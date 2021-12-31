@@ -16,9 +16,13 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.io.File;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
+import org.apache.solr.common.params.ConfigSetParams;
+
 import org.junit.Test;
 
 /**
@@ -28,10 +32,39 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoAction() {
-    ConfigSetAdminRequest request = new MyConfigSetAdminRequest();
+    MyConfigSetAdminRequest request = new MyConfigSetAdminRequest();
     verifyException(request, "action");
   }
 
+  @Test
+  public void testUpload() throws Exception {
+    final File tmpFile = createTempFile().toFile();
+    ConfigSetAdminRequest.Upload upload = new ConfigSetAdminRequest.Upload();
+    verifyException(upload, "ConfigSet");
+    
+    upload.setConfigSetName("name");
+    verifyException(upload, "There must be a ContentStream");
+    
+    upload.setUploadFile(tmpFile, "application/zip");
+    
+    assertEquals(1, upload.getContentStreams().size());
+    assertEquals("application/zip", upload.getContentStreams().stream().findFirst().get().getContentType());
+    
+    assertNull(upload.getParams().get(ConfigSetParams.FILE_PATH));
+    assertNull(upload.getParams().get(ConfigSetParams.OVERWRITE));
+    assertNull(upload.getParams().get(ConfigSetParams.CLEANUP));
+    
+    upload.setUploadFile(tmpFile, "application/xml")
+      .setFilePath("solrconfig.xml")
+      .setOverwrite(true);
+    
+    assertEquals(1, upload.getContentStreams().size());
+    assertEquals("application/xml", upload.getContentStreams().stream().findFirst().get().getContentType());
+    
+    assertEquals("solrconfig.xml", upload.getParams().get(ConfigSetParams.FILE_PATH));
+    assertEquals("true", upload.getParams().get(ConfigSetParams.OVERWRITE));
+  }
+  
   @Test
   public void testCreate() {
     ConfigSetAdminRequest.Create create = new ConfigSetAdminRequest.Create();
@@ -46,7 +79,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     verifyException(delete, "ConfigSet");
   }
 
-  private void verifyException(ConfigSetAdminRequest request, String errorContains) {
+  private void verifyException(ConfigSetAdminRequest<?,?> request, String errorContains) {
     Exception e = expectThrows(Exception.class, request::getParams);
     assertTrue("Expected exception message to contain: " + errorContains,
         e.getMessage().contains(errorContains));

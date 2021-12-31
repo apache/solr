@@ -17,6 +17,7 @@
 
 package org.apache.solr.prometheus.scraper;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,11 +43,12 @@ import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 import org.apache.solr.prometheus.exporter.PrometheusExporterSettings;
 import org.apache.solr.prometheus.exporter.SolrClientFactory;
 import org.apache.solr.prometheus.utils.Helpers;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@ThreadLeakLingering(linger = 10)
 public class SolrCloudScraperTest extends PrometheusExporterTestBase {
 
   private MetricsConfiguration configuration;
@@ -82,7 +84,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    executor = ExecutorUtil.newMDCAwareFixedThreadPool(25, new DefaultSolrThreadFactory("solr-cloud-scraper-tests"));
+    executor = ExecutorUtil.newMDCAwareFixedThreadPool(25, new SolrNamedThreadFactory("solr-cloud-scraper-tests"));
     configuration = Helpers.loadConfiguration("conf/prometheus-solr-exporter-scraper-test-config.xml");
     solrCloudScraper = createSolrCloudScraper();
   }
@@ -150,7 +152,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     assertEquals(2, collection1Metrics.size());
     Collector.MetricFamilySamples liveNodeSamples = collection1Metrics.get(0);
     assertEquals("solr_collections_live_nodes", liveNodeSamples.name);
-    assertEquals("See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus", liveNodeSamples.help);
+    assertEquals("See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus", liveNodeSamples.help);
     assertEquals(1, liveNodeSamples.samples.size());
 
     assertEquals(

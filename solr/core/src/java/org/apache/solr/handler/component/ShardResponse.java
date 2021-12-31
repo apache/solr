@@ -16,15 +16,14 @@
  */
 package org.apache.solr.handler.component;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.common.SolrException;
 
 public final class ShardResponse {
   private ShardRequest req;
   private String shard;
   private String nodeName;
-  private String shardAddress;  // the specific shard that this response was received from
+  private volatile String shardAddress;  // the specific shard that this response was received from
   private int rspCode;
-  private Throwable exception;
+  private volatile Throwable exception;
   private SolrResponse rsp;
 
   @Override
@@ -32,7 +31,7 @@ public final class ShardResponse {
     return "ShardResponse:{shard="+shard+",shardAddress="+shardAddress
             +"\n\trequest=" + req
             +"\n\tresponse=" + rsp
-            + (exception==null ? "" : "\n\texception="+ SolrException.toStr(exception))
+            + (exception==null ? "" : "\n\texception="+ exception)
             +"\n}";
   }
 

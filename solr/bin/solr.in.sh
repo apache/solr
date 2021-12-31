@@ -22,10 +22,14 @@
 #SOLR_JAVA_HOME=""
 
 # This controls the number of seconds that the solr script will wait for
-# Solr to stop gracefully or Solr to start.  If the graceful stop fails,
-# the script will forcibly stop Solr.  If the start fails, the script will
-# give up waiting and display the last few lines of the logfile.
+# Solr to stop gracefully.  If the graceful stop fails, the script will
+# forcibly stop Solr.
 #SOLR_STOP_WAIT="180"
+
+# This controls the number of seconds that the solr script will wait for
+# Solr to start.  If the start fails, the script will give up waiting and
+# display the last few lines of the logfile.
+#SOLR_START_WAIT="$SOLR_STOP_WAIT"
 
 # Increase Java Heap as needed to support your indexing / query needs
 #SOLR_HEAP="512m"
@@ -47,6 +51,7 @@
 
 # These GC settings have shown to work well for a number of common Solr workloads
 #GC_TUNE=" \
+#-XX:+ExplicitGCInvokesConcurrent \
 #-XX:SurvivorRatio=4 \
 #-XX:TargetSurvivorRatio=90 \
 #-XX:MaxTenuringThreshold=8 \
@@ -58,16 +63,18 @@
 #-XX:CMSInitiatingOccupancyFraction=50 \
 #-XX:CMSMaxAbortablePrecleanTime=6000 \
 #-XX:+CMSParallelRemarkEnabled \
-#-XX:+ParallelRefProcEnabled \
-#-XX:-OmitStackTraceInFastThrow  etc.
+#-XX:+ParallelRefProcEnabled        etc.
 
 # Set the ZooKeeper connection string if using an external ZooKeeper ensemble
 # e.g. host1:2181,host2:2181/chroot
 # Leave empty if not using SolrCloud
 #ZK_HOST=""
 
+# Set to true if your ZK host has a chroot path, and you want to create it automatically.
+#ZK_CREATE_CHROOT=true
+
 # Set the ZooKeeper client timeout (for SolrCloud mode)
-#ZK_CLIENT_TIMEOUT="15000"
+#ZK_CLIENT_TIMEOUT="30000"
 
 # By default the start script uses "localhost"; override the hostname here
 # for production SolrCloud environments to control the hostname exposed to cluster state
@@ -118,11 +125,6 @@
 # Location where Solr should write logs to. Absolute or relative to solr start dir
 #SOLR_LOGS_DIR=logs
 
-# Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
-# start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
-# framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
-#SOLR_LOG_PRESTART_ROTATION=false
-
 # Enables jetty request log for all requests
 #SOLR_REQUESTLOG_ENABLED=false
 
@@ -132,12 +134,12 @@
 # Restrict access to solr by IP address.
 # Specify a comma-separated list of addresses or networks, for example:
 #   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
-#SOLR_IP_WHITELIST=
+#SOLR_IP_ALLOWLIST=
 
 # Block access to solr from specific IP addresses.
 # Specify a comma-separated list of addresses or networks, for example:
 #   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
-#SOLR_IP_BLACKLIST=
+#SOLR_IP_DENYLIST=
 
 # Sets the network interface the Solr binds to. To prevent administrators from
 # accidentally exposing Solr more widely than intended, this defaults to 127.0.0.1.
@@ -152,9 +154,9 @@
 #SOLR_SSL_ENABLED=true
 # Uncomment to set SSL-related system properties
 # Be sure to update the paths to the correct keystore for your environment
-#SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
+#SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.p12
 #SOLR_SSL_KEY_STORE_PASSWORD=secret
-#SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
+#SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.p12
 #SOLR_SSL_TRUST_STORE_PASSWORD=secret
 # Require clients to authenticate
 #SOLR_SSL_NEED_CLIENT_AUTH=false
@@ -203,6 +205,8 @@
 #  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
 #SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
 
+# Jetty GZIP module enabled by default
+#SOLR_GZIP_ENABLED=true
 
 # Settings for common system values that may cause operational imparement when system defaults are used.
 # Solr can use many processes and many file handles. On modern operating systems the savings by leaving
@@ -215,18 +219,46 @@
 #SOLR_ULIMIT_CHECKS=
 
 # When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
-# list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can be configured in solr.xml,
-# or if you are using the OOTB solr.xml, can be specified using the system property "solr.shardsWhitelist". Alternatively
-# host checking can be disabled by using the system property "solr.disable.shardsWhitelist"
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.shardsWhitelist=http://localhost:8983,http://localhost:8984"
+# list of hosts needs to be defined in an allow-list or Solr will forbid the request. The allow-list can be configured
+# in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.allowUrls".
+# Alternatively host checking can be disabled by using the system property "solr.disable.allowUrls"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowUrls=http://localhost:8983,http://localhost:8984"
 
 # For a visual indication in the Admin UI of what type of environment this cluster is, configure
 # a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
 # label or color, e.g. -Dsolr.environment=test,label=Functional+test,color=brown
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"
 
+# Specifies the path to a common library directory that will be shared across all cores.
+# Any JAR files in this directory will be added to the search path for Solr plugins.
+# If the specified path is not absolute, it will be relative to `$SOLR_HOME`.
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.sharedLib=/path/to/lib"
+
 # Runs solr in java security manager sandbox. This can protect against some attacks.
 # Runtime properties are passed to the security policy file (server/etc/security.policy)
 # You can also tweak via standard JDK files such as ~/.java.policy, see https://s.apache.org/java8policy
 # This is experimental! It may not work at all with Hadoop/HDFS features.
 #SOLR_SECURITY_MANAGER_ENABLED=true
+# This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
+# change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
+# scripts.
+# SOLR_ADMIN_UI_DISABLED=false
+
+# Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
+# Sometimes it may be necessary to place a core or a backup on a different location or a different disk
+# This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowPaths=/mnt/bigdisk,/other/path"
+
+# Solr can attempt to take a heap dump on out of memory errors. To enable this, uncomment the line setting
+# SOLR_HEAP_DUMP below. Heap dumps will be saved to SOLR_LOG_DIR/dumps by default. Alternatively, you can specify any
+# other directory, which will implicitly enable heap dumping. Dump name pattern will be solr-[timestamp]-pid[###].hprof
+# When using this feature, it is recommended to have an external service monitoring the given dir.
+# If more fine grained control is required, you can manually add the appropriate flags to SOLR_OPTS
+# See https://docs.oracle.com/en/java/javase/11/troubleshoot/command-line-options1.html
+# You can test this behaviour by setting SOLR_HEAP=25m
+#SOLR_HEAP_DUMP=true
+#SOLR_HEAP_DUMP_DIR=/var/log/dumps
+
+# Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
+# then enable the following setting to address CVE-2021-44228
+# SOLR_OPTS="$SOLR_OPTS -Dlog4j2.formatMsgNoLookups=true"

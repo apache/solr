@@ -18,7 +18,6 @@
 import java.io.*;
 import java.io.FilenameFilter;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.json.*;
@@ -67,7 +66,7 @@ public class BuildNavDataFiles {
     if (null == mainPage) {
       throw new RuntimeException("no main-page found with shortname: " + mainPageShortname);
     }
-    // NOTE: mainPage claims to be its own parent to prevent anyone decendent from introducing a loop
+    // NOTE: mainPage claims to be its own parent to prevent anyone descendant from introducing a loop
     mainPage.buildPageTreeRecursive(mainPage, allPages);
 
     { // validate that there are no orphan pages

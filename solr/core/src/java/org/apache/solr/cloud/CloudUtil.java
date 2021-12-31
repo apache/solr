@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -29,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -40,7 +40,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
@@ -76,12 +75,12 @@ public class CloudUtil {
         for (Replica replica : slice.getReplicas()) {
 
           String cnn = replica.getName();
-          String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+          String baseUrl = replica.getBaseUrl();
           log.debug("compare against coreNodeName={} baseUrl={}", cnn, baseUrl);
 
           if (thisCnn != null && thisCnn.equals(cnn)
               && !thisBaseUrl.equals(baseUrl)) {
-            if (cc.getLoadedCoreNames().contains(desc.getName())) {
+            if (cc.isLoaded(desc.getName())) {
               cc.unload(desc.getName());
             }
 
@@ -91,9 +90,9 @@ public class CloudUtil {
               SolrException.log(log, "Failed to delete instance dir for core:"
                   + desc.getName() + " dir:" + desc.getInstanceDir());
             }
-            log.error("", new SolrException(ErrorCode.SERVER_ERROR,
-                "Will not load SolrCore " + desc.getName()
-                    + " because it has been replaced due to failover."));
+            log.error("{}",
+                new SolrException(ErrorCode.SERVER_ERROR, "Will not load SolrCore " + desc.getName()
+                    + " because it has been replaced due to failover.")); // nowarn
             throw new SolrException(ErrorCode.SERVER_ERROR,
                 "Will not load SolrCore " + desc.getName()
                     + " because it has been replaced due to failover.");
@@ -125,7 +124,7 @@ public class CloudUtil {
   public static String unifiedResourcePath(SolrResourceLoader loader) {
     return (loader instanceof ZkSolrResourceLoader) ?
             ((ZkSolrResourceLoader) loader).getConfigSetZkPath() + "/" :
-            loader.getConfigDir() + File.separator;
+            loader.getConfigPath() + "/";
   }
 
   /**Read the list of public keys from ZK
@@ -141,7 +140,7 @@ public class CloudUtil {
       }
     } catch (KeeperException.NoNodeException e) {
       log.info("Error fetching key names");
-      return Collections.EMPTY_MAP;
+      return Collections.emptyMap();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVER_ERROR,"Unable to read crypto keys",e );
@@ -234,7 +233,6 @@ public class CloudUtil {
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
    * number of shards and replicas.
    * <p>Note: for shards marked as inactive the current Solr behavior is that replicas remain active.
-   * {@link org.apache.solr.cloud.autoscaling.sim.SimCloudManager} follows this behavior.</p>
    * @param expectedShards expected number of shards
    * @param expectedReplicas expected number of active replicas per shard
    * @param withInactive if true then count also inactive shards
@@ -249,7 +247,9 @@ public class CloudUtil {
       }
       Collection<Slice> slices = withInactive ? collectionState.getSlices() : collectionState.getActiveSlices();
       if (slices.size() != expectedShards) {
-        log.debug("-- wrong number of slices for collection {}, expected={}, found={}: {}", collectionState.getName(), expectedShards, collectionState.getSlices().size(), collectionState.getSlices());
+        if (log.isDebugEnabled()) {
+          log.debug("-- wrong number of slices for collection {}, expected={}, found={}: {}", collectionState.getName(), expectedShards, collectionState.getSlices().size(), collectionState.getSlices());
+        }
         return false;
       }
       Set<String> leaderless = new HashSet<>();
@@ -268,7 +268,9 @@ public class CloudUtil {
             activeReplicas++;
         }
         if (activeReplicas != expectedReplicas) {
-          log.debug("-- wrong number of active replicas for collection {} in slice {}, expected={}, found={}", collectionState.getName(), slice.getName(), expectedReplicas, activeReplicas);
+          if (log.isDebugEnabled()) {
+            log.debug("-- wrong number of active replicas for collection {} in slice {}, expected={}, found={}", collectionState.getName(), slice.getName(), expectedReplicas, activeReplicas);
+          }
           return false;
         }
       }
@@ -281,5 +283,15 @@ public class CloudUtil {
     };
   }
 
-
+  /**
+   * Builds a string with sorted {@link CoreContainer#getLoadedCoreNames()} while truncating to the first 20 cores.
+   */
+  static String getLoadedCoreNamesAsString(CoreContainer coreContainer) {
+    List<String> loadedCoreNames = coreContainer.getLoadedCoreNames();
+    if (loadedCoreNames.size() <= 20) {
+      loadedCoreNames.sort(null);
+    }
+    return loadedCoreNames.stream().limit(20).collect(Collectors.toList())
+            + (loadedCoreNames.size() > 20 ? "...(truncated from " + loadedCoreNames.size() + " cores)" : "");
+  }
 }

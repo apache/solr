@@ -45,9 +45,10 @@ public class SpatialHeatmapFacets {
   public static final String RESPONSE_KEY = "facet_heatmaps";
 
   /** Called by {@link org.apache.solr.request.SimpleFacets} to compute heatmap facets. */
+  @SuppressWarnings("unchecked")
   public static NamedList<Object> getHeatmapForField(String fieldKey, String fieldName, ResponseBuilder rb, SolrParams params, DocSet docSet) throws IOException {
     final FacetRequest facetRequest = createHeatmapRequest(fieldKey, fieldName, rb, params);
-    return (NamedList) facetRequest.process(rb.req, docSet);
+    return (NamedList<Object>) facetRequest.process(rb.req, docSet);
   }
 
   private static FacetRequest createHeatmapRequest(String fieldKey, String fieldName, ResponseBuilder rb, SolrParams params) {
@@ -106,7 +107,7 @@ public class SpatialHeatmapFacets {
   /** Called by FacetComponent.countFacets which is in turn called by FC's impl of
    * {@link org.apache.solr.handler.component.SearchComponent#handleResponses(ResponseBuilder, ShardRequest)}. */
   @SuppressWarnings("unchecked")
-  public static void distribHandleResponse(LinkedHashMap<String, HeatmapFacet> heatmapFacets, NamedList srsp_facet_counts) {
+  public static void distribHandleResponse(LinkedHashMap<String, HeatmapFacet> heatmapFacets, NamedList<?> srsp_facet_counts) {
     NamedList<NamedList<Object>> facet_heatmaps = (NamedList<NamedList<Object>>) srsp_facet_counts.get(RESPONSE_KEY);
     if (facet_heatmaps == null) {
       return;
@@ -127,7 +128,8 @@ public class SpatialHeatmapFacets {
 
   /** Called by FacetComponent's impl of
    * {@link org.apache.solr.handler.component.SearchComponent#finishStage(ResponseBuilder)}. */
-  public static NamedList distribFinish(LinkedHashMap<String, HeatmapFacet> heatmapInfos, ResponseBuilder rb) {
+  @SuppressWarnings("unchecked")
+  public static NamedList<NamedList<Object>> distribFinish(LinkedHashMap<String, HeatmapFacet> heatmapInfos, ResponseBuilder rb) {
     NamedList<NamedList<Object>> result = new SimpleOrderedMap<>();
     for (Map.Entry<String, HeatmapFacet> entry : heatmapInfos.entrySet()) {
       final HeatmapFacet facet = entry.getValue();

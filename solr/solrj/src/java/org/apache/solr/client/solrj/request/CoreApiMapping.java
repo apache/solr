@@ -18,21 +18,16 @@
 package org.apache.solr.client.solrj.request;
 
 
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.ApiMapping.CommandMeta;
+import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+
 import java.util.Collections;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
-import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
-import org.apache.solr.common.util.Utils;
-
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.CORES_COMMANDS;
-import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.CORES_STATUS;
-import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.NODEAPIS;
-import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.NODEINVOKE;
-import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.PER_CORE_COMMANDS;
+import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.*;
 
 /** stores the mapping of v1 API parameters to v2 API parameters
  * for core admin API
@@ -40,23 +35,18 @@ import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.PER_C
  */
 public class CoreApiMapping {
   public enum Meta implements CommandMeta {
-    CREATE(CORES_COMMANDS, POST, CoreAdminAction.CREATE, "create", Utils.makeMap("config", "configSet")),
     UNLOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.UNLOAD, "unload", null),
     RELOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.RELOAD, "reload", null),
-    STATUS(CORES_STATUS, GET, CoreAdminAction.STATUS, "status", null),
-    SWAP(PER_CORE_COMMANDS, POST, CoreAdminAction.SWAP, "swap", Utils.makeMap("other", "with")),
-    RENAME(PER_CORE_COMMANDS, POST, CoreAdminAction.RENAME, "rename", Utils.makeMap("other", "to")),
+    SWAP(PER_CORE_COMMANDS, POST, CoreAdminAction.SWAP, "swap", Collections.singletonMap("other", "with")),
+    RENAME(PER_CORE_COMMANDS, POST, CoreAdminAction.RENAME, "rename", Collections.singletonMap("other", "to")),
     MERGEINDEXES(PER_CORE_COMMANDS, POST, CoreAdminAction.MERGEINDEXES, "merge-indexes", null),
-    SPLIT(PER_CORE_COMMANDS, POST, CoreAdminAction.SPLIT, "split", Utils.makeMap("split.key", "splitKey")),
+    SPLIT(PER_CORE_COMMANDS, POST, CoreAdminAction.SPLIT, "split", Collections.singletonMap("split.key", "splitKey")),
     PREPRECOVERY(PER_CORE_COMMANDS, POST, CoreAdminAction.PREPRECOVERY, "prep-recovery", null),
     REQUESTRECOVERY(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTRECOVERY, "request-recovery", null),
     REQUESTSYNCSHARD(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTSYNCSHARD, "request-sync-shard", null),
     REQUESTBUFFERUPDATES(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTBUFFERUPDATES, "request-buffer-updates", null),
     REQUESTAPPLYUPDATES(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTAPPLYUPDATES, "request-apply-updates", null),
-    REQUESTSTATUS(PER_CORE_COMMANDS, GET, CoreAdminAction.REQUESTSTATUS, "request-status", null),/*TODO*/
-    OVERSEEROP(NODEAPIS, POST, CoreAdminAction.OVERSEEROP, "overseer-op", null),
-    REJOINLEADERELECTION(NODEAPIS, POST, CoreAdminAction.REJOINLEADERELECTION, "rejoin-leader-election", null),
-    INVOKE(NODEINVOKE, GET, CoreAdminAction.INVOKE,"invoke",  null);
+    REQUESTSTATUS(PER_CORE_COMMANDS, GET, CoreAdminAction.REQUESTSTATUS, "request-status", null)/*TODO*/;
 
     public final String commandName;
     public final EndPoint endPoint;
@@ -65,11 +55,11 @@ public class CoreApiMapping {
     public final Map<String, String> paramstoAttr;
 
     Meta(EndPoint endPoint, SolrRequest.METHOD method, CoreAdminAction action, String commandName,
-         Map paramstoAttr) {
+         Map<String,String> paramstoAttr) {
       this.commandName = commandName;
       this.endPoint = endPoint;
       this.method = method;
-      this.paramstoAttr = paramstoAttr == null ? Collections.EMPTY_MAP : Collections.unmodifiableMap(paramstoAttr);
+      this.paramstoAttr = paramstoAttr == null ? Collections.emptyMap() : paramstoAttr; // expect this to be immutable
       this.action = action;
     }
 
@@ -84,7 +74,7 @@ public class CoreApiMapping {
     }
 
     @Override
-    public CollectionApiMapping.V2EndPoint getEndPoint() {
+    public ApiMapping.V2EndPoint getEndPoint() {
       return endPoint;
     }
 
@@ -92,16 +82,10 @@ public class CoreApiMapping {
     public String getParamSubstitute(String param) {
       return paramstoAttr.containsKey(param) ? paramstoAttr.get(param) : param;
     }
-
-
   }
 
-  public enum EndPoint implements CollectionApiMapping.V2EndPoint {
-    CORES_STATUS("cores.Status"),
-    CORES_COMMANDS("cores.Commands"),
-    PER_CORE_COMMANDS("cores.core.Commands"),
-    NODEINVOKE("node.invoke"),
-    NODEAPIS("node.Commands");
+  public enum EndPoint implements ApiMapping.V2EndPoint {
+    PER_CORE_COMMANDS("cores.core.Commands");
 
     final String specName;
 

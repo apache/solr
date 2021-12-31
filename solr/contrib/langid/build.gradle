@@ -18,11 +18,13 @@
 
 apply plugin: 'java-library'
 
+description = 'Language Identifier contrib for extracting language from a document being indexed'
+
 dependencies {
   implementation project(':solr:core')
 
   implementation ('org.apache.tika:tika-core') { transitive = false }
-
+  implementation 'commons-io:commons-io'
   implementation 'com.cybozu.labs:langdetect'
   implementation 'net.arnx:jsonic'
   implementation 'org.apache.opennlp:opennlp-tools'

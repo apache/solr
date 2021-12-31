@@ -63,7 +63,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
    * {@link #onCommit} on our {@link #getWrappedDeletionPolicy()}.
    * 
    * <p>
-   * This map is atomically replaced by {@linke #updateKnownCommitPoints}.  
+   * This map is atomically replaced by {@link #updateKnownCommitPoints}.
    * The keys are the {@link IndexCommit#getGeneration} of each commit
    * </p>
    *
@@ -323,7 +323,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     }
 
     @Override
-    public Collection getFileNames() throws IOException {
+    public Collection<String> getFileNames() throws IOException {
       return delegate.getFileNames();
     }
 
@@ -379,7 +379,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     }
 
     @Override
-    public Map getUserData() throws IOException {
+    public Map<String,String> getUserData() throws IOException {
       return delegate.getUserData();
     }    
   }

@@ -31,7 +31,7 @@ public interface QueryElevationParams {
    * The name of the field that editorial results will be written out as when using the QueryElevationComponent, which
    * automatically configures the EditorialMarkerFactory.  The default name is "elevated"
    * <br>
-   * See http://wiki.apache.org/solr/DocTransformers
+   * See https://solr.apache.org/guide/query-elevation-component.html
    */
   String EDITORIAL_MARKER_FIELD_NAME = "editorialMarkerFieldName";
 
@@ -40,7 +40,7 @@ public interface QueryElevationParams {
    * automatically configures the EditorialMarkerFactory.  The default name is "excluded".  This is only used
    * when {@link #MARK_EXCLUDES} is set to true at query time.
    * <br>
-   * See http://wiki.apache.org/solr/DocTransformers
+   * See https://solr.apache.org/guide/query-elevation-component.html
    */
   String EXCLUDE_MARKER_FIELD_NAME = "excludeMarkerFieldName";
 
@@ -55,4 +55,11 @@ public interface QueryElevationParams {
    * they be subject to whatever the sort criteria is?  True by default.
    */
   String USE_CONFIGURED_ELEVATED_ORDER = "useConfiguredElevatedOrder";
+
+  /**
+   * By default, the component will also elevate docs that aren't part of the search result (matching the query).
+   * If you only want to elevate the docs that are part of the search result, set this to true. False by default.
+   */
+  String ELEVATE_ONLY_DOCS_MATCHING_QUERY = "elevateOnlyDocsMatchingQuery";
+
 }

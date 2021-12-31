@@ -63,7 +63,6 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
     return "ResourceSharingTestComponent";
   }
 
-  @SuppressWarnings("unchecked")
   TestObject getTestObj() {
     return this.blob.get();
   }
@@ -89,7 +88,7 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
     return "1";
   }
 
-  class DumbCsvDecoder implements BlobRepository.Decoder<Object> {
+  class DumbCsvDecoder implements BlobRepository.Decoder<TestObject> {
     private final Map<String, String> dict = new HashMap<>();
     
     public DumbCsvDecoder() {}
@@ -119,7 +118,9 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
       
       assertEquals("bar", dict.get("foo"));
       assertEquals("bam", dict.get("baz"));
-      log.info("Loaded {}  using {}", getDict().size(), this.getClass().getClassLoader());
+      if (log.isInfoEnabled()) {
+        log.info("Loaded {}  using {}", getDict().size(), this.getClass().getClassLoader());
+      }
       
       // if we get here we have seen the data from the blob and all we need is to test that two collections
       // are able to see the same object..

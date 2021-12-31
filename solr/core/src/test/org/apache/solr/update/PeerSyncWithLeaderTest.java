@@ -51,7 +51,7 @@ public class PeerSyncWithLeaderTest extends PeerSyncTest {
   @Override
   void assertSync(SolrClient client, int numVersions, boolean expectedResult, String... syncWith) throws IOException, SolrServerException {
     QueryRequest qr = new QueryRequest(params("qt","/get", "getVersions",Integer.toString(numVersions), "syncWithLeader", StrUtils.join(Arrays.asList(syncWith), ',')));
-    NamedList rsp = client.request(qr);
-    assertEquals(expectedResult, (Boolean) rsp.get("syncWithLeader"));
+    NamedList<?> rsp = client.request(qr);
+    assertEquals(expectedResult, rsp.get("syncWithLeader"));
   }
 }

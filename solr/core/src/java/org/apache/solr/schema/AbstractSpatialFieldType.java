@@ -34,12 +34,14 @@ import com.google.common.cache.CacheBuilder;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.SpatialStrategy;
@@ -138,7 +140,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
         }
         // Warn about using old Spatial4j class names
         if (argEntry.getValue().contains(OLD_SPATIAL4J_PREFIX)) {
-          log.warn("Replace '" + OLD_SPATIAL4J_PREFIX + "' with '" + NEW_SPATIAL4J_PREFIX + "' in your schema.");
+          log.warn("Replace '{}' with '{}' in your schema", OLD_SPATIAL4J_PREFIX, NEW_SPATIAL4J_PREFIX);
           argEntry.setValue(argEntry.getValue().replace(OLD_SPATIAL4J_PREFIX, NEW_SPATIAL4J_PREFIX));
         }
       }
@@ -333,6 +335,13 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     // the x & y pair of FieldCache value sources.
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
         "A ValueSource isn't directly available from this field. Instead try a query using the distance as the score.");
+  }
+
+  @Override
+  protected Query getSpecializedExistenceQuery(QParser parser, SchemaField field) {
+    PrefixQuery query = new PrefixQuery(new Term(field.getName(), ""));
+    query.setRewriteMethod(field.getType().getRewriteMethod(parser, field));
+    return query;
   }
 
   @Override

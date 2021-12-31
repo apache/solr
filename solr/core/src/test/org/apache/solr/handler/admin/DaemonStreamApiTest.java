@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +41,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@ThreadLeakLingering(linger = 60)
 public class DaemonStreamApiTest extends SolrTestCaseJ4 {
 
   private MiniSolrCloudCluster cluster;
@@ -74,15 +76,12 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     // create a single shard, single replica collection. This is necessary until SOLR-13245 since the commands
     // don't look in all replicas.
     CollectionAdminRequest.createCollection(SOURCE_COLL, CONF_NAME, 1, 1)
-        .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.createCollection(TARGET_COLL, CONF_NAME, 1, 1)
-        .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.createCollection(CHECKPOINT_COLL, CONF_NAME, 1, 1)
-        .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
 
     for (int idx = 0; idx < numDaemons; ++idx) {

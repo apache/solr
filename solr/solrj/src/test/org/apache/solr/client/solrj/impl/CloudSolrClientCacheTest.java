@@ -31,7 +31,7 @@ import java.util.function.Function;
 import com.google.common.collect.ImmutableSet;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.cloud.autoscaling.DelegatingClusterStateProvider;
+import org.apache.solr.client.solrj.cloud.DelegatingClusterStateProvider;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -74,8 +74,8 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
         return colls.get(c);
       }
     }
-    Map<String, Function> responses = new HashMap<>();
-    NamedList okResponse = new NamedList();
+    Map<String, Function<?, ?>> responses = new HashMap<>();
+    NamedList<Object> okResponse = new NamedList<>();
     okResponse.add("responseHeader", new NamedList<>(Collections.singletonMap("status", 0)));
 
     LBHttpSolrClient mockLbclient = getMockLbHttpSolrClient(responses);
@@ -84,8 +84,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
         .withLBHttpSolrClient(mockLbclient)
         .build()) {
       livenodes.addAll(ImmutableSet.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
-      ClusterState cs = ClusterState.load(1, coll1State.getBytes(UTF_8),
-          Collections.emptySet(), "/collections/gettingstarted/state.json");
+      ClusterState cs = ClusterState.createFromJson(1, coll1State.getBytes(UTF_8), Collections.emptySet());
       refs.put(collName, new Ref(collName));
       colls.put(collName, cs.getCollectionOrNull(collName));
       responses.put("request", o -> {
@@ -105,16 +104,18 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   }
 
 
-  private LBHttpSolrClient getMockLbHttpSolrClient(Map<String, Function> responses) throws Exception {
+  @SuppressWarnings({"unchecked"})
+  private LBHttpSolrClient getMockLbHttpSolrClient(
+          Map<String, Function<?,?>> responses) throws Exception {
     LBHttpSolrClient mockLbclient = mock(LBHttpSolrClient.class);
 
     when(mockLbclient.request(any(LBSolrClient.Req.class))).then(invocationOnMock -> {
-      LBHttpSolrClient.Req req = invocationOnMock.getArgument(0);
-      Function f = responses.get("request");
+      LBSolrClient.Req req = invocationOnMock.getArgument(0);
+      Function<?,?> f = responses.get("request");
       if (f == null) return null;
       Object res = f.apply(null);
       if (res instanceof Exception) throw (Throwable) res;
-      LBHttpSolrClient.Rsp rsp = new LBHttpSolrClient.Rsp();
+      LBSolrClient.Rsp rsp = new LBSolrClient.Rsp();
       rsp.rsp = (NamedList<Object>) res;
       rsp.server = req.servers.get(0);
       return rsp;
@@ -152,8 +153,6 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   private String coll1State = "{'gettingstarted':{\n" +
       "    'replicationFactor':'2',\n" +
       "    'router':{'name':'compositeId'},\n" +
-      "    'maxShardsPerNode':'2',\n" +
-      "    'autoAddReplicas':'false',\n" +
       "    'shards':{\n" +
       "      'shard1':{\n" +
       "        'range':'80000000-ffffffff',\n" +

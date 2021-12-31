@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -42,8 +41,7 @@ public class IsNullEvaluator extends RecursiveBooleanEvaluator implements ManyVa
 
     if(values[0] instanceof String) {
       //Check to see if the this tuple had a null value for that string.
-      Map tupleContext = getStreamContext().getTupleContext();
-      String nullField = (String)tupleContext.get("null");
+      String nullField = getStreamContext().getTupleContext().get("null");
       if(nullField != null && nullField.equals(values[0])) {
         return true;
       }

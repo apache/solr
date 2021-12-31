@@ -20,11 +20,6 @@ import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMResult;
-import javax.xml.transform.dom.DOMSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -41,12 +36,13 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.SystemIdResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,20 +68,34 @@ public class XmlConfigFile { // formerly simply "Config"
   private final String prefix;
   private final String name;
   private final SolrResourceLoader loader;
+  private final Properties substituteProperties;
   private int zkVersion = -1;
 
   /**
-   * Builds a config from a resource name with no xpath prefix.
+   * Builds a config from a resource name with no xpath prefix.  Does no property substitution.
    */
   public XmlConfigFile(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException
   {
     this( loader, name, null, null );
   }
 
+  /**
+   * Builds a config.  Does no property substitution.
+   */
   public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException
   {
-    this(loader, name, is, prefix, true);
+    this(loader, name, is, prefix, null);
   }
+  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps) throws ParserConfigurationException, IOException, SAXException{
+    this(loader, s -> {
+      try {
+        return loader.openResource(s);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+    },name, is, prefix, substituteProps);
+  }
+
   /**
    * Builds a config:
    * <p>
@@ -101,20 +111,20 @@ public class XmlConfigFile { // formerly simply "Config"
    * @param name the resource name used if the input stream 'is' is null
    * @param is the resource as a SAX InputSource
    * @param prefix an optional prefix that will be prepended to all non-absolute xpath expressions
+   * @param substituteProps optional property substitution
    */
-  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean substituteProps) throws ParserConfigurationException, IOException, SAXException
-  {
-    if( loader == null ) {
-      loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
-    }
+  public XmlConfigFile(SolrResourceLoader loader, Function<String, InputStream> fileSupplier, String name, InputSource is, String prefix, Properties substituteProps) throws IOException {
+    if (null == loader) throw new NullPointerException("loader");
     this.loader = loader;
+    
+    this.substituteProperties = substituteProps;
     this.name = name;
     this.prefix = (prefix != null && !prefix.endsWith("/"))? prefix + '/' : prefix;
     try {
       javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
       if (is == null) {
-        InputStream in = loader.openConfig(name);
+        InputStream in = fileSupplier.apply(name);
         if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
           zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
           log.debug("loaded config {} with version {} ",name,zkVersion);
@@ -129,7 +139,7 @@ public class XmlConfigFile { // formerly simply "Config"
           dbf.setXIncludeAware(true);
           dbf.setNamespaceAware(true);
         } catch(UnsupportedOperationException e) {
-          log.warn(name + " XML parser doesn't support XInclude option");
+          log.warn("{} XML parser doesn't support XInclude option", name);
         }
       }
       
@@ -138,15 +148,15 @@ public class XmlConfigFile { // formerly simply "Config"
       db.setErrorHandler(xmllog);
       try {
         doc = db.parse(is);
-        origDoc = copyDoc(doc);
+        origDoc = doc;
       } finally {
         // some XML parsers are broken and don't close the byte stream (but they should according to spec)
         IOUtils.closeQuietly(is.getByteStream());
       }
-      if (substituteProps) {
+      if (substituteProps != null) {
         DOMUtil.substituteProperties(doc, getSubstituteProperties());
       }
-    } catch (ParserConfigurationException | SAXException | TransformerException e)  {
+    } catch (ParserConfigurationException | SAXException e)  {
       SolrException.log(log, "Exception during parsing file: " + name, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -167,32 +177,12 @@ public class XmlConfigFile { // formerly simply "Config"
     }
   }
 
+  /** Returns non-null props to substitute.  Param is the base/default set, also non-null. */
   protected Properties getSubstituteProperties() {
-    return loader.getCoreProperties();
+    return this.substituteProperties;
   }
 
-  public XmlConfigFile(SolrResourceLoader loader, String name, Document doc) {
-    this.prefix = null;
-    this.doc = doc;
-    try {
-      this.origDoc = copyDoc(doc);
-    } catch (TransformerException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-    this.name = name;
-    this.loader = loader;
-  }
 
-  
-  private static Document copyDoc(Document doc) throws TransformerException {
-    TransformerFactory tfactory = TransformerFactory.newInstance();
-    Transformer tx = tfactory.newTransformer();
-    DOMSource source = new DOMSource(doc);
-    DOMResult result = new DOMResult();
-    tx.transform(source, result);
-    return (Document) result.getNode();
-  }
-  
   /**
    * @since solr 1.3
    */
@@ -224,11 +214,6 @@ public class XmlConfigFile { // formerly simply "Config"
     return (prefix==null || path.startsWith("/")) ? path : prefix+path;
   }
   
-  public void substituteProperties() {
-    DOMUtil.substituteProperties(doc, getSubstituteProperties());
-  }
-
-
   public Object evaluate(String path, QName type) {
     XPath xpath = xpathFactory.newXPath();
     try {
@@ -247,10 +232,6 @@ public class XmlConfigFile { // formerly simply "Config"
     return getNode(path, doc, errifMissing);
   }
 
-  public Node getUnsubstitutedNode(String path, boolean errIfMissing) {
-    return getNode(path, origDoc, errIfMissing);
-  }
-
   public Node getNode(String path, Document doc, boolean errIfMissing) {
     XPath xpath = xpathFactory.newXPath();
     String xstr = normalize(path);
@@ -262,7 +243,7 @@ public class XmlConfigFile { // formerly simply "Config"
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.trace(name + " missing optional " + path);
+          log.trace("{} missing optional {}", name, path);
           return null;
         }
       }
@@ -271,7 +252,7 @@ public class XmlConfigFile { // formerly simply "Config"
                                  name + " contains more than one value for config path: " + path);
       }
       Node nd = nodes.item(0);
-      log.trace(name + ":" + path + "=" + nd);
+      log.trace("{}:{}={}", name, path, nd);
       return nd;
 
     } catch (XPathExpressionException e) {
@@ -296,12 +277,12 @@ public class XmlConfigFile { // formerly simply "Config"
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.trace(name + " missing optional " + path);
+          log.trace("{} missing optional {}", name, path);
           return null;
         }
       }
 
-      log.trace(name + ":" + path + "=" + nodeList);
+      log.trace("{}:{}={}", name, path, nodeList);
       return nodeList;
 
     } catch (XPathExpressionException e) {
@@ -383,7 +364,7 @@ public class XmlConfigFile { // formerly simply "Config"
 
     String txt = DOMUtil.getText(nd);
 
-    log.debug(name + ' '+path+'='+txt);
+    log.debug("{} {}={}", name, path, txt);
     return txt;
   }
 
@@ -440,10 +421,6 @@ public class XmlConfigFile { // formerly simply "Config"
    */
   public int getZnodeVersion(){
     return zkVersion;
-  }
-
-  public XmlConfigFile getOriginalConfig() {
-    return new XmlConfigFile(loader, null, origDoc);
   }
 
 }

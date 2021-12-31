@@ -53,7 +53,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
-import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.tracing.SolrRequestCarrier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,10 +73,6 @@ public class SolrCmdDistributor implements Closeable {
   
   private final CompletionService<Object> completionService;
   private final Set<Future<Object>> pending = new HashSet<>();
-  
-  public static interface AbortCheck {
-    public boolean abortCheck();
-  }
   
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     this.clients = new StreamingSolrClients(updateShardHandler);
@@ -131,7 +126,7 @@ public class SolrCmdDistributor implements Closeable {
         builder.append(errors.size() - 10);
         builder.append(" more");
       }
-      log.debug(builder.toString());
+      log.debug("{}", builder);
     }
 
     for (Error err : errors) {
@@ -162,7 +157,9 @@ public class SolrCmdDistributor implements Closeable {
       // Only backoff once for the full batch
       try {
         int backoffTime = Math.min(retryPause * resubmitList.get(0).req.retries, 2000);
-        log.debug("Sleeping {}ms before re-submitting {} requests", backoffTime, resubmitList.size());
+        if (log.isDebugEnabled()) {
+          log.debug("Sleeping {}ms before re-submitting {} requests", backoffTime, resubmitList.size());
+        }
         Thread.sleep(backoffTime);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
@@ -292,7 +289,7 @@ public class SolrCmdDistributor implements Closeable {
       req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
     }
 
-    Tracer tracer = GlobalTracer.getTracer();
+    Tracer tracer = req.cmd.getTracer();
     Span parentSpan = tracer.activeSpan();
     if (parentSpan != null) {
       tracer.inject(parentSpan.context(), Format.Builtin.HTTP_HEADERS,
@@ -320,9 +317,8 @@ public class SolrCmdDistributor implements Closeable {
     }
     
     if (log.isDebugEnabled()) {
-      log.debug("sending update to "
-          + req.node.getUrl() + " retry:"
-          + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
+      log.debug("sending update to {} retry: {} {} params {}"
+          , req.node.getUrl(), req.retries, req.cmd, req.uReq.getParams());
     }
     
     if (isCommit) {
@@ -427,6 +423,7 @@ public class SolrCmdDistributor implements Closeable {
           NamedList<Object> nl = brp.processResponse(inputStream, null);
           Object hdr = nl.get("responseHeader");
           if (hdr != null && hdr instanceof NamedList) {
+            @SuppressWarnings({"unchecked"})
             NamedList<Object> hdrList = (NamedList<Object>) hdr;
             Object rfObj = hdrList.get(UpdateRequest.REPFACT);
             if (rfObj != null && rfObj instanceof Integer) {

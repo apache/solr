@@ -84,7 +84,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
-        urls.add("" + replica.get(ZkStateReader.BASE_URL_PROP) + "/" + replica.get(ZkStateReader.CORE_NAME_PROP));
+        urls.add("" + replica.getBaseUrl() + "/" + replica.get(ZkStateReader.CORE_NAME_PROP));
     }
 
     RestTestHarness writeHarness = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
@@ -111,7 +111,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params", payload);
 
-    Map result = TestSolrConfigHandler.testForResponseElement(null,
+    Map<?, ?> result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
         "/config/params",
         cloudClient,
@@ -279,10 +279,10 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
         asList("params", "fixed"),
         "f",
         5);
-    compareValues(result, new Predicate() {
+    compareValues(result, new Predicate<>() {
       @Override
       public boolean test(Object o) {
-        List l = (List) o;
+        List<?> l = (List<?>) o;
         return l.contains("first") && l.contains("second");
       }
     }, asList("params", "add"));

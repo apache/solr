@@ -53,6 +53,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
   // used by MoveReplicaHDFSTest
   protected boolean inPlaceMove = true;
+  protected boolean isCollectionApiDistributed = false;
 
   protected String getConfigSet() {
     return "cloud-dynamic";
@@ -67,6 +68,11 @@ public class MoveReplicaTest extends SolrCloudTestCase {
         .addConfig("conf2", configset(getConfigSet()))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
+
+    // If Collection API is distributed let's not wait for Overseer.
+    if (isCollectionApiDistributed = new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      return;
+    }
 
     NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
     JettySolrRunner overseerJetty = null;
@@ -95,7 +101,9 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     String coll = getTestClass().getSimpleName() + "_coll_" + inPlaceMove;
-    log.info("total_jettys: " + cluster.getJettySolrRunners().size());
+    if (log.isInfoEnabled()) {
+      log.info("total_jettys: {}", cluster.getJettySolrRunners().size());
+    }
     int REPLICATION = 2;
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
@@ -103,8 +111,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     // random create tlog or pull type replicas with nrt
     boolean isTlog = random().nextBoolean();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
-    create.setMaxShardsPerNode(2);
-    create.setAutoAddReplicas(false);
     cloudClient.request(create);
 
     addDocs(coll, 100);
@@ -154,7 +160,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     boolean recovered = false;
     for (int i = 0; i < 300; i++) {
       DocCollection collState = getCollectionState(coll);
-      log.debug("###### " + collState);
+      log.debug("###### {}", collState);
       Collection<Replica> replicas = collState.getSlice(shardId).getReplicas();
       boolean allActive = true;
       boolean hasLeaders = true;
@@ -164,7 +170,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
             continue;
           }
           if (!r.isActive(Collections.singleton(targetNode))) {
-            log.info("Not active: " + r);
+            log.info("Not active: {}", r);
             allActive = false;
           }
         }
@@ -182,7 +188,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
         recovered = true;
         break;
       } else {
-        log.info("--- waiting, allActive=" + allActive + ", hasLeaders=" + hasLeaders);
+        log.info("--- waiting, allActive={}, hasLeaders={}", allActive, hasLeaders);
         Thread.sleep(1000);
       }
     }
@@ -198,7 +204,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     recovered = false;
     for (int i = 0; i < 300; i++) {
       DocCollection collState = getCollectionState(coll);
-      log.debug("###### " + collState);
+      log.debug("###### {}", collState);
       Collection<Replica> replicas = collState.getSlice(shardId).getReplicas();
       boolean allActive = true;
       boolean hasLeaders = true;
@@ -208,7 +214,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
             continue;
           }
           if (!r.isActive(Collections.singleton(replica.getNodeName()))) {
-            log.info("Not active yet: " + r);
+            log.info("Not active yet: {}", r);
             allActive = false;
           }
         }
@@ -248,7 +254,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     // random create tlog or pull type replicas with nrt
     boolean isTlog = random().nextBoolean();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
-    create.setAutoAddReplicas(false);
     cloudClient.request(create);
 
     addDocs(coll, 100);
@@ -268,7 +273,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     Collections.shuffle(l, random());
     String targetNode = null;
     for (String node : liveNodes) {
-      if (!replica.getNodeName().equals(node) && !overseerLeader.equals(node)) {
+      if (!replica.getNodeName().equals(node) && (isCollectionApiDistributed || !overseerLeader.equals(node))) {
         targetNode = node;
         break;
       }
@@ -301,7 +306,9 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     }
     assertFalse(success);
 
-    log.info("--- current collection state: " + cloudClient.getZkStateReader().getClusterState().getCollection(coll));
+    if (log.isInfoEnabled()) {
+      log.info("--- current collection state: {}", cloudClient.getZkStateReader().getClusterState().getCollection(coll));
+    }
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
 

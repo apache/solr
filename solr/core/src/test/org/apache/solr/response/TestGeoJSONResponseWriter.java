@@ -49,8 +49,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
 //    <field name="srpt_geohash" type="srpt_geohash" multiValued="true" />
 //    <field name="" type="srpt_quad" multiValued="true" />
 //    <field name="" type="srpt_packedquad" multiValued="true" />
-//    <field name="" type="stqpt_geohash" multiValued="true" />
-    
+
     // multiple valued field
     assertU(adoc("id","H.A", "srpt_geohash","POINT( 1 2 )"));
     assertU(adoc("id","H.B", "srpt_geohash","POINT( 1 2 )", 
@@ -79,6 +78,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
+  @SuppressWarnings({"unchecked"})
   protected Map<String,Object> readJSON(String json) {
     try {
       return jsonmapper.readValue(json, Map.class);
@@ -91,6 +91,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
     return null; 
   }
   
+  @SuppressWarnings({"unchecked"})
   protected Map<String,Object> getFirstFeatureGeometry(Map<String,Object> json)
   {
     Map<String,Object> rsp = (Map<String,Object>)json.get("response");
@@ -138,7 +139,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
         "wt","geojson", 
         "rows","2", 
         "fl","*", 
-        "geojson.field", "stqpt_geohash",
+        "geojson.field", "srptgeom",
         "indent","true"));
     
     // Check that we have a normal solr response with 'responseHeader' and 'response'
@@ -152,7 +153,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
         "rows","2", 
         "fl","*", 
         "omitHeader", "true",
-        "geojson.field", "stqpt_geohash",
+        "geojson.field", "srptgeom",
         "indent","true"));
     
     // Check that we have a normal solr response with 'responseHeader' and 'response'
@@ -171,7 +172,7 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
         "q","*:*", 
         "wt","geojson", 
         "fl","*", 
-        "geojson.field", "stqpt_geohash",
+        "geojson.field", "srpt_geohash",
         "indent","true")));
     
     // Multivalued Valued Point
@@ -213,8 +214,10 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
     }
   }
   
+  @SuppressWarnings({"unchecked"})
   protected Map<String,Object> readFirstDoc(String json)
   {
+    @SuppressWarnings({"rawtypes"})
     List docs = (List)((Map)readJSON(json).get("response")).get("docs");
     return (Map)docs.get(0);
   }

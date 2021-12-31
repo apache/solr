@@ -16,12 +16,7 @@
  */
 package org.apache.solr.common;
 
-import java.io.CharArrayWriter;
-import java.io.PrintWriter;
 import java.util.Map;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
@@ -33,7 +28,7 @@ public class SolrException extends RuntimeException {
 
   public static final String ROOT_ERROR_CLASS = "root-error-class";
   public static final String ERROR_CLASS = "error-class";
-  final private Map mdcContext;
+  final private Map<String, String> mdcContext;
 
   /**
    * This list of valid HTTP Status error codes that Solr may return in 
@@ -48,6 +43,7 @@ public class SolrException extends RuntimeException {
     NOT_FOUND( 404 ),
     CONFLICT( 409 ),
     UNSUPPORTED_MEDIA_TYPE( 415 ),
+    TOO_MANY_REQUESTS(429),
     SERVER_ERROR( 500 ),
     SERVICE_UNAVAILABLE( 503 ),
     INVALID_STATE( 510 ),
@@ -137,82 +133,53 @@ public class SolrException extends RuntimeException {
     return getMetadata(ROOT_ERROR_CLASS);
   }
 
-  public void log(Logger log) { log(log,this); }
-  public static void log(Logger log, Throwable e) {
-    String stackTrace = toStr(e);
-    String ignore = doIgnore(e, stackTrace);
-    if (ignore != null) {
-      log.info(ignore);
-      return;
-    }
-    log.error(stackTrace);
-
-  }
-
-  public static void log(Logger log, String msg, Throwable e) {
-    String stackTrace = msg + ':' + toStr(e);
-    String ignore = doIgnore(e, stackTrace);
-    if (ignore != null) {
-      log.info(ignore);
-      return;
-    }
-    log.error(stackTrace);
-  }
-  
-  public static void log(Logger log, String msg) {
-    String stackTrace = msg;
-    String ignore = doIgnore(null, stackTrace);
-    if (ignore != null) {
-      log.info(ignore);
-      return;
-    }
-    log.error(stackTrace);
-  }
-
-  // public String toString() { return toStr(this); }  // oops, inf loop
-  @Override
-  public String toString() { return super.toString(); }
-
-  public static String toStr(Throwable e) {   
-    CharArrayWriter cw = new CharArrayWriter();
-    PrintWriter pw = new PrintWriter(cw);
-    e.printStackTrace(pw);
-    pw.flush();
-    return cw.toString();
-
-/** This doesn't work for some reason!!!!!
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    e.printStackTrace(pw);
-    pw.flush();
-    System.out.println("The STRING:" + sw.toString());
-    return sw.toString();
-**/
-  }
-
-
-  /**
-   * For test code - do not log exceptions that match any of these regular expressions.
-   * A {@link java.util.concurrent.CopyOnWriteArraySet is recommended}.
+  /** 
+   * This method was initially created to aid in testing situations that were known to cause ERRORs.  It should no longer be used by any new code.
+   *
+   * @deprecated Use the Logger directly
    */
-  public static Set<String> ignorePatterns;
-
-  /** Returns null if this exception does not match any ignore patterns, or a message string to use if it does. */
-  public static String doIgnore(Throwable t, String m) {
-    Set<String> ignorePatterns = SolrException.ignorePatterns; // guard against races, albeit unlikely
-    if (ignorePatterns == null || m == null) return null;
-    if (t != null && t instanceof AssertionError) return null;
-
-    for (String regex : ignorePatterns) {
-      Pattern pattern = Pattern.compile(regex); // TODO why do we compile late; why not up-front?
-      Matcher matcher = pattern.matcher(m);
-      
-      if (matcher.find()) return "Ignoring exception matching " + regex;
-    }
-
-    return null;
+  @Deprecated
+  public void log(Logger log) {
+    log(log,this);
   }
   
+  /** 
+   * This method was initially created to aid in testing situations that were known to cause ERRORs.  It should no longer be used by any new code.
+   *
+   * @deprecated Use the Logger directly
+   */
+  @Deprecated
+  public static void log(Logger log, Throwable e) {
+    if (log.isErrorEnabled()) {
+      log.error(e.toString(), e); // nowarn (we are inside of isErrorEnabled, toString as msg is ok)
+    }
+  }
+
+  /** 
+   * This method was initially created to aid in testing situations that were known to cause ERRORs.  It should no longer be used by any new code.
+   *
+   * @deprecated Use the Logger directly
+   */
+  @Deprecated
+  public static void log(Logger log, String msg, Throwable e) {
+    if (log.isErrorEnabled()) {
+      log.error(msg, e);
+    }
+  }
+  
+  /** 
+   * This method was initially created to aid in testing situations that were known to cause ERRORs.  It should no longer be used by any new code.
+   *
+   * @deprecated Use the Logger directly
+   */
+  @Deprecated
+  public static void log(Logger log, String msg) {
+    if (log.isErrorEnabled()) {
+      log.error(msg);
+    }
+  }
+
+  // TODO: This doesn't handle cause loops
     public static Throwable getRootCause(Throwable t) {
     while (true) {
       Throwable cause = t.getCause();
@@ -226,7 +193,7 @@ public class SolrException extends RuntimeException {
   }
 
   public void logInfoWithMdc(Logger logger, String msg) {
-    Map previousMdcContext = MDC.getCopyOfContextMap();
+    Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
     MDC.setContextMap(mdcContext);
     try {
       logger.info(msg);
@@ -236,7 +203,7 @@ public class SolrException extends RuntimeException {
   }
 
   public void logDebugWithMdc(Logger logger, String msg) {
-    Map previousMdcContext = MDC.getCopyOfContextMap();
+    Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
     MDC.setContextMap(mdcContext);
     try {
       logger.debug(msg);
@@ -246,7 +213,7 @@ public class SolrException extends RuntimeException {
   }
 
   public void logWarnWithMdc(Logger logger, String msg) {
-    Map previousMdcContext = MDC.getCopyOfContextMap();
+    Map<String, String> previousMdcContext = MDC.getCopyOfContextMap();
     MDC.setContextMap(mdcContext);
     try {
       logger.warn(msg);

@@ -66,9 +66,9 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
         list.append("fields",
             constantArrayList(
                 Pair.zip(generateFields(SolrRules.solrFieldNames(rowType), solrImplementor.fieldMappings),
-                    new AbstractList<Class>() {
+                    new AbstractList<Class<?>>() {
                       @Override
-                      public Class get(int index) {
+                      public Class<?> get(int index) {
                         return physType.fieldClass(index);
                       }
 
@@ -85,8 +85,9 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final Expression limit = list.append("limit", Expressions.constant(solrImplementor.limitValue));
     final Expression negativeQuery = list.append("negativeQuery", Expressions.constant(Boolean.toString(solrImplementor.negativeQuery), String.class));
     final Expression havingPredicate = list.append("havingTest", Expressions.constant(solrImplementor.havingPredicate, String.class));
+    final Expression offset = list.append("offset", Expressions.constant(solrImplementor.offsetValue));
     Expression enumerable = list.append("enumerable", Expressions.call(table, SolrMethod.SOLR_QUERYABLE_QUERY.method,
-        fields, query, orders, buckets, metricPairs, limit, negativeQuery, havingPredicate));
+        fields, query, orders, buckets, metricPairs, limit, negativeQuery, havingPredicate, offset));
     Hook.QUERY_PLAN.run(query);
     list.add(Expressions.return_(null, enumerable));
     return implementor.result(physType, list.toBlock());
@@ -122,7 +123,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
    * E.g. {@code constantArrayList("x", "y")} returns
    * "Arrays.asList('x', 'y')".
    */
-  private static <T> MethodCallExpression constantArrayList(List<T> values, Class clazz) {
+  private static <T> MethodCallExpression constantArrayList(List<T> values, Class<?> clazz) {
     return Expressions.call(BuiltInMethod.ARRAYS_AS_LIST.method,
         Expressions.newArrayInit(clazz, constantList(values)));
   }

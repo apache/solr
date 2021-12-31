@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.grouping.distributed.command;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -139,10 +140,10 @@ class GroupConverter {
     }
     
     FieldType fieldType = field.getType();
-    
+
     @SuppressWarnings("unchecked")
-    GroupDocs<BytesRef> groupDocs[] = new GroupDocs[values.groups.length];
-    
+    GroupDocs<BytesRef>[] groupDocs = (GroupDocs<BytesRef>[]) Array.newInstance(GroupDocs.class, values.groups.length);
+
     for (int i = 0; i < values.groups.length; i++) {
       GroupDocs<MutableValue> original = values.groups[i];
       final BytesRef groupValue;

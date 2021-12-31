@@ -23,6 +23,7 @@ import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.security.HadoopAuthPlugin;
@@ -50,7 +51,7 @@ public class ImpersonationUtil {
     return group;
   }
 
-  static SolrRequest getProxyRequest(String user, String doAs) {
+  static SolrRequest<CollectionAdminResponse> getProxyRequest(String user, String doAs) {
     return new CollectionAdminRequest.List() {
       @Override
       public SolrParams getParams() {

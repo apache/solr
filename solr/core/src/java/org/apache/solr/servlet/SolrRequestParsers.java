@@ -16,11 +16,16 @@
  */
 package org.apache.solr.servlet;
 
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.Part;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -38,10 +43,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
@@ -60,14 +61,19 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimerTree;
-import org.apache.solr.util.SolrFileCleaningTracker;
-import org.apache.solr.util.tracing.GlobalTracer;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.Request;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 
-public class SolrRequestParsers 
-{
+public class SolrRequestParsers {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   // Should these constants be in a more public place?
   public static final String MULTIPART = "multipart";
   public static final String FORMDATA = "formdata";
@@ -92,9 +98,7 @@ public class SolrRequestParsers
 
   /** Default instance for e.g. admin requests. Limits to 2 MB uploads and does not allow remote streams. */
   public static final SolrRequestParsers DEFAULT = new SolrRequestParsers();
-  
-  public static volatile SolrFileCleaningTracker fileCleaningTracker;
-  
+
   /**
    * Pass in an xml configuration.  A null configuration will enable
    * everything with maximum values.
@@ -166,9 +170,7 @@ public class SolrRequestParsers
     // Pick the parser from the request...
     ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams( req, streams );
-    if (GlobalTracer.get().tracing()) {
-      GlobalTracer.get().getTracer().activeSpan().setTag("params", params.toString());
-    }
+
     SolrQueryRequest sreq = buildRequestFrom(core, params, streams, getRequestTimer(req), req);
 
     // Handlers and login will want to know the path. If it contains a ':'
@@ -182,6 +184,7 @@ public class SolrRequestParsers
     return sreq;
   }
 
+  /** For embedded Solr use; not related to HTTP. */
   public SolrQueryRequest buildRequestFrom(SolrCore core, SolrParams params, Collection<ContentStream> streams) throws Exception {
     return buildRequestFrom(core, params, streams, new RTimerTree(), null);
   }
@@ -210,7 +213,7 @@ public class SolrRequestParsers
     strs = params.getParams( CommonParams.STREAM_FILE );
     if( strs != null ) {
       if( !enableRemoteStreams ) {
-        throw new SolrException( ErrorCode.BAD_REQUEST, "Remote Streaming is disabled. See http://lucene.apache.org/solr/guide/requestdispatcher-in-solrconfig.html for help" );
+        throw new SolrException( ErrorCode.BAD_REQUEST, "Remote Streaming is disabled. See https://solr.apache.org/guide/requestdispatcher-in-solrconfig.html for help" );
       }
       for( final String file : strs ) {
         ContentStreamBase stream = new ContentStreamBase.FileStream( new File(file) );
@@ -225,7 +228,7 @@ public class SolrRequestParsers
     strs = params.getParams( CommonParams.STREAM_BODY );
     if( strs != null ) {
       if( !enableStreamBody ) {
-        throw new SolrException( ErrorCode.BAD_REQUEST, "Stream Body is disabled. See http://lucene.apache.org/solr/guide/requestdispatcher-in-solrconfig.html for help" );
+        throw new SolrException( ErrorCode.BAD_REQUEST, "Stream Body is disabled. See https://solr.apache.org/guide/requestdispatcher-in-solrconfig.html for help" );
       }
       for( final String body : strs ) {
         ContentStreamBase stream = new ContentStreamBase.StringStream( body );
@@ -509,12 +512,12 @@ public class SolrRequestParsers
    */
   static class HttpRequestContentStream extends ContentStreamBase
   {
-    private final HttpServletRequest req;
-    
-    public HttpRequestContentStream( HttpServletRequest req ) {
-      this.req = req;
-      
-      contentType = req.getContentType();
+    private final InputStream inputStream;
+
+    public HttpRequestContentStream(HttpServletRequest req, InputStream inputStream) {
+      this.inputStream = inputStream;
+
+      this.contentType = req.getContentType();
       // name = ???
       // sourceInfo = ???
       
@@ -530,30 +533,7 @@ public class SolrRequestParsers
       // so that it does not trip our test assert in our close shield
       // in SolrDispatchFilter - we must allow closes from getStream
       // due to the other impls of ContentStream
-      return new CloseShieldInputStream(req.getInputStream());
-    }
-  }
-
-
-  /**
-   * Wrap a FileItem as a ContentStream
-   */
-  static class FileItemContentStream extends ContentStreamBase
-  {
-    private final FileItem item;
-    
-    public FileItemContentStream( FileItem f )
-    {
-      item = f;
-      contentType = item.getContentType();
-      name = item.getName();
-      sourceInfo = item.getFieldName();
-      size = item.getSize();
-    }
-      
-    @Override
-    public InputStream getStream() throws IOException {
-      return item.getInputStream();
+      return new CloseShieldInputStream(inputStream);
     }
   }
 
@@ -566,63 +546,117 @@ public class SolrRequestParsers
     public SolrParams parseParamsAndFillStreams( 
         final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
     {
-      streams.add( new HttpRequestContentStream( req ) );
+      // If we wrongly add a stream that actually has no content, then it can confuse
+      //  some of our code that sees a stream but has no content-type.
+      // If we wrongly don't add a stream, then obviously we'll miss data.
+      final ServletInputStream inputStream = req.getInputStream(); // don't close it
+      if (req.getContentLengthLong() >= 0 || req.getHeader("Transfer-Encoding") != null
+            || inputStream.available() > 0) {
+        streams.add(new HttpRequestContentStream(req, inputStream));
+      } else if (!req.getMethod().equals("GET")) { // GET shouldn't have data
+        // We're not 100% sure there is no data, so check by reading a byte (and put back).
+        PushbackInputStream pbInputStream = new PushbackInputStream(inputStream);
+        int b = pbInputStream.read();
+        if (b != -1) {
+          pbInputStream.unread(b); // put back
+          streams.add(new HttpRequestContentStream(req, pbInputStream));
+        }
+      }
       return parseQueryString( req.getQueryString() );
     }
   }
-
-
 
   /**
    * Extract Multipart streams
    */
   static class MultipartRequestParser implements SolrRequestParser {
-    private final int uploadLimitKB;
-    private DiskFileItemFactory factory = new DiskFileItemFactory();
-    
-    public MultipartRequestParser(int limit) {
-      uploadLimitKB = limit;
+    private final MultipartConfigElement multipartConfigElement;
 
-      // Set factory constraints
-      FileCleaningTracker fct = fileCleaningTracker;
-      if (fct != null) {
-        factory.setFileCleaningTracker(fileCleaningTracker);
-      }
-      // TODO - configure factory.setSizeThreshold(yourMaxMemorySize);
-      // TODO - configure factory.setRepository(yourTempDirectory);
+    public MultipartRequestParser(int uploadLimitKB) {
+      multipartConfigElement = new MultipartConfigElement(
+          null, // temp dir (null=default)
+          -1, // maxFileSize  (-1=none)
+          uploadLimitKB * 1024, // maxRequestSize
+          100 * 1024 ); // fileSizeThreshold after which will go to disk
     }
     
     @Override
     public SolrParams parseParamsAndFillStreams(
         final HttpServletRequest req, ArrayList<ContentStream> streams) throws Exception {
-      if( !ServletFileUpload.isMultipartContent(req) ) {
+      if (!isMultipart(req)) {
         throw new SolrException( ErrorCode.BAD_REQUEST, "Not multipart content! "+req.getContentType() );
       }
-      
+      // Magic way to tell Jetty dynamically we want multi-part processing.  "Request" here is a Jetty class
+      req.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, multipartConfigElement);
+
       MultiMapSolrParams params = parseQueryString( req.getQueryString() );
 
-      // Create a new file upload handler
-      ServletFileUpload upload = new ServletFileUpload(factory);
-      upload.setSizeMax( ((long) uploadLimitKB) * 1024L );
+      // IMPORTANT: the Parts will all have the delete() method called by cleanupMultipartFiles()
 
-      // Parse the request
-      List<FileItem> items = upload.parseRequest(req);
-      for (FileItem item : items) {
-        // If it's a form field, put it in our parameter map
-        if (item.isFormField()) {
+      for (Part part : req.getParts()) {
+        if (part.getSubmittedFileName() == null) { // thus a form field and not file upload
+          // If it's a form field, put it in our parameter map
+          String partAsString = org.apache.commons.io.IOUtils.toString(new PartContentStream(part).getReader());
           MultiMapSolrParams.addParam(
-            item.getFieldName().trim(),
-            item.getString(), params.getMap() );
-        }
-        // Add the stream
-        else {
-          streams.add( new FileItemContentStream( item ) );
+              part.getName().trim(),
+              partAsString, params.getMap() );
+        } else { // file upload
+          streams.add(new PartContentStream(part));
         }
       }
       return params;
     }
+
+    static boolean isMultipart(HttpServletRequest req) {
+      // Jetty utilities
+      return MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(req.getContentType(), null));
+    }
+
+    /** Wrap a MultiPart-{@link Part} as a {@link ContentStream} */
+    static class PartContentStream extends ContentStreamBase {
+      private final Part part;
+
+      public PartContentStream(Part part ) {
+        this.part = part;
+        contentType = part.getContentType();
+        name = part.getName();
+        sourceInfo = part.getSubmittedFileName();
+        size = part.getSize();
+      }
+
+      @Override
+      public InputStream getStream() throws IOException {
+        return part.getInputStream();
+      }
+    }
   }
 
+
+  /** Clean up any files created by MultiPartInputStream. */
+  static void cleanupMultipartFiles(HttpServletRequest request) {
+    if (!MultipartRequestParser.isMultipart(request)) {
+      return;
+    }
+
+    log.debug("Deleting multipart files");
+
+    Collection<Part> parts;
+    try {
+      parts = request.getParts();
+    } catch (Exception e) {
+      assert false : e.toString();
+      log.error("Couldn't get multipart parts in order to delete them", e);
+      return;
+    }
+
+    for (Part part : parts) {
+      try {
+        part.delete();
+      } catch (IOException e) {
+        log.warn("Errors deleting multipart tmp files", e);
+      }
+    }
+  }
 
   /**
    * Extract application/x-www-form-urlencoded form data for POST requests
@@ -749,8 +783,7 @@ public class SolrRequestParsers
 
       // According to previous StandardRequestParser logic (this is a re-written version),
       // POST was handled normally, but other methods (PUT/DELETE)
-      // were handled by restlet if the URI contained /schema or /config
-      // "handled by restlet" means that we don't attempt to handle any request body here.
+      // were handled by the RestManager classes if the URI contained /schema or /config
       if (!isPost) {
         if (isV2) {
           return raw.parseParamsAndFillStreams(req, streams);
@@ -761,14 +794,14 @@ public class SolrRequestParsers
 
         // OK, we have a BODY at this point
 
-        boolean restletPath = false;
+        boolean schemaRestPath = false;
         int idx = uri.indexOf("/schema");
         if (idx >= 0 && uri.endsWith("/schema") || uri.contains("/schema/")) {
-          restletPath = true;
+          schemaRestPath = true;
         }
 
-        if (restletPath) {
-          return parseQueryString(req.getQueryString());
+        if (schemaRestPath) {
+          return raw.parseParamsAndFillStreams(req, streams);
         }
 
         if ("PUT".equals(method) || "DELETE".equals(method)) {
@@ -791,7 +824,7 @@ public class SolrRequestParsers
         return formdata.parseParamsAndFillStreams(req, streams, input);
       }
 
-      if (ServletFileUpload.isMultipartContent(req)) {
+      if (MultipartRequestParser.isMultipart(req)) {
         return multipart.parseParamsAndFillStreams(req, streams);
       }
 

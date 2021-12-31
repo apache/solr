@@ -104,7 +104,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
 
     // ----- Search
     // this test simply has some 0's, nulls, 1's and a 2 in there.
-    NamedList hmObj = getHmObj(query(params(baseParams,
+    NamedList<?> hmObj = getHmObj(query(params(baseParams,
         FacetParams.FACET_HEATMAP_GEOM, "[\"50 20\" TO \"180 90\"]",
         FacetParams.FACET_HEATMAP_LEVEL, "4")));
     List<List<Integer>> counts = (List<List<Integer>>) hmObj.get("counts_ints2D");
@@ -232,7 +232,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
 
     // ----- Search
     // this test simply has some 0's, nulls, 1's and a 2 in there.
-    NamedList hmObj = getHmObj(query(params(baseParams,
+    NamedList<?> hmObj = getHmObj(query(params(baseParams,
         "json.facet", "{f1:{type:heatmap, f:" + FIELD + " geom:'[\"50 20\" TO \"180 90\"]', gridLevel:4}}")));
     List<List<Integer>> counts = (List<List<Integer>>) hmObj.get("counts_ints2D");
     List<List<Integer>> expectedCounts1 = Arrays.asList(
@@ -265,9 +265,9 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
               "q2:{type:query, q:'id:4', " + jsonHeatmap + " } " +
               "}"));
       {
-        final NamedList q1Res = (NamedList) response.getResponse().findRecursive("facets", "q1");
+        final NamedList<?> q1Res = (NamedList<?>) response.getResponse().findRecursive("facets", "q1");
         assertEquals("1", q1Res.get("count").toString());
-        final NamedList q2Res = (NamedList) response.getResponse().findRecursive("facets", "q2");
+        final NamedList<?> q2Res = (NamedList<?>) response.getResponse().findRecursive("facets", "q2");
         assertEquals("1", q2Res.get("count").toString());
         // essentially, these will differ only in the heatmap counts but otherwise will be the same
         assertNotNull(compare(q1Res, q2Res, flags, handle));
@@ -303,14 +303,14 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
     //good enough for this test method
   }
 
-  private NamedList getHmObj(QueryResponse response) {
+  private NamedList<?> getHmObj(QueryResponse response) {
     // classic faceting
-    final NamedList classicResp = (NamedList) response.getResponse().findRecursive("facet_counts", "facet_heatmaps", FIELD);
+    final NamedList<?> classicResp = (NamedList<?>) response.getResponse().findRecursive("facet_counts", "facet_heatmaps", FIELD);
     if (classicResp != null) {
       return classicResp;
     }
     // JSON Facet
-    return (NamedList) response.getResponse().findRecursive("facets", "f1");
+    return (NamedList<?>) response.getResponse().findRecursive("facets", "f1");
   }
 
   @Test

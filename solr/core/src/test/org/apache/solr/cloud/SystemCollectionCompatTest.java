@@ -90,7 +90,6 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     // put .system replicas on other nodes that the overseer
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 2)
         .setCreateNodeSet(String.join(",", nodes))
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL,  1, 2);
     // send a dummy doc to the .system collection
@@ -130,7 +129,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
           long currentTime = getCoreStatus(r).getCoreStartTime().getTime();
           allReloaded = allReloaded && (previousTime < currentTime);
         } catch (Exception e) {
-          log.warn("Error retrieving replica status of " + Utils.toJSONString(r), e);
+          log.warn("Error retrieving replica status of {}", Utils.toJSONString(r), e);
           allReloaded = false;
         }
       }
@@ -163,6 +162,13 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
 
   @Test
   public void testBackCompat() throws Exception {
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      log.info("Skipping test because Collection API is distributed");
+      // TODO once we completely remove Overseer, do we need to move the back compat check to some other place, for example
+      //  to when the .system collection is opened?
+      return;
+    }
+
     CollectionAdminRequest.OverseerStatus status = new CollectionAdminRequest.OverseerStatus();
     CloudSolrClient solrClient = cluster.getSolrClient();
     CollectionAdminResponse adminResponse = status.process(solrClient);
@@ -180,12 +186,14 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     }
     assertNotNull(overseerNode);
     LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, "WARN", 100);
-    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
+    LogWatcher<?> watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
 
     watcher.reset();
 
     // restart Overseer to trigger the back-compat check
-    log.info("Stopping Overseer Node: {} ({})", overseerNode.getNodeName(), overseerNode.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("Stopping Overseer Node: {} ({})", overseerNode.getNodeName(), overseerNode.getLocalPort());
+    }
     cluster.stopJettySolrRunner(overseerNode);
     log.info("Waiting for new overseer election...");
     TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, cloudManager.getTimeSource());
@@ -217,11 +225,15 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
           continue;
         }
         if (doc.getFieldValue("message").toString().contains("re-indexing")) {
-          log.info("Found re-indexing message: {}", doc.getFieldValue("message"));
+          if (log.isInfoEnabled()) {
+            log.info("Found re-indexing message: {}", doc.getFieldValue("message"));
+          }
           foundWarning = true;
         }
         if (doc.getFieldValue("message").toString().contains("timestamp")) {
-          log.info("Found timestamp message: {}", doc.getFieldValue("message"));
+          if (log.isInfoEnabled()) {
+            log.info("Found timestamp message: {}", doc.getFieldValue("message"));
+          }
           foundSchemaWarning = true;
         }
       }

@@ -20,7 +20,7 @@ package org.apache.solr.prometheus.exporter;
 import java.util.List;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.DOMUtil;
+import org.apache.solr.common.util.DOMUtil;
 import org.w3c.dom.Node;
 
 public class PrometheusExporterSettings {
@@ -57,13 +57,14 @@ public class PrometheusExporterSettings {
   }
 
   public static PrometheusExporterSettings from(Node settings) {
-    NamedList config = DOMUtil.childNodesToNamedList(settings);
+    NamedList<?> config = DOMUtil.childNodesToNamedList(settings);
 
     Builder builder = builder();
 
-    List<NamedList> httpClientSettings = config.getAll("httpClients");
+    @SuppressWarnings("unchecked")
+    List<NamedList<?>> httpClientSettings = (List<NamedList<?>>) config.getAll("httpClients");
 
-    for (NamedList entry : httpClientSettings) {
+    for (NamedList<?> entry : httpClientSettings) {
       Integer connectionTimeout = (Integer) entry.get("connectionTimeout");
       if (connectionTimeout != null) {
         builder.withConnectionHttpTimeout(connectionTimeout);

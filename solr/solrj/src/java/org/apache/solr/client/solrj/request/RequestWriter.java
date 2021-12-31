@@ -52,7 +52,7 @@ public class RequestWriter {
    * {@link org.apache.solr.client.solrj.request.RequestWriter#getContentStreams(SolrRequest)} is
    * invoked to do a pull write.
    */
-  public ContentWriter getContentWriter(SolrRequest req) {
+  public ContentWriter getContentWriter(SolrRequest<?> req) {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
       if (isEmpty(updateRequest)) return null;
@@ -77,7 +77,7 @@ public class RequestWriter {
    * @deprecated Use {@link #getContentWriter(SolrRequest)}.
    */
   @Deprecated
-  public Collection<ContentStream> getContentStreams(SolrRequest req) throws IOException {
+  public Collection<ContentStream> getContentStreams(SolrRequest<?> req) throws IOException {
     if (req instanceof UpdateRequest) {
       return null;
     }
@@ -91,11 +91,11 @@ public class RequestWriter {
             updateRequest.getDocIterator() == null;
   }
 
-  public String getPath(SolrRequest req) {
+  public String getPath(SolrRequest<?> req) {
     return req.getPath();
   }
 
-  public void write(SolrRequest request, OutputStream os) throws IOException {
+  public void write(SolrRequest<?> request, OutputStream os) throws IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
       BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
@@ -129,11 +129,11 @@ public class RequestWriter {
     }
   }
 
-  protected boolean isNull(List l) {
+  protected boolean isNull(List<?> l) {
     return l == null || l.isEmpty();
   }
   
-  protected boolean isNull(Map l) {
+  protected boolean isNull(Map<?,?> l) {
     return l == null || l.isEmpty();
   }
 }

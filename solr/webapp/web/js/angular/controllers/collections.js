@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CollectionsController',
-    function($scope, $routeParams, $location, $timeout, Collections, Zookeeper, Constants){
+    function($scope, $routeParams, $location, $timeout, Collections, Zookeeper, Constants, ConfigSets){
       $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
 
       $scope.refresh = function() {
@@ -26,6 +26,9 @@ solrAdminApp.controller('CollectionsController',
           Collections.status(function (data) {
               $scope.collections = [];
               for (var name in data.cluster.collections) {
+                  if (name.startsWith("._designer_")) {
+                      continue;
+                  }
                   var collection = data.cluster.collections[name];
                   collection.name = name;
                   collection.type = 'collection';
@@ -75,11 +78,11 @@ solrAdminApp.controller('CollectionsController',
 
               $scope.liveNodes = data.cluster.liveNodes;
           });
-          Zookeeper.configs(function(data) {
+          ConfigSets.configs(function(data) {
               $scope.configs = [];
-              var items = data.tree[0].children;
+              var items = data.configSets;
               for (var i in items) {
-                  $scope.configs.push({name: items[i].text});
+                  $scope.configs.push({name: items[i]});
               }
           });
       };
@@ -101,9 +104,7 @@ solrAdminApp.controller('CollectionsController',
           routerName: "compositeId",
           numShards: 1,
           configName: "",
-          replicationFactor: 1,
-          maxShardsPerNode: 1,
-          autoAddReplicas: 'false'
+          replicationFactor: 1
         };
       };
 
@@ -152,9 +153,7 @@ solrAdminApp.controller('CollectionsController',
                 "router.name": coll.routerName,
                 numShards: coll.numShards,
                 "collection.configName": coll.configName,
-                replicationFactor: coll.replicationFactor,
-                maxShardsPerNode: coll.maxShardsPerNode,
-                autoAddReplicas: coll.autoAddReplicas
+                replicationFactor: coll.replicationFactor
             };
             if (coll.shards) params.shards = coll.shards;
             if (coll.routerField) params["router.field"] = coll.routerField;
@@ -216,7 +215,7 @@ solrAdminApp.controller('CollectionsController',
             $scope.nodes = [];
             var children = data.tree[0].children;
             for (var child in children) {
-              $scope.nodes.push(children[child].data.title);
+              $scope.nodes.push(children[child].text);
             }
           });
       };
@@ -225,7 +224,7 @@ solrAdminApp.controller('CollectionsController',
           $scope.hideAll();
           replica.showRemove = !replica.showRemove;
       };
-      
+
       $scope.toggleRemoveShard = function(shard) {
           $scope.hideAll();
           shard.showRemove = !shard.showRemove;
@@ -252,6 +251,7 @@ solrAdminApp.controller('CollectionsController',
         var params = {
           collection: shard.collection,
           shard: shard.name,
+          type: shard.replicaType
         }
         if (shard.replicaNodeName && shard.replicaNodeName != "") {
           params.node = shard.replicaNodeName;
@@ -261,7 +261,7 @@ solrAdminApp.controller('CollectionsController',
           $timeout(function () {
             shard.replicaAdded = false;
             shard.showAdd = false;
-            $$scope.refresh();
+            $scope.refresh();
           }, 2000);
         });
       };

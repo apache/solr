@@ -48,14 +48,16 @@ public class PairSortEvaluator extends RecursiveNumericEvaluator implements TwoV
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a list of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
 
+    @SuppressWarnings({"unchecked"})
     List<Number> l1 = (List<Number>)first;
+    @SuppressWarnings({"unchecked"})
     List<Number> l2 = (List<Number>)second;
 
     if(l2.size() != l1.size()){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - first list (%d) has a different size than the second list (%d)",toExpression(constructingFactory), l1.size(), l2.size()));
     }
 
-    List<double[]> pairs = new ArrayList();
+    List<double[]> pairs = new ArrayList<>();
     for(int idx = 0; idx < l1.size(); ++idx){
       double[] pair = new double[2];
       pair[0]= l1.get(idx).doubleValue();

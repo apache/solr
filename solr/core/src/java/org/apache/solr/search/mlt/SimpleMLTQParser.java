@@ -99,7 +99,7 @@ public class SimpleMLTQParser extends QParser {
         fieldNames = boostFields.keySet().toArray(new String[0]);
       } else {
         Map<String, SchemaField> fieldDefinitions = req.getSearcher().getSchema().getFields();
-        ArrayList<String> fields = new ArrayList();
+        ArrayList<String> fields = new ArrayList<>();
         for (Map.Entry<String, SchemaField> entry : fieldDefinitions.entrySet()) {
           if (entry.getValue().indexed() && entry.getValue().stored())
             if (entry.getValue().getType().getNumberType() == null)

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.store.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.HashSet;
@@ -30,6 +31,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -42,8 +45,11 @@ import org.junit.Test;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 20)
 public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   
   private static final int MAX_NUMBER_OF_WRITES = 10000;
@@ -113,7 +119,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
 
     IndexInput input1 = directory.openInput("testing.test", new IOContext());
 
-    IndexInput input2 = (IndexInput) input1.clone();
+    IndexInput input2 = input1.clone();
     assertEquals(12345, input2.readInt());
     input2.close();
 

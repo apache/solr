@@ -29,7 +29,7 @@ public class DummyHighlighter extends SolrHighlighter {
   @Override
   public NamedList<Object> doHighlighting(DocList docs, Query query,
       SolrQueryRequest req, String[] defaultFields) throws IOException {
-    NamedList fragments = new SimpleOrderedMap();
+    NamedList<Object> fragments = new SimpleOrderedMap<>();
     fragments.add("dummy", "thing1");
     return fragments;
   }

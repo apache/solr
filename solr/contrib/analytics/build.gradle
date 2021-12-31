@@ -17,7 +17,11 @@
 
 apply plugin: 'java-library'
 
+description = 'Analytics Package'
+
 dependencies {
   implementation project(':solr:core')
+  implementation 'com.fasterxml.jackson.core:jackson-databind'
+  implementation ('com.google.guava:guava') { transitive = false }
   testImplementation project(':solr:test-framework')
 }

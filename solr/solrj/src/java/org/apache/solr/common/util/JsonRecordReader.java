@@ -117,6 +117,7 @@ public class JsonRecordReader {
    * @param r the stream reader
    * @return results a List of emitted records
    */
+  @SuppressWarnings({"unchecked"})
   public List<Map<String, Object>> getAllRecords(Reader r) throws IOException {
     final List<Map<String, Object>> results = new ArrayList<>();
     // Deep copy is required here because the stream might hold on to the map
@@ -352,7 +353,7 @@ public class JsonRecordReader {
                 // ensure that the value is of type List
                 final Object val = values.get(name);
                 if (val != null && !(val instanceof List)) {
-                  final ArrayList listVal = new ArrayList(1);
+                  final ArrayList<Object> listVal = new ArrayList<>(1);
                   listVal.add(val);
                   values.put(name, listVal);
                 }
@@ -446,6 +447,7 @@ public class JsonRecordReader {
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values, String key) {
       record =  Utils.getDeepCopy(record, 2);
       Object oldVal = values.get(key);
@@ -454,7 +456,7 @@ public class JsonRecordReader {
       } else if (oldVal instanceof List) {
         ((List) oldVal).add(record);
       } else {
-        ArrayList l = new ArrayList();
+        ArrayList<Object> l = new ArrayList<>();
         l.add(oldVal);
         l.add(record);
         values.put(key, l);
@@ -484,11 +486,12 @@ public class JsonRecordReader {
         return;
       }
       if (val instanceof List) {
-        List list = (List) val;
+        @SuppressWarnings({"unchecked"})
+        List<Object> list = (List<Object>) val;
         list.add(o);
         return;
       }
-      ArrayList l = new ArrayList();
+      ArrayList<Object> l = new ArrayList<>();
       l.add(val);
       l.add(o);
       values.put(fieldName, l);
@@ -605,7 +608,7 @@ public class JsonRecordReader {
   public static List<Object> parseArrayFieldValue(int ev, JSONParser parser, MethodFrameWrapper runnable) throws IOException {
     assert ev == ARRAY_START;
 
-    ArrayList lst = new ArrayList(2);
+    ArrayList<Object> lst = new ArrayList<>(2);
     for (; ; ) {
       ev = parser.nextEvent();
       if (ev == ARRAY_END) {

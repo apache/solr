@@ -52,9 +52,9 @@ public class FindDelayEvaluator extends RecursiveNumericEvaluator implements Two
     }
 
     // Get first and second lists as arrays, where second is in reverse order
-    double[] firstArray = ((List)first).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray();
+    double[] firstArray = ((List<?>)first).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray();
     double[] secondArray = StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-        ((LinkedList)((List)second).stream().collect(Collectors.toCollection(LinkedList::new))).descendingIterator(),
+        ((LinkedList<?>)((List<?>)second).stream().collect(Collectors.toCollection(LinkedList::new))).descendingIterator(),
         Spliterator.ORDERED), false).mapToDouble(value -> ((Number)value).doubleValue()).toArray();
     
     double[] convolution = MathArrays.convolve(firstArray, secondArray);

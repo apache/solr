@@ -63,7 +63,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         this.liveNodes = fetchLiveNodes(initialClient);
         liveNodesTimestamp = System.nanoTime();
         break;
-      } catch (IOException e) {
+      } catch (SolrServerException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", solrUrl, e);
       }
     }
@@ -87,8 +87,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         ClusterState cs = fetchClusterState(client, collection, null);
         return cs.getCollectionRef(collection);
       } catch (SolrServerException | IOException e) {
-        log.warn("Attempt to fetch cluster state from " +
-            Utils.getBaseUrlForNodeName(nodeName, urlScheme) + " failed.", e);
+        log.warn("Attempt to fetch cluster state from {} failed."
+            , Utils.getBaseUrlForNodeName(nodeName, urlScheme), e);
       } catch (RemoteSolrException e) {
         if ("NOT_FOUND".equals(e.getMetadata("CLUSTERSTATUS"))) {
           return null;
@@ -108,7 +108,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         + " solrUrl(s) or zkHost(s).");
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  @SuppressWarnings("unchecked")
   private ClusterState fetchClusterState(SolrClient client, String collection, Map<String, Object> clusterProperties) throws SolrServerException, IOException, NotACollectionException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (collection != null) {
@@ -117,13 +117,13 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     params.set("action", "CLUSTERSTATUS");
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    NamedList cluster = (SimpleOrderedMap) client.request(request).get("cluster");
+    SimpleOrderedMap<?> cluster = (SimpleOrderedMap<?>) client.request(request).get("cluster");
     Map<String, Object> collectionsMap;
     if (collection != null) {
       collectionsMap = Collections.singletonMap(collection,
-          ((NamedList) cluster.get("collections")).get(collection));
+          ((NamedList<?>) cluster.get("collections")).get(collection));
     } else {
-      collectionsMap = ((NamedList)cluster.get("collections")).asMap(10);
+      collectionsMap = ((NamedList<?>)cluster.get("collections")).asMap(10);
     }
     int znodeVersion;
     Map<String, Object> collFromStatus = (Map<String, Object>) (collectionsMap).get(collection);
@@ -135,11 +135,10 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     } else {
       znodeVersion = -1;
     }
-    Set<String> liveNodes = new HashSet((List<String>)(cluster.get("live_nodes")));
+    Set<String> liveNodes = new HashSet<>((List<String>)(cluster.get("live_nodes")));
     this.liveNodes = liveNodes;
     liveNodesTimestamp = System.nanoTime();
-    //TODO SOLR-11877 we don't know the znode path; CLUSTER_STATE is probably wrong leading to bad stateFormat
-    ClusterState cs = ClusterState.load(znodeVersion, collectionsMap, liveNodes, ZkStateReader.CLUSTER_STATE);
+    ClusterState cs = ClusterState.createFromCollectionMap(znodeVersion, collectionsMap, liveNodes);
     if (clusterProperties != null) {
       Map<String, Object> properties = (Map<String, Object>) cluster.get("properties");
       if (properties != null) {
@@ -180,6 +179,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     }
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   private static Set<String> fetchLiveNodes(SolrClient client) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", "CLUSTERSTATUS");
@@ -226,8 +226,9 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         } catch (SolrServerException | RemoteSolrException | IOException e) {
           // Situation where we're hitting an older Solr which doesn't have LISTALIASES
           if (e instanceof RemoteSolrException && ((RemoteSolrException)e).code()==400) {
-            log.warn("LISTALIASES not found, possibly using older Solr server. Aliases won't work"
-                + " unless you re-create the CloudSolrClient using zkHost(s) or upgrade Solr server", e);
+            log.warn("LISTALIASES not found, possibly using older Solr server. Aliases won't work {}"
+                ,"unless you re-create the CloudSolrClient using zkHost(s) or upgrade Solr server"
+                , e);
             this.aliases = Collections.emptyMap();
             this.aliasProperties = Collections.emptyMap();
             this.aliasesTimestamp = System.nanoTime();
@@ -259,7 +260,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
         return fetchClusterState(client, null, null);
-      } catch (SolrServerException | HttpSolrClient.RemoteSolrException | IOException e) {
+      } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
       } catch (NotACollectionException e) {
         // not possible! (we passed in null for collection so it can't be an alias)
@@ -282,7 +283,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         Map<String, Object> clusterProperties = new HashMap<>();
         fetchClusterState(client, null, clusterProperties);
         return clusterProperties;
-      } catch (SolrServerException | HttpSolrClient.RemoteSolrException | IOException e) {
+      } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
       } catch (NotACollectionException e) {
         // not possible! (we passed in null for collection so it can't be an alias)

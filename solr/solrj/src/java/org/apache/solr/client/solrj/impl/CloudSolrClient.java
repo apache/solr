@@ -38,12 +38,7 @@ import org.apache.solr.common.util.NamedList;
  * Instances of this class communicate with Zookeeper to discover
  * Solr endpoints for SolrCloud collections, and then use the 
  * {@link LBHttpSolrClient} to issue requests.
- * 
- * This class assumes the id field for your documents is called
- * 'id' - if this is not the case, you must set the right name
- * with {@link #setIdField(String)}.
  */
-@SuppressWarnings("serial")
 public class CloudSolrClient extends BaseCloudSolrClient {
 
   private final ClusterStateProvider stateProvider;
@@ -53,14 +48,6 @@ public class CloudSolrClient extends BaseCloudSolrClient {
   private final boolean clientIsInternal;
 
   public static final String STATE_VERSION = BaseCloudSolrClient.STATE_VERSION;
-
-  /**
-   * @deprecated since 7.0  Use {@link Builder} methods instead. 
-   */
-  @Deprecated
-  public void setSoTimeout(int timeout) {
-    lbClient.setSoTimeout(timeout);
-  }
 
   /**
    * Create a new client object that connects to Zookeeper and is always aware
@@ -115,47 +102,14 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     }
   }
 
-  protected Map<String, LBHttpSolrClient.Req> createRoutes(UpdateRequest updateRequest, ModifiableSolrParams routableParams,
+  protected Map<String, LBSolrClient.Req> createRoutes(UpdateRequest updateRequest, ModifiableSolrParams routableParams,
                                                        DocCollection col, DocRouter router, Map<String, List<String>> urlMap,
                                                        String idField) {
-    return urlMap == null ? null : updateRequest.getRoutes(router, col, urlMap, routableParams, idField);
+    return urlMap == null ? null : updateRequest.getRoutesToCollection(router, col, urlMap, routableParams, idField);
   }
 
   protected RouteException getRouteException(SolrException.ErrorCode serverError, NamedList<Throwable> exceptions, Map<String, ? extends LBSolrClient.Req> routes) {
     return new RouteException(serverError, exceptions, routes);
-  }
-
-  /** @deprecated since 7.2  Use {@link Builder} methods instead. */
-  @Deprecated
-  public void setParallelUpdates(boolean parallelUpdates) {
-    this.parallelUpdates = parallelUpdates;
-  }
-
-  /**
-   * @deprecated since Solr 8.0
-   */
-  @Deprecated
-  public RouteResponse condenseResponse(NamedList response, int timeMillis) {
-    return condenseResponse(response, timeMillis, RouteResponse::new);
-  }
-
-  /**
-   * @deprecated since Solr 8.0
-   */
-  @Deprecated
-  public static class RouteResponse extends BaseCloudSolrClient.RouteResponse<LBHttpSolrClient.Req> {
-
-  }
-
-  /**
-   * @deprecated since Solr 8.0
-   */
-  @Deprecated
-  public static class RouteException extends BaseCloudSolrClient.RouteException {
-
-    public RouteException(ErrorCode errorCode, NamedList<Throwable> throwables, Map<String, ? extends LBSolrClient.Req> routes) {
-      super(errorCode, throwables, routes);
-    }
   }
 
   @Override
@@ -179,14 +133,6 @@ public class CloudSolrClient extends BaseCloudSolrClient {
 
   public HttpClient getHttpClient() {
     return myClient;
-  }
-
-  /**
-   * @deprecated since 7.0  Use {@link Builder} methods instead. 
-   */
-  @Deprecated
-  public void setConnectionTimeout(int timeout) {
-    this.lbClient.setConnectionTimeout(timeout); 
   }
 
   public ClusterStateProvider getClusterStateProvider(){
@@ -230,11 +176,10 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     protected ClusterStateProvider stateProvider;
     
     /**
-     * @deprecated use other constructors instead.  This constructor will be changing visibility in an upcoming release.
+     * Constructor for use by subclasses. This constructor was public prior to version 9.0
      */
-    @Deprecated
-    public Builder() {}
-    
+    protected Builder() {}
+
     /**
      * Provide a series of Solr URLs to be used when configuring {@link CloudSolrClient} instances.
      * The solr client will use these urls to understand the cluster topology, which solr nodes are active etc.
@@ -289,56 +234,6 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     }
 
     /**
-     * Provide a ZooKeeper client endpoint to be used when configuring {@link CloudSolrClient} instances.
-     * 
-     * Method may be called multiple times.  All provided values will be used.
-     * 
-     * @param zkHost
-     *          The client endpoint of the ZooKeeper quorum containing the cloud
-     *          state.
-     *          
-     * @deprecated use Zk-host constructor instead
-     */
-    @Deprecated
-    public Builder withZkHost(String zkHost) {
-      this.zkHosts.add(zkHost);
-      return this;
-    }
-
-    /**
-     * Provide a Solr URL to be used when configuring {@link CloudSolrClient} instances.
-     *
-     * Method may be called multiple times. One of the provided values will be used to fetch
-     * the list of live Solr nodes that the underlying {@link HttpClusterStateProvider} would be maintaining.
-     * 
-     * Provided Solr URL is expected to point to the root Solr path ("http://hostname:8983/solr"); it should not
-     * include any collections, cores, or other path components.
-     * 
-     * @deprecated use Solr-URL constructor instead
-     */
-    @Deprecated
-    public Builder withSolrUrl(String solrUrl) {
-      this.solrUrls.add(solrUrl);
-      return this;
-    }
-
-    /**
-     * Provide a list of Solr URL to be used when configuring {@link CloudSolrClient} instances.
-     * One of the provided values will be used to fetch the list of live Solr
-     * nodes that the underlying {@link HttpClusterStateProvider} would be maintaining.
-     * 
-     * Provided Solr URLs are expected to point to the root Solr path ("http://hostname:8983/solr"); they should not
-     * include any collections, cores, or other path components.
-     * 
-     * @deprecated use Solr URL constructors instead
-     */
-    @Deprecated
-    public Builder withSolrUrl(Collection<String> solrUrls) {
-      this.solrUrls.addAll(solrUrls);
-      return this;
-    }
-
-    /**
      * Provides a {@link HttpClient} for the builder to use when creating clients.
      */
     public Builder withLBHttpSolrClientBuilder(LBHttpSolrClient.Builder lbHttpSolrClientBuilder) {
@@ -346,36 +241,6 @@ public class CloudSolrClient extends BaseCloudSolrClient {
       return this;
     }
 
-    /**
-     * Provide a series of ZooKeeper client endpoints for the builder to use when creating clients.
-     * 
-     * Method may be called multiple times.  All provided values will be used.
-     * 
-     * @param zkHosts
-     *          A Java Collection (List, Set, etc) of HOST:PORT strings, one for
-     *          each host in the ZooKeeper ensemble. Note that with certain
-     *          Collection types like HashSet, the order of hosts in the final
-     *          connect string may not be in the same order you added them.
-     *          
-     * @deprecated use Zk-host constructor instead
-     */
-    @Deprecated
-    public Builder withZkHost(Collection<String> zkHosts) {
-      this.zkHosts.addAll(zkHosts);
-      return this;
-    }
-
-    /**
-     * Provides a ZooKeeper chroot for the builder to use when creating clients.
-     * 
-     * @deprecated use Zk-host constructor instead
-     */
-    @Deprecated
-    public Builder withZkChroot(String zkChroot) {
-      this.zkChroot = zkChroot;
-      return this;
-    }
-    
     /**
      * Provides a {@link LBHttpSolrClient} for the builder to use when creating clients.
      */
@@ -438,19 +303,6 @@ public class CloudSolrClient extends BaseCloudSolrClient {
       return this;
     }
 
-    /**
-     * Expert feature where you want to implement a custom cluster discovery mechanism of the solr nodes as part of the
-     * cluster.
-     *
-     * @deprecated since this is an expert feature we don't want to expose this to regular users. To use this feature
-     * extend CloudSolrClient.Builder and pass your custom ClusterStateProvider
-     */
-    @Deprecated
-    public Builder withClusterStateProvider(ClusterStateProvider stateProvider) {
-      this.stateProvider = stateProvider;
-      return this;
-    }
-    
     /**
      * Create a {@link CloudSolrClient} based on the provided configuration.
      */

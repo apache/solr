@@ -50,7 +50,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       this.regex = regex;
     }
 
-    public void transform(List<?> choices)
+    public <T> void transform(List<T> choices)
     {
       log.info("regex transform input: {}", choices);
       Iterator<?> it = choices.iterator();
@@ -82,7 +82,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
     {
     }
 
-    public void transform(List<?> choices)
+    public <T> void transform(List<T> choices)
     {
       // no-op
       log.info("No-Op transform ignoring input: {}", choices);
@@ -137,7 +137,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       final Map<String,Object> propMap = new HashMap<String,Object>();
       propMap.put("base_url", url);
       propMap.put("core", "test_core");
-      propMap.put("node_name", "test_node");
+      propMap.put("node_name", "test_node:80_");
       propMap.put("type", "NRT");
       // a skeleton replica, good enough for this test's purposes
       final Replica replica = new Replica(name, propMap,"c1","s1");

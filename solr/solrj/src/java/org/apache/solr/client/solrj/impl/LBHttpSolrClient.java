@@ -16,25 +16,21 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.IOException;
+import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.common.params.ModifiableSolrParams;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.params.ModifiableSolrParams;
 
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around
  * {@link HttpSolrClient}. This is useful when you
  * have multiple Solr servers and the requests need to be Load Balanced among them.
  *
- * Do <b>NOT</b> use this class for indexing in master/slave scenarios since documents must be sent to the
- * correct master; no inter-node routing is done.
+ * Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be sent to the
+ * correct leader; no inter-node routing is done.
  *
  * In SolrCloud (leader/replica) scenarios, it is usually better to use
  * {@link CloudSolrClient}, but this class may be used
@@ -76,54 +72,8 @@ public class LBHttpSolrClient extends LBSolrClient {
   private volatile Integer soTimeout;
 
   /**
-   * @deprecated use {@link LBSolrClient.Req} instead
-   */
-  @Deprecated
-  public static class Req extends LBSolrClient.Req {
-    public Req(SolrRequest request, List<String> servers) {
-      super(request, servers);
-    }
-
-    public Req(SolrRequest request, List<String> servers, Integer numServersToTry) {
-      super(request, servers, numServersToTry);
-    }
-  }
-
-  /**
-   * @deprecated use {@link LBSolrClient.Rsp} instead
-   */
-  @Deprecated
-  public static class Rsp extends LBSolrClient.Rsp {
-
-  }
-
-  /**
    * The provided httpClient should use a multi-threaded connection manager
-   *
-   * @deprecated use {@link LBHttpSolrClient#LBHttpSolrClient(Builder)} instead, as it is a more extension/subclassing-friendly alternative
    */
-  @Deprecated
-  protected LBHttpSolrClient(HttpSolrClient.Builder httpSolrClientBuilder,
-                          HttpClient httpClient, String... solrServerUrl) {
-    this(new Builder()
-        .withHttpSolrClientBuilder(httpSolrClientBuilder)
-        .withHttpClient(httpClient)
-        .withBaseSolrUrls(solrServerUrl));
-  }
-
-  /**
-   * The provided httpClient should use a multi-threaded connection manager
-   *
-   * @deprecated use {@link LBHttpSolrClient#LBHttpSolrClient(Builder)} instead, as it is a more extension/subclassing-friendly alternative
-   */
-  @Deprecated
-  protected LBHttpSolrClient(HttpClient httpClient, ResponseParser parser, String... solrServerUrl) {
-    this(new Builder()
-        .withBaseSolrUrls(solrServerUrl)
-        .withResponseParser(parser)
-        .withHttpClient(httpClient));
-  }
-
   protected LBHttpSolrClient(Builder builder) {
     super(builder.baseSolrUrls);
     this.clientIsInternal = builder.httpClient == null;
@@ -182,40 +132,6 @@ public class LBHttpSolrClient extends LBSolrClient {
       client.setQueryParams(queryParams);
     }
     return client;
-  }
-
-  /**
-   * @deprecated since 7.0  Use {@link Builder} methods instead. 
-   */
-  @Deprecated
-  public void setConnectionTimeout(int timeout) {
-    this.connectionTimeout = timeout;
-    this.urlToClient.values().forEach(client -> client.setConnectionTimeout(timeout));
-  }
-
-  /**
-   * set soTimeout (read timeout) on the underlying HttpConnectionManager. This is desirable for queries, but probably
-   * not for indexing.
-   *
-   * @deprecated since 7.0  Use {@link Builder} methods instead. 
-   */
-  @Deprecated
-  public void setSoTimeout(int timeout) {
-    this.soTimeout = timeout;
-    this.urlToClient.values().forEach(client -> client.setSoTimeout(timeout));
-  }
-
-  /**
-   * @deprecated use {@link LBSolrClient#request(LBSolrClient.Req)} instead
-   */
-  @Deprecated
-  public Rsp request(Req req) throws SolrServerException, IOException {
-    LBSolrClient.Rsp rsp = super.request(req);
-    // for backward-compatibility support
-    Rsp result = new Rsp();
-    result.rsp = rsp.rsp;
-    result.server = rsp.server;
-    return result;
   }
 
   @Override

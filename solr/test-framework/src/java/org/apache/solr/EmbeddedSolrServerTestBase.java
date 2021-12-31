@@ -22,23 +22,17 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Properties;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ContentStreamBase.ByteArrayStream;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.AfterClass;
 
@@ -72,12 +66,7 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
    * Create a new solr client. Subclasses should override for other options.
    */
   public EmbeddedSolrServer createNewSolrClient() {
-    return new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_CORE_NAME) {
-      @Override
-      public void close() {
-        // do not close core container
-      }
-    };
+    return new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_CORE_NAME);
   }
 
   public void upload(final String collection, final ContentStream... contents) {
@@ -128,33 +117,9 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
   }
 
   public static void initCore() throws Exception {
-    final String home = legacyExampleCollection1SolrHome();
+    final String home = SolrJettyTestBase.legacyExampleCollection1SolrHome();
     final String config = home + "/" + DEFAULT_CORE_NAME + "/conf/solrconfig.xml";
     final String schema = home + "/" + DEFAULT_CORE_NAME + "/conf/schema.xml";
     initCore(config, schema, home);
   }
-
-  public static String legacyExampleCollection1SolrHome() throws IOException {
-    final String sourceHome = ExternalPaths.SOURCE_HOME;
-    if (sourceHome == null)
-      throw new IllegalStateException("No source home! Cannot create the legacy example solr home directory.");
-
-    final File tempSolrHome = LuceneTestCase.createTempDir().toFile();
-    FileUtils.copyFileToDirectory(new File(sourceHome, "server/solr/solr.xml"), tempSolrHome);
-    final File collectionDir = new File(tempSolrHome, DEFAULT_CORE_NAME);
-    FileUtils.forceMkdir(collectionDir);
-    final File configSetDir = new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
-    FileUtils.copyDirectoryToDirectory(configSetDir, collectionDir);
-
-    final Properties props = new Properties();
-    props.setProperty("name", DEFAULT_CORE_NAME);
-
-    try (Writer writer = new OutputStreamWriter(FileUtils.openOutputStream(new File(collectionDir, "core.properties")),
-        "UTF-8");) {
-      props.store(writer, null);
-    }
-
-    return tempSolrHome.getAbsolutePath();
-  }
-
 }

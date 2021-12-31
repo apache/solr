@@ -36,7 +36,7 @@ import org.apache.lucene.util.mutable.MutableValueInt;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.Insanity;
+import org.apache.solr.search.NumericHidingLeafReader;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -71,7 +71,7 @@ public class OrdFieldSource extends ValueSource {
 
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     final int off = readerContext.docBase;
     final LeafReader r;
     Object o = context.get("searcher");
@@ -83,14 +83,14 @@ public class OrdFieldSource extends ValueSource {
             "ord() is not supported over Points based field " + field);
       }
       if (sf != null && sf.hasDocValues() == false && sf.multiValued() == false && sf.getType().getNumberType() != null) {
-        // it's a single-valued numeric field: we must currently create insanity :(
+        // it's a single-valued numeric field: we must hide the numeric
         List<LeafReaderContext> leaves = is.getIndexReader().leaves();
-        LeafReader insaneLeaves[] = new LeafReader[leaves.size()];
+        LeafReader hidingLeaves[] = new LeafReader[leaves.size()];
         int upto = 0;
         for (LeafReaderContext raw : leaves) {
-          insaneLeaves[upto++] = Insanity.wrapInsanity(raw.reader(), field);
+          hidingLeaves[upto++] = NumericHidingLeafReader.wrap(raw.reader(), field);
         }
-        r = SlowCompositeReaderWrapper.wrap(new MultiReader(insaneLeaves));
+        r = SlowCompositeReaderWrapper.wrap(new MultiReader(hidingLeaves));
       } else {
         // reuse ordinalmap
         r = ((SolrIndexSearcher)o).getSlowAtomicReader();

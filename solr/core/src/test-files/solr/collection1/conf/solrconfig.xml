@@ -46,7 +46,7 @@
     <double name="maxWriteMBPerSecMerge">3000000</double>
     <double name="maxWriteMBPerSecRead">4000000</double>
     <str name="solr.hdfs.home">${solr.hdfs.home:}</str>
-    <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool> 
+    <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool>
     <bool name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:true}</bool>
     <bool name="solr.hdfs.blockcache.write.enabled">${solr.hdfs.blockcache.write.enabled:false}</bool>
     <int name="solr.hdfs.blockcache.blocksperbank">${solr.hdfs.blockcache.blocksperbank:10}</int>
@@ -73,11 +73,11 @@
       <maxTime>3600000</maxTime>
     </autoCommit>
     -->
-    
+
     <updateLog enable="${enable.update.log:true}">
       <str name="dir">${solr.ulog.dir:}</str>
-    </updateLog> 
-    
+    </updateLog>
+
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
@@ -97,7 +97,8 @@
     <filterCache
       size="512"
       initialSize="512"
-      autowarmCount="2"/>
+      autowarmCount="2"
+      async="${solr.filterCache.async:false}"/>
 
     <queryResultCache
       size="512"
@@ -135,9 +136,6 @@
 
     <queryResultWindowSize>10</queryResultWindowSize>
 
-    <!-- set maxSize artificially low to exercise both types of sets -->
-    <HashDocSet maxSize="3" loadFactor="0.75"/>
-
     <!-- boolToFilterOptimizer converts boolean clauses with zero boost
          into cached filters if the number of docs selected by the clause exceeds
          the threshold (represented as a fraction of the total index)
@@ -171,13 +169,9 @@
     <slowQueryThresholdMillis>2000</slowQueryThresholdMillis>
 
   </query>
-  
+
   <queryResponseWriter name="xml" default="true"
                        class="solr.XMLResponseWriter" />
-
-  <!-- An alternate set representation that uses an integer hash to store filters (sets of docids).
-       If the set cardinality <= maxSize elements, then HashDocSet will be used instead of the bitset
-       based HashBitset. -->
 
   <!-- requestHandler plugins
   -->
@@ -246,7 +240,7 @@
     </lst>
     <lst name="spellchecker">
       <str name="name">wordbreak</str>
-      <str name="classname">solr.WordBreakSolrSpellChecker</str>      
+      <str name="classname">solr.WordBreakSolrSpellChecker</str>
       <str name="field">lowerfilt</str>
       <str name="combineWords">true</str>
       <str name="breakWords">true</str>
@@ -301,6 +295,7 @@
     </lst>
   </searchComponent>
 
+    <!-- This is now part of the implicit configuration together with terms=true and distrib=false defaults
   <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
 
   <requestHandler name="/terms" class="org.apache.solr.handler.component.SearchHandler">
@@ -308,8 +303,9 @@
       <str>termsComp</str>
     </arr>
   </requestHandler>
-  
-  
+  -->
+
+
   <!--
   The SpellingQueryConverter to convert raw (CommonParams.Q) queries into tokens.  Uses a simple regular expression
    to strip off field markup, boosts, ranges, etc. but it is not guaranteed to match an exact parse from the query parser.
@@ -369,7 +365,7 @@
         <str>spellcheck</str>
       </arr>
  </requestHandler>
- 
+
   <requestHandler name="/mltrh" class="org.apache.solr.handler.component.SearchHandler">
 
   </requestHandler>
@@ -456,11 +452,6 @@
       <str name="facet.query">foo_s:bar</str>
     </lst>
   </requestHandler>
-  
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
-  </admin>
 
   <!-- test getting system property -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
@@ -468,48 +459,16 @@
 
   <queryParser name="foo" class="FooQParserPlugin"/>
 
-  <updateRequestProcessorChain name="dedupe">
-    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
-      <bool name="enabled">false</bool>
-      <bool name="overwriteDupes">true</bool>
-      <str name="fields">v_t,t_field</str>
-      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-  <updateRequestProcessorChain name="dedupe-allfields">
-    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
-      <bool name="enabled">false</bool>
-      <bool name="overwriteDupes">false</bool>
-      <str name="signatureField">id</str>
-      <str name="fields"></str>
-      <str name="signatureClass">org.apache.solr.update.processor.Lookup3Signature</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-  <updateRequestProcessorChain name="stored_sig">
-    <!-- this chain is valid even though the signature field is not
-         indexed, because we are not asking for dups to be overwritten
-      -->
-    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
-      <bool name="enabled">true</bool>
-      <str name="signatureField">non_indexed_signature_sS</str>
-      <bool name="overwriteDupes">false</bool>
-      <str name="fields">v_t,t_field</str>
-      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
   <updateRequestProcessorChain name="uniq-fields">
     <processor class="org.apache.solr.update.processor.UniqFieldsUpdateProcessorFactory">
       <arr name="fieldName">
         <str>uniq</str>
         <str>uniq2</str>
         <str>uniq3</str>
-      </arr>      
+      </arr>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="distrib-dup-test-chain-explicit">
     <!-- explicit test using processors before and after distrib -->
@@ -525,7 +484,7 @@
       <str name="replacement">x_x</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="distrib-dup-test-chain-implicit">
     <!-- implicit test w/o distrib declared-->
@@ -540,10 +499,10 @@
       <str name="replacement">x_x</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
 
   <restManager>
-    <!-- 
+    <!--
     IMPORTANT: Due to the Lucene SecurityManager, tests can only write to their runtime directory or below.
     But it's easier to just keep everything in memory for testing so no remnants are left behind.
     -->
@@ -551,7 +510,7 @@
   </restManager>
 
   <!-- warning: not a best practice; requests generally ought to be explicit to thus not require this -->
-  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh,/search-facet-def,/search-facet-invariants,/terms">
+  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh,/search-facet-def,/search-facet-invariants">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>
@@ -566,4 +525,3 @@
   </transformer>
 
 </config>
-

@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
@@ -31,7 +31,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 /**
  * Field type for support of monetary values.
  * <p>
- * See <a href="http://wiki.apache.org/solr/CurrencyField">http://wiki.apache.org/solr/CurrencyField</a>
+ * See <a href="https://solr.apache.org/guide/currencies-exchange-rates.html">https://solr.apache.org/guide/currencies-exchange-rates.html</a>
  * @deprecated Use {@link CurrencyFieldType}
  */
 @Deprecated
@@ -45,12 +45,12 @@ public class CurrencyField extends CurrencyFieldType implements SchemaAware, Res
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
-    
+
     // Fail if amountLongSuffix or codeStrSuffix are specified
     List<String> unknownParams = new ArrayList<>();
     fieldSuffixAmountRaw = args.get(PARAM_FIELD_SUFFIX_AMOUNT_RAW);
     if (fieldSuffixAmountRaw != null) {
-      unknownParams.add(PARAM_FIELD_SUFFIX_AMOUNT_RAW); 
+      unknownParams.add(PARAM_FIELD_SUFFIX_AMOUNT_RAW);
     }
     fieldSuffixCurrency = args.get(PARAM_FIELD_SUFFIX_CURRENCY);
     if (fieldSuffixCurrency != null) {
@@ -59,7 +59,7 @@ public class CurrencyField extends CurrencyFieldType implements SchemaAware, Res
     if ( ! unknownParams.isEmpty()) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unknown parameter(s): " + unknownParams);
     }
-    
+
     String precisionStepString = args.get(PARAM_PRECISION_STEP);
     if (precisionStepString == null) {
       precisionStepString = DEFAULT_PRECISION_STEP;
@@ -73,7 +73,7 @@ public class CurrencyField extends CurrencyFieldType implements SchemaAware, Res
     //
     // In theory we should fix this, but since this class is already deprecated, we'll leave it alone
     // to simplify the risk of back-compat break for existing users.
-    
+
     // Initialize field type for amount
     fieldTypeAmountRaw = new TrieLongField();
     fieldTypeAmountRaw.setTypeName(FIELD_TYPE_AMOUNT_RAW);
@@ -104,7 +104,7 @@ public class CurrencyField extends CurrencyFieldType implements SchemaAware, Res
   }
 
   /**
-   * When index schema is informed, add dynamic fields "*____currency" and "*____amount_raw". 
+   * When index schema is informed, add dynamic fields "*____currency" and "*____amount_raw".
    *
    * {@inheritDoc}
    *

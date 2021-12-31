@@ -47,8 +47,8 @@ public class SumDifferenceEvaluator extends RecursiveNumericEvaluator implements
     }
 
     return StatUtils.sumDifference(
-        ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-        ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+        ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+        ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
     );
   }
 }

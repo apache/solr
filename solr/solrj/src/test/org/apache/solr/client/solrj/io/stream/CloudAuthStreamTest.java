@@ -41,14 +41,13 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.apache.solr.util.TimeOut;
-
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 /**
  * tests various streaming expressions (via the SolrJ {@link SolrStream} API) against a SolrCloud cluster
@@ -75,7 +74,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
    *
    * @see SolrRequest#setBasicAuthCredentials
    */
-  private static <T extends SolrRequest> T setBasicAuthCredentials(T req, String user) {
+  private static <T extends SolrRequest<?>> T setBasicAuthCredentials(T req, String user) {
     assert null != user;
     req.setBasicAuthCredentials(user, user);
     return req;
@@ -93,28 +92,28 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       .collect(Collectors.toMap(Function.identity(), Function.identity()));
 
     final String SECURITY_JSON = Utils.toJSONString
-      (Utils.makeMap("authorization",
-                     Utils.makeMap("class", RuleBasedAuthorizationPlugin.class.getName(),
+      (Map.of("authorization",
+                     Map.of("class", RuleBasedAuthorizationPlugin.class.getName(),
                                    "user-role", roles,
                                    // NOTE: permissions order matters!
                                    "permissions", Arrays.asList(// any authn user can 'read' or hit /stream
-                                                                Utils.makeMap("name","read",
+                                                                Map.of("name","read",
                                                                               "role","*"),
-                                                                Utils.makeMap("name","stream",
+                                                                Map.of("name","stream",
                                                                               "collection", "*",
                                                                               "path", "/stream",
                                                                               "role","*"),
                                                                 // per collection write perms
-                                                                Utils.makeMap("name","update",
+                                                                Map.of("name","update",
                                                                               "collection", COLLECTION_X,
                                                                               "role", WRITE_X_USER),
-                                                                Utils.makeMap("name","update",
+                                                                Map.of("name","update",
                                                                               "collection", COLLECTION_Y,
                                                                               "role", WRITE_Y_USER),
-                                                                Utils.makeMap("name","all",
+                                                                Map.of("name","all",
                                                                               "role",ADMIN_USER))),
                      "authentication",
-                     Utils.makeMap("class", BasicAuthPlugin.class.getName(),
+                     Map.of("class", BasicAuthPlugin.class.getName(),
                                    "blockUnknown",true,
                                    "credentials", credentials)));
     
@@ -125,7 +124,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
     for (String collection : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
       CollectionAdminRequest.createCollection(collection, "_default", 2, 2)
-        .setBasicAuthCredentials(ADMIN_USER, ADMIN_USER)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .setBasicAuthCredentials(ADMIN_USER, ADMIN_USER)
         .process(cluster.getSolrClient());
     }
     
@@ -521,7 +521,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
           daemonCheck.setCredentials(user, user);
           final List<Tuple> tuples = getTuples(daemonCheck);
           assertEquals(1, tuples.size()); // our daemon;
-          log.info("Current daemon status: {}", tuples.get(0).fields);
+          if (log.isInfoEnabled()) {
+            log.info("Current daemon status: {}", tuples.get(0).getFields());
+          }
           assertEquals(daemonId + " should have never had a successful iteration",
                        Long.valueOf(0L), tuples.get(0).getLong("iterations"));
           state = tuples.get(0).get("state");
@@ -806,7 +808,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       log.trace("TupleStream: {}", tupleStream);
       tupleStream.open();
       for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
-        log.trace("Tuple: {}", t.fields);
+        if (log.isTraceEnabled()) {
+          log.trace("Tuple: {}", t.getFields());
+        }
         tuples.add(t);
       }
     } finally {

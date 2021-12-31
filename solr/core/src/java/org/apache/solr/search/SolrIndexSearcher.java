@@ -28,13 +28,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.codahale.metrics.Gauge;
 import com.google.common.collect.Iterables;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -49,8 +49,10 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.*;
+import org.apache.lucene.search.TotalHits.Relation;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -80,6 +82,7 @@ import org.apache.solr.search.stats.StatsSource;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
+import org.apache.solr.util.IOFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,8 +100,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
-  private static final Map<String,SolrCache> NO_GENERIC_CACHES = Collections.emptyMap();
-  private static final SolrCache[] NO_CACHES = new SolrCache[0];
+  private static final Map<String,SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
+  private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
 
   private final SolrCore core;
   private final IndexSchema schema;
@@ -122,9 +125,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final SolrCache<String,UnInvertedField> fieldValueCache;
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
-  private final Map<String,SolrCache> cacheMap;
+  private final Map<String,SolrCache<?, ?>> cacheMap;
 
   // list of all caches associated with this searcher.
+  @SuppressWarnings({"rawtypes"})
   private final SolrCache[] cacheList;
 
   private DirectoryFactory directoryFactory;
@@ -165,8 +169,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Builds the necessary collector chain (via delegate wrapping) and executes the query against it. This method takes
    * into consideration both the explicitly provided collector and postFilter as well as any needed collector wrappers
    * for dealing with options specified in the QueryCommand.
+   * @return The collector used for search
    */
-  private void buildAndRunCollectorChain(QueryResult qr, Query query, Collector collector, QueryCommand cmd,
+  private Collector buildAndRunCollectorChain(QueryResult qr, Query query, Collector collector, QueryCommand cmd,
       DelegatingCollector postFilter) throws IOException {
 
     EarlyTerminatingSortingCollector earlyTerminatingSortingCollector = null;
@@ -198,10 +203,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       collector = postFilter;
     }
 
+    if (cmd.isQueryCancellable()) {
+      collector = new CancellableCollector(collector);
+
+      // Add this to the local active queries map
+      core.getCancellableQueryTracker().addShardLevelActiveQuery(cmd.getQueryID(), (CancellableCollector) collector);
+    }
+
     try {
       super.search(query, collector);
-    } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn("Query: [{}]; {}", query, x.getMessage());
+    } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException |
+            CancellableCollector.QueryCancelledException x) {
+      log.warn("Query: [{}]; ", query, x);
       qr.setPartialResults(true);
     } catch (EarlyTerminatingCollectorException etce) {
       if (collector instanceof DelegatingCollector) {
@@ -212,10 +225,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (earlyTerminatingSortingCollector != null) {
         qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());
       }
+
+      if (cmd.isQueryCancellable()) {
+        core.getCancellableQueryTracker().removeCancellableQuery(cmd.getQueryID());
+      }
     }
     if (collector instanceof DelegatingCollector) {
       ((DelegatingCollector) collector).finish();
     }
+
+    return collector;
   }
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name,
@@ -227,6 +246,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.releaseDirectory = true;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, String name, DirectoryReader r,
       boolean closeReader, boolean enableCache, boolean reserveDirectory, DirectoryFactory directoryFactory)
           throws IOException {
@@ -242,7 +262,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + "[" + core.getName() + "]"
         + (name != null ? " " + name : "");
-    log.info("Opening [{}]", this.name);
+    log.debug("Opening [{}]", this.name);
 
     if (directoryFactory.searchersReserveCommitPoints()) {
       // reserve commit point for life of searcher
@@ -286,7 +306,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } else {
         cacheMap = new HashMap<>(solrConfig.userCacheConfigs.size());
         for (Map.Entry<String,CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
-          SolrCache cache = e.getValue().newInstance();
+          SolrCache<?, ?> cache = e.getValue().newInstance();
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
             clist.add(cache);
@@ -426,12 +446,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // register self
     infoRegistry.put(STATISTICS_KEY, this);
     infoRegistry.put(name, this);
-    for (SolrCache cache : cacheList) {
+    for (SolrCache<?,?> cache : cacheList) {
       cache.setState(SolrCache.State.LIVE);
       infoRegistry.put(cache.name(), cache);
     }
     this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
-    for (SolrCache cache : cacheList) {
+    for (SolrCache<?,?> cache : cacheList) {
       cache.initializeMetrics(solrMetricsContext, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
     initializeMetrics(solrMetricsContext, STATISTICS_KEY);
@@ -449,11 +469,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (cachingEnabled) {
         final StringBuilder sb = new StringBuilder();
         sb.append("Closing ").append(name);
-        for (SolrCache cache : cacheList) {
+        for (SolrCache<?,?> cache : cacheList) {
           sb.append("\n\t");
           sb.append(cache);
         }
-        log.debug(sb.toString());
+        log.debug("{}", sb);
       } else {
         log.debug("Closing [{}]", name);
       }
@@ -476,7 +496,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       core.getDeletionPolicy().releaseCommitPoint(cpg);
     }
 
-    for (SolrCache cache : cacheList) {
+    for (SolrCache<?,?> cache : cacheList) {
       try {
         cache.close();
       } catch (Exception e) {
@@ -522,8 +542,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (solrConfig.fieldValueCacheConfig != null && solrConfig.fieldValueCacheConfig.getRegenerator() == null) {
       solrConfig.fieldValueCacheConfig.setRegenerator(new CacheRegenerator() {
         @Override
-        public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
+        public <K,V> boolean regenerateItem(SolrIndexSearcher newSearcher,
+                                      SolrCache<K,V> newCache,
+                                      SolrCache<K,V> oldCache,
+            K oldKey, V oldVal) throws IOException {
           if (oldVal instanceof UnInvertedField) {
             UnInvertedField.getUnInvertedField((String) oldKey, newSearcher);
           }
@@ -535,8 +557,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (solrConfig.filterCacheConfig != null && solrConfig.filterCacheConfig.getRegenerator() == null) {
       solrConfig.filterCacheConfig.setRegenerator(new CacheRegenerator() {
         @Override
-        public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
+        public <K,V> boolean regenerateItem(SolrIndexSearcher newSearcher
+                , SolrCache<K,V> newCache
+                , SolrCache<K,V> oldCache,
+            K oldKey, V oldVal) throws IOException {
           newSearcher.cacheDocSet((Query) oldKey, null, false);
           return true;
         }
@@ -547,8 +571,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final int queryResultWindowSize = solrConfig.queryResultWindowSize;
       solrConfig.queryResultCacheConfig.setRegenerator(new CacheRegenerator() {
         @Override
-        public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
+        public <K,V> boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache<K,V> newCache, SolrCache<K,V> oldCache,
+            K oldKey, V oldVal) throws IOException {
           QueryResultKey key = (QueryResultKey) oldKey;
           int nDocs = 1;
           // request 1 doc and let caching round up to the next window size...
@@ -760,6 +784,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private BitDocSet makeBitDocSet(DocSet answer) {
     // TODO: this should be implemented in DocSet, most likely with a getBits method that takes a maxDoc argument
     // or make DocSet instances remember maxDoc
+    if (answer instanceof BitDocSet) {
+      return (BitDocSet) answer;
+    }
     FixedBitSet bs = new FixedBitSet(maxDoc());
     DocIterator iter = answer.iterator();
     while (iter.hasNext()) {
@@ -771,78 +798,64 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   public BitDocSet getDocSetBits(Query q) throws IOException {
     DocSet answer = getDocSet(q);
-    if (answer instanceof BitDocSet) {
-      return (BitDocSet) answer;
-    }
     BitDocSet answerBits = makeBitDocSet(answer);
-    if (filterCache != null) {
+    if (answerBits != answer && filterCache != null) {
       filterCache.put(q, answerBits);
     }
     return answerBits;
   }
 
-  /**
-   * Returns the set of document ids matching a query. This method is cache-aware and attempts to retrieve the answer
-   * from the cache if possible. If the answer was not cached, it may have been inserted into the cache as a result of
-   * this call. This method can handle negative queries.
-   * <p>
-   * The DocSet returned should <b>not</b> be modified.
-   */
-  public DocSet getDocSet(Query query) throws IOException {
+  // only handle positive (non negative) queries
+  DocSet getPositiveDocSet(Query query) throws IOException {
+    // TODO duplicated code with getDocSet?
+    boolean doCache = filterCache != null;
     if (query instanceof ExtendedQuery) {
-      ExtendedQuery eq = (ExtendedQuery) query;
-      if (!eq.getCache()) {
-        if (query instanceof WrappedQuery) {
-          query = ((WrappedQuery) query).getWrappedQuery();
-        }
-        query = QueryUtils.makeQueryable(query);
-        return getDocSetNC(query, null);
+      if (!((ExtendedQuery) query).getCache()) {
+        doCache = false;
+      }
+      if (query instanceof WrappedQuery) {
+        query = ((WrappedQuery) query).getWrappedQuery();
       }
     }
 
-    // Get the absolute value (positive version) of this query. If we
-    // get back the same reference, we know it's positive.
-    Query absQ = QueryUtils.getAbs(query);
-    boolean positive = query == absQ;
-
-    if (filterCache != null) {
-      DocSet absAnswer = filterCache.get(absQ);
-      if (absAnswer != null) {
-        if (positive) return absAnswer;
-        else return getLiveDocSet().andNot(absAnswer);
-      }
+    if (doCache) {
+      return getAndCacheDocSet(query);
     }
 
-    DocSet absAnswer = getDocSetNC(absQ, null);
-    DocSet answer = positive ? absAnswer : getLiveDocSet().andNot(absAnswer);
-
-    if (filterCache != null) {
-      // cache negative queries as positive
-      filterCache.put(absQ, absAnswer);
-    }
-
-    return answer;
+    return getDocSetNC(query, null);
   }
 
-  // only handle positive (non negative) queries
-  DocSet getPositiveDocSet(Query q) throws IOException {
-    DocSet answer;
-    if (filterCache != null) {
-      answer = filterCache.get(q);
-      if (answer != null) return answer;
+  /**
+   * Attempt to read the query from the filter cache, if not will compute the result and insert back into the cache
+   * <p>Callers must ensure that:
+   * <ul><li>The query is unwrapped
+   * <li>The query has caching enabled
+   * <li>The filter cache exists
+   * @param query the query to compute.
+   * @return the DocSet answer
+   */
+  private DocSet getAndCacheDocSet(Query query) throws IOException {
+    assert !(query instanceof WrappedQuery) : "should have unwrapped";
+    assert filterCache != null : "must check for caching before calling this method";
+
+    if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled()) {
+      // If there is a possibility of timeout for this query, then don't reserve a computation slot. Further, we can't
+      // naively wait for an in progress computation to finish, because if we time out before it does then we won't
+      // even have partial results to provide. We could possibly wait for the query to finish in parallel with our own
+      // results and if they complete first use that instead, but we'll leave that to implement later.
+      DocSet answer = filterCache.get(query);
+      if (answer != null) {
+        return answer;
+      }
+      answer = getDocSetNC(query, null);
+      filterCache.put(query, answer);
+      return answer;
     }
-    answer = getDocSetNC(q, null);
-    if (filterCache != null) filterCache.put(q, answer);
-    return answer;
+    return filterCache.computeIfAbsent(query, q -> getDocSetNC(q, null));
   }
 
   private static Query matchAllDocsQuery = new MatchAllDocsQuery();
   private volatile BitDocSet liveDocs;
-
-  @Deprecated // TODO remove for 8.0
-  public BitDocSet getLiveDocs() throws IOException {
-    return getLiveDocSet();
-  }
 
   /**
    * Returns an efficient random-access {@link DocSet} of the live docs.  It's cached.  Never null.
@@ -879,25 +892,32 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public void setLiveDocs(DocSet docs) {
     // a few places currently expect BitDocSet
     assert docs.size() == numDocs();
-    if (docs instanceof BitDocSet) {
-      this.liveDocs = (BitDocSet)docs;
-    } else {
-      this.liveDocs = makeBitDocSet(docs);
-    }
+    this.liveDocs = makeBitDocSet(docs);
   }
 
-  public static class ProcessedFilter {
-    public DocSet answer; // the answer, if non-null
-    public Filter filter;
-    public DelegatingCollector postFilter;
-    public boolean hasDeletedDocs;  // true if it's possible that filter may match deleted docs
-  }
+  private static Comparator<ExtendedQuery> sortByCost =
+      Comparator.comparingInt(ExtendedQuery::getCost);
 
-  private static Comparator<Query> sortByCost = (q1, q2) -> ((ExtendedQuery) q1).getCost() - ((ExtendedQuery) q2).getCost();
+  /**
+   * Returns the set of document ids matching all queries. This method is cache-aware and attempts to retrieve the
+   * answer from the cache if possible. If the answer was not cached, it may have been inserted into the cache as a
+   * result of this call. This method can handle negative queries.
+   * A null/empty list results in {@link #getLiveDocSet()}.
+   * <p>
+   * The DocSet returned should <b>not</b> be modified.
+   */
+  public DocSet getDocSet(List<Query> queries) throws IOException {
 
-  private DocSet getDocSetScore(List<Query> queries) throws IOException {
-    Query main = queries.remove(0);
     ProcessedFilter pf = getProcessedFilter(null, queries);
+
+    if (pf.postFilter == null) {
+      if (pf.answer != null) {
+        return pf.answer;
+      } else if (pf.filter == null) {
+        return getLiveDocSet(); // note: this is what happens when queries is an empty list
+      }
+    }
+
     DocSetCollector setCollector = new DocSetCollector(maxDoc());
     Collector collector = setCollector;
     if (pf.postFilter != null) {
@@ -905,12 +925,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       collector = pf.postFilter;
     }
 
-    if (pf.filter != null) {
-      Query query = new BooleanQuery.Builder().add(main, Occur.MUST).add(pf.filter, Occur.FILTER).build();
-      search(query, collector);
-    } else {
-      search(main, collector);
-    }
+    Query query = pf.filter != null ? pf.filter : matchAllDocsQuery;
+
+    search(query, collector);
 
     if (collector instanceof DelegatingCollector) {
       ((DelegatingCollector) collector).finish();
@@ -920,90 +937,40 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /**
-   * Returns the set of document ids matching all queries. This method is cache-aware and attempts to retrieve the
-   * answer from the cache if possible. If the answer was not cached, it may have been inserted into the cache as a
-   * result of this call. This method can handle negative queries.
-   * <p>
-   * The DocSet returned should <b>not</b> be modified.
+   * INTERNAL: The response object from {@link #getProcessedFilter(DocSet, List)}.
+   * Holds a filter and postFilter pair that together match a set of documents.
+   * Either of them may be null, in which case the semantics are to match everything.
+   * @see #getProcessedFilter(DocSet, List)
    */
-  public DocSet getDocSet(List<Query> queries) throws IOException {
-
-    if (queries != null) {
-      for (Query q : queries) {
-        if (q instanceof ScoreFilter) {
-          return getDocSetScore(queries);
-        }
-      }
-    }
-
-    ProcessedFilter pf = getProcessedFilter(null, queries);
-    if (pf.answer != null) return pf.answer;
-
-    DocSetCollector setCollector = new DocSetCollector(maxDoc());
-    Collector collector = setCollector;
-    if (pf.postFilter != null) {
-      pf.postFilter.setLastDelegate(collector);
-      collector = pf.postFilter;
-    }
-
-    for (final LeafReaderContext leaf : leafContexts) {
-      final LeafReader reader = leaf.reader();
-      Bits liveDocs = reader.getLiveDocs();
-      DocIdSet idSet = null;
-      if (pf.filter != null) {
-        idSet = pf.filter.getDocIdSet(leaf, liveDocs);
-        if (idSet == null) continue;
-      }
-      DocIdSetIterator idIter = null;
-      if (idSet != null) {
-        idIter = idSet.iterator();
-        if (idIter == null) continue;
-        if (!pf.hasDeletedDocs) liveDocs = null; // no need to check liveDocs
-      }
-
-      final LeafCollector leafCollector = collector.getLeafCollector(leaf);
-      int max = reader.maxDoc();
-
-      if (idIter == null) {
-        for (int docid = 0; docid < max; docid++) {
-          if (liveDocs != null && !liveDocs.get(docid)) continue;
-          leafCollector.collect(docid);
-        }
-      } else {
-        if (liveDocs != null) {
-          for (int docid = -1; (docid = idIter.advance(docid + 1)) < max; ) {
-            if (liveDocs.get(docid))
-              leafCollector.collect(docid);
-          }
-        } else {
-          for (int docid = -1; (docid = idIter.advance(docid + 1)) < max;) {
-            leafCollector.collect(docid);
-          }
-        }
-      }
-
-    }
-
-    if (collector instanceof DelegatingCollector) {
-      ((DelegatingCollector) collector).finish();
-    }
-
-    return DocSetUtil.getDocSet(setCollector, this);
+  public static class ProcessedFilter {
+    public DocSet answer; // maybe null. Sometimes we have a docSet answer that represents the complete answer / result.
+    public Query filter; // maybe null
+    public DelegatingCollector postFilter; // maybe null
   }
 
+  /**
+   * INTERNAL: Processes conjunction (AND) of both args into a {@link ProcessedFilter} result.
+   * Either arg may be null/empty thus doesn't restrict the matching docs.
+   * Queries typically are resolved against the filter cache, and populate it.
+   */
   public ProcessedFilter getProcessedFilter(DocSet setFilter, List<Query> queries) throws IOException {
     ProcessedFilter pf = new ProcessedFilter();
     if (queries == null || queries.size() == 0) {
-      if (setFilter != null) pf.filter = setFilter.getTopFilter();
+      if (setFilter != null) {
+        pf.answer = setFilter;
+        pf.filter = setFilter.getTopFilter();
+      }
       return pf;
     }
 
+    // We combine all the filter queries that come from the filter cache & setFilter into "answer".
+    // This might become pf.answer but not if there are any non-cached filters
     DocSet answer = null;
 
     boolean[] neg = new boolean[queries.size() + 1];
     DocSet[] sets = new DocSet[queries.size() + 1];
-    List<Query> notCached = null;
-    List<Query> postFilters = null;
+    List<ExtendedQuery> notCached = null;
+    List<PostFilter> postFilters = null;
 
     int end = 0;
     int smallestIndex = -1;
@@ -1011,7 +978,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (setFilter != null) {
       answer = sets[end++] = setFilter;
       smallestIndex = end;
-    }
+    } // we are done with setFilter at this point
 
     int smallestCount = Integer.MAX_VALUE;
     for (Query q : queries) {
@@ -1020,10 +987,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         if (!eq.getCache()) {
           if (eq.getCost() >= 100 && eq instanceof PostFilter) {
             if (postFilters == null) postFilters = new ArrayList<>(sets.length - end);
-            postFilters.add(q);
+            postFilters.add((PostFilter) q);
           } else {
             if (notCached == null) notCached = new ArrayList<>(sets.length - end);
-            notCached.add(q);
+            notCached.add((ExtendedQuery) q);
           }
           continue;
         }
@@ -1073,34 +1040,48 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (!neg[i] && i != smallestIndex) answer = answer.intersection(sets[i]);
     }
 
-    if (notCached != null) {
-      Collections.sort(notCached, sortByCost);
-      List<Weight> weights = new ArrayList<>(notCached.size());
-      for (Query q : notCached) {
-        Query qq = QueryUtils.makeQueryable(q);
-        weights.add(createWeight(rewrite(qq), ScoreMode.COMPLETE_NO_SCORES, 1));
-      }
-      pf.filter = new FilterImpl(answer, weights);
-      pf.hasDeletedDocs = (answer == null);  // if all clauses were uncached, the resulting filter may match deleted docs
-    } else {
-      if (postFilters == null) {
-        if (answer == null) {
-          answer = getLiveDocSet();
-        }
-        // "answer" is the only part of the filter, so set it.
-        pf.answer = answer;
-      }
+    // ignore "answer" if it simply matches all docs
+    if (answer != null && answer.size() == numDocs()) {
+      answer = null;
+    }
 
+    // answer is done.
+
+    // If no notCached nor postFilters, we can return now.
+    if (notCached == null && postFilters == null) {
+      // "answer" is the only part of the filter, so set it.
+      if (answer != null) {
+        pf.answer = answer;
+        pf.filter = answer.getTopFilter();
+      }
+      return pf;
+    }
+    // pf.answer will remain null ...  (our local "answer" var is not the complete answer)
+
+    // Set pf.filter based on combining "answer" and "notCached"
+    if (notCached == null) {
       if (answer != null) {
         pf.filter = answer.getTopFilter();
       }
+    } else {
+      notCached.sort(sortByCost); // pointless?
+      final BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      if (answer != null) {
+        builder.add(answer.getTopFilter(), Occur.FILTER);
+      }
+      for (ExtendedQuery eq : notCached) {
+        Query q = eq.getCostAppliedQuery();
+        builder.add(q, Occur.FILTER);
+      }
+      pf.filter = builder.build();
     }
 
+    // Set pf.postFilter
     if (postFilters != null) {
       Collections.sort(postFilters, sortByCost);
       for (int i = postFilters.size() - 1; i >= 0; i--) {
         DelegatingCollector prev = pf.postFilter;
-        pf.postFilter = ((PostFilter) postFilters.get(i)).getFilterCollector(this);
+        pf.postFilter = postFilters.get(i).getFilterCollector(this);
         if (prev != null) pf.postFilter.setDelegate(prev);
       }
     }
@@ -1112,14 +1093,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public DocSet getDocSet(DocsEnumState deState) throws IOException {
     int largestPossible = deState.termsEnum.docFreq();
     boolean useCache = filterCache != null && largestPossible >= deState.minSetSizeCached;
-    TermQuery key = null;
 
     if (useCache) {
-      key = new TermQuery(new Term(deState.fieldName, deState.termsEnum.term()));
-      DocSet result = filterCache.get(key);
-      if (result != null) return result;
+      TermQuery key = new TermQuery(new Term(deState.fieldName, deState.termsEnum.term()));
+      return filterCache.computeIfAbsent(key,
+              (IOFunction<? super Query, ? extends DocSet>) k -> getResult(deState, largestPossible));
     }
 
+    return getResult(deState, largestPossible);
+  }
+
+  private DocSet getResult(DocsEnumState deState, int largestPossible) throws IOException {
     int smallSetSize = DocSetUtil.smallSetSize(maxDoc());
     int scratchSize = Math.min(smallSetSize, largestPossible);
     if (deState.scratch == null || deState.scratch.length < scratchSize) deState.scratch = new int[scratchSize];
@@ -1179,13 +1163,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       bitsSet += upto;
       result = new BitDocSet(fbs, bitsSet);
     } else {
-      result = upto == 0 ? DocSet.EMPTY : new SortedIntDocSet(Arrays.copyOf(docs, upto));
+      result = upto == 0 ? DocSet.empty() : new SortedIntDocSet(Arrays.copyOf(docs, upto));
     }
-
-    if (useCache) {
-      filterCache.put(key, result);
-    }
-
     return result;
   }
 
@@ -1195,45 +1174,53 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /**
-   * Returns the set of document ids matching both the query and the filter. This method is cache-aware and attempts to
-   * retrieve the answer from the cache if possible. If the answer was not cached, it may have been inserted into the
-   * cache as a result of this call.
-   * <p>
+   * Returns the set of document ids matching both the query.
+   * This method is cache-aware and attempts to retrieve a DocSet of the query from the cache if possible.
+   * If the answer was not cached, it may have been inserted into the cache as a result of this call.
    *
-   * @param filter
-   *          may be null
-   * @return DocSet meeting the specified criteria, should <b>not</b> be modified by the caller.
+   * @return Non-null DocSet meeting the specified criteria.  Should <b>not</b> be modified by the caller.
+   * @see #getDocSet(Query,DocSet)
+   */
+  public DocSet getDocSet(Query query) throws IOException {
+    return getDocSet(query, null);
+  }
+
+  /**
+   * Returns the set of document ids matching both the query and the filter.
+   * This method is cache-aware and attempts to retrieve a DocSet of the query from the cache if possible.
+   * If the answer was not cached, it may have been inserted into the cache as a result of this call.
+   *
+   * @param filter may be null if none
+   * @return Non-null DocSet meeting the specified criteria.  Should <b>not</b> be modified by the caller.
    */
   public DocSet getDocSet(Query query, DocSet filter) throws IOException {
-    if (filter == null) return getDocSet(query);
-
+    boolean doCache = filterCache != null;
     if (query instanceof ExtendedQuery) {
-      ExtendedQuery eq = (ExtendedQuery) query;
-      if (!eq.getCache()) {
-        if (query instanceof WrappedQuery) {
-          query = ((WrappedQuery) query).getWrappedQuery();
-        }
-        query = QueryUtils.makeQueryable(query);
-        return getDocSetNC(query, filter);
+      if (!((ExtendedQuery) query).getCache()) {
+        doCache = false;
+      }
+      if (query instanceof WrappedQuery) {
+        query = ((WrappedQuery) query).getWrappedQuery();
       }
     }
 
-    // Negative query if absolute value different from original
+    if (!doCache) {
+      query = QueryUtils.makeQueryable(query);
+      return getDocSetNC(query, filter);
+    }
+
+    // Get the absolute value (positive version) of this query. If we
+    // get back the same reference, we know it's positive.
     Query absQ = QueryUtils.getAbs(query);
     boolean positive = absQ == query;
 
-    DocSet first;
-    if (filterCache != null) {
-      first = filterCache.get(absQ);
-      if (first == null) {
-        first = getDocSetNC(absQ, null);
-        filterCache.put(absQ, first);
-      }
-      return positive ? first.intersection(filter) : filter.andNot(first);
-    }
+    DocSet absAnswer = getAndCacheDocSet(absQ);
 
-    // If there isn't a cache, then do a single filtered query if positive.
-    return positive ? getDocSetNC(absQ, filter) : filter.andNot(getPositiveDocSet(absQ));
+    if (filter == null) {
+      return positive ? absAnswer : getLiveDocSet().andNot(absAnswer);
+    } else {
+      return positive ? absAnswer.intersection(filter) : filter.andNot(absAnswer);
+    }
   }
 
   /**
@@ -1342,7 +1329,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         && (flags & (NO_CHECK_QCACHE | NO_SET_QCACHE)) != ((NO_CHECK_QCACHE | NO_SET_QCACHE))) {
       // all of the current flags can be reused during warming,
       // so set all of them on the cache key.
-      key = new QueryResultKey(q, cmd.getFilterList(), cmd.getSort(), flags);
+      key = new QueryResultKey(q, cmd.getFilterList(), cmd.getSort(), flags, cmd.getMinExactCount());
       if ((flags & NO_CHECK_QCACHE) == 0) {
         superset = queryResultCache.get(key);
 
@@ -1518,8 +1505,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @param cmd
    *          The Command whose properties should determine the type of TopDocsCollector to use.
    */
-  private TopDocsCollector buildTopDocsCollector(int len, QueryCommand cmd) throws IOException {
-
+  private TopDocsCollector<? extends ScoreDoc> buildTopDocsCollector(int len, QueryCommand cmd) throws IOException {
+    int minNumFound = cmd.getMinExactCount();
     Query q = cmd.getQuery();
     if (q instanceof RankQuery) {
       RankQuery rq = (RankQuery) q;
@@ -1528,14 +1515,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (null == cmd.getSort()) {
       assert null == cmd.getCursorMark() : "have cursor but no sort";
-      return TopScoreDocCollector.create(len, Integer.MAX_VALUE);
+      return TopScoreDocCollector.create(len, minNumFound);
     } else {
       // we have a sort
       final Sort weightedSort = weightSort(cmd.getSort());
       final CursorMark cursor = cmd.getCursorMark();
 
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
-      return TopFieldCollector.create(weightedSort, len, searchAfter, Integer.MAX_VALUE);
+      return TopFieldCollector.create(weightedSort, len, searchAfter, minNumFound);
     }
   }
 
@@ -1552,12 +1539,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
 
-    Query query = QueryUtils.makeQueryable(cmd.getQuery());
-
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
-    if (pf.filter != null) {
-      query = new BooleanQuery.Builder().add(query, Occur.MUST).add(pf.filter, Occur.FILTER).build();
-    }
+    final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
+    Relation hitsRelation;
 
     // handle zero case...
     if (lastDocRequested <= 0) {
@@ -1610,19 +1594,25 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       maxScore = totalHits > 0 ? topscore[0] : 0.0f;
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
+      hitsRelation = Relation.EQUAL_TO;
     } else {
-      final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
+      final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
       MaxScoreCollector maxScoreCollector = null;
       Collector collector = topCollector;
       if ((cmd.getFlags() & GET_SCORES) != 0) {
         maxScoreCollector = new MaxScoreCollector();
         collector = MultiCollector.wrap(topCollector, maxScoreCollector);
       }
-      buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
+      ScoreMode scoreModeUsed = buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter).scoreMode();
 
       totalHits = topCollector.getTotalHits();
       TopDocs topDocs = topCollector.topDocs(0, len);
-      if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
+      if (scoreModeUsed == ScoreMode.COMPLETE || scoreModeUsed == ScoreMode.COMPLETE_NO_SCORES) {
+        hitsRelation = TotalHits.Relation.EQUAL_TO;
+      } else {
+        hitsRelation = topDocs.totalHits.relation;
+      }
+      if (cmd.getSort() != null && cmd.getQuery() instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
@@ -1640,7 +1630,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     int sliceLen = Math.min(lastDocRequested, nDocsReturned);
     if (sliceLen < 0) sliceLen = 0;
-    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore));
+    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, hitsRelation));
   }
 
   // any DocSet returned is for the query only, without any filtering... that way it may
@@ -1659,12 +1649,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
     int maxDoc = maxDoc();
+    cmd.setMinExactCount(Integer.MAX_VALUE);// We need the full DocSet
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
-    Query query = QueryUtils.makeQueryable(cmd.getQuery());
-    if (pf.filter != null) {
-      query = new BooleanQuery.Builder().add(query, Occur.MUST).add(pf.filter, Occur.FILTER).build();
-    }
+    final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
 
     // handle zero case...
     if (lastDocRequested <= 0) {
@@ -1712,8 +1700,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
-
-      final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
+      final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
       DocSetCollector setCollector = new DocSetCollector(maxDoc);
       MaxScoreCollector maxScoreCollector = null;
       List<Collector> collectors = new ArrayList<>(Arrays.asList(topCollector, setCollector));
@@ -1733,7 +1720,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       assert (totalHits == set.size()) || qr.isPartialResults();
 
       TopDocs topDocs = topCollector.topDocs(0, len);
-      if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
+      if (cmd.getSort() != null && cmd.getQuery() instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
@@ -1752,7 +1739,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int sliceLen = Math.min(lastDocRequested, nDocsReturned);
     if (sliceLen < 0) sliceLen = 0;
 
-    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore));
+    qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, TotalHits.Relation.EQUAL_TO));
     // TODO: if we collect results before the filter, we just need to intersect with
     // that filter to generate the DocSet for qr.setDocSet()
     qr.setDocSet(set);
@@ -2025,7 +2012,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int nDocs = cmd.getSupersetMaxDoc();
     if (nDocs == 0) {
       // SOLR-2923
-      qr.getDocListAndSet().docList = new DocSlice(0, 0, new int[0], null, set.size(), 0f);
+      qr.getDocListAndSet().docList = new DocSlice(0, 0, new int[0], null, set.size(), 0f, TotalHits.Relation.EQUAL_TO);
       qr.setNextCursorMark(cmd.getCursorMark());
       return;
     }
@@ -2033,7 +2020,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // bit of a hack to tell if a set is sorted - do it better in the future.
     boolean inOrder = set instanceof BitDocSet || set instanceof SortedIntDocSet;
 
-    TopDocsCollector topCollector = buildTopDocsCollector(nDocs, cmd);
+    TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(nDocs, cmd);
 
     DocIterator iter = set.iterator();
     int base = 0;
@@ -2064,7 +2051,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
-    qr.getDocListAndSet().docList = new DocSlice(0, nDocsReturned, ids, null, topDocs.totalHits.value, 0.0f);
+    qr.getDocListAndSet().docList = new DocSlice(0, nDocsReturned, ids, null, topDocs.totalHits.value, 0.0f, topDocs.totalHits.relation);
     populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
   }
 
@@ -2092,8 +2079,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // have deleted documents, but UninvertedField's doNegative has sets with deleted docs
       TotalHitCountCollector collector = new TotalHitCountCollector();
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
-      bq.add(QueryUtils.makeQueryable(a), BooleanClause.Occur.MUST);
-      bq.add(new ConstantScoreQuery(b.getTopFilter()), BooleanClause.Occur.MUST);
+      bq.add(QueryUtils.makeQueryable(a), Occur.MUST);
+      bq.add(new ConstantScoreQuery(b.getTopFilter()), Occur.MUST);
       super.search(bq.build(), collector);
       return collector.getTotalHits();
     }
@@ -2155,6 +2142,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /**
    * Warm this searcher based on an old one (primarily for auto-cache warming).
    */
+  @SuppressWarnings({"unchecked"})
   public void warm(SolrIndexSearcher old) {
     // Make sure this is first! filters can help queryResults execute!
     long warmingStartTime = System.nanoTime();
@@ -2177,7 +2165,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       };
 
       final SolrQueryResponse rsp = new SolrQueryResponse();
-      SolrRequestInfo.clearRequestInfo();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       try {
         cacheList[i].warm(this, old.cacheList[i]);
@@ -2199,6 +2186,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /**
    * return the named generic cache
    */
+  @SuppressWarnings({"rawtypes"})
   public SolrCache getCache(String cacheName) {
     return cacheMap.get(cacheName);
   }
@@ -2206,7 +2194,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /**
    * lookup an entry in a generic cache
    */
+  @SuppressWarnings({"unchecked"})
   public Object cacheLookup(String cacheName, Object key) {
+    @SuppressWarnings({"rawtypes"})
     SolrCache cache = cacheMap.get(cacheName);
     return cache == null ? null : cache.get(key);
   }
@@ -2214,7 +2204,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /**
    * insert an entry in a generic cache
    */
+  @SuppressWarnings({"unchecked"})
   public Object cacheInsert(String cacheName, Object key, Object val) {
+    @SuppressWarnings({"rawtypes"})
     SolrCache cache = cacheMap.get(cacheName);
     return cache == null ? null : cache.put(key, val);
   }
@@ -2290,12 +2282,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     parentContext.gauge(() -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
     // reader stats
-    parentContext.gauge(() -> reader.numDocs(), true, "numDocs", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> reader.maxDoc(), true, "maxDoc", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> reader.maxDoc() - reader.numDocs(), true, "deletedDocs", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> reader.toString(), true, "reader", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> reader.directory().toString(), true, "readerDir", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> reader.getVersion(), true, "indexVersion", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.numDocs()), true, "numDocs", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.maxDoc()), true, "maxDoc", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.maxDoc() - reader.numDocs()), true, "deletedDocs", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(rgauge(parentContext.nullString(), () -> reader.toString()), true, "reader", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(rgauge(parentContext.nullString(), () -> reader.directory().toString()), true, "readerDir", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.getVersion()), true, "indexVersion", Category.SEARCHER.toString(), scope);
     // size of the currently opened commit
     parentContext.gauge(() -> {
       try {
@@ -2306,187 +2298,33 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
         return total;
       } catch (Exception e) {
-        return -1;
+        return parentContext.nullNumber();
       }
     }, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
     // statsCache metrics
     parentContext.gauge(
-        new MetricsMap((detailed, map) -> {
-          statsCache.getCacheMetrics().getSnapshot(map::put);
+        new MetricsMap(map -> {
+          statsCache.getCacheMetrics().getSnapshot(map::putNoEx);
           map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
         }), true, "statsCache", Category.CACHE.toString(), scope);
   }
 
-  private static class FilterImpl extends Filter {
-    private final Filter topFilter;
-    private final List<Weight> weights;
-
-    public FilterImpl(DocSet filter, List<Weight> weights) {
-      this.weights = weights;
-      this.topFilter = filter == null ? null : filter.getTopFilter();
-    }
-
-    @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      final DocIdSet sub = topFilter == null ? null : topFilter.getDocIdSet(context, acceptDocs);
-      if (weights.size() == 0) return sub;
-      return new FilterSet(sub, context);
-    }
-
-    @Override
-    public String toString(String field) {
-      return "SolrFilter";
-    }
-
-    @Override
-    public void visit(QueryVisitor visitor) {
-      visitor.visitLeaf(this);
-    }
-
-    private class FilterSet extends DocIdSet {
-      private final DocIdSet docIdSet;
-      private final LeafReaderContext context;
-
-      public FilterSet(DocIdSet docIdSet, LeafReaderContext context) {
-        this.docIdSet = docIdSet;
-        this.context = context;
+  /**
+   * wraps a gauge (related to an IndexReader) and swallows any {@link AlreadyClosedException} that
+   * might be thrown, returning the specified default in it's place.
+   */
+  private <T> Gauge<T> rgauge(T closedDefault, Gauge<T> g) {
+    return () -> {
+      try {
+        return g.getValue();
+      } catch (AlreadyClosedException ignore) {
+        return closedDefault;
       }
+    };
+  }
 
-      @Override
-      public DocIdSetIterator iterator() throws IOException {
-        List<DocIdSetIterator> iterators = new ArrayList<>(weights.size() + 1);
-        if (docIdSet != null) {
-          final DocIdSetIterator iter = docIdSet.iterator();
-          if (iter == null) return null;
-          iterators.add(iter);
-        }
-        for (Weight w : weights) {
-          final Scorer scorer = w.scorer(context);
-          if (scorer == null) return null;
-          iterators.add(scorer.iterator());
-        }
-        if (iterators.isEmpty()) return null;
-        if (iterators.size() == 1) return iterators.get(0);
-        if (iterators.size() == 2) return new DualFilterIterator(iterators.get(0), iterators.get(1));
-        return new FilterIterator(iterators.toArray(new DocIdSetIterator[iterators.size()]));
-      }
-
-      @Override
-      public Bits bits() throws IOException {
-        return null; // don't use random access
-      }
-
-      @Override
-      public long ramBytesUsed() {
-        return docIdSet != null ? docIdSet.ramBytesUsed() : 0L;
-      }
-    }
-
-    private static class FilterIterator extends DocIdSetIterator {
-      private final DocIdSetIterator[] iterators;
-      private final DocIdSetIterator first;
-
-      public FilterIterator(DocIdSetIterator[] iterators) {
-        this.iterators = iterators;
-        this.first = iterators[0];
-      }
-
-      @Override
-      public int docID() {
-        return first.docID();
-      }
-
-      private int advanceAllTo(int doc) throws IOException {
-        int highestDocIter = 0; // index of the iterator with the highest id
-        int i = 1; // We already advanced the first iterator before calling this method
-        while (i < iterators.length) {
-          if (i != highestDocIter) {
-            final int next = iterators[i].advance(doc);
-            if (next != doc) { // We need to advance all iterators to a new target
-              doc = next;
-              highestDocIter = i;
-              i = 0;
-              continue;
-            }
-          }
-          ++i;
-        }
-        return doc;
-      }
-
-      @Override
-      public int nextDoc() throws IOException {
-        return advanceAllTo(first.nextDoc());
-      }
-
-      @Override
-      public int advance(int target) throws IOException {
-        return advanceAllTo(first.advance(target));
-      }
-
-      @Override
-      public long cost() {
-        return first.cost();
-      }
-    }
-
-    private static class DualFilterIterator extends DocIdSetIterator {
-      private final DocIdSetIterator a;
-      private final DocIdSetIterator b;
-
-      public DualFilterIterator(DocIdSetIterator a, DocIdSetIterator b) {
-        this.a = a;
-        this.b = b;
-      }
-
-      @Override
-      public int docID() {
-        return a.docID();
-      }
-
-      @Override
-      public int nextDoc() throws IOException {
-        return doNext(a.nextDoc());
-      }
-
-      @Override
-      public int advance(int target) throws IOException {
-        return doNext(a.advance(target));
-      }
-
-      @Override
-      public long cost() {
-        return Math.min(a.cost(), b.cost());
-      }
-
-      private int doNext(int doc) throws IOException {
-        for (;;) {
-          int other = b.advance(doc);
-          if (other == doc) return doc;
-          doc = a.advance(other);
-          if (other == doc) return doc;
-        }
-      }
-
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
-    }
-
-    private boolean equalsTo(FilterImpl other) {
-      return Objects.equals(this.topFilter, other.topFilter) &&
-             Objects.equals(this.weights, other.weights);
-    }
-
-    @Override
-    public int hashCode() {
-      return classHash() 
-          + 31 * Objects.hashCode(topFilter)
-          + 31 * Objects.hashCode(weights);
-    }
+  public long getWarmupTime() {
+    return warmupTime;
   }
 
 }

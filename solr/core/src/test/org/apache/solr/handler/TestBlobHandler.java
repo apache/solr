@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -39,7 +40,6 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SimplePostTool;
@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
+@ThreadLeakLingering(linger = 0)
 public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -66,7 +67,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       DocCollection sysColl = cloudClient.getZkStateReader().getClusterState().getCollection(".system");
       Replica replica = sysColl.getActiveSlicesMap().values().iterator().next().getLeader();
 
-      String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+      String baseUrl = replica.getBaseUrl();
       String url = baseUrl + "/.system/config/requestHandler";
       MapWriter map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
       assertNotNull(map);
@@ -177,7 +178,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       entity = cloudClient.getLbClient().getHttpClient().execute(httpPost).getEntity();
       try {
         response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-        Map m = (Map) fromJSONString(response);
+        Map<?, ?> m = (Map<?, ?>) fromJSONString(response);
         assertFalse("Error in posting blob " + m.toString(), m.containsKey("error"));
       } catch (JSONParser.ParseException e) {
         log.error("$ERROR$: {}", response, e);

@@ -96,9 +96,9 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     return tagByte == SOLRDOCLST;
   }
 
-  private Map readAsMap(DataInputInputStream dis) throws IOException {
+  private Map<?,?> readAsMap(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
-    Map m = new LinkedHashMap<>();
+    Map<String, Object> m = new LinkedHashMap<>();
     for (int i = 0; i < sz; i++) {
       String name = (String) readVal(dis);
       Object val = readVal(dis);
@@ -107,16 +107,17 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     return m;
   }
 
-  private Map readSolrDocumentAsMap(DataInputInputStream dis) throws IOException {
+  private Map<?,?> readSolrDocumentAsMap(DataInputInputStream dis) throws IOException {
     tagByte = dis.readByte();
     int size = readSize(dis);
-    Map doc = new LinkedHashMap<>();
+    Map<String, Object> doc = new LinkedHashMap<>();
     for (int i = 0; i < size; i++) {
       String fieldName;
       Object obj = readVal(dis); // could be a field name, or a child document
       if (obj instanceof Map) {
-        List l = (List) doc.get("_childDocuments_");
-        if (l == null) doc.put("_childDocuments_", l = new ArrayList());
+        @SuppressWarnings("unchecked")
+        List<Object> l = (List<Object>) doc.get("_childDocuments_");
+        if (l == null) doc.put("_childDocuments_", l = new ArrayList<>());
         l.add(obj);
         continue;
       } else {
@@ -139,7 +140,6 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
           int i = readSmallInt(dis);
           return (long) i;
         case ORDERED_MAP >>> 5:
-          return readAsMap(dis);
         case NAMED_LST >>> 5:
           return readAsMap(dis);
       }
@@ -174,6 +174,7 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
 
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Map<String, Object> next() throws IOException {
     if (arraySize == 0) return null;
     Object o = readVal(fis);

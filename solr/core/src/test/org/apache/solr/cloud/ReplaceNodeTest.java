@@ -22,16 +22,20 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import com.codahale.metrics.Metric;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
-import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -39,6 +43,9 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -48,9 +55,13 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(6)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
-        .configure();
+    System.setProperty("metricsEnabled", "true");
+  }
+
+  @Before
+  public void clearPreviousCluster() throws Exception {
+    // Clear the previous cluster before each test, since they use different numbers of nodes.
+    shutdownCluster();
   }
 
   protected String getSolrXml() {
@@ -59,8 +70,13 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
+    configureCluster(6)
+        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .configure();
     String coll = "replacenodetest_coll";
-    log.info("total_jettys: " + cluster.getJettySolrRunners().size());
+    if (log.isInfoEnabled()) {
+      log.info("total_jettys: {}", cluster.getJettySolrRunners().size());
+    }
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
     Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
@@ -71,70 +87,47 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create;
     // NOTE: always using the createCollection that takes in 'int' for all types of replicas, so we never
     // have to worry about null checking when comparing the Create command with the final Slices
-    
+
     // TODO: tlog replicas do not work correctly in tests due to fault TestInjection#waitForInSyncWithLeader
     create = pickRandom(
-                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 2,0,0),
-                        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,1,0),
-                        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,1),
-                        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,1),
-                        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,2,0),
-                        // check also replicationFactor 1
-                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,0)
-                        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,0)
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 2,0,0),
+        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,1,0),
+        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,1),
+        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,1),
+        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,2,0),
+        // check also replicationFactor 1
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,0)
+        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,0)
     );
-    create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(3);
+    create.setCreateNodeSet(StrUtils.join(l, ','));
     cloudClient.request(create);
-    
+
     cluster.waitForActiveCollection(coll, 5, 5 * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
-    
+
     DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
-    log.debug("### Before decommission: " + collection);
+    log.debug("### Before decommission: {}", collection);
     log.info("excluded_node : {}  ", emptyNode);
-    createReplaceNodeRequest(node2bdecommissioned, emptyNode, null).processAsync("000", cloudClient);
-    CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("000");
-    boolean success = false;
-    for (int i = 0; i < 300; i++) {
-      CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
-      if (rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
-        success = true;
-        break;
-      }
-      assertFalse(rsp.getRequestStatus() == RequestStatusState.FAILED);
-      Thread.sleep(50);
-    }
-    assertTrue(success);
+    createReplaceNodeRequest(node2bdecommissioned, emptyNode, null).processAndWait("000", cloudClient, 15);
     try (HttpSolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(node2bdecommissioned))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
-      assertTrue(status.getCoreStatus().size() == 0);
+      assertEquals(0, status.getCoreStatus().size());
     }
 
     Thread.sleep(5000);
     collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
-    log.debug("### After decommission: " + collection);
+    log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
     List<Replica> replicas = collection.getReplicas(node2bdecommissioned);
     if (replicas == null) {
       replicas = Collections.emptyList();
     }
-    log.debug("### Existing replicas on decommissioned node: " + replicas);
+    log.debug("### Existing replicas on decommissioned node: {}", replicas);
 
     //let's do it back - this time wait for recoveries
     CollectionAdminRequest.AsyncCollectionAdminRequest replaceNodeRequest = createReplaceNodeRequest(emptyNode, node2bdecommissioned, Boolean.TRUE);
     replaceNodeRequest.setWaitForFinalState(true);
-    replaceNodeRequest.processAsync("001", cloudClient);
-    requestStatus = CollectionAdminRequest.requestStatus("001");
+    replaceNodeRequest.processAndWait("001", cloudClient, 10);
 
-    for (int i = 0; i < 200; i++) {
-      CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
-      if (rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
-        success = true;
-        break;
-      }
-      assertFalse(rsp.getRequestStatus() == RequestStatusState.FAILED);
-      Thread.sleep(50);
-    }
-    assertTrue(success);
     try (HttpSolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(emptyNode))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       assertEquals("Expecting no cores but found some: " + status.getCoreStatus(), 0, status.getCoreStatus().size());
@@ -149,14 +142,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     }
     // make sure all newly created replicas on node are active
     List<Replica> newReplicas = collection.getReplicas(node2bdecommissioned);
-    replicas.forEach(r -> {
-      for (Iterator<Replica> it = newReplicas.iterator(); it.hasNext(); ) {
-        Replica nr = it.next();
-        if (nr.getName().equals(r.getName())) {
-          it.remove();
-        }
-      }
-    });
+    replicas.forEach(r -> newReplicas.removeIf(nr -> nr.getName().equals(r.getName())));
     assertFalse(newReplicas.isEmpty());
     for (Replica r : newReplicas) {
       assertEquals(r.toString(), Replica.State.ACTIVE, r.getState());
@@ -165,9 +151,108 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     replicas = collection.getReplicas(emptyNode);
     if (replicas != null) {
       for (Replica r : replicas) {
-        assertFalse(r.toString(), Replica.State.ACTIVE.equals(r.getState()));
+        assertNotEquals(r.toString(), Replica.State.ACTIVE, r.getState());
       }
     }
+
+    // check replication metrics on this jetty - see SOLR-14924
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      if (jetty.getCoreContainer() == null) {
+        continue;
+      }
+      SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
+      String registryName = null;
+      for (String name : metricManager.registryNames()) {
+        if (name.startsWith("solr.core.")) {
+          registryName = name;
+        }
+      }
+      Map<String, Metric> metrics = metricManager.registry(registryName).getMetrics();
+      if (!metrics.containsKey("REPLICATION./replication.fetcher")) {
+        continue;
+      }
+      MetricsMap fetcherGauge = (MetricsMap) ((SolrMetricManager.GaugeWrapper<?>) metrics.get("REPLICATION./replication.fetcher")).getGauge();
+      assertNotNull("no IndexFetcher gauge in metrics", fetcherGauge);
+      Map<String, Object> value = fetcherGauge.getValue();
+      if (value.isEmpty()) {
+        continue;
+      }
+      assertNotNull("isReplicating missing: " + value, value.get("isReplicating"));
+      assertTrue("isReplicating should be a boolean: " + value, value.get("isReplicating") instanceof Boolean);
+      if (value.get("indexReplicatedAt") == null) {
+        continue;
+      }
+      assertNotNull("timesIndexReplicated missing: " + value, value.get("timesIndexReplicated"));
+      assertTrue("timesIndexReplicated should be a number: " + value, value.get("timesIndexReplicated") instanceof Number);
+    }
+
+  }
+
+  @Test
+  public void testGoodSpreadDuringAssignWithNoTarget() throws Exception {
+    configureCluster(5)
+            .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+            .configure();
+    String coll = "replacenodetest_coll";
+    if (log.isInfoEnabled()) {
+      log.info("total_jettys: {}", cluster.getJettySolrRunners().size());
+    }
+
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+    List<String> l = new ArrayList<>(liveNodes);
+    Collections.shuffle(l, random());
+    List<String> emptyNodes = l.subList(0, 2);
+    l = l.subList(2, l.size());
+    String node2bdecommissioned = l.get(0);
+
+    // TODO: tlog replicas do not work correctly in tests due to fault TestInjection#waitForInSyncWithLeader
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 4, 3,0,0);
+    create.setCreateNodeSet(StrUtils.join(l, ','));
+    cloudClient.request(create);
+
+    cluster.waitForActiveCollection(coll, 4, 4 * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
+
+    DocCollection initialCollection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
+    log.debug("### Before decommission: {}", initialCollection);
+    log.info("excluded_nodes : {}  ", emptyNodes);
+    List<Integer> initialReplicaCounts = l.stream().map(node -> initialCollection.getReplicas(node).size()).collect(Collectors.toList());
+    createReplaceNodeRequest(node2bdecommissioned, null, true).processAndWait("000", cloudClient, 15);
+
+    DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
+    log.debug("### After decommission: {}", collection);
+    // check what are replica states on the decommissioned node
+    List<Replica> replicas = collection.getReplicas(node2bdecommissioned);
+    if (replicas == null) {
+      replicas = Collections.emptyList();
+    }
+    assertEquals("There should be no more replicas on the sourceNode after a replaceNode request.", Collections.emptyList(), replicas);
+    int sizeA = collection.getReplicas(emptyNodes.get(0)).size();
+    int sizeB = collection.getReplicas(emptyNodes.get(1)).size();
+    assertEquals("The empty nodes should have a similar number of replicas placed on each", sizeA, sizeB, 1);
+    assertEquals("The number of replicas on the two empty nodes should equal the number of replicas removed from the source node", initialReplicaCounts.get(0).intValue(), sizeA + sizeB);
+    for (int i = 1; i < l.size(); i++) {
+      assertEquals("The number of replicas on non-empty and non-source nodes should not change", initialReplicaCounts.get(i).intValue(), collection.getReplicas(l.get(i)).size());
+    }
+  }
+
+  @Test
+  public void testFailOnSingleNode() throws Exception {
+    configureCluster(1)
+        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .configure();
+    String coll = "replacesinglenodetest_coll";
+    if (log.isInfoEnabled()) {
+      log.info("total_jettys: {}", cluster.getJettySolrRunners().size());
+    }
+
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    cloudClient.request(CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,0));
+
+    cluster.waitForActiveCollection(coll, 5, 5);
+
+    String liveNode = cloudClient.getZkStateReader().getClusterState().getLiveNodes().iterator().next();
+    expectThrows(SolrException.class, () -> createReplaceNodeRequest(liveNode, null, null).process(cloudClient));
   }
 
   public static  CollectionAdminRequest.AsyncCollectionAdminRequest createReplaceNodeRequest(String sourceNode, String targetNode, Boolean parallel) {
@@ -181,7 +266,9 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         public SolrParams getParams() {
           ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
           params.set("source", sourceNode);
-          params.setNonNull("target", targetNode);
+          if (!StringUtils.isEmpty(targetNode)) {
+            params.setNonNull("target", targetNode);
+          }
           if (parallel != null) params.set("parallel", parallel.toString());
           return params;
         }

@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.NamedList;
@@ -68,6 +67,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
     super(writer, req, rsp);
   }
 
+  @SuppressWarnings({"unchecked"})
   public void writeResponse() throws IOException {
     
     writer.write(XML_DECLARATION);
@@ -78,7 +78,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
       writer.write(MANAGED_SCHEMA_DO_NOT_EDIT_WARNING);
     }
 
-    @SuppressWarnings("unchecked") Map<String,Object> schemaProperties
+    Map<String,Object> schemaProperties
         = (Map<String , Object>)rsp.getValues().get(IndexSchema.SCHEMA);
 
     openStartTag(IndexSchema.SCHEMA);
@@ -103,7 +103,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
       } else if (schemaPropName.equals(IndexSchema.FIELD_TYPES)) {
         writeFieldTypes((List<SimpleOrderedMap<Object>>) val);
       } else if (schemaPropName.equals(IndexSchema.FIELDS)) {
-        @SuppressWarnings("unchecked") List<SimpleOrderedMap<Object>> fieldPropertiesList
+        List<SimpleOrderedMap<Object>> fieldPropertiesList
             = (List<SimpleOrderedMap<Object>>) val;
         for (SimpleOrderedMap<Object> fieldProperties : fieldPropertiesList) {
           openStartTag(IndexSchema.FIELD);
@@ -113,7 +113,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
           closeStartTag(true);
         }
       } else if (schemaPropName.equals(IndexSchema.DYNAMIC_FIELDS)) {
-        @SuppressWarnings("unchecked") List<SimpleOrderedMap<Object>> dynamicFieldPropertiesList 
+        List<SimpleOrderedMap<Object>> dynamicFieldPropertiesList
             = (List<SimpleOrderedMap<Object>>) val;
         for (SimpleOrderedMap<Object> dynamicFieldProperties : dynamicFieldPropertiesList) {
           openStartTag(IndexSchema.DYNAMIC_FIELD);
@@ -124,7 +124,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
           closeStartTag(true);
         }
       } else if (schemaPropName.equals(IndexSchema.COPY_FIELDS)) {
-        @SuppressWarnings("unchecked") List<SimpleOrderedMap<Object>> copyFieldPropertiesList
+        List<SimpleOrderedMap<Object>> copyFieldPropertiesList
             = (List<SimpleOrderedMap<Object>>) val;
         for (SimpleOrderedMap<Object> copyFieldProperties : copyFieldPropertiesList) {
           openStartTag(IndexSchema.COPY_FIELD);
@@ -135,13 +135,14 @@ public class SchemaXmlWriter extends TextResponseWriter {
           closeStartTag(true);
         }
       } else {
-        log.warn("Unknown schema component '" + schemaPropName + "'");
+        log.warn("Unknown schema component '{}'", schemaPropName);
       }
     }
     decLevel();
     endTag(IndexSchema.SCHEMA);
   }
 
+  @SuppressWarnings({"unchecked"})
   private void writeFieldTypes(List<SimpleOrderedMap<Object>> fieldTypePropertiesList) throws IOException {
     for (SimpleOrderedMap<Object> fieldTypeProperties : fieldTypePropertiesList) {
       SimpleOrderedMap<Object> analyzerProperties = null;
@@ -199,6 +200,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   private void writeAnalyzer(SimpleOrderedMap<Object> analyzerProperties, String analyzerType) throws IOException {
     openStartTag(FieldType.ANALYZER);
     if (null != analyzerType) {
@@ -304,7 +306,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeNamedList(String name, NamedList val) throws IOException {
+  public void writeNamedList(String name, NamedList<?> val) throws IOException {
     // name is ignored - this method is only used for SimilarityFactory
     int sz = val.size();
     for (int i=0; i<sz; i++) {
@@ -338,7 +340,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
 
 
   @Override
-  public void writeMap(String name, Map map, boolean excludeOuter, boolean isFirstVal) throws IOException {
+  public void writeMap(String name, Map<?, ?> map, boolean excludeOuter, boolean isFirstVal) throws IOException {
     int sz = map.size();
 
     if (!excludeOuter) {
@@ -346,7 +348,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
       incLevel();
     }
 
-    for (Map.Entry entry : (Set<Map.Entry>)map.entrySet()) {
+    for (Map.Entry<?,?> entry : map.entrySet()) {
       Object k = entry.getKey();
       Object v = entry.getValue();
       // if (sz<indentThreshold) indent();
@@ -368,7 +370,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeArray(String name, Iterator iter) throws IOException {
+  public void writeArray(String name, Iterator<?> iter) throws IOException {
     if( iter.hasNext() ) {
       startTag("arr", name, false );
       incLevel();
@@ -461,9 +463,9 @@ public class SchemaXmlWriter extends TextResponseWriter {
     writer.write(tag);
     writer.write('>');
   }
-
+  
   @Override
-  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore) throws IOException {
+  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException {
     // no-op
   }
 

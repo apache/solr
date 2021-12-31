@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -47,10 +48,11 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
 
   public void testFileStream() throws IOException {
     File file = new File(createTempDir().toFile(), "README");
-    try (SolrResourceLoader srl = new SolrResourceLoader(); InputStream is = srl.openResource("solrj/README");
+    try (SolrResourceLoader srl = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+         InputStream is = srl.openResource("solrj/README");
          FileOutputStream os = new FileOutputStream(file)) {
       assertNotNull(is);
-      IOUtils.copy(is, os);
+      is.transferTo(os);
     }
 
     ContentStreamBase stream = new ContentStreamBase.FileStream(file);
@@ -70,10 +72,11 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
   public void testFileStreamGZIP() throws IOException {
     File file = new File(createTempDir().toFile(), "README.gz");
 
-    try (SolrResourceLoader srl = new SolrResourceLoader(); InputStream is = srl.openResource("solrj/README");
+    try (SolrResourceLoader srl = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+         InputStream is = srl.openResource("solrj/README");
          FileOutputStream os = new FileOutputStream(file);
          GZIPOutputStream zos = new GZIPOutputStream(os)) {
-      IOUtils.copy(is, zos);
+      is.transferTo(zos);
     }
 
     ContentStreamBase stream = new ContentStreamBase.FileStream(file);
@@ -95,9 +98,10 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
   public void testURLStream() throws IOException {
     File file = new File(createTempDir().toFile(), "README");
 
-    try (SolrResourceLoader srl = new SolrResourceLoader(); InputStream is = srl.openResource("solrj/README");
+    try (SolrResourceLoader srl = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+         InputStream is = srl.openResource("solrj/README");
          FileOutputStream os = new FileOutputStream(file)) {
-      IOUtils.copy(is, os);
+      is.transferTo(os);
     }
 
     ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
@@ -124,10 +128,11 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
   public void testURLStreamGZIP() throws IOException {
     File file = new File(createTempDir().toFile(), "README.gz");
 
-    try (SolrResourceLoader srl = new SolrResourceLoader(); InputStream is = srl.openResource("solrj/README");
+    try (SolrResourceLoader srl = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+         InputStream is = srl.openResource("solrj/README");
          FileOutputStream os = new FileOutputStream(file);
          GZIPOutputStream zos = new GZIPOutputStream(os)) {
-      IOUtils.copy(is, zos);
+      is.transferTo(zos);
     }
 
     ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
@@ -149,10 +154,11 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
   public void testURLStreamCSVGZIPExtention() throws IOException {
     File file = new File(createTempDir().toFile(), "README.CSV.gz");
 
-    try (SolrResourceLoader srl = new SolrResourceLoader(); InputStream is = srl.openResource("solrj/README");
+    try (SolrResourceLoader srl = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+         InputStream is = srl.openResource("solrj/README");
          FileOutputStream os = new FileOutputStream(file);
          GZIPOutputStream zos = new GZIPOutputStream(os)) {
-      IOUtils.copy(is, zos);
+      is.transferTo(zos);
     }
 
     ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
@@ -174,10 +180,11 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
   public void testURLStreamJSONGZIPExtention() throws IOException {
     File file = new File(createTempDir().toFile(), "README.json.gzip");
 
-    try (SolrResourceLoader srl = new SolrResourceLoader(); InputStream is = srl.openResource("solrj/README");
+    try (SolrResourceLoader srl = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+         InputStream is = srl.openResource("solrj/README");
          FileOutputStream os = new FileOutputStream(file);
          GZIPOutputStream zos = new GZIPOutputStream(os)) {
-      IOUtils.copy(is, zos);
+      is.transferTo(zos);
     }
 
     ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));

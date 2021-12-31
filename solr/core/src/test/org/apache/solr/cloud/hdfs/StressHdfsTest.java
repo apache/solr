@@ -19,12 +19,15 @@ package org.apache.solr.cloud.hdfs;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -56,8 +59,11 @@ import java.util.concurrent.TimeUnit;
 @Slow
 @Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 10)
 public class StressHdfsTest extends BasicDistributedZkTest {
   private static final String DELETE_DATA_DIR_COLLECTION = "delete_data_dir";
   private static MiniDFSCluster dfsCluster;
@@ -107,7 +113,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
       Timer timer = new Timer();
       
       try {
-        createCollection(DELETE_DATA_DIR_COLLECTION, "conf1", 1, 1, 1);
+        createCollection(DELETE_DATA_DIR_COLLECTION, "conf1", 1, 1);
         
         waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
 
@@ -139,19 +145,16 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     boolean overshard = random().nextBoolean();
     int rep;
     int nShards;
-    int maxReplicasPerNode;
     if (overshard) {
       nShards = getShardCount() * 2;
-      maxReplicasPerNode = 8;
       rep = 1;
     } else {
       nShards = getShardCount() / 2;
-      maxReplicasPerNode = 1;
       rep = 2;
       if (nShards == 0) nShards = 1;
     }
     
-    createCollection(DELETE_DATA_DIR_COLLECTION, "conf1", nShards, rep, maxReplicasPerNode);
+    createCollection(DELETE_DATA_DIR_COLLECTION, "conf1", nShards, rep);
 
     waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
     
@@ -193,7 +196,9 @@ public class StressHdfsTest extends BasicDistributedZkTest {
         
         NamedList<Object> response = c.query(
             new SolrQuery().setRequestHandler("/admin/system")).getResponse();
+        @SuppressWarnings({"unchecked"})
         NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
+        @SuppressWarnings({"unchecked"})
         String dataDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("data");
         dataDirs.add(dataDir);
       }

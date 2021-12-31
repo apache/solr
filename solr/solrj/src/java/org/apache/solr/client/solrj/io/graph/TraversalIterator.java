@@ -26,7 +26,7 @@ import java.util.Set;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.graph.Traversal.Scatter;
 
-class TraversalIterator implements Iterator {
+class TraversalIterator implements Iterator<Tuple> {
 
   private List<Map<String,Node>> graph;
   private List<String> collections;
@@ -49,10 +49,10 @@ class TraversalIterator implements Iterator {
     collections = traversal.getCollections();
     fields = traversal.getFields();
 
-    List<String> outCollections = new ArrayList();
-    List<String> outFields = new ArrayList();
-    List<Integer> levelNums = new ArrayList();
-    List<Iterator<Node>> levelIterators = new ArrayList();
+    List<String> outCollections = new ArrayList<>();
+    List<String> outFields = new ArrayList<>();
+    List<Integer> levelNums = new ArrayList<>();
+    List<Iterator<Node>> levelIterators = new ArrayList<>();
 
     if(scatter.contains(Scatter.BRANCHES)) {
       if(graph.size() > 1) {

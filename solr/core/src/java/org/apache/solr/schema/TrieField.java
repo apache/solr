@@ -81,6 +81,7 @@ import org.slf4j.LoggerFactory;
  * @see org.apache.solr.legacy.LegacyNumericRangeQuery
  * @since solr 1.4
  * @deprecated Trie fields are deprecated as of Solr 7.0
+ * @see PointField
  */
 @Deprecated
 public class TrieField extends NumericFieldType {
@@ -348,16 +349,6 @@ public class TrieField extends NumericFieldType {
   }
 
   @Override
-  public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    if (!field.indexed() && field.hasDocValues()) {
-      // currently implemented as singleton range
-      return getRangeQuery(parser, field, externalVal, externalVal, true, true);
-    } else {
-      return super.getFieldQuery(parser, field, externalVal);
-    }
-  }
-
-  @Override
   public String storedToReadable(IndexableField f) {
     return toExternal(f);
   }
@@ -517,7 +508,7 @@ public class TrieField extends NumericFieldType {
 
     if (!indexed && !stored && !docValues) {
       if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
+        log.trace("Ignoring unindexed/unstored field: {}", field);
       return null;
     }
     

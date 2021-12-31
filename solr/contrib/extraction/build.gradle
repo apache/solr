@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Solr Integration with Tika for extracting content from binary file formats such as Microsoft Word and Adobe PDF'
+
 dependencies {
   implementation project(':solr:core')
 
@@ -30,6 +32,7 @@ dependencies {
   runtimeOnly ('org.apache.tika:tika-java7') { transitive = false }
   runtimeOnly ('org.apache.tika:tika-xmp') { transitive = false }
 
+  implementation 'commons-io:commons-io'
   implementation ('com.healthmarketscience.jackcess:jackcess') { transitive = false }
   implementation ('com.healthmarketscience.jackcess:jackcess-encrypt') { transitive = false }
   implementation ('org.gagravarr:vorbis-java-tika') { transitive = false }

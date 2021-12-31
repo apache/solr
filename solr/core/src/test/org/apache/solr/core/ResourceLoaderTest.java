@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,25 +33,32 @@ import java.util.jar.JarOutputStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.junit.After;
 
-import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
-import static org.apache.solr.core.SolrResourceLoader.clearCache;
+import static org.apache.solr.core.SolrResourceLoader.*;
 import static org.hamcrest.core.Is.is;
 
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    setUnsafeResourceLoading(false);
+  }
 
   public void testInstanceDir() throws Exception {
-    try (SolrResourceLoader loader = new SolrResourceLoader()) {
-      assertThat(loader.getInstancePath(), is(Paths.get("solr").toAbsolutePath()));
+    final Path dir = createTempDir();
+    try (SolrResourceLoader loader = new SolrResourceLoader(dir.toAbsolutePath())) {
+      assertThat(loader.getInstancePath(), is(dir.toAbsolutePath()));
     }
   }
 
@@ -61,20 +69,45 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     Path instanceDir = temp.resolve("instance");
     Files.createDirectories(instanceDir.resolve("conf"));
 
+    setUnsafeResourceLoading(false);
     try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir)) {
-      loader.openResource("../../dummy.txt").close();
-      fail();
-    } catch (IOException ioe) {
-      assertTrue(ioe.getMessage().contains("is outside resource loader dir"));
+      // Path traversal
+      assertTrue(assertThrows(IOException.class, () ->
+          loader.openResource("../../dummy.txt").close()).getMessage().contains("Can't find resource"));
+      assertNull(loader.resourceLocation("../../dummy.txt"));
+
+      // UNC paths
+      assertTrue(assertThrows(SolrResourceNotFoundException.class, () ->
+          loader.openResource("\\\\192.168.10.10\\foo").close()).getMessage().contains("Resource '\\\\192.168.10.10\\foo' could not be loaded."));
+      assertNull(loader.resourceLocation("\\\\192.168.10.10\\foo"));
     }
 
+    setUnsafeResourceLoading(true);
+    try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir)) {
+      // Path traversal - unsafe but allowed
+      loader.openResource("../../dummy.txt").close();
+      assertNotNull(loader.resourceLocation("../../dummy.txt"));
+
+      // UNC paths never allowed
+      assertTrue(assertThrows(SolrResourceNotFoundException.class, () ->
+          loader.openResource("\\\\192.168.10.10\\foo").close()).getMessage().contains("Resource '\\\\192.168.10.10\\foo' could not be loaded."));
+      assertNull(loader.resourceLocation("\\\\192.168.10.10\\foo"));
+    }
   }
 
+  private void setUnsafeResourceLoading(boolean unsafe) {
+    if (unsafe) {
+      System.setProperty(SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM, "true");
+    } else {
+      System.clearProperty(SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM);
+    }
+  }
+
+  @SuppressWarnings({"unchecked"})
   public void testAwareCompatibility() throws Exception {
     
     final Class<?> clazz1 = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects
-    //noinspection unchecked
     assertAwareCompatibility(clazz1, new NGramFilterFactory(map("minGramSize", "1", "maxGramSize", "2")));
     assertAwareCompatibility(clazz1, new KeywordTokenizerFactory(new HashMap<>()));
     
@@ -97,7 +130,6 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     assertAwareCompatibility(clazz2, new JSONResponseWriter());
     
     // Make sure it throws an error for invalid objects
-    //noinspection unchecked
     invalid = new Object[] {
         new NGramFilterFactory(map("minGramSize", "1", "maxGramSize", "2")),
         "hello",   12.3f ,
@@ -169,12 +201,13 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     }
 
     SolrResourceLoader loader = new SolrResourceLoader(tmpRoot);
+    loader.addToClassLoader(SolrResourceLoader.getURLs(lib));
 
-    // ./lib is accessible by default
+    // check "lib/aLibFile"
     assertNotNull(loader.getClassLoader().getResource("aLibFile"));
 
     // add inidividual jars from other paths
-    loader.addToClassLoader(otherLib.resolve("jar2.jar").toUri().toURL());
+    loader.addToClassLoader(Collections.singletonList(otherLib.resolve("jar2.jar").toUri().toURL()));
 
     assertNotNull(loader.getClassLoader().getResource("explicitFile"));
     assertNull(loader.getClassLoader().getResource("otherFile"));
@@ -201,19 +234,19 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   @SuppressWarnings("deprecation")
   public void testLoadDeprecatedFactory() throws Exception {
-    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1"));
+    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1").toAbsolutePath());
     // ensure we get our exception
     loader.newInstance(DeprecatedTokenFilterFactory.class.getName(), TokenFilterFactory.class, null,
-        new Class[] { Map.class }, new Object[] { new HashMap<String,String>() });
+        new Class<?>[] { Map.class }, new Object[] { new HashMap<String,String>() });
     // TODO: How to check that a warning was printed to log file?
     loader.close();    
   }
 
-  public void testCacheWrongType() {
+  public void testCacheWrongType() throws Exception {
     clearCache();
 
-    SolrResourceLoader loader = new SolrResourceLoader();
-    Class[] params = { Map.class };
+    SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
+    Class<?>[] params = { Map.class };
     Map<String,String> args = Map.of("minGramSize", "1", "maxGramSize", "2");
     final String className = "solr.NGramTokenizerFactory";
 
@@ -224,5 +257,6 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     // This should work, but won't if earlier call succeeding corrupting the cache
     TokenizerFactory tf = loader.newInstance(className, TokenizerFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});
     assertNotNull("Did not load Tokenizer after bad call earlier", tf);
+    loader.close();
   }
 }

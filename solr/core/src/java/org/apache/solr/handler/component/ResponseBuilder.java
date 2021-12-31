@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
@@ -64,11 +65,19 @@ public class ResponseBuilder
   public boolean doAnalytics;
   public MergeStrategy mergeFieldHandler;
 
+  public String queryID;
+
   private boolean needDocList = false;
   private boolean needDocSet = false;
   private int fieldFlags = 0;
   //private boolean debug = false;
   private boolean debugTimings, debugQuery, debugResults, debugTrack;
+
+  private boolean isCancellation;
+  private String cancellationUUID;
+
+  private String taskStatusCheckUUID;
+  private boolean isTaskListRequest;
 
   private QParser qparser = null;
   private String queryString = null;
@@ -214,6 +223,7 @@ public class ResponseBuilder
     NamedList<Object> target = debugInfo;
     for (int i=0; i<path.length-1; i++) {
       String elem = path[i];
+      @SuppressWarnings({"unchecked"})
       NamedList<Object> newTarget = (NamedList<Object>)debugInfo.get(elem);
       if (newTarget == null) {
         newTarget = new SimpleOrderedMap<>();
@@ -249,7 +259,7 @@ public class ResponseBuilder
 
   public void addMergeStrategy(MergeStrategy mergeStrategy) {
     if(mergeStrategies == null) {
-      mergeStrategies = new ArrayList();
+      mergeStrategies = new ArrayList<>();
     }
 
     mergeStrategies.add(mergeStrategy);
@@ -450,7 +460,7 @@ public class ResponseBuilder
       rsp.getResponseHeader().asShallowMap()
           .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
       if(getResults() != null && getResults().docList==null) {
-        getResults().docList = new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0);
+        getResults().docList = new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, TotalHits.Relation.EQUAL_TO);
       }
     }
     final Boolean segmentTerminatedEarly = result.getSegmentTerminatedEarly();
@@ -506,5 +516,37 @@ public class ResponseBuilder
 
   public boolean isOlapAnalytics() {
     return this._isOlapAnalytics;
+  }
+
+  public void setCancellation(boolean isCancellation) {
+    this.isCancellation = isCancellation;
+  }
+
+  public boolean isCancellation() {
+    return isCancellation;
+  }
+
+  public void setIsTaskListRequest(boolean isTaskListRequest) {
+    this.isTaskListRequest = isTaskListRequest;
+  }
+
+  public boolean isTaskListRequest() {
+    return isTaskListRequest;
+  }
+
+  public void setCancellationUUID(String queryID) {
+    this.cancellationUUID = queryID;
+  }
+
+  public String getCancellationUUID() {
+    return cancellationUUID;
+  }
+
+  public void setTaskStatusCheckUUID(String taskUUID) {
+    this.taskStatusCheckUUID = taskUUID;
+  }
+
+  public String getTaskStatusCheckUUID() {
+    return taskStatusCheckUUID;
   }
 }

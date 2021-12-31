@@ -31,17 +31,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LazyDocument;
+import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
@@ -108,6 +107,7 @@ public class SolrDocumentFetcher {
 
   private Collection<String> storedHighlightFieldNames; // lazy populated; use getter
 
+  @SuppressWarnings({"unchecked"})
   SolrDocumentFetcher(SolrIndexSearcher searcher, SolrConfig solrConfig, boolean cachingEnabled) {
     this.searcher = searcher;
     this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading;
@@ -220,18 +220,7 @@ public class SolrDocumentFetcher {
     Document d;
     if (documentCache != null) {
       final Set<String> getFields = enableLazyFieldLoading ? fields : null;
-      AtomicReference<IOException> exceptionRef = new AtomicReference<>();
-      d = documentCache.computeIfAbsent(i, docId -> {
-        try {
-          return docNC(docId, getFields);
-        } catch (IOException e) {
-          exceptionRef.set(e);
-          return null;
-        }
-      });
-      if (exceptionRef.get() != null) {
-        throw exceptionRef.get();
-      }
+      d = documentCache.computeIfAbsent(i, docId -> docNC(docId, getFields));
       if (d == null) {
         // failed to retrieve due to an earlier exception, try again?
         return docNC(i, fields);
@@ -514,7 +503,7 @@ public class SolrDocumentFetcher {
    *          The fields with docValues to populate the document with.
    *          DocValues fields which do not exist or not decodable will be ignored.
    */
-  public void decorateDocValueFields(@SuppressWarnings("rawtypes") SolrDocumentBase doc, int docid, Set<String> fields)
+  public void decorateDocValueFields(SolrDocumentBase<?,?> doc, int docid, Set<String> fields)
       throws IOException {
     final List<LeafReaderContext> leafContexts = searcher.getLeafContexts();
     final int subIndex = ReaderUtil.subIndex(docid, leafContexts);
@@ -560,7 +549,7 @@ public class SolrDocumentFetcher {
       case SORTED:
         SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
         if (sdv != null && sdv.advanceExact(localId)) {
-          final BytesRef bRef = sdv.binaryValue();
+          final BytesRef bRef = sdv.lookupOrd(sdv.ordValue());
           // Special handling for Boolean fields since they're stored as 'T' and 'F'.
           if (schemaField.getType() instanceof BoolField) {
             return schemaField.getType().toObject(schemaField, bRef);

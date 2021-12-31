@@ -16,16 +16,56 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Analysis screen lets you inspect how data will be handled according to the field, field type and dynamic field configurations found in your Schema. You can analyze how content would be handled during indexing or during query processing and view the results separately or at the same time. Ideally, you would want content to be handled consistently, and this screen allows you to validate the settings in the field type or field analysis chains.
+Once you've <<field-type-definitions-and-properties.adoc#,defined a field type in your Schema>>, and specified the analysis steps that you want applied to it, you should test it out to make sure that it behaves the way you expect it to.
 
-Enter content in one or both boxes at the top of the screen, and then choose the field or field type definitions to use for analysis.
+Luckily, there is a very handy page in the Solr <<solr-admin-ui.adoc#,admin interface>> that lets you do just that.
+You can invoke the analyzer for any text field, provide sample input, and display the resulting token stream.
 
-image::images/analysis-screen/analysis_normal.png[image,height=400]
+For example, let's look at some of the "Text" field types available in the `bin/solr -e techproducts` example configuration, and use the Analysis Screen (`\http://localhost:8983/solr/#/techproducts/analysis`) to compare how the tokens produced at index time for the sentence "Running an Analyzer" match up with a slightly different query text of "run my analyzer".
 
-If you click the *Verbose Output* check box, you see more information, including more details on the transformations to the input (such as, convert to lower case, strip extra characters, etc.) including the raw bytes, type and detailed position information at each stage. The information displayed will vary depending on the settings of the field or field type. Each step of the process is displayed in a separate section, with an abbreviation for the tokenizer or filter that is applied in that step. Hover or click on the abbreviation, and you'll see the name and path of the tokenizer or filter.
+We can begin with `text_ws` - one of the most simplified Text field types available:
 
-image::images/analysis-screen/analysis_verbose.png[image,height=400]
+image::images/analysis-screen/analysis_normal.png[Normal Analysis]
 
-In the example screenshot above, several transformations are applied to the input "Running is a sport." The words "is" and "a" have been removed and the word "running" has been changed to its basic form, "run". This is because we are using the field type `text_en` in this scenario, which is configured to remove stop words (small words that usually do not provide a great deal of context) and "stem" terms when possible to find more possible matches (this is particularly helpful with plural forms of words). If you click the question mark next to the *Analyze Fieldname/Field Type* pull-down menu, the <<schema-browser-screen.adoc#schema-browser-screen,Schema Browser window>> will open, showing you the settings for the field specified.
+This shows a simple output of only the tokens produced by each step of analysis (a single step in this case).
+The tokenizer is shown with an abbreviation, hover or click on this to see the full name.
 
-The section <<understanding-analyzers-tokenizers-and-filters.adoc#understanding-analyzers-tokenizers-and-filters,Understanding Analyzers, Tokenizers, and Filters>> describes in detail what each option is and how it may transform your data and the section <<running-your-analyzer.adoc#running-your-analyzer,Running Your Analyzer>> has specific examples for using the Analysis screen.
+If we enable *Verbose Output* by checking the box, more details are shown:
+
+image::images/analysis-screen/analysis_compare_0.png[Verbose Analysis]
+
+By looking at the start and end positions for each term, we can see that the only thing this field type does is tokenize text on whitespace.
+Notice in this image that the term "Running" has a start position of 0 and an end position of 7, while "an" has a start position of 8 and an end position of 10, and "Analyzer" starts at 11 and ends at 19.
+If the whitespace between the terms was also included, the count would be 21; since it is 19, we know that whitespace has been removed from this query.
+
+Note also that the indexed terms and the query terms are still very different.
+"Running" doesn't match "run", "Analyzer" doesn't match "analyzer" (to a computer), and obviously "an" and "my" are totally different words.
+If our objective is to allow queries like "run my analyzer" to match indexed text like "Running an Analyzer" then we will need to pick a different field type with index and query time text analysis that does more processing of the inputs.
+
+In particular we want:
+
+* Case insensitivity, so "Analyzer" and "analyzer" match.
+* Stemming, so words like "Run" and "Running" are considered equivalent terms.
+* Stop Word Pruning, so small words like "an" and "my" don't affect the query.
+
+For our next attempt, let's try the `text_general` field type:
+
+image::images/analysis-screen/analysis_compare_1.png[image]
+
+With the verbose output enabled, we can see how each stage of our new analyzers modify the tokens they receive before passing them on to the next stage.
+As we scroll down to the final output, we can see that we do start to get a match on "analyzer" from each input string, thanks to the "LCF" stage, which if you hover over with your mouse, you'll see is the `LowerCaseFilter`:
+
+image::images/analysis-screen/analysis_compare_2.png[image]
+
+The `text_general` field type is designed to be generally useful for any language, and it has definitely gotten us closer to our objective than `text_ws` from our first example by solving the problem of case sensitivity.
+It's still not quite what we are looking for because we don't see stemming or stopword rules being applied.
+So now let us try the `text_en` field type:
+
+image::images/analysis-screen/analysis_compare_3.png[image]
+
+Now we can see the "SF" (`StopFilter`) stage of the analyzers solving the problem of removing Stop Words ("an"), and as we scroll down, we also see the "PSF" (`PorterStemFilter`) stage apply stemming rules suitable for our English language input, such that the terms produced by our "index analyzer" and the terms produced by our "query analyzer" match the way we expect.
+
+image::images/analysis-screen/analysis_compare_4.png[image]
+
+
+At this point, we can continue to experiment with additional inputs, verifying that our analyzers produce matching tokens when we expect them to match, and disparate tokens when we do not expect them to match, as we iterate and tweak our field type configuration.

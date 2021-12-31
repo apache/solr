@@ -101,13 +101,13 @@ public abstract class LTRScoringModel implements Accountable {
           className,
           LTRScoringModel.class,
           new String[0], // no sub packages
-          new Class[] { String.class, List.class, List.class, String.class, List.class, Map.class },
+          new Class<?>[] { String.class, List.class, List.class, String.class, List.class, Map.class },
           new Object[] { name, features, norms, featureStoreName, allFeatures, params });
       if (params != null) {
         SolrPluginUtils.invokeSetters(model, params.entrySet());
       }
     } catch (final Exception e) {
-      throw new ModelException("Model type does not exist " + className, e);
+      throw new ModelException("Model loading failed for " + className, e);
     }
     model.validate();
     return model;

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,7 +35,9 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.NamedList;
@@ -53,8 +56,11 @@ import org.junit.Test;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 10)
 public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   private static MiniDFSCluster dfsCluster;
   
@@ -78,6 +84,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"try"})
   public void testInitArgsOrSysPropConfig() throws Exception {
     try(HdfsDirectoryFactory hdfsFactory = new HdfsDirectoryFactory()) {
       // test sys prop config

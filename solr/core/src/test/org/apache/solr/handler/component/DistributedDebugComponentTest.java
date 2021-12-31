@@ -62,7 +62,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   
   @BeforeClass
   public static void createThings() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
+    systemSetPropertySolrDisableUrlAllowList("true");
     solrHome = createSolrHome();
     createAndStartJetty(solrHome.getAbsolutePath());
     String url = jetty.getBaseUrl().toString();
@@ -111,7 +111,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       jetty=null;
     }
     resetExceptionIgnores();
-    systemClearPropertySolrDisableShardsWhitelist();
+    systemClearPropertySolrDisableUrlAllowList();
   }
   
   @Test
@@ -208,7 +208,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
         debug.add("true");
         all = true;
       }
-      q.set("debug", (String[])debug.toArray(new String[debug.size()]));
+      q.set("debug", debug.toArray(new String[debug.size()]));
 
       QueryResponse r = client.query(q);
       try {
@@ -404,8 +404,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     QueryResponse response = collection1.query(query);
     assertTrue((Boolean)response.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
     @SuppressWarnings("unchecked")
-    NamedList<String> badShardTrack = (NamedList<String>) ((NamedList<NamedList<String>>)
-        ((NamedList<NamedList<NamedList<String>>>)response.getDebugMap().get("track")).get("EXECUTE_QUERY")).get(badShard);
+    NamedList<String> badShardTrack =
+            (((NamedList<NamedList<NamedList<String>>>)response.getDebugMap().get("track")).get("EXECUTE_QUERY")).get(badShard);
     assertEquals("Unexpected response size for shard", 1, badShardTrack.size());
     Entry<String, String> exception = badShardTrack.iterator().next();
     assertEquals("Expected key 'Exception' not found", "Exception", exception.getKey());
@@ -420,16 +420,15 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     assertEquals(section + " debug should be equal", distrib.getDebugMap().get(section), nonDistrib.getDebugMap().get(section));
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private void assertSameKeys(NamedList object, NamedList object2) {
-    Iterator<Map.Entry<String,Object>> iteratorObj2 = ((NamedList)object2).iterator();
-    for (Map.Entry<String,Object> entry:(NamedList<Object>)object) {
+  private void assertSameKeys(NamedList<?> object, NamedList<?> object2) {
+    Iterator<? extends Map.Entry<String, ?>> iteratorObj2 = object2.iterator();
+    for (Map.Entry<String, ?> entry: object) {
       assertTrue(iteratorObj2.hasNext());
-      Map.Entry<String,Object> entry2 = iteratorObj2.next();
+      Map.Entry<String, ?> entry2 = iteratorObj2.next();
       assertEquals(entry.getKey(), entry2.getKey());
       if (entry.getValue() instanceof NamedList) {
         assertTrue(entry2.getValue() instanceof NamedList);
-        assertSameKeys((NamedList)entry.getValue(), (NamedList)entry2.getValue());
+        assertSameKeys((NamedList<?>)entry.getValue(), (NamedList<?>)entry2.getValue());
       }
     }
     assertFalse(iteratorObj2.hasNext());

@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * LanguageIdentifier.
  * The tika-core-x.y.jar must be on the classpath
  * <p>
- * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
+ * See <a href="https://solr.apache.org/guide/language-detection.html#configuring-tika-language-detection">https://solr.apache.org/guide/language-detection.html#configuring-tika-language-detection</a>
  * @since 3.5
  */
 public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpdateProcessor {
@@ -58,7 +58,10 @@ public class TikaLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpd
         certainty = 0d;
       DetectedLanguage language = new DetectedLanguage(identifier.getLanguage(), certainty);
       languages.add(language);
-      log.debug("Language detected as "+language+" with a certainty of "+language.getCertainty()+" (Tika distance="+identifier.toString()+")");
+      if (log.isDebugEnabled()) {
+        log.debug("Language detected as {} with a certainty of {} (Tika distance={})"
+            , language, language.getCertainty(), identifier);
+      }
     } else {
       log.debug("No input text to detect language from, returning empty list");
     }

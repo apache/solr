@@ -20,7 +20,7 @@ if (!String.prototype.includes) {
   String.prototype.includes = function(search, start) { 'use strict';
   if (search instanceof RegExp) {
     throw TypeError('first argument must not be a RegExp');
-  } 
+  }
   if (start === undefined) { start = 0; }
     return this.indexOf(search, start) !== -1;
   };
@@ -52,7 +52,8 @@ var solrAdminApp = angular.module("solrAdminApp", [
   "ngtimeago",
   "solrAdminServices",
   "localytics.directives",
-  "ab-base64"
+  "ab-base64",
+  "ui.grid"
 ]);
 
 solrAdminApp.config([
@@ -114,10 +115,6 @@ solrAdminApp.config([
         templateUrl: 'partials/java-properties.html',
         controller: 'JavaPropertiesController'
       }).
-      when('/~cluster-suggestions', {
-        templateUrl: 'partials/cluster_suggestions.html',
-        controller: 'ClusterSuggestionsController'
-      }).
       when('/:core/core-overview', {
         templateUrl: 'partials/core_overview.html',
         controller: 'CoreOverviewController'
@@ -133,14 +130,6 @@ solrAdminApp.config([
       when('/:core/analysis', {
         templateUrl: 'partials/analysis.html',
         controller: 'AnalysisController'
-      }).
-      when('/:core/dataimport', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
-      when('/:core/dataimport/:handler*', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
       }).
       when('/:core/documents', {
         templateUrl: 'partials/documents.html',
@@ -168,17 +157,13 @@ solrAdminApp.config([
         templateUrl: 'partials/stream.html',
         controller: 'StreamController'
       }).
+      when('/:core/sqlquery', {
+        templateUrl: 'partials/sqlquery.html',
+        controller: 'SQLQueryController'
+      }).
       when('/:core/replication', {
         templateUrl: 'partials/replication.html',
         controller: 'ReplicationController'
-      }).
-      when('/:core/dataimport', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
-      when('/:core/dataimport/:handler*', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
       }).
       when('/:core/schema', {
         templateUrl: 'partials/schema.html',
@@ -187,6 +172,14 @@ solrAdminApp.config([
       when('/:core/segments', {
         templateUrl: 'partials/segments.html',
         controller: 'SegmentsController'
+      }).
+      when('/~schema-designer', {
+        templateUrl: 'partials/schema-designer.html',
+        controller: 'SchemaDesignerController'
+      }).
+      when('/~security', {
+        templateUrl: 'partials/security.html',
+        controller: 'SecurityController'
       }).
       otherwise({
         templateUrl: 'partials/unknown.html',
@@ -335,12 +328,17 @@ solrAdminApp.config([
                   var treeConfig = {
                     'core' : {
                       'animation' : 0,
-                      'data': scope.data,
                       'worker': false
                     }
                   };
 
                   var tree = $(element).jstree(treeConfig);
+
+                  // This is done to ensure that the data can be refreshed if it is updated behind the scenes.
+                  // Putting the data in the treeConfig makes it stack and doesn't update.
+                  $(element).jstree(true).settings.core.data = scope.data;
+                  $(element).jstree(true).refresh();
+
                   $(element).jstree('open_node','li:first');
                   if (tree) {
                       element.bind("select_node.jstree", function (event, data) {
@@ -378,7 +376,9 @@ solrAdminApp.config([
     if (sessionStorage.getItem("auth.header")) {
       config.headers['Authorization'] = sessionStorage.getItem("auth.header");
     }
-    config.timeout = 10000;
+    if (!config.timeout) {
+      config.timeout = 10000;
+    }
     return config || $q.when(config);
   };
 
@@ -411,6 +411,9 @@ solrAdminApp.config([
     if (rejection.config.headers.doNotIntercept) {
         return rejection;
     }
+
+    // Schema Designer handles errors internally to provide a better user experience than the global error handler
+    var isHandledBySchemaDesigner = rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/");
     if (rejection.status === 0) {
       $rootScope.$broadcast('connectionStatusActive');
       if (!$rootScope.retryCount) $rootScope.retryCount=0;
@@ -418,7 +421,7 @@ solrAdminApp.config([
       var $http = $injector.get('$http');
       var result = $http(rejection.config);
       return result;
-    } else if (rejection.status === 401) {
+    } else if (rejection.status === 401 && !isHandledBySchemaDesigner) {
       // Authentication redirect
       var headers = rejection.headers();
       var wwwAuthHeader = headers['www-authenticate'];
@@ -440,7 +443,10 @@ solrAdminApp.config([
         $location.path('/login');
       }
     } else {
-      $rootScope.exceptions[rejection.config.url] = rejection.data.error;
+      // schema designer prefers to handle errors itself
+      if (!isHandledBySchemaDesigner) {
+        $rootScope.exceptions[rejection.config.url] = rejection.data.error;
+      }
     }
     return $q.reject(rejection);
   };
@@ -468,7 +474,7 @@ solrAdminApp.config([
     };
 });
 
-solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, Collections, System, Ping, Constants) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, Collections, System, Ping, Constants, SchemaDesigner) {
 
   $rootScope.exceptions={};
 
@@ -490,6 +496,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       delete $scope.currentCore;
       for (key in data.status) {
         var core = data.status[key];
+        if (core.name.startsWith("._designer_")) {
+          continue;
+        }
         $scope.cores.push(core);
         if ((!$scope.isSolrCloud || pageType == Constants.IS_CORE_PAGE) && core.name == currentCoreName) {
             $scope.currentCore = core;
@@ -499,6 +508,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       $scope.initFailures = data.initFailures;
     });
 
+    $scope.isSchemaDesignerEnabled = true;
     System.get(function(data) {
       $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
 
@@ -521,6 +531,9 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
             }
             $scope.collections = [];
             for (key in cdata.collections) {
+              if (cdata.collections[key].startsWith("._designer_")) {
+                continue; // ignore temp designer collections
+              }
               var collection = {name: cdata.collections[key], type: 'collection'};
               $scope.collections.push(collection);
               if (pageType == Constants.IS_COLLECTION_PAGE && collection.name == currentCollectionName) {
@@ -533,6 +546,14 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
               $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
             }
             $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+
+            SchemaDesigner.get({path: "configs"}, function (ignore) {
+              // no-op, just checking if we have access to this path
+            }, function(e) {
+              if (e.status === 401 || e.status === 403) {
+                $scope.isSchemaDesignerEnabled = false;
+              }
+            });
           });
         });
       }

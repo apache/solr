@@ -34,16 +34,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Identifies the language of a set of input fields using http://code.google.com/p/language-detection
+ * Identifies the language of a set of input fields using https://github.com/shuyo/language-detection
  * <p>
- * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
+ * See <a href="https://solr.apache.org/guide/language-detection.html">Detecting Languages During
+ * Indexing</a> in the Solr Ref Guide
  * @since 3.5
  */
 public class LangDetectLanguageIdentifierUpdateProcessor extends LanguageIdentifierUpdateProcessor {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public LangDetectLanguageIdentifierUpdateProcessor(SolrQueryRequest req, 
+  public LangDetectLanguageIdentifierUpdateProcessor(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
     super(req, rsp, next);
   }

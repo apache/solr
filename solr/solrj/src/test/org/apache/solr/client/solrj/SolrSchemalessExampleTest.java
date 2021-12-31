@@ -121,7 +121,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
         "p_q",
         "p.q",
         "x_y");
-    HashSet set = new HashSet();
+    HashSet<String> set = new HashSet<>();
     QueryResponse rsp = assertNumFound("*:*", expected.size());
     for (SolrDocument doc : rsp.getResults()) set.addAll(doc.getFieldNames());
     for (String s : expected) {

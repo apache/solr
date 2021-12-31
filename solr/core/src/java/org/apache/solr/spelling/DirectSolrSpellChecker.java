@@ -96,26 +96,29 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   private DirectSpellChecker checker = new DirectSpellChecker();
   
   @Override
-  public String init(NamedList config, SolrCore core) {
+  public String init(NamedList<?> config, SolrCore core) {
 
     SolrParams params = config.toSolrParams();
 
-    log.info("init: " + config);
+    log.info("init: {}", config);
     String name = super.init(config, core);
     
     Comparator<SuggestWord> comp = SuggestWordQueue.DEFAULT_COMPARATOR;
-    String compClass = (String) config.get(COMPARATOR_CLASS);
+    String compClass = (String)config.get(COMPARATOR_CLASS);
     if (compClass != null) {
       if (compClass.equalsIgnoreCase(SCORE_COMP))
         comp = SuggestWordQueue.DEFAULT_COMPARATOR;
       else if (compClass.equalsIgnoreCase(FREQ_COMP))
         comp = new SuggestWordFrequencyComparator();
-      else //must be a FQCN
-        comp = (Comparator<SuggestWord>) core.getResourceLoader().newInstance(compClass, Comparator.class);
+      else { //must be a FQCN
+        @SuppressWarnings({"unchecked"})
+        Comparator<SuggestWord> temp = (Comparator<SuggestWord>) core.getResourceLoader().newInstance(compClass, Comparator.class);
+        comp = temp;
+      }
     }
     
     StringDistance sd = DirectSpellChecker.INTERNAL_LEVENSHTEIN;
-    String distClass = (String) config.get(STRING_DISTANCE);
+    String distClass = (String)config.get(STRING_DISTANCE);
     if (distClass != null && !distClass.equalsIgnoreCase(INTERNAL_DISTANCE))
       sd = core.getResourceLoader().newInstance(distClass, StringDistance.class);
 
@@ -183,7 +186,7 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
   @Override
   public SpellingResult getSuggestions(SpellingOptions options)
       throws IOException {
-    log.debug("getSuggestions: " + options.tokens);
+    log.debug("getSuggestions: {}", options.tokens);
         
     SpellingResult result = new SpellingResult();
     float accuracy = (options.accuracy == Float.MIN_VALUE) ? checker.getAccuracy() : options.accuracy;

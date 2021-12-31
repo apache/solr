@@ -32,6 +32,7 @@ import java.io.IOException;
  * <p>
  * Note, there is no reciprocal function for this.
  **/
+@Deprecated
 public class GeohashFunction extends ValueSource {
   protected ValueSource lat, lon;
 
@@ -45,7 +46,7 @@ public class GeohashFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues latDV = lat.getValues(context, readerContext);
     final FunctionValues lonDV = lon.getValues(context, readerContext);
 

@@ -16,11 +16,11 @@
  */
 package org.apache.solr.client.solrj.io.stream.ops;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import junit.framework.Assert;
 
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
@@ -42,7 +42,7 @@ public class ConcatOperationTest extends SolrTestCase {
     
     factory = new StreamFactory()
       .withFunctionName("concat", ConcatOperation.class);
-    values = new HashedMap();
+    values = new HashMap<>();
   }
     
   @Test

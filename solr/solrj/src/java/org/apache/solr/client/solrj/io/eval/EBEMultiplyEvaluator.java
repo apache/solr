@@ -48,11 +48,11 @@ public class EBEMultiplyEvaluator extends RecursiveNumericEvaluator implements T
     }
 
     double[] result =  MathArrays.ebeMultiply(
-        ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-        ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+        ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+        ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
     );
 
-    List<Number> numbers = new ArrayList();
+    List<Number> numbers = new ArrayList<>();
     for(double d : result) {
       numbers.add(d);
     }

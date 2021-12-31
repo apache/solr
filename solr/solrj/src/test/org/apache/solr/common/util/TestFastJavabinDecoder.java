@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.FastStreamingDocsCallback;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -34,9 +33,6 @@ import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.FastJavaBinDecoder.Tag;
-
-import static org.apache.solr.common.util.Utils.NEW_ARRAYLIST_FUN;
-import static org.apache.solr.common.util.Utils.NEW_LINKED_HASHMAP_FUN;
 
 public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
 
@@ -77,33 +73,37 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
         "}";
 
 
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSONString(sampleObj);
     BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       jbc.marshal(m, baos);
     }
 
+    @SuppressWarnings({"rawtypes"})
     Map m2;
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       m2 = (Map) jbc.unmarshal(new FastInputStream(null, baos.getbuf(), 0, baos.size()));
     }
+    @SuppressWarnings({"rawtypes"})
     LinkedHashMap fastMap = (LinkedHashMap) new FastJavaBinDecoder()
         .withInputStream(new FastInputStream(null, baos.getbuf(), 0, baos.size()))
         .decode(FastJavaBinDecoder.getEntryListener());
     assertEquals(Utils.writeJson(m2, new StringWriter(), true).toString(),
         Utils.writeJson(fastMap, new StringWriter(), true).toString());
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     Object newMap = new FastJavaBinDecoder()
         .withInputStream(new FastInputStream(null, baos.getbuf(), 0, baos.size()))
         .decode(e -> {
           e.listenContainer(new LinkedHashMap<>(), e_ -> {
             Map rootMap = (Map) e_.ctx();
             if (e_.type() == DataEntry.Type.ENTRY_ITER) {
-              e_.listenContainer(rootMap.computeIfAbsent(e_.name(), NEW_ARRAYLIST_FUN),
+              e_.listenContainer(rootMap.computeIfAbsent(e_.name(), o -> new ArrayList<>()),
                   FastJavaBinDecoder.getEntryListener());
             } else if (e_.type() == DataEntry.Type.KEYVAL_ITER) {
-              e_.listenContainer(rootMap.computeIfAbsent(e_.name(), NEW_LINKED_HASHMAP_FUN), e1 -> {
-                Map m1 = (Map) e1.ctx();
+              e_.listenContainer(rootMap.computeIfAbsent(e_.name(), o -> new LinkedHashMap<>()), e1 -> {
+                Map<CharSequence,String> m1 = (Map<CharSequence,String>) e1.ctx();
                 if ("k1".equals(e1.name())) {
                   m1.put(e1.name(), e1.val().toString());
                 }
@@ -123,11 +123,12 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
   public void testFastJavabinStreamingDecoder() throws IOException {
     BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
     try (InputStream is = getClass().getResourceAsStream("/solrj/javabin_sample.bin")) {
-      IOUtils.copy(is, baos);
+      is.transferTo(baos);
     }
 
     SolrDocumentList list;
     try (JavaBinCodec jbc = new JavaBinCodec()) {
+      @SuppressWarnings({"rawtypes"})
       SimpleOrderedMap o = (SimpleOrderedMap) jbc.unmarshal(baos.toByteArray());
       list = (SolrDocumentList) o.get("response");
     }
@@ -138,6 +139,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
       CharSequence id;
       boolean inStock;
       float price;
+      @SuppressWarnings({"rawtypes"})
       List<NamedList> children;
     }
     StreamingBinaryResponseParser parser = new StreamingBinaryResponseParser(new FastStreamingDocsCallback() {
@@ -197,7 +199,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
     sdocs.add(d1);
     sdocs.add(d2);
 
-    SimpleOrderedMap orderedMap = new SimpleOrderedMap();
+    SimpleOrderedMap<SolrDocumentList> orderedMap = new SimpleOrderedMap<>();
     orderedMap.add("response", sdocs);
 
     BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
@@ -219,6 +221,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
         assertEquals(subject, d.getFieldValue("subject"));
         assertEquals(cat, d.getFieldValue("cat"));
         assertEquals(d.getChildDocumentCount(), children.size());
+        @SuppressWarnings({"unchecked"})
         List<Long> l = (List<Long>) d.getFieldValue("longs");
         if(l != null){
           assertNotNull(longs);
@@ -245,6 +248,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
       }
 
       @Override
+      @SuppressWarnings({"unchecked"})
       public Object startDoc(Object docListObj) {
         Pojo pojo = new Pojo();
         ((List) docListObj).add(pojo);
@@ -264,6 +268,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
           if(useListener[0]){
             field.listenContainer(pojo.longs = new long[field.length()], READLONGS);
           } else {
+            @SuppressWarnings({"unchecked"})
             List<Long> longList = (List<Long>) field.val();
             pojo.longs = new long[longList.size()];
             for (int i = 0; i < longList.size(); i++) {

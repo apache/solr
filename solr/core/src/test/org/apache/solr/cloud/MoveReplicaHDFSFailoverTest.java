@@ -22,6 +22,8 @@ import java.io.IOException;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -32,7 +34,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
@@ -40,6 +41,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 @Nightly // test is too long for non nightly
@@ -54,8 +57,7 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
 
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
-    ZkConfigManager configManager = new ZkConfigManager(zkClient());
-    configManager.uploadConfigDir(configset("cloud-hdfs"), "conf1");
+    cluster.uploadConfigSet(configset("cloud-hdfs"), "conf1");
   }
 
   @AfterClass

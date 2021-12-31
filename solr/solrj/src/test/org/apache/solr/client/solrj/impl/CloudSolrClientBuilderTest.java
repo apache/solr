@@ -32,13 +32,6 @@ public class CloudSolrClientBuilderTest extends SolrTestCase {
   private static final String ANY_ZK_HOST = "ANY_ZK_HOST";
   private static final String ANY_OTHER_ZK_HOST = "ANY_OTHER_ZK_HOST";
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testNoZkHostSpecified() {
-    new Builder()
-      .withZkChroot(ANY_CHROOT)
-      .build();
-  }
-  
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSingleZkHostSpecified() throws IOException {
@@ -95,7 +88,7 @@ public class CloudSolrClientBuilderTest extends SolrTestCase {
   }
   
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  @SuppressWarnings({"try"})
   public void test0Timeouts() throws IOException {
     try(CloudSolrClient createdClient = new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.empty())
         .withSocketTimeout(0)

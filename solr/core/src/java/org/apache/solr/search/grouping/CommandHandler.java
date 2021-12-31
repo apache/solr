@@ -24,11 +24,11 @@ import java.util.List;
 
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
@@ -61,7 +61,7 @@ public class CommandHandler {
   public static class Builder {
 
     private QueryCommand queryCommand;
-    private List<Command> commands = new ArrayList<>();
+    private List<Command<?>> commands = new ArrayList<>();
     private SolrIndexSearcher searcher;
     private boolean needDocSet = false;
     private boolean truncateGroups = false;
@@ -73,7 +73,7 @@ public class CommandHandler {
       return this;
     }
 
-    public Builder addCommandField(Command commandField) {
+    public Builder addCommandField(Command<?> commandField) {
       commands.add(commandField);
       return this;
     }
@@ -118,7 +118,7 @@ public class CommandHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final QueryCommand queryCommand;
-  private final List<Command> commands;
+  private final List<Command<?>> commands;
   private final SolrIndexSearcher searcher;
   private final boolean needDocset;
   private final boolean truncateGroups;
@@ -129,7 +129,7 @@ public class CommandHandler {
   private DocSet docSet;
 
   private CommandHandler(QueryCommand queryCommand,
-                         List<Command> commands,
+                         List<Command<?>> commands,
                          SolrIndexSearcher searcher,
                          boolean needDocset,
                          boolean truncateGroups,
@@ -142,11 +142,10 @@ public class CommandHandler {
     this.includeHitCount = includeHitCount;
   }
 
-  @SuppressWarnings("unchecked")
   public void execute() throws IOException {
     final int nrOfCommands = commands.size();
     List<Collector> collectors = new ArrayList<>(nrOfCommands);
-    for (Command command : commands) {
+    for (Command<?> command : commands) {
       collectors.addAll(command.create());
     }
 
@@ -161,21 +160,28 @@ public class CommandHandler {
     } else if (!collectors.isEmpty()) {
       searchWithTimeLimiter(query, filter, MultiCollector.wrap(collectors.toArray(new Collector[nrOfCommands])));
     } else {
-      searchWithTimeLimiter(query, filter, null);
+      searchWithTimeLimiter(query, filter, NO_OP_COLLECTOR);
     }
 
-    for (Command command : commands) {
+    for (Command<?> command : commands) {
       command.postCollect(searcher);
     }
   }
 
+  private static Collector NO_OP_COLLECTOR = new SimpleCollector() {
+    @Override
+    public ScoreMode scoreMode() { return ScoreMode.COMPLETE_NO_SCORES; }
+    @Override
+    public void collect(int doc) throws IOException {}
+  };
+
   private DocSet computeGroupedDocSet(Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {
-    Command firstCommand = commands.get(0);
+    Command<?> firstCommand = commands.get(0);
     String field = firstCommand.getKey();
     SchemaField sf = searcher.getSchema().getField(field);
     FieldType fieldType = sf.getType();
     
-    final AllGroupHeadsCollector allGroupHeadsCollector;
+    final AllGroupHeadsCollector<?> allGroupHeadsCollector;
     if (fieldType.getNumberType() != null) {
       ValueSource vs = fieldType.getValueSource(sf, null);
       allGroupHeadsCollector = AllGroupHeadsCollector.newCollector(new ValueSourceGroupSelector(vs, new HashMap<>()),
@@ -203,8 +209,7 @@ public class CommandHandler {
     return DocSetUtil.getDocSet( docSetCollector, searcher );
   }
 
-  @SuppressWarnings("unchecked")
-  public NamedList processResult(QueryResult queryResult, ShardResultTransformer transformer) throws IOException {
+  public NamedList<NamedList<Object>> processResult(QueryResult queryResult, ShardResultTransformer<List<Command<?>>, ?> transformer) throws IOException {
     if (docSet != null) {
       queryResult.setDocSet(docSet);
     }
@@ -228,12 +233,8 @@ public class CommandHandler {
       collector = MultiCollector.wrap(collector, hitCountCollector);
     }
 
-    if (filter.filter != null) {
-      query = new BooleanQuery.Builder()
-          .add(query, Occur.MUST)
-          .add(filter.filter, Occur.FILTER)
-          .build();
-    }
+    query = QueryUtils.combineQueryAndFilter(query, filter.filter);
+
     if (filter.postFilter != null) {
       filter.postFilter.setLastDelegate(collector);
       collector = filter.postFilter;
@@ -243,7 +244,7 @@ public class CommandHandler {
       searcher.search(query, collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
       partialResults = true;
-      log.warn( "Query: " + query + "; " + x.getMessage() );
+      log.warn("Query: {}; ", query, x);
     }
 
     if (includeHitCount) {

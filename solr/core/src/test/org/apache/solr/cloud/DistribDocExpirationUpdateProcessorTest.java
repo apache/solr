@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.Collections.singletonMap;
 import static java.util.Collections.singletonList;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -78,7 +77,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   /**
    * Modifies the request to inlcude authentication params if needed, returns the request 
    */
-  private <T extends SolrRequest> T setAuthIfNeeded(T req) {
+  private <T extends SolrRequest<?>> T setAuthIfNeeded(T req) {
     if (null != USER) {
       assert null != PASS;
       req.setBasicAuthCredentials(USER, PASS);
@@ -88,7 +87,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   
   public void setupCluster(boolean security) throws Exception {
     // we want at most one core per node to force lots of network traffic to try and tickle distributed bugs
-    final Builder b = configureCluster(4)
+    final MiniSolrCloudCluster.Builder b = configureCluster(4)
       .addConfig("conf", TEST_PATH().resolve("configsets").resolve("doc-expiry").resolve("conf"));
 
     COLLECTION = "expiring";
@@ -98,15 +97,15 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
       COLLECTION += "_secure";
       
       final String SECURITY_JSON = Utils.toJSONString
-        (Utils.makeMap("authorization",
-                       Utils.makeMap("class", RuleBasedAuthorizationPlugin.class.getName(),
-                                     "user-role", singletonMap(USER,"admin"),
-                                     "permissions", singletonList(Utils.makeMap("name","all",
+        (Map.of("authorization",
+                       Map.of("class", RuleBasedAuthorizationPlugin.class.getName(),
+                                     "user-role", Map.of(USER,"admin"),
+                                     "permissions", singletonList(Map.of("name","all",
                                                                                 "role","admin"))),
                        "authentication",
-                       Utils.makeMap("class", BasicAuthPlugin.class.getName(),
+                       Map.of("class", BasicAuthPlugin.class.getName(),
                                      "blockUnknown",true,
-                                     "credentials", singletonMap(USER, getSaltedHashedValue(PASS)))));
+                                     "credentials", Map.of(USER, getSaltedHashedValue(PASS)))));
       b.withSecurityJson(SECURITY_JSON);
     }
     b.configure();
@@ -231,7 +230,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
       boolean firstReplica = true;
       for (Replica replica : shard) {
         coresCompared++;
-        assertEquals(shard.getName(), replica.getSlice()); // sanity check
+        assertEquals(shard.getName(), replica.getShard()); // sanity check
         final String core = replica.getCoreName();
         final ReplicaData initData = initReplicaData.get(core);
         final ReplicaData finalData = finalReplicaData.get(core);
@@ -300,7 +299,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
                                   "rows", "0",
                                   "_trace", "counting_docs"))).process(client).getResults().getNumFound();
 
-        final ReplicaData data = new ReplicaData(replica.getSlice(),coreName,(Long)version,numDocs);
+        final ReplicaData data = new ReplicaData(replica.getShard(),coreName,(Long)version,numDocs);
         log.info("{}", data);
         results.put(coreName, data);
 

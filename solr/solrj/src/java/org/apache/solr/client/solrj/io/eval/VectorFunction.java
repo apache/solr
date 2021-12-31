@@ -21,12 +21,12 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 
-public class VectorFunction extends ArrayList {
+public class VectorFunction extends ArrayList<Number> {
 
   protected static final long serialVersionUID = 1L;
 
   private Object function;
-  private Map context = new HashMap();
+  private Map<Object, Object> context = new HashMap<>();
 
   public VectorFunction(Object function, double[] results) {
     this.function = function;
@@ -35,7 +35,7 @@ public class VectorFunction extends ArrayList {
     }
   }
 
-  public VectorFunction(Object function, List<Number> values) {
+  public VectorFunction(Object function, List<? extends Number> values) {
     this.function = function;
     addAll(values);
   }

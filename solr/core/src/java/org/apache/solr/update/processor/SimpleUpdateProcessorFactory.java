@@ -31,7 +31,7 @@ import org.apache.solr.update.AddUpdateCommand;
  */
 public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   private String myName; // if classname==XyzUpdateProcessorFactory  myName=Xyz
-  protected NamedList initArgs = new NamedList();
+  protected NamedList<?> initArgs = new NamedList<>();
   private static ThreadLocal<SolrQueryRequest> REQ = new ThreadLocal<>();
 
   protected SimpleUpdateProcessorFactory() {
@@ -39,10 +39,9 @@ public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcesso
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     this.initArgs = args;
-
   }
 
   @Override

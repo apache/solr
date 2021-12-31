@@ -52,12 +52,14 @@ public class ConfigSetProperties {
    * @param name   the name of the config set properties file
    * @return the properties in a NamedList
    */
-  public static NamedList readFromResourceLoader(SolrResourceLoader loader, String name) {
+  public static NamedList<Object> readFromResourceLoader(SolrResourceLoader loader, String name) {
     InputStreamReader reader;
     try {
       reader = new InputStreamReader(loader.openResource(name), StandardCharsets.UTF_8);
     } catch (SolrResourceNotFoundException ex) {
-      log.debug("Did not find ConfigSet properties, assuming default properties: {}", ex.getMessage());
+      if (log.isDebugEnabled()) {
+        log.debug("Did not find ConfigSet properties, assuming default properties: ", ex);
+      }
       return null;
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load reader for ConfigSet properties: " + name, ex);
@@ -70,14 +72,16 @@ public class ConfigSetProperties {
     }
   }
 
-  public static NamedList readFromInputStream(InputStreamReader reader) {
+  public static NamedList<Object> readFromInputStream(InputStreamReader reader) {
     try {
       Object object = fromJSON(reader);
       if (!(object instanceof Map)) {
         final String objectClass = object == null ? "null" : object.getClass().getName();
         throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + objectClass + ", expected Map");
       }
-      return new NamedList((Map) object);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> map = (Map<String, Object>) object;
+      return new NamedList<>(map);
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load ConfigSet properties", ex);
     } finally {

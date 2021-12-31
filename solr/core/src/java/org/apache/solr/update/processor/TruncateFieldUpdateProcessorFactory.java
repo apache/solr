@@ -52,9 +52,8 @@ public final class TruncateFieldUpdateProcessorFactory
 
   private int maxLength = 0;
 
-  @SuppressWarnings("unchecked")
   @Override
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
 
     Object lengthParam = args.remove(MAX_LENGTH_PARAM);
     if (null == lengthParam) {

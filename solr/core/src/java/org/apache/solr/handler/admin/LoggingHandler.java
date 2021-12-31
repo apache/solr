@@ -16,12 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -30,6 +26,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.NodeLoggingAPI;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LoggerInfo;
 import org.apache.solr.request.SolrQueryRequest;
@@ -37,6 +34,13 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -47,14 +51,16 @@ import org.slf4j.LoggerFactory;
 public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private LogWatcher watcher;
+  private LogWatcher<?> watcher;
+  private final CoreContainer cc;
   
   public LoggingHandler(CoreContainer cc) {
+    this.cc = cc;
     this.watcher = cc.getLogging();
   }
   
   public LoggingHandler() {
-    
+    this.cc = null;
   }
   
   @Override
@@ -82,9 +88,10 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     if(params.get("test")!=null) {
       log.trace("trace message");
       log.debug( "debug message");
-      log.info("info (with exception)", new RuntimeException("test") );
-      log.warn("warn (with exception)", new RuntimeException("test") );
-      log.error("error (with exception)", new RuntimeException("test") );
+      RuntimeException exc = new RuntimeException("test");
+      log.info("info (with exception) INFO", exc );
+      log.warn("warn (with exception) WARN", exc );
+      log.error("error (with exception) ERROR", exc );
     }
     
     String[] set = params.getParams("set");
@@ -148,6 +155,9 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
       rsp.add("loggers", info);
     }
     rsp.setHttpCaching(false);
+    if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
+      return; // Request was proxied to other node
+    }
   }
 
   // ////////////////////// SolrInfoMBeans methods //////////////////////
@@ -160,6 +170,16 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return AnnotatedApi.getApis(new NodeLoggingAPI(this));
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
 
 }

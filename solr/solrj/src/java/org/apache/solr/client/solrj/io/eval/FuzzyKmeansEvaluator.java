@@ -57,11 +57,8 @@ public class FuzzyKmeansEvaluator extends RecursiveObjectEvaluator implements Tw
 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
-
-
     Matrix matrix = null;
     int k = 0;
-
 
     if(value1 instanceof Matrix) {
       matrix = (Matrix)value1;
@@ -75,11 +72,11 @@ public class FuzzyKmeansEvaluator extends RecursiveObjectEvaluator implements Tw
       throw new IOException("The second parameter for fuzzyKmeans should be k.");
     }
 
-    FuzzyKMeansClusterer<KmeansEvaluator.ClusterPoint> kmeans = new FuzzyKMeansClusterer(k,
+    FuzzyKMeansClusterer<KmeansEvaluator.ClusterPoint> kmeans = new FuzzyKMeansClusterer<>(k,
                                                                                          fuzziness,
                                                                                          maxIterations,
                                                                                          new EuclideanDistance());
-    List<KmeansEvaluator.ClusterPoint> points = new ArrayList();
+    List<KmeansEvaluator.ClusterPoint> points = new ArrayList<>();
     double[][] data = matrix.getData();
 
     List<String> ids = matrix.getRowLabels();
@@ -89,7 +86,7 @@ public class FuzzyKmeansEvaluator extends RecursiveObjectEvaluator implements Tw
       points.add(new KmeansEvaluator.ClusterPoint(ids.get(i), vec));
     }
 
-    Map fields = new HashMap();
+    Map<String, Object> fields = new HashMap<>();
 
     fields.put("k", k);
     fields.put("fuzziness", fuzziness);
@@ -101,7 +98,7 @@ public class FuzzyKmeansEvaluator extends RecursiveObjectEvaluator implements Tw
     double[][] mmData = realMatrix.getData();
     Matrix mmMatrix = new Matrix(mmData);
     mmMatrix.setRowLabels(matrix.getRowLabels());
-    List<String> clusterCols = new ArrayList();
+    List<String> clusterCols = new ArrayList<>();
     for(int i=0; i<clusters.size(); i++) {
       clusterCols.add("cluster"+ ZplotStream.pad(Integer.toString(i), clusters.size()));
     }

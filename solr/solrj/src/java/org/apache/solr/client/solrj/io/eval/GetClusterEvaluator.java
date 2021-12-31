@@ -44,13 +44,13 @@ public class GetClusterEvaluator extends RecursiveObjectEvaluator implements Two
       List<CentroidCluster<KmeansEvaluator.ClusterPoint>> clusters = clusterTuple.getClusters();
 
       Number index = (Number)value2;
-      CentroidCluster cluster = clusters.get(index.intValue());
-      List points = cluster.getPoints();
-      List<String> rowLabels = new ArrayList();
+      CentroidCluster<KmeansEvaluator.ClusterPoint> cluster = clusters.get(index.intValue());
+      List<KmeansEvaluator.ClusterPoint> points = cluster.getPoints();
+      List<String> rowLabels = new ArrayList<>();
       double[][] data = new double[points.size()][];
 
       for(int i=0; i<points.size(); i++) {
-        KmeansEvaluator.ClusterPoint p = (KmeansEvaluator.ClusterPoint)points.get(i);
+        KmeansEvaluator.ClusterPoint p = points.get(i);
         data[i] = p.getPoint();
         rowLabels.add(p.getId());
       }

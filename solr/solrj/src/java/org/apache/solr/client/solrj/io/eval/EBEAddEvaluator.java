@@ -44,11 +44,11 @@ public class EBEAddEvaluator extends RecursiveObjectEvaluator implements TwoValu
 
     if(first instanceof List && second instanceof List) {
       double[] result = MathArrays.ebeAdd(
-          ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-          ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+          ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+          ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
       );
 
-      List<Number> numbers = new ArrayList();
+      List<Number> numbers = new ArrayList<>();
       for (double d : result) {
         numbers.add(d);
       }

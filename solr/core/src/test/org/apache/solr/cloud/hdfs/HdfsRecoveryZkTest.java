@@ -17,11 +17,13 @@
 package org.apache.solr.cloud.hdfs;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.RecoveryZkTest;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -29,8 +31,11 @@ import org.junit.BeforeClass;
 @Slow
 @Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 10)
 public class HdfsRecoveryZkTest extends RecoveryZkTest {
   private static MiniDFSCluster dfsCluster;
   
@@ -38,8 +43,7 @@ public class HdfsRecoveryZkTest extends RecoveryZkTest {
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
-    ZkConfigManager configManager = new ZkConfigManager(zkClient());
-    configManager.uploadConfigDir(configset("cloud-hdfs"), "conf");
+    cluster.uploadConfigSet(configset("cloud-hdfs"), "conf");
   }
   
   @AfterClass

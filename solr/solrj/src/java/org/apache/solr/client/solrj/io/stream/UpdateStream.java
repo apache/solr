@@ -19,10 +19,8 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -68,7 +66,7 @@ public class UpdateStream extends TupleStream implements Expressible {
   private PushBackStream tupleSource;
   private transient SolrClientCache cache;
   private transient CloudSolrClient cloudSolrClient;
-  private List<SolrInputDocument> documentBatch = new ArrayList();
+  private List<SolrInputDocument> documentBatch = new ArrayList<>();
   private String coreName;
 
   public UpdateStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -298,14 +296,14 @@ public class UpdateStream extends TupleStream implements Expressible {
   
   private SolrInputDocument convertTupleToSolrDocument(Tuple tuple) {
     SolrInputDocument doc = new SolrInputDocument();
-    for (Object field : tuple.fields.keySet()) {
+    for (String field : tuple.getFields().keySet()) {
 
       if (! (field.equals(CommonParams.VERSION_FIELD) && pruneVersionField)) {
         Object value = tuple.get(field);
         if (value instanceof List) {
-          addMultivaluedField(doc, (String)field, (List<Object>)value);
+          addMultivaluedField(doc, field, (List<?>)value);
         } else {
-          doc.addField((String)field, tuple.get(field));
+          doc.addField(field, value);
         }
       }
     }
@@ -314,7 +312,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     return doc;
   }
   
-  private void addMultivaluedField(SolrInputDocument doc, String fieldName, List<Object> values) {
+  private void addMultivaluedField(SolrInputDocument doc, String fieldName, List<?> values) {
     for (Object value : values) {
       doc.addField(fieldName, value);
     }
@@ -347,16 +345,16 @@ public class UpdateStream extends TupleStream implements Expressible {
   
   private Tuple createBatchSummaryTuple(int batchSize) {
     assert batchSize > 0;
-    Map m = new HashMap();
+    Tuple tuple = new Tuple();
     this.totalDocsIndex += batchSize;
     ++batchNumber;
-    m.put(BATCH_INDEXED_FIELD_NAME, batchSize);
-    m.put("totalIndexed", this.totalDocsIndex);
-    m.put("batchNumber", batchNumber);
-    if(coreName != null) {
-      m.put("worker", coreName);
+    tuple.put(BATCH_INDEXED_FIELD_NAME, batchSize);
+    tuple.put("totalIndexed", this.totalDocsIndex);
+    tuple.put("batchNumber", batchNumber);
+    if (coreName != null) {
+      tuple.put("worker", coreName);
     }
-    return new Tuple(m);
+    return tuple;
   }
 
 }

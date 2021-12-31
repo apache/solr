@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -44,6 +45,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ThreadLeakLingering(linger = 10)
 public class TestCloudConsistency extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -69,7 +71,9 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       cluster.stopJettySolrRunner(jetty);//TODO: Can we avoid this restart
       cluster.startJettySolrRunner(jetty);
       proxy.open(jetty.getBaseUrl().toURI());
-      log.info("Adding proxy for URL: " + jetty.getBaseUrl() + ". Proxy: " + proxy.getUrl());
+      if (log.isInfoEnabled()) {
+        log.info("Adding proxy for URL: {}. Proxy: {}", jetty.getBaseUrl(), proxy.getUrl());
+      }
       proxies.put(jetty, proxy);
       jettys.put(proxy.getUrl(), jetty);
     }
@@ -293,13 +297,13 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   }
 
   private void assertDocExists(HttpSolrClient solr, String coll, String docId) throws Exception {
-    NamedList rsp = realTimeGetDocId(solr, docId);
+    NamedList<?> rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
     assertTrue("Doc with id=" + docId + " not found in " + solr.getBaseURL()
         + " due to: " + match + "; rsp="+rsp, match == null);
   }
 
-  private NamedList realTimeGetDocId(HttpSolrClient solr, String docId) throws SolrServerException, IOException {
+  private NamedList<Object> realTimeGetDocId(HttpSolrClient solr, String docId) throws SolrServerException, IOException {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
     return solr.request(qr);
   }

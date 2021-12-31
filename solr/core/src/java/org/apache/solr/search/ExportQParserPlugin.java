@@ -95,7 +95,7 @@ public class ExportQParserPlugin extends QParserPlugin {
       }
     }
 
-    public TopDocsCollector getTopDocsCollector(int len,
+    public TopDocsCollector<ScoreDoc> getTopDocsCollector(int len,
                                                 QueryCommand cmd,
                                                 IndexSearcher searcher) throws IOException {
       int leafCount = searcher.getTopReaderContext().leaves().size();
@@ -137,7 +137,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
   }
   
-  private static class ExportCollector extends TopDocsCollector  {
+  private static class ExportCollector extends TopDocsCollector<ScoreDoc>  {
 
     private FixedBitSet[] sets;
 
@@ -180,7 +180,7 @@ public class ExportQParserPlugin extends QParserPlugin {
 
       SolrQueryRequest req = null;
       if(info != null && ((req = info.getReq()) != null)) {
-        Map context = req.getContext();
+        Map<Object,Object> context = req.getContext();
         context.put("export", sets);
         context.put("totalHits", totalHits);
       }

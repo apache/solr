@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -41,7 +40,7 @@ import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   //only for debugging purposes
   public static final ThreadLocal<AtomicLong> v2Calls = new ThreadLocal<>();
-  static final Pattern COLL_REQ_PATTERN = Pattern.compile("/(c|collections)/([^/])+/(?!shards)");
+  static final Pattern COLL_REQ_PATTERN = Pattern.compile("/(c|collections)/([^/]+)/(?!shards)");
   private Object payload;
   private SolrParams solrParams;
   public final boolean useBinary;
@@ -87,7 +86,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
           return;
         }
         if (payload instanceof InputStream) {
-          IOUtils.copy((InputStream) payload, os);
+          ((InputStream) payload).transferTo(os);
           return;
         }
         if (useBinary) {
@@ -133,6 +132,11 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     return super.getResponseParser();
   }
 
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.ADMIN.toString();
+  }
+
   public static class Builder {
     private String resource;
     private METHOD method = METHOD.GET;
@@ -157,6 +161,26 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
     public Builder withMethod(METHOD m) {
       this.method = m;
+      return this;
+    }
+
+    public Builder POST() {
+      this.method = METHOD.POST;
+      return this;
+    }
+
+    public Builder GET() {
+      this.method = METHOD.GET;
+      return this;
+    }
+
+    public Builder PUT() {
+      this.method = METHOD.PUT;
+      return this;
+    }
+
+    public Builder DELETE() {
+      this.method = METHOD.DELETE;
       return this;
     }
 

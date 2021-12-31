@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
+import org.apache.lucene.codecs.lucene90.Lucene90Codec.Mode;
+import org.apache.lucene.codecs.lucene90.Lucene90StoredFieldsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
@@ -117,11 +117,11 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
       SegmentInfos infos = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
       SegmentInfo info = infos.info(infos.size() - 1).info;
       assertEquals("Expecting compression mode string to be " + expectedModeString +
-              " but got: " + info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY) +
+              " but got: " + info.getAttribute(Lucene90StoredFieldsFormat.MODE_KEY) +
               "\n SegmentInfo: " + info +
               "\n SegmentInfos: " + infos +
               "\n Codec: " + core.getCodec(),
-          expectedModeString, info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY));
+          expectedModeString, info.getAttribute(Lucene90StoredFieldsFormat.MODE_KEY));
       return null;
     });
   }
@@ -173,9 +173,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     final SchemaCodecFactory factory1 = new SchemaCodecFactory();
     final NamedList<String> nl = new NamedList<>();
     nl.add(SchemaCodecFactory.COMPRESSION_MODE, "something_that_doesnt_exist");
-    thrown = expectThrows(SolrException.class, () -> {
-      factory1.init(nl);
-    });
+    thrown = expectThrows(SolrException.class, () -> factory1.init(nl));
     assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, thrown.code());
     assertTrue("Unexpected Exception message: " + thrown.getMessage(),
         thrown.getMessage().contains("Invalid compressionMode: 'something_that_doesnt_exist'"));
@@ -183,9 +181,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     final SchemaCodecFactory factory2 = new SchemaCodecFactory();
     final NamedList<String> nl2 = new NamedList<>();
     nl2.add(SchemaCodecFactory.COMPRESSION_MODE, "");
-    thrown = expectThrows(SolrException.class, () -> {
-      factory2.init(nl2);
-    });
+    thrown = expectThrows(SolrException.class, () -> factory2.init(nl2));
     assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, thrown.code());
     assertTrue("Unexpected Exception message: " + thrown.getMessage(),
         thrown.getMessage().contains("Invalid compressionMode: ''"));
@@ -200,9 +196,9 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     SolrCore c = null;
     
     SolrConfig config = TestHarness.createConfig(testSolrHome, previousCoreName, "solrconfig_codec2.xml");
-    assertEquals("Unexpected codec factory for this test.", "solr.SchemaCodecFactory", config.get("codecFactory/@class"));
-    assertNull("Unexpected configuration of codec factory for this test. Expecting empty element", 
-        config.getNode("codecFactory", false).getFirstChild());
+    assertEquals("Unexpected codec factory for this test.", "solr.SchemaCodecFactory", config.get("codecFactory").attr("class"));
+    assertTrue("Unexpected configuration of codec factory for this test. Expecting empty element",
+        config.get("codecFactory").getAll(null, (String)null).isEmpty());
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema("schema_codec.xml", config);
 
     CoreContainer coreContainer = h.getCoreContainer();
@@ -210,7 +206,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     try {
       CoreDescriptor cd = new CoreDescriptor(newCoreName, testSolrHome.resolve(newCoreName), coreContainer);
       c = new SolrCore(coreContainer, cd,
-          new ConfigSet("fakeConfigset", config, schema, null, true));
+          new ConfigSet("fakeConfigset", config, forceFetch -> schema, null, true));
       assertNull(coreContainer.registerCore(cd, c, false, false));
       h.coreName = newCoreName;
       assertEquals("We are not using the correct core", "solrconfig_codec2.xml", h.getCore().getConfigResource());

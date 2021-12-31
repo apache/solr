@@ -191,7 +191,7 @@ class GeoFieldUpdater {
     doc.remove(display);
     if(val != null) {
       if(val instanceof Iterable) {
-        Iterator iter = ((Iterable)val).iterator();
+        Iterator<?> iter = ((Iterable<?>)val).iterator();
         while(iter.hasNext()) {
           addValue(doc, iter.next());
         }

@@ -38,9 +38,9 @@ import org.apache.solr.schema.SchemaField;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Before;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.BaseMatcher;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 
 public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
 
@@ -427,6 +427,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     final Phrase we_lazy = phrases.get(phrases.size()-2);
     assertEquals("we lAzY", we_lazy.getSubSequence());
     assertEquals(we_lazy.toString(), -1.0D, we_lazy.getFieldScore("multigrams_body"), 0.0D);
+
     assertThat(we_lazy.toString(), we_lazy.getFieldScore("multigrams_title"), lessThan(0.0D));
     assertThat(we_lazy.toString(), we_lazy.getTotalScore(), lessThan(0.0D));
     assertEquals(we_lazy.toString(), we_lazy.getFieldScore("multigrams_title"), we_lazy.getTotalScore(),
@@ -768,28 +769,5 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     assertEquals(msg,
                  Collections.emptyList(),
                  stream.collect(Collectors.toList()));
-  }
-
-  /** helper, docs for future junit/hamcrest seems to have something similar */
-  public static Matcher lessThan(double expected) {
-    return new BaseMatcher() {
-      @Override public boolean matches(Object actual) {
-        return ((Double)actual).compareTo(expected) < 0;
-      }
-      @Override public void describeTo(Description d) {
-        d.appendText("should be less than " + expected);
-      }
-    };
-  }
-  /** helper, docs for future junit/hamcrest seems to have something similar */
-  public static Matcher greaterThan(double expected) {
-    return new BaseMatcher() {
-      @Override public boolean matches(Object actual) {
-        return 0 < ((Double)actual).compareTo(expected);
-      }
-      @Override public void describeTo(Description d) {
-        d.appendText("should be greater than " + expected);
-      }
-    };
   }
 }

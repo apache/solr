@@ -44,7 +44,8 @@ public class HeatmapJsonFacet {
   private List<List<Integer>> countGrid;
   private String countEncodedAsBase64PNG;
 
-  public HeatmapJsonFacet(NamedList<Object> heatmapNL) {
+  @SuppressWarnings({"unchecked"})
+  public HeatmapJsonFacet(NamedList<?> heatmapNL) {
     gridLevel = (int) heatmapNL.get("gridLevel");
     columns = (int) heatmapNL.get("columns");
     rows = (int) heatmapNL.get("rows");
@@ -94,7 +95,7 @@ public class HeatmapJsonFacet {
    * <p>
    * Heatmap facets do not support subfacets.
    */
-  public static boolean isHeatmapFacet(NamedList<Object> potentialHeatmapValues) {
+  public static boolean isHeatmapFacet(NamedList<?> potentialHeatmapValues) {
     boolean hasGridLevel = false;
     boolean hasColumns = false;
     boolean hasRows = false;
@@ -103,7 +104,7 @@ public class HeatmapJsonFacet {
     boolean hasMinY = false;
     boolean hasMaxY = false;
     boolean hasCountGrid = false;
-    for (Map.Entry<String, Object> entry : potentialHeatmapValues) {
+    for (Map.Entry<String, ?> entry : potentialHeatmapValues) {
       String key = entry.getKey();
       if ("gridLevel".equals(key)) {
         hasGridLevel = true;

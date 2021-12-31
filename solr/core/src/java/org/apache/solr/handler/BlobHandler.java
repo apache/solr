@@ -71,7 +71,6 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.params.CommonParams.VERSION;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized , PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -113,18 +112,18 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
           payload = SimplePostTool.inputStreamToByteArray(is, maxSize);
         }
         MessageDigest m = MessageDigest.getInstance("MD5");
-        m.update(payload.array(), payload.position(), payload.limit());
+        m.update(payload.array(), payload.arrayOffset() + payload.position(), payload.limit());
         String md5 = new String(Hex.encodeHex(m.digest()));
 
         int duplicateCount = req.getSearcher().count(new TermQuery(new Term("md5", md5)));
         if (duplicateCount > 0) {
           rsp.add("error", "duplicate entry");
           forward(req, null,
-              new MapSolrParams((Map) makeMap(
+              new MapSolrParams(Map.of(
                   "q", "md5:" + md5,
                   "fl", "id,size,version,timestamp,blobName")),
               rsp);
-          log.warn("duplicate entry for blob :" + blobName);
+          log.warn("duplicate entry for blob : {}", blobName);
           return;
         }
 
@@ -139,7 +138,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         }
         version++;
         String id = blobName + "/" + version;
-        Map<String, Object> doc = makeMap(
+        Map<String, Object> doc = Map.of(
             ID, id,
             CommonParams.TYPE, "blob",
             "md5", md5,
@@ -149,9 +148,13 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
             "size", payload.limit(),
             "blob", payload);
         verifyWithRealtimeGet(blobName, version, req, doc);
-        log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5));
+        if (log.isInfoEnabled()) {
+          log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5));
+        }
         indexMap(req, rsp, doc);
-        log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
+        if (log.isInfoEnabled()) {
+          log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
+        }
 
         break;
       }
@@ -188,7 +191,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
                   //should never happen unless a user wrote this document directly
                   throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Invalid document . No field called blob");
                 } else {
-                  os.write(buf.array(), 0, buf.limit());
+                  os.write(buf.array(), buf.arrayOffset(), buf.limit());
                 }
               }
             });
@@ -209,7 +212,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         }
 
         forward(req, null,
-            new MapSolrParams((Map) makeMap(
+            new MapSolrParams(Map.of(
                 "q", StrUtils.formatString(q, blobName, version),
                 "fl", "id,size,version,timestamp,blobName,md5",
                 SORT, "version desc"))
@@ -244,9 +247,9 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
     try (UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp)) {
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = solrDoc;
-      log.info("Adding doc: " + doc);
+      log.info("Adding doc: {}", doc);
       processor.processAdd(cmd);
-      log.info("committing doc: " + doc);
+      log.info("committing doc: {}", doc);
       processor.processCommit(new CommitUpdateCommand(req, false));
       processor.finish();
     }
@@ -271,7 +274,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
   public void init(PluginInfo info) {
     super.init(info.initArgs);
     if (info.initArgs != null) {
-      NamedList invariants = (NamedList) info.initArgs.get(PluginInfo.INVARIANTS);
+      NamedList<?> invariants = (NamedList<?>) info.initArgs.get(PluginInfo.INVARIANTS);
       if (invariants != null) {
         Object o = invariants.get("maxSize");
         if (o != null) {

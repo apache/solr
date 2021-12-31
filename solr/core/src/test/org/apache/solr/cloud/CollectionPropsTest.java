@@ -50,11 +50,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    Boolean useLegacyCloud = rarely();
-    log.info("Using legacyCloud?: {}", useLegacyCloud);
-
     configureCluster(4)
-        .withProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud))
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
   }
@@ -205,7 +201,8 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     // Trigger a value change event
     log.info("setting value2");
     collectionProps.setCollectionProperty(collectionName, "property", "value2");
-    log.info("(value2) waitForTrigger=={}", watcher.waitForTrigger());
+    int wft = watcher.waitForTrigger();
+    log.info("(value2) waitForTrigger=={}", wft);
     assertEquals("value2", watcher.getProps().get("property"));
 
     // Delete the properties znode
@@ -290,10 +287,10 @@ public class CollectionPropsTest extends SolrCloudTestCase {
       log.info("{}: state changed...", name);
       if (forceReadPropsFromZk) {
         final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-        props = Collections.unmodifiableMap(new HashMap(zkStateReader.getCollectionProperties(collectionName)));
+        props = Map.copyOf(zkStateReader.getCollectionProperties(collectionName));
         log.info("{}: Setting props from zk={}", name, props);
       } else {
-        props = Collections.unmodifiableMap(new HashMap(collectionProperties));
+        props = Map.copyOf(collectionProperties);
         log.info("{}: Setting props from caller={}", name, props);
       }
       

@@ -23,9 +23,13 @@ import org.junit.BeforeClass;
 
 
 /**
- * Test for https://issues.apache.org/jira/browse/SOLR-749
+ * This class started life as a test for SOLR-749 to prove that value source plugins were properly
+ * intialized, but it has since evolved to also help prove that ValueSource's are not asked to compute
+ * values for documents unnecessarily.
  *
- **/
+ * @see CountUsageValueSourceParser
+ * @see <a href="https://issues.apache.org/jira/browse/SOLR-749">SOLR-749</a>
+ */
 public class SOLR749Test extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -73,15 +77,25 @@ public class SOLR749Test extends SolrTestCaseJ4 {
               "//result[@numFound=20]");
       assertEquals(20, CountUsageValueSourceParser.getAndClearCount("func_q_wrapping_fq"));
 
-      assertQ("frange in complex bq w/ other mandatory clauses to check skipping",
+      assertQ("frange in complex boolean query w/ other mandatory clauses to check skipping",
               req("q","{!notfoo}(+id_i1:[20 TO 39] -id:25 +{!frange l=4.5 u=4.5 v='countUsage(frange_in_bq,4.5)'})"),
               "//result[@numFound=19]");
-
+      
       // don't assume specific clause evaluation ordering.
       // ideally this is 19, but could be as high as 20 depending on whether frange's
       // scorer has next() called on it before other clauses skipTo
       int count = CountUsageValueSourceParser.getAndClearCount("frange_in_bq");
       assertTrue("frange_in_bq: " + count, (19 <= count && count <= 20));
+      
+      assertQ("func in complex boolean query w/ constant scoring mandatory clauses",
+              req("q","{!notfoo}(+id_i1:[20 TO 29]^0 +{!frange l=4.5 u=4.5 v='countUsage(func_in_bq,4.5)'})"),
+              "//result[@numFound=10]");
+
+      // don't assume specific clause evaluation ordering.
+      // ideally this is 10, but could be as high as 11 depending on whether func's
+      // scorer has next() called on it before other clauses skipTo
+      count = CountUsageValueSourceParser.getAndClearCount("func_in_bq");
+      assertTrue("func_in_bq: " + count, (10 <= count && count <= 11));
 
       // non-cached frange queries should default to post-filtering
       // (ie: only be computed on candidates of other q/fq restrictions)
@@ -102,6 +116,17 @@ public class SOLR749Test extends SolrTestCaseJ4 {
               "//result[@numFound=0]");
       assertEquals(0, CountUsageValueSourceParser.getAndClearCount("postfilt_match_all"));
 
+      // Tests that TwoPhaseIterator is employed optimally
+      // note: map(countUsage(lowCost,0),0,0,id_i1) == return "id_i1" value & keep track of access
+      assertQ("query matching 20 -> 10 -> 5 docs; two non-cached queries",
+          req("q","{!notfoo cache=false}id_i1:[20 TO 39]", // match 20
+              // the below IDs have alternating even/odd pairings so as to test possible sequencing of evaluation
+              "fq","{!notfoo cache=false}id_i1:(20 21 25 26 28 29 31 32 36 37)", // match 10 (subset of above)
+              "fq","{!frange cache=false cost=5 l=21 u=99 v='map(countUsage(lowCost,0),0,0,id_i1)'})", // eliminate #20
+              "fq","{!frange cache=false cost=10 l=1 v='mod(map(countUsage(lastFilter,0),0,0,id_i1),2)'}"), // match 5 -- (the odd ones since l=1 thus don't match 0)
+          "//result[@numFound=5]");
+      assertEquals(10, CountUsageValueSourceParser.getAndClearCount("lowCost"));
+      assertEquals(9, CountUsageValueSourceParser.getAndClearCount("lastFilter"));
     } finally {
       CountUsageValueSourceParser.clearCounters();
     }

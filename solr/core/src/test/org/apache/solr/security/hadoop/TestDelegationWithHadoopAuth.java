@@ -27,11 +27,13 @@ import org.apache.http.HttpStatus;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.DelegationTokenRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
@@ -115,7 +117,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
       DelegationTokenResponse.Renew renewResponse = renew.process(client);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
       return renewResponse.getExpirationTime();
-    } catch (HttpSolrClient.RemoteSolrException ex) {
+    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
       return -1;
     }
@@ -127,7 +129,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     try {
       cancel.process(client);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
-    } catch (HttpSolrClient.RemoteSolrException ex) {
+    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
     }
   }
@@ -150,7 +152,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     assertEquals("Did not receieve excepted status code", expectedStatusCode, lastStatusCode);
   }
 
-  private SolrRequest getAdminRequest(final SolrParams params) {
+  private SolrRequest<CollectionAdminResponse> getAdminRequest(final SolrParams params) {
     return new CollectionAdminRequest.List() {
       @Override
       public SolrParams getParams() {
@@ -181,7 +183,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
       ModifiableSolrParams p = new ModifiableSolrParams();
       if (user != null) p.set(PseudoAuthenticator.USER_NAME, user);
       if (op != null) p.set("op", op);
-      SolrRequest req = getAdminRequest(p);
+      SolrRequest<CollectionAdminResponse> req = getAdminRequest(p);
       if (user != null || op != null) {
         Set<String> queryParams = new HashSet<>();
         if (user != null) queryParams.add(PseudoAuthenticator.USER_NAME);
@@ -191,7 +193,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
       try {
         delegationTokenClient.request(req, null);
         return HttpStatus.SC_OK;
-      } catch (HttpSolrClient.RemoteSolrException re) {
+      } catch (BaseHttpSolrClient.RemoteSolrException re) {
         return re.code();
       }
     } finally {
@@ -199,12 +201,13 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private void doSolrRequest(SolrClient client, SolrRequest request,
+  private void doSolrRequest(SolrClient client,
+                             SolrRequest<?> request,
       int expectedStatusCode) throws Exception {
     try {
       client.request(request);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
-    } catch (HttpSolrClient.RemoteSolrException ex) {
+    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
     }
   }
@@ -367,7 +370,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     String token = getDelegationToken(null, USER_1, primarySolrClient);
     assertNotNull(token);
 
-    SolrRequest request = getAdminRequest(new ModifiableSolrParams());
+    SolrRequest<?> request = getAdminRequest(new ModifiableSolrParams());
 
     // test without token
     HttpSolrClient ss =

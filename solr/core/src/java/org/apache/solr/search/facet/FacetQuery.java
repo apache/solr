@@ -28,13 +28,13 @@ public class FacetQuery extends FacetRequest {
   Query q;
 
   @Override
-  public FacetProcessor createFacetProcessor(FacetContext fcontext) {
+  public FacetProcessor<FacetQuery> createFacetProcessor(FacetContext fcontext) {
     return new FacetQueryProcessor(fcontext, this);
   }
 
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetQueryMerger(this);
+    return new FacetModule.FacetQueryMerger(this);
   }
   
   @Override

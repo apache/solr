@@ -100,10 +100,10 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         assertEquals(4L, dvs.longValue());
         SortedDocValues sdv = reader.getSortedDocValues("stringdv");
         assertEquals(0, sdv.nextDoc());
-        assertEquals("solr", sdv.binaryValue().utf8ToString());
+        assertEquals("solr", sdv.lookupOrd(sdv.ordValue()).utf8ToString());
         sdv = reader.getSortedDocValues("booldv");
         assertEquals(0, sdv.nextDoc());
-        assertEquals("T", sdv.binaryValue().utf8ToString());
+        assertEquals("T", sdv.lookupOrd(sdv.ordValue()).utf8ToString());
 
         final IndexSchema schema = core.getLatestSchema();
         final SchemaField floatDv = schema.getField("floatdv");
@@ -570,7 +570,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
       }
       assertU(commit());
 
-      log.info("Indexed values: "+values);
+      log.info("Indexed values: {}", values);
       // Querying
       int numQueries = 10000;
       for (int j=0; j<numQueries; j++) {
@@ -628,7 +628,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         for (int k=0; k<tests.size(); k++) {
           testsArr[k] = tests.get(k);
         }
-        log.info("Expected: "+tests);
+        log.info("Expected: {}", tests);
         assertQ(req("q", fieldName[i] + ":" + (minInclusive? '[': '{') + min + " TO " + max + (maxInclusive? ']': '}'),
                          "sort", "id_i asc", "fl", "id,"+fieldName[i]+",score"),
             testsArr);

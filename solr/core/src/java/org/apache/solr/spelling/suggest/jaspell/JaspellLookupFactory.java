@@ -19,7 +19,6 @@ package org.apache.solr.spelling.suggest.jaspell;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.LookupFactory;
@@ -35,8 +34,8 @@ public class JaspellLookupFactory extends LookupFactory {
   private static final String FILENAME = "jaspell.dat";
 
   @Override
-  public Lookup create(NamedList params, SolrCore core) {
-    log.info("init: " + params);
+  public Lookup create(NamedList<?> params, SolrCore core) {
+    log.info("init: {}", params);
     return new JaspellLookup();
   }
 

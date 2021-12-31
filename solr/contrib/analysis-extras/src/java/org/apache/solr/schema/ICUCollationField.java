@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,8 +28,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.collation.ICUCollationKeyAnalyzer;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.analysis.icu.ICUCollationKeyAnalyzer;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
@@ -201,7 +202,7 @@ public class ICUCollationField extends FieldType {
     InputStream input = null;
     try {
      input = loader.openResource(fileName);
-     String rules = IOUtils.toString(input, "UTF-8");
+     String rules = IOUtils.toString(input, StandardCharsets.UTF_8);
      return new RuleBasedCollator(rules);
     } catch (Exception e) {
       // io error or invalid rules

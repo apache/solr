@@ -21,15 +21,18 @@
 -->
 <solr>
 
+  <metrics enabled="${metricsEnabled:true}"/>
+
   <str name="shareSchema">${shareSchema:false}</str>
   <str name="configSetBaseDir">${configSetBaseDir:configsets}</str>
   <str name="coreRootDirectory">${coreRootDirectory:.}</str>
+  <str name="allowPaths">${solr.allowPaths:}</str>
+  <str name="allowUrls">${solr.tests.allowUrls:}</str>
 
   <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
     <str name="urlScheme">${urlScheme:}</str>
     <int name="socketTimeout">${socketTimeout:15000}</int>
     <int name="connTimeout">${connTimeout:15000}</int>
-    <str name="shardsWhitelist">${solr.tests.shardsWhitelist:}</str>
   </shardHandlerFactory>
 
   <transientCoreCacheFactory name="transientCoreCacheFactory" class="TransientSolrCoreCacheFactoryDefault">
@@ -47,7 +50,6 @@
     <int name="leaderConflictResolveWait">${leaderConflictResolveWait:45000}</int> 
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:5000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:30000}</int> <!-- We are running tests - the default should be low, not like production -->
-    <int name="autoReplicaFailoverWaitAfterExpiration">${autoReplicaFailoverWaitAfterExpiration:10000}</int>
   </solrcloud>
   
 </solr>

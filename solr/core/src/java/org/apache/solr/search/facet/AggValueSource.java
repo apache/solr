@@ -44,13 +44,13 @@ public abstract class AggValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     // FUTURE
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);
   }
 
   // TODO: make abstract
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
     throw new UnsupportedOperationException("NOT IMPLEMENTED " + name + " " + this);
   }
 

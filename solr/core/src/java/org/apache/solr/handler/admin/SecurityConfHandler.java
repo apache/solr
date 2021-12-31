@@ -109,14 +109,16 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     for (int count = 1; count <= 3 ; count++ ) {
       SecurityConfig securityConfig = getSecurityConfig(true);
       Map<String, Object> data = securityConfig.getData();
+      @SuppressWarnings("unchecked")
       Map<String, Object> latestConf = (Map<String, Object>) data.get(key);
       if (latestConf == null) {
         throw new SolrException(SERVER_ERROR, "No configuration present for " + key);
       }
       List<CommandOperation> commandsCopy = CommandOperation.clone(ops);
+      @SuppressWarnings("unchecked")
       Map<String, Object> out = configEditablePlugin.edit(Utils.getDeepCopy(latestConf, 4) , commandsCopy);
       if (out == null) {
-        List<Map> errs = CommandOperation.captureErrors(commandsCopy);
+        List<Map<String, Object>> errs = CommandOperation.captureErrors(commandsCopy);
         if (!errs.isEmpty()) {
           rsp.add(CommandOperation.ERR_MSGS, errs);
           return;
@@ -127,7 +129,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
         if(!Objects.equals(latestConf.get("class") , out.get("class"))){
           throw new SolrException(SERVER_ERROR, "class cannot be modified");
         }
-        Map meta = getMapValue(out, "");
+        Map<String, Object> meta = getMapValue(out, "");
         meta.put("v", securityConfig.getVersion()+1);//encode the expected zkversion
         data.put(key, out);
         
@@ -156,14 +158,16 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
   protected abstract void getConf(SolrQueryResponse rsp, String key);
 
   public static Map<String, Object> getMapValue(Map<String, Object> lookupMap, String key) {
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> m = (Map<String, Object>) lookupMap.get(key);
     if (m == null) lookupMap.put(key, m = new LinkedHashMap<>());
     return m;
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static List getListValue(Map<String, Object> lookupMap, String key) {
     List l = (List) lookupMap.get(key);
-    if (l == null) lookupMap.put(key, l= new ArrayList());
+    if (l == null) lookupMap.put(key, l= new ArrayList<>());
     return l;
   }
 
@@ -193,7 +197,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
    * The data object defaults to EMPTY_MAP if not set
    */
   public static class SecurityConfig {
-    private Map<String, Object> data = Collections.EMPTY_MAP;
+    private Map<String, Object> data = Collections.emptyMap();
     private int version = -1;
 
     public SecurityConfig() {}
@@ -213,6 +217,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
      * @param data an Object of type Map&lt;String,Object&gt;
      * @return SecurityConf object (builder pattern)
      */
+    @SuppressWarnings({"unchecked"})
     public SecurityConfig setData(Object data) {
       if (data instanceof Map) {
         this.data = (Map<String, Object>) data;

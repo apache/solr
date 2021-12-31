@@ -55,6 +55,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.apache.solr.util.QueryMatchers.booleanQuery;
+import static org.apache.solr.util.QueryMatchers.boosted;
+import static org.apache.solr.util.QueryMatchers.disjunctionOf;
+import static org.apache.solr.util.QueryMatchers.phraseQuery;
+import static org.apache.solr.util.QueryMatchers.termQuery;
 import static org.hamcrest.core.StringContains.containsString;
 
 public class TestSolrQueryParser extends SolrTestCaseJ4 {
@@ -62,6 +67,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.max.booleanClauses", "42"); // lower for testing
+    System.setProperty("solr.filterCache.async", "true"); // for testLocalParamsInQP
     initCore("solrconfig.xml", "schema12.xml");
     createIndex();
   }
@@ -567,16 +573,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     inserts += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     assertJQ(req("q", "doesnotexist2 filter(id:1) filter(qqq_s:X) filter(abcdefg)")
         , "/response/numFound==2"
     );
 
     hits += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     // make sure normal "fq" parameters also hit the cache the same way
     assertJQ(req("q", "doesnotexist3", "fq", "id:1", "fq", "qqq_s:X", "fq", "abcdefg")
@@ -584,8 +590,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     hits += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     // try a query deeply nested in a FQ
     assertJQ(req("q", "*:* doesnotexist4", "fq", "(id:* +(filter(id:1) filter(qqq_s:X) filter(abcdefg)) )")
@@ -594,8 +600,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     inserts += 1;  // +1 for top level fq
     hits += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     // retry the complex FQ and make sure hashCode/equals works as expected w/ filter queries
     assertJQ(req("q", "*:* doesnotexist5", "fq", "(id:* +(filter(id:1) filter(qqq_s:X) filter(abcdefg)) )")
@@ -603,8 +609,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     hits += 1;  // top-level fq should have been found.
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
 
     // try nested filter with multiple top-level args (i.e. a boolean query)
@@ -614,8 +620,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     hits += 1;  // the inner filter
     inserts += 1; // the outer filter
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     // test the score for a filter, and that default score is 0
     assertJQ(req("q", "+filter(*:*) +filter(id:1)", "fl", "id,score", "sort", "id asc")
@@ -1066,6 +1072,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
 
+    @SuppressWarnings({"rawtypes"})
     Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
     int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;
@@ -1180,7 +1187,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       QParser qParser = QParser.getParser("text:grackle", req);
       qParser.setParams(sowTrueParams);
       Query q = qParser.getQuery();
-      assertEquals("spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])", q.toString());
+      assertEquals("text:\"crow blackbird\" text:grackl", q.toString());
 
       for (SolrParams params : Arrays.asList(noSowParams, sowTrueParams, sowFalseParams)) {
         qParser = QParser.getParser("text_sw:grackle", req); // "text_sw" doesn't specify autoGeneratePhraseQueries => default false
@@ -1207,49 +1214,78 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
   }
 
-
   public void testSynonymQueryStyle() throws Exception {
+    String field = "t_pick_best_foo";
+    Query q = QParser.getParser("tabby", req(params("df", field))).getQuery();
+    assertThat(q, disjunctionOf(
+        termQuery(field, "cat"),
+        termQuery(field, "tabbi"),
+        termQuery(field, "anim"),
+        termQuery(field, "felin")
+    ));
 
-    Query q = QParser.getParser("tabby", req(params("df", "t_pick_best_foo"))).getQuery();
-    assertEquals("(t_pick_best_foo:tabbi | t_pick_best_foo:cat | t_pick_best_foo:felin | t_pick_best_foo:anim)", q.toString());
-
-    q = QParser.getParser("tabby", req(params("df", "t_as_distinct_foo"))).getQuery();
-    assertEquals("t_as_distinct_foo:tabbi t_as_distinct_foo:cat t_as_distinct_foo:felin t_as_distinct_foo:anim", q.toString());
+    field = "t_as_distinct_foo";
+    q = QParser.getParser("tabby", req(params("df", field))).getQuery();
+    assertThat(q, booleanQuery(
+        termQuery(field,"cat"),
+        termQuery(field,"tabbi"),
+        termQuery(field,"anim"),
+        termQuery(field,"felin")
+    ));
 
     /*confirm autoGeneratePhraseQueries always builds OR queries*/
     q = QParser.getParser("jeans",  req(params("df", "t_as_distinct_foo", "sow", "false"))).getQuery();
     assertEquals("(t_as_distinct_foo:\"denim pant\" t_as_distinct_foo:jean)", q.toString());
 
-    q = QParser.getParser("jeans",  req(params("df", "t_pick_best_foo", "sow", "false"))).getQuery();
-    assertEquals("(t_pick_best_foo:\"denim pant\" | t_pick_best_foo:jean)", q.toString());
+    field = "t_pick_best_foo";
+    q = QParser.getParser("jeans",  req(params("df", field, "sow", "false"))).getQuery();
+    assertThat(q, booleanQuery(disjunctionOf(
+        termQuery(field, "jean"),
+        phraseQuery(field, "denim pant")
+    )));
   }
 
   public void testSynonymsBoost_singleTermQuerySingleTermSynonyms_shouldParseBoostedQuery() throws Exception {
     //tiger, tigre|0.9
-    Query q = QParser.getParser("tiger", req(params("df", "t_pick_best_boosted_foo"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:tigre)^0.9 | t_pick_best_boosted_foo:tiger)", q.toString());
+    String field = "t_pick_best_boosted_foo";
+    Query q = QParser.getParser("tiger", req(params("df", field))).getQuery();
+    assertThat(q, disjunctionOf(termQuery(field, "tiger"), boosted(field, "tigre", 0.9f)));
 
+    field = "t_as_distinct_boosted_foo";
     q = QParser.getParser("tiger", req(params("df", "t_as_distinct_boosted_foo"))).getQuery();
     assertEquals("(t_as_distinct_boosted_foo:tigre)^0.9 t_as_distinct_boosted_foo:tiger", q.toString());
 
+    field = "t_as_same_term_boosted_foo";
     q = QParser.getParser("tiger", req(params("df", "t_as_same_term_boosted_foo"))).getQuery();
     assertEquals("Synonym(t_as_same_term_boosted_foo:tiger t_as_same_term_boosted_foo:tigre^0.9)", q.toString());
 
     //lynx => lince|0.8, lynx_canadensis|0.9
-    q = QParser.getParser("lynx", req(params("df", "t_pick_best_boosted_foo"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:lince)^0.8 | (t_pick_best_boosted_foo:lynx_canadensis)^0.9)", q.toString());
+    field = "t_pick_best_boosted_foo";
+    q = QParser.getParser("lynx", req(params("df", field))).getQuery();
+    assertThat(q, disjunctionOf(boosted(field, "lince", 0.8f), boosted(field, "lynx_canadensis", 0.9f)));
 
-    q = QParser.getParser("lynx", req(params("df", "t_as_distinct_boosted_foo"))).getQuery();
-    assertEquals("(t_as_distinct_boosted_foo:lince)^0.8 (t_as_distinct_boosted_foo:lynx_canadensis)^0.9", q.toString());
+    field = "t_as_distinct_boosted_foo";
+    q = QParser.getParser("lynx", req(params("df", field))).getQuery();
+    assertThat(q, booleanQuery(
+        boosted(field, "lince", 0.8f),
+        boosted(field, "lynx_canadensis", 0.9f)
+    ));
 
-    q = QParser.getParser("lynx", req(params("df", "t_as_same_term_boosted_foo"))).getQuery();
+    field = "t_as_same_term_boosted_foo";
+    q = QParser.getParser("lynx", req(params("df", field))).getQuery();
     assertEquals("Synonym(t_as_same_term_boosted_foo:lince^0.8 t_as_same_term_boosted_foo:lynx_canadensis^0.9)", q.toString());
   }
 
   public void testSynonymsBoost_singleTermQueryMultiTermSynonyms_shouldParseBoostedQuery() throws Exception {
     //leopard, big cat|0.8, bagheera|0.9, panthera pardus|0.85
+    String field = "t_pick_best_boosted_foo";
     Query q = QParser.getParser("leopard", req(params("df", "t_pick_best_boosted_foo"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:\"big cat\")^0.8 | (t_pick_best_boosted_foo:bagheera)^0.9 | (t_pick_best_boosted_foo:\"panthera pardus\")^0.85 | t_pick_best_boosted_foo:leopard)", q.toString());
+    assertThat(q, booleanQuery(disjunctionOf(
+        termQuery(field, "leopard"),
+        boosted(phraseQuery(field, "big cat"), 0.8f),
+        boosted(phraseQuery(field, "panthera pardus"), 0.85f),
+        boosted(termQuery(field, "bagheera"), 0.9f)
+    )));
 
     q = QParser.getParser("leopard", req(params("df", "t_as_distinct_boosted_foo"))).getQuery();
     assertEquals("((t_as_distinct_boosted_foo:\"big cat\")^0.8 (t_as_distinct_boosted_foo:bagheera)^0.9 (t_as_distinct_boosted_foo:\"panthera pardus\")^0.85 t_as_distinct_boosted_foo:leopard)", q.toString());
@@ -1259,7 +1295,11 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     //lion => panthera leo|0.9, simba leo|0.8, kimba|0.75
     q = QParser.getParser("lion", req(params("df", "t_pick_best_boosted_foo"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:\"panthera leo\")^0.9 | (t_pick_best_boosted_foo:\"simba leo\")^0.8 | (t_pick_best_boosted_foo:kimba)^0.75)", q.toString());
+    assertThat(q, booleanQuery(disjunctionOf(
+      boosted(termQuery(field, "kimba"), 0.75f),
+      boosted(phraseQuery(field, "simba leo"), 0.8f),
+      boosted(phraseQuery(field, "panthera leo"), 0.9f)
+    )));
 
     q = QParser.getParser("lion", req(params("df", "t_as_distinct_boosted_foo"))).getQuery();
     assertEquals("((t_as_distinct_boosted_foo:\"panthera leo\")^0.9 (t_as_distinct_boosted_foo:\"simba leo\")^0.8 (t_as_distinct_boosted_foo:kimba)^0.75)", q.toString());
@@ -1271,9 +1311,18 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public void testSynonymsBoost_multiTermQuerySingleTermSynonyms_shouldParseBoostedQuery() throws Exception {
     //tiger, tigre|0.9
     //lynx => lince|0.8, lynx_canadensis|0.9
-    Query q = QParser.getParser("tiger lynx", req(params("df", "t_pick_best_boosted_foo"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:tigre)^0.9 | t_pick_best_boosted_foo:tiger)" +
-            " ((t_pick_best_boosted_foo:lince)^0.8 | (t_pick_best_boosted_foo:lynx_canadensis)^0.9)", q.toString());
+    String field = "t_pick_best_boosted_foo";
+    Query q = QParser.getParser("tiger lynx", req(params("df", field))).getQuery();
+    assertThat(q, booleanQuery(
+        disjunctionOf(
+            boosted(field, "lince", 0.8f),
+            boosted(field, "lynx_canadensis", 0.9f)
+        ),
+        disjunctionOf(
+            termQuery(field, "tiger"),
+            boosted(field, "tigre", 0.9f)
+        )
+    ));
 
     q = QParser.getParser("tiger lynx", req(params("df", "t_as_distinct_boosted_foo"))).getQuery();
     assertEquals("((t_as_distinct_boosted_foo:tigre)^0.9 t_as_distinct_boosted_foo:tiger)" +
@@ -1287,9 +1336,21 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public void testSynonymsBoost_multiTermQueryMultiTermSynonyms_shouldParseBoostedQuery() throws Exception {
     //leopard, big cat|0.8, bagheera|0.9, panthera pardus|0.85
     //lion => panthera leo|0.9, simba leo|0.8, kimba|0.75
-    Query q = QParser.getParser("leopard lion", req(params("df", "t_pick_best_boosted_foo"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:\"big cat\")^0.8 | (t_pick_best_boosted_foo:bagheera)^0.9 | (t_pick_best_boosted_foo:\"panthera pardus\")^0.85 | t_pick_best_boosted_foo:leopard)" +
-        " ((t_pick_best_boosted_foo:\"panthera leo\")^0.9 | (t_pick_best_boosted_foo:\"simba leo\")^0.8 | (t_pick_best_boosted_foo:kimba)^0.75)", q.toString());
+    String field = "t_pick_best_boosted_foo";
+    Query q = QParser.getParser("leopard lion", req(params("df", field))).getQuery();
+    assertThat(q, booleanQuery(
+      disjunctionOf(
+        termQuery(field, "leopard"),
+        boosted(phraseQuery(field, "big cat"), 0.8f),
+        boosted(phraseQuery(field, "panthera pardus"), 0.85f),
+        boosted(termQuery(field, "bagheera"), 0.9f)
+      ),
+      disjunctionOf(
+        boosted(termQuery(field, "kimba"), 0.75f),
+        boosted(phraseQuery(field, "simba leo"), 0.8f),
+        boosted(phraseQuery(field, "panthera leo"), 0.9f)
+      )
+    ));
 
     q = QParser.getParser("leopard lion", req(params("df", "t_as_distinct_boosted_foo"))).getQuery();
     assertEquals("((t_as_distinct_boosted_foo:\"big cat\")^0.8 (t_as_distinct_boosted_foo:bagheera)^0.9 (t_as_distinct_boosted_foo:\"panthera pardus\")^0.85 t_as_distinct_boosted_foo:leopard)" +
@@ -1303,8 +1364,15 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
   public void testSynonymsBoost_singleConceptQuerySingleTermSynonym_shouldParseBoostedQuery() throws Exception {
     //panthera pardus, leopard|0.6
-    Query q = QParser.getParser("panthera pardus story",req(params("df", "t_pick_best_boosted_foo","sow", "false"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:leopard)^0.6 | t_pick_best_boosted_foo:\"panthera pardus\") t_pick_best_boosted_foo:story", q.toString());
+    String field = "t_pick_best_boosted_foo";
+    Query q = QParser.getParser("panthera pardus story",req(params("df", field,"sow", "false"))).getQuery();
+    assertThat(q, booleanQuery(
+        termQuery(field, "story"),
+        disjunctionOf(
+            boosted(field, "leopard", 0.6f),
+            phraseQuery(field, "panthera pardus")
+        )
+    ));
 
     q = QParser.getParser("panthera pardus story", req(params("df", "t_as_distinct_boosted_foo","sow", "false"))).getQuery();
     assertEquals("((t_as_distinct_boosted_foo:leopard)^0.6 t_as_distinct_boosted_foo:\"panthera pardus\") t_as_distinct_boosted_foo:story", q.toString());
@@ -1325,8 +1393,12 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
   public void testSynonymsBoost_singleConceptQueryMultiTermSynonymWithMultipleBoost_shouldParseMultiplicativeBoostedQuery() throws Exception {
     //panthera blytheae, oldest|0.5 ancient|0.9 panthera
-    Query q = QParser.getParser("panthera blytheae",req(params("df", "t_pick_best_boosted_foo","sow", "false"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:\"oldest ancient panthera\")^0.45 | t_pick_best_boosted_foo:\"panthera blytheae\")", q.toString());
+    String field = "t_pick_best_boosted_foo";
+    Query q = QParser.getParser("panthera blytheae",req(params("df", field, "sow", "false"))).getQuery();
+    assertThat(q, booleanQuery(disjunctionOf(
+        boosted(phraseQuery(field, "oldest ancient panthera"), 0.45f),
+        phraseQuery(field, "panthera blytheae")
+    )));
 
     q = QParser.getParser("panthera blytheae", req(params("df", "t_as_distinct_boosted_foo","sow", "false"))).getQuery();
     assertEquals("((t_as_distinct_boosted_foo:\"oldest ancient panthera\")^0.45 t_as_distinct_boosted_foo:\"panthera blytheae\")", q.toString());
@@ -1337,9 +1409,15 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
   public void testSynonymsBoost_singleConceptQueryMultiTermSynonyms_shouldParseBoostedQuery() throws Exception {
     //snow leopard, panthera uncia|0.9, big cat|0.8, white_leopard|0.6
-    Query q = QParser.getParser("snow leopard",req(params("df", "t_pick_best_boosted_foo","sow", "false"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:\"panthera uncia\")^0.9 | (t_pick_best_boosted_foo:\"big cat\")^0.8 | (t_pick_best_boosted_foo:white_leopard)^0.6 | t_pick_best_boosted_foo:\"snow leopard\")", q.toString());
-    
+    String field = "t_pick_best_boosted_foo";
+    Query q = QParser.getParser("snow leopard",req(params("df", field, "sow", "false"))).getQuery();
+    assertThat(q, booleanQuery(disjunctionOf( // TODO why does this generate a single clause Boolean?
+        phraseQuery(field, "snow leopard"),
+        boosted(phraseQuery(field, "panthera uncia"), 0.9f),
+        boosted(phraseQuery(field, "big cat"), 0.8f),
+        boosted(field, "white_leopard", 0.6f)
+    )));
+
     q = QParser.getParser("snow leopard", req(params("df", "t_as_distinct_boosted_foo","sow", "false"))).getQuery();
     assertEquals("((t_as_distinct_boosted_foo:\"panthera uncia\")^0.9 (t_as_distinct_boosted_foo:\"big cat\")^0.8 (t_as_distinct_boosted_foo:white_leopard)^0.6 t_as_distinct_boosted_foo:\"snow leopard\")", q.toString());
 
@@ -1348,21 +1426,34 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     //panthera onca => jaguar|0.95, big cat|0.85, black panther|0.65
     q = QParser.getParser("panthera onca", req(params("df", "t_pick_best_boosted_foo","sow", "false"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:jaguar)^0.95 | (t_pick_best_boosted_foo:\"big cat\")^0.85 | (t_pick_best_boosted_foo:\"black panther\")^0.65)", q.toString());
+    assertThat(q, booleanQuery(disjunctionOf(
+        boosted(field, "jaguar", 0.95f),
+        boosted(phraseQuery(field, "big cat"), 0.85f),
+        boosted(phraseQuery(field, "black panther"), 0.65f)
+    )));
 
     q = QParser.getParser("panthera onca", req(params("df", "t_as_distinct_boosted_foo","sow", "false"))).getQuery();
     assertEquals("((t_as_distinct_boosted_foo:jaguar)^0.95 (t_as_distinct_boosted_foo:\"big cat\")^0.85 (t_as_distinct_boosted_foo:\"black panther\")^0.65)", q.toString());
 
     q = QParser.getParser("panthera onca", req(params("df", "t_as_same_term_boosted_foo","sow", "false"))).getQuery();
     assertEquals("((t_as_same_term_boosted_foo:jaguar)^0.95 (t_as_same_term_boosted_foo:\"big cat\")^0.85 (t_as_same_term_boosted_foo:\"black panther\")^0.65)", q.toString());
-
   }
 
   public void testSynonymsBoost_multiConceptQuerySingleTermSynonym_shouldParseBoostedQuery() throws Exception {
     //panthera pardus, leopard|0.6
     //tiger, tigre|0.9
-    Query q = QParser.getParser("panthera pardus tiger",req(params("df", "t_pick_best_boosted_foo","sow", "false"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:leopard)^0.6 | t_pick_best_boosted_foo:\"panthera pardus\") ((t_pick_best_boosted_foo:tigre)^0.9 | t_pick_best_boosted_foo:tiger)", q.toString());
+    String field = "t_pick_best_boosted_foo";
+    Query q = QParser.getParser("panthera pardus tiger",req(params("df", field,"sow", "false"))).getQuery();
+    assertThat(q, booleanQuery(
+       disjunctionOf(
+           boosted(field, "leopard", 0.6f),
+           phraseQuery(field, "panthera pardus")
+       ),
+       disjunctionOf(
+           termQuery(field, "tiger"),
+           boosted(field, "tigre", 0.9f)
+       )
+    ));
 
     q = QParser.getParser("panthera pardus tiger", req(params("df", "t_as_distinct_boosted_foo","sow", "false"))).getQuery();
     assertEquals("((t_as_distinct_boosted_foo:leopard)^0.6 t_as_distinct_boosted_foo:\"panthera pardus\") ((t_as_distinct_boosted_foo:tigre)^0.9 t_as_distinct_boosted_foo:tiger)", q.toString());
@@ -1374,9 +1465,21 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public void testSynonymsBoost_multiConceptsQueryMultiTermSynonyms_shouldParseBoostedQuery() throws Exception {
     //snow leopard, panthera uncia|0.9, big cat|0.8, white_leopard|0.6
     //panthera onca => jaguar|0.95, big cat|0.85, black panther|0.65
-    Query q = QParser.getParser("snow leopard panthera onca",req(params("df", "t_pick_best_boosted_foo","sow", "false"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:\"panthera uncia\")^0.9 | (t_pick_best_boosted_foo:\"big cat\")^0.8 | (t_pick_best_boosted_foo:white_leopard)^0.6 | t_pick_best_boosted_foo:\"snow leopard\")" +
-        " ((t_pick_best_boosted_foo:jaguar)^0.95 | (t_pick_best_boosted_foo:\"big cat\")^0.85 | (t_pick_best_boosted_foo:\"black panther\")^0.65)", q.toString());
+    String field = "t_pick_best_boosted_foo";
+    Query q = QParser.getParser("snow leopard panthera onca",req(params("df", field,"sow", "false"))).getQuery();
+    assertThat(q, booleanQuery(
+       disjunctionOf(
+           boosted(phraseQuery(field, "panthera uncia"), 0.9f),
+           boosted(phraseQuery(field, "big cat"), 0.8f),
+           boosted(field, "white_leopard", 0.6f),
+           phraseQuery(field, "snow leopard")
+       ),
+       disjunctionOf(
+           boosted(field, "jaguar", 0.95f),
+           boosted(phraseQuery(field, "big cat"), 0.85f),
+           boosted(phraseQuery(field, "black panther"), 0.65f)
+       )
+    ));
 
     q = QParser.getParser("snow leopard panthera onca", req(params("df", "t_as_distinct_boosted_foo","sow", "false"))).getQuery();
     assertEquals("((t_as_distinct_boosted_foo:\"panthera uncia\")^0.9 (t_as_distinct_boosted_foo:\"big cat\")^0.8 (t_as_distinct_boosted_foo:white_leopard)^0.6 t_as_distinct_boosted_foo:\"snow leopard\")" +
@@ -1389,11 +1492,21 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
     
   public void testSynonymsBoost_edismaxBoost_shouldParseBoostedPhraseQuery() throws Exception {
-    Query q = QParser.getParser("snow leopard lion","edismax",true, req(params("sow", "false","qf", "t_pick_best_boosted_foo^10"))).getQuery();
-    assertEquals("+(" +
-        "((((t_pick_best_boosted_foo:\"panthera uncia\")^0.9 | (t_pick_best_boosted_foo:\"big cat\")^0.8 | (t_pick_best_boosted_foo:white_leopard)^0.6 | t_pick_best_boosted_foo:\"snow leopard\"))^10.0)" +
-        " ((((t_pick_best_boosted_foo:\"panthera leo\")^0.9 | (t_pick_best_boosted_foo:\"simba leo\")^0.8 | (t_pick_best_boosted_foo:kimba)^0.75))^10.0)" +
-        ")", q.toString());
+    String field = "t_pick_best_boosted_foo";
+    Query q = QParser.getParser("snow leopard lion","edismax",true, req(params("sow", "false","qf", field + "^10"))).getQuery();
+    assertThat(q, booleanQuery(booleanQuery(
+        disjunctionOf(boosted(disjunctionOf(
+            phraseQuery(field, "snow leopard"),
+            boosted(phraseQuery(field, "big cat"), 0.8f),
+            boosted(phraseQuery(field, "panthera uncia"), 0.9f),
+            boosted(termQuery(field, "white_leopard"), 0.6f)
+        ), 10)),
+        disjunctionOf(boosted(disjunctionOf(
+            boosted(termQuery(field, "kimba"), 0.75f),
+            boosted(phraseQuery(field, "simba leo"), 0.8f),
+            boosted(phraseQuery(field, "panthera leo"), 0.9f)
+        ), 10))),
+    BooleanClause.Occur.MUST));
 
     q = QParser.getParser("snow leopard lion","edismax",true, req(params("sow", "false","qf", "t_as_distinct_boosted_foo^10"))).getQuery();
     assertEquals("+(" +
@@ -1407,36 +1520,42 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
   }
 
-  public void testSynonymsBoost_phraseQueryMultiTermSynonymsBoost_shouldParseBoostedSpanQuery() throws Exception {
+  public void testSynonymsBoost_phraseQueryMultiTermSynonymsBoost() throws Exception {
     Query q = QParser.getParser("\"snow leopard lion\"", req(params("df", "t_pick_best_boosted_foo", "sow", "false"))).getQuery();
-    assertEquals("spanNear([" +
-        "spanOr([" +
-        "(spanNear([t_pick_best_boosted_foo:panthera, t_pick_best_boosted_foo:uncia], 0, true))^0.9," +
-        " (spanNear([t_pick_best_boosted_foo:big, t_pick_best_boosted_foo:cat], 0, true))^0.8," +
-        " (t_pick_best_boosted_foo:white_leopard)^0.6," +
-        " spanNear([t_pick_best_boosted_foo:snow, t_pick_best_boosted_foo:leopard], 0, true)])," +
-        " spanOr([" +
-        "(spanNear([t_pick_best_boosted_foo:panthera, t_pick_best_boosted_foo:leo], 0, true))^0.9," +
-        " (spanNear([t_pick_best_boosted_foo:simba, t_pick_best_boosted_foo:leo], 0, true))^0.8," +
-        " (t_pick_best_boosted_foo:kimba)^0.75])], 0, true)", q.toString());
+    assertEquals("(t_pick_best_boosted_foo:\"panthera uncia panthera leo\")^0.80999994 " +
+        "(t_pick_best_boosted_foo:\"panthera uncia simba leo\")^0.71999997 " +
+        "(t_pick_best_boosted_foo:\"panthera uncia kimba\")^0.67499995 " +
+        "(t_pick_best_boosted_foo:\"big cat panthera leo\")^0.71999997 " +
+        "(t_pick_best_boosted_foo:\"big cat simba leo\")^0.64000005 " +
+        "(t_pick_best_boosted_foo:\"big cat kimba\")^0.6 " +
+        "(t_pick_best_boosted_foo:\"white_leopard panthera leo\")^0.54 " +
+        "(t_pick_best_boosted_foo:\"white_leopard simba leo\")^0.48000002 " +
+        "(t_pick_best_boosted_foo:\"white_leopard kimba\")^0.45000002 " +
+        "(t_pick_best_boosted_foo:\"snow leopard panthera leo\")^0.9 " +
+        "(t_pick_best_boosted_foo:\"snow leopard simba leo\")^0.8 " +
+        "(t_pick_best_boosted_foo:\"snow leopard kimba\")^0.75", q.toString());
   }
 
-  public void testSynonymsBoost_phraseQueryMultiTermSynonymsMultipleBoost_shouldParseMultiplicativeBoostedSpanQuery() throws Exception {
+  public void testSynonymsBoost_phraseQueryMultiTermSynonymsMultipleBoost() throws Exception {
     Query q = QParser.getParser("\"panthera blytheae lion\"", req(params("df", "t_pick_best_boosted_foo", "sow", "false"))).getQuery();
-    assertEquals("spanNear([" +
-            "spanOr([" +
-            "(spanNear([t_pick_best_boosted_foo:oldest, t_pick_best_boosted_foo:ancient, t_pick_best_boosted_foo:panthera], 0, true))^0.45," +
-            " spanNear([t_pick_best_boosted_foo:panthera, t_pick_best_boosted_foo:blytheae], 0, true)])," +
-            " spanOr([" +
-            "(spanNear([t_pick_best_boosted_foo:panthera, t_pick_best_boosted_foo:leo], 0, true))^0.9," +
-            " (spanNear([t_pick_best_boosted_foo:simba, t_pick_best_boosted_foo:leo], 0, true))^0.8," +
-            " (t_pick_best_boosted_foo:kimba)^0.75])], 0, true)", q.toString());
+    assertEquals("(t_pick_best_boosted_foo:\"oldest ancient panthera panthera leo\")^0.40499997 " +
+        "(t_pick_best_boosted_foo:\"oldest ancient panthera simba leo\")^0.35999998 " +
+        "(t_pick_best_boosted_foo:\"oldest ancient panthera kimba\")^0.33749998 " +
+        "(t_pick_best_boosted_foo:\"panthera blytheae panthera leo\")^0.9 " +
+        "(t_pick_best_boosted_foo:\"panthera blytheae simba leo\")^0.8 " +
+        "(t_pick_best_boosted_foo:\"panthera blytheae kimba\")^0.75", q.toString());
   }
 
   public void testSynonymsBoost_BoostMissing_shouldAssignDefaultBoost() throws Exception {
     //leopard, big cat|0.8, bagheera|0.9, panthera pardus|0.85
-    Query q = QParser.getParser("leopard", req(params("df", "t_pick_best_boosted_foo"))).getQuery();
-    assertEquals("((t_pick_best_boosted_foo:\"big cat\")^0.8 | (t_pick_best_boosted_foo:bagheera)^0.9 | (t_pick_best_boosted_foo:\"panthera pardus\")^0.85 | t_pick_best_boosted_foo:leopard)", q.toString());
+    String field = "t_pick_best_boosted_foo";
+    Query q = QParser.getParser("leopard", req(params("df", field))).getQuery();
+    assertThat(q, booleanQuery(disjunctionOf(
+        termQuery(field, "leopard"),
+        boosted(phraseQuery(field, "big cat"), 0.8f),
+        boosted(phraseQuery(field, "panthera pardus"), 0.85f),
+        boosted(termQuery(field, "bagheera"), 0.9f)
+    )));
 
     q = QParser.getParser("leopard", req(params("df", "t_as_distinct_boosted_foo"))).getQuery();
     assertEquals("((t_as_distinct_boosted_foo:\"big cat\")^0.8 (t_as_distinct_boosted_foo:bagheera)^0.9 (t_as_distinct_boosted_foo:\"panthera pardus\")^0.85 t_as_distinct_boosted_foo:leopard)", q.toString());
@@ -1477,13 +1596,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public void testFieldExistsQueries() throws SyntaxError {
     SolrQueryRequest req = req();
     String[] fieldSuffix = new String[] {
-        "ti", "tf", "td", "tl", "tdt",
-        "pi", "pf", "pd", "pl", "pdt",
-        "i", "f", "d", "l", "dt", "s", "b",
-        "is", "fs", "ds", "ls", "dts", "ss", "bs",
-        "i_dv", "f_dv", "d_dv", "l_dv", "dt_dv", "s_dv", "b_dv",
-        "is_dv", "fs_dv", "ds_dv", "ls_dv", "dts_dv", "ss_dv", "bs_dv",
-        "i_dvo", "f_dvo", "d_dvo", "l_dvo", "dt_dvo",
+        "ti", "tf", "td", "tl", "tdt", // trie types
+        "pi", "pf", "pd", "pl", "pdt", // point types
+        "i", "f", "d", "l", "dt", "s", "b", // numeric types
+        "is", "fs", "ds", "ls", "dts", "ss", "bs", // multi-valued
+        "i_dv", "f_dv", "d_dv", "l_dv", "dt_dv", "s_dv", "b_dv", // numerics + docValues
+        "is_dv", "fs_dv", "ds_dv", "ls_dv", "dts_dv", "ss_dv", "bs_dv", // multi-docValues
+        "i_dvo", "f_dvo", "d_dvo", "l_dvo", "dt_dvo", // not indexed
         "t",
         "t_on", "b_norms", "s_norms", "dt_norms", "i_norms", "l_norms", "f_norms", "d_norms"
     };

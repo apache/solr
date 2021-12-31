@@ -43,7 +43,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -192,15 +192,13 @@ public class ChaosMonkey {
       List<CloudJettyRunner> jetties = shardToJetty.get(key);
       for (CloudJettyRunner jetty : jetties) {
         Thread.sleep(pauseBetweenMs);
-        Thread thread = new Thread() {
-          public void run() {
-            try {
-              stopJetty(jetty);
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            }
+        Thread thread = new Thread(() -> {
+          try {
+            stopJetty(jetty);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
           }
-        };
+        }, "ChaosMonkey");
         jettyThreads.add(thread);
         thread.start();
 
@@ -490,39 +488,35 @@ public class ChaosMonkey {
     // TODO: when kill leaders is on, lets kill a higher percentage of leaders
     
     stop = false;
-    monkeyThread = new Thread() {
+    monkeyThread = new Thread(() -> {
+      while (!stop) {
+        try {
 
-      @Override
-      public void run() {
-        while (!stop) {
-          try {
-    
-            Thread.sleep(chaosRandom.nextInt(roundPauseUpperLimit));
+          Thread.sleep(chaosRandom.nextInt(roundPauseUpperLimit));
 
-            causeSomeChaos();
-            
-          } catch (InterruptedException e) {
-            //
-          } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-          }
+          causeSomeChaos();
+
+        } catch (InterruptedException e) {
+          //
+        } catch (Exception e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
         }
-        monkeyLog("finished");
-        monkeyLog("I ran for " + runTimer.getTime() / 1000 + "s. I stopped " + stops + " and I started " + starts
-            + ". I also expired " + expires.get() + " and caused " + connloss
-            + " connection losses");
       }
-    };
+      monkeyLog("finished");
+      monkeyLog("I ran for " + runTimer.getTime() / 1000 + "s. I stopped " + stops + " and I started " + starts
+          + ". I also expired " + expires.get() + " and caused " + connloss
+          + " connection losses");
+    }, "ChaosMonkey");
     monkeyThread.start();
   }
   
   public static void monkeyLog(String msg) {
-    log.info("monkey: " + msg);
+    log.info("monkey: {}", msg);
   }
   
   public static void monkeyLog(String msg, Object...logParams) {
-    log.info("monkey: " + msg, logParams);
+    log.info("monkey: {}", msg, logParams);
   }
   
   public void stopTheMonkey() {
@@ -592,7 +586,7 @@ public class ChaosMonkey {
         Integer.MAX_VALUE,
         15, TimeUnit.SECONDS,
         new SynchronousQueue<>(),
-        new DefaultSolrThreadFactory("ChaosMonkey"),
+        new SolrNamedThreadFactory("ChaosMonkey"),
         false);
     for (JettySolrRunner jetty : jettys) {
       executor.submit(() -> {
@@ -613,7 +607,7 @@ public class ChaosMonkey {
         Integer.MAX_VALUE,
         15, TimeUnit.SECONDS,
         new SynchronousQueue<>(),
-        new DefaultSolrThreadFactory("ChaosMonkey"),
+        new SolrNamedThreadFactory("ChaosMonkey"),
         false);
     for (JettySolrRunner jetty : jettys) {
       executor.submit(() -> {
@@ -654,7 +648,7 @@ public class ChaosMonkey {
     for (Slice slice:docCollection.getSlices()) {
       builder.append(slice.getName()).append(": {");
       for (Replica replica:slice.getReplicas()) {
-        log.info(replica.toString());
+        log.info("{}", replica);
         java.util.regex.Matcher m = portPattern.matcher(replica.getBaseUrl());
         m.find();
         String jettyPort = m.group(1);

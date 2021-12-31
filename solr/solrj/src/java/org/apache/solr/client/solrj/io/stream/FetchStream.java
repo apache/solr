@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -199,13 +200,13 @@ public class FetchStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     l.add(stream);
     return l;
   }
 
   public void open() throws IOException {
-    tuples = new ArrayList().iterator();
+    tuples = Collections.emptyIterator();
     stream.open();
   }
 
@@ -239,6 +240,7 @@ public class FetchStream extends TupleStream implements Expressible {
       CloudSolrStream cloudSolrStream = new CloudSolrStream(zkHost, collection, params);
       StreamContext newContext = new StreamContext();
       newContext.setSolrClientCache(streamContext.getSolrClientCache());
+      newContext.setObjectCache(streamContext.getObjectCache());
       cloudSolrStream.setStreamContext(newContext);
       Map<String, Tuple> fetched = new HashMap<>();
       try {

@@ -102,26 +102,6 @@
 
   </requestDispatcher>
 
-  <!-- Request Handlers
-
-       http://wiki.apache.org/solr/SolrRequestHandler
-
-       Incoming queries will be dispatched to a specific handler by name
-       based on the path specified in the request.
-
-       If a Request Handler is declared with startup="lazy", then it will
-       not be initialized until the first request that uses it.
-
-    -->
-  <!-- SearchHandler
-
-       http://wiki.apache.org/solr/SearchHandler
-
-       For processing Search Queries, the primary Request Handler
-       provided with Solr is "SearchHandler" It delegates to a sequent
-       of SearchComponents (see below) and supports distributed
-       queries across multiple shards
-    -->
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
@@ -129,30 +109,6 @@
     </lst>
   </requestHandler>
 
-  <!-- Update Processors
-
-       Chains of Update Processor Factories for dealing with Update
-       Requests can be declared, and then used by name in Update
-       Request Processors
-
-       http://wiki.apache.org/solr/UpdateRequestProcessor
-
-    -->
-
-  <!-- Add unknown fields to the schema
-
-       Field type guessing update processors that will
-       attempt to parse string-typed field values as Booleans, Longs,
-       Doubles, or Dates, and then add schema fields with the guessed
-       field types. Text content will be indexed as "text_general" as
-       well as a copy to a plain string version in *_str.
-
-       These require that the schema is both managed and mutable, by
-       declaring schemaFactory as ManagedIndexSchemaFactory, with
-       mutable specified as true.
-
-       See http://wiki.apache.org/solr/GuessingFieldTypes
-    -->
   <updateProcessor class="solr.UUIDUpdateProcessorFactory" name="uuid"/>
   <updateProcessor class="solr.RemoveBlankFieldUpdateProcessorFactory" name="remove-blank"/>
   <updateProcessor class="solr.FieldNameMutatingUpdateProcessorFactory" name="field-name-mutating">
@@ -220,13 +176,5 @@
     <processor class="solr.DistributedUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
-
-  <queryResponseWriter name="json" class="solr.JSONResponseWriter">
-    <!-- For the purposes of the tutorial, JSON responses are written as
-     plain text so that they are easy to read in *any* browser.
-     If you expect a MIME type of "application/json" just remove this override.
-    -->
-    <str name="content-type">text/plain; charset=UTF-8</str>
-  </queryResponseWriter>
 
 </config>

@@ -39,9 +39,6 @@ limitations under the License.
           <dt class="index_max-doc">Max Doc:</dt>
             <dd class="index_max-doc value">{{index.maxDoc}}</dd>
 
-          <dt class="index_heap-usage-bytes">Heap Memory Usage:</dt>
-            <dd class="index_heap-usage-bytes value">{{index.indexHeapUsageBytes}}</dd>
-
           <dt class="index_deleted-docs">Deleted Docs:</dt>
             <dd class="index_deleted-docs value">{{index.deletedDocs}}</dd>
 
@@ -99,8 +96,8 @@ limitations under the License.
       <h2>
         <span class="is-replicating">
           Replication
-          <span ng-show="isSlave"> (Slave)</span>
-          <span ng-show="isMaster"> (Master)</span>
+          <span ng-show="isFollower"> (Follower)</span>
+          <span ng-show="isLeader"> (Leader)</span>
         </span>
       </h2>
 
@@ -126,45 +123,45 @@ limitations under the License.
           </thead>
           <tbody>
 
-            <tr class="masterSearch" ng-show="isMaster">
+            <tr class="leaderSearch" ng-show="isLeader">
 
-              <th>Master (Searching)</th>
+              <th>Leader (Searching)</th>
               <td class="version"><div>{{replication.indexVersion}}</div></td>
               <td class="generation"><div>{{replication.generation}}</div></td>
               <td class="size"><div>{{replication.indexSize || '-'}}</div></td>
 
             </tr>
 
-            <tr class="master" ng-show="isMaster">
+            <tr class="leader" ng-show="isLeader">
 
-              <th>Master (Replicable)</th>
-              <td class="version"><div>{{replication.master.replicableVersion || '-'}}</div></td>
-              <td class="generation"><div>{{replication.master.replicableGeneration || '-'}}</div></td>
+              <th>Leader (Replicable)</th>
+              <td class="version"><div>{{replication.leader.replicableVersion || '-'}}</div></td>
+              <td class="generation"><div>{{replication.leader.replicableGeneration || '-'}}</div></td>
               <td class="size"><div>-</div></td>
 
             </tr>
 
-            <tr class="master" ng-show="isSlave">
+            <tr class="leader" ng-show="isFollower">
 
-              <th>Master (Replicable)</th>
-              <td class="version"><div>{{replication.master.replicableVersion || '-'}}</div></td>
-              <td class="generation"><div>{{replication.master.replicableGeneration || '-'}}</div></td>
+              <th>Leader (Replicable)</th>
+              <td class="version"><div>{{replication.leader.replicableVersion || '-'}}</div></td>
+              <td class="generation"><div>{{replication.leader.replicableGeneration || '-'}}</div></td>
               <td class="size"><div>-</div></td>
 
             </tr>
 
-            <tr class="masterSearch" ng-show="isSlave">
+            <tr class="leaderSearch" ng-show="isFollower">
 
-              <th>Master (Searching)</th>
-              <td class="version"><div>{{replication.slave.masterDetails.indexVersion}}</div></td>
-              <td class="generation"><div>{{replication.slave.masterDetails.generation}}</div></td>
-              <td class="size"><div>{{replication.slave.masterDetails.indexSize || '-'}}</div></td>
+              <th>Leader (Searching)</th>
+              <td class="version"><div>{{replication.follower.leaderDetails.indexVersion}}</div></td>
+              <td class="generation"><div>{{replication.follower.leaderDetails.generation}}</div></td>
+              <td class="size"><div>{{replication.follower.leaderDetails.indexSize || '-'}}</div></td>
 
             </tr>
 
-            <tr class="slave slaveOnly" ng-show="isSlave">
+            <tr class="follower followerOnly" ng-show="isFollower">
 
-              <th>Slave (Searching)</th>
+              <th>Follower (Searching)</th>
               <td class="version"><div>{{replication.indexVersion}}</div></td>
               <td class="generation"><div>{{replication.generation}}</div></td>
               <td class="size"><div>{{replication.indexSize || '-'}}</div></td>
@@ -189,10 +186,10 @@ limitations under the License.
         <dl>
 
           <dt class="status">Status:</dt>
-          <dd class="status value ico ico-1" ng-show="healthcheckStatus">
+          <dd class="status value ico ico-1" ng-show="healthcheckStatus" ng-click="toggleHealthcheck()">
             <button class="healthcheck-status enabled">Healthcheck Status</button>
           </dd>
-          <dd class="status value ico ico-0" ng-show="!healthcheckStatus">
+          <dd class="status value ico ico-0" ng-show="!healthcheckStatus" ng-click="toggleHealthcheck()">
             <button class="healthcheck-status">enable ping</button>
           </dd>
         </dl>

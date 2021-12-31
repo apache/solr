@@ -16,6 +16,27 @@
  */
 package org.apache.solr.handler.admin;
 
+import com.codahale.metrics.Gauge;
+import org.apache.lucene.util.Version;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
+import org.apache.solr.common.cloud.UrlScheme;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.security.AuthorizationPlugin;
+import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
+import org.apache.solr.util.RTimer;
+import org.apache.solr.util.RedactionUtils;
+import org.apache.solr.util.stats.MetricUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -25,25 +46,12 @@ import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-
-import com.codahale.metrics.Gauge;
-import org.apache.lucene.LucenePackage;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.util.RTimer;
-import org.apache.solr.util.RedactionUtils;
-import org.apache.solr.util.stats.MetricUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Set;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -106,9 +114,9 @@ public class SystemInfoHandler extends RequestHandlerBase
       InetAddress addr = InetAddress.getLocalHost();
       hostname = addr.getCanonicalHostName();
     } catch (Exception e) {
-      log.warn("Unable to resolve canonical hostname for local host, possible DNS misconfiguration. " +
-               "Set the '"+PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP+"' sysprop to true on startup to " +
-               "prevent future lookups if DNS can not be fixed.", e);
+      log.warn("Unable to resolve canonical hostname for local host, possible DNS misconfiguration. SET THE '{}' {}"
+          , PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP
+          , " sysprop to true on startup to prevent future lookups if DNS can not be fixed.", e);
       hostname = null;
       return;
     }
@@ -116,10 +124,9 @@ public class SystemInfoHandler extends RequestHandlerBase
     
     if (15000D < timer.getTime()) {
       String readableTime = String.format(Locale.ROOT, "%.3f", (timer.getTime() / 1000));
-      log.warn("Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. " +
-               "Set the '{}' sysprop to true on startup to prevent future lookups if DNS can not be fixed.",
-               readableTime, PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP);
-    
+      log.warn("Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. Set the '{}' {}"
+          , readableTime, PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP,
+          " sysprop to true on startup to prevent future lookups if DNS can not be fixed.");
     }
   }
 
@@ -137,10 +144,14 @@ public class SystemInfoHandler extends RequestHandlerBase
     if (solrCloudMode) {
       rsp.add("zkHost", getCoreContainer(req, core).getZkController().getZkServerAddress());
     }
-    if (cc != null)
-      rsp.add( "solr_home", cc.getSolrHome());
+    if (cc != null) {
+      rsp.add("solr_home", cc.getSolrHome());
+      rsp.add("core_root", cc.getCoreRootDirectory().toString());
+    }
+
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
+    rsp.add( "security", getSecurityInfo(req) );
     rsp.add( "system", getSystemInfo() );
     if (solrCloudMode) {
       rsp.add("node", getCoreContainer(req, core).getZkController().getNodeName());
@@ -188,7 +199,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     // Solr Home
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
     dirs.add( "cwd" , new File( System.getProperty("user.dir")).getAbsolutePath() );
-    dirs.add("instance", core.getResourceLoader().getInstancePath().toString());
+    dirs.add("instance", core.getInstancePath().toString());
     try {
       dirs.add( "data", core.getDirectoryFactory().normalize(core.getDataDir()));
     } catch (IOException e) {
@@ -312,7 +323,45 @@ public class SystemInfoHandler extends RequestHandlerBase
     jvm.add( "jmx", jmx );
     return jvm;
   }
-  
+
+  /**
+   * Get Security Info
+   */
+  public SimpleOrderedMap<Object> getSecurityInfo(SolrQueryRequest req)
+  {
+    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
+
+    if (cc != null) {
+      if (cc.getAuthenticationPlugin() != null) {
+        info.add("authenticationPlugin", cc.getAuthenticationPlugin().getName());
+      }
+      if (cc.getAuthorizationPlugin() != null) {
+        info.add("authorizationPlugin", cc.getAuthorizationPlugin().getClass().getName());
+      }
+    }
+
+    // User principal
+    String username = null;
+    if (req.getUserPrincipal() != null) {
+      username = req.getUserPrincipal().getName();
+      info.add("username", username);
+
+      // Mapped roles for this principal
+      @SuppressWarnings("resource")
+      AuthorizationPlugin auth = cc==null? null: cc.getAuthorizationPlugin();
+      if (auth instanceof RuleBasedAuthorizationPluginBase) {
+        RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
+        Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
+        info.add("roles", roles);
+      }
+    }
+
+    info.add("tls", UrlScheme.HTTPS.equals(UrlScheme.INSTANCE.getUrlScheme()));
+
+    return info;
+  }
+
+
   private static SimpleOrderedMap<Object> getLuceneInfo() {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
 
@@ -321,10 +370,8 @@ public class SystemInfoHandler extends RequestHandlerBase
     info.add( "solr-spec-version", p.getSpecificationVersion() );
     info.add( "solr-impl-version", p.getImplementationVersion() );
   
-    p = LucenePackage.class.getPackage();
-
-    info.add( "lucene-spec-version", p.getSpecificationVersion() );
-    info.add( "lucene-impl-version", p.getImplementationVersion() );
+    info.add( "lucene-spec-version", Version.LATEST.toString() );
+    info.add( "lucene-impl-version", Version.getPackageImplementationVersion() );
 
     return info;
   }
@@ -374,6 +421,16 @@ public class SystemInfoHandler extends RequestHandlerBase
       }
     }
     return list;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return AnnotatedApi.getApis(new NodeSystemInfoAPI(this));
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
   
 }

@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import org.apache.http.HttpEntity;
@@ -82,8 +81,8 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
   }
 
   @Override
-  public SolrHttpClientBuilder getHttpClientBuilder(Optional<SolrHttpClientBuilder> builder) {
-    return builder.isPresent() ? getBuilder(builder.get()) : getBuilder();
+  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
+    return builder == null ? getBuilder() : getBuilder(builder);
   }
 
   private SPNEGOAuthentication createSPNEGOAuthentication() {
@@ -103,13 +102,19 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
       log.warn("Multiple login modules are specified in the configuration file");
       return authentication;
     }
+
     Map<String, ?> options = entries[0].getOptions();
+    setAuthenticationOptions(authentication, options, (String) options.get("principal"));
+    return authentication;
+  }
+
+  static void setAuthenticationOptions(SPNEGOAuthentication authentication, Map<String, ?> options, String username) {
     String keyTab = (String)options.get("keyTab");
     if (keyTab != null) {
-      authentication.setUserKeyTabPath(Paths.get(keyTab, new String[0]));
+      authentication.setUserKeyTabPath(Paths.get(keyTab));
     }
     authentication.setServiceName("HTTP");
-    authentication.setUserName((String)options.get("principal"));
+    authentication.setUserName(username);
     if ("true".equalsIgnoreCase((String)options.get("useTicketCache"))) {
       authentication.setUseTicketCache(true);
       String ticketCachePath = (String)options.get("ticketCache");
@@ -118,7 +123,6 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
       }
       authentication.setRenewTGT("true".equalsIgnoreCase((String)options.get("renewTGT")));
     }
-    return authentication;
   }
 
   @Override
@@ -134,7 +138,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
       String configValue = System.getProperty(LOGIN_CONFIG_PROP);
 
       if (configValue != null) {
-        log.info("Setting up SPNego auth with config: " + configValue);
+        log.info("Setting up SPNego auth with config: {}", configValue);
         final String useSubjectCredsProp = "javax.security.auth.useSubjectCredsOnly";
         String useSubjectCredsVal = System.getProperty(useSubjectCredsProp);
 
@@ -145,8 +149,8 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
         } else if (!useSubjectCredsVal.toLowerCase(Locale.ROOT).equals("false")) {
           // Don't overwrite the prop value if it's already been written to something else,
           // but log because it is likely the Credentials won't be loaded correctly.
-          log.warn("System Property: " + useSubjectCredsProp + " set to: " + useSubjectCredsVal
-              + " not false.  SPNego authentication may not be successful.");
+          log.warn("System Property: {} set to: {} not false.  SPNego authentication may not be successful."
+              , useSubjectCredsProp, useSubjectCredsVal);
         }
 
         javax.security.auth.login.Configuration.setConfiguration(jaasConfig);
@@ -203,12 +207,12 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     }
   };
 
-  private static class SolrJaasConfiguration extends javax.security.auth.login.Configuration {
+  public static class SolrJaasConfiguration extends javax.security.auth.login.Configuration {
 
     private javax.security.auth.login.Configuration baseConfig;
 
     // the com.sun.security.jgss appNames
-    private Set<String> initiateAppNames = new HashSet(
+    private Set<String> initiateAppNames = new HashSet<>(
       Arrays.asList("com.sun.security.jgss.krb5.initiate", "com.sun.security.jgss.initiate"));
 
     public SolrJaasConfiguration() {
@@ -224,11 +228,13 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     public AppConfigurationEntry[] getAppConfigurationEntry(String appName) {
       if (baseConfig == null) return null;
 
-      log.debug("Login prop: "+System.getProperty(LOGIN_CONFIG_PROP));
+      if (log.isDebugEnabled()) {
+        log.debug("Login prop: {}", System.getProperty(LOGIN_CONFIG_PROP));
+      }
 
       String clientAppName = System.getProperty("solr.kerberos.jaas.appname", "Client");
       if (initiateAppNames.contains(appName)) {
-        log.debug("Using AppConfigurationEntry for appName '"+clientAppName+"' instead of: " + appName);
+        log.debug("Using AppConfigurationEntry for appName '{}' instead of: '{}'", clientAppName, appName);
         return baseConfig.getAppConfigurationEntry(clientAppName);
       }
       return baseConfig.getAppConfigurationEntry(appName);

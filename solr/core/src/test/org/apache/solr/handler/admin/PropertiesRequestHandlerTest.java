@@ -43,7 +43,7 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
     RedactionUtils.setRedactSystemProperty(true);
     for(String propName: new String[]{"some.password", "javax.net.ssl.trustStorePassword"}){
       System.setProperty(propName, PASSWORD);
-      NamedList<NamedList<NamedList<Object>>> properties = readProperties();
+      NamedList<Object> properties = readProperties();
 
       assertEquals("Failed to redact "+propName, REDACT_STRING, properties.get(propName));
     }
@@ -54,20 +54,21 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
     RedactionUtils.setRedactSystemProperty(false);
     for(String propName: new String[]{"some.password", "javax.net.ssl.trustStorePassword"}){
       System.setProperty(propName, PASSWORD);
-      NamedList<NamedList<NamedList<Object>>> properties = readProperties();
+      NamedList<Object> properties = readProperties();
 
       assertEquals("Failed to *not* redact "+propName, PASSWORD, properties.get(propName));
     }
   }
 
-  private NamedList<NamedList<NamedList<Object>>> readProperties() throws Exception {
+  @SuppressWarnings({"unchecked"})
+  private NamedList<Object> readProperties() throws Exception {
     String xml = h.query(req(
         CommonParams.QT, "/admin/properties",
         CommonParams.WT, "xml"
     ));
 
     XMLResponseParser parser = new XMLResponseParser();
-    return (NamedList<NamedList<NamedList<Object>>>)
+    return (NamedList<Object>)
         parser.processResponse(new StringReader(xml)).get("system.properties");
   }
 }

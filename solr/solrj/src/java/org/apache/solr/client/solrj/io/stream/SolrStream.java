@@ -21,13 +21,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -43,6 +41,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -69,6 +68,7 @@ public class SolrStream extends TupleStream {
   private boolean distrib = true;
   private String user;
   private String password;
+  private String core;
 
   /**
    * @param baseUrl Base URL of the stream.
@@ -80,12 +80,17 @@ public class SolrStream extends TupleStream {
     this.params = params;
   }
 
+  SolrStream(String baseUrl, SolrParams params, String core) {
+    this(baseUrl, params);
+    this.core = core;
+  }
+
   public void setFieldMappings(Map<String, String> fieldMappings) {
     this.fieldMappings = fieldMappings;
   }
 
   public List<TupleStream> children() {
-    return new ArrayList();
+    return new ArrayList<>();
   }
 
   public String getBaseUrl() {
@@ -109,6 +114,8 @@ public class SolrStream extends TupleStream {
   **/
 
   public void open() throws IOException {
+
+    // Reuse the same client per node vs. having one per replica
     if(cache == null) {
       client = new HttpSolrClient.Builder(baseUrl).build();
     } else {
@@ -118,9 +125,11 @@ public class SolrStream extends TupleStream {
     try {
       SolrParams requestParams = loadParams(params);
       if (!distrib) {
-        ((ModifiableSolrParams) requestParams).add("distrib","false");
+        ((ModifiableSolrParams) requestParams).add("distrib", "false");
       }
-      tupleStreamParser = constructParser(client, requestParams);
+      tupleStreamParser = constructParser(requestParams);
+    } catch (IOException ioe) {
+      throw ioe;
     } catch (Exception e) {
       throw new IOException("params " + params, e);
     }
@@ -187,7 +196,7 @@ public class SolrStream extends TupleStream {
     if (closeableHttpResponse != null) {
       closeableHttpResponse.close();
     }
-    if(cache == null) {
+    if(cache == null && client != null) {
       client.close();
     }
   }
@@ -198,16 +207,14 @@ public class SolrStream extends TupleStream {
 
   public Tuple read() throws IOException {
     try {
-      Map fields = tupleStreamParser.next();
+      Map<String, Object> fields = tupleStreamParser.next();
 
       if (fields == null) {
         //Return the EOF tuple.
-        Map m = new HashMap();
-        m.put("EOF", true);
-        return new Tuple(m);
+        return Tuple.EOF();
       } else {
 
-        String msg = (String) fields.get("EXCEPTION");
+        String msg = (String) fields.get(StreamParams.EXCEPTION);
         if (msg != null) {
           HandledException ioException = new HandledException(msg);
           throw ioException;
@@ -252,23 +259,22 @@ public class SolrStream extends TupleStream {
     return null;
   }
 
-  private Map mapFields(Map fields, Map<String,String> mappings) {
+  private <V> Map<String, V> mapFields(Map<String, V> fields, Map<String,String> mappings) {
 
     Iterator<Map.Entry<String,String>> it = mappings.entrySet().iterator();
     while(it.hasNext()) {
       Map.Entry<String,String> entry = it.next();
       String mapFrom = entry.getKey();
       String mapTo = entry.getValue();
-      Object o = fields.get(mapFrom);
+      V v = fields.get(mapFrom);
       fields.remove(mapFrom);
-      fields.put(mapTo, o);
+      fields.put(mapTo, v);
     }
 
     return fields;
   }
 
-  // temporary...
-  public TupleStreamParser constructParser(SolrClient server, SolrParams requestParams) throws IOException, SolrServerException {
+  private TupleStreamParser constructParser(SolrParams requestParams) throws IOException, SolrServerException {
     String p = requestParams.get("qt");
     if (p != null) {
       ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
@@ -279,7 +285,14 @@ public class SolrStream extends TupleStream {
 
     String wt = requestParams.get(CommonParams.WT, "json");
     QueryRequest query = new QueryRequest(requestParams);
-    query.setPath(p);
+
+    // in order to reuse HttpSolrClient objects per node, we need to cache them without the core name in the URL
+    if (core != null) {
+      query.setPath("/"+core + (p != null ? p : "/select"));
+    } else {
+      query.setPath(p);
+    }
+
     query.setResponseParser(new InputStreamResponseParser(wt));
     query.setMethod(SolrRequest.METHOD.POST);
 
@@ -287,14 +300,36 @@ public class SolrStream extends TupleStream {
       query.setBasicAuthCredentials(user, password);
     }
 
-    NamedList<Object> genericResponse = server.request(query);
+    NamedList<Object> genericResponse = client.request(query);
     InputStream stream = (InputStream) genericResponse.get("stream");
-    this.closeableHttpResponse = (CloseableHttpResponse)genericResponse.get("closeableResponse");
+    CloseableHttpResponse httpResponse = (CloseableHttpResponse)genericResponse.get("closeableResponse");
+
+    final int statusCode = httpResponse.getStatusLine().getStatusCode();
+    if (statusCode != 200) {
+      String errMsg = consumeStreamAsErrorMessage(stream);
+      httpResponse.close();
+      throw new IOException("Query to '" + query.getPath() + "?" + query.getParams() + "' failed due to: (" + statusCode + ") " + errMsg);
+    }
+
+    this.closeableHttpResponse = httpResponse;
     if (CommonParams.JAVABIN.equals(wt)) {
       return new JavabinTupleStreamParser(stream, true);
     } else {
       InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
       return new JSONTupleStream(reader);
     }
+  }
+
+  private String consumeStreamAsErrorMessage(InputStream stream) throws IOException {
+    StringBuilder errMsg = new StringBuilder();
+    int r;
+    char[] ach = new char[1024];
+    if (stream != null) {
+      try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+        while ((r = reader.read(ach)) != -1)
+          errMsg.append(ach, 0, r);
+      }
+    }
+    return errMsg.toString();
   }
 }

@@ -70,8 +70,8 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
     }
 
 
-    KMeansPlusPlusClusterer<ClusterPoint> kmeans = new KMeansPlusPlusClusterer(k, maxIterations);
-    List<ClusterPoint> points = new ArrayList();
+    KMeansPlusPlusClusterer<ClusterPoint> kmeans = new KMeansPlusPlusClusterer<>(k, maxIterations);
+    List<ClusterPoint> points = new ArrayList<>();
     double[][] data = matrix.getData();
 
     List<String> ids = matrix.getRowLabels();
@@ -85,7 +85,7 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
       }
     }
 
-    Map fields = new HashMap();
+    Map<String, Object> fields = new HashMap<>();
 
     fields.put("k", k);
     fields.put("distance", "euclidean");
@@ -119,7 +119,7 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
     private List<CentroidCluster<ClusterPoint>> clusters;
     private Matrix membershipMatrix;
 
-    public ClusterTuple(Map fields,
+    public ClusterTuple(Map<String, ?> fields,
                         List<CentroidCluster<ClusterPoint>> clusters,
                         List<String> columnLabels) {
       super(fields);
@@ -127,7 +127,7 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
       this.columnLabels = columnLabels;
     }
 
-    public ClusterTuple(Map fields,
+    public ClusterTuple(Map<String, ?> fields,
                         List<CentroidCluster<ClusterPoint>> clusters,
                         List<String> columnLabels,
                         Matrix membershipMatrix) {

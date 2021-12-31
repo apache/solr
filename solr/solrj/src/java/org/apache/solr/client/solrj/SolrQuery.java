@@ -280,19 +280,19 @@ public class SolrQuery extends ModifiableSolrParams
     this.set(FacetParams.FACET, true);
     return this;
   }
-  
+
   /**
    * Add Interval Faceting on a field. All intervals for the same field should be included
    * in the same call to this method.
-   * For syntax documentation see <a href="https://wiki.apache.org/solr/SimpleFacetParameters#Interval_Faceting">Solr wiki</a>.
+   * For syntax documentation see <a href="https://solr.apache.org/guide/faceting.html#interval-faceting">Solr wiki</a>.
    * <br>
-   * Key substitution, filter exclusions or other local params on the field are not supported when using this method, 
-   * if this is needed, use the lower level {@link #add} method.<br> 
+   * Key substitution, filter exclusions or other local params on the field are not supported when using this method,
+   * if this is needed, use the lower level {@link #add} method.<br>
    * Key substitution IS supported on intervals when using this method.
-   * 
-   * 
+   *
+   *
    * @param field the field to add facet intervals. Must be an existing field and can't be null
-   * @param intervals Intervals to be used for faceting. It can be an empty array, but it can't 
+   * @param intervals Intervals to be used for faceting. It can be an empty array, but it can't
    * be <code>null</code>
    * @return this
    */
@@ -650,7 +650,6 @@ public class SolrQuery extends ModifiableSolrParams
    * If the field is already used for sorting, the order
    * of the existing field is modified; otherwise, it is
    * added to the end.
-   * <p>
    * @return the modified SolrQuery object, for easy chaining
    * @since 4.2
    */

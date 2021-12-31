@@ -17,8 +17,12 @@
 package org.apache.solr;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.SortedMap;
@@ -29,6 +33,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -113,7 +118,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     jetty = new JettySolrRunner(solrHome, nodeProps, jettyConfig);
     jetty.start();
     port = jetty.getLocalPort();
-    log.info("Jetty Assigned Port#" + port);
+    log.info("Jetty Assigned Port#{}", port);
     return jetty;
   }
 
@@ -172,39 +177,27 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     if (sourceHome == null)
       throw new IllegalStateException("No source home! Cannot create the legacy example solr home directory.");
 
-    String legacyExampleSolrHome = null;
     try {
-      File tempSolrHome = LuceneTestCase.createTempDir().toFile();
-      org.apache.commons.io.FileUtils.copyFileToDirectory(new File(sourceHome, "server/solr/solr.xml"), tempSolrHome);
-      File collection1Dir = new File(tempSolrHome, "collection1");
-      org.apache.commons.io.FileUtils.forceMkdir(collection1Dir);
+      Path tempSolrHome = LuceneTestCase.createTempDir();
+      Path serverSolr = tempSolrHome.getFileSystem().getPath(sourceHome, "server", "solr");
+      Files.copy(serverSolr.resolve("solr.xml"), tempSolrHome.resolve("solr.xml"));
 
-      File configSetDir = new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
-      org.apache.commons.io.FileUtils.copyDirectoryToDirectory(configSetDir, collection1Dir);
+      Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
+      Path collection1Dir = tempSolrHome.resolve("collection1");
+
+      DirectoryUtil.copyDirectoryContents(sourceConfig.resolve("conf"), collection1Dir.resolve("conf"));
+
       Properties props = new Properties();
       props.setProperty("name", "collection1");
-      OutputStreamWriter writer = null;
-      try {
-        writer = new OutputStreamWriter(FileUtils.openOutputStream(
-            new File(collection1Dir, "core.properties")), StandardCharsets.UTF_8);
+      try (Writer writer = new OutputStreamWriter(Files.newOutputStream(collection1Dir.resolve("core.properties")), StandardCharsets.UTF_8)) {
         props.store(writer, null);
-      } finally {
-        if (writer != null) {
-          try {
-            writer.close();
-          } catch (Exception ignore){}
-        }
       }
-      legacyExampleSolrHome = tempSolrHome.getAbsolutePath();
-    } catch (Exception exc) {
-      if (exc instanceof RuntimeException) {
-        throw (RuntimeException)exc;
-      } else {
-        throw new RuntimeException(exc);
-      }
+      return tempSolrHome.toString();
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
-
-    return legacyExampleSolrHome;
   }
 
 }

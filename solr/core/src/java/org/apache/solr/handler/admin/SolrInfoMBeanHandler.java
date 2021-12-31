@@ -40,7 +40,6 @@ import java.util.HashSet;
  * A request handler that provides info about all 
  * registered SolrInfoMBeans.
  */
-@SuppressWarnings("unchecked")
 public class SolrInfoMBeanHandler extends RequestHandlerBase {
 
   /**
@@ -57,6 +56,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     NamedList<NamedList<NamedList<Object>>> cats = getMBeanInfo(req);
     if(req.getParams().getBool("diff", false)) {
@@ -79,8 +79,8 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
           BinaryResponseWriter.getParsedResponse(req, wrap).get("solr-mbeans");
       
       // Get rid of irrelevant things
-      ref = normalize(ref);
-      cats = normalize(cats);
+      normalize(ref);
+      normalize(cats);
       
       // Only the changes
       boolean showAll = req.getParams().getBool("all", false);
@@ -91,7 +91,8 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     }
     rsp.setHttpCaching(false); // never cache, no matter what init config looks like
   }
-  
+
+  @SuppressWarnings("unchecked")
   static NamedList<NamedList<NamedList<Object>>> fromXML(String content) {
     int idx = content.indexOf("<response>");
     if(idx<0) {
@@ -115,11 +116,11 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     String[] requestedCats = req.getParams().getParams("cat");
     if (null == requestedCats || 0 == requestedCats.length) {
       for (SolrInfoBean.Category cat : SolrInfoBean.Category.values()) {
-        cats.add(cat.name(), new SimpleOrderedMap<NamedList<Object>>());
+        cats.add(cat.name(), new SimpleOrderedMap<>());
       }
     } else {
       for (String catName : requestedCats) {
-        cats.add(catName,new SimpleOrderedMap<NamedList<Object>>());
+        cats.add(catName,new SimpleOrderedMap<>());
       }
     }
          
@@ -184,7 +185,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
 //              System.out.println( "NOW: " + now_txt );
               
               // Calculate the differences
-              NamedList diff = diffNamedList(ref_bean,now_bean);
+              NamedList<Object> diff = diffNamedList(ref_bean,now_bean);
               diff.add( "_changed_", true ); // flag the changed thing
               cat.add(name, diff);
             }
@@ -204,8 +205,8 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     return changed;
   }
   
-  public NamedList diffNamedList(NamedList ref, NamedList now) {
-    NamedList out = new SimpleOrderedMap();
+  public NamedList<Object> diffNamedList(NamedList<?> ref, NamedList<?> now) {
+    NamedList<Object> out = new SimpleOrderedMap<>();
     for(int i=0; i<ref.size(); i++) {
       String name = ref.getName(i);
       Object r = ref.getVal(i);
@@ -231,13 +232,14 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
     }
     return out;
   }
-  
+
+  @SuppressWarnings("unchecked")
   public Object diffObject(Object ref, Object now) {
     if (now instanceof Map) {
-      now = new NamedList((Map)now);
+      now = new NamedList<>((Map<String, ?>)now);
     }
     if(ref instanceof NamedList) {
-      return diffNamedList((NamedList)ref, (NamedList)now);
+      return diffNamedList((NamedList<?>)ref, (NamedList<?>)now);
     }
     if(ref.equals(now)) {
       return ref;
@@ -272,15 +274,15 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   /**
    * The 'avgRequestsPerSecond' field will make everything look like it changed
    */
-  public NamedList normalize(NamedList input) {
+  public void normalize(NamedList<?> input) {
     input.remove("avgRequestsPerSecond");
     for(int i=0; i<input.size(); i++) {
       Object v = input.getVal(i);
       if(v instanceof NamedList) {
-        input.setVal(i, normalize((NamedList)v));
+        // edit in place so we don't need to return it
+        normalize((NamedList<?>)v);
       }
     }
-    return input;
   }
   
   

@@ -24,10 +24,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.parser.SolrQueryParserBase;
@@ -122,7 +124,7 @@ public class TextField extends FieldType {
                                  // historical behavior based on how the early versions of the FieldCache
                                  // would deal with multiple indexed terms in a singled valued field...
                                  //
-                                 // Always use the 'min' value from the (Uninverted) "psuedo doc values"
+                                 // Always use the 'min' value from the (Uninverted) "pseudo doc values"
                                  SortedSetSelector.Type.MIN,
                                  reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
   }
@@ -139,12 +141,19 @@ public class TextField extends FieldType {
 
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
-    writer.writeStr(name, f.stringValue(), true);
+    writer.writeStr(name, toExternal(f), true);
   }
 
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     return parseFieldQuery(parser, getQueryAnalyzer(), field.getName(), externalVal);
+  }
+  
+  @Override
+  public Query getFieldTermQuery(QParser parser, SchemaField field, String externalVal) {
+    BytesRefBuilder br = new BytesRefBuilder();
+    readableToIndexed(externalVal, br);
+    return new TermQuery(new Term(field.getName(), br));
   }
 
   @Override

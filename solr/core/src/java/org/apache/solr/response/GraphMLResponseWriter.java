@@ -20,23 +20,17 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 
 import org.apache.solr.client.solrj.io.graph.Traversal;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.GraphHandler;
 import org.apache.solr.request.SolrQueryRequest;
 
 
 public class GraphMLResponseWriter implements QueryResponseWriter {
-
-  public void init(NamedList args) {
-    /* NOOP */
-  }
 
   public String getContentType(SolrQueryRequest req, SolrQueryResponse res) {
     return "application/xml";
@@ -94,10 +88,8 @@ public class GraphMLResponseWriter implements QueryResponseWriter {
 
         printWriter.write("<node id=\""+ xmlEscape(id)+"\"");
 
-        List<String> outfields = new ArrayList();
-        Iterator<String> keys = tuple.fields.keySet().iterator();
-        while(keys.hasNext()) {
-          String key = keys.next();
+        List<String> outfields = new ArrayList<>();
+        for (String key : tuple.getFields().keySet()) {
           if(key.equals("node") || key.equals("ancestors") || key.equals("collection")) {
             continue;
           } else {

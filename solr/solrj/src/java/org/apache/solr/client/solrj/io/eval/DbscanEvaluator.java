@@ -74,8 +74,8 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
       distanceMeasure = (DistanceMeasure)values[3];
     }
 
-    DBSCANClusterer<ClusterPoint> dbscan = new DBSCANClusterer(e, minPoints, distanceMeasure);
-    List<ClusterPoint> points = new ArrayList();
+    DBSCANClusterer<ClusterPoint> dbscan = new DBSCANClusterer<>(e, minPoints, distanceMeasure);
+    List<ClusterPoint> points = new ArrayList<>();
     double[][] data = matrix.getData();
     List<String> ids = matrix.getRowLabels();
 
@@ -88,7 +88,7 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
       }
     }
 
-    Map fields = new HashMap();
+    Map<String, Object> fields = new HashMap<>();
 
     fields.put("e", e);
     fields.put("minPoints", minPoints);
@@ -121,7 +121,7 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
     private List<String> columnLabels;
     private List<Cluster<ClusterPoint>> clusters;
 
-    public ClusterTuple(Map fields,
+    public ClusterTuple(Map<String,Object> fields,
                         List<Cluster<ClusterPoint>> clusters,
                         List<String> columnLabels) {
       super(fields);

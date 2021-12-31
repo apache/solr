@@ -47,7 +47,7 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
   //       explicitly. See SOLR-12732.
   @Test
   public void testLog4jWatcher() throws InterruptedException {
-    LogWatcher watcher = null;
+    LogWatcher<?> watcher = null;
     int lim = random().nextInt(3) + 2;
     // Every time through this loop, insure that, of all the test messages that have been logged, only the current
     // test message is present. NOTE: there may be log messages from the superclass the first time around.

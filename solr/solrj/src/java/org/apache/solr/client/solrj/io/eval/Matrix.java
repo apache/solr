@@ -23,19 +23,19 @@ import java.util.ArrayList;
 
 import java.util.Iterator;
 
-public class Matrix implements Iterable, Attributes {
+public class Matrix implements Iterable<List<Double>>, Attributes {
 
   private double[][] data;
   private List<String> columnLabels;
   private List<String> rowLabels;
 
-  private Map<String, Object> attributes = new HashMap();
+  private Map<String, Object> attributes = new HashMap<>();
 
   public Matrix(double[][] data) {
     this.data = data;
   }
 
-  public Map getAttributes() {
+  public Map<?,?> getAttributes() {
     return this.attributes;
   }
 
@@ -75,11 +75,11 @@ public class Matrix implements Iterable, Attributes {
     return data[0].length;
   }
 
-  public Iterator iterator() {
+  public Iterator<List<Double>> iterator() {
     return new MatrixIterator(data);
   }
 
-  private static class MatrixIterator implements Iterator {
+  private static class MatrixIterator implements Iterator<List<Double>> {
 
     private double[][] d;
     private int index;
@@ -88,9 +88,9 @@ public class Matrix implements Iterable, Attributes {
       d = data;
     }
 
-    public Object next() {
+    public List<Double> next() {
       double[] row = d[index++];
-      List list = new ArrayList();
+      List<Double> list = new ArrayList<>();
       for(double value : row) {
         list.add(value);
       }

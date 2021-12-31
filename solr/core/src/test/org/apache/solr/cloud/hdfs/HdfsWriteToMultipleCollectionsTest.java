@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,8 +32,10 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -55,8 +58,11 @@ import org.junit.Test;
 @Slow
 @Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 10)
 public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   private static final String ACOLLECTION = "acollection";
   private static MiniDFSCluster dfsCluster;
@@ -97,7 +103,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
     int docCount = random().nextInt(1313) + 1;
     int cnt = random().nextInt(4) + 1;
     for (int i = 0; i < cnt; i++) {
-      createCollection(ACOLLECTION + i, "conf1", 2, 2, 9);
+      createCollection(ACOLLECTION + i, "conf1", 2, 2);
     }
     for (int i = 0; i < cnt; i++) {
       waitForRecoveriesToFinish(ACOLLECTION + i, false);

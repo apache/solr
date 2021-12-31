@@ -53,10 +53,6 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
   public static final String NAME = "tlogit";
 
   @Override
-  public void init(NamedList args) {
-  }
-
-  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new TextLogisticRegressionQParser(qstr, localParams, params, req);
   }
@@ -165,6 +161,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
 
     }
 
+    @SuppressWarnings({"unchecked"})
     public void finish() throws IOException {
 
       Map<Integer, double[]> docVectors = new HashMap<>();
@@ -211,7 +208,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
         }
       }
 
-      NamedList analytics = new NamedList();
+      NamedList<Object> analytics = new NamedList<>();
       rbsp.rsp.add("logit", analytics);
 
       List<Double> outWeights = new ArrayList<>();

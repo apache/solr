@@ -18,17 +18,18 @@
 package org.apache.solr.prometheus.exporter;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.regex.Matcher;
 
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.DOMUtil;
 import org.w3c.dom.Node;
 
 public class MetricsQuery {
@@ -88,24 +89,35 @@ public class MetricsQuery {
     return jsonQueries;
   }
 
-  public static List<MetricsQuery> from(Node node) throws JsonQueryException {
+  public static List<MetricsQuery> from(Node node, Map<String,MetricsQueryTemplate> jqTemplates) throws JsonQueryException {
     List<MetricsQuery> metricsQueries = new ArrayList<>();
 
-    NamedList config = DOMUtil.childNodesToNamedList(node);
-    List<NamedList> requests = config.getAll("request");
+    NamedList<?> config = DOMUtil.childNodesToNamedList(node);
+    @SuppressWarnings("unchecked")
+    List<NamedList<?>> requests = (List<NamedList<?>>) config.getAll("request");
 
-    for (NamedList request : requests) {
-      NamedList query = (NamedList) request.get("query");
-      NamedList queryParameters = (NamedList) query.get("params");
+    for (NamedList<?> request : requests) {
+      NamedList<?> query = (NamedList<?>) request.get("query");
+      @SuppressWarnings("unchecked")
+      NamedList<Object> queryParameters = (NamedList<Object>) query.get("params");
       String path = (String) query.get("path");
       String core = (String) query.get("core");
       String collection = (String) query.get("collection");
+      @SuppressWarnings("unchecked")
       List<String> jsonQueries = (ArrayList<String>) request.get("jsonQueries");
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       if (queryParameters != null) {
-        for (Map.Entry<String, String> entrySet : (Set<Map.Entry<String, String>>) queryParameters.asShallowMap().entrySet()) {
-          params.add(entrySet.getKey(), entrySet.getValue());
+        for (Map.Entry<String, Object> entrySet : queryParameters.asShallowMap().entrySet()) {
+          if (entrySet.getValue() instanceof Collection) {
+            @SuppressWarnings("unchecked")
+            Collection<Object> values = (Collection<Object>) entrySet.getValue();
+            for (Object value : values) {
+              params.add(entrySet.getKey(), String.valueOf(value));
+            }
+          } else {
+            params.add(entrySet.getKey(), String.valueOf(entrySet.getValue()));
+          }
         }
       }
 
@@ -115,6 +127,23 @@ public class MetricsQuery {
       List<JsonQuery> compiledQueries = new ArrayList<>();
       if (jsonQueries != null) {
         for (String jsonQuery : jsonQueries) {
+
+          // does this query refer to a reusable jq template to reduce boilerplate in the config?
+          final String jsonQueryCollapseWs = jsonQuery.replaceAll("\\s+", " ").trim();
+          if (jsonQueryCollapseWs.startsWith("$jq:")) {
+            Optional<Matcher> maybeMatcher = MetricsQueryTemplate.matches(jsonQueryCollapseWs);
+            if (maybeMatcher.isPresent()) {
+              Matcher matcher = maybeMatcher.get();
+              String templateName = matcher.group("TEMPLATE");
+              MetricsQueryTemplate template = jqTemplates.get(templateName);
+              if (template == null) {
+                throw new IllegalStateException("jq template '" + matcher.group("TEMPLATE") + "' not found!");
+              }
+
+              jsonQuery = template.applyTemplate(matcher);
+            }
+          }
+
           JsonQuery compiledJsonQuery = JsonQuery.compile(jsonQuery);
           compiledQueries.add(compiledJsonQuery);
         }

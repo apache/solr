@@ -63,7 +63,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     NamedList<NamedList<NamedList<Object>>> diff = SolrInfoMBeanHandler.fromXML(xml);
 
     // The stats bean for SolrInfoMBeanHandler
-    NamedList stats = (NamedList)diff.get("ADMIN").get("/admin/mbeans").get("stats");
+    NamedList<?> stats = (NamedList<?>)diff.get("ADMIN").get("/admin/mbeans").get("stats");
 
     //System.out.println("stats:"+stats);
     Pattern p = Pattern.compile("Was: (?<was>[0-9]+), Now: (?<now>[0-9]+), Delta: (?<delta>[0-9]+)");
@@ -107,7 +107,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     xml = h.query(req);
 
     NamedList<NamedList<NamedList<Object>>> nl = SolrInfoMBeanHandler.fromXML(xml);
-    assertNotNull(((NamedList)nl.get("ADMIN").get("/admin/mbeans").get("stats")).get("ADD ADMIN./admin/mbeans.totalTime"));
+    assertNotNull(((NamedList<?>)nl.get("ADMIN").get("/admin/mbeans").get("stats")).get("ADD ADMIN./admin/mbeans.totalTime"));
   }
 
   @Test
@@ -193,5 +193,9 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     reader.start();
     counter.await(30, TimeUnit.SECONDS);
     runSnapshots = false;
+    bean.close();
+
+    reader.join();
+    modifier.join();
   }
 }

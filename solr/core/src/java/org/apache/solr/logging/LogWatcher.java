@@ -124,18 +124,20 @@ public abstract class LogWatcher<E> {
    *
    * @return a LogWatcher configured for the container's logging framework
    */
-  public static LogWatcher newRegisteredLogWatcher(LogWatcherConfig config, SolrResourceLoader loader) {
+  public static LogWatcher<?> newRegisteredLogWatcher(LogWatcherConfig config, SolrResourceLoader loader) {
 
     if (!config.isEnabled()) {
       log.debug("A LogWatcher is not enabled");
       return null;
     }
 
-    LogWatcher logWatcher = createWatcher(config, loader);
+    LogWatcher<?> logWatcher = createWatcher(config, loader);
 
     if (logWatcher != null) {
       if (config.getWatcherSize() > 0) {
-        log.debug("Registering Log Listener [{}]", logWatcher.getName());
+        if (log.isDebugEnabled()) {
+          log.debug("Registering Log Listener [{}]", logWatcher.getName());
+        }
         logWatcher.registerListener(config.asListenerConfig());
       }
     }
@@ -143,14 +145,14 @@ public abstract class LogWatcher<E> {
     return logWatcher;
   }
 
-  private static LogWatcher createWatcher(LogWatcherConfig config, SolrResourceLoader loader) {
+  private static LogWatcher<?> createWatcher(LogWatcherConfig config, SolrResourceLoader loader) {
 
     String fname = config.getLoggingClass();
     String slf4jImpl;
 
     try {
       slf4jImpl = StaticLoggerBinder.getSingleton().getLoggerFactoryClassStr();
-      log.debug("SLF4J impl is " + slf4jImpl);
+      log.debug("SLF4J impl is {}", slf4jImpl);
       if (fname == null) {
         if ("org.apache.logging.slf4j.Log4jLoggerFactory".equals(slf4jImpl)) {
           fname = "Log4j2";
@@ -160,7 +162,7 @@ public abstract class LogWatcher<E> {
       }
     }
     catch (Throwable e) {
-      log.warn("Unable to read SLF4J version.  LogWatcher will be disabled: " + e);
+      log.warn("Unable to read SLF4J version.  LogWatcher will be disabled: ", e);
       if (e instanceof OutOfMemoryError) {
         throw (OutOfMemoryError) e;
       }

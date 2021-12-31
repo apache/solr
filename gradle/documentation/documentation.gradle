@@ -1,0 +1,137 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+configure(rootProject) {
+  def urlVersion = project.baseVersion.replace('.', '_')
+  def refguideUrlVersion = project.baseVersion.replaceFirst(/^(\d+)\.(\d+).*$/, '$1_$2')
+
+  ext {
+    // NOTE: The actual dependency version isn't available at configuration time, so we use a lazy property provider to
+    // supply it at execution time.
+    //
+    // In the case of a 'SNAPSHOT' luceneDocVersion this URL won't actually exist, but that shouldn't mater since
+    // we can't release Solr pointed at a Lucene SNAPSHOT, so we won't be publishing in this state...
+    luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url',
+        "https://lucene.apache.org/core/${-> getVersion("org.apache.lucene", "lucene-core").replace('.', '_')}")
+
+    solrDocUrl = project.propertyOrDefault('solr.javadoc.url', {
+      if (project.version != project.baseVersion) {
+        // non-release build does not cross-link between modules.
+        return null
+      } else {
+        // release build
+        "https://solr.apache.org/docs/${urlVersion}"
+      }
+    }())
+
+    solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://solr.apache.org/guide/${refguideUrlVersion}")
+  }
+
+  task documentation() {
+    group = 'documentation'
+    description = 'Generate all documentation'
+
+    dependsOn ':solr:documentation:assemble'
+  }
+
+  assemble.dependsOn documentation
+}
+
+// docroot will point to Lucene and Solr relative directory for each sub-project.
+configure(project(':solr:documentation')) {
+  ext {
+    docroot = file("${buildDir}/site")
+    docrootMinimal = file("${buildDir}/minimalSite")
+
+    markdownSrc = file("src/markdown")
+    assets = file("src/assets")
+  }
+
+  task documentation() {
+    group = 'documentation'
+    description = "Generate ${project.name.capitalize()} documentation"
+
+    dependsOn project.parent.subprojects.collect { prj ->
+      prj.tasks.matching { it.name == 'renderSiteJavadoc' }
+    }
+    dependsOn 'changesToHtml','copyDocumentationAssets',
+      'markdownToHtml','createDocumentationIndex'
+  }
+
+  task copyDocumentationAssets(type: Copy) {
+    includeEmptyDirs = false
+    from(project.assets)
+    into project.docroot
+  }
+  
+  assemble {
+    dependsOn documentation
+  }
+
+  configurations {
+    site
+  }
+  
+  artifacts {
+    site project.docroot, {
+      builtBy documentation
+    }
+  }
+
+  task documentationMinimal() {
+    group = 'documentation'
+    description = "Generate stub Solr documentation pointing to web page (that's part of Solr TGZ)"
+    dependsOn 'copyMiniDocumentationAssets', 'createMiniDocumentationIndex', 'copyChangesToHtmlForMiniSite'
+  }
+
+  task copyChangesToHtmlForMiniSite(type: Copy) {
+    dependsOn 'copyDocumentationAssets'
+    dependsOn 'markdownToHtml'
+
+    from project.docroot
+    into project.docrootMinimal
+    include 'changes/**'
+    dependsOn 'changesToHtml'
+  }
+
+  task copyMiniDocumentationAssets(type: Copy) {
+    includeEmptyDirs = false
+    from('src/assets')
+    into project.docrootMinimal
+  }
+
+  assemble {
+    dependsOn documentationMinimal
+  }
+
+  configurations {
+    minimalSite
+  }
+
+  artifacts {
+    minimalSite project.docrootMinimal, {
+      builtBy documentationMinimal
+    }
+  }
+}
+
+configure(project(":solr")) {
+  ext {
+    docroot = project('documentation').docroot
+    docrootMinimal = project('documentation').docrootMinimal
+  }
+}

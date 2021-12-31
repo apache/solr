@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,7 +64,6 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.3
  */
-@SuppressWarnings("rawtypes")
 public class FacetComponent extends SearchComponent {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -709,15 +709,15 @@ public class FacetComponent extends SearchComponent {
     
     for (ShardResponse srsp : sreq.responses) {
       int shardNum = rb.getShardNum(srsp.getShard());
-      NamedList facet_counts = null;
+      NamedList<?> facet_counts = null;
       try {
-        facet_counts = (NamedList) srsp.getSolrResponse().getResponse().get("facet_counts");
+        facet_counts = (NamedList<?>) srsp.getSolrResponse().getResponse().get("facet_counts");
         if (facet_counts==null) {
           NamedList<?> responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
           if (Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
             continue;
           } else {
-            log.warn("corrupted response on "+srsp.getShardRequest()+": "+srsp.getSolrResponse());
+            log.warn("corrupted response on {} : {}", srsp.getShardRequest(), srsp.getSolrResponse());
             throw new SolrException(ErrorCode.SERVER_ERROR,
                 "facet_counts is absent in response from " + srsp.getNodeName() +
                 ", but "+SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" hasn't been responded");
@@ -732,7 +732,7 @@ public class FacetComponent extends SearchComponent {
       }
       
       // handle facet queries
-      NamedList facet_queries = (NamedList) facet_counts.get("facet_queries");
+      NamedList<?> facet_queries = (NamedList<?>) facet_counts.get("facet_queries");
       if (facet_queries != null) {
         for (int i = 0; i < facet_queries.size(); i++) {
           String returnedKey = facet_queries.getName(i);
@@ -743,11 +743,11 @@ public class FacetComponent extends SearchComponent {
       }
 
       // step through each facet.field, adding results from this shard
-      NamedList facet_fields = (NamedList) facet_counts.get("facet_fields");
+      NamedList<?> facet_fields = (NamedList<?>) facet_counts.get("facet_fields");
       
       if (facet_fields != null) {
         for (DistribFieldFacet dff : fi.facets.values()) {
-          dff.add(shardNum, (NamedList) facet_fields.get(dff.getKey()), dff.initialLimit);
+          dff.add(shardNum, (NamedList<?>) facet_fields.get(dff.getKey()), dff.initialLimit);
         }
       }
 
@@ -789,7 +789,7 @@ public class FacetComponent extends SearchComponent {
       if (dff.minCount <= 1 && dff.sort.equals(FacetParams.FACET_SORT_INDEX)) continue;
 
       @SuppressWarnings("unchecked") // generic array's are annoying
-      List<String>[] tmp = (List<String>[]) new List[rb.shards.length];
+      List<String>[] tmp = (List<String>[]) Array.newInstance(List.class, rb.shards.length);
       dff._toRefine = tmp;
 
       ShardFacetCount[] counts = dff.getCountSorted();
@@ -869,7 +869,9 @@ public class FacetComponent extends SearchComponent {
       if (ent.getValue().count >= minCount) {
         newQueryFacets.put(ent.getKey(), ent.getValue());
       } else {
-        log.trace("Removing facetQuery/key: " + ent.getKey() + "/" + ent.getValue().toString() + " mincount=" + minCount);
+        if (log.isTraceEnabled()) {
+          log.trace("Removing facetQuery/key: {}/{} mincount={}", ent.getKey(), ent.getValue(), minCount);
+        }
         replace = true;
       }
     }
@@ -919,7 +921,7 @@ public class FacetComponent extends SearchComponent {
 
   // The implementation below uses the first encountered shard's
   // facet_intervals as the basis for subsequent shards' data to be merged.
-  private void doDistribIntervals(FacetInfo fi, NamedList facet_counts) {
+  private void doDistribIntervals(FacetInfo fi, NamedList<?> facet_counts) {
     @SuppressWarnings("unchecked")
     SimpleOrderedMap<SimpleOrderedMap<Integer>> facet_intervals =
         (SimpleOrderedMap<SimpleOrderedMap<Integer>>)
@@ -964,9 +966,9 @@ public class FacetComponent extends SearchComponent {
     }
   }
 
-  private void doDistribPivots(ResponseBuilder rb, int shardNum, NamedList facet_counts) {
+  private void doDistribPivots(ResponseBuilder rb, int shardNum, NamedList<?> facet_counts) {
     @SuppressWarnings("unchecked")
-    SimpleOrderedMap<List<NamedList<Object>>> facet_pivot 
+    SimpleOrderedMap<List<NamedList<Object>>> facet_pivot
       = (SimpleOrderedMap<List<NamedList<Object>>>) facet_counts.get(PIVOT_KEY);
     
     if (facet_pivot != null) {
@@ -984,8 +986,8 @@ public class FacetComponent extends SearchComponent {
 
     for (ShardResponse srsp : sreq.responses) {
       // int shardNum = rb.getShardNum(srsp.shard);
-      NamedList facet_counts = (NamedList) srsp.getSolrResponse().getResponse().get("facet_counts");
-      NamedList facet_fields = (NamedList) facet_counts.get("facet_fields");
+      NamedList<?> facet_counts = (NamedList<?>) srsp.getSolrResponse().getResponse().get("facet_counts");
+      NamedList<?> facet_fields = (NamedList<?>) facet_counts.get("facet_fields");
       
       if (facet_fields == null) continue; // this can happen when there's an exception
       
@@ -994,7 +996,7 @@ public class FacetComponent extends SearchComponent {
         DistribFieldFacet dff = fi.facets.get(key);
         if (dff == null) continue;
 
-        NamedList shardCounts = (NamedList) facet_fields.getVal(i);
+        NamedList<?> shardCounts = (NamedList<?>) facet_fields.getVal(i);
         
         for (int j = 0; j < shardCounts.size(); j++) {
           String name = shardCounts.getName(j);
@@ -1002,10 +1004,8 @@ public class FacetComponent extends SearchComponent {
           ShardFacetCount sfc = dff.counts.get(name);
           if (sfc == null) {
             // we got back a term we didn't ask for?
-            log.error("Unexpected term returned for facet refining. key=" + key
-                      + " term='" + name + "'" + "\n\trequest params=" + sreq.params
-                      + "\n\ttoRefine=" + dff._toRefine + "\n\tresponse="
-                      + shardCounts);
+            log.error("Unexpected term returned for facet refining. key='{}'  term='{}'\n\trequest params={}\n\ttoRefine={}\n\tresponse={}"
+                , key, name, sreq.params, dff._toRefine, shardCounts);
             continue;
           }
           sfc.count += count;
@@ -1021,7 +1021,7 @@ public class FacetComponent extends SearchComponent {
       
       int shardNumber = rb.getShardNum(srsp.getShard());
       
-      NamedList facetCounts = (NamedList) srsp.getSolrResponse().getResponse().get("facet_counts");
+      NamedList<?> facetCounts = (NamedList<?>) srsp.getSolrResponse().getResponse().get("facet_counts");
       
       @SuppressWarnings("unchecked")
       NamedList<List<NamedList<Object>>> pivotFacetResponsesFromShard 
@@ -1033,9 +1033,9 @@ public class FacetComponent extends SearchComponent {
       }
       
       for (Entry<String,List<NamedList<Object>>> pivotFacetResponseFromShard : pivotFacetResponsesFromShard) {
-        PivotFacet masterPivotFacet = fi.pivotFacets.get(pivotFacetResponseFromShard.getKey());
-        masterPivotFacet.mergeResponseFromShard(shardNumber, rb, pivotFacetResponseFromShard.getValue());  
-        masterPivotFacet.removeAllRefinementsForShard(shardNumber);
+        PivotFacet aggregatedPivotFacet = fi.pivotFacets.get(pivotFacetResponseFromShard.getKey());
+        aggregatedPivotFacet.mergeResponseFromShard(shardNumber, rb, pivotFacetResponseFromShard.getValue());
+        aggregatedPivotFacet.removeAllRefinementsForShard(shardNumber);
       }
     }
     
@@ -1414,7 +1414,6 @@ public class FacetComponent extends SearchComponent {
   /**
    * <b>This API is experimental and subject to change</b>
    */
-  @SuppressWarnings("rawtypes")
   public static class DistribFieldFacet extends FieldFacet {
     public List<String>[] _toRefine; // a List<String> of refinements needed,
                                      // one for each shard.
@@ -1453,7 +1452,7 @@ public class FacetComponent extends SearchComponent {
         = params.getFieldInt(field, FacetParams.FACET_OVERREQUEST_COUNT, 10);
     }
     
-    void add(int shardNum, NamedList shardCounts, int numRequested) {
+    void add(int shardNum, NamedList<?> shardCounts, int numRequested) {
       // shardCounts could be null if there was an exception
       int sz = shardCounts == null ? 0 : shardCounts.size();
       int numReceived = sz;
@@ -1538,7 +1537,9 @@ public class FacetComponent extends SearchComponent {
         if (ent.getValue().count >= minCount) {
           newOne.put(ent.getKey(), ent.getValue());
         } else {
-          log.trace("Removing facet/key: " + ent.getKey() + "/" + ent.getValue().toString() + " mincount=" + minCount);
+          if (log.isTraceEnabled()) {
+            log.trace("Removing facet/key: {}/{} mincount={}", ent.getKey(), ent.getValue(), minCount);
+          }
           replace = true;
         }
       }

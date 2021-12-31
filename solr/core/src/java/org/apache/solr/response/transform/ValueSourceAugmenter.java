@@ -72,7 +72,7 @@ public class ValueSourceAugmenter extends DocTransformer
     }
   }
 
-  Map fcontext;
+  Map<Object,Object> fcontext;
   SolrIndexSearcher searcher;
   List<LeafReaderContext> readerContexts;
 

@@ -1,0 +1,402 @@
+import org.gradle.internal.jvm.Jvm
+
+import javax.annotation.Nullable
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// generate javadocs by calling javadoc tool
+// see https://docs.oracle.com/en/java/javase/11/tools/javadoc.html
+
+def resources = scriptResources(buildscript)
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    configurations {
+      missingdoclet
+    }
+
+    dependencies {
+      missingdoclet "org.apache.lucene.tools:missing-doclet"
+    }
+
+    ext {
+      relativeDocPath = project.path.replaceFirst(/:\w+:/, "").replace(':', '/')
+    }
+
+    // We disable the default javadoc task and have our own
+    // javadoc rendering task below. The default javadoc task
+    // will just invoke 'renderJavadoc' (to allow people to call
+    // conventional task name).
+    tasks.matching { it.name == "javadoc" }.all {
+      enabled = false
+      dependsOn "renderJavadoc"
+    }
+
+    task renderJavadoc(type: RenderJavadocTask) {
+      description "Generates Javadoc API documentation for each module. This directly invokes javadoc tool."
+      group "documentation"
+
+      taskResources = resources
+      dependsOn sourceSets.main.compileClasspath
+      classpath = sourceSets.main.compileClasspath
+      srcDirSet = sourceSets.main.java
+
+      outputDir = project.javadoc.destinationDir
+    }
+
+    task renderSiteJavadoc(type: RenderJavadocTask) {
+      description "Generates Javadoc API documentation for the site (relative links)."
+      group "documentation"
+
+      taskResources = resources
+      dependsOn sourceSets.main.compileClasspath
+      classpath = sourceSets.main.compileClasspath;
+      srcDirSet = sourceSets.main.java;
+
+      relativeProjectLinks = true
+
+      // Place the documentation under Lucene or Solr's documentation directory.
+      // docroot is defined in 'documentation.gradle'
+      outputDir = project.docroot.toPath().resolve(project.relativeDocPath).toFile()
+    }
+  }
+}
+
+// Set up titles and link up some offline docs for all documentation
+// (they may be unused but this doesn't do any harm).
+
+def javaJavadocPackages = rootProject.file("${resources}/java11/")
+def junitJavadocPackages = rootProject.file("${resources}/junit/")
+allprojects {
+  project.tasks.withType(RenderJavadocTask) {
+    title = "Solr ${project.version} ${project.name} API"
+
+    offlineLinks += [
+        "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
+        "https://junit.org/junit4/javadoc/4.12/": junitJavadocPackages
+    ]
+
+    solrDocUrl = provider({ rootProject.solrDocUrl })
+
+    // Set up custom doclet.
+    dependsOn configurations.missingdoclet
+    docletpath = configurations.missingdoclet
+  }
+}
+
+// Configure project-specific tweaks and to-dos.
+
+configure(project(":solr").allprojects) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: fix missing javadocs
+    javadocMissingLevel = "package"
+  }
+}
+
+configure(project(":solr:contrib:analysis-extras")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.solr.schema",
+        "org.apache.solr.update.processor"
+    ]
+  }
+}
+
+configure(project(":solr:contrib:analytics")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.solr.handler",
+        "org.apache.solr.handler.component",
+        "org.apache.solr.response"
+    ]
+  }
+}
+
+configure(project(":solr:contrib:langid")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = ["org.apache.solr.update.processor"]
+  }
+}
+
+configure(project(":solr:solrj")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = ["org.apache.solr.client.solrj.embedded"]
+  }
+}
+
+configure(project(":solr:test-framework")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.solr",
+        "org.apache.solr.analysis",
+        "org.apache.solr.cloud",
+        "org.apache.solr.core",
+        "org.apache.solr.handler.component",
+        "org.apache.solr.update.processor",
+        "org.apache.solr.util"
+    ]
+  }
+}
+
+// Fix for Java 11 Javadoc tool that cannot handle split packages between modules correctly.
+// (by removing all the packages which are part of lucene-core)
+// See: https://issues.apache.org/jira/browse/LUCENE-8738?focusedCommentId=16818106&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-16818106
+
+// Disable Javadoc rendering for these projects.
+configure(subprojects.findAll {
+  it.path in [
+      ':solr:solr-ref-guide',
+      ':solr:server',
+      ':solr:webapp']
+}) {
+  project.tasks.withType(RenderJavadocTask) {
+    enabled = false
+  }
+}
+
+// Add cross-project documentation task dependencies:
+// - each RenderJavaDocs task gets a dependency to all tasks with same name in its dependencies
+// - the dependency is using dependsOn with a closure to enable lazy evaluation
+configure(subprojects) {
+  project.tasks.withType(RenderJavadocTask) { task ->
+    task.dependsOn {
+      task.project.configurations.implementation.allDependencies.withType(ProjectDependency).collect { dep ->
+        def otherProject = dep.dependencyProject
+        return otherProject.tasks.findByName(task.name)
+      }
+    }
+  }
+}
+
+@CacheableTask
+class RenderJavadocTask extends DefaultTask {
+  @InputFiles
+  @PathSensitive(PathSensitivity.RELATIVE)
+  @SkipWhenEmpty
+  SourceDirectorySet srcDirSet;
+
+  @OutputDirectory
+  File outputDir
+
+  @CompileClasspath
+  FileCollection classpath
+
+  @CompileClasspath
+  FileCollection docletpath
+
+  @Input
+  String title
+
+  @Input
+  boolean linksource = false
+
+  @Input
+  boolean relativeProjectLinks = false
+
+  @Input
+  def offlineLinks = [:]
+
+  @Input
+  @Optional
+  final Property<String> solrDocUrl = project.objects.property(String)
+
+  // default is to require full javadocs
+  @Input
+  String javadocMissingLevel = "parameter"
+
+  // anything in these packages is checked with level=method. This allows iteratively fixing one package at a time.
+  @Input
+  List<String> javadocMissingMethod = []
+
+  // default is not to ignore any elements, should only be used to workaround split packages
+  @Input
+  List<String> javadocMissingIgnore = []
+
+  @Input
+  @Optional
+  ListProperty<String> extraOpts = project.objects.listProperty(String)
+
+  @Optional
+  @Input
+  final Property<String> executable = project.objects.property(String).convention(
+      project.provider { Jvm.current().javadocExecutable.toString() })
+
+  @Input
+  def taskResources
+
+  /** Utility method to recursively collect all tasks with same name like this one that we depend on */
+  private Set findRenderTasksInDependencies() {
+    Set found = []
+    def collectDeps
+    collectDeps = { task -> task.taskDependencies.getDependencies(task).findAll{ it.name == this.name && it.enabled && !found.contains(it) }.each{
+      found << it
+      collectDeps(it)
+    }}
+    collectDeps(this)
+    return found
+  }
+
+  @TaskAction
+  public void render() {
+    def srcDirs = srcDirSet.srcDirs.findAll { dir -> dir.exists() }
+    def optionsFile = project.file("${getTemporaryDir()}/javadoc-options.txt")
+
+    // create the directory, so relative link calculation knows that it's a directory:
+    outputDir.mkdirs();
+
+    def opts = []
+    opts << [ '-overview', project.file("${srcDirs[0]}/overview.html") ]
+    opts << [ '-sourcepath', srcDirs.join(File.pathSeparator) ]
+    opts << [ '-subpackages', 'org.apache.solr' ]
+    opts << [ '-d', outputDir ]
+    opts << '-protected'
+    opts << [ '-encoding', 'UTF-8' ]
+    opts << [ '-charset', 'UTF-8' ]
+    opts << [ '-docencoding', 'UTF-8' ]
+    opts << '-noindex'
+    opts << '-author'
+    opts << '-version'
+    if (linksource) {
+      opts << '-linksource'
+    }
+    opts << '-use'
+    opts << [ '-locale', 'en_US' ]
+    opts << [ '-windowtitle', title ]
+    opts << [ '-doctitle', title ]
+    if (!classpath.isEmpty()) {
+      opts << [ '-classpath', classpath.asPath ]
+    }
+    opts << [ '-bottom', "<i>Copyright &copy; 2000-${project.buildYear} Apache Software Foundation. All Rights Reserved.</i>" ]
+
+    opts << [ '-tag', 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.' ]
+    opts << [ '-tag', 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.' ]
+    opts << [ '-tag', "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)." ]
+
+    opts << [ '-doclet', "org.apache.lucene.missingdoclet.MissingDoclet" ]
+    opts << [ '-docletpath', docletpath.asPath ]
+    opts << [ '--missing-level', javadocMissingLevel ]
+    if (javadocMissingIgnore) {
+      opts << [ '--missing-ignore', String.join(',', javadocMissingIgnore) ]
+    }
+    if (javadocMissingMethod) {
+      opts << [ '--missing-method', String.join(',', javadocMissingMethod) ]
+    }
+
+    opts << [ '-quiet' ]
+
+    // Add all extra options, if any.
+    opts.addAll(extraOpts.orElse([]).get())
+
+    def allOfflineLinks = [:]
+    allOfflineLinks.putAll(offlineLinks)
+
+    // Resolve inter-project links:
+    // - find all (enabled) tasks this tasks depends on (with same name), calling findRenderTasksInDependencies()
+    // - sort the tasks preferring those whose project name equals 'core', then lexigraphical by path
+    // - for each task get output dir to create relative or absolute link
+    // NOTE: explicitly exclude solr/test-framework, or attempting to link to lucene-test-framework because if we did javadoc would
+    // attempt to link class refs in in org.apache.lucene, causing broken links. (either broken links to things like "Directory" if
+    // lucene-test-framework was first, or broken links to things like LuceneTestCase if lucene-core was first)
+    if (project.path != ':solr:test-framework') {  //
+      findRenderTasksInDependencies()
+          .sort(false, Comparator.comparing { (it.project.name != 'core') as Boolean }.thenComparing(Comparator.comparing { it.path }))
+          .each { otherTask ->
+            def otherProject = otherTask.project
+            // For relative links we compute the actual relative link between projects.
+            def crossLuceneSolr = (otherProject.docroot != project.docroot)
+            if (relativeProjectLinks && !crossLuceneSolr) {
+              def pathTo = otherTask.outputDir.toPath().toAbsolutePath()
+              def pathFrom = outputDir.toPath().toAbsolutePath()
+              def relative = pathFrom.relativize(pathTo).toString().replace(File.separator, '/')
+              opts << ['-link', relative]
+            } else {
+              // For absolute links, we determine the target URL by assembling the full URL.
+              def value = solrDocUrl.getOrElse(null)
+              if (value) {
+                allOfflineLinks.put("${value}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+              }
+            }
+          }
+    }
+
+    // Add offline links.
+    allOfflineLinks.each { url, dir ->
+      // Some sanity check/ validation here to ensure dir/package-list or dir/element-list is present.
+      if (!project.file("$dir/package-list").exists() &&
+          !project.file("$dir/element-list").exists()) {
+        throw new GradleException("Expected pre-rendered package-list or element-list at ${dir}.")
+      }
+      opts << [ '-linkoffline', url, dir ]
+    }
+
+    opts << [ '--release', 11 ]
+    opts << '-Xdoclint:all,-missing'
+
+    // Increase Javadoc's heap.
+    opts += [ "-J-Xmx512m" ]
+    // Force locale to be "en_US" (fix for: https://bugs.openjdk.java.net/browse/JDK-8222793)
+    opts += [ "-J-Duser.language=en", "-J-Duser.country=US" ]
+
+    // -J options have to be passed on command line, they are not interpreted if passed via args file.
+    def jOpts = opts.findAll { opt -> opt instanceof String && opt.startsWith("-J") }
+    opts.removeAll(jOpts)
+
+    // Temporary file that holds all javadoc options for the current task (except jOpts)
+    optionsFile.withWriter("UTF-8", { writer ->
+      // escapes an option with single quotes or whitespace to be passed in the options.txt file for
+      def escapeJavadocOption = { String s -> (s =~ /[ '"]/) ? ("'" + s.replaceAll(/[\\'"]/, /\\$0/) + "'") : s }
+
+      opts.each { entry ->
+        if (entry instanceof List) {
+          writer.write(entry.collect { escapeJavadocOption(it as String) }.join(" "))
+        } else {
+          writer.write(escapeJavadocOption(entry as String))
+        }
+        writer.write('\n')
+      }
+    })
+
+    def javadocCmd = project.file(executable.get())
+    logger.info("Javadoc executable used: ${javadocCmd}")
+
+    project.quietExec {
+        executable javadocCmd
+
+        args += [ "@${optionsFile}" ]
+        args += jOpts
+    }
+
+    // append some special table css, prettify css
+    ant.concat(destfile: "${outputDir}/stylesheet.css", append: "true", fixlastline: "true", encoding: "UTF-8") {
+      filelist(dir: taskResources, files: "table_padding.css")
+      filelist(dir: project.file("${taskResources}/prettify"), files: "prettify.css")
+    }
+
+    // append prettify to scripts
+    ant.concat(destfile: "${outputDir}/script.js", append: "true", fixlastline: "true", encoding: "UTF-8") {
+      filelist(dir: project.file("${taskResources}/prettify"), files: "prettify.js inject-javadocs.js")
+    }
+
+    ant.fixcrlf(srcdir: outputDir, includes: "stylesheet.css script.js", eol: "lf", fixlast: "true", encoding: "UTF-8")
+  }
+}

@@ -75,8 +75,8 @@ public class DistanceEvaluator extends RecursiveObjectEvaluator implements ManyV
 
         DistanceMeasure distanceMeasure = new EuclideanDistance();
         return distanceMeasure.compute(
-            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+            ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+            ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
         );
       }
     } else if (values.length == 3) {
@@ -101,8 +101,8 @@ public class DistanceEvaluator extends RecursiveObjectEvaluator implements ManyV
       }
 
       return distanceMeasure.compute(
-          ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-          ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+          ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+          ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
       );
     } else {
       throw new IOException("distance function operates on either two numeric arrays or a single matrix as parameters.");

@@ -20,29 +20,19 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
-import org.jsoup.nodes.TextNode;
-import org.jsoup.parser.Parser;
 import org.jsoup.parser.Tag;
 import org.jsoup.select.Elements;
-import org.jsoup.select.NodeVisitor;
 
 /**
  * Check various things regarding anchors, links &amp; general doc structure in the generated HTML site.
@@ -60,7 +50,7 @@ import org.jsoup.select.NodeVisitor;
  * Validates that no file contains the same anchor more then once.
  * </li>
  * <li>
- * Validates that relative links point to a file that actually exists, and if it's part of the ref-guide that the '#fragement' in the link refers to an ID that exists in that file.
+ * Validates that relative links point to a file that actually exists, and if it's part of the ref-guide that any '#fragment' in the link refers to an ID that exists in that file.
  * </li>
  * <li>
  * Our use of "<a href="https://getbootstrap.com/">Bootstrap</a>" features leverage some custom javascript
@@ -94,7 +84,7 @@ import org.jsoup.select.NodeVisitor;
  *      <li>Jekyll Mode:
  *        <ul>
  *          <li>Requires all html pages have a "content" div; ignores all DOM Nodes that are
- *              <em>not</em> decendents of this div (to exclude redundent template based header, footer,
+ *              <em>not</em> descendants of this div (to exclude redundant template based header, footer,
  *              &amp; sidebar links)
  *          </li>
  *          <li>Expects that the <code>&lt;body/&gt;</code> tag will have an <code>id</code> matching
@@ -178,11 +168,12 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
 
       // For Jekyll, we only care about class='content' -- we don't want to worry
       // about ids/links duplicated in the header/footer of every page,
-      final String mainContentSelector = bareBones ? "body" : ".content";
-      final Element mainContent = doc.select(mainContentSelector).first();
-      if (mainContent == null) {
-        throw new RuntimeException(file.getName() + " has no main content: " + mainContentSelector);
-      }
+      final String mainContentSelector = bareBones ? "body" : ".link-check-root";
+      final Elements mainContents = doc.select(mainContentSelector);
+      if (1 != mainContents.size()) {
+        throw new RuntimeException(file.getName() + " has " + mainContents.size() + " main content elements: " + mainContentSelector);
+      }        
+      final Element mainContent = mainContents.first();
 
       // All of the ID (nodes) in (the content of) this doc
       final Elements nodesWithIds = mainContent.select("[id]");
@@ -192,7 +183,7 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
         nodesWithIds.add(new Element(Tag.valueOf("body"), "").attr("id", file.getName().replaceAll("\\.html$","")));
       } else {
         // We have to add Jekyll's <body> to the nodesWithIds so we check the main section anchor as well
-        // since we've already
+        // since we've already drilled down below it
         nodesWithIds.addAll(doc.select("body[id]"));
       }
 
@@ -224,7 +215,7 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
         totalIds++; // Note: we specifically don't count 'preamble'
       }
 
-      // check for (relative) links that don't include a fragment
+      // build up the list of (relative) linksInThisFile
       final Elements links = mainContent.select("a[href]");
       for (Element link : links) {
         totalLinks++;
@@ -237,17 +228,8 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
           final URI uri = new URI(href);
           if (! uri.isAbsolute()) {
             totalRelativeLinks++;
-            final String frag = uri.getFragment();
-            if ((null == frag || "".equals(frag)) && ! uri.getPath().startsWith("../")) {
-              // we must have a fragment for intra-page links to work correctly
-              // but relative links "up and out" of ref-guide (Ex: local javadocs)
-              // don't require them (even if checkAllRelativeLinks is set)
-              problems++;
-              System.err.println(file.toURI().toString() + " contains relative link w/o an '#anchor': " + href);
-            } else {
-              // track the link to validate it exists in the target doc
-              linksInThisFile.add(uri);
-            }
+            // track the link to (later) validate the target doc exists and contains the linked anchor (if any)
+            linksInThisFile.add(uri);
           }
         } catch (URISyntaxException uri_ex) {
           // before reporting a problem, see if it can be parsed as a valid (absolute) URL
@@ -270,7 +252,7 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
       problems += validateHtmlStructure(file, mainContent);
     }
 
-    // check every (realtive) link in every file to ensure the frag exists in the target page
+    // check every (relative) link in every file to ensure the target page exists, and contains the linked anchor (if any)
     for (Map.Entry<File,List<URI>> entry : filesToRelativeLinks.entrySet()) {
       final File source = entry.getKey();
       for (URI link : entry.getValue()) {
@@ -286,14 +268,16 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
         } else {
           if ( ! path.startsWith("../") ) {
             // if the dest file is part of the ref guide (ie: not an "up and out" link to javadocs)
-            // then we validate the fragment is known and exists in that file...
+            // then we validate the fragment (if any) is known and exists in that file...
             final String frag = link.getFragment();
-            final Set<String> knownIdsInDest = filesToIds.get(dest.getName());
-            assert null != knownIdsInDest : dest.getName();
-            if (! knownIdsInDest.contains(frag) ) {
-              problems++;
-              System.err.println("Relative link points at id that doesn't exist in dest: " + link);
-              System.err.println(" ... source: " + source.toURI().toString());
+            if ( ! (null == frag || frag.isEmpty()) ) {
+              final Set<String> knownIdsInDest = filesToIds.get(dest.getName());
+              assert null != knownIdsInDest : dest.getName();
+              if (! knownIdsInDest.contains(frag) ) {
+                problems++;
+                System.err.println("Relative link points at id that doesn't exist in dest: " + link);
+                System.err.println(" ... source: " + source.toURI().toString());
+              }
             }
           }
         }
@@ -334,15 +318,15 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
     int problems = 0;
 
     for (Element tab : mainContent.select(".dynamic-tabs")) {
-      // must be at least two tab-pane decendents of each dynamic-tabs
+      // must be at least two tab-pane descendants of each dynamic-tabs
       final Elements panes = tab.select(".tab-pane");
       final int numPanes = panes.size();
       if (numPanes < 2) {
-        System.err.println(file + " contains a 'dynamic-tabs' with "+ numPanes+" 'tab-pane' decendents -- must be at least 2");
+        System.err.println(file + " contains a 'dynamic-tabs' with "+ numPanes+" 'tab-pane' descendants -- must be at least 2");
         problems++;
       }
 
-      // must not have any decendents of a dynamic-tabs that are not part of tab-pane
+      // must not have any descendants of a dynamic-tabs that are not part of tab-pane
       //
       // this is kind of tricky, because asciidoctor creates wrapper divs around the tab-panes
       // so we can't make assumptions about direct children
@@ -351,11 +335,11 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
       for (Element pane : panes) {
         elementsToIgnore.addAll(pane.select("*"));
       }
-      final Elements nonPaneDecendents = tab.select("*");
-      nonPaneDecendents.removeAll(elementsToIgnore);
-      if (0 != nonPaneDecendents.size()) {
+      final Elements nonPaneDescendants = tab.select("*");
+      nonPaneDescendants.removeAll(elementsToIgnore);
+      if (0 != nonPaneDescendants.size()) {
         System.err.println(file + " contains a 'dynamic-tabs' with content outside of a 'tab-pane': " +
-                           shortStr(nonPaneDecendents.text()));
+                           shortStr(nonPaneDescendants.text()));
         problems++;
       }
     }
@@ -379,16 +363,16 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
         problems++;
       }
 
-      // every tab-pane must be a decendent of a dynamic-tabs
+      // every tab-pane must be a descendant of a dynamic-tabs
       if (! validPanes.contains(pane)) {
-        System.err.println(file + " contains " + debug + " that is not a decendent of a 'dynamic-tabs'");
+        System.err.println(file + " contains " + debug + " that is not a dependent of a 'dynamic-tabs'");
         problems++;
       }
 
       // every tab-pane must have exactly 1 tab-label which is <strong>
       Elements labels = pane.select(".tab-label");
       if (1 != labels.size()) {
-        System.err.println(file + " contains " + debug + " with " + labels.size() + " 'tab-label' decendents -- must be exactly 1");
+        System.err.println(file + " contains " + debug + " with " + labels.size() + " 'tab-label' descendants -- must be exactly 1");
         problems++;
       } else {
         Element label = labels.first();
@@ -422,5 +406,4 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
     }
     return s.substring(0, 17) + "...";
   }
-
 }

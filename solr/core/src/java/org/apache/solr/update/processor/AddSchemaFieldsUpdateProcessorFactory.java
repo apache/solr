@@ -158,7 +158,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
     inclusions = FieldMutatingUpdateProcessorFactory.parseSelectorParams(args);
     validateSelectorParams(inclusions);
     inclusions.fieldNameMatchesSchemaField = false;  // Explicitly (non-configurably) require unknown field names
@@ -192,9 +192,9 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     }
   }
 
-  private static List<TypeMapping> parseTypeMappings(NamedList args) {
+  private static List<TypeMapping> parseTypeMappings(NamedList<?> args) {
     List<TypeMapping> typeMappings = new ArrayList<>();
-    List<Object> typeMappingsParams = args.getAll(TYPE_MAPPING_PARAM);
+    List<?> typeMappingsParams = args.getAll(TYPE_MAPPING_PARAM);
     for (Object typeMappingObj : typeMappingsParams) {
       if (null == typeMappingObj) {
         throw new SolrException(SERVER_ERROR, "'" + TYPE_MAPPING_PARAM + "' init param cannot be null");
@@ -202,7 +202,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       if ( ! (typeMappingObj instanceof NamedList) ) {
         throw new SolrException(SERVER_ERROR, "'" + TYPE_MAPPING_PARAM + "' init param must be a <lst>");
       }
-      NamedList typeMappingNamedList = (NamedList)typeMappingObj;
+      NamedList<?> typeMappingNamedList = (NamedList<?>)typeMappingObj;
 
       Object fieldTypeObj = typeMappingNamedList.remove(FIELD_TYPE_PARAM);
       if (null == fieldTypeObj) {
@@ -245,7 +245,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         if ( ! (copyFieldObj instanceof NamedList)) {
           throw new SolrException(SERVER_ERROR, "'" + COPY_FIELD_PARAM + "' init param must be a <lst>");
         }
-        NamedList copyFieldNamedList = (NamedList)copyFieldObj;
+        NamedList<?> copyFieldNamedList = (NamedList<?>)copyFieldObj;
         // dest
         Object destObj = copyFieldNamedList.remove(DEST_PARAM);
         if (null == destObj) {
@@ -401,7 +401,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
                   typeMapping.copyFieldDefs.stream().collect(Collectors.groupingBy(CopyFieldDef::getMaxChars)));
             }
           } 
-          newFields.add(oldSchema.newField(fieldName, fieldTypeName, Collections.<String,Object>emptyMap()));
+          newFields.add(oldSchema.newField(fieldName, fieldTypeName, Collections.emptyMap()));
         }
         if (newFields.isEmpty() && newCopyFields.isEmpty()) {
           // nothing to do - no fields will be added - exit from the retry loop
@@ -438,7 +438,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
             builder.append("}");
           }
           builder.append("]");
-          log.debug(builder.toString());
+          log.debug("{}", builder);
         }
         // Need to hold the lock during the entire attempt to ensure that
         // the schema on the request is the latest
@@ -556,7 +556,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     }
 
     private boolean isImmutableConfigSet(SolrCore core) {
-      NamedList args = core.getConfigSetProperties();
+      NamedList<?> args = core.getConfigSetProperties();
       Object immutable = args != null ? args.get(IMMUTABLE_CONFIGSET_ARG) : null;
       return immutable != null ? Boolean.parseBoolean(immutable.toString()) : false;
     }

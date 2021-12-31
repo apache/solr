@@ -74,7 +74,7 @@ public abstract class Feature extends Query implements Accountable {
         className,
         Feature.class,
         new String[0], // no sub packages
-        new Class[] { String.class, Map.class },
+        new Class<?>[] { String.class, Map.class },
         new Object[] { name, params });
     if (params != null) {
       SolrPluginUtils.invokeSetters(f, params.entrySet());
@@ -338,6 +338,45 @@ public abstract class Feature extends Query implements Accountable {
       public DocIdSetIterator iterator() {
         return itr;
       }
+    }
+
+    /**
+     * A <code>FeatureScorer</code> that contains a <code>Scorer</code>,
+     * which it delegates to where appropriate.
+     */
+    public abstract class FilterFeatureScorer extends FeatureScorer {
+
+      final protected Scorer in;
+
+      public FilterFeatureScorer(Feature.FeatureWeight weight, Scorer scorer) {
+        super(weight, null);
+        this.in = scorer;
+      }
+
+      @Override
+      public int docID() {
+        return in.docID();
+      }
+
+      @Override
+      public DocIdSetIterator iterator() {
+        return in.iterator();
+      }
+
+      // Currently (Q1 2021) we intentionally don't delegate twoPhaseIterator()
+      // because it doesn't always work and we don't yet know why, please see
+      // SOLR-15071 for more details.
+
+      @Override
+      public int advanceShallow(int target) throws IOException {
+        return in.advanceShallow(target);
+      }
+
+      @Override
+      public float getMaxScore(int upTo) throws IOException {
+        return in.getMaxScore(upTo);
+      }
+
     }
 
     /**

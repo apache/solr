@@ -142,6 +142,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
   private static String dynfield(String field) {
     return "//lst[@name='dynamicFields']/lst[@name='"+field+"']/";
   }
+
   @Test
   public void testFlParam() {
     SolrQueryRequest req = req("qt", "/admin/luke", "fl", "solr_t solr_s", "show", "all");

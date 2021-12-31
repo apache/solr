@@ -32,7 +32,7 @@ import static org.mockito.Mockito.mock;
  */
 public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   private ClassificationUpdateProcessorFactory cFactoryToTest = new ClassificationUpdateProcessorFactory();
-  private NamedList args = new NamedList<String>();
+  private NamedList<String> args = new NamedList<>();
 
   @Before
   public void initArgs() {

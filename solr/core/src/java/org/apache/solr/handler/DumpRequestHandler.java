@@ -36,14 +36,16 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class DumpRequestHandler extends RequestHandlerBase
 {
+
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
+  @SuppressWarnings({"unchecked"})
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException
   {
     // Show params
     rsp.add( "params", req.getParams().toNamedList() );
     String[] parts = req.getParams().getParams("urlTemplateValues");
     if (parts != null && parts.length > 0) {
-      Map map = new LinkedHashMap<>();
+      Map<String, String> map = new LinkedHashMap<>();
       rsp.getValues().add("urlTemplateValues", map);
       for (String part : parts) {
         map.put(part, req.getPathTemplateValues().get(part));
@@ -52,7 +54,8 @@ public class DumpRequestHandler extends RequestHandlerBase
 
     String[] returnParams = req.getParams().getParams("param");
     if(returnParams !=null) {
-      NamedList params = (NamedList) rsp.getValues().get("params");
+      @SuppressWarnings({"unchecked"})
+      NamedList<Object> params = (NamedList<Object>) rsp.getValues().get("params");
       for (String returnParam : returnParams) {
         String[] vals = req.getParams().getParams(returnParam);
         if(vals != null){
@@ -68,7 +71,7 @@ public class DumpRequestHandler extends RequestHandlerBase
     }
 
     if(req.getParams().getBool("getdefaults", false)){
-      NamedList def = (NamedList) initArgs.get(PluginInfo.DEFAULTS);
+      NamedList<?> def = (NamedList<?>) initArgs.get(PluginInfo.DEFAULTS);
       rsp.add("getdefaults", def);
     }
 
@@ -116,11 +119,12 @@ public class DumpRequestHandler extends RequestHandlerBase
   private List<String> subpaths;
 
   @Override
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     if(args !=null) {
-      NamedList nl = (NamedList) args.get(PluginInfo.DEFAULTS);
-      if(nl!=null) subpaths = nl.getAll("subpath");
+      @SuppressWarnings("unchecked")
+      NamedList<String> nl = (NamedList<String>) args.get(PluginInfo.DEFAULTS);
+      if (nl!=null) subpaths = nl.getAll("subpath");
     }
   }
 }

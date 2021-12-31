@@ -47,8 +47,6 @@ import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FilterCollector;
@@ -58,6 +56,7 @@ import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
 import org.apache.lucene.search.grouping.TermGroupFacetCollector;
 import org.apache.lucene.search.grouping.TermGroupSelector;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.StringHelper;
@@ -81,14 +80,12 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.Grouping;
-import org.apache.solr.search.HashDocSet;
-import org.apache.solr.search.Insanity;
+import org.apache.solr.search.NumericHidingLeafReader;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SortedIntDocSet;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.search.facet.FacetRequest;
@@ -270,7 +267,7 @@ public class SimpleFacets {
       } else {
         return base;
       }
-      AllGroupHeadsCollector allGroupHeadsCollector = grouping.getCommands().get(0).createAllGroupCollector();
+      AllGroupHeadsCollector<?> allGroupHeadsCollector = grouping.getCommands().get(0).createAllGroupCollector();
       searcher.search(base.getTopFilter(), allGroupHeadsCollector);
       return new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));
     } else {
@@ -336,13 +333,8 @@ public class SimpleFacets {
       );
     }
 
-    AllGroupsCollector collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
-    Filter mainQueryFilter = docSet.getTopFilter(); // This returns a filter that only matches documents matching with q param and fq params
-    Query filteredFacetQuery = new BooleanQuery.Builder()
-        .add(facetQuery, Occur.MUST)
-        .add(mainQueryFilter, Occur.FILTER)
-        .build();
-    searcher.search(filteredFacetQuery, collector);
+    AllGroupsCollector<?> collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
+    searcher.search(QueryUtils.combineQueryAndFilter(facetQuery, docSet.getTopFilter()), collector);
     return collector.getGroupCount();
   }
 
@@ -524,6 +516,7 @@ public class SimpleFacets {
               String warningMessage 
                   = "Raising facet.mincount from " + mincount + " to 1, because field " + field + " is Points-based.";
               log.warn(warningMessage);
+              @SuppressWarnings({"unchecked"})
               List<String> warnings = (List<String>)rb.rsp.getResponseHeader().get("warnings");
               if (null == warnings) {
                 warnings = new ArrayList<>();
@@ -576,15 +569,18 @@ public class SimpleFacets {
             //Go through the response to build the expected output for SimpleFacets
             counts = new NamedList<>();
             if(resObj != null) {
+              @SuppressWarnings({"unchecked"})
               NamedList<Object> res = (NamedList<Object>) resObj;
 
+              @SuppressWarnings({"unchecked"})
               List<NamedList<Object>> buckets = (List<NamedList<Object>>)res.get("buckets");
               for(NamedList<Object> b : buckets) {
-                counts.add(b.get("val").toString(), (Integer)b.get("count"));
+                counts.add(b.get("val").toString(), ((Number)b.get("count")).intValue());
               }
               if(missing) {
+                @SuppressWarnings({"unchecked"})
                 NamedList<Object> missingCounts = (NamedList<Object>) res.get("missing");
-                counts.add(null, (Integer)missingCounts.get("count"));
+                counts.add(null, ((Number)missingCounts.get("count")).intValue());
               }
             }
           break;
@@ -722,9 +718,9 @@ public class SimpleFacets {
     BytesRef prefixBytesRef = prefix != null ? new BytesRef(prefix) : null;
     final TermGroupFacetCollector collector = TermGroupFacetCollector.createTermGroupFacetCollector(groupField, field, multiToken, prefixBytesRef, 128);
     
-    Collector groupWrapper = getInsanityWrapper(groupField, collector);
-    Collector fieldWrapper = getInsanityWrapper(field, groupWrapper);
-    // When GroupedFacetCollector can handle numerics we can remove the wrapped collectors
+    Collector groupWrapper = getNumericHidingWrapper(groupField, collector);
+    Collector fieldWrapper = getNumericHidingWrapper(field, groupWrapper);
+    // When GroupFacetCollector can handle numerics we can remove the wrapped collectors
     searcher.search(base.getTopFilter(), fieldWrapper);
     
     boolean orderByCount = sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
@@ -754,16 +750,16 @@ public class SimpleFacets {
     return facetCounts;
   }
   
-  private Collector getInsanityWrapper(final String field, Collector collector) {
+  private Collector getNumericHidingWrapper(final String field, Collector collector) {
     SchemaField sf = searcher.getSchema().getFieldOrNull(field);
     if (sf != null && !sf.hasDocValues() && !sf.multiValued() && sf.getType().getNumberType() != null) {
-      // it's a single-valued numeric field: we must currently create insanity :(
-      // there isn't a GroupedFacetCollector that works on numerics right now...
+      // it's a single-valued numeric field: we must hide the numeric because
+      // there isn't a GroupFacetCollector that works on numerics right now...
       return new FilterCollector(collector) {
         @Override
         public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-          LeafReader insane = Insanity.wrapInsanity(context.reader(), field);
-          return in.getLeafCollector(insane.getContext());
+          LeafReader leafReader = NumericHidingLeafReader.wrap(context.reader(), field);
+          return in.getLeafCollector(leafReader.getContext());
         }
       };
     } else {
@@ -789,7 +785,6 @@ public class SimpleFacets {
    * @see #getFieldMissingCount
    * @see #getFacetTermEnumCounts
    */
-  @SuppressWarnings("unchecked")
   public NamedList<Object> getFacetFieldCounts()
       throws IOException, SyntaxError {
 
@@ -805,7 +800,7 @@ public class SimpleFacets {
     int maxThreads = req.getParams().getInt(FacetParams.FACET_THREADS, 0);
     Executor executor = maxThreads == 0 ? directExecutor : facetExecutor;
     final Semaphore semaphore = new Semaphore((maxThreads <= 0) ? Integer.MAX_VALUE : maxThreads);
-    List<Future<NamedList>> futures = new ArrayList<>(facetFs.length);
+    List<Future<NamedList<?>>> futures = new ArrayList<>(facetFs.length);
 
     if (fdebugParent != null) {
       fdebugParent.putInfoItem("maxThreads", maxThreads);
@@ -823,7 +818,7 @@ public class SimpleFacets {
         final String termList = localParams == null ? null : localParams.get(CommonParams.TERMS);
         final String key = parsed.key;
         final String facetValue = parsed.facetValue;
-        Callable<NamedList> callable = () -> {
+        Callable<NamedList<?>> callable = () -> {
           try {
             NamedList<Object> result = new SimpleOrderedMap<>();
             if(termList != null) {
@@ -847,14 +842,14 @@ public class SimpleFacets {
           }
         };
 
-        RunnableFuture<NamedList> runnableFuture = new FutureTask<>(callable);
+        RunnableFuture<NamedList<?>> runnableFuture = new FutureTask<>(callable);
         semaphore.acquire();//may block and/or interrupt
         executor.execute(runnableFuture);//releases semaphore when done
         futures.add(runnableFuture);
       }//facetFs loop
 
       //Loop over futures to get the values. The order is the same as facetFs but shouldn't matter.
-      for (Future<NamedList> future : futures) {
+      for (Future<NamedList<?>> future : futures) {
         res.addAll(future.get());
       }
       assert semaphore.availablePermits() >= maxThreads;
@@ -902,7 +897,7 @@ public class SimpleFacets {
 
   private int numDocs(String term, final SchemaField sf, final FieldType ft, final DocSet baseDocset) {
     try {
-      return searcher.numDocs(ft.getFieldQuery(null, sf, term), baseDocset);
+      return searcher.numDocs(ft.getFieldTermQuery(null, sf, term), baseDocset);
     } catch (IOException e1) {
       throw new RuntimeException(e1);
     }
@@ -962,10 +957,11 @@ public class SimpleFacets {
     int minDfFilterCache = global.getFieldInt(field, FacetParams.FACET_ENUM_CACHE_MINDF, 0);
 
     // make sure we have a set that is fast for random access, if we will use it for that
-    DocSet fastForRandomSet = docs;
-    if (minDfFilterCache>0 && docs instanceof SortedIntDocSet) {
-      SortedIntDocSet sset = (SortedIntDocSet)docs;
-      fastForRandomSet = new HashDocSet(sset.getDocs(), 0, sset.size());
+    Bits fastForRandomSet;
+    if (minDfFilterCache <= 0) {
+      fastForRandomSet = null;
+    } else {
+      fastForRandomSet = docs.getBits();
     }
 
     IndexSchema schema = searcher.getSchema();
@@ -1064,7 +1060,7 @@ public class SimpleFacets {
                   int base = sub.slice.start;
                   int docid;
                   while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                    if (fastForRandomSet.exists(docid + base)) {
+                    if (fastForRandomSet.get(docid + base)) {
                       c++;
                       if (intersectsCheck) {
                         assert c==1;
@@ -1076,7 +1072,7 @@ public class SimpleFacets {
               } else {
                 int docid;
                 while ((docid = postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                  if (fastForRandomSet.exists(docid)) {
+                  if (fastForRandomSet.get(docid)) {
                     c++;
                     if (intersectsCheck) {
                       assert c==1;
@@ -1203,7 +1199,7 @@ public class SimpleFacets {
     return res;
   }
 
-  public NamedList getHeatmapCounts() throws IOException, SyntaxError {
+  public NamedList<Object> getHeatmapCounts() throws IOException, SyntaxError {
     final NamedList<Object> resOuter = new SimpleOrderedMap<>();
     String[] unparsedFields = rb.req.getParams().getParams(FacetParams.FACET_HEATMAP);
     if (unparsedFields == null || unparsedFields.length == 0) {

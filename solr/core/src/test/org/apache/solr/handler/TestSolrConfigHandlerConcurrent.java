@@ -55,19 +55,18 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
   @Test
   public void test() throws Exception {
-    Map editable_prop_map = (Map) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
-    Map caches = (Map) editable_prop_map.get("query");
+    Map<?, ?> editable_prop_map = (Map<?, ?>) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
+    Map<?, ?> caches = (Map<?, ?>) editable_prop_map.get("query");
 
     setupRestTestHarnesses();
     List<Thread> threads = new ArrayList<>(caches.size());
-    final List<List> collectErrors = new ArrayList<>();
+    final List<List<String>> collectErrors = new ArrayList<>();
 
-    for (Object o : caches.entrySet()) {
-      final Map.Entry e = (Map.Entry) o;
+    for (Map.Entry<?, ?> e : caches.entrySet()) {
       if (e.getValue() instanceof Map) {
         List<String> errs = new ArrayList<>();
         collectErrors.add(errs);
-        Map value = (Map) e.getValue();
+        Map<?, ?> value = (Map<?, ?>) e.getValue();
         Thread t = new Thread(() -> {
           try {
             invokeBulkCall((String)e.getKey() , errs, value);
@@ -85,10 +84,10 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
     boolean success = true;
 
-    for (List e : collectErrors) {
+    for (List<?> e : collectErrors) {
       if(!e.isEmpty()){
         success = false;
-        log.error(e.toString());
+        log.error("{}", e);
       }
 
     }
@@ -99,7 +98,9 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
   }
 
 
-  private void invokeBulkCall(String  cacheName, List<String> errs, Map val) throws Exception {
+  private void invokeBulkCall(String  cacheName, List<String> errs,
+                              // TODO this is unused - is that a bug?
+                              Map<?, ?> val) throws Exception {
 
     String payload = "{" +
         "'set-property' : {'query.CACHENAME.size':'CACHEVAL1'," +
@@ -128,7 +129,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         publisher.close();
       }
       
-      Map map = (Map) Utils.fromJSONString(response);
+      Map<?, ?> map = (Map<?, ?>) Utils.fromJSONString(response);
       Object errors = map.get("errors");
       if(errors!= null){
         errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));
@@ -139,7 +140,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
       List<String> urls = new ArrayList<>();
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas())
-          urls.add(""+replica.get(ZkStateReader.BASE_URL_PROP) + "/"+replica.get(ZkStateReader.CORE_NAME_PROP));
+          urls.add(""+replica.getBaseUrl() + "/" + replica.get(ZkStateReader.CORE_NAME_PROP));
       }
 
 
@@ -177,6 +178,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static LinkedHashMapWriter getAsMap(String uri, CloudSolrClient cloudClient) throws Exception {
     HttpGet get = new HttpGet(uri) ;
     HttpEntity entity = null;

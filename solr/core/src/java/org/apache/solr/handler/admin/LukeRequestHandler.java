@@ -16,11 +16,18 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.lucene.index.IndexOptions.DOCS;
+import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
+import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -29,11 +36,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.util.CharFilterFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
@@ -44,10 +50,8 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -65,7 +69,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -80,18 +83,14 @@ import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.index.IndexOptions.DOCS;
-import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
-import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
-
 /**
- * This handler exposes the internal lucene index.  It is inspired by and 
- * modeled on Luke, the Lucene Index Browser by Andrzej Bialecki.
- *   http://www.getopt.org/luke/
+ * Exposes the internal lucene index.  It's registered at /admin/luke by default.
  *
- * For more documentation see:
- *  http://wiki.apache.org/solr/LukeRequestHandler
+ * It is inspired by and
+ * modeled on Luke, the Lucene Index Browser that is currently a Lucene module:
+ * https://github.com/apache/lucene/tree/main/lucene/luke
  *
+ * @see SegmentsInfoRequestHandler
  * @since solr 1.2
  */
 public class LukeRequestHandler extends RequestHandlerBase
@@ -297,7 +296,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
       BytesRef bytes = field.binaryValue();
       if (bytes != null) {
-        f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
+        f.add( "binary", new String(Base64.getEncoder().encode(ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length)).array(), StandardCharsets.ISO_8859_1));
       }
       if (!ftype.isPointField()) {
         Term t = new Term(field.name(), ftype!=null ? ftype.storedToIndexed(field) : field.stringValue());
@@ -390,7 +389,7 @@ public class LukeRequestHandler extends RequestHandlerBase
                 fieldMap.add("index", "(unstored field)");
               }
             } catch (Exception ex) {
-              log.warn("error reading field: " + fieldName);
+              log.warn("error reading field: {}", fieldName);
             }
           }
         }
@@ -574,8 +573,6 @@ public class LukeRequestHandler extends RequestHandlerBase
     indexInfo.add("numDocs", reader.numDocs());
     indexInfo.add("maxDoc", reader.maxDoc());
     indexInfo.add("deletedDocs", reader.maxDoc() - reader.numDocs());
-    indexInfo.add("indexHeapUsageBytes", getIndexHeapUsed(reader));
-
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
     indexInfo.add("segmentCount", reader.leaves().size());
     indexInfo.add("current", closeSafe( reader::isCurrent));
@@ -623,8 +620,8 @@ public class LukeRequestHandler extends RequestHandlerBase
       return commit.getDirectory().fileLength(commit.getSegmentsFileName());
     } catch (NoSuchFileException okException) {
       log.debug("Unable to determine the (optional) fileSize for the current IndexReader's segments file because it is "
-                + "no longer in the Directory, this can happen if there are new commits since the Reader was opened",
-                okException);
+          + "no longer in the Directory, this can happen if there are new commits since the Reader was opened"
+          , okException);
     } catch (IOException strangeException) {
       log.warn("Ignoring IOException wile attempting to determine the (optional) fileSize stat for the current IndexReader's segments file",
                strangeException);
@@ -632,24 +629,8 @@ public class LukeRequestHandler extends RequestHandlerBase
     return -1;
   }
 
-  /** Returns the sum of RAM bytes used by each segment */
-  private static long getIndexHeapUsed(DirectoryReader reader) {
-    long indexHeapRamBytesUsed = 0;
-    for(LeafReaderContext leafReaderContext : reader.leaves()) {
-      LeafReader leafReader = leafReaderContext.reader();
-      if (leafReader instanceof SegmentReader) {
-        indexHeapRamBytesUsed += ((SegmentReader) leafReader).ramBytesUsed();
-      } else {
-        // Not supported for any reader that is not a SegmentReader
-        return -1;
-      }
-    }
-    return indexHeapRamBytesUsed;
-  }
-
   // Get terribly detailed information about a particular field. This is a very expensive call, use it with caution
   // especially on large indexes!
-  @SuppressWarnings("unchecked")
   private static void getDetailedFieldInfo(SolrQueryRequest req, String field, SimpleOrderedMap<Object> fieldMap)
       throws IOException {
 
@@ -712,7 +693,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
   @Override
   public String getDescription() {
-    return "Lucene Index Browser.  Inspired and modeled after Luke: http://www.getopt.org/luke/";
+    return "Lucene Index Browser.  Inspired and modeled after Luke: https://code.google.com/archive/p/luke/";
   }
 
   @Override
@@ -747,7 +728,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   /**
    * Private internal class that counts up frequent terms
    */
-  private static class TopTermQueue extends PriorityQueue
+  private static class TopTermQueue extends PriorityQueue<TopTermQueue.TermInfo>
   {
     static class TermInfo {
       TermInfo(Term t, int df) {
@@ -769,10 +750,8 @@ public class LukeRequestHandler extends RequestHandlerBase
     }
 
     @Override
-    protected final boolean lessThan(Object a, Object b) {
-      TermInfo termInfoA = (TermInfo)a;
-      TermInfo termInfoB = (TermInfo)b;
-      return termInfoA.docFreq < termInfoB.docFreq;
+    protected final boolean lessThan(TermInfo a, TermInfo b) {
+      return a.docFreq < b.docFreq;
     }
 
     /**
@@ -783,7 +762,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       // reverse the list..
       List<TermInfo> aslist = new LinkedList<>();
       while( size() > 0 ) {
-        aslist.add( 0, (TermInfo)pop() );
+        aslist.add( 0, pop());
       }
 
       NamedList<Integer> list = new NamedList<>();
@@ -798,7 +777,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       return list;
     }
     public TermInfo getTopTermInfo() {
-      return (TermInfo)top();
+      return top();
     }
   }
 }

@@ -21,6 +21,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.TimeSource;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -293,7 +294,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     int currentSize = stats.size.intValue();
     if ((currentSize > upperWaterMark || ramBytes.sum() > ramUpperWatermark || oldestEntryNs.get() < idleCutoff) && !isCleaning) {
       if (newThreadForCleanup) {
-        new Thread(this::markAndSweep).start();
+        new Thread(this::markAndSweep, "CacheCleanupThread").start();
       } else if (cleanupThread != null){
         cleanupThread.wakeThread();
       } else {
@@ -417,8 +418,8 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     int wantToKeep = lowerWaterMark;
     int wantToRemove = sz - lowerWaterMark;
 
-    @SuppressWarnings("unchecked") // generic array's are annoying
-    CacheEntry<K,V>[] eset = new CacheEntry[sz];
+    @SuppressWarnings("unchecked")
+    CacheEntry<K,V>[] eset = (CacheEntry<K, V>[]) Array.newInstance(CacheEntry.class, sz);
     int eSize = 0;
 
     // System.out.println("newestEntry="+newestEntry + " oldestEntry="+oldestEntry);
@@ -552,14 +553,14 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
           // this loop so far.
           queue.myMaxSize = sz - lowerWaterMark - numRemoved;
           while (queue.size() > queue.myMaxSize && queue.size() > 0) {
-            CacheEntry otherEntry = queue.pop();
+            CacheEntry<K, V> otherEntry = queue.pop();
             newOldestEntry = Math.min(otherEntry.lastAccessedCopy, newOldestEntry);
           }
           if (queue.myMaxSize <= 0) break;
 
-          Object o = queue.myInsertWithOverflow(ce);
+          CacheEntry<K, V> o = queue.myInsertWithOverflow(ce);
           if (o != null) {
-            newOldestEntry = Math.min(((CacheEntry)o).lastAccessedCopy, newOldestEntry);
+            newOldestEntry = Math.min(o.lastAccessedCopy, newOldestEntry);
           }
         }
       }
@@ -595,7 +596,8 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     }
 
     @Override
-    protected boolean lessThan(CacheEntry a, CacheEntry b) {
+    protected boolean lessThan(CacheEntry<K,V> a,
+                               CacheEntry<K,V> b) {
       // reverse the parameter order so that the queue keeps the oldest items
       return b.lastAccessedCopy < a.lastAccessedCopy;
     }
@@ -859,18 +861,19 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
   }
 
   private static class CleanupThread extends Thread {
-    private WeakReference<ConcurrentLRUCache> cache;
+    private final WeakReference<ConcurrentLRUCache<?,?>> cache;
 
     private boolean stop = false;
 
-    public CleanupThread(ConcurrentLRUCache c) {
+    public CleanupThread(ConcurrentLRUCache<?,?> c) {
+      super("CacheCleanupThread");
       cache = new WeakReference<>(c);
     }
 
     @Override
     public void run() {
       while (true) {
-        ConcurrentLRUCache c = cache.get();
+        ConcurrentLRUCache<?,?> c = cache.get();
         if(c == null) break;
         synchronized (this) {
           if (stop) break;

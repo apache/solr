@@ -22,7 +22,9 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,14 +33,15 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.FileUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -47,6 +50,11 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
@@ -88,13 +96,6 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   }
 
   private void init(String config, String schema) throws Exception {
-    //write out elevate-data.xml to the Data dir first by copying it from conf, which we know exists, this way we can test both conf and data configurations
-    File parent = new File(TEST_HOME() + "/collection1", "conf");
-    File elevateFile = new File(parent, "elevate.xml");
-    File elevateDataFile = new File(initAndGetDataDir(), "elevate-data.xml");
-    FileUtils.copyFile(elevateFile, elevateDataFile);
-
-
     initCore(config,schema);
     clearIndex();
     assertU(commit());
@@ -384,46 +385,50 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       args.add(QueryElevationComponent.FIELD_TYPE, "string");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
-      QueryElevationComponent comp = new QueryElevationComponent();
-      comp.init(args);
-      comp.inform(core);
+      IndexReader reader;
+      try (SolrQueryRequest req = req()) {
+        reader = req.getSearcher().getIndexReader();
+      }
 
-      SolrQueryRequest req = req();
-      IndexReader reader = req.getSearcher().getIndexReader();
-      QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
-      req.close();
+      try (QueryElevationComponent comp = new QueryElevationComponent()) {
+        comp.init(args);
+        comp.inform(core);
 
-      // Make sure the boosts loaded properly
-      assertEquals(11, elevationProvider.size());
-      assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
-      assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
-      assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
-      assertNull(elevationProvider.getElevationForQuery("xxxx"));
-      assertNull(elevationProvider.getElevationForQuery("yyyy"));
-      assertNull(elevationProvider.getElevationForQuery("zzzz"));
+        QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
+
+        // Make sure the boosts loaded properly
+        assertEquals(11, elevationProvider.size());
+        assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
+        assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
+        assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
+        assertNull(elevationProvider.getElevationForQuery("xxxx"));
+        assertNull(elevationProvider.getElevationForQuery("yyyy"));
+        assertNull(elevationProvider.getElevationForQuery("zzzz"));
+      }
 
       // Now test the same thing with a lowercase filter: 'lowerfilt'
       args = new NamedList<>();
       args.add(QueryElevationComponent.FIELD_TYPE, "lowerfilt");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
-      comp = new QueryElevationComponent();
-      comp.init(args);
-      comp.inform(core);
-      elevationProvider = comp.getElevationProvider(reader, core);
-      assertEquals(11, elevationProvider.size());
-      assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
-      assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
-      assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
-      assertEquals(1, elevationProvider.getElevationForQuery("xxxx").elevatedIds.size());
-      assertEquals(2, elevationProvider.getElevationForQuery("yyyy").elevatedIds.size());
-      assertEquals(3, elevationProvider.getElevationForQuery("zzzz").elevatedIds.size());
+      try (QueryElevationComponent comp = new QueryElevationComponent()) {
+        comp.init(args);
+        comp.inform(core);
+        QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
+        assertEquals(11, elevationProvider.size());
+        assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
+        assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
+        assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
+        assertEquals(1, elevationProvider.getElevationForQuery("xxxx").elevatedIds.size());
+        assertEquals(2, elevationProvider.getElevationForQuery("yyyy").elevatedIds.size());
+        assertEquals(3, elevationProvider.getElevationForQuery("zzzz").elevatedIds.size());
 
-      assertEquals("xxxx", comp.analyzeQuery("XXXX"));
-      assertEquals("xxxxyyyy", comp.analyzeQuery("XXXX YYYY"));
+        assertEquals("xxxx", comp.analyzeQuery("XXXX"));
+        assertEquals("xxxxyyyy", comp.analyzeQuery("XXXX YYYY"));
 
-      assertQ("Make sure QEC handles null queries", req("qt", "/elevate", "q.alt", "*:*", "defType", "dismax"),
-          "//*[@numFound='0']");
+        assertQ("Make sure QEC handles null queries", req("qt", "/elevate", "q.alt", "*:*", "defType", "dismax"),
+            "//*[@numFound='0']");
+      }
     } finally {
       delete();
     }
@@ -702,20 +707,28 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     out.flush();
     out.close();
 
-    log.info("OUT:" + file.getAbsolutePath());
+    if (log.isInfoEnabled()) {
+      log.info("OUT: {}", file.getAbsolutePath());
+    }
   }
 
   @Test
   public void testElevationReloading() throws Exception {
+    // need a mutable solr home.  Copying all collection1 is a lot but this is only one test.
+    final Path solrHome = createTempDir();
+    copyMinConf(solrHome.resolve("collection1").toFile(), null, "solrconfig-elevate.xml");
+
+    File configFile =
+        solrHome.resolve("collection1").resolve("conf").resolve("elevate.xml").toFile();
+    writeElevationConfigFile(configFile, "aaa", "A");
+
+    initCore("solrconfig.xml", "schema.xml", solrHome.toString());
+
     try {
-      init("schema12.xml");
-      String testfile = "data-elevation.xml";
-      File configFile = new File(h.getCore().getDataDir(), testfile);
-      writeElevationConfigFile(configFile, "aaa", "A");
 
       QueryElevationComponent comp = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
       NamedList<String> args = new NamedList<>();
-      args.add(QueryElevationComponent.CONFIG_FILE, testfile);
+      args.add(QueryElevationComponent.CONFIG_FILE, configFile.getName());
       comp.init(args);
       comp.inform(h.getCore());
 
@@ -901,7 +914,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testElevatedIds() throws Exception {
-    try {
+    try (QueryElevationComponent comp = new QueryElevationComponent()) {
       init("schema12.xml");
       SolrCore core = h.getCore();
 
@@ -909,7 +922,6 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       args.add(QueryElevationComponent.FIELD_TYPE, "text");
       args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
-      QueryElevationComponent comp = new QueryElevationComponent();
       comp.init(args);
       comp.inform(core);
 
@@ -927,7 +939,200 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testOnlyDocsInSearchResultsWillBeElevated() throws Exception {
+    try {
+      init("schema12.xml");
+      assertU(adoc("id", "1", "title", "XXXX", "str_s1", "a"));
+      assertU(adoc("id", "2", "title", "YYYY", "str_s1", "b"));
+      assertU(adoc("id", "3", "title", "ZZZZ", "str_s1", "c"));
+
+      assertU(adoc("id", "4", "title", "XXXX XXXX", "str_s1", "x"));
+      assertU(adoc("id", "5", "title", "YYYY YYYY", "str_s1", "y"));
+      assertU(adoc("id", "6", "title", "XXXX XXXX", "str_s1", "z"));
+      assertU(adoc("id", "7", "title", "AAAA", "str_s1", "a"));
+
+      assertU(commit());
+
+      // default behaviour
+      assertQ("", req(
+              CommonParams.Q, "YYYY",
+              CommonParams.QT, "/elevate",
+              QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, "false",
+              CommonParams.FL, "id, score, [elevated]"),
+              "//*[@numFound='3']",
+              "//result/doc[1]/str[@name='id'][.='1']",
+              "//result/doc[2]/str[@name='id'][.='2']",
+              "//result/doc[3]/str[@name='id'][.='5']",
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[3]/bool[@name='[elevated]'][.='false']"
+      );
+
+      // only docs that matches q
+      assertQ("", req(
+              CommonParams.Q, "YYYY",
+              CommonParams.QT, "/elevate",
+              QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, "true",
+              CommonParams.FL, "id, score, [elevated]"),
+              "//*[@numFound='2']",
+              "//result/doc[1]/str[@name='id'][.='2']",
+              "//result/doc[2]/str[@name='id'][.='5']",
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[2]/bool[@name='[elevated]'][.='false']"
+      );
+
+
+
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testOnlyRepresentativeIsVisibleWhenCollapsing() throws Exception {
+    try {
+      init("schema12.xml");
+      assertU(adoc("id", "1", "title", "ZZZZ", "str_s1", "a"));
+      assertU(adoc("id", "2", "title", "ZZZZ", "str_s1", "b"));
+      assertU(adoc("id", "3", "title", "ZZZZ ZZZZ", "str_s1", "a"));
+      assertU(adoc("id", "4", "title", "ZZZZ ZZZZ", "str_s1", "c"));
+
+      assertU(commit());
+
+      // default behaviour - all elevated docs are visible
+      assertQ("", req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CollapsingQParserPlugin.COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, "true",
+              CommonParams.FQ, "{!collapse field=str_s1 sort='score desc'}",
+              CommonParams.FL, "id, score, [elevated]"),
+              "//*[@numFound='4']",
+              "//result/doc[1]/str[@name='id'][.='1']",
+              "//result/doc[2]/str[@name='id'][.='2']",
+              "//result/doc[3]/str[@name='id'][.='3']",
+              "//result/doc[4]/str[@name='id'][.='4']",
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[3]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[4]/bool[@name='[elevated]'][.='false']"
+      );
+
+      // only representative elevated doc visible
+      assertQ("", req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CollapsingQParserPlugin.COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, "false",
+              CommonParams.FQ, "{!collapse field=str_s1 sort='score desc'}",
+              CommonParams.FL, "id, score, [elevated]"),
+              "//*[@numFound='3']",
+              "//result/doc[1]/str[@name='id'][.='2']",
+              "//result/doc[2]/str[@name='id'][.='3']",
+              "//result/doc[3]/str[@name='id'][.='4']",
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[3]/bool[@name='[elevated]'][.='false']"
+      );
+
+    } finally {
+      delete();
+    }
+  }
+  @Test
+  public void testCursor() throws Exception {
+    try {
+      init("schema12.xml");
+      
+      assertU(adoc("id", "a", "title", "ipod trash trash", "str_s1", "group1"));
+      assertU(adoc("id", "b", "title", "ipod ipod  trash", "str_s1", "group2"));
+      assertU(adoc("id", "c", "title", "ipod ipod  ipod ", "str_s1", "group2"));
+
+      assertU(adoc("id", "x", "title", "boosted",                 "str_s1", "group1"));
+      assertU(adoc("id", "y", "title", "boosted boosted",         "str_s1", "group2"));
+      assertU(adoc("id", "z", "title", "boosted boosted boosted", "str_s1", "group2"));
+      assertU(commit());
+
+      final SolrParams baseParams = params("qt", "/elevate",
+                                           "q", "title:ipod",
+                                           "sort", "score desc, id asc",
+                                           "fl", "id",
+                                           "elevateIds", "x,y,z",
+                                           "excludeIds", "b");
+
+      // sanity check everything returned w/these elevation options...
+      assertJQ(req(baseParams)
+               , "/response/numFound==5"
+               , "/response/start==0"
+               , "/response/docs==[{'id':'x'},{'id':'y'},{'id':'z'},{'id':'c'},{'id':'a'}]"
+               );
+      // same query using CURSOR_MARK_START should produce a 'next' cursor...
+      assertCursorJQ(req(baseParams, CURSOR_MARK_PARAM, CURSOR_MARK_START)
+                     , "/response/numFound==5"
+                     , "/response/start==0"
+                     , "/response/docs==[{'id':'x'},{'id':'y'},{'id':'z'},{'id':'c'},{'id':'a'}]"
+                     );
+
+      // use a cursor w/rows < 5, then fetch next cursor...
+      String nextCursor = null;
+      nextCursor = assertCursorJQ(req(baseParams
+                                      , CURSOR_MARK_PARAM, CURSOR_MARK_START
+                                      , "rows", "2"
+                                      )
+                                  , "/response/numFound==5"
+                                  , "/response/start==0"
+                                  , "/response/docs==[{'id':'x'},{'id':'y'}]"
+                                  );
+      nextCursor = assertCursorJQ(req(baseParams
+                                      , CURSOR_MARK_PARAM, nextCursor
+                                      , "rows", "2"
+                                      )
+                                  , "/response/numFound==5"
+                                  , "/response/start==0"
+                                  , "/response/docs==[{'id':'z'},{'id':'c'}]"
+                                  );
+      nextCursor = assertCursorJQ(req(baseParams
+                                      , CURSOR_MARK_PARAM, nextCursor
+                                      , "rows", "2"
+                                      )
+                                  , "/response/numFound==5"
+                                  , "/response/start==0"
+                                  , "/response/docs==[{'id':'a'}]"
+                                  );
+      final String lastCursor = nextCursor;
+      nextCursor = assertCursorJQ(req(baseParams
+                                      , CURSOR_MARK_PARAM, nextCursor
+                                      , "rows", "2"
+                                      )
+                                  , "/response/numFound==5"
+                                  , "/response/start==0"
+                                  , "/response/docs==[]"
+                                  );
+      assertEquals(lastCursor, nextCursor);
+
+    } finally {
+      delete();
+    }
+
+  }
   private static Set<BytesRef> toIdSet(String... ids) {
     return Arrays.stream(ids).map(BytesRef::new).collect(Collectors.toSet());
   }
+
+  
+  /**
+   * Asserts that the query matches the specified JSON patterns and then returns the
+   * {@link CursorMarkParams#CURSOR_MARK_NEXT} value from the response
+   *
+   * @see #assertJQ
+   */
+  private static String assertCursorJQ(SolrQueryRequest req, String... tests) throws Exception {
+    String json = assertJQ(req, tests);
+    Map<?, ?> rsp = (Map<?, ?>) fromJSONString(json);
+    assertTrue("response doesn't contain "+CURSOR_MARK_NEXT + ": " + json,
+               rsp.containsKey(CURSOR_MARK_NEXT));
+    String next = (String)rsp.get(CURSOR_MARK_NEXT);
+    assertNotNull(CURSOR_MARK_NEXT + " is null", next);
+    return next;
+  }
+
 }

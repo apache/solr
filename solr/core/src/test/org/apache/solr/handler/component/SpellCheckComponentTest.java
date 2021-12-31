@@ -230,7 +230,6 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     );
   }
   
-  @SuppressWarnings("unchecked")
   @Test
   public void testRelativeIndexDirLocation() throws Exception {
     SolrCore core = h.getCore();
@@ -253,8 +252,8 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         "default", "spellcheck.build", "true");
     assertQ(request, "//arr[@name='suggestion'][.='title']");
 
-    NamedList args = new NamedList();
-    NamedList spellchecker = new NamedList();
+    NamedList<Object> args = new NamedList<>();
+    NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add(SolrSpellChecker.DICTIONARY_NAME, "default");
     spellchecker.add(AbstractLuceneSpellChecker.FIELD, "lowerfilt");
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, "spellchecker1");
@@ -282,9 +281,9 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     }
 
     rb.req.close();
+    checker.close();
   }
   
-    @SuppressWarnings("unchecked")
     @Test
   public void testRebuildOnCommit() throws Exception {
     SolrQueryRequest req = req("q", "lowerfilt:lucenejavt", "qt", "/spellCheckCompRH", "spellcheck", "true");
@@ -326,26 +325,26 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
         SolrRequestHandler handler = core.getRequestHandler("/spellCheckCompRH");
         SolrQueryResponse rsp = new SolrQueryResponse();
-        rsp.addResponseHeader(new SimpleOrderedMap());
+        rsp.addResponseHeader(new SimpleOrderedMap<>());
         SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
         handler.handleRequest(req, rsp);
         req.close();
-        NamedList values = rsp.getValues();
-        NamedList spellCheck = (NamedList) values.get("spellcheck");
-        NamedList suggestions = (NamedList) spellCheck.get("suggestions");
+        NamedList<?> values = rsp.getValues();
+        NamedList<?> spellCheck = (NamedList<?>) values.get("spellcheck");
+        NamedList<?> suggestions = (NamedList<?>) spellCheck.get("suggestions");
         assertTrue(suggestions.get("suggestion")==null);
         assertTrue((Boolean) spellCheck.get("correctlySpelled")==false);
 
         params.remove(SpellingParams.SPELLCHECK_DICT);
         params.add(SpellingParams.SPELLCHECK_DICT, "threshold_direct");
         rsp = new SolrQueryResponse();
-        rsp.addResponseHeader(new SimpleOrderedMap());
+        rsp.addResponseHeader(new SimpleOrderedMap<>());
         req = new LocalSolrQueryRequest(core, params);
         handler.handleRequest(req, rsp);
         req.close();
         values = rsp.getValues();
-        spellCheck = (NamedList) values.get("spellcheck");
-        suggestions = (NamedList) spellCheck.get("suggestions");
+        spellCheck = (NamedList<?>) values.get("spellcheck");
+                suggestions = (NamedList<?>) spellCheck.get("suggestions");
         assertTrue(suggestions.get("suggestion")==null);
         assertTrue((Boolean) spellCheck.get("correctlySpelled")==false);
     }

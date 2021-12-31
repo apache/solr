@@ -101,7 +101,7 @@ public class StreamingBinaryResponseParser extends BinaryResponseParser {
             EntryImpl entry = (EntryImpl) e;
             if( !entry.type().isContainer) return;
             if (e.isKeyValEntry() && entry.getTag() == Tag._SOLRDOCLST) {
-              List l = (List) e.metadata();
+              List<?> l = (List<?>) e.metadata();
               e.listenContainer(fastCallback.initDocList(
                   (Long) l.get(0),
                   (Long) l.get(1),
@@ -120,6 +120,7 @@ public class StreamingBinaryResponseParser extends BinaryResponseParser {
   private EntryListener docListener;
 
 
+  @SuppressWarnings({"unchecked"})
   private NamedList<Object> streamDocs(InputStream body) {
     try (JavaBinCodec codec = new JavaBinCodec() {
 
@@ -143,7 +144,7 @@ public class StreamingBinaryResponseParser extends BinaryResponseParser {
       @Override
       public SolrDocumentList readSolrDocumentList(DataInputInputStream dis) throws IOException {
         SolrDocumentList solrDocs = new SolrDocumentList();
-        List list = (List) readVal(dis);
+        List<?> list = (List<?>) readVal(dis);
         solrDocs.setNumFound((Long) list.get(0));
         solrDocs.setStart((Long) list.get(1));
         solrDocs.setMaxScore((Float) list.get(2));

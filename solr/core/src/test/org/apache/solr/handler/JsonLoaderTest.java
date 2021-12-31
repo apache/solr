@@ -294,7 +294,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     String content = (String) p.addCommands.get(0).solrDoc.getFieldValue("_src_");
     assertNotNull(content);
-    Map obj = (Map) Utils.fromJSONString(content);
+    Map<?, ?> obj = (Map<?, ?>) Utils.fromJSONString(content);
     assertEquals(Boolean.TRUE, obj.get("bool"));
     assertEquals("v0", obj.get("f0"));
     assertNotNull(obj.get("f0"));
@@ -303,7 +303,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     content = (String) p.addCommands.get(1).solrDoc.getFieldValue("_src_");
     assertNotNull(content);
-    obj = (Map) Utils.fromJSONString(content);
+    obj = (Map<?, ?>) Utils.fromJSONString(content);
     assertEquals("v1", obj.get("f1"));
     assertEquals("v2", obj.get("f2"));
     assertTrue(obj.containsKey("f3"));
@@ -418,6 +418,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       assertOnlyValue("i am the parent", parent, "name");
       assertOnlyValue("parent", parent, "cat");
 
+      @SuppressWarnings({"unchecked"})
       List<SolrInputDocument> childDocs1 = (List) ((parent.getField("children")).getValue());
 
       assertEquals(2, childDocs1.size());
@@ -434,6 +435,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         assertOnlyValue("test-new-label", child2, "test_s");
         assertOnlyValue("child", child2, "cat");
 
+        @SuppressWarnings({"unchecked"})
         List<SolrInputDocument> childDocs2 = (List) ((child2.getField("grandchildren")).getValue());
 
         assertEquals(1, childDocs2.size());
@@ -788,6 +790,14 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     checkTwoAnonymousChildDocs(DUP_KEYS_ANON_CHILD_DOCS_JSON, false);
   }
 
+  @Test
+  public void testChildDocWithoutId() throws Exception {
+    final String json = DUP_KEYS_ANON_CHILD_DOCS_JSON.replace("\"id\": \"3\",\n", "");
+    assert !json.equals(DUP_KEYS_ANON_CHILD_DOCS_JSON);
+    checkTwoAnonymousChildDocs(
+        json, false);
+  }
+
   // rawJsonStr has "_childDocuments_" key.  if anonChildDocs then we want to test with something else.
   private void checkTwoAnonymousChildDocs(String rawJsonStr, boolean anonChildDocs) throws Exception {
     if (!anonChildDocs) {
@@ -821,7 +831,11 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       cd = (SolrInputDocument)((List)(d.getField("childLabel")).getValue()).get(1);
     }
     cf = cd.getField( "id" );
-    assertEquals("3", cf.getValue());
+    if (rawJsonStr.contains("\"3\"")) {
+      assertEquals("3", cf.getValue());
+    } else { // ID 3 was removed previously to test we don't need an ID to have a child doc
+      assertNull("child doc should have no ID", cf);
+    }
     cf = cd.getField( "foo_i" );
     assertEquals(2, cf.getValueCount());
 
@@ -944,6 +958,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrInputDocument one = add.solrDoc;
     assertEquals("1", one.getFieldValue("id"));
 
+    @SuppressWarnings({"unchecked"})
     List<SolrInputDocument> children = (List) one.getFieldValues("children");
     SolrInputDocument two = children.get(0);
     assertEquals("2", two.getFieldValue("id"));

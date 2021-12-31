@@ -16,19 +16,10 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.File;
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -41,9 +32,16 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
+import org.apache.solr.handler.admin.api.CreateCoreAPI;
+import org.apache.solr.handler.admin.api.InvokeClassAPI;
+import org.apache.solr.handler.admin.api.OverseerOperationAPI;
+import org.apache.solr.handler.admin.api.RejoinLeaderElectionAPI;
+import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -51,11 +49,23 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.stats.MetricUtils;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import java.io.File;
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
@@ -73,7 +83,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   private final CoreAdminHandlerApi coreAdminHandlerApi;
 
   protected ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(50,
-      new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
+      new SolrNamedThreadFactory("parallelCoreAdminExecutor"));
 
   protected static int MAX_TRACKED_REQUESTS = 100;
   public static String RUNNING = "running";
@@ -114,7 +124,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
 
   @Override
-  final public void init(NamedList args) {
+  final public void init(NamedList<?> args) {
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "CoreAdminHandler should not be configured in solrconf.xml\n" +
                     "it is a special Handler configured directly by the RequestDispatcher");
@@ -165,18 +175,18 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
 
       // Pick the action
-      CoreAdminOperation op = opMap.get(req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT));
+      final String action = req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT);
+      CoreAdminOperation op = opMap.get(action);
       if (op == null) {
         handleCustomAction(req, rsp);
         return;
       }
 
       final CallInfo callInfo = new CallInfo(this, req, rsp, op);
-      String coreName = req.getParams().get(CoreAdminParams.CORE);
-      if (coreName == null) {
-        coreName = req.getParams().get(CoreAdminParams.NAME);
-      }
+      final String coreName =
+          req.getParams().get(CoreAdminParams.CORE, req.getParams().get(CoreAdminParams.NAME));
       MDCLoggingContext.setCoreName(coreName);
+      TraceUtils.setDbInstance(req, coreName);
       if (taskId == null) {
         callInfo.call();
       } else {
@@ -401,7 +411,15 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
   @Override
   public Collection<Api> getApis() {
-    return coreAdminHandlerApi.getApis();
+    final List<Api> apis = Lists.newArrayList(coreAdminHandlerApi.getApis());
+    // Only some core-admin APIs use the v2 AnnotatedApi framework
+    apis.addAll(AnnotatedApi.getApis(new AllCoresStatusAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SingleCoreStatusAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new CreateCoreAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new InvokeClassAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
+    return apis;
   }
 
   static {

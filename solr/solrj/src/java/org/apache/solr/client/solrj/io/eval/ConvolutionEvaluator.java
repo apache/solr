@@ -50,8 +50,8 @@ public class ConvolutionEvaluator extends RecursiveNumericEvaluator implements T
 
     return Arrays.stream(
         MathArrays.convolve(
-          ((List)first).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray(),
-          ((List)second).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray()
+          ((List<?>)first).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray(),
+          ((List<?>)second).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray()
         )
     ).boxed().collect(Collectors.toList());
   }

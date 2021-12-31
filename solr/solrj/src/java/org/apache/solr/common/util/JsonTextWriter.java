@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -186,7 +185,7 @@ public interface JsonTextWriter extends TextWriter {
     _writeChar(':');
   }
 
-  default void writeJsonIter(Iterator val) throws IOException {
+  default void writeJsonIter(Iterator<?> val) throws IOException {
     incLevel();
     boolean first = true;
     while (val.hasNext()) {
@@ -233,7 +232,7 @@ public interface JsonTextWriter extends TextWriter {
   }
 
 
-  default void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
+  default void writeMap(String name, Map<?, ?> val, boolean excludeOuter, boolean isFirstVal) throws IOException {
     if (!excludeOuter) {
       writeMapOpener(val.size());
       incLevel();
@@ -242,7 +241,7 @@ public interface JsonTextWriter extends TextWriter {
 
     boolean doIndent = excludeOuter || val.size() > 1;
 
-    for (Map.Entry entry : (Set<Map.Entry>) val.entrySet()) {
+    for (Map.Entry<?,?> entry : val.entrySet()) {
       Object e = entry.getKey();
       String k = e == null ? "" : e.toString();
       Object v = entry.getValue();
@@ -265,13 +264,13 @@ public interface JsonTextWriter extends TextWriter {
   }
 
 
-  default void writeArray(String name, List l) throws IOException {
+  default void writeArray(String name, List<?> l) throws IOException {
     writeArrayOpener(l.size());
     writeJsonIter(l.iterator());
     writeArrayCloser();
   }
 
-  default void writeArray(String name, Iterator val) throws IOException {
+  default void writeArray(String name, Iterator<?> val) throws IOException {
     writeArrayOpener(-1); // no trivial way to determine array size
     writeJsonIter(val);
     writeArrayCloser();
@@ -286,7 +285,7 @@ public interface JsonTextWriter extends TextWriter {
     out.append(hexdigits[(ch) & 0xf]);
   }
 
-  default void writeNamedList(String name, NamedList val) throws IOException {
+  default void writeNamedList(String name, NamedList<?> val) throws IOException {
     String namedListStyle = getNamedListStyle();
     if (val instanceof SimpleOrderedMap) {
       writeNamedListAsMapWithDups(name, val);
@@ -309,7 +308,7 @@ public interface JsonTextWriter extends TextWriter {
    * Map null to "" and name mangle any repeated keys to avoid repeats in the
    * output.
    */
-  default void writeNamedListAsMapMangled(String name, NamedList val) throws IOException {
+  default void writeNamedListAsMapMangled(String name, NamedList<?> val) throws IOException {
     int sz = val.size();
     writeMapOpener(sz);
     incLevel();
@@ -369,7 +368,7 @@ public interface JsonTextWriter extends TextWriter {
    * null key is mapped to "".
    */
   // NamedList("a"=1,"bar"="foo",null=3,null=null) => {"a":1,"bar":"foo","":3,"":null}
-  default void writeNamedListAsMapWithDups(String name, NamedList val) throws IOException {
+  default void writeNamedListAsMapWithDups(String name, NamedList<?> val) throws IOException {
     int sz = val.size();
     writeMapOpener(sz);
     incLevel();
@@ -392,7 +391,7 @@ public interface JsonTextWriter extends TextWriter {
 
   // Represents a NamedList directly as an array of JSON objects...
   // NamedList("a"=1,"b"=2,null=3,null=null) => [{"a":1},{"b":2},3,null]
-  default void writeNamedListAsArrMap(String name, NamedList val) throws IOException {
+  default void writeNamedListAsArrMap(String name, NamedList<?> val) throws IOException {
     int sz = val.size();
     indent();
     writeArrayOpener(sz);
@@ -427,7 +426,7 @@ public interface JsonTextWriter extends TextWriter {
 
   // Represents a NamedList directly as an array of JSON objects...
   // NamedList("a"=1,"b"=2,null=3,null=null) => [["a",1],["b",2],[null,3],[null,null]]
-  default void writeNamedListAsArrArr(String name, NamedList val) throws IOException {
+  default void writeNamedListAsArrArr(String name, NamedList<?> val) throws IOException {
     int sz = val.size();
     indent();
     writeArrayOpener(sz);
@@ -471,7 +470,7 @@ public interface JsonTextWriter extends TextWriter {
   // Represents a NamedList directly as an array with keys/values
   // interleaved.
   // NamedList("a"=1,"b"=2,null=3,null=null) => ["a",1,"b",2,null,3,null,null]
-  default void writeNamedListAsFlat(String name, NamedList val) throws IOException {
+  default void writeNamedListAsFlat(String name, NamedList<?> val) throws IOException {
     int sz = val.size();
     writeArrayOpener(sz * 2);
     incLevel();

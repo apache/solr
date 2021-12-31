@@ -86,7 +86,7 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
      *
      * @param schema for opening resources
      * @param fieldType Used for logging or error messages
-     * @param args the init args to comsume the enum name + config file from
+     * @param args the init args to consume the enum name + config file from
      */
     public EnumMapping(IndexSchema schema, FieldType fieldType, Map<String, String> args) {
       final String ftName = fieldType.getTypeName();
@@ -122,9 +122,8 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, exceptionMessage);
         }
         if (nodesLength > 1) {
-          if (log.isWarnEnabled())
-            log.warn("{}: More than one enum configuration found for enum '{}' in {}. The last one was taken.",
-                     ftName, enumName, enumsConfigFile);
+          log.warn("{}: More than one enum configuration found for enum '{}' in {}. The last one was taken."
+              , ftName, enumName, enumsConfigFile);
         }
         final Node enumNode = nodes.item(nodesLength - 1);
         final NodeList valueNodes = (NodeList) xpath.evaluate("value", enumNode, XPathConstants.NODESET);

@@ -32,7 +32,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LazyDocument;
+import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -53,6 +53,7 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.util.BaseTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -131,6 +132,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     Map<String, Metric> metrics = manager.registry(registry).getMetrics();
     assertTrue(metrics.containsKey("CORE.coreName"));
     assertTrue(metrics.containsKey("CORE.refCount"));
+    @SuppressWarnings({"unchecked"})
     Gauge<Number> g = (Gauge<Number>)metrics.get("CORE.refCount");
     assertTrue(g.getValue().intValue() > 0);
 
@@ -231,7 +233,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
             ,"//*[@numFound='0']"
             );
     
-    assertU(h.simpleTag("rollback"));
+    assertU(BaseTestHarness.simpleTag("rollback"));
     assertU(commit());
   }
 
@@ -461,7 +463,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
           throw new RuntimeException(tmp);
         }
       };
-    handler.init(new NamedList());
+    handler.init(new NamedList<>());
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequest req = req();
     h.getCore().execute(handler, 
@@ -540,7 +542,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @Test
   public void testLocalSolrQueryRequestParams() {
-    HashMap args = new HashMap();
+    HashMap<String, Object> args = new HashMap<>();
     args.put("string", "string value");
     args.put("array", new String[] {"array", "value"});
     SolrQueryRequest req = new LocalSolrQueryRequest(null, null, null, 0, 20, args);
@@ -615,7 +617,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSolrParams() throws Exception {
-    NamedList nl = new NamedList();
+    NamedList<Object> nl = new NamedList<>();
     nl.add("i",555);
     nl.add("s","bbb");
     nl.add("bt","true");
@@ -652,7 +654,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals(p.getBool("foo",false), false);
     assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
 
-    NamedList more = new NamedList();
+    NamedList<String> more = new NamedList<>();
     more.add("s", "aaa");
     more.add("s", "ccc");
     more.add("ss","YYY");
@@ -1017,7 +1019,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
                  e.getMessage().contains(f));
     }
   }
-
+  
 //   /** this doesn't work, but if it did, this is how we'd test it. */
 //   public void testOverwriteFalse() {
 

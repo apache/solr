@@ -13,7 +13,7 @@ https://docs.gradle.org/current/userguide/dependency_management_for_java_project
 https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_separation
 https://docs.gradle.org/current/userguide/java_plugin.html#sec:java_plugin_and_dependency_management
 
-For the needs of Lucene and Solr we will typically focus on three
+For the needs of Solr we will typically focus on three
 configurations and attach project dependencies to them:
 
 api  - makes a dependency available for main classes, tests and any
@@ -30,9 +30,9 @@ Adding a library dependency
 ---------------------------
 
 Let's say we wish to add a dependency on library "foo.bar:baz" in
-version 1.2 to :lucene:core. Let's assume this library is only
-used internally by the project. The :lucene:core project is configured
-by lucene/core/build.gradle and we would add (or modify) the dependency
+version 1.2 to :solr:core. Let's assume this library is only
+used internally by the project. The :solr:core project is configured
+by solr/core/build.gradle and we would add (or modify) the dependency
 block as follows:
 
 dependencies {
@@ -84,13 +84,71 @@ tree of all module dependencies and maybe exclude transitive
 dependencies of foo.bar:baz that we won't need.
 
 
+Update Lucene prerelease
+------------------------
+
+The main branch of Apache Solr uses a prerelease of Apache Lucene that
+is published by ASF Jenkins on:
+  https://nightlies.apache.org/solr/lucene-prereleases/
+
+If you want to upgrade Lucene to a newer build proceed like the following:
+
+- Go to https://ci-builds.apache.org/job/Solr/job/Lucene-prerelease-main/
+- Log in with ASF account
+- Press on "build now" on left side
+- Wait until build is finished.... (can take long time, if other builds are
+  queued)
+- remember the build number of Jenkins (left side, first build in list,
+  prefixed by '#')
+- Edit ./versions.props and change Lucene's version to '9.0.0-prereleaseX',
+  with 'X' is the jenkins build number
+- Edit ./gradle/defaults.gradle and change jenkins build number, too
+  (this directs the repository to the one created by latest build):
+    def lucenePrereleaseBuild = 'X'
+- Run: gradlew --write-locks (as described before)
+
+
+Lucene local dependency substitution
+-------------------------------
+
+Because of the fundamental nature of Solr's dependency on Lucene, Solr
+facilitates dependency substitution to support developing against a local
+Lucene version (e.g., for joint Solr and Lucene development).
+
+A local Lucene dependency substitution is resolved by evaluating the
+following conditions, in priority order:
+
+  1) A "-Plucene.dev.version=[version]" property, resolving Lucene artifacts
+     from a local Maven repository.
+  2) A non-empty property "-Plucene.dev.path=[path]" pointing to a local
+     path. Relative paths are resolved against the Solr root project
+     directory.
+  3) An auto-wired 'lucene' subdirectory, if present. To skip auto-wiring,
+     pass a blank value for condition 2: "-Plucene.dev.path=".
+
+Note: Lucene dependencies substituted via conditions 2 and 3 require the
+local Lucene repository to use the same Gradle version as the Solr root
+project.
+
+Local Maven repository Lucene artifacts (for use with the
+"-Plucene.dev.version" project property) may be created by running the
+following command from within a local Lucene project:
+
+  gradlew mavenToLocalRepo
+
+As is the case with project properties generally, the relevant properties
+can be invoked on the command line, or configured via the gradle.properties
+file (the latter approach is particularly useful for making IDEs aware of
+associated dependency substitutions).
+
+
 Inspecting current dependencies
 -------------------------------
 
 The tree of dependencies of a project (in all configurations) can
 be dumped by the following command (example):
 
-gradlew -p lucene\analysis\icu dependencies
+gradlew -p solr/solrj dependencies
 
 But this can be a bit overwhelming; we will most likely be interested
 in just the "publicly visible" and "classpath-visible" configurations.
@@ -98,12 +156,12 @@ in just the "publicly visible" and "classpath-visible" configurations.
 The publicly visible project dependencies (classes shared by other
 modules importing our module) can be displayed with:
 
-gradlew -p lucene\analysis\icu dependencies --configuration api
+gradlew -p solr/solrj dependencies --configuration api
 
 And the "private" set of dependencies (real classpath) can be dumped
 with:
 
-gradlew -p lucene\analysis\icu dependencies --configuration runtimeClasspath
+gradlew -p solr/solrj dependencies --configuration runtimeClasspath
 
 
 Excluding a transitive dependency
@@ -124,7 +182,7 @@ Note the brackets - they are important and prevent accidental
 mistakes of applying the exclusion to the wrong scope.
 
 
-Updating dependency checksum and licenses
+Updating dependency checksums and licenses
 -----------------------------------------
 
 The last step is to make sure the licenses, notice files and checksums
@@ -133,6 +191,6 @@ missing and where:
 
 gradlew licenses
 
-To update JAR checksums for licenses use:
+To update JAR checksums (sha1) for licenses use:
 
 gradlew updateLicenses

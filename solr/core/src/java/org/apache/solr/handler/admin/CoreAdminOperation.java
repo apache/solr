@@ -24,28 +24,24 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.NumberUtils;
-import org.apache.solr.util.PropertiesUtil;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -67,7 +63,7 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
 import static org.apache.solr.handler.admin.CoreAdminHandler.buildCoreParams;
 import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
-enum CoreAdminOperation implements CoreAdminOp {
+public enum CoreAdminOperation implements CoreAdminOp {
 
   CREATE_OP(CREATE, it -> {
     assert TestInjection.injectRandomDelayInCoreCreation();
@@ -77,7 +73,7 @@ enum CoreAdminOperation implements CoreAdminOp {
     String coreName = params.required().get(CoreAdminParams.NAME);
     Map<String, String> coreParams = buildCoreParams(params);
     CoreContainer coreContainer = it.handler.coreContainer;
-    Path instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);
+    Path instancePath;
 
     // TODO: Should we nuke setting odd instance paths?  They break core discovery, generally
     String instanceDir = it.req.getParams().get(CoreAdminParams.INSTANCE_DIR);
@@ -86,6 +82,8 @@ enum CoreAdminOperation implements CoreAdminOp {
     if (instanceDir != null) {
       instanceDir = PropertiesUtil.substituteProperty(instanceDir, coreContainer.getContainerProperties());
       instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
+    } else {
+      instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);
     }
 
     boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
@@ -101,27 +99,8 @@ enum CoreAdminOperation implements CoreAdminOp {
     boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, false);
     boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
     boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
-    boolean deleteMetricsHistory = params.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, false);
     CoreDescriptor cdescr = it.handler.coreContainer.getCoreDescriptor(cname);
     it.handler.coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
-    if (deleteMetricsHistory) {
-      MetricsHistoryHandler historyHandler = it.handler.coreContainer.getMetricsHistoryHandler();
-      if (historyHandler != null) {
-        CloudDescriptor cd = cdescr != null ? cdescr.getCloudDescriptor() : null;
-        String registry;
-        if (cd == null) {
-          registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, cname);
-        } else {
-          String replicaName = Utils.parseMetricsReplicaName(cd.getCollectionName(), cname);
-          registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core,
-              cd.getCollectionName(),
-              cd.getShardId(),
-              replicaName);
-        }
-        historyHandler.checkSystemCollection();
-        historyHandler.removeHistory(registry);
-      }
-    }
 
     assert TestInjection.injectNonExistentCoreExceptionAfterUnload(cname);
   }),
@@ -243,6 +222,7 @@ enum CoreAdminOperation implements CoreAdminOp {
   RESTORECORE_OP(RESTORECORE, new RestoreCoreOp()),
   CREATESNAPSHOT_OP(CREATESNAPSHOT, new CreateSnapshotOp()),
   DELETESNAPSHOT_OP(DELETESNAPSHOT, new DeleteSnapshotOp()),
+  @SuppressWarnings({"unchecked"})
   LISTSNAPSHOTS_OP(LISTSNAPSHOTS, it -> {
     final SolrParams params = it.req.getParams();
     String cname = params.required().get(CoreAdminParams.CORE);
@@ -255,6 +235,7 @@ enum CoreAdminOperation implements CoreAdminOp {
       }
 
       SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
+      @SuppressWarnings({"rawtypes"})
       NamedList result = new NamedList();
       for (String name : mgr.listSnapshots()) {
         Optional<SnapshotMetaData> metadata = mgr.getSnapshotMetaData(name);
@@ -294,7 +275,8 @@ enum CoreAdminOperation implements CoreAdminOp {
    * @return - a named list of key/value pairs from the core.
    * @throws IOException - LukeRequestHandler can throw an I/O exception
    */
-  static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<>();
 
     if (cores.isCoreLoading(cname)) {
@@ -321,7 +303,7 @@ enum CoreAdminOperation implements CoreAdminOp {
         try (SolrCore core = cores.getCore(cname)) {
           if (core != null) {
             info.add(NAME, core.getName());
-            info.add("instanceDir", core.getResourceLoader().getInstancePath().toString());
+            info.add("instanceDir", core.getInstancePath().toString());
             info.add("dataDir", normalizePath(core.getDataDir()));
             info.add("config", core.getConfigResource());
             info.add("schema", core.getSchemaResource());
@@ -330,7 +312,7 @@ enum CoreAdminOperation implements CoreAdminOp {
             if (cores.isZooKeeperAware()) {
               info.add("lastPublished", core.getCoreDescriptor().getCloudDescriptor().getLastPublished().toString().toLowerCase(Locale.ROOT));
               info.add("configVersion", core.getSolrConfig().getZnodeVersion());
-              SimpleOrderedMap cloudInfo = new SimpleOrderedMap<>();
+              SimpleOrderedMap<String> cloudInfo = new SimpleOrderedMap<>();
               cloudInfo.add(COLLECTION, core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
               cloudInfo.add(SHARD, core.getCoreDescriptor().getCloudDescriptor().getShardId());
               cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());

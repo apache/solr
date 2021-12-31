@@ -92,30 +92,11 @@ of the other tools in this folder.
     Example usage for a Release Manager:
     python3 -u dev-tools/scripts/buildAndPushRelease.py --push-local /tmp/releases/6.0.1 --sign 6E68DA61 --rc-num 1
 
-### addBackcompatIndexes.py
-
-    usage: addBackcompatIndexes.py [-h] [--force] [--no-cleanup] [--temp-dir DIR]
-                                   version
-    
-    Add backcompat index and test for new version.  See:
-    http://wiki.apache.org/lucene-java/ReleaseTodo#Generate_Backcompat_Indexes
-    
-    positional arguments:
-      version         Version to add, of the form X.Y.Z
-    
-    optional arguments:
-      -h, --help      show this help message and exit
-      --force         Redownload the version and rebuild, even if it already
-                      exists
-      --no-cleanup    Do not cleanup the built indexes, so that they can be reused
-                      for adding to another branch
-      --temp-dir DIR  Temp directory to build backcompat indexes within
-
 ### addVersion.py
 
     usage: addVersion.py [-h] version
     
-    Add a new version to CHANGES, to Version.java, lucene/version.properties and
+    Add a new version to CHANGES, to Version.java, build.gradle and
     solrconfig.xml files
     
     positional arguments:
@@ -163,25 +144,6 @@ and prints a regular expression that will match all of them
       --no-git    Do not run "git" at all
       --iters N   Number of iterations per test suite (default: 5)
 
-### poll-mirrors.py
-
-    usage: poll-mirrors.py [-h] [-version VERSION] [-path PATH]
-                           [-interval INTERVAL] [-details] [-once]
-    
-    Periodically checks that all Lucene/Solr mirrors contain either a copy of a
-    release or a specified path
-    
-    optional arguments:
-      -h, --help            show this help message and exit
-      -version VERSION, -v VERSION
-                            Lucene/Solr version to check
-      -path PATH, -p PATH   instead of a versioned release, check for
-                            some/explicit/path
-      -interval INTERVAL, -i INTERVAL
-                            seconds to wait before re-querying mirrors
-      -details, -d          print missing mirror URLs
-      -once, -o             run only once
-
 ### githubPRs.py
 
     usage: githubPRs.py [-h] [--json] [--token TOKEN]
@@ -197,15 +159,3 @@ and prints a regular expression that will match all of them
 
 TBD
 
-### publish-solr-ref-guide.sh
-
-TBD
-
-### prep-solr-ref-guide-rc.sh
-
-TBD
-
-## Tools to be removed
-
-* svnBranchToGit.py
-* createPatch.py (svn)

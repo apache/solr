@@ -36,6 +36,7 @@ import org.apache.solr.common.util.ByteUtils;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter.Resolver;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.SimplePostTool;
@@ -69,13 +70,13 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     document.put("desc", new StoredField("desc", new ByteArrayUtf8CharSequence(text) {
     }, TextField.TYPE_STORED));
 
-    NamedList nl = new NamedList();
+    NamedList<Object> nl = new NamedList<>();
     nl.add("doc1", document);
     SimplePostTool.BAOS baos = new SimplePostTool.BAOS();
     new JavaBinCodec(new BinaryResponseWriter.Resolver(null, null)).marshal(nl, baos);
     ByteBuffer byteBuffer = baos.getByteBuffer();
-    nl = (NamedList) new JavaBinCodec().unmarshal(new ByteArrayInputStream(byteBuffer.array(), 0, byteBuffer.limit()));
-    assertEquals(text, nl._get("doc1/desc", null));
+    NamedList<?> result = (NamedList<?>) new JavaBinCodec().unmarshal(new ByteArrayInputStream(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.limit()));
+    assertEquals(text, result._get("doc1/desc", null));
 
 
   }
@@ -103,9 +104,9 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
     BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) h.getCore().getQueryResponseWriter("javabin");
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     writer.write(baos, req, rsp);
-    NamedList res;
+    NamedList<?> res;
     try (JavaBinCodec jbc = new JavaBinCodec()) {
-      res = (NamedList) jbc.unmarshal(new ByteArrayInputStream(baos.toByteArray()));
+      res = (NamedList<?>) jbc.unmarshal(new ByteArrayInputStream(baos.toByteArray()));
     } 
     SolrDocumentList docs = (SolrDocumentList) res.get("response");
     for (Object doc : docs) {
@@ -114,6 +115,21 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
       assertEquals("Wrong UUID string returned", s, document.getFieldValue("uuid"));
     }
 
+    req.close();
+  }
+
+  public void testOmitHeader() throws Exception {
+    SolrQueryRequest req = req("q", "*:*", "omitHeader", "true");
+    SolrQueryResponse rsp = h.queryAndResponse(null, req);
+
+    NamedList<Object> res = BinaryResponseWriter.getParsedResponse(req, rsp);
+    assertNull(res.get("responseHeader"));
+    req.close();
+
+    req = req("q", "*:*");
+    rsp = h.queryAndResponse(null, req);
+    res = BinaryResponseWriter.getParsedResponse(req, rsp);
+    assertNotNull(res.get("responseHeader"));
     req.close();
   }
 

@@ -40,39 +40,42 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 
-public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
+public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
   private final CollectionAction operation;
   private final OverseerNodePrioritizer overseerPrioritizer;
 
-
-
-  public OverseerRoleCmd(OverseerCollectionMessageHandler ocmh, CollectionAction operation, OverseerNodePrioritizer prioritizer) {
-    this.ocmh = ocmh;
+  public OverseerRoleCmd(CollectionCommandContext ccc, CollectionAction operation, OverseerNodePrioritizer prioritizer) {
+    this.ccc = ccc;
     this.operation = operation;
     this.overseerPrioritizer = prioritizer;
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
+    if (ccc.isDistributedCollectionAPI()) {
+      // No Overseer (not accessible from Collection API command execution in any case) so this command can't be run...
+      log.error("Cluster is running with distributed Collection API execution. Ignoring Collection API operation " + operation); // nowarn
+      return;
+    }
+    ZkStateReader zkStateReader = ccc.getZkStateReader();
     SolrZkClient zkClient = zkStateReader.getZkClient();
-    Map roles = null;
+    Map<String, List<String>> roles = null;
     String node = message.getStr("node");
 
     String roleName = message.getStr("role");
     boolean nodeExists = false;
     if (nodeExists = zkClient.exists(ZkStateReader.ROLES, true)) {
-      roles = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
+      @SuppressWarnings("unchecked")
+      Map<String, List<String>> tmp = (Map<String, List<String>>) Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
+      roles = tmp;
     } else {
-      roles = new LinkedHashMap(1);
+      roles = new LinkedHashMap<>(1);
     }
 
-    List nodeList = (List) roles.get(roleName);
-    if (nodeList == null) roles.put(roleName, nodeList = new ArrayList());
+    List<String> nodeList = roles.computeIfAbsent(roleName, k -> new ArrayList<>());
     if (ADDROLE == operation) {
       log.info("Overseer role added to {}", node);
       if (!nodeList.contains(node)) nodeList.add(node);
@@ -90,12 +93,11 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
     // overseers are created when there are too many nodes  . So , do this operation in a separate thread
     new Thread(() -> {
       try {
-        overseerPrioritizer.prioritizeOverseerNodes(ocmh.myId);
+        overseerPrioritizer.prioritizeOverseerNodes(ccc.getOverseerId());
       } catch (Exception e) {
         log.error("Error in prioritizing Overseer", e);
       }
-
-    }).start();
+    }, "OverseerPrioritizationThread").start();
 
   }
 

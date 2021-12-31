@@ -69,7 +69,7 @@ public class TestToleratedUpdateError extends SolrTestCase {
   
   public void testParseMap() {
     // trivial
-    SimpleOrderedMap valid = new SimpleOrderedMap<String>();
+    SimpleOrderedMap<String> valid = new SimpleOrderedMap<>();
     valid.add("type", CmdType.ADD.toString());
     valid.add("id", "some id");
     valid.add("message", "some message");

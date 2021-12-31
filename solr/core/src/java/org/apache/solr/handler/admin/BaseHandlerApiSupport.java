@@ -30,8 +30,8 @@ import com.google.common.collect.ImmutableList;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
-import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
+import org.apache.solr.client.solrj.request.ApiMapping.CommandMeta;
+import org.apache.solr.client.solrj.request.ApiMapping.V2EndPoint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -112,7 +112,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
                 }
               }
             }
-            wrapParams(req, new CommandOperation("", Collections.EMPTY_MAP), commands.get(0), true);
+            wrapParams(req, new CommandOperation("", Collections.emptyMap()), commands.get(0), true);
             commands.get(0).invoke(req, rsp, apiHandler);
           }
 
@@ -158,7 +158,8 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             if (o == null) o = pathValues.get(param);
             if (o == null && useRequestParams) o = origParams.getParams(param);
             if (o instanceof List) {
-              List l = (List) o;
+              @SuppressWarnings("unchecked")
+              List<String> l = (List<String>) o;
               return l.toArray(new String[l.size()]);
             }
 
@@ -179,7 +180,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
           }
 
           @Override
-          public Map toMap(Map<String, Object> suppliedMap) {
+          public Map<String, Object> toMap(Map<String, Object> suppliedMap) {
             for(Iterator<String> it=getParameterNamesIterator(); it.hasNext(); ) {
               final String param = it.next();
               String key = cmd.meta().getParamSubstitute(param);
@@ -197,6 +198,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
                   Boolean.class.isAssignableFrom(oClass)) {
                 suppliedMap.put(param,String.valueOf(o));
               } else if (List.class.isAssignableFrom(oClass) && ((List)o).get(0) instanceof String ) {
+                @SuppressWarnings({"unchecked"})
                 List<String> l = (List<String>) o;
                 suppliedMap.put( param, l.toArray(new String[0]));
               } else {

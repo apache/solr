@@ -132,7 +132,7 @@ public class NamedListTest extends SolrTestCase {
     NamedList<Object> nl2 = new NamedList<>();
     nl2.add("key2a", "value2a");
     nl2.add("key2b", nl2b);
-    nl2.add("k2int1", (int) 5);
+    nl2.add("k2int1", 5);
     NamedList<Object> nl3 = new NamedList<>();
     nl3.add("key3a", nl3a);
     nl3.add("key3b", "value3b");
@@ -153,11 +153,11 @@ public class NamedListTest extends SolrTestCase {
     assertEquals("value3c", test3);
     // Checking that invalid values return null.
     String test4 = (String) nl.findRecursive("key3", "key3c", "invalid");
-    assertEquals(null, test4);
+    assertNull(test4);
     String test5 = (String) nl.findRecursive("key3", "invalid", "invalid");
-    assertEquals(null, test5);
+    assertNull(test5);
     String test6 = (String) nl.findRecursive("invalid", "key3c");
-    assertEquals(null, test6);
+    assertNull(test6);
     // Verify that retrieved NamedList objects have the right type.
     Object test7 = nl.findRecursive("key2", "key2b");
     assertTrue(test7 instanceof NamedList);
@@ -198,14 +198,14 @@ public class NamedListTest extends SolrTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testShallowMap() {
-    NamedList nl = new NamedList();
+    NamedList<String> nl = new NamedList<>();
     nl.add("key1", "Val1");
-    Map m = nl.asShallowMap();
+    Map<String,String> m = nl.asShallowMap();
     m.put("key1", "Val1_");
     assertEquals("Val1_", nl.get("key1"));
     assertEquals("Val1_", m.get("key1"));
     assertEquals(0, nl.indexOf("key1", 0));
-    m.putAll(Utils.makeMap("key1", "Val1__", "key2", "Val2"));
+    m.putAll(Map.of("key1", "Val1__", "key2", "Val2"));
     assertEquals("Val1__", nl.get("key1"));
     assertEquals("Val1__", m.get("key1"));
     assertEquals(0, nl.indexOf("key1", 0));

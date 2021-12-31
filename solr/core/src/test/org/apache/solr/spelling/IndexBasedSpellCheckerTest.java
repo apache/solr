@@ -104,7 +104,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   public void testSpelling() throws Exception {
     IndexBasedSpellChecker checker = new IndexBasedSpellChecker();
 
-    NamedList spellchecker = new NamedList();
+    NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
     File indexDir = createTempDir().toFile();
@@ -177,7 +177,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   @Test
   public void testExtendedResults() throws Exception {
     IndexBasedSpellChecker checker = new IndexBasedSpellChecker();
-    NamedList spellchecker = new NamedList();
+    NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
     File indexDir = createTempDir().toFile();
@@ -231,7 +231,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   @Test
   public void testAlternateDistance() throws Exception {
     TestSpellChecker checker = new TestSpellChecker();
-    NamedList spellchecker = new NamedList();
+    NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
     File indexDir = createTempDir().toFile();
@@ -268,7 +268,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     };
 
     IndexBasedSpellChecker checker = new IndexBasedSpellChecker();
-    NamedList spellchecker = new NamedList();
+    NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
     
     File tmpDir = createTempDir().toFile();

@@ -41,6 +41,7 @@
   <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
+  <fieldType name="rank" class="solr.RankField"/>
 
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
@@ -436,14 +437,8 @@
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
 
-  <!-- Poly field -->
+  <fieldType name="location" class="solr.LatLonPointSpatialField"/>
   <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
-  <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
-  <fieldType name="geohash" class="solr.GeoHashField"/>
-
-  <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
-  <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
-  <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
 
   <fieldType name="text_min_hash" class="solr.TextField" positionIncrementGap="100">
     <analyzer>
@@ -539,11 +534,9 @@
   -->
   <field name="timestamp" type="date" indexed="true" stored="true"/>
 
-  <!-- Test a point field for distances -->
-  <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
-  <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
-  <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
-  <field name="store" type="location" indexed="true" stored="true"/>
+  <field name="xy" type="xy" indexed="true" stored="true" multiValued="false"/>
+  <field name="store" type="location" indexed="true" stored="true" docValues="true"/>
+
   <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
 
   <!-- to test uniq fields -->
@@ -559,12 +552,12 @@
   <field name="_version_" type="long" indexed="false" stored="false" docValues="true"/>
   <!-- points to the root document of a block of nested documents -->
   <field name="_root_" type="string" indexed="true" stored="true"/>
+  <!-- for nested documents (relationship tracking) -->
+  <field name="_nest_path_" type="_nest_path_" /><fieldType name="_nest_path_" class="solr.NestPathField" />
 
   <field name="multi_int_with_docvals" type="tint" multiValued="true" docValues="true" indexed="false"/>
 
   <field name="min_hash_analysed" type="text_min_hash" multiValued="false" indexed="true" stored="false"/>
-
-  <dynamicField name="*_coordinate" type="tdouble" indexed="true" stored="false"/>
 
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
@@ -613,6 +606,8 @@
 
   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
   <dynamicField name="attr_*" type="text" indexed="true" stored="true" multiValued="true"/>
+
+  <dynamicField name="rank_*" type="rank"/>
 
   <dynamicField name="random_*" type="random"/>
 

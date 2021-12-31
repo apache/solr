@@ -43,6 +43,11 @@ solrAdminServices.factory('System',
     "reload": {method: "GET", params:{action:"RELOAD", core: "@core"}}
     });
   }])
+.factory('ConfigSets',
+ ['$resource', function ($resource) {
+    return $resource('admin/configs', {'wt': 'json', '_': Date.now()}, {"configs": {params: {action: "LIST"}}
+    });
+ }])
 .factory('Cores',
   ['$resource', function($resource) {
     return $resource('admin/cores',
@@ -61,7 +66,7 @@ solrAdminServices.factory('System',
     return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
       "events": {params: {since:'0'}},
       "levels": {},
-      "setLevel": {}
+      "setLevel": {params: {nodes:'all'}}
       });
   }])
 .factory('Zookeeper',
@@ -173,25 +178,12 @@ solrAdminServices.factory('System',
       "field": {params: {"analysis.showmatch": true}}
     });
   }])
-.factory('DataImport',
-  ['$resource', function($resource) {
-    return $resource(':core/:name', {core: '@core', name: '@name', indent:'on', wt:'json', _:Date.now()}, {
-      "config": {params: {command: "show-config"}, headers: {doNotIntercept: "true"},
-                 transformResponse: function(data) {
-                    return {config: data};
-                 }
-                },
-      "status": {params: {command: "status"}, headers: {doNotIntercept: "true"}},
-      "reload": {params: {command: "reload-config"}},
-      "post": {method: "POST",
-                headers: {'Content-type': 'application/x-www-form-urlencoded'},
-                transformRequest: function(data) { return $.param(data) }}
-    });
-  }])
 .factory('Ping',
   ['$resource', function($resource) {
     return $resource(':core/admin/ping', {wt:'json', core: '@core', ts:Date.now(), _:Date.now()}, {
      "ping": {},
+     "enable": {params:{action:"enable"}, headers: {doNotIntercept: "true"}},
+     "disable": {params:{action:"disable"}, headers: {doNotIntercept: "true"}},
      "status": {params:{action:"status"}, headers: {doNotIntercept: "true"}
     }});
   }])
@@ -268,6 +260,23 @@ solrAdminServices.factory('System',
      return $resource(':core/config', {wt: 'json', core: '@core', _:Date.now()}, {
        get: {method: "GET"}
      })
+}])
+.factory('SchemaDesigner',
+   ['$resource', function($resource) {
+     return $resource('/api/schema-designer/:path', {wt: 'json', path: '@path', _:Date.now()}, {
+       get: {method: "GET"},
+       post: {method: "POST", timeout: 90000},
+       put: {method: "PUT"},
+       postXml: {headers: {'Content-type': 'text/xml'}, method: "POST", timeout: 90000},
+       postCsv: {headers: {'Content-type': 'application/csv'}, method: "POST", timeout: 90000},
+       upload: {method: "POST", transformRequest: angular.identity, headers: {'Content-Type': undefined}, timeout: 90000}
+     })
+}])
+.factory('Security',
+    ['$resource', function($resource) {
+          return $resource('/api/cluster/security/:path', {wt: 'json', path: '@path', _:Date.now()}, {
+            get: {method: "GET"}, post: {method: "POST", timeout: 90000}
+        })
 }])
 .factory('AuthenticationService',
     ['base64', function (base64) {

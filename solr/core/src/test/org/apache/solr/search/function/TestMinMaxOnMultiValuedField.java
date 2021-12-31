@@ -416,6 +416,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
 
   public void testRandom() throws Exception {
 
+    @SuppressWarnings({"rawtypes"})
     Comparable[] vals = new Comparable[TestUtil.nextInt(random(), 1, 17)];
 
     // random ints
@@ -532,17 +533,20 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
   }
   
   /** Tests a single doc with a few explicit values, as well as testing exists with and w/o values */
-  protected void testSimpleValues(final String fieldname, final Class<?> clazz, final Comparable... vals) {
+  @SuppressWarnings({"unchecked"})
+  protected void testSimpleValues(final String fieldname, final Class<?> clazz,
+                                  @SuppressWarnings({"rawtypes"})final Comparable... vals) {
     clearIndex();
     
     assert 0 < vals.length;
-    
+    @SuppressWarnings({"rawtypes"})
     Comparable min = vals[0];
+    @SuppressWarnings({"rawtypes"})
     Comparable max = vals[0];
     
     final String type = clazz.getName();
     final SolrInputDocument doc1 = sdoc("id", "1");
-    for (Comparable v : vals) {
+    for (@SuppressWarnings({"rawtypes"})Comparable v : vals) {
       doc1.addField(fieldname, v);
       if (0 < min.compareTo(v)) {
         min = v;
@@ -610,7 +614,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
    * @param positive a "positive" value for this field (ie: in a function context, is more then the "0")
    */
   protected void testSimpleSort(final String fieldname,
-                                final Comparable negative, final Comparable positive) {
+                                @SuppressWarnings({"rawtypes"})final Comparable negative,
+                                @SuppressWarnings({"rawtypes"})final Comparable positive) {
     clearIndex();
 
     int numDocsExpected = 1;
@@ -890,8 +895,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
   /**
    * Given a (multivalued) field name and an (ascending) sorted list of values, this method will generate a List of Solr Documents of the same size such that:
    * <ul>
-   *  <li>For each non-null value in the original list, the corrisponding document in the result will have that value in the specified field.</li>
-   *  <li>For each null value in the original list, the corrisponding document in teh result will have <em>NO</em> values in the specified field.</li>
+   *  <li>For each non-null value in the original list, the corresponding document in the result will have that value in the specified field.</li>
+   *  <li>For each null value in the original list, the corresponding document in teh result will have <em>NO</em> values in the specified field.</li>
    *  <li>If a document has a value in the field, then some random number of values that come <em>after</em> that value in the original list may also be included in the specified field.</li>
    *  <li>Every document in the result will have a randomly asssigned 'id', unique realitive to all other documents in the result.</li>
    * </ul>

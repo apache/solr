@@ -57,7 +57,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
@@ -91,7 +91,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
   public FeaturesSelectionStream(String zkHost,
                      String collectionName,
-                     Map params,
+                     Map<String,String> params,
                      String field,
                      String outcome,
                      String featureSet,
@@ -126,7 +126,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
     }
 
-    Map<String,String> params = new HashMap<String,String>();
+    Map<String,String> params = new HashMap<>();
     for(StreamExpressionNamedParameter namedParam : namedParams){
       if(!namedParam.getName().equals("zkHost")) {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
@@ -215,7 +215,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
   private void init(String collectionName,
                     String zkHost,
-                    Map params,
+                    Map<String, String> params,
                     String field,
                     String outcome,
                     String featureSet,
@@ -248,7 +248,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     }
 
     this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
-    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("FeaturesSelectionStream"));
+    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("FeaturesSelectionStream"));
   }
 
   public List<TupleStream> children() {
@@ -288,16 +288,16 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     }
   }
 
-  private List<Future<NamedList>> callShards(List<String> baseUrls) throws IOException {
+  private List<Future<NamedList<?>>> callShards(List<String> baseUrls) throws IOException {
 
-    List<Future<NamedList>> futures = new ArrayList<>();
+    List<Future<NamedList<?>>> futures = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       FeaturesSelectionCall lc = new FeaturesSelectionCall(baseUrl,
           this.params,
           this.field,
           this.outcome);
 
-      Future<NamedList> future = executorService.submit(lc);
+      Future<NamedList<?>> future = executorService.submit(lc);
       futures.add(future);
     }
 
@@ -336,10 +336,12 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
 
         long numDocs = 0;
-        for (Future<NamedList> getTopTermsCall : callShards(getShardUrls())) {
-          NamedList resp = getTopTermsCall.get();
+        for (Future<NamedList<?>> getTopTermsCall : callShards(getShardUrls())) {
+          NamedList<?> resp = getTopTermsCall.get();
 
+          @SuppressWarnings({"unchecked"})
           NamedList<Double> shardTopTerms = (NamedList<Double>)resp.get("featuredTerms");
+          @SuppressWarnings({"unchecked"})
           NamedList<Integer> shardDocFreqs = (NamedList<Integer>)resp.get("docFreq");
 
           numDocs += (Integer)resp.get("numDocs");
@@ -362,21 +364,19 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
         for (Map.Entry<String, Double> termScore : termScores.entrySet()) {
           if (tuples.size() == numTerms) break;
           index++;
-          Map map = new HashMap();
-          map.put(ID, featureSet + "_" + index);
-          map.put("index_i", index);
-          map.put("term_s", termScore.getKey());
-          map.put("score_f", termScore.getValue());
-          map.put("featureSet_s", featureSet);
+          Tuple tuple = new Tuple();
+          tuple.put(ID, featureSet + "_" + index);
+          tuple.put("index_i", index);
+          tuple.put("term_s", termScore.getKey());
+          tuple.put("score_f", termScore.getValue());
+          tuple.put("featureSet_s", featureSet);
           long docFreq = docFreqs.get(termScore.getKey());
           double d = Math.log(((double)numDocs / (double)(docFreq + 1)));
-          map.put("idf_d", d);
-          tuples.add(new Tuple(map));
+          tuple.put("idf_d", d);
+          tuples.add(tuple);
         }
 
-        Map map = new HashMap();
-        map.put("EOF", true);
-        tuples.add(new Tuple(map));
+        tuples.add(Tuple.EOF());
 
         tupleIterator = tuples.iterator();
       }
@@ -399,7 +399,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     return result;
   }
 
-  protected class FeaturesSelectionCall implements Callable<NamedList> {
+  protected class FeaturesSelectionCall implements Callable<NamedList<?>> {
 
     private String baseUrl;
     private String outcome;
@@ -417,7 +417,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
       this.paramsMap = paramsMap;
     }
 
-    public NamedList<Double> call() throws Exception {
+    public NamedList<?> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
@@ -435,7 +435,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
       QueryRequest request= new QueryRequest(params);
       QueryResponse response = request.process(solrClient);
-      NamedList res = response.getResponse();
+      NamedList<?> res = response.getResponse();
       return res;
     }
   }

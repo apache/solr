@@ -19,12 +19,13 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.slf4j.Logger;
@@ -44,7 +45,7 @@ public class BinaryField extends FieldType  {
   }
 
   private String toBase64String(ByteBuffer buf) {
-    return Base64.byteArrayToBase64(buf.array(), buf.position(), buf.limit()-buf.position());
+    return new String(Base64.getEncoder().encode(ByteBuffer.wrap(buf.array(), buf.arrayOffset() + buf.position(), buf.limit()-buf.position()).array()), StandardCharsets.ISO_8859_1);
   }
 
   @Override
@@ -82,7 +83,7 @@ public class BinaryField extends FieldType  {
   public IndexableField createField(SchemaField field, Object val) {
     if (val == null) return null;
     if (!field.stored()) {
-      log.trace("Ignoring unstored binary field: " + field);
+      log.trace("Ignoring unstored binary field: {}", field);
       return null;
     }
     byte[] buf = null;
@@ -93,12 +94,12 @@ public class BinaryField extends FieldType  {
     } else if (val instanceof ByteBuffer && ((ByteBuffer)val).hasArray()) {
       ByteBuffer byteBuf = (ByteBuffer) val;
       buf = byteBuf.array();
-      offset = byteBuf.position();
+      offset = byteBuf.arrayOffset() + byteBuf.position();
       len = byteBuf.limit() - byteBuf.position();
     } else {
       String strVal = val.toString();
       //the string has to be a base64 encoded string
-      buf = Base64.base64ToByteArray(strVal);
+      buf = Base64.getDecoder().decode(strVal);
       offset = 0;
       len = buf.length;
     }
@@ -112,7 +113,7 @@ public class BinaryField extends FieldType  {
       return ByteBuffer.wrap((byte[]) val);
     } else if (val instanceof CharSequence) {
       final CharSequence valAsCharSequence = (CharSequence) val;
-      return ByteBuffer.wrap(Base64.base64ToByteArray(valAsCharSequence.toString()));
+      return ByteBuffer.wrap(Base64.getDecoder().decode(valAsCharSequence.toString()));
     }
     return super.toNativeType(val);
   }

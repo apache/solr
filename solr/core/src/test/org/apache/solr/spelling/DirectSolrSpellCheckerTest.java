@@ -47,13 +47,13 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(adoc("id", "4", "teststop", "another foo")));
     assertNull(h.validateUpdate(commit()));
     queryConverter = new SimpleQueryConverter();
-    queryConverter.init(new NamedList());
+    queryConverter.init(new NamedList<>());
   }
   
   @Test
   public void test() throws Exception {
     DirectSolrSpellChecker checker = new DirectSolrSpellChecker();
-    NamedList spellchecker = new NamedList();
+    NamedList<Object> spellchecker = new NamedList<>();
     spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.FIELD, "teststop");
     spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, 2); // we will try "fob"

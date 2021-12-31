@@ -54,6 +54,20 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     DELETE
   };
 
+  public enum SolrRequestType {
+    QUERY,
+    UPDATE,
+    SECURITY,
+    ADMIN,
+    STREAMING,
+    UNSPECIFIED
+  };
+
+  public enum SolrClientContext {
+    CLIENT,
+    SERVER
+  };
+
   public static final Set<String> SUPPORTED_METHODS = Set.of(
       METHOD.GET.toString(),
       METHOD.POST.toString(),
@@ -74,14 +88,14 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   /**If set to true, every request that implements {@link V2RequestSupport} will be converted
    * to a V2 API call
    */
-  public SolrRequest setUseV2(boolean flag){
+  public SolrRequest<T> setUseV2(boolean flag){
     this.usev2 = flag;
     return this;
   }
 
   /**If set to true use javabin instead of json (default)
    */
-  public SolrRequest setUseBinaryV2(boolean flag){
+  public SolrRequest<T> setUseBinaryV2(boolean flag){
     this.useBinaryV2 = flag;
     return this;
   }
@@ -90,7 +104,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   private String basePath;
 
-  public SolrRequest setBasicAuthCredentials(String user, String password) {
+  public SolrRequest<T> setBasicAuthCredentials(String user, String password) {
     this.basicAuthUser = user;
     this.basicAuthPwd = password;
     return this;
@@ -164,6 +178,11 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public void setQueryParams(Set<String> queryParams) {
     this.queryParams = queryParams;
   }
+
+  /**
+   * This method defines the type of this Solr request.
+   */
+  public abstract String getRequestType();
 
   public abstract SolrParams getParams();
 

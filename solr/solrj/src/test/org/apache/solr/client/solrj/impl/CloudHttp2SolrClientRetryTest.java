@@ -37,6 +37,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(NODE_COUNT)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
@@ -60,7 +61,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
       QueryResponse response = solrClient.query(collectionName, params, SolrRequest.METHOD.GET);
       NamedList<Object> namedList = response.getResponse();
       System.out.println(namedList);
-      NamedList metrics = (NamedList) namedList.get("metrics");
+      NamedList<?> metrics = (NamedList<?>) namedList.get("metrics");
       assertEquals(1L, metrics.get(updateRequestCountKey));
 
       TestInjection.failUpdateRequests = "true:100";
@@ -76,7 +77,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
       response = solrClient.query(collectionName, params, SolrRequest.METHOD.GET);
       namedList = response.getResponse();
       System.out.println(namedList);
-      metrics = (NamedList) namedList.get("metrics");
+      metrics = (NamedList<?>) namedList.get("metrics");
       assertEquals(2L, metrics.get(updateRequestCountKey));
     }
   }

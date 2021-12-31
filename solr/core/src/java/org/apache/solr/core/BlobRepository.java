@@ -54,13 +54,14 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 /**
  * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the Jar in a single node.
  */
 public class BlobRepository {
-  private static final long MAX_JAR_SIZE = Long.parseLong(System.getProperty("runtme.lib.size", String.valueOf(5 * 1024 * 1024)));
+
+  private static final long MAX_JAR_SIZE = Long.parseLong(
+      System.getProperty("runtime.lib.size", String.valueOf(5 * 1024 * 1024)));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final Random RANDOM;
   static final Pattern BLOB_KEY_PATTERN_CHECKER = Pattern.compile(".*/\\d+");
@@ -77,9 +78,11 @@ public class BlobRepository {
   }
 
   private final CoreContainer coreContainer;
+  @SuppressWarnings({"rawtypes"})
   private Map<String, BlobContent> blobs = createMap();
 
   // for unit tests to override
+  @SuppressWarnings({"rawtypes"})
   ConcurrentHashMap<String, BlobContent> createMap() {
     return new ConcurrentHashMap<>();
   }
@@ -112,12 +115,12 @@ public class BlobRepository {
    * @param decoder a decoder that knows how to interpret the bytes from the blob
    * @return The reference of a blob
    */
-  BlobContentRef<Object> getBlobIncRef(String key, Decoder<Object> decoder) {
+  <T> BlobContentRef<T> getBlobIncRef(String key, Decoder<T> decoder) {
     return getBlobIncRef(key.concat(decoder.getName()), () -> addBlob(key, decoder));
   }
 
-  BlobContentRef getBlobIncRef(String key, Decoder decoder, String url, String sha512) {
-    StringBuffer keyBuilder = new StringBuffer(key);
+  <T> BlobContentRef<T> getBlobIncRef(String key, Decoder<T> decoder, String url, String sha512) {
+    StringBuilder keyBuilder = new StringBuilder(key);
     if (decoder != null) keyBuilder.append(decoder.getName());
     keyBuilder.append("/").append(sha512);
 
@@ -125,6 +128,7 @@ public class BlobRepository {
   }
 
   // do the actual work returning the appropriate type...
+  @SuppressWarnings({"unchecked"})
   private <T> BlobContentRef<T> getBlobIncRef(String key, Callable<BlobContent<T>> blobCreator) {
     BlobContent<T> aBlob;
     if (this.coreContainer.isZooKeeperAware()) {
@@ -158,10 +162,10 @@ public class BlobRepository {
   }
 
   // for use cases sharing java objects
-  private BlobContent<Object> addBlob(String key, Decoder<Object> decoder) {
+  private <T> BlobContent<T> addBlob(String key, Decoder<T> decoder) {
     ByteBuffer b = fetchBlob(key);
     String keyPlusName = key + decoder.getName();
-    BlobContent<Object> aBlob = new BlobContent<>(keyPlusName, b, decoder);
+    BlobContent<T> aBlob = new BlobContent<>(keyPlusName, b, decoder);
     blobs.put(keyPlusName, aBlob);
     return aBlob;
   }
@@ -199,7 +203,7 @@ public class BlobRepository {
    */
   ByteBuffer fetchBlob(String key) {
     Replica replica = getSystemCollReplica();
-    String url = replica.getStr(BASE_URL_PROP) + "/" + CollectionAdminParams.SYSTEM_COLL + "/blob/" + key + "?wt=filestream";
+    String url = replica.getBaseUrl() + "/" + CollectionAdminParams.SYSTEM_COLL + "/blob/" + key + "?wt=filestream";
     return fetchFromUrl(key, url);
   }
 
@@ -253,7 +257,9 @@ public class BlobRepository {
             replica = r;
             break;
           } else {
-            log.info("replica {} says it is active but not a member of live nodes", r.get(ZkStateReader.NODE_NAME_PROP));
+            if (log.isInfoEnabled()) {
+              log.info("replica {} says it is active but not a member of live nodes", r.get(ZkStateReader.NODE_NAME_PROP));
+            }
           }
         }
       }
@@ -269,7 +275,7 @@ public class BlobRepository {
    *
    * @param ref The reference that is already there. Doing multiple calls with same ref will not matter
    */
-  public void decrementBlobRefCount(BlobContentRef ref) {
+  public void decrementBlobRefCount(BlobContentRef<?> ref) {
     if (ref == null) return;
     synchronized (ref.blob.references) {
       if (!ref.blob.references.remove(ref)) {
@@ -285,8 +291,9 @@ public class BlobRepository {
     public final String key;
     private final T content; // holds byte buffer or cached object, holding both is a waste of memory
     // ref counting mechanism
-    private final Set<BlobContentRef> references = new HashSet<>();
+    private final Set<BlobContentRef<T>> references = new HashSet<>();
 
+    @SuppressWarnings("unchecked")
     public BlobContent(String key, ByteBuffer buffer, Decoder<T> decoder) {
       this.key = key;
       this.content = decoder == null ? (T) buffer : decoder.decode(new ByteBufferInputStream(buffer));

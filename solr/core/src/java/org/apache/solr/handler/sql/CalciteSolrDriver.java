@@ -18,7 +18,11 @@ package org.apache.solr.handler.sql;
 
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.Driver;
+import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql2rel.SqlToRelConverter;
+import org.apache.calcite.util.Holder;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -32,12 +36,21 @@ import java.util.Properties;
 public class CalciteSolrDriver extends Driver {
   public final static String CONNECT_STRING_PREFIX = "jdbc:calcitesolr:";
 
+  public static CalciteSolrDriver INSTANCE = new CalciteSolrDriver();
+
+  private SolrClientCache solrClientCache;
+
+
   private CalciteSolrDriver() {
     super();
   }
 
   static {
-    new CalciteSolrDriver().register();
+    INSTANCE.register();
+  }
+
+  static void subQueryThreshold(Holder<SqlToRelConverter.Config> configHolder) {
+    configHolder.accept(config -> config.withInSubQueryThreshold(Integer.MAX_VALUE));
   }
 
   @Override
@@ -51,19 +64,28 @@ public class CalciteSolrDriver extends Driver {
       return null;
     }
 
+    // Configure SqlToRelConverter to allow more values for an 'IN' clause,
+    // otherwise, Calcite will transform the query into a join with a static table of literals
+    Hook.SQL2REL_CONVERTER_CONFIG_BUILDER.addThread(CalciteSolrDriver::subQueryThreshold);
+
     Connection connection = super.connect(url, info);
     CalciteConnection calciteConnection = (CalciteConnection) connection;
+
     final SchemaPlus rootSchema = calciteConnection.getRootSchema();
 
     String schemaName = info.getProperty("zk");
     if(schemaName == null) {
       throw new SQLException("zk must be set");
     }
-    rootSchema.add(schemaName, new SolrSchema(info));
+    final SolrSchema solrSchema = new SolrSchema(info, solrClientCache);
+    rootSchema.add(schemaName, solrSchema);
 
     // Set the default schema
     calciteConnection.setSchema(schemaName);
+    return calciteConnection;
+  }
 
-    return connection;
+  public void setSolrClientCache(SolrClientCache solrClientCache) {
+    this.solrClientCache = solrClientCache;
   }
 }

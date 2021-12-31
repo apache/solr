@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Solr Server'
+
 configurations {
   api {
     exclude group: "org.slf4j"
@@ -70,6 +72,7 @@ dependencies {
   libExt 'org.apache.logging.log4j:log4j-1.2-api'
   libExt 'org.apache.logging.log4j:log4j-api'
   libExt 'org.apache.logging.log4j:log4j-core'
+  libExt 'org.apache.logging.log4j:log4j-layout-template-json'
   libExt 'org.apache.logging.log4j:log4j-slf4j-impl'
   libExt 'org.apache.logging.log4j:log4j-web'
 
@@ -100,7 +103,7 @@ task assemblePackaging(type: Sync) {
     include "resources/**"
     include "scripts/**"
     include "solr/**"
-    include "README.txt"
+    include "README.md"
   })
 
   from(configurations.compileClasspath, {

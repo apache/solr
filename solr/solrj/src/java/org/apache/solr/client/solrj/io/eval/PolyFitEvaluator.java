@@ -50,7 +50,7 @@ public class PolyFitEvaluator extends RecursiveNumericEvaluator implements ManyV
     if(objects.length == 1) {
       //Only the y values passed
 
-      y = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+      y = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       x = new double[y.length];
       for(int i=0; i<y.length; i++) {
         x[i] = i;
@@ -60,18 +60,18 @@ public class PolyFitEvaluator extends RecursiveNumericEvaluator implements ManyV
       // x, y and degree passed
 
       Object second = objects[1];
-      x = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
-      y = ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+      x = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+      y = ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       degree = ((Number)objects[2]).intValue();
     } else if(objects.length == 2) {
       if(objects[1] instanceof List) {
         // x and y passed
         Object second = objects[1];
-        x = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
-        y = ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+        x = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+        y = ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       } else {
         // y and degree passed
-        y = ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+        y = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
         x = new double[y.length];
         for(int i=0; i<y.length; i++) {
           x[i] = i;
@@ -90,7 +90,7 @@ public class PolyFitEvaluator extends RecursiveNumericEvaluator implements ManyV
     double[] coef = curveFitter.fit(points.toList());
     PolynomialFunction pf = new PolynomialFunction(coef);
 
-    List list = new ArrayList();
+    List<Number> list = new ArrayList<>();
     for(double xvalue : x) {
       double yvalue= pf.value(xvalue);
       list.add(yvalue);

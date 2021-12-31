@@ -64,7 +64,7 @@ public abstract class SnitchContext implements RemoteCallback {
     return Collections.emptyMap();
   }
 
-  public abstract Map getZkJson(String path) throws KeeperException, InterruptedException;
+  public abstract Map<?,?> getZkJson(String path) throws KeeperException, InterruptedException;
 
   public String getNode() {
     return node;

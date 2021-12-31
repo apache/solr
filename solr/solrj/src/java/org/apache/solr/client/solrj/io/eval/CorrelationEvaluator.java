@@ -82,21 +82,21 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
       if (type.equals(CorrelationType.pearsons)) {
         PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation();
         return pearsonsCorrelation.correlation(
-            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+            ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+            ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
         );
       } else if (type.equals(CorrelationType.kendalls)) {
         KendallsCorrelation kendallsCorrelation = new KendallsCorrelation();
         return kendallsCorrelation.correlation(
-            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+            ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+            ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
         );
 
       } else if (type.equals(CorrelationType.spearmans)) {
         SpearmansCorrelation spearmansCorrelation = new SpearmansCorrelation();
         return spearmansCorrelation.correlation(
-            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+            ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+            ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
         );
       } else {
         return null;
@@ -150,7 +150,7 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
     if(labels != null) {
       return labels;
     } else {
-      List<String> l = new ArrayList();
+      List<String> l = new ArrayList<>();
       for(int i=0; i<length; i++) {
         String label = "col"+ ZplotStream.pad(Integer.toString(i), length);
         l.add(label);

@@ -74,7 +74,7 @@ public class PivotFacetProcessor extends SimpleFacets
     // rb._statsInfo may be null if stats=false, ie: refine requests
     // if that's the case, but we need to refine w/stats, then we'll lazy init our 
     // own instance of StatsInfo
-    StatsInfo statsInfo = rb._statsInfo; 
+    StatsInfo statsInfo = rb._statsInfo;
 
     SimpleOrderedMap<List<NamedList<Object>>> pivotResponse = new SimpleOrderedMap<>();
     for (String pivotList : pivots) {
@@ -237,7 +237,7 @@ public class PivotFacetProcessor extends SimpleFacets
    *
    * @return A list of StatsFields to compute for this pivot, or the empty list if none
    */
-  private static List<StatsField> getTaggedStatsFields(StatsInfo statsInfo, 
+  private static List<StatsField> getTaggedStatsFields(StatsInfo statsInfo,
                                                        String statsLocalParam) {
     if (null == statsLocalParam || null == statsInfo) {
       return Collections.emptyList();
@@ -351,7 +351,7 @@ public class PivotFacetProcessor extends SimpleFacets
       DocSet hasVal = searcher.getDocSet(query);
       return base.andNotSize(hasVal);
     } else {
-      Query query = ft.getFieldQuery(null, field, pivotValue);
+      Query query = ft.getFieldTermQuery(null, field, pivotValue);
       return searcher.numDocs(query, base);
     }
   }
@@ -370,7 +370,7 @@ public class PivotFacetProcessor extends SimpleFacets
       DocSet hasVal = searcher.getDocSet(query);
       return base.andNot(hasVal);
     } else {
-      Query query = ft.getFieldQuery(null, field, pivotValue);
+      Query query = ft.getFieldTermQuery(null, field, pivotValue);
       return searcher.getDocSet(query, base);
     }
   }

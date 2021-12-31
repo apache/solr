@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,7 +30,6 @@ import java.util.Random;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -49,7 +49,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  static void putUser(String user, String pwd, Map credentials) {
+  static void putUser(String user, String pwd, Map<? super String, ? super String> credentials) {
     if (user == null || pwd == null) return;
     String val = getSaltedHashedValue(pwd);
     credentials.put(user, val);
@@ -59,7 +59,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     final Random r = new SecureRandom();
     byte[] salt = new byte[32];
     r.nextBytes(salt);
-    String saltBase64 = Base64.encodeBase64String(salt);
+    String saltBase64 = Base64.getEncoder().encodeToString(salt);
     String val = sha256(pwd, saltBase64) + " " + saltBase64;
     return val;
   }
@@ -74,6 +74,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     
     promptHeader = Collections.unmodifiableMap(Collections.singletonMap("WWW-Authenticate", "Basic realm=\"" + realm + "\""));
     credentials = new LinkedHashMap<>();
+    @SuppressWarnings({"unchecked"})
     Map<String,String> users = (Map<String,String>) pluginConfig.get("credentials");
     if (users == null || users.isEmpty()) {
       throw new IllegalStateException("No users configured yet. At least one user must be configured in security.json");
@@ -81,7 +82,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     for (Map.Entry<String, String> e : users.entrySet()) {
       String v = e.getValue();
       if (v == null) {
-        log.warn("user has no password " + e.getKey());
+        log.warn("user has no password {}", e.getKey());
         continue;
       }
       credentials.put(e.getKey(), v);
@@ -114,18 +115,18 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     try {
       digest = MessageDigest.getInstance("SHA-256");
     } catch (NoSuchAlgorithmException e) {
-      log.error(e.getMessage(), e);
+      log.error("Cannot find algorithm ", e);
       return null;//should not happen
     }
     if (saltKey != null) {
       digest.reset();
-      digest.update(Base64.decodeBase64(saltKey));
+      digest.update(Base64.getDecoder().decode(saltKey));
     }
 
     byte[] btPass = digest.digest(password.getBytes(StandardCharsets.UTF_8));
     digest.reset();
     btPass = digest.digest(btPass);
-    return Base64.encodeBase64String(btPass);
+    return Base64.getEncoder().encodeToString(btPass);
   }
 
   @Override
@@ -138,7 +139,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
       if (cmd.hasError()) return null;
       if ("delete-user".equals(cmd.name)) {
         List<String> names = cmd.getStrs("");
-        Map map = (Map) latestConf.get("credentials");
+        Map<?, ?> map = (Map<?, ?>) latestConf.get("credentials");
         if (map == null || !map.keySet().containsAll(names)) {
           cmd.addError("No such user(s) " +names );
           return null;
@@ -155,15 +156,14 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
         return latestConf;
       }
       if ("set-user".equals(cmd.name) ) {
-        Map map = getMapValue(latestConf, "credentials");
-        Map kv = cmd.getDataMap();
-        for (Object o : kv.entrySet()) {
-          Map.Entry e = (Map.Entry) o;
+        Map<String, Object> map = getMapValue(latestConf, "credentials");
+        Map<String, Object> kv = cmd.getDataMap();
+        for (Map.Entry<String, Object> e : kv.entrySet()) {
           if(e.getKey() == null || e.getValue() == null){
             cmd.addError("name and password must be non-null");
             return null;
           }
-          putUser(String.valueOf(e.getKey()), String.valueOf(e.getValue()), map);
+          putUser(e.getKey(), String.valueOf(e.getValue()), map);
         }
 
       }

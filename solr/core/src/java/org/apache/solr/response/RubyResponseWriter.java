@@ -19,17 +19,11 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.Writer;
 
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class RubyResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_RUBY_UTF8="text/x-ruby;charset=UTF-8";
 
-  @Override
-  public void init(NamedList n) {
-    /* NOOP */
-  }
-  
  @Override
 public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     RubyWriter w = new RubyWriter(writer, req, rsp);
@@ -46,7 +40,7 @@ public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) th
   }
 }
 
-class RubyWriter extends NaNFloatWriter {
+class RubyWriter extends JSONResponseWriter.NaNFloatWriter {
 
   @Override
   protected String getNaN() { return "(0.0/0.0)"; }

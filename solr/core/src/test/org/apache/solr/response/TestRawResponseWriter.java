@@ -191,7 +191,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
    */
   private static RawResponseWriter newRawResponseWriter(String baseWriter) {
     RawResponseWriter writer = new RawResponseWriter();
-    NamedList initArgs = new NamedList<Object>();
+    NamedList<String> initArgs = new NamedList<>();
     if (null != baseWriter) {
       initArgs.add("base", baseWriter);
     }

@@ -18,7 +18,11 @@
 package org.apache.solr.cloud.hdfs;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -26,14 +30,17 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@LuceneTestCase.AwaitsFix(bugUrl = "SOLR-15405")
+@ThreadLeakLingering(linger = 10)
 public class HDFSCollectionsAPITest extends SolrCloudTestCase {
 
   private static MiniDFSCluster dfsCluster;
@@ -44,8 +51,7 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
 
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
-    ZkConfigManager configManager = new ZkConfigManager(zkClient());
-    configManager.uploadConfigDir(configset("cloud-hdfs"), "conf1");
+    cluster.uploadConfigSet(configset("cloud-hdfs"), "conf1");
   }
 
 

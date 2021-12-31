@@ -32,11 +32,11 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 
-import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.handler.admin.SecurityConfHandler.SecurityConfig;
 
 public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testEdit() throws Exception {
     MockSecurityHandler handler = new MockSecurityHandler();
     String command = "{\n" +
@@ -173,8 +173,10 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     req.setContentStreams(Collections.singletonList(o));
     rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
+    @SuppressWarnings({"rawtypes"})
     List l = (List) ((Map) ((List)rsp.getValues().get("errorMessages")).get(0)).get("errorMessages");
     assertEquals(1, l.size());
+    handler.close();
   }
 
 
@@ -188,12 +190,14 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
       super(null);
       m = new HashMap<>();
       SecurityConfig sp = new SecurityConfig();
-      sp.setData(makeMap("authentication", makeMap("class", "solr."+ BasicAuthPlugin.class.getSimpleName())));
+      Map<String, Object> securityData = new HashMap<>();
+      securityData.put("authentication", Map.of("class", "solr."+ BasicAuthPlugin.class.getSimpleName()));
+      securityData.put("authorization", Map.of("class", "solr."+RuleBasedAuthorizationPlugin.class.getSimpleName()));
       sp.setVersion(1);
-      sp.getData().put("authorization", makeMap("class", "solr."+RuleBasedAuthorizationPlugin.class.getSimpleName()));
+      sp.setData(securityData);
       m.put("/security.json", sp);
 
-      basicAuthPlugin.init(Collections.singletonMap("credentials", Collections.singletonMap("ignore", "me")));
+      basicAuthPlugin.init(Map.of("credentials", Map.of("ignore", "me")));
 
       rulesBasedAuthorizationPlugin.init(new HashMap<>());
     }
@@ -266,7 +270,9 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
 
 
   public static void main(String[] args) throws Exception{
-    System.out.println(new MockSecurityHandler().getStandardJson());
+    try (MockSecurityHandler msh = new MockSecurityHandler()) {
+      System.out.println(msh.getStandardJson());
+    }
   }
 
 

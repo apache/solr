@@ -29,6 +29,8 @@ import org.apache.lucene.search.Sort;
 public class QueryCommand {
   
   private Query query;
+  private String queryID;
+  private boolean isQueryCancellable;
   private List<Query> filterList;
   private DocSet filter;
   private Sort sort;
@@ -37,6 +39,7 @@ public class QueryCommand {
   private int supersetMaxDoc;
   private int flags;
   private long timeAllowed = -1;
+  private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
   
   public CursorMark getCursorMark() {
@@ -182,6 +185,15 @@ public class QueryCommand {
     this.timeAllowed = timeAllowed;
     return this;
   }
+
+  public int getMinExactCount() {
+    return minExactCount;
+  }
+
+  public QueryCommand setMinExactCount(int count) {
+    this.minExactCount = count;
+    return this;
+  }
   
   public boolean isNeedDocSet() {
     return (flags & SolrIndexSearcher.GET_DOCSET) != 0;
@@ -218,5 +230,17 @@ public class QueryCommand {
       return clearFlags(SolrIndexSearcher.SEGMENT_TERMINATE_EARLY);
     }
   }
+
+  public void setQueryID(String queryID) {
+    this.queryID = queryID;
+  }
+
+  public String getQueryID() {
+    return queryID;
+  }
+
+  public void setQueryCancellable(boolean isQueryCancellable) { this.isQueryCancellable = isQueryCancellable; }
+
+  public boolean isQueryCancellable() { return isQueryCancellable; }
 
 }

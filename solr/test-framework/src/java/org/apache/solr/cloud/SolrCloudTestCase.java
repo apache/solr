@@ -19,33 +19,25 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
-import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.LiveNodesPredicate;
@@ -53,7 +45,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -81,173 +72,9 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final Boolean USE_PER_REPLICA_STATE = Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));
 
   public static final int DEFAULT_TIMEOUT = 45; // this is an important timeout for test stability - can't be too short
-
-  private static class Config {
-    final String name;
-    final Path path;
-    private Config(String name, Path path) {
-      this.name = name;
-      this.path = path;
-    }
-  }
-
-  /**
-   * Builder class for a MiniSolrCloudCluster
-   */
-  public static class Builder {
-
-    private final int nodeCount;
-    private final Path baseDir;
-    private String solrxml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML;
-    private JettyConfig.Builder jettyConfigBuilder = JettyConfig.builder().setContext("/solr").withSSLConfig(sslConfig.buildServerSSLConfig());
-    private Optional<String> securityJson = Optional.empty();
-
-    private List<Config> configs = new ArrayList<>();
-    private Map<String, Object> clusterProperties = new HashMap<>();
-
-    private boolean trackJettyMetrics;
-
-    /**
-     * Create a builder
-     *
-     * @param nodeCount the number of nodes in the cluster
-     * @param baseDir   a base directory for the cluster
-     */
-    public Builder(int nodeCount, Path baseDir) {
-      this.nodeCount = nodeCount;
-      this.baseDir = baseDir;
-    }
-
-    /**
-     * Use a JettyConfig.Builder to configure the cluster's jetty servers
-     */
-    public Builder withJettyConfig(Consumer<JettyConfig.Builder> fun) {
-      fun.accept(jettyConfigBuilder);
-      return this;
-    }
-
-    /**
-     * Use the provided string as solr.xml content
-     */
-    public Builder withSolrXml(String solrXml) {
-      this.solrxml = solrXml;
-      return this;
-    }
-
-    /**
-     * Read solr.xml from the provided path
-     */
-    public Builder withSolrXml(Path solrXml) {
-      try {
-        this.solrxml = new String(Files.readAllBytes(solrXml), Charset.defaultCharset());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      return this;
-    }
-
-    /**
-     * Configure the specified security.json for the {@linkplain MiniSolrCloudCluster}
-     *
-     * @param securityJson The path specifying the security.json file
-     * @return the instance of {@linkplain Builder}
-     */
-    public Builder withSecurityJson(Path securityJson) {
-      try {
-        this.securityJson = Optional.of(new String(Files.readAllBytes(securityJson), Charset.defaultCharset()));
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      return this;
-    }
-
-    /**
-     * Configure the specified security.json for the {@linkplain MiniSolrCloudCluster}
-     *
-     * @param securityJson The string specifying the security.json configuration
-     * @return the instance of {@linkplain Builder}
-     */
-    public Builder withSecurityJson(String securityJson) {
-      this.securityJson = Optional.of(securityJson);
-      return this;
-    }
-
-    /**
-     * Upload a collection config before tests start
-     *
-     * @param configName the config name
-     * @param configPath the path to the config files
-     */
-    public Builder addConfig(String configName, Path configPath) {
-      this.configs.add(new Config(configName, configPath));
-      return this;
-    }
-
-    /**
-     * Set a cluster property
-     *
-     * @param propertyName  the property name
-     * @param propertyValue the property value
-     */
-    public Builder withProperty(String propertyName, String propertyValue) {
-      this.clusterProperties.put(propertyName, propertyValue);
-      return this;
-    }
-
-    public Builder withMetrics(boolean trackJettyMetrics) {
-      this.trackJettyMetrics = trackJettyMetrics;
-      return this;
-    }
-
-    /**
-     * Configure and run the {@link MiniSolrCloudCluster}
-     *
-     * @throws Exception if an error occurs on startup
-     */
-    public MiniSolrCloudCluster configure() throws Exception {
-      return cluster = build();
-    }
-
-    /**
-     * Configure, run and return the {@link MiniSolrCloudCluster}
-     *
-     * @throws Exception if an error occurs on startup
-     */
-    public MiniSolrCloudCluster build() throws Exception {
-      JettyConfig jettyConfig = jettyConfigBuilder.build();
-      MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig,
-          null, securityJson, trackJettyMetrics);
-      CloudSolrClient client = cluster.getSolrClient();
-      for (Config config : configs) {
-        ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
-      }
-
-      if (clusterProperties.size() > 0) {
-        ClusterProperties props = new ClusterProperties(cluster.getSolrClient().getZkStateReader().getZkClient());
-        for (Map.Entry<String, Object> entry : clusterProperties.entrySet()) {
-          props.setClusterProperty(entry.getKey(), entry.getValue());
-        }
-      }
-      return cluster;
-    }
-
-    public Builder withDefaultClusterProperty(String key, String value) {
-      HashMap<String, Object> defaults = (HashMap<String, Object>) this.clusterProperties.get(CollectionAdminParams.DEFAULTS);
-      if (defaults == null) {
-        defaults = new HashMap<>();
-        this.clusterProperties.put(CollectionAdminParams.DEFAULTS, defaults);
-      }
-      HashMap<String, Object> cluster = (HashMap<String, Object>) defaults.get(CollectionAdminParams.CLUSTER);
-      if (cluster == null) {
-        cluster = new HashMap<>();
-        defaults.put(CollectionAdminParams.CLUSTER, cluster);
-      }
-      cluster.put(key, value);
-      return this;
-    }
-  }
 
   /**
    * The cluster
@@ -264,12 +91,18 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   /**
    * Call this to configure a cluster of n nodes.
    * <p>
-   * NB you must call {@link Builder#configure()} to start the cluster
+   * NB you must call {@link MiniSolrCloudCluster.Builder#configure()} to start the cluster
    *
    * @param nodeCount the number of nodes
    */
-  protected static Builder configureCluster(int nodeCount) {
-    return new Builder(nodeCount, createTempDir());
+  protected static MiniSolrCloudCluster.Builder configureCluster(int nodeCount) {
+    // By default the MiniSolrCloudCluster being built will randomly (seed based) decide which collection API strategy
+    // to use (distributed or Overseer based) and which cluster update strategy to use (distributed if collection API
+    // is distributed, but Overseer based or distributed randomly chosen if Collection API is Overseer based)
+
+    boolean useDistributedCollectionConfigSetExecution = LuceneTestCase.random().nextInt(2) == 0;
+    boolean useDistributedClusterStateUpdate = useDistributedCollectionConfigSetExecution || LuceneTestCase.random().nextInt(2) == 0;
+    return new MiniSolrCloudCluster.Builder(nodeCount, createTempDir()).withDistributedClusterStateUpdates(useDistributedCollectionConfigSetExecution, useDistributedClusterStateUpdate);
   }
 
   @AfterClass
@@ -347,7 +180,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return (liveNodes, collectionState) -> {
       if (collectionState == null)
         return false;
-      log.info("active slice count: " + collectionState.getActiveSlices().size() + " expected:" + expectedShards);
+      if (log.isInfoEnabled()) {
+        log.info("active slice count: {} expected: {}", collectionState.getActiveSlices().size(), expectedShards);
+      }
       if (collectionState.getActiveSlices().size() != expectedShards)
         return false;
       return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
@@ -389,7 +224,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
 
-    log.info("active replica count: " + activeReplicas + " expected replica count: " + expectedReplicas);
+    log.info("active replica count: {} expected replica count: {}", activeReplicas, expectedReplicas);
 
     return activeReplicas == expectedReplicas;
 
@@ -445,6 +280,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
     log.info("waitForResponse: {}", request);
     int i = 0;

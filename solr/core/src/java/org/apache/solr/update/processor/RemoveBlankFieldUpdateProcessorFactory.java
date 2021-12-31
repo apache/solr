@@ -16,7 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -47,13 +46,6 @@ import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor
  */
 public final class RemoveBlankFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
-  @SuppressWarnings("unchecked")
-  @Override
-  public void init(NamedList args) {
-    // no trim specific init args
-    super.init(args);
-  }
-  
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
                                             SolrQueryResponse rsp,
