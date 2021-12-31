@@ -30,8 +30,6 @@ import org.junit.Test;
  * Tests currency field type.
  */
 public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
-  private final static long HARDCODED_TEST_TIMESTAMP = 1332070464L;
-
   OpenExchangeRatesOrgProvider oerp;
   ResourceLoader loader;
   private final Map<String,String> mockParams = new HashMap<>();
@@ -86,7 +84,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     assertEquals("USD", oerp.rates.getBaseCurrency());
   }
 
-  @SuppressForbidden(reason = "Needs currentTimeMillis to construct rates file contents")
+  @SuppressForbidden(reason = "Needs currentTimeMillis to check if reload happens")
   @Test
   public void testReload() {
     // reminder: interval is in minutes
@@ -94,21 +92,36 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     oerp.init(mockParams);
     oerp.inform(loader);
 
-    // reminder: timestamp is in seconds
-    assertEquals(HARDCODED_TEST_TIMESTAMP, oerp.rates.getTimestamp());
-
-    // modify the timestamp to be "current" then fetch a rate and ensure no reload
-    final long currentTimestamp = System.currentTimeMillis() / 1000;
+    // modify the timestamp to be "current", then fetch a rate and ensure no reload
+    // (subtract one minute to be sure that it didn't change; if it was precisely the current timestamp,
+    // it could stay the same even when reload happened because it takes less than a second to reload)
+    final long currentTimestamp = System.currentTimeMillis() / 1000 - 60;
     oerp.rates.setTimestamp(currentTimestamp);
     assertEquals(81.29D, oerp.getExchangeRate("USD", "JPY"), 0.0D);    
     assertEquals(currentTimestamp, oerp.rates.getTimestamp());
 
     // roll back clock on timestamp and ensure rate fetch does reload
-    oerp.rates.setTimestamp(currentTimestamp - (101 * 60));
-    assertEquals(81.29D, oerp.getExchangeRate("USD", "JPY"), 0.0D);    
-    assertEquals("timestamp wasn't reset to hardcoded value, indicating no reload",
-                 HARDCODED_TEST_TIMESTAMP, oerp.rates.getTimestamp());
+    long timestampBeforeTheRefreshInterval = currentTimestamp - (101 * 60);
+    oerp.rates.setTimestamp(timestampBeforeTheRefreshInterval);
+    assertEquals(81.29D, oerp.getExchangeRate("USD", "JPY"), 0.0D);
+    assertTrue(
+            "timestamp is not greater than before, indicating no reload",
+            oerp.rates.getTimestamp() > timestampBeforeTheRefreshInterval
+    );
+  }
 
+  @SuppressForbidden(reason = "Needs currentTimeMillis to check if reload happens")
+  @Test
+  public void testNoReloadWhenParameterIsFalse() {
+    mockParams.put(OpenExchangeRatesOrgProvider.PARAM_REFRESH_INTERVAL, "100");
+    mockParams.put(OpenExchangeRatesOrgProvider.PARAM_REFRESH_WHILE_SEARCHING, "false");
+    oerp.init(mockParams);
+    oerp.inform(loader);
+
+    long timestampBeforeTheRefreshInterval = System.currentTimeMillis() / 1000 - (101 * 60);
+    oerp.rates.setTimestamp(timestampBeforeTheRefreshInterval);
+    assertEquals(81.29D, oerp.getExchangeRate("USD", "JPY"), 0.0D);
+    assertEquals(timestampBeforeTheRefreshInterval, oerp.rates.getTimestamp());
   }
 
   @Test(expected=SolrException.class)
