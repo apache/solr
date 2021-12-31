@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.noggit.JSONParser;
 import org.apache.lucene.util.ResourceLoader;
@@ -44,6 +45,9 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *  <li><code>ratesFileLocation</code> - A file path or absolute URL specifying the JSON data to load (mandatory)</li>
  *  <li><code>refreshInterval</code> - How frequently (in minutes) to reload the exchange rate data (default: 1440)</li>
+ *  <li><code>refreshWhileSearching</code> - controls if currency rates should be refreshed during a search request;
+ *  if you set it to false, you should set up a OpenExchangeRatesOrgReloader to refresh currency rates on commit;
+ *  please refer to the documentation of OpenExchangeRatesOrgReloader for more information (default: true)</li>
  * </ul>
  * <p>
  * <b>Disclaimer:</b> This data is collected from various providers and provided free of charge
@@ -55,13 +59,16 @@ import org.slf4j.LoggerFactory;
  */
 public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  protected static final String PARAM_RATES_FILE_LOCATION   = "ratesFileLocation";
-  protected static final String PARAM_REFRESH_INTERVAL      = "refreshInterval";
-  protected static final String DEFAULT_REFRESH_INTERVAL    = "1440";
+  protected static final String PARAM_RATES_FILE_LOCATION                  = "ratesFileLocation";
+  protected static final String PARAM_REFRESH_INTERVAL                     = "refreshInterval";
+  protected static final String PARAM_REFRESH_WHILE_SEARCHING              = "refreshWhileSearching";
+  protected static final boolean PARAM_REFRESH_WHILE_SEARCHING_DEFAULT_VAL = true;
+  protected static final String DEFAULT_REFRESH_INTERVAL                   = "1440";
   
   protected String ratesFileLocation;
   // configured in minutes, but stored in seconds for quicker math
   protected int refreshIntervalSeconds;
+  protected boolean refreshWhileSearching = PARAM_REFRESH_WHILE_SEARCHING_DEFAULT_VAL;
   protected ResourceLoader resourceLoader;
   
   protected OpenExchangeRates rates;
@@ -86,7 +93,9 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot get exchange rate; currency was null.");
     }
 
-    reloadIfExpired();
+    if (refreshWhileSearching) {
+      reloadIfExpired();
+    }
 
     Double source = rates.getRates().get(sourceCurrencyCode);
     Double target = rates.getRates().get(targetCurrencyCode);
@@ -97,12 +106,12 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
           + "Available rates are "+listAvailableCurrencies());
     }
     
-    return target / source;  
+    return target / source;
   }
 
   @SuppressForbidden(reason = "Need currentTimeMillis, for comparison with stamp in an external file")
-  private void reloadIfExpired() {
-    if ((rates.getTimestamp() + refreshIntervalSeconds)*1000 < System.currentTimeMillis()) {
+  public void reloadIfExpired() {
+    if ((rates.getTimestamp() + refreshIntervalSeconds) * 1000 < System.currentTimeMillis()) {
       log.debug("Refresh interval has expired. Refreshing exchange rates.");
       reload();
     }
@@ -175,7 +184,8 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
         refreshInterval = 60;
         log.warn("Specified refreshInterval was too small. Setting to 60 minutes which is the update rate of openexchangerates.org");
       }
-      log.debug("Initialized with rates={}, refreshInterval={}.", ratesFileLocation, refreshInterval);
+      refreshWhileSearching = getParam(params.get(PARAM_REFRESH_WHILE_SEARCHING), PARAM_REFRESH_WHILE_SEARCHING_DEFAULT_VAL);
+      log.debug("Initialized with rates={}, refreshInterval={}, refreshWhileSearching={}.", ratesFileLocation, refreshInterval, refreshWhileSearching);
       refreshIntervalSeconds = refreshInterval * 60;
     } catch (SolrException e1) {
       throw e1;
@@ -186,6 +196,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
       // Removing config params custom to us
       params.remove(PARAM_RATES_FILE_LOCATION);
       params.remove(PARAM_REFRESH_INTERVAL);
+      params.remove(PARAM_REFRESH_WHILE_SEARCHING);
     }
   }
 
@@ -194,11 +205,16 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     resourceLoader = loader;
     reload();
   }
-  
+
   private String getParam(String param, String defaultParam) {
     return param == null ? defaultParam : param;
   }
-  
+
+  /** Returns the boolean value of the param, or def if not set */
+  private boolean getParam(String param, boolean defaultParam) {
+    return param == null ? defaultParam : StrUtils.parseBool(param);
+  }
+
   /**
    * A simple class encapsulating the JSON data from openexchangerates.org
    */
@@ -229,7 +245,6 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
                 license = parser.getString();
               } else if(key.equals("timestamp")) {
                 parser.nextEvent();
-                timestamp = parser.getLong();
               } else if(key.equals("base")) {
                 parser.nextEvent();
                 baseCurrency = parser.getString();
@@ -252,7 +267,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
               log.warn("Expected key, got {}", JSONParser.getEventString(ev));
               break;
             }
-             
+
           case JSONParser.OBJECT_END:
           case JSONParser.OBJECT_START:
           case JSONParser.EOF:
@@ -265,6 +280,12 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
             break;
         }
       } while( ev != JSONParser.EOF);
+
+      // We set the timestamp based on the system time not the time from openexchangerates.com because
+      // in the method reloadIfExpired we will be comparing it to the system time. If we took the time
+      // from openexchangerates.com and there was a desynchronization (or some other error), we could
+      // be refreshing the exchange rates too often or too rarely.
+      timestamp = System.currentTimeMillis() / 1000;
     }
 
     public Map<String, Double> getRates() {
