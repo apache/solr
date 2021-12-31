@@ -65,7 +65,6 @@ public class OpenExchangeRatesOrgReloader extends AbstractSolrEventListener {
         if (fieldType.getProvider() instanceof OpenExchangeRatesOrgProvider) {
           OpenExchangeRatesOrgProvider provider = (OpenExchangeRatesOrgProvider) fieldType.getProvider();
           provider.reloadIfExpired();
-          log.info("Reloaded currency rates for field {}", field.getName());
         }
       }
     }

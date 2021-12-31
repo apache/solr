@@ -24,9 +24,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.noggit.JSONParser;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -109,9 +109,8 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     return target / source;
   }
 
-  @SuppressForbidden(reason = "Need currentTimeMillis, for comparison with stamp in an external file")
   public void reloadIfExpired() {
-    if ((rates.getTimestamp() + refreshIntervalSeconds) * 1000 < System.currentTimeMillis()) {
+    if ((rates.getTimestamp() + refreshIntervalSeconds) < TimeUnit.SECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS)) {
       log.debug("Refresh interval has expired. Refreshing exchange rates.");
       reload();
     }
@@ -285,7 +284,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
       // in the method reloadIfExpired we will be comparing it to the system time. If we took the time
       // from openexchangerates.com and there was a desynchronization (or some other error), we could
       // be refreshing the exchange rates too often or too rarely.
-      timestamp = System.currentTimeMillis() / 1000;
+      timestamp = TimeUnit.SECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS);
     }
 
     public Map<String, Double> getRates() {

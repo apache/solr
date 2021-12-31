@@ -17,11 +17,11 @@
 package org.apache.solr.schema;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Before;
 import org.junit.Test;
@@ -84,7 +84,6 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     assertEquals("USD", oerp.rates.getBaseCurrency());
   }
 
-  @SuppressForbidden(reason = "Needs currentTimeMillis to check if reload happens")
   @Test
   public void testReload() {
     // reminder: interval is in minutes
@@ -95,7 +94,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     // modify the timestamp to be "current", then fetch a rate and ensure no reload
     // (subtract one minute to be sure that it didn't change; if it was precisely the current timestamp,
     // it could stay the same even when reload happened because it takes less than a second to reload)
-    final long currentTimestamp = System.currentTimeMillis() / 1000 - 60;
+    final long currentTimestamp = TimeUnit.SECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS) - 60;
     oerp.rates.setTimestamp(currentTimestamp);
     assertEquals(81.29D, oerp.getExchangeRate("USD", "JPY"), 0.0D);    
     assertEquals(currentTimestamp, oerp.rates.getTimestamp());
@@ -110,7 +109,6 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     );
   }
 
-  @SuppressForbidden(reason = "Needs currentTimeMillis to check if reload happens")
   @Test
   public void testNoReloadWhenParameterIsFalse() {
     mockParams.put(OpenExchangeRatesOrgProvider.PARAM_REFRESH_INTERVAL, "100");
@@ -118,7 +116,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     oerp.init(mockParams);
     oerp.inform(loader);
 
-    long timestampBeforeTheRefreshInterval = System.currentTimeMillis() / 1000 - (101 * 60);
+    long timestampBeforeTheRefreshInterval = TimeUnit.SECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS) - (101 * 60);
     oerp.rates.setTimestamp(timestampBeforeTheRefreshInterval);
     assertEquals(81.29D, oerp.getExchangeRate("USD", "JPY"), 0.0D);
     assertEquals(timestampBeforeTheRefreshInterval, oerp.rates.getTimestamp());
