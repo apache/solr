@@ -650,6 +650,7 @@ groups:
       To make sure a new release is not announced before the reference guide is complete, add a new
       Blocker JIRA issue for version {{ release_version }} with subject
       "Complete Major changes and Upgrade Notes in RefGudie for {{ release_version }}".
+      Note that this does not block the RC and voting process, but will block announcing the release.
     types:
     - major
     - minor
@@ -1086,8 +1087,8 @@ groups:
       - major
       - minor
     description: |
-      Ensure that the reference Guide is updated for v {{ release_version }}. In particular, the sections "Solr Upgrade Notes"
-      and if applicable, also the "Major changes in Solr ..." section must be up to date for the latest release.
+      Ensure that the reference Guide is updated for {{ release_version }}. In particular, the sections "Solr Upgrade Notes"
+      and (if applicable) also the "Major changes in Solr ..." section must be up to date for the latest release.
       Check that the the Blocker JIRA issue created in the beginning of the release process is resolved.
   - !Todo
     id: build_final_ref_guide
