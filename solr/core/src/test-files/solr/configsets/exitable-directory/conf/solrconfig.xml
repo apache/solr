@@ -71,7 +71,7 @@
          <fieldValueCache
                 size="0"
                 autowarmCount="0"
-                showItems="0" />         
+                />
   </query>
   
   <searchComponent name="delayingSearchComponent"
