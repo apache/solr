@@ -179,6 +179,20 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15376: Accept "Long" values for CollectionAdminRequest.CreateTimeRoutedAlias.setMaxFutureMs
   to support durations greater than ~ 25 days. (Nahian-Al Hasan, Gus Heck, Christine Poerschke)
 
+* SOLR-15427: Nested docs: [child limit=...] now defaults to -1 which is interpreted as unlimited.
+  (David Smiley)
+  
+* SOLR-15786: Add the "films" example to SolrCLI via -e films parameter. (Eric Pugh)
+
+* SOLR-15834: Films example readme needs updating, including useParams support for multiple algorithms.  (Eric Pugh) 
+
+* SOLR-15824 Improved Query Screen handling of raw query parameters.  (Betul Ince via Tim Potter, Eric Pugh)
+
+* SOLR-15803: Compute concurrent replica assignment requests together, using the shared context to better distribute replicas. (Houston Putman)
+
+* SOLR-15213: Atomic updates: "add" now uses add-or-replace logic for child documents.  They can
+  also themselves be atomic updates.  (James Ashbourne, Endika Posadas via David Smiley)
+
 Build
 ---------------------
 
@@ -409,8 +423,17 @@ Other Changes
 
 * SOLR-15808: [Docker] The jattach tool is now installed with apt (janhoy)
 
+* SOLR-15809: Get rid of blacklist/whitelist terminology
+  JWTAuthPlugin parameter 'algWhitelist' is now 'algAllowlist'
+  Environment variables SOLR_IP_WHITELIST and SOLR_IP_BLACKLIST are no longer supported, but replaced with SOLR_IP_ALLOWLIST and SOLR_IP_DENYLIST.
+  (janhoy)
+
+* SOLR-15807: New LogListener class for tests to use to make assertions about what Log messages should or should not be produced by a test (hossman)
+
 Bug Fixes
 ---------------------
+* SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
+
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
 
@@ -432,20 +455,56 @@ Bug Fixes
 
 * SOLR-14781: Removed many unused classes that accumulated over the years. (Bence Szabo, David Smiley)
 
+* SOLR-15871: Update Log4J to 2.17 (weidongkl via janhoy)
+
+==================  8.11.2 ==================
+
+Bug Fixes
+---------------------
+* SOLR-15871: Update Log4J to 2.17 (weidongkl via janhoy)
+
 ==================  8.11.1 ==================
 
 Bug Fixes
 ---------------------
-* SOLR-15794: Switching a PRS collection from true -> false -> true results in INACTIVE replicas (noble)
-
 * SOLR-15635: Don't close hooks twice when SolrRequestInfo is cleared twice; or /export with classic join
   closed fromCore if provided (Mikhail Khludnev, David Smiley)
-  
+
 * SOLR-15795: Fix REPLACENODE to not use source node when choosing a target node for new replicas (Houston Putman)
 
 * SOLR-15804: Admin UI once again can show files in the Core/Collection -> Files screen. Fixed regression from 8.11.0 (Karl Stoney, janhoy)
 
+* SOLR-15768: Set default permissions for the zookeeper endpoints so users won't need to configure custom permissions for these (janhoy)
+
 * SOLR-15774: Avoid weird off-by-one errors with Angular's 'chosen' select box directive for the security and schema-designer screens in Admin UI (Timothy Potter)
+
+* SOLR-13900: Reset index values on authorization rules after deleting by index (Timothy Potter)
+
+* SOLR-15794: Switching a PRS collection from true -> false -> true results in INACTIVE replicas (noble)
+
+* SOLR-15813: Schema designer not handling `update.autoCreateFields` stored as a string (vs. boolean) in the config overlay (Timothy Potter)
+
+* SOLR-15825: Security UI 'hasPermission' check should check if the user has the "all" permission if the requested permission is not defined
+  to match how the backend works (Timothy Potter)
+
+* SOLR-15826: ResourceLoader should better respect allowed paths (janhoy)
+
+* SOLR-15828: AuthTool (in SolrCLI) should include the config-read, collection-admin-read, core-admin-read, and all permissions in the initial security.json
+  to avoid warnings in the security UI (Timothy Potter)
+
+* SOLR-15199: Pass thru all command actions not explicitly handled by the bin/solr script, such as 'api', to the SolrCLI Java app (Timothy Potter)
+
+* SOLR-15833: Enable exists queries on spatial types. (Mike Drob, Houston Putman)
+
+* SOLR-15832: Clean-up after publish action in Schema Designer shouldn't fail if .system collection doesn't exist (Timothy Potter)
+
+* SOLR-15844: Upgrade Velocity from v2.0 to v2.3 (wcmrnd1, janhoy)
+
+* SOLR-8319: Fix NPE in pivot facets, add non-Analyzed query method in FieldType. (Houston Putman, Isabelle Giguere)
+
+* SOLR-15843: Update Log4J to 2.16 (Mike Drob, janhoy)
+
+* SOLR-15324: Upgrade jaegertracing to 1.6.0 and libthrift to 0.14.1 (wcmrnd1, janhoy)
 
 ==================  8.11.0 ==================
 
@@ -633,8 +692,6 @@ Other Changes
 
 * SOLR-15486: During node shutdown pausing of updates and waiting for in-flight update requests to finish
   before closing cores is no longer SolrCloud specific. (Christine Poerschke, David Smiley)
-
-* SOLR-15324: Upgrade Jaeger dependency from 1.1.0 to 1.6.0 and thus also libthrift to 0.14.1 (janhoy)
 
 * SOLR-15599: woodstox-core-asl:4.4.1 (org.codehaus) replaced with woodstox-core:6.2.4 (com.fasterxml) (Houston Putman)
 
@@ -16243,7 +16300,7 @@ Other Changes
   in the migration of existing clients.  (yonik)
 
 * SOLR-3691: SimplePostTool: Mode for crawling/posting web pages
-  See https://lucene.apache.org/solr/guide/post-tool.html for examples (janhoy)
+  See https://solr.apache.org/guide/post-tool.html for examples (janhoy)
 
 * SOLR-3707: Upgrade Solr to Tika 1.2 (janhoy)
 
@@ -18337,7 +18394,7 @@ New Features
   Great Circle (haversine), Manhattan, Euclidean and String (using the
   StringDistance methods in the Lucene spellchecker).
   Also added geohash(), deg() and rad() convenience functions.
-  See https://lucene.apache.org/solr/guide/function-queries.html (gsingers)
+  See https://solr.apache.org/guide/function-queries.html (gsingers)
 
 * SOLR-1553: New dismax parser implementation (accessible as "edismax")
   that supports full lucene syntax, improved reserved char escaping,

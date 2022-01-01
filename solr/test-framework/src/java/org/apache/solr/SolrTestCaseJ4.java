@@ -2892,7 +2892,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     if (null != allowedAlg) {
       // the user has explicitly requested to bypass our assertions and allow a particular alg
-      // the only thing we should do is assert that the algorithm they have whitelisted is actaully used
+      // the only thing we should do is assert that the algorithm they have allowed is actually used
       
       
       final String actualAlg = (new SecureRandom()).getAlgorithm();
@@ -2913,10 +2913,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     
     assertFalse("SecureRandom algorithm '" + algorithm + "' is in use by your JVM, " +
                 "which is a potentially blocking algorithm on some environments. " +
-                "Please report the details of this failure (and your JVM vendor/version) to solr-user@lucene.apache.org. " +
+                "Please report the details of this failure (and your JVM vendor/version) to users@solr.apache.org. " +
                 "You can try to run your tests with -D"+EGD+"="+URANDOM+" or bypass this check using " +
                 "-Dtest.solr.allowed.securerandom="+ algorithm +" as a JVM option when running tests.",
-                // be permissive in our checks and blacklist only algorithms 
+                // be permissive in our checks and deny only algorithms
                 // that are known to be blocking under some circumstances
                 algorithm.equals("NativePRNG") || algorithm.equals("NativePRNGBlocking"));
   }

@@ -521,7 +521,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       // silly stuff included from solrconfig.snippet.randomindexconfig.xml
       System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(100000));
       
-      // If we want to run with whitelist list, this must be explicitly set to true for the test
+      // If we want to run with allowlist, this must be explicitly set to true for the test
       // otherwise we disable the check
       if (System.getProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST) == null) {
         systemSetPropertySolrDisableUrlAllowList("true");
@@ -593,20 +593,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       return getShardsParam(slist);
     }
     
-    public String getWhitelistString() {
-      StringBuilder sb = new StringBuilder();
-      boolean first = true;
-      for (SolrInstance instance : slist) {
-        if (first) {
-          first = false;
-        } else {
-          sb.append(',');
-        }
-        sb.append( instance.getBaseURL().replace("/solr", ""));
-      }
-      return sb.toString();
-    }
-
     public List<SolrClient> getSolrJs() {
       List<SolrClient> solrjs = new ArrayList<>(slist.size());
       for (SolrInstance instance : slist) {

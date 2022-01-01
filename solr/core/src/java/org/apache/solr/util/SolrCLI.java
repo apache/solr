@@ -274,8 +274,14 @@ public class SolrCLI implements CLIO {
 
     SSLConfigurationsFactory.current().init();
 
-    Tool tool = findTool(args);
-    CommandLine cli = parseCmdLine(args, tool.getOptions());
+    Tool tool = null;
+    try {
+      tool = findTool(args);
+    } catch (IllegalArgumentException iae) {
+      CLIO.err(iae.getMessage());
+      System.exit(1);
+    }
+    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
     System.exit(tool.runTool(cli));
   }
 
@@ -284,7 +290,15 @@ public class SolrCLI implements CLIO {
     return newTool(toolType);
   }
 
+  /**
+   * @deprecated Use the method that takes a tool name as the first argument instead.
+   */
+  @Deprecated
   public static CommandLine parseCmdLine(String[] args, Option[] toolOptions) throws Exception {
+    return parseCmdLine(SolrCLI.class.getName(), args, toolOptions);
+  }
+
+  public static CommandLine parseCmdLine(String toolName, String[] args, Option[] toolOptions) throws Exception {
     // the parser doesn't like -D props
     List<String> toolArgList = new ArrayList<String>();
     List<String> dashDList = new ArrayList<String>();
@@ -300,7 +314,7 @@ public class SolrCLI implements CLIO {
 
     // process command-line args to configure this application
     CommandLine cli =
-        processCommandLineArgs(joinCommonAndToolOptions(toolOptions), toolArgs);
+        processCommandLineArgs(toolName, joinCommonAndToolOptions(toolOptions), toolArgs);
 
     List<String> argList = cli.getArgList();
     argList.addAll(dashDList);
@@ -400,7 +414,7 @@ public class SolrCLI implements CLIO {
         return tool;
     }
 
-    throw new IllegalArgumentException(toolType + " not supported!");
+    throw new IllegalArgumentException(toolType + " is not a valid command!");
   }
 
   private static void displayToolOptions() throws Exception {
@@ -459,11 +473,18 @@ public class SolrCLI implements CLIO {
     return options.toArray(new Option[0]);
   }
 
+  /**
+   * @deprecated Use the method that takes a tool name as the first argument instead.
+   */
+  @Deprecated
+  public static CommandLine processCommandLineArgs(Option[] customOptions, String[] args) {
+    return processCommandLineArgs(SolrCLI.class.getName(), customOptions, args);
+  }
 
   /**
    * Parses the command-line arguments passed by the user.
    */
-  public static CommandLine processCommandLineArgs(Option[] customOptions, String[] args) {
+  public static CommandLine processCommandLineArgs(String toolName, Option[] customOptions, String[] args) {
     Options options = new Options();
 
     options.addOption("help", false, "Print this message");
@@ -492,13 +513,13 @@ public class SolrCLI implements CLIO {
             + exp.getMessage());
       }
       HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp(SolrCLI.class.getName(), options);
+      formatter.printHelp(toolName, options);
       exit(1);
     }
 
     if (cli.hasOption("help")) {
       HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp(SolrCLI.class.getName(), options);
+      formatter.printHelp(toolName, options);
       exit(0);
     }
 
@@ -995,7 +1016,7 @@ public class SolrCLI implements CLIO {
           Option.builder("get")
               .argName("URL")
               .hasArg()
-              .required(false)
+              .required(true)
               .desc("Send a GET request to a Solr API endpoint.")
               .build()
       };
@@ -2635,7 +2656,7 @@ public class SolrCLI implements CLIO {
               .argName("NAME")
               .hasArg()
               .required(true)
-              .desc("Name of the example to launch, one of: cloud, techproducts, schemaless.")
+              .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
               .longOpt("example")
               .build(),
           Option.builder("script")
@@ -2752,11 +2773,11 @@ public class SolrCLI implements CLIO {
       String exampleType = cli.getOptionValue("example");
       if ("cloud".equals(exampleType)) {
         runCloudExample(cli);
-      } else if ("techproducts".equals(exampleType) || "schemaless".equals(exampleType)) {
+      } else if ("techproducts".equals(exampleType) || "schemaless".equals(exampleType) || "films".equals(exampleType)) {
         runExample(cli, exampleType);
       } else {
         throw new IllegalArgumentException("Unsupported example "+exampleType+
-            "! Please choose one of: cloud, schemaless, or techproducts");
+            "! Please choose one of: cloud, schemaless, techproducts, or films");
       }
     }
 
@@ -2807,7 +2828,7 @@ public class SolrCLI implements CLIO {
         };
         CreateTool createTool = new CreateTool(stdout);
         int createCode =
-            createTool.runTool(processCommandLineArgs(joinCommonAndToolOptions(createTool.getOptions()), createArgs));
+            createTool.runTool(processCommandLineArgs(createTool.getName(), joinCommonAndToolOptions(createTool.getOptions()), createArgs));
         if (createCode != 0)
           throw new Exception("Failed to create "+collectionName+" using command: "+ Arrays.asList(createArgs));
       }
@@ -2838,8 +2859,63 @@ public class SolrCLI implements CLIO {
           echo("exampledocs directory not found, skipping indexing step for the techproducts example");
         }
       }
+      else if ("films".equals(exampleName) && !alreadyExists) {
+        HttpSolrClient solrClient = new HttpSolrClient.Builder(solrUrl).build();
 
-      echo("\nSolr "+exampleName+" example launched successfully. Direct your Web browser to "+solrUrl+" to visit the Solr Admin UI");
+        echo("Adding name and initial_release_data fields to films schema \"_default\"");
+        try {
+          SolrCLI.postJsonToSolr(solrClient, "/" + collectionName + "/schema", "{\n" +
+                  "        \"add-field\" : {\n" +
+                  "          \"name\":\"name\",\n" +
+                  "          \"type\":\"text_general\",\n" +
+                  "          \"multiValued\":false,\n" +
+                  "          \"stored\":true\n" +
+                  "        },\n" +
+                  "        \"add-field\" : {\n" +
+                  "          \"name\":\"initial_release_date\",\n" +
+                  "          \"type\":\"pdate\",\n" +
+                  "          \"stored\":true\n" +
+                  "        }\n" +
+                  "      }");
+        } catch (Exception ex) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
+        }
+
+        echo("Adding paramsets \"algo\" and \"algo_b\" to films configuration for relevancy tuning");
+        try {
+          SolrCLI.postJsonToSolr(solrClient, "/" + collectionName + "/config/params", "{\n" +
+                  "        \"set\": {\n" +
+                  "        \"algo_a\":{\n" +
+                  "               \"defType\":\"dismax\",\n" +
+                  "               \"qf\":\"name\"\n" +
+                  "             }\n" +
+                  "           },\n" +
+                  "           \"set\": {\n" +
+                  "             \"algo_b\":{\n" +
+                  "               \"defType\":\"dismax\",\n" +
+                  "               \"qf\":\"name\",\n" +
+                  "               \"mm\":\"100%\"\n" +
+                  "             }\n" +
+                  "            }\n" +
+                  "        }\n");
+        } catch (Exception ex) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
+        }
+
+        File filmsJsonFile = new File(exampleDir, "films/films.json");
+        String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
+        echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
+        String currentPropVal = System.getProperty("url");
+        System.setProperty("url", updateUrl);
+        SimplePostTool.main(new String[] {filmsJsonFile.getAbsolutePath()});
+        if (currentPropVal != null) {
+          System.setProperty("url", currentPropVal); // reset
+        } else {
+          System.clearProperty("url");
+        }
+      }
+
+        echo("\nSolr "+exampleName+" example launched successfully. Direct your Web browser to "+solrUrl+" to visit the Solr Admin UI");
     }
 
     protected void runCloudExample(CommandLine cli) throws Exception {
@@ -2945,7 +3021,7 @@ public class SolrCLI implements CLIO {
 
       // let's not fail if we get this far ... just report error and finish up
       try {
-        configTool.runTool(processCommandLineArgs(joinCommonAndToolOptions(configTool.getOptions()), configArgs));
+        configTool.runTool(processCommandLineArgs(configTool.getName(), joinCommonAndToolOptions(configTool.getOptions()), configArgs));
       } catch (Exception exc) {
         CLIO.err("Failed to update '"+propName+"' property due to: "+exc);
       }
@@ -3203,7 +3279,7 @@ public class SolrCLI implements CLIO {
       CreateCollectionTool createCollectionTool = new CreateCollectionTool(stdout);
       int createCode =
           createCollectionTool.runTool(
-              processCommandLineArgs(joinCommonAndToolOptions(createCollectionTool.getOptions()), createArgs));
+              processCommandLineArgs(createCollectionTool.getName(), joinCommonAndToolOptions(createCollectionTool.getOptions()), createArgs));
 
       if (createCode != 0)
         throw new Exception("Failed to create collection using command: "+ Arrays.asList(createArgs));
@@ -3995,8 +4071,12 @@ public class SolrCLI implements CLIO {
               "\n {\"name\":\"security-edit\", \"role\":\"admin\"}," +
               "\n {\"name\":\"security-read\", \"role\":\"admin\"}," +
               "\n {\"name\":\"config-edit\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"config-read\", \"role\":\"admin\"}," +
               "\n {\"name\":\"collection-admin-edit\", \"role\":\"admin\"}," +
-              "\n {\"name\":\"core-admin-edit\", \"role\":\"admin\"}" +
+              "\n {\"name\":\"collection-admin-read\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"core-admin-edit\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"core-admin-read\", \"role\":\"admin\"}," +
+              "\n {\"name\":\"all\", \"role\":\"admin\"}" +
               "\n   ]," +
               "\n   \"user-role\":{\"" + username + "\":\"admin\"}" +
               "\n  }" +

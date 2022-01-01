@@ -80,6 +80,9 @@ All the usages are replaced by BaseHttpSolrClient.RemoteSolrException and BaseHt
 
 * SOLR-15409: Zookeeper client libraries upgraded to 3.7.0, which may not be compatible with your existing server installations
 
+* SOLR-15809: Get rid of blacklist/whitelist terminology. JWTAuthPlugin parameter `algWhitelist` is now `algAllowlist`. The old parameter will still
+  work in 9.x. Environment variables `SOLR_IP_WHITELIST` and `SOLR_IP_BLACKLIST` are no longer supported, but replaced with `SOLR_IP_ALLOWLIST` and `SOLR_IP_DENYLIST`.
+
 * SOLR-11623: Every request handler in Solr now implements PermissionNameProvider. Any custom or 3rd party request handler must also do this
 
 

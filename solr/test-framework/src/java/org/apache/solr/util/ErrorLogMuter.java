@@ -152,6 +152,8 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
    */
   @SuppressForbidden(reason="We need to use log4J2 classes directly to check that the ErrorLogMuter is working")
   private static final class StringPredicateErrorOrThrowableFilter extends AbstractFilter implements CountingFilter {
+    // TODO: could probably refactor to share some code with LogListener
+    
     // This could probably be implemented with a combination of "LevelRangeFilter" and "ConjunctionFilter" if "ConjunctionFilter" existed
     // Since it doesn't, we write our own more specialized impl instead of writing & combining multiple generalized versions
 
