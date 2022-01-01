@@ -35,11 +35,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 
 import static org.apache.solr.common.params.CommonParams.ID;
