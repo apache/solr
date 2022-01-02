@@ -219,7 +219,7 @@
    <dynamicField name="*_ds" type="pdouble" indexed="true"  stored="true"  multiValued="true"/>
 
    <dynamicField name="*_dt"  type="pdate"    indexed="true"  stored="true"/>
-   <dynamicField name="*_dts" type="pdate"    indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_dts" type="pdates"   indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_p"  type="location" indexed="true" stored="true"/>
 
    <dynamicField name="*_c"   type="currency" indexed="true"  stored="true"/>
