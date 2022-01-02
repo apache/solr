@@ -735,7 +735,7 @@
 
   <!-- Request Handlers
 
-       https://lucene.apache.org/solr/guide/requesthandlers-and-searchcomponents-in-solrconfig.html
+       https://solr.apache.org/guide/requesthandlers-and-searchcomponents-in-solrconfig.html
 
        Incoming queries will be dispatched to a specific handler by name based on the path specified in the request.
 
@@ -778,7 +778,7 @@
        The spell check component can return a list of alternative spelling
        suggestions.
 
-       https://lucene.apache.org/solr/guide/spell-checking.html
+       https://solr.apache.org/guide/spell-checking.html
     -->
   <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
 
@@ -835,7 +835,7 @@
        IN OTHER WORDS, THERE IS REALLY GOOD CHANCE THE SETUP BELOW IS
        NOT WHAT YOU WANT FOR YOUR PRODUCTION SYSTEM!
 
-       See https://lucene.apache.org/solr/guide/spell-checking.html for details
+       See https://solr.apache.org/guide/spell-checking.html for details
        on the request parameters.
     -->
   <requestHandler name="/spell" class="solr.SearchHandler" startup="lazy">
@@ -862,7 +862,7 @@
 
   <!-- Highlighting Component
 
-       https://lucene.apache.org/solr/guide/highlighting.html
+       https://solr.apache.org/guide/highlighting.html
     -->
   <searchComponent class="solr.HighlightComponent" name="highlight">
     <highlighting>
@@ -967,7 +967,7 @@
   </searchComponent>
 
   <!-- Update Request Processors
-       https://lucene.apache.org/solr/guide/update-request-processors.html
+       https://solr.apache.org/guide/update-request-processors.html
 
        Chains or individual Update Request Processor Factories can be declared and referenced
        to preprocess documents sent to Update Request Handlers.
@@ -986,7 +986,7 @@
        declaring schemaFactory as ManagedIndexSchemaFactory, with
        mutable specified as true.
 
-       See https://lucene.apache.org/solr/guide/schemaless-mode.html for further explanation.
+       See https://solr.apache.org/guide/schemaless-mode.html for further explanation.
 
     -->
   <updateProcessor class="solr.UUIDUpdateProcessorFactory" name="uuid"/>
@@ -1108,7 +1108,7 @@
 
   <!-- Query Parsers
 
-       https://lucene.apache.org/solr/guide/query-syntax-and-parsing.html
+       https://solr.apache.org/guide/query-syntax-and-parsing.html
 
        Multiple QParserPlugins can be registered by name, and then
        used in either the "defType" param for the QueryComponent (used

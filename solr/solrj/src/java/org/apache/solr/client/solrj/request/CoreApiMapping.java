@@ -18,20 +18,16 @@
 package org.apache.solr.client.solrj.request;
 
 
-import java.util.Collections;
-import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.ApiMapping.CommandMeta;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 
+import java.util.Collections;
+import java.util.Map;
+
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.CORES_COMMANDS;
-import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.CORES_STATUS;
-import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.NODEAPIS;
-import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.NODEINVOKE;
-import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.PER_CORE_COMMANDS;
+import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.*;
 
 /** stores the mapping of v1 API parameters to v2 API parameters
  * for core admin API
@@ -39,10 +35,8 @@ import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.PER_C
  */
 public class CoreApiMapping {
   public enum Meta implements CommandMeta {
-    CREATE(CORES_COMMANDS, POST, CoreAdminAction.CREATE, "create", Collections.singletonMap("config", "configSet")),
     UNLOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.UNLOAD, "unload", null),
     RELOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.RELOAD, "reload", null),
-    STATUS(CORES_STATUS, GET, CoreAdminAction.STATUS, "status", null),
     SWAP(PER_CORE_COMMANDS, POST, CoreAdminAction.SWAP, "swap", Collections.singletonMap("other", "with")),
     RENAME(PER_CORE_COMMANDS, POST, CoreAdminAction.RENAME, "rename", Collections.singletonMap("other", "to")),
     MERGEINDEXES(PER_CORE_COMMANDS, POST, CoreAdminAction.MERGEINDEXES, "merge-indexes", null),
@@ -52,10 +46,7 @@ public class CoreApiMapping {
     REQUESTSYNCSHARD(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTSYNCSHARD, "request-sync-shard", null),
     REQUESTBUFFERUPDATES(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTBUFFERUPDATES, "request-buffer-updates", null),
     REQUESTAPPLYUPDATES(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTAPPLYUPDATES, "request-apply-updates", null),
-    REQUESTSTATUS(PER_CORE_COMMANDS, GET, CoreAdminAction.REQUESTSTATUS, "request-status", null),/*TODO*/
-    OVERSEEROP(NODEAPIS, POST, CoreAdminAction.OVERSEEROP, "overseer-op", null),
-    REJOINLEADERELECTION(NODEAPIS, POST, CoreAdminAction.REJOINLEADERELECTION, "rejoin-leader-election", null),
-    INVOKE(NODEINVOKE, GET, CoreAdminAction.INVOKE,"invoke",  null);
+    REQUESTSTATUS(PER_CORE_COMMANDS, GET, CoreAdminAction.REQUESTSTATUS, "request-status", null)/*TODO*/;
 
     public final String commandName;
     public final EndPoint endPoint;
@@ -91,16 +82,10 @@ public class CoreApiMapping {
     public String getParamSubstitute(String param) {
       return paramstoAttr.containsKey(param) ? paramstoAttr.get(param) : param;
     }
-
-
   }
 
   public enum EndPoint implements ApiMapping.V2EndPoint {
-    CORES_STATUS("cores.Status"),
-    CORES_COMMANDS("cores.Commands"),
-    PER_CORE_COMMANDS("cores.core.Commands"),
-    NODEINVOKE("node.invoke"),
-    NODEAPIS("node.Commands");
+    PER_CORE_COMMANDS("cores.core.Commands");
 
     final String specName;
 

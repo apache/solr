@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/basic-authentication-plugin.html",
+  "documentation": "https://solr.apache.org/guide/basic-authentication-plugin.html",
   "description": "Modifies the configuration of Basic authentication, allowing you to add or remove users and their passwords.",
   "methods": [
     "POST"
