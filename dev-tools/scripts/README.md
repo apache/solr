@@ -94,15 +94,16 @@ of the other tools in this folder.
 
 ### addVersion.py
 
-    usage: addVersion.py [-h] version
+    usage: addVersion.py [-h] [-l LUCENE_VERSION] version
     
-    Add a new version to CHANGES, SolrVersion.java, build.gradle and solrconfig.xml files
+    Add a new version to CHANGES, to Version.java, build.gradle and solrconfig.xml files
     
     positional arguments:
-      version
+      version            New Solr version
     
     optional arguments:
-      -h, --help  show this help message and exit
+      -h, --help         show this help message and exit
+      -l LUCENE_VERSION  Optional lucene version. By default will read versions.props
 
 ### releasedJirasRegex.py
 
