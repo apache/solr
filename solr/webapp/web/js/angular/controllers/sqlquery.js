@@ -39,7 +39,7 @@ solrAdminApp.controller('SQLQueryController',
 
       var stmt = $scope.stmt
 
-      if(!stmt.toLowerCase().includes(' limit ')) {
+      if(!stmt.toLowerCase().replace(/(\r\n|\n|\r)/gm," ").includes(' limit ')) {
         params.stmt = [stmt + " limit 10"]
       } else {
         params.stmt = [$scope.stmt]
