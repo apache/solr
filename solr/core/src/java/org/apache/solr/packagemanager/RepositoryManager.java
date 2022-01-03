@@ -53,7 +53,6 @@ import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.util.SolrCLI;
-import org.apache.solr.util.SolrVersion;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
