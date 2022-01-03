@@ -80,8 +80,6 @@ public class ClusterAPI {
     this.configSetsHandler = configSetsHandler;
   }
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   @EndPoint(method = GET,
           path = "/cluster/node-roles",
           permission = COLL_READ_PERM)
@@ -152,7 +150,7 @@ public class ClusterAPI {
      Map<String, Object> roleModesSupportedMap = new HashMap<>();
     for (NodeRoles.Role role: NodeRoles.Role.values()) {
       roleModesSupportedMap.put(role.toString(),
-              Map.of("modes", (role.supportedModes()).stream().map(NodeRoles.Mode::toString).collect(Collectors.toList())));
+              Map.of("modes", role.supportedModes().stream().map(NodeRoles.Mode::toString).collect(Collectors.toList())));
     }
     rsp.add("supported-roles", roleModesSupportedMap);
   }
