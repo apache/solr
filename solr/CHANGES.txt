@@ -187,6 +187,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15803: Compute concurrent replica assignment requests together, using the shared context to better distribute replicas. (Houston Putman)
 
+* SOLR-15213: Atomic updates: "add" now uses add-or-replace logic for child documents.  They can
+  also themselves be atomic updates.  (James Ashbourne, Endika Posadas via David Smiley)
+
 Build
 ---------------------
 
@@ -450,6 +453,14 @@ Bug Fixes
 * SOLR-15783: Prevent Logging MDC values from leaking between request threads, and set 'trace_id' in MDC as soon as it's available (hossman)
 
 * SOLR-14781: Removed many unused classes that accumulated over the years. (Bence Szabo, David Smiley)
+
+* SOLR-15871: Update Log4J to 2.17 (weidongkl via janhoy)
+
+==================  8.11.2 ==================
+
+Bug Fixes
+---------------------
+* SOLR-15871: Update Log4J to 2.17 (weidongkl via janhoy)
 
 ==================  8.11.1 ==================
 
