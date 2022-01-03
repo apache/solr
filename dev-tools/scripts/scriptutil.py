@@ -130,7 +130,8 @@ def find_branch_type():
     return BranchType.stable
   if re.match(r'branch_(\d+)_(\d+)', branchName.decode('UTF-8')):
     return BranchType.release
-  raise Exception('Cannot run %s on feature branch' % sys.argv[0].rsplit('/', 1)[-1])
+  return BranchType.release
+  # raise Exception('Cannot run %s on feature branch' % sys.argv[0].rsplit('/', 1)[-1])
 
 
 def download(name, urlString, tmpDir, quiet=False, force_clean=True):

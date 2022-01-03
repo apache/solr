@@ -64,34 +64,23 @@ def update_build_version(new_version):
   def edit(buffer, match, line):
     if new_version.dot in line:
       return None
-    buffer.append('  baseVersion = \'' + new_version.dot + '\'\n')
+    buffer.append('  String baseVersion = \'' + new_version.dot + '\'\n')
     return True 
 
-  changed = update_file(filename, scriptutil.version_prop_re, edit)
+  changed = update_file(filename, version_prop_re, edit)
   print('done' if changed else 'uptodate')
 
-def update_latest_constant(new_version):
-  print('  changing SolrVersion.LATEST to %s...' % new_version.constant, end='', flush=True)
-  filename = 'solr/core/src/java/org/apache/solr/util/SolrVersion.java'
-  matcher = re.compile('public static final SolrVersion LATEST')
-  def edit(buffer, match, line):
-    if new_version.constant in line:
-      return None
-    buffer.append(line.rpartition('=')[0] + ('= %s;\n' % new_version.constant))
-    return True
-
-  changed = update_file(filename, matcher, edit)
-  print('done' if changed else 'uptodate')
 
 def onerror(x):
   raise x
 
 def update_example_solrconfigs(new_version):
-  print('  updating example solrconfig.xml files')
-  matcher = re.compile('<luceneMatchVersion>')
+  print('  updating example solrconfig.xml files with version %s' % new_version)
+  matcher = re.compile('<luceneMatchVersion>(.*?)</luceneMatchVersion>')
 
-  paths = ['solr/server/solr/configsets', 'solr/example', 'solr/core/src/test-files/solr/configsets/_default']
+  paths = ['solr/server/solr/configsets', 'solr/example']
   for path in paths:
+    print("   Patching configset folder %s" % path)
     if not os.path.isdir(path):
       raise RuntimeError("Can't locate configset dir (layout change?) : " + path)
     for root,dirs,files in os.walk(path, onerror=onerror):
@@ -104,7 +93,7 @@ def update_solrconfig(filename, matcher, new_version):
   def edit(buffer, match, line):
     if new_version.dot in line:
       return None
-    match = new_version.previous_dot_matcher.search(line)
+    match = matcher.search(line)
     if match is None:
       return False
     buffer.append(line.replace(match.group(1), new_version.dot))
@@ -125,8 +114,12 @@ def check_lucene_match_version_tests():
 
 def read_config(current_version):
   parser = argparse.ArgumentParser(description='Add a new version to CHANGES, to Version.java, build.gradle and solrconfig.xml files')
-  parser.add_argument('version', type=Version.parse)
+  parser.add_argument('version', type=Version.parse, help='New Solr version')
+  parser.add_argument('-l', '--lucene_version', dest='lucene_version', type=Version.parse, help='Optional lucene version if different from Solr')
   newconf = parser.parse_args()
+  if not newconf.lucene_version:
+    print('Using same lucene_version as Solr version')
+    newconf.lucene_version = newconf.version
 
   newconf.branch_type = find_branch_type()
   newconf.is_latest_version = newconf.version.on_or_after(current_version)
@@ -164,20 +157,16 @@ def main():
   latest_or_backcompat = newconf.is_latest_version or current_version.is_back_compat_with(newconf.version)
   if latest_or_backcompat:
     update_solrversion_class(newconf.version)
-    print('\nSolr does not yet have a Version class, see SOLR-15845')
   else:
     print('\nNot adding constant for version %s because it is no longer supported' % newconf.version)
 
   if newconf.is_latest_version:
     print('\nUpdating latest version')
     update_build_version(newconf.version)
-    update_latest_constant(newconf.version)
-    update_example_solrconfigs(newconf.version)
+    update_example_solrconfigs(newconf.lucene_version)
 
   if newconf.version.is_major_release():
-    print('\nTODO: ')
-    print('  - Move backcompat oldIndexes to unsupportedIndexes in TestBackwardsCompatibility')
-    print('  - Update IndexFormatTooOldException throw cases')
+    print('\nNo tests to run for major release')
   elif latest_or_backcompat:
     print('\nTesting changes')
     check_solr_version_class_tests()
