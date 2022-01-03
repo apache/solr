@@ -112,14 +112,14 @@ def check_lucene_match_version_tests():
   run('./gradlew -p solr/core test --tests TestLuceneMatchVersion')
   print('ok')
 
-def read_config(current_version):
+def read_config(current_version, current_lucene_version):
   parser = argparse.ArgumentParser(description='Add a new version to CHANGES, to Version.java, build.gradle and solrconfig.xml files')
   parser.add_argument('version', type=Version.parse, help='New Solr version')
-  parser.add_argument('-l', '--lucene_version', dest='lucene_version', type=Version.parse, help='Optional lucene version if different from Solr')
+  parser.add_argument('-l', dest='lucene_version', type=Version.parse, help='Optional lucene version. By default will read versions.props')
   newconf = parser.parse_args()
   if not newconf.lucene_version:
-    print('Using same lucene_version as Solr version')
-    newconf.lucene_version = newconf.version
+    newconf.lucene_version = current_lucene_version
+  print('Using lucene_version %s' % current_lucene_version)
 
   newconf.branch_type = find_branch_type()
   newconf.is_latest_version = newconf.version.on_or_after(current_version)
@@ -146,7 +146,8 @@ def main():
   if not os.path.exists('build.gradle'):
     sys.exit("Tool must be run from the root of a source checkout.")
   current_version = Version.parse(find_current_version())
-  newconf = read_config(current_version)
+  current_lucene_version = Version.parse(find_current_lucene_version())
+  newconf = read_config(current_version, current_lucene_version)
   is_bugfix = newconf.version.is_bugfix_release()
 
   print('\nAdding new version %s' % newconf.version)
