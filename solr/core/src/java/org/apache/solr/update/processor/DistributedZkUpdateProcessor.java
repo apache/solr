@@ -111,8 +111,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
                                       SolrQueryResponse rsp, UpdateRequestProcessor next) {
     super(req, rsp, next);
-    CoreContainer cc = req.getCore().getCoreContainer();
-    cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
+    CoreContainer cc = req.getCoreContainer();
+    cloudDesc = req.getCloudDescriptor();
     zkController = cc.getZkController();
     distributedClusterStateUpdater = zkController.getDistributedClusterStateUpdater();
     cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
@@ -149,7 +149,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   @Override
   protected Replica.Type computeReplicaType() {
     // can't use cloudDesc since this is called by super class, before the constructor instantiates cloudDesc.
-    return req.getCore().getCoreDescriptor().getCloudDescriptor().getReplicaType();
+    return req.getCloudDescriptor().getReplicaType();
   }
 
   @Override
@@ -757,7 +757,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // a batch we need to use the _same_ leader replication tracker.
     if (isLeader && leaderReplicationTracker == null) {
       leaderReplicationTracker = new LeaderRequestReplicationTracker(
-          req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId());
+          req.getCloudDescriptor().getShardId());
     }
   }
 
@@ -1246,7 +1246,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // Streaming updates can delay shutdown and cause big update reorderings (new streams can't be
     // initiated, but existing streams carry on).  This is why we check if the CC is shutdown.
     // See SOLR-8203 and loop HdfsChaosMonkeyNothingIsSafeTest (and check for inconsistent shards) to test.
-    if (req.getCore().getCoreContainer().isShutDown()) {
+    if (req.getCoreContainer().isShutDown()) {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is shutting down.");
     }
 

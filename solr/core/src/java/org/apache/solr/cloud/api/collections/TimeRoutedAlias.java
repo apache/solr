@@ -370,8 +370,7 @@ public class TimeRoutedAlias extends RoutedAlias {
       startTime = Instant.parse(start);
     } catch (DateTimeParseException e) {
       startTime = DateMathParser.parseMath(new Date(), start).toInstant();
-      SolrCore core = cmd.getReq().getCore();
-      ZkStateReader zkStateReader = core.getCoreContainer().getZkController().zkStateReader;
+      ZkStateReader zkStateReader = cmd.getReq().getCoreContainer().getZkController().zkStateReader;
       Aliases aliases = zkStateReader.getAliases();
       Map<String, String> props = new HashMap<>(aliases.getCollectionAliasProperties(aliasName));
       start = DateTimeFormatter.ISO_INSTANT.format(startTime);
@@ -381,7 +380,7 @@ public class TimeRoutedAlias extends RoutedAlias {
       // should all be identical and who wins won't matter (baring cases of Date Math involving seconds,
       // which is pretty far fetched). Putting this in a separate thread to ensure that any failed
       // races don't cause documents to get rejected.
-      core.runAsync(() -> zkStateReader.aliasesManager.applyModificationAndExportToZk(
+      cmd.getReq().runAsync(() -> zkStateReader.aliasesManager.applyModificationAndExportToZk(
           (a) -> aliases.cloneWithCollectionAliasProperties(aliasName, props)));
 
     }
@@ -449,7 +448,7 @@ public class TimeRoutedAlias extends RoutedAlias {
   @Override
   public CandidateCollection findCandidateGivenValue(AddUpdateCommand cmd) {
     Object value = cmd.getSolrInputDocument().getFieldValue(getRouteField());
-    ZkStateReader zkStateReader = cmd.getReq().getCore().getCoreContainer().getZkController().zkStateReader;
+    ZkStateReader zkStateReader = cmd.getReq().getCoreContainer().getZkController().zkStateReader;
     String printableId = cmd.getPrintableId();
     updateParsedCollectionAliases(zkStateReader, true);
 

@@ -239,7 +239,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   public ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
-    CoreContainer cc = req.getCore().getCoreContainer();
+    CoreContainer cc = req.getCoreContainer();
     boolean isZkAware = cc.isZooKeeperAware();
     rb.isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
     if (!rb.isDistrib) {
@@ -577,7 +577,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   private static String generateRid(SolrQueryRequest req) {
-    String hostName = req.getCore().getCoreContainer().getHostName();
+    String hostName = req.getCoreContainer().getHostName();
     return hostName + "-" + ridCounter.getAndIncrement();
   }
 

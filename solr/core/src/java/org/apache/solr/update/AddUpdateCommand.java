@@ -88,9 +88,9 @@ public class AddUpdateCommand extends UpdateCommand {
         route = null;
       } else {
         // use route but there's one last exclusion: It's incompatible with SolrCloud implicit router.
-        String collectionName = req.getCore().getCoreDescriptor().getCollectionName();
+        String collectionName = req.getCloudDescriptor().getCollectionName();
         if (collectionName != null) {
-          DocRouter router = req.getCore().getCoreContainer().getZkController().getClusterState()
+          DocRouter router = req.getCoreContainer().getZkController().getClusterState()
               .getCollection(collectionName).getRouter();
           if (router instanceof ImplicitDocRouter) {
             route = null;

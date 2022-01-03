@@ -322,9 +322,7 @@ public abstract class RoutedAlias {
    */
   private String createAllRequiredCollections(AddUpdateCommand cmd, CandidateCollection targetCollectionDesc) {
 
-    SolrQueryRequest req = cmd.getReq();
-    SolrCore core = req.getCore();
-    CoreContainer coreContainer = core.getCoreContainer();
+    CoreContainer coreContainer = cmd.getReq().getCoreContainer();
     do {
       switch (targetCollectionDesc.getCreationType()) {
         case NONE:
@@ -333,7 +331,7 @@ public abstract class RoutedAlias {
           targetCollectionDesc = doSynchronous( cmd, targetCollectionDesc, coreContainer);
           break;
         case ASYNC_PREEMPTIVE:
-          return doPreemptive(targetCollectionDesc, core, coreContainer);
+          return doPreemptive(targetCollectionDesc, cmd.getReq(), coreContainer);
         default:
           throw unknownCreateType();
       }
@@ -354,7 +352,7 @@ public abstract class RoutedAlias {
     return targetCollectionDesc;
   }
 
-  private String doPreemptive(CandidateCollection targetCollectionDesc, SolrCore core, CoreContainer coreContainer) {
+  private String doPreemptive(CandidateCollection targetCollectionDesc, SolrQueryRequest req, CoreContainer coreContainer) {
 
     if (!this.preemptiveCreateOnceAlready) {
       preemptiveAsync(() -> {
@@ -363,7 +361,7 @@ public abstract class RoutedAlias {
         } catch (Exception e) {
           log.error("Async creation of a collection for routed Alias {} failed!", this.getAliasName(), e);
         }
-      }, core);
+      }, req);
     }
     return targetCollectionDesc.destinationCollection;
   }
@@ -375,9 +373,9 @@ public abstract class RoutedAlias {
    */
   abstract protected String getHeadCollectionIfOrdered(AddUpdateCommand cmd);
 
-  private void preemptiveAsync(Runnable r, SolrCore core) {
+  private void preemptiveAsync(Runnable r, SolrQueryRequest req) {
     preemptiveCreateOnceAlready = true;
-    core.runAsync(r);
+    req.runAsync(r);
   }
 
   private SolrException unknownCreateType() {

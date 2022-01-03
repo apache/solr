@@ -132,7 +132,7 @@ public abstract class TaskManagementHandler extends RequestHandlerBase implement
 
     public static ResponseBuilder buildResponseBuilder(SolrQueryRequest req, SolrQueryResponse rsp,
                                                        List<SearchComponent> components) {
-        CoreContainer cc = req.getCore().getCoreContainer();
+        CoreContainer cc = req.getCoreContainer();
         boolean isZkAware = cc.isZooKeeperAware();
 
         ResponseBuilder rb = new ResponseBuilder(req, rsp, components);

@@ -288,7 +288,7 @@ public class QueryComponent extends SearchComponent
     groupingSpec.setResponseFormat(responseFormat);
 
     // See SOLR-12249. Disallow grouping on text fields that are not SortableText in cloud mode
-    if (req.getCore().getCoreContainer().isZooKeeperAware()) {
+    if (req.getCoreContainer().isZooKeeperAware()) {
       IndexSchema schema = rb.req.getSchema();
       String[] fields = params.getParams(GroupParams.GROUP_FIELD);
       if (fields != null) {
@@ -1569,7 +1569,7 @@ public class QueryComponent extends SearchComponent
   }
 
   private static String generateQueryID(SolrQueryRequest req) {
-    ZkController zkController = req.getCore().getCoreContainer().getZkController();
+    ZkController zkController = req.getCoreContainer().getZkController();
     String nodeName = req.getCore().getCoreContainer().getHostName();
 
     if (zkController != null) {

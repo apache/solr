@@ -230,10 +230,10 @@ public class ExactStatsCache extends StatsCache {
       Map<String,TermStats> globalTermStats = new HashMap<>();
       Map<String,CollectionStats> globalColStats = new HashMap<>();
       // aggregate collection stats, only for the field in terms
-      String collectionName = rb.req.getCore().getCoreDescriptor().getCollectionName();
-      if (collectionName == null) {
+      String collectionName = rb.req.getCloudDescriptor().getCollectionName();
+     /* if (collectionName == null) {
         collectionName = rb.req.getCore().getCoreDescriptor().getName();
-      }
+      }*/
       List<String> shards = new ArrayList<>();
       for (String shardUrl : rb.shards) {
         String shard = StatsUtil.shardUrlToShard(collectionName, shardUrl);
