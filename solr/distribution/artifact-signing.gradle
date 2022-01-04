@@ -19,13 +19,12 @@
 
 task signReleaseArchives(type: Sign) {
   dependsOn tasks.assembleBinaryTgz
-  sign tasks.assembleBinaryTgz
-
   dependsOn tasks.assembleBinaryZip
-  sign tasks.assembleBinaryZip
-
-  // The source tgz is not an archive task so be explicit about the outputs to sign.
   dependsOn tasks.assembleSourceTgz
+
+  sign tasks.assembleBinaryTgz
+  sign tasks.assembleBinaryZip
+  // The source tgz is not an archive task so be explicit about the outputs to sign.
   sign tasks.assembleSourceTgz.destination
 }
 
