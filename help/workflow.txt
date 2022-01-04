@@ -27,10 +27,17 @@ local maven repository for inspection:
 gradlew mavenLocal
 ls -R build/maven-local/
 
-Put together Solr distribution:
+Put together a local Solr binary "distribution" folder:
 gradlew -p solr/packaging assemble
-ls solr/packaging/build/distributions/solr-* # release archives
 ls solr/packaging/build/solr-*               # expanded directory
+
+For quick local development
+gradlew -p solr/packaging dev
+ls solr/packaging/build/dev                  # expanded directory
+
+Generate the release tar and zip archives (see publishing.txt for details)
+gradlew -p solr/distribution assembleRelease
+ls solr/distribution/build/packages          # release archives
 
 
 Other validation and checks

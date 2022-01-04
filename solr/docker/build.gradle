@@ -67,8 +67,9 @@ dependencies {
     builtBy 'assemblePackaging'
   }
 
-  solrTgz project(path: ":solr:packaging", configuration: 'solrTgz')
-  solrTgzSignature project(path: ":solr:packaging", configuration: 'solrTgzSignature')
+  // NOCOMMIT: Fix the reference to solr:distribution
+  solrTgz project(path: ":solr:distribution:", configuration: 'solrTgz')
+  solrTgzSignature project(path: ":solr:distribution", configuration: 'solrTgzSignature')
 
   dockerImage files(imageIdFile) {
     builtBy 'dockerBuild'
