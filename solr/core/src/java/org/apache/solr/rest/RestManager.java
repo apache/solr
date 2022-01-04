@@ -327,6 +327,10 @@ public class RestManager {
       final String method = req.getHttpMethod();
       try {
         switch (method) {
+          case "HEAD":
+            managedResource.doGet(this, childId);
+            doHead(this);
+            break;
           case "GET":
             managedResource.doGet(this, childId);
             break;
@@ -344,6 +348,11 @@ public class RestManager {
         getSolrResponse().setException(e);
       }
       handlePostExecution(log);
+    }
+
+    private void doHead(ManagedEndpoint managedEndpoint) {
+      // truncating the content-length removes the response body
+      managedEndpoint.getSolrResponse().setHttpHeader("Content-Length", "0");
     }
 
     protected void doDelete() {
