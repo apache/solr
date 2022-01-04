@@ -37,7 +37,7 @@ ls solr/packaging/build/dev                  # expanded directory
 
 Generate the release tar and zip archives (see publishing.txt for details)
 gradlew -p solr/distribution assembleRelease
-ls solr/distribution/build/packages          # release archives
+ls solr/distribution/build/release           # release archives
 
 
 Other validation and checks
