@@ -43,6 +43,8 @@ New Features
 
 * SOLR-15613: Enforce error-prone checks to catch all URLEqualsHashCode violations and use java.net.URI instead (Collins Abanda)
 
+* SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -186,6 +188,11 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15824 Improved Query Screen handling of raw query parameters.  (Betul Ince via Tim Potter, Eric Pugh)
 
 * SOLR-15803: Compute concurrent replica assignment requests together, using the shared context to better distribute replicas. (Houston Putman)
+
+* SOLR-15213: Atomic updates: "add" now uses add-or-replace logic for child documents.  They can
+  also themselves be atomic updates.  (James Ashbourne, Endika Posadas via David Smiley)
+
+* SOLR-15890: Add a limit to the Admin SQL panel if one is not included in the stmt (Joel Bernstein)
 
 Build
 ---------------------
@@ -424,6 +431,8 @@ Other Changes
 
 * SOLR-15807: New LogListener class for tests to use to make assertions about what Log messages should or should not be produced by a test (hossman)
 
+* SOLR-15845: Add a new SolrVersion class to manage Solr's version independently from the Lucene version we consume (janhoy)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
@@ -448,6 +457,14 @@ Bug Fixes
 * SOLR-15783: Prevent Logging MDC values from leaking between request threads, and set 'trace_id' in MDC as soon as it's available (hossman)
 
 * SOLR-14781: Removed many unused classes that accumulated over the years. (Bence Szabo, David Smiley)
+
+* SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
+
+==================  8.11.2 ==================
+
+Bug Fixes
+---------------------
+* SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
 
 ==================  8.11.1 ==================
 
@@ -16286,7 +16303,7 @@ Other Changes
   in the migration of existing clients.  (yonik)
 
 * SOLR-3691: SimplePostTool: Mode for crawling/posting web pages
-  See https://lucene.apache.org/solr/guide/post-tool.html for examples (janhoy)
+  See https://solr.apache.org/guide/post-tool.html for examples (janhoy)
 
 * SOLR-3707: Upgrade Solr to Tika 1.2 (janhoy)
 
@@ -18380,7 +18397,7 @@ New Features
   Great Circle (haversine), Manhattan, Euclidean and String (using the
   StringDistance methods in the Lucene spellchecker).
   Also added geohash(), deg() and rad() convenience functions.
-  See https://lucene.apache.org/solr/guide/function-queries.html (gsingers)
+  See https://solr.apache.org/guide/function-queries.html (gsingers)
 
 * SOLR-1553: New dismax parser implementation (accessible as "edismax")
   that supports full lucene syntax, improved reserved char escaping,

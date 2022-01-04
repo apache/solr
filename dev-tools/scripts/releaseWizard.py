@@ -83,6 +83,7 @@ def expand_jinja(text, vars=None):
         'script_branch': state.script_branch,
         'release_folder': state.get_release_folder(),
         'git_checkout_folder': state.get_git_checkout_folder(),
+        'ref_guide_svn_folder': state.get_ref_guide_svn_folder(),
         'git_website_folder': state.get_website_git_folder(),
         'dist_url_base': 'https://dist.apache.org/repos/dist/dev/lucene',
         'm2_repository_url': 'https://repository.apache.org/service/local/staging/deploy/maven2',
@@ -557,6 +558,10 @@ class ReleaseState:
 
     def get_git_checkout_folder(self):
         folder = os.path.join(self.get_release_folder(), "lucene-solr")
+        return folder
+
+    def get_ref_guide_svn_folder(self):
+        folder = os.path.join(self.get_release_folder(), "ref-guide-svn")
         return folder
 
     def get_website_git_folder(self):
