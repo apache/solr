@@ -92,7 +92,6 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     return defaultCurrency;
   }
 
-
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
@@ -191,6 +190,10 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     return schema.getField(field.getName() + POLY_FIELD_SEPARATOR + fieldSuffixCurrency);
   }
 
+  public void shutdown() {
+    log.debug("shutdown called on CurrencyFieldType");
+  }
+
   /**
    * When index schema is informed, get field types for the configured dynamic sub-fields
    *
@@ -239,10 +242,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   @Override
   public void inform(ResourceLoader resourceLoader) {
     provider.inform(resourceLoader);
-    boolean reloaded = provider.reload();
-    if(!reloaded) {
-      log.warn("Failed reloading currencies");
-    }
+    //no need to call reload() here; providers call reload inside inform()
   }
 
   @Override

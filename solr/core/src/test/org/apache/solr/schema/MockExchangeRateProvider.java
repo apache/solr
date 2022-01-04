@@ -87,5 +87,4 @@ public class MockExchangeRateProvider implements ExchangeRateProvider {
     gotLoader = true;
     assert(gotArgs == true);
   }
-  
 }

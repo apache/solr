@@ -109,19 +109,6 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
     );
   }
 
-  @Test
-  public void testNoReloadWhenParameterIsFalse() {
-    mockParams.put(OpenExchangeRatesOrgProvider.PARAM_REFRESH_INTERVAL, "100");
-    mockParams.put(OpenExchangeRatesOrgProvider.PARAM_REFRESH_WHILE_SEARCHING, "false");
-    oerp.init(mockParams);
-    oerp.inform(loader);
-
-    long timestampBeforeTheRefreshInterval = TimeUnit.SECONDS.convert(System.nanoTime(), TimeUnit.NANOSECONDS) - (101 * 60);
-    oerp.rates.setTimestamp(timestampBeforeTheRefreshInterval);
-    assertEquals(81.29D, oerp.getExchangeRate("USD", "JPY"), 0.0D);
-    assertEquals(timestampBeforeTheRefreshInterval, oerp.rates.getTimestamp());
-  }
-
   @Test(expected=SolrException.class)
   public void testNoInit() {
     oerp.getExchangeRate("ABC", "DEF");

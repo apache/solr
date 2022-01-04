@@ -31,6 +31,7 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.SafeXMLParsing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
