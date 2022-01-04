@@ -23,8 +23,7 @@ configure(project(":solr:distribution")) {
     description "Assemble source Solr artifact as a .tgz file."
 
     // Make sure no unstaged/ dirty files are present.
-// TODO - enable
-    dependsOn ":gitStatus" //, ":checkWorkingCopyClean"
+    dependsOn ":gitStatus", ":checkWorkingCopyClean"
 
     ext {
       destination = file("${buildDir}/packages/solr-${version}-src.tgz")
