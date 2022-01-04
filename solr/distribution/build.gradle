@@ -51,7 +51,7 @@ configurations {
   changesHtml
   solrTgz
   solrTgzSignature
-//  docker
+  docker
 }
 
 artifacts {
@@ -61,7 +61,7 @@ artifacts {
 
 dependencies {
   changesHtml project(path: ":solr:documentation", configuration: "changesHtml")
-//  docker project(path: ':solr:docker', configuration: 'packaging')
+  docker project(path: ':solr:docker', configuration: 'packaging')
 }
 
 // Compute checksums for release archives.
@@ -103,6 +103,10 @@ task assembleRelease(type: Sync) {
 
   from(configurations.changesHtml, {
     into "changes"
+  })
+
+  from(configurations.docker, {
+    into "docker"
   })
 
   from(rootProject.mavenLocalDir, {
