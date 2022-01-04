@@ -155,15 +155,6 @@ public class ZkNodeProps implements JSONWriter.Writable {
    */
   public String getStr(String key, String def) {
     Object o = propMap.get(key);
-
-    // TODO: This "hack" should not be needed but keeping it here b/c we removed the base_url from the map in the ctor
-    if (o == null && def == null && ZkStateReader.BASE_URL_PROP.equals(key)) {
-      final String nodeName = (String)propMap.get(ZkStateReader.NODE_NAME_PROP);
-      if (nodeName != null) {
-        o = UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName);
-      }
-    }
-
     return o == null ? def : o.toString();
   }
 
