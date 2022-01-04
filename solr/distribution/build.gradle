@@ -56,7 +56,7 @@ configurations {
 
 artifacts {
   solrTgz assembleBinaryTgz
-  solrTgzSignature assembleBinaryTgz // TODO: How to reference the signature file from the Sign task?
+  solrTgzSignature file(assembleBinaryTgz.archiveFileName.get() + ".asc")
 }
 
 dependencies {
