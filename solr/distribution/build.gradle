@@ -42,10 +42,6 @@ apply from: buildscript.sourceFile.toPath().resolveSibling("source-release.gradl
 // Prepare the "binary" distribution artifact.
 apply from: buildscript.sourceFile.toPath().resolveSibling("binary-release.gradle")
 
-// Configure maven artifact collection to a local build folder (required to collect artifacts for the release).
-// TODO: Re-Enable
-//apply from: buildscript.sourceFile.toPath().resolveSibling("collect-maven-artifacts.gradle")
-
 // Configure artifact signing.
 apply from: buildscript.sourceFile.toPath().resolveSibling("artifact-signing.gradle")
 
@@ -103,14 +99,15 @@ task prepareGitRev() {
 // Assemble everything needed in the release folder structure.
 task assembleRelease(type: Sync) {
   description "Assemble all Solr artifacts for a release."
+  dependsOn rootProject.getTasksByName("mavenToLocalFolder", true)[0]
 
   from(configurations.changesHtml, {
     into "changes"
   })
 
-//  from(tasks.mavenToBuild, {
-//    into "maven"
-//  })
+  from(rootProject.mavenLocalDir, {
+    into "maven"
+  })
 
   from tasks.prepareGitRev
   from tasks.assembleSourceTgz
