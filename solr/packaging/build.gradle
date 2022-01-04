@@ -103,14 +103,6 @@ distributions {
         include "README.md"
       })
 
-      // Should we include Lucene changes?
-      /*
-        from(project(":lucene").projectDir, {
-          include "CHANGES.txt"
-          rename { file -> 'LUCENE_CHANGES.txt' }
-        })
-      */
-
       from(configurations.contrib, {
         into "contrib"
       })
@@ -155,6 +147,7 @@ task dev(type: Copy) {
   into devDir
 }
 
+// Hack to
 tasks.distZip.enabled = false
 tasks.distTar.enabled = false
 
