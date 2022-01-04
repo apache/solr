@@ -53,13 +53,15 @@ apply from: buildscript.sourceFile.toPath().resolveSibling("artifact-signing.gra
 // Set up the HTML-rendered "changes" distribution artifact by linking to documentation's output.
 configurations {
   changesHtml
-  assembleBinaryTgz
+  solrTgz
+  solrTgzSignature
 //  docker
 }
 
-//assembleBinaryTgz {
-//  from tasks.assembleBinaryTgz
-//}
+artifacts {
+  solrTgz assembleBinaryTgz
+  solrTgzSignature assembleBinaryTgz // TODO: How to reference the signature file from the Sign task?
+}
 
 dependencies {
   changesHtml project(path: ":solr:documentation", configuration: "changesHtml")
