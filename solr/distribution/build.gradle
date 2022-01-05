@@ -61,7 +61,7 @@ artifacts {
 
 dependencies {
   changesHtml project(path: ":solr:documentation", configuration: "changesHtml")
-  docker project(path: ':solr:docker', configuration: 'packaging')
+  docker project(path: ':solr:docker', configuration: 'packagingOfficial')
 }
 
 // Compute checksums for release archives.

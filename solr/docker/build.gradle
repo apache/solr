@@ -29,7 +29,7 @@ def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER
 def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
 def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
 
-def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName','');
+def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId',''));
 
 // Build directory locations
 def imageIdFile = "$buildDir/image-id"
@@ -39,6 +39,9 @@ def imageIdFileOfficial = "$smokeTestOfficial/image-id"
 
 configurations {
   packaging {
+    canBeResolved = true
+  }
+  packagingOfficial {
     canBeResolved = true
   }
   solrTgz {
@@ -60,11 +63,16 @@ configurations {
 
 ext {
   packagingDir = file("${buildDir}/packaging")
+  packagingOfficialDir = file("${buildDir}/packagingOfficial")
 }
 
 dependencies {
   packaging files(packagingDir) {
     builtBy 'assemblePackaging'
+  }
+
+  packagingOfficial files(packagingOfficialDir) {
+    builtBy 'assemblePackagingOfficial'
   }
 
   solrTgz project(path: ":solr:distribution:", configuration: 'solrTgz')
@@ -102,6 +110,18 @@ task assemblePackaging(type: Sync) {
     include 'Dockerfile.local'
   })
   into packagingDir
+}
+
+task assemblePackagingOfficial(type: Sync) {
+  description = 'Assemble docker scripts and Dockerfile.official for Solr Packaging'
+
+  from(projectDir, {
+    include "scripts/**"
+  })
+  from(buildDir, {
+    include 'Dockerfile.official'
+  })
+  into packagingOfficialDir
 }
 
 task dockerBuild(dependsOn: configurations.solrTgz) {
@@ -327,7 +347,7 @@ tasks.createDockerfileOfficial.dependsOn configurations.solrTgz // to lazy compu
 if (''.equals(releaseGpgFingerprint)) {
   gradle.taskGraph.whenReady { graph ->
     if ( graph.hasTask(createDockerfileOfficial) ) {
-      throw new GradleException("No GPG keyName found, please see help/gpgSigning.txt (GPG key is neccessary to create Dockerfile.official)")
+      throw new GradleException("No GPG keyName found, please see help/publishing.txt (GPG key is neccessary to create Dockerfile.official)")
     }
   }
 }
