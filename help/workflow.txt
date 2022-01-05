@@ -39,6 +39,10 @@ Generate the release tar and zip archives (see publishing.txt for details)
 gradlew -p solr/distribution assembleRelease
 ls solr/distribution/build/release           # release archives
 
+Build a docker image from the local repository (see docker/gradle-help.txt for more)
+gradlew dockerBuild dockerTag
+docker run --rm -p 8983:8983 apache/solr:9.0.0-SNAPSHOT
+
 
 Other validation and checks
 ===========================
