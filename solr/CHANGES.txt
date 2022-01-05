@@ -43,6 +43,8 @@ New Features
 
 * SOLR-15613: Enforce error-prone checks to catch all URLEqualsHashCode violations and use java.net.URI instead (Collins Abanda)
 
+* SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -189,6 +191,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15213: Atomic updates: "add" now uses add-or-replace logic for child documents.  They can
   also themselves be atomic updates.  (James Ashbourne, Endika Posadas via David Smiley)
+
+* SOLR-15890: Add a limit to the Admin SQL panel if one is not included in the stmt (Joel Bernstein)
 
 Build
 ---------------------
@@ -427,6 +431,8 @@ Other Changes
 
 * SOLR-15807: New LogListener class for tests to use to make assertions about what Log messages should or should not be produced by a test (hossman)
 
+* SOLR-15845: Add a new SolrVersion class to manage Solr's version independently from the Lucene version we consume (janhoy)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
@@ -452,13 +458,13 @@ Bug Fixes
 
 * SOLR-14781: Removed many unused classes that accumulated over the years. (Bence Szabo, David Smiley)
 
-* SOLR-15871: Update Log4J to 2.17 (weidongkl via janhoy)
+* SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
 
 ==================  8.11.2 ==================
 
 Bug Fixes
 ---------------------
-* SOLR-15871: Update Log4J to 2.17 (weidongkl via janhoy)
+* SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
 
 ==================  8.11.1 ==================
 
