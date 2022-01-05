@@ -62,8 +62,8 @@ configurations {
 }
 
 ext {
+  dockerfilesDirPath = "${buildDir}/dockerfiles"
   packagingDir = file("${buildDir}/packaging")
-  packagingOfficialDir = file("${buildDir}/packagingOfficial")
 }
 
 dependencies {
@@ -71,8 +71,8 @@ dependencies {
     builtBy 'assemblePackaging'
   }
 
-  packagingOfficial files(packagingOfficialDir) {
-    builtBy 'assemblePackagingOfficial'
+  packagingOfficial files("${dockerfilesDirPath}/Dockerfile.official") {
+    builtBy 'createDockerfileOfficial'
   }
 
   solrTgz project(path: ":solr:distribution:", configuration: 'solrTgz')
@@ -106,22 +106,10 @@ task assemblePackaging(type: Sync) {
   from(projectDir, {
     include "scripts/**"
   })
-  from(buildDir, {
+  from(dockerfilesDirPath, {
     include 'Dockerfile.local'
   })
   into packagingDir
-}
-
-task assemblePackagingOfficial(type: Sync) {
-  description = 'Assemble docker scripts and Dockerfile.official for Solr Packaging'
-
-  from(projectDir, {
-    include "scripts/**"
-  })
-  from(buildDir, {
-    include 'Dockerfile.official'
-  })
-  into packagingOfficialDir
 }
 
 task dockerBuild(dependsOn: configurations.solrTgz) {
@@ -291,7 +279,7 @@ The final Dockerfiles are merely the snippet headers combined with the snippet b
  */
 [ dfLocalDetails, dfOfficialDetails ].each{ details ->
   def fileName = "Dockerfile.${ -> details.name.toLowerCase(Locale.ROOT) }"
-  def outFile = file("$buildDir/${fileName}")
+  def outFile = file("$dockerfilesDirPath/${fileName}")
   
   def props = [
     // Values defined here should be common (and consistent) across both Dockerfiles
@@ -361,7 +349,7 @@ task testBuildDockerfileOfficial(type: Copy) {
   
   def mockHttpdHome = file("$smokeTestOfficial/mock-httpd-home");
   
-  inputs.file("$buildDir/Dockerfile.official")
+  inputs.file("$dockerfilesDirPath/Dockerfile.official")
   outputs.dir(mockHttpdHome)
   outputs.file(imageIdFileOfficial)
 
@@ -403,7 +391,7 @@ task testBuildDockerfileOfficial(type: Copy) {
         // *NOW* we can actually run our docker build command...
         logger.lifecycle('Running docker build on Dockerfile.official...');
         exec {
-          standardInput = file("${buildDir}/Dockerfile.official").newDataInputStream()
+          standardInput = file("${dockerfilesDirPath}/Dockerfile.official").newDataInputStream()
           commandLine 'docker', 'build',
             '--add-host', "mock-solr-dl-server:${mockServerIp}",
             '--no-cache', // force fresh downloads from our current network

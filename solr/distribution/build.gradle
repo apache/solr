@@ -34,6 +34,17 @@ ext {
     // Allow -Psign to work as a shorthand for -Psign=true
     return propValue != null && (propValue.isBlank() || Boolean.parseBoolean(propValue))
   }.call()
+  useGpgForSigning = { ->
+    def propValue = propertyOrDefault("useGpg", null)
+    // Allow -PuseGpg to work as a shorthand for -PuseGpg=true
+    return propValue != null && (propValue.isBlank() || Boolean.parseBoolean(propValue))
+  }.call()
+}
+
+if (ext.useGpgForSigning) {
+  signing {
+    useGpgCmd()
+  }
 }
 
 // Prepare the "source" distribution artifact.
