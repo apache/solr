@@ -147,10 +147,6 @@ public class ZkNodeProps implements JSONWriter.Writable {
    */
   public String getStr(String key, String def) {
     Object o = propMap.get(key);
-    // nocommit
-    if (o == null && "base_url".equals(key)) {
-      throw new IllegalStateException("base_url not set in props: "+propMap);
-    }
     return o == null ? def : o.toString();
   }
 
