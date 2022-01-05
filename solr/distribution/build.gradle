@@ -99,7 +99,7 @@ task prepareGitRev() {
 // Assemble everything needed in the release folder structure.
 task assembleRelease(type: Sync) {
   description "Assemble all Solr artifacts for a release."
-  dependsOn rootProject.getTasksByName("mavenToLocalFolder", true)[0]
+  dependsOn ":mavenToLocalFolder"
 
   from(configurations.changesHtml, {
     into "changes"
