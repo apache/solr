@@ -70,11 +70,9 @@ artifacts {
   solrTgzSignature file(assembleBinaryTgz.archiveFileName.get() + ".asc")
 }
 
-def useSigning = propertyOrDefault('sign', null) != null;
-
 dependencies {
   changesHtml project(path: ":solr:documentation", configuration: "changesHtml")
-  docker project(path: ':solr:docker', configuration: useSigning ? 'packagingOfficial' : 'packaging')
+  docker project(path: ':solr:docker', configuration: 'packagingOfficial')
 }
 
 // Compute checksums for release archives.
