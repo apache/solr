@@ -1428,9 +1428,8 @@ public class ZkController implements Closeable {
     Map<String, Object> props = new HashMap<>();
     // we only put a subset of props into the leader node
     props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
-    String nodeName = getNodeName();
-    props.put(ZkStateReader.NODE_NAME_PROP, nodeName);
-    props.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName));
+    props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
+    props.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(getNodeName()));
     props.put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
 
 
