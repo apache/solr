@@ -16,12 +16,17 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiFunction;
 
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -43,6 +48,8 @@ public class JoinQParserPlugin extends QParserPlugin {
   private String routerField;
 
   private Set<String> allowSolrUrls;
+
+  private final BiFunction<Query, String, Query> eventualCacheFactory;
 
   private static class JoinParams {
     final String fromField;
@@ -172,6 +179,14 @@ public class JoinQParserPlugin extends QParserPlugin {
     }
   }
 
+  public JoinQParserPlugin() {
+    this((q,i)->new EventualJoinCacheWrapper(q,i));
+  }
+  // test injection
+  protected JoinQParserPlugin(BiFunction<Query, String, Query> factory) {
+    this.eventualCacheFactory = factory;
+  }
+
   @Override
   public void init(NamedList<?> args) {
     routerField = (String) args.get("routerField");
@@ -189,11 +204,40 @@ public class JoinQParserPlugin extends QParserPlugin {
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     final JoinQParserPlugin plugin = this;
-
+    final BiFunction<Query, String, Query> wrapperFactory = eventualCacheFactory;
     return new QParser(qstr, localParams, params, req) {
 
       @Override
       public Query parse() throws SyntaxError {
+        final Query query = parseImpl();
+        // make cross core joins time-agnostic
+        // it should be ruled by param probably
+        boolean crossCoreCache = false;
+        // TODO make it {!cache=eventually}
+        if(localParams.getBool("cacheEventually", false)) {
+          if (query instanceof  JoinQuery) {
+            if (((JoinQuery) query).fromCoreOpenTime != 0L) {
+              ((JoinQuery) query).fromCoreOpenTime = Long.MIN_VALUE;
+              crossCoreCache = true;
+            }
+          } else {
+            if (query instanceof ScoreJoinQParserPlugin.OtherCoreJoinQuery){
+              if (((ScoreJoinQParserPlugin.OtherCoreJoinQuery) query).fromCoreOpenTime!=0) {
+                ((ScoreJoinQParserPlugin.OtherCoreJoinQuery) query).fromCoreOpenTime = Long.MIN_VALUE;
+                crossCoreCache = true;
+              }
+            }
+          }
+        }
+        if (crossCoreCache) {
+          String fromIndex = localParams.get("fromIndex");// TODO in might be a single sharded collection
+          // TODO also , from index is set into joinquery itself
+          return wrapperFactory.apply(query, fromIndex);
+        }
+        return query;
+      }
+
+      private Query parseImpl() throws SyntaxError {
         if (localParams != null && localParams.get(METHOD) != null) {
           // TODO Make sure 'method' is valid value here and give users a nice error
           final Method explicitMethod = Method.valueOf(localParams.get(METHOD));
@@ -208,6 +252,24 @@ public class JoinQParserPlugin extends QParserPlugin {
         }
       }
     };
+  }
+
+  public static class DocsetTimestamp {
+    private DocSet docSet;
+    private long timestamp;
+
+    public DocsetTimestamp(DocSet docSet, long timestamp) {
+      this.docSet = docSet;
+      this.timestamp = timestamp;
+    }
+
+    public DocSet getDocSet() {
+      return docSet;
+    }
+
+    public long getTimestamp() {
+      return timestamp;
+    }
   }
 
   private static final EnumSet<Method> JOIN_METHOD_ALLOWLIST = EnumSet.of(Method.index, Method.topLevelDV, Method.dvWithScore);
@@ -245,5 +307,61 @@ public class JoinQParserPlugin extends QParserPlugin {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Provided join method '" + method + "' not supported");
     }
   }
-  
+
+  public static class EventualJoinCacheWrapper extends ExtendedQueryBase {
+    private final Query query;
+    private final String fromIndex;
+
+    public EventualJoinCacheWrapper(Query query, String fromIndex) {
+      this.query = query;
+      this.fromIndex = fromIndex;
+      setCache(false);
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      query.visit(visitor);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return query.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+      return query.hashCode();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
+      // either try to obtain it via SRI and assert
+      final SolrIndexSearcher solrIndexSearcher = (SolrIndexSearcher) searcher;
+      @SuppressWarnings("rawtypes")
+      final SolrCache toCache = solrIndexSearcher.getCache(fromIndex);
+      WrappedQuery wrap = new WrappedQuery(query);
+      wrap.setCache(false); //bypassing searcher cache
+      final DocsetTimestamp entry = (DocsetTimestamp)toCache.computeIfAbsent(wrap, k -> {
+        // let's snapshot from,to reader
+        final SolrCore fromCore = solrIndexSearcher.getCore().getCoreContainer().getCore(fromIndex);
+        try {
+          final RefCounted<SolrIndexSearcher> fromSearcher = fromCore.getSearcher();
+          try {
+            long fromCoreTimestamp = fromSearcher.get().getOpenNanoTime();
+            return createEntry(solrIndexSearcher, (Query) k, fromCoreTimestamp);
+          } finally {
+            fromSearcher.decref();
+          }
+        } finally {
+          fromCore.close();
+        }
+      });
+      return entry.getDocSet().getTopFilter().createWeight(searcher, scoreMode, boost);
+    }
+
+    protected DocsetTimestamp createEntry(SolrIndexSearcher solrIndexSearcher, Query joinQuery, long fromCoreTimestamp) throws IOException {
+      return new DocsetTimestamp(solrIndexSearcher.getDocSet(joinQuery), fromCoreTimestamp);
+    }
+  }
 }

@@ -55,10 +55,10 @@ import org.apache.solr.search.join.GraphPointsCollector;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 
-class JoinQuery extends Query {
+public class JoinQuery extends Query {
   String fromField;
   String toField;
-  String fromIndex; // TODO: name is missleading here compared to JoinQParserPlugin usage - here it must be a core name
+  public String fromIndex; // TODO: name is missleading here compared to JoinQParserPlugin usage - here it must be a core name
   Query q;
   long fromCoreOpenTime;
 

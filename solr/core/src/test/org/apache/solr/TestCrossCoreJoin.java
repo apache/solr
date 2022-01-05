@@ -18,10 +18,13 @@ package org.apache.solr;
 
 import java.io.StringWriter;
 import java.util.Collections;
+import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -44,14 +47,11 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
   public static void beforeTests() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.filterCache.async", "true");
-//    initCore("solrconfig.xml","schema12.xml");
 
-    // File testHome = createTempDir().toFile();
-    // FileUtils.copyDirectory(getFile("solrj/solr"), testHome);
-    initCore("solrconfig.xml", "schema12.xml", TEST_HOME(), "collection1");
+    initCore("solrconfig-crosscore-join-cache.xml", "schema12.xml", TEST_HOME(), "collection1");
     final CoreContainer coreContainer = h.getCoreContainer();
 
-    fromCore = coreContainer.create("fromCore", ImmutableMap.of("configSet", "minimal"));
+    fromCore = coreContainer.create("fromCore", ImmutableMap.of("configSet", "minimal-bckg-join"));
 
     assertU(add(doc("id", "1", "id_s_dv", "1", "name", "john", "title", "Director", "dept_s", "Engineering")));
     assertU(add(doc("id", "2", "id_s_dv", "2", "name", "mark", "title", "VP", "dept_s", "Marketing")));
@@ -70,9 +70,13 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
 
   public static String update(SolrCore core, String xml) throws Exception {
+    return update(core, xml, null);
+  }
+
+  public static String update(SolrCore core, String xml, SolrParams params) throws Exception {
     DirectSolrConnection connection = new DirectSolrConnection(core);
     SolrRequestHandler handler = core.getRequestHandler("/update");
-    return connection.request(handler, null, xml);
+    return connection.request(handler, params, xml);
   }
 
   @Test
@@ -106,6 +110,48 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
         "debugQuery", random().nextBoolean() ? "true":"false")
         , "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1'}]}"
     );
+
+    doTestBackgroundCache(joinPrefix);
+  }
+
+  private void doTestBackgroundCache(String joinPrefix) throws Exception {
+    // cache first
+    assertJQ(req("q", joinPrefix + " from=dept_id_s to=dept_s cacheEventually=true fromIndex=fromCore}cat:dev", "fl", "id",
+            "debugQuery", random().nextBoolean() ? "true":"false")
+            , "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
+    );
+    update(fromCore, delQ("id:10"));
+    update(fromCore, add(doc("id", "10", "id_s_dv", "10", "dept_id_s", "Marketing",
+            "text", "now they go on market", "cat", "dev")));
+    update(fromCore, commit());
+    // see no changes yet
+    assertJQ(req("q", joinPrefix + " from=dept_id_s to=dept_s cacheEventually=true fromIndex=fromCore}cat:dev", "fl", "id",
+            "debugQuery", random().nextBoolean() ? "true":"false")
+            , "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
+    );
+
+    if (random().nextBoolean()) {
+      // refresh explicitly
+      update(fromCore, commit(), new MapSolrParams(Map.of("post-processor", "refresh-join-caches")));
+    } else { // commit into main index regenerates cache as well
+      assertU(add(doc("id", "99999999")));
+      assertU(commit());
+    }
+
+    assertJQ(req("q", joinPrefix + " from=dept_id_s to=dept_s cacheEventually=true fromIndex=fromCore}cat:dev", "fl", "id",
+            "debugQuery", random().nextBoolean() ? "true":"false")
+            , "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'2'}]}"
+    );
+
+    compensateUpdates();
+  }
+
+  private void compensateUpdates() throws Exception {
+    update(fromCore, delQ("id:10"));
+    update(fromCore, add(doc("id", "10", "id_s_dv", "10", "dept_id_s", "Engineering", "text", "These guys develop stuff", "cat", "dev")));
+    update(fromCore, commit());
+    assertU(delI( "99999999"));
+    assertU(commit());
   }
 
   @Test
