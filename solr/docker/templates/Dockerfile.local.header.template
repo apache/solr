@@ -40,5 +40,5 @@ ARG BASE_IMAGE=_REPLACE_BASE_IMAGE_
 
 FROM $BASE_IMAGE
 
-COPY / /opt/
+COPY --chmod=0644 / /opt/
 
