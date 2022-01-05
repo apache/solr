@@ -25,6 +25,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.SyncStrategy;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.util.UrlScheme;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -61,6 +62,7 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
         Map<String, Object> props = new HashMap<>();
         props.put(ZkStateReader.CORE_NAME_PROP, cname);
         props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
+        props.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(zkController.getNodeName()));
 
         boolean success = syncStrategy.sync(zkController, core, new ZkNodeProps(props), true).isSuccess();
         // solrcloud_debug

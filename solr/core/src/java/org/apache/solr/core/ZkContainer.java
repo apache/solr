@@ -16,9 +16,9 @@
  */
 package org.apache.solr.core;
 
-import static org.apache.solr.common.cloud.UrlScheme.HTTP;
-import static org.apache.solr.common.cloud.UrlScheme.HTTPS;
-import static org.apache.solr.common.cloud.UrlScheme.HTTPS_PORT_PROP;
+import static org.apache.solr.util.UrlScheme.HTTP;
+import static org.apache.solr.util.UrlScheme.HTTPS;
+import static org.apache.solr.util.UrlScheme.HTTPS_PORT_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
 import java.io.File;
@@ -39,7 +39,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.UrlScheme;
+import org.apache.solr.util.UrlScheme;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;

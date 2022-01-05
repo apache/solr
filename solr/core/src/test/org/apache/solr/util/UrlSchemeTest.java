@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.common.cloud;
+package org.apache.solr.util;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.util.UrlScheme;
 import org.junit.Test;
 
-import static org.apache.solr.common.cloud.UrlScheme.HTTP;
-import static org.apache.solr.common.cloud.UrlScheme.HTTPS;
+import static org.apache.solr.util.UrlScheme.HTTP;
+import static org.apache.solr.util.UrlScheme.HTTPS;
 
 public class UrlSchemeTest extends SolrTestCase {
 

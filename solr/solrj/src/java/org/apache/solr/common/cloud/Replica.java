@@ -153,8 +153,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     // default to ACTIVE
     this.state = State.getState(String.valueOf(propMap.getOrDefault(ZkStateReader.STATE_PROP, State.ACTIVE.toString())));
     validate();
-
-    propMap.putIfAbsent(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   // clone constructor
@@ -173,7 +171,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     }
     readPrs();
     validate();
-    propMap.putIfAbsent(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   /**
@@ -197,7 +194,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     type = Replica.Type.valueOf(String.valueOf(propMap.getOrDefault(ZkStateReader.REPLICA_TYPE, "NRT")));
     if(state == null) state = State.getState(String.valueOf(propMap.getOrDefault(ZkStateReader.STATE_PROP, "active")));
     validate();
-    propMap.putIfAbsent(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   private void readPrs() {
@@ -219,6 +215,10 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Objects.requireNonNull(this.type, "'type' must not be null");
     Objects.requireNonNull(this.state, "'state' must not be null");
     Objects.requireNonNull(this.node, "'node' must not be null");
+
+    String baseUrl = (String)propMap.get(BASE_URL_PROP);
+    Objects.requireNonNull(baseUrl, "'base_url' must not be null");
+
     // make sure all declared props are in the propMap
     propMap.put(ZkStateReader.COLLECTION_PROP, collection);
     propMap.put(ZkStateReader.SHARD_ID_PROP, shard);

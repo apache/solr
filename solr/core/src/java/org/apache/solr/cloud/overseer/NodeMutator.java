@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.util.UrlScheme;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
@@ -92,6 +93,7 @@ public class NodeMutator {
         if (rNodeName.equals(nodeName)) {
           log.debug("Update replica state for {} to {}", replica, Replica.State.DOWN);
           Map<String, Object> props = replica.shallowCopy();
+          props.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(replica.node));
           Replica newReplica = new Replica(replica.getName(), replica.node, replica.collection, slice.getName(), replica.core,
               Replica.State.DOWN, replica.type, props);
           newReplicas.put(replica.getName(), newReplica);

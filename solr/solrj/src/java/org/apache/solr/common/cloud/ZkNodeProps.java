@@ -42,7 +42,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * Also, not storing base_url means a client application cannot have different urlSchemes for multiple clusters concurrently,
    * which was also raised as a concern on SOLR-12182. This flag was set to true as part of the fix for SOLR-15587.
    */
-  static final boolean STORE_BASE_URL = true; // Boolean.parseBoolean(System.getProperty("solr.storeBaseUrl", "true"));
+  static final boolean STORE_BASE_URL = true;
 
   protected final Map<String,Object> propMap;
 
@@ -124,15 +124,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    // don't write out the base_url if we have a node_name
-    if (propMap.get(ZkStateReader.BASE_URL_PROP) == null && propMap.get(ZkStateReader.NODE_NAME_PROP) != null) {
-      // this is for back-compat with older SolrJ
-      final Map<String, Object> addBaseUrl = new HashMap<>(propMap);
-      addBaseUrl.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName((String)propMap.get(ZkStateReader.NODE_NAME_PROP)));
-      jsonWriter.write(addBaseUrl);
-    } else {
-      jsonWriter.write(propMap);
-    }
+    jsonWriter.write(propMap);
   }
   
   /**
@@ -155,6 +147,10 @@ public class ZkNodeProps implements JSONWriter.Writable {
    */
   public String getStr(String key, String def) {
     Object o = propMap.get(key);
+    // nocommit
+    if (o == null && "base_url".equals(key)) {
+      throw new IllegalStateException("base_url not set in props: "+propMap);
+    }
     return o == null ? def : o.toString();
   }
 

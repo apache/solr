@@ -469,6 +469,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
             ZkStateReader.NODE_NAME_PROP, subShardNodeName,
+            ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(subShardNodeName),
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           hasRecordedDistributedUpdate = true;

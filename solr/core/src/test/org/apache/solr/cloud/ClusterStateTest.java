@@ -27,6 +27,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.util.UrlScheme;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
@@ -44,8 +45,10 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     Map<String,Slice> slices = new HashMap<>();
     Map<String,Replica> sliceToProps = new HashMap<>();
     Map<String,Object> props = new HashMap<>();
-    props.put("node_name", "node1:10000_solr");
-    props.put("core", "core1");
+    String nodeName = "node1:10000_solr";
+    props.put(ZkStateReader.NODE_NAME_PROP, nodeName);
+    props.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName));
+    props.put(ZkStateReader.CORE_NAME_PROP, "core1");
 
     props.put("prop1", "value");
     props.put("prop2", "value2");

@@ -88,7 +88,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import static org.apache.solr.common.cloud.UrlScheme.HTTP;
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 import static org.apache.solr.common.params.CommonParams.ID;
 
@@ -1051,7 +1050,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     ReplicaListTransformer replicaListTransformer = requestRLTGenerator.getReplicaListTransformer(reqParams);
 
     final ClusterStateProvider provider = getClusterStateProvider();
-    final String urlScheme = provider.getClusterProperty(ZkStateReader.URL_SCHEME, HTTP);
+    final String urlScheme = provider.getClusterProperty(ZkStateReader.URL_SCHEME, "http");
     final Set<String> liveNodes = provider.getLiveNodes();
 
     final List<String> theUrlList = new ArrayList<>(); // we populate this as follows...

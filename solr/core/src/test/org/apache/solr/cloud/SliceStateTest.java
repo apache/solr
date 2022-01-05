@@ -27,6 +27,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.util.UrlScheme;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
@@ -43,8 +44,10 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     Map<String, Slice> slices = new HashMap<>();
     Map<String, Replica> sliceToProps = new HashMap<>();
     Map<String, Object> props = new HashMap<>();
-    props.put("node_name", "127.0.0.1:10000_solr");
-    props.put("core", "core1");
+    String nodeName = "127.0.0.1:10000_solr";
+    props.put(ZkStateReader.NODE_NAME_PROP, nodeName);
+    props.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName));
+    props.put(ZkStateReader.CORE_NAME_PROP, "core1");
     props.put(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
 
     Replica replica = new Replica("node1", props, "collection1", "shard1");

@@ -48,15 +48,8 @@ public class ZkCoreNodeProps {
   private static String getBaseUrl(ZkNodeProps nodeProps) {
     // if storing baseUrl in ZK is enabled and it's stored, just use what's stored, i.e. no self-healing here
     String baseUrl = nodeProps.getStr(ZkStateReader.BASE_URL_PROP);
-    if (baseUrl != null) {
-      return baseUrl;
-    }
-
-    final String nodeName = nodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
-    if (nodeName != null) {
-      baseUrl = UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName);
-    } else {
-      throw new IllegalStateException("base_url and node_name not available for "+nodeProps);
+    if (baseUrl == null) {
+      throw new IllegalStateException("base_url not set in: " + nodeProps);
     }
     return baseUrl;
   }

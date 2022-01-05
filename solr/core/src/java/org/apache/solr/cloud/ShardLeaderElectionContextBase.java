@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.UrlScheme;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -165,10 +166,12 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       }
     }
     if (!isAlreadyLeader) {
+      String nodeName = leaderProps.getStr(ZkStateReader.NODE_NAME_PROP);
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
           ZkStateReader.SHARD_ID_PROP, shardId,
           ZkStateReader.COLLECTION_PROP, collection,
-          ZkStateReader.NODE_NAME_PROP, leaderProps.getStr(ZkStateReader.NODE_NAME_PROP),
+          ZkStateReader.NODE_NAME_PROP, nodeName,
+          ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName),
           ZkStateReader.CORE_NAME_PROP, leaderProps.getStr(ZkStateReader.CORE_NAME_PROP),
           ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
       assert zkController != null;

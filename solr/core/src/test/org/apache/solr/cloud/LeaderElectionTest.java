@@ -32,7 +32,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.UrlScheme;
+import org.apache.solr.util.UrlScheme;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -144,10 +144,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     public ClientThread(ElectorSetup es, String shard, int nodeNumber, long runLeaderDelay) throws Exception {
       super("Thread-" + shard + nodeNumber);
       this.shard = shard;
-      this.nodeName = shard + nodeNumber;
+      this.nodeName = shard + nodeNumber + ":80_solr";
       this.runLeaderDelay = runLeaderDelay;
 
-      props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, Integer.toString(nodeNumber), ZkStateReader.CORE_NAME_PROP, "");
+      props = new ZkNodeProps(ZkStateReader.NODE_NAME_PROP, this.nodeName, ZkStateReader.BASE_URL_PROP, Integer.toString(nodeNumber), ZkStateReader.CORE_NAME_PROP, "");
 
       this.es = es;
       if (this.es == null) {
@@ -205,7 +205,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   @Test
   public void testBasic() throws Exception {
     LeaderElector elector = new LeaderElector(zkClient);
-    ZkNodeProps props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
+    ZkNodeProps props = new ZkNodeProps(ZkStateReader.NODE_NAME_PROP, "127.0.0.1:80_solr", ZkStateReader.BASE_URL_PROP,
         UrlScheme.INSTANCE.applyUrlScheme("http://127.0.0.1/solr/"), ZkStateReader.CORE_NAME_PROP, "");
     ZkController zkController = MockSolrSource.makeSimpleMock(null, null, zkClient);
     ElectionContext context = new ShardLeaderElectionContextBase(elector,
@@ -220,7 +220,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   public void testCancelElection() throws Exception {
     UrlScheme u = UrlScheme.INSTANCE;
     LeaderElector first = new LeaderElector(zkClient);
-    ZkNodeProps props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
+    ZkNodeProps props = new ZkNodeProps(ZkStateReader.NODE_NAME_PROP, "127.0.0.1:80_solr", ZkStateReader.BASE_URL_PROP,
         u.applyUrlScheme("http://127.0.0.1/solr/"), ZkStateReader.CORE_NAME_PROP, "1");
     ZkController zkController = MockSolrSource.makeSimpleMock(null, null, zkClient);
     ElectionContext firstContext = new ShardLeaderElectionContextBase(first,
@@ -236,7 +236,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     assertEquals("original leader was not registered", url1, getLeaderUrl("collection2", "slice1"));
 
     LeaderElector second = new LeaderElector(zkClient);
-    props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
+    props = new ZkNodeProps(ZkStateReader.NODE_NAME_PROP, "127.0.0.1:80_solr", ZkStateReader.BASE_URL_PROP,
         u.applyUrlScheme("http://127.0.0.1/solr/"), ZkStateReader.CORE_NAME_PROP, "2");
     zkController = MockSolrSource.makeSimpleMock(null, null, zkClient);
     ElectionContext context = new ShardLeaderElectionContextBase(second,

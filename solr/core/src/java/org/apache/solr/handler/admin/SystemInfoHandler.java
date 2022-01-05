@@ -20,7 +20,7 @@ import com.codahale.metrics.Gauge;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.common.cloud.UrlScheme;
+import org.apache.solr.util.UrlScheme;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
