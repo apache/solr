@@ -41,7 +41,7 @@ ext {
   }.call()
 }
 
-if (ext.useGpgForSigning) {
+if (project.ext.useGpgForSigning) {
   signing {
     useGpgCmd()
   }
@@ -72,7 +72,7 @@ artifacts {
 
 dependencies {
   changesHtml project(path: ":solr:documentation", configuration: "changesHtml")
-  docker project(path: ':solr:docker', configuration: 'packagingOfficial')
+  docker project(path: ':solr:docker', configuration: project.ext.withSignedArtifacts ? 'packagingOfficial' : 'packaging')
 }
 
 // Compute checksums for release archives.
@@ -117,6 +117,7 @@ task assembleRelease(type: Sync) {
   })
 
   from(configurations.docker, {
+    include 'Dockerfile.*'
     into "docker"
   })
 
