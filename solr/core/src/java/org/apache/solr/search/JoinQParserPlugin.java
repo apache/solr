@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -194,6 +195,41 @@ public class JoinQParserPlugin extends QParserPlugin {
 
       @Override
       public Query parse() throws SyntaxError {
+        final Query query = parseImpl();
+        // make cross core joins time-agnostic
+        // it should be ruled by param probably
+        boolean crossCoreCache = false;
+        if (query instanceof  JoinQuery) {
+          if (((JoinQuery) query).fromCoreOpenTime != 0L) {
+            ((JoinQuery) query).fromCoreOpenTime = Long.MIN_VALUE;
+            crossCoreCache = true;
+          }
+        } else {
+          if (query instanceof ScoreJoinQParserPlugin.OtherCoreJoinQuery){
+            if (((ScoreJoinQParserPlugin.OtherCoreJoinQuery) query).fromCoreOpenTime!=0) {
+              ((ScoreJoinQParserPlugin.OtherCoreJoinQuery) query).fromCoreOpenTime = Long.MIN_VALUE;
+              crossCoreCache = true;
+            }
+          }
+        }
+        if (crossCoreCache) {
+          String fromIndex = localParams.get("fromIndex");// TODO in might be a single sharded collection
+          WrappedQuery wrap = new WrappedQuery(query);
+          wrap.setCache(false);
+          DocSet docset = null;
+          try {
+            docset = (DocSet) req.getSearcher().getCache(fromIndex).computeIfAbsent(wrap, k -> req.getSearcher().getDocSet((Query) k));
+          } catch (IOException e) {
+            throw new SolrException();
+          }
+          WrappedQuery wrappedCache = new WrappedQuery(docset.getTopFilter());
+          wrappedCache.setCache(false);
+          return wrappedCache;
+        }
+        return query;
+      }
+
+      private Query parseImpl() throws SyntaxError {
         if (localParams != null && localParams.get(METHOD) != null) {
           // TODO Make sure 'method' is valid value here and give users a nice error
           final Method explicitMethod = Method.valueOf(localParams.get(METHOD));
