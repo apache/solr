@@ -112,6 +112,19 @@ task assemblePackaging(type: Sync) {
   into packagingDir
 }
 
+task assemblePackagingOfficial(type: Sync) {
+  description = 'Assemble docker scripts and Dockerfile.official for Solr Packaging'
+
+  from(projectDir, {
+    include "scripts/**"
+  })
+  from(buildDir, {
+    include 'Dockerfile.local'
+    include 'Dockerfile.official'
+  })
+  into packagingOfficialDir
+}
+
 task dockerBuild(dependsOn: configurations.solrTgz) {
   group = 'Docker'
   description = 'Build Solr docker image'
@@ -280,7 +293,7 @@ The final Dockerfiles are merely the snippet headers combined with the snippet b
 [ dfLocalDetails, dfOfficialDetails ].each{ details ->
   def fileName = "Dockerfile.${ -> details.name.toLowerCase(Locale.ROOT) }"
   def outFile = file("$dockerfilesDirPath/${fileName}")
-  
+
   def props = [
     // Values defined here should be common (and consistent) across both Dockerfiles
     'BASE_IMAGE': baseDockerImage,
@@ -293,7 +306,7 @@ The final Dockerfiles are merely the snippet headers combined with the snippet b
     inputs.properties(props)
     inputs.file("$buildDir/snippets/Dockerfile.body.snippet")
     outputs.file(outFile)
-    
+
     from "templates/${fileName}.header.template"
     into "$buildDir/snippets/"
     rename { name -> name.replace("template","snippet") }
@@ -329,6 +342,7 @@ The final Dockerfiles are merely the snippet headers combined with the snippet b
   }
 }
 assemblePackaging.dependsOn tasks.createDockerfileLocal
+assemblePackagingOfficial.dependsOn tasks.createDockerfileLocal
 tasks.createDockerfileOfficial.dependsOn configurations.solrTgz // to lazy compute SHA
 
 // sanity check...
