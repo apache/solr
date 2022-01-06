@@ -697,7 +697,7 @@ groups:
     vars:
       dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
-      dist_url: {{ dist_url_base }}/{{ dist_folder}}
+      dist_url: '{{ dist_url_base }}/{{ dist_folder}}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: Have your Apache credentials handy, you'll be prompted for your password
@@ -715,7 +715,7 @@ groups:
     depends: import_svn
     vars:
       dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
-      dist_url: {{ dist_url_base }}/{{ dist_folder}}
+      dist_url: '{{ dist_url_base }}/{{ dist_folder}}'
       tmp_dir: '{{ [rc_folder, ''smoketest_staged''] | path_join }}'
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     commands: !Commands
@@ -876,7 +876,7 @@ groups:
     vars:
       dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
-      dist_stage_url: {{ dist_url_base }}/{{ dist_folder}}
+      dist_stage_url: '{{ dist_url_base }}/{{ dist_folder}}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       confirm_each_command: false
@@ -891,7 +891,7 @@ groups:
     title: Move release artifacts to release repo
     vars:
       dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
-      dist_stage_url: {{ dist_url_base }}/{{ dist_folder}}
+      dist_stage_url: '{{ dist_url_base }}/{{ dist_folder}}'
       dist_release_url: https://dist.apache.org/repos/dist/release/solr
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
