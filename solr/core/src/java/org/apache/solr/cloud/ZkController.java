@@ -921,10 +921,9 @@ public class ZkController implements Closeable {
         overseerElector = new LeaderElector(zkClient);
         this.overseer = new Overseer((HttpShardHandler) cc.getShardHandlerFactory().getShardHandler(), cc.getUpdateShardHandler(),
             CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
-        ElectionContext context = new OverseerElectionContext(zkClient,
-            overseer, getNodeName());
-        overseerElector.setup(context);
         if (cc.nodeRoles.isOverseerAllowedOrPreferred()) {
+          ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
+          overseerElector.setup(context);
           overseerElector.joinElection(context, false);
         }
       }
