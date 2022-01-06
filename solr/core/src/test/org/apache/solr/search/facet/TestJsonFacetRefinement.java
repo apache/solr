@@ -326,7 +326,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         null);
 
     final String leafLabel;
-    switch (FacetRequest.DEFAULT_REFINE_IMPL) {
+    switch (FacetRequest.RefineMethod.DEFAULT_IMPL) {
       case SIMPLE:
         leafLabel = "_l";
         break;
@@ -434,7 +434,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                  "=={x:{_l:[x1,x9]}}");
 
     final String leafLabel;
-    switch (FacetRequest.DEFAULT_REFINE_IMPL) {
+    switch (FacetRequest.RefineMethod.DEFAULT_IMPL) {
       case SIMPLE:
         leafLabel = "_l";
         break;
@@ -758,7 +758,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // NOTE: `iterative` refinement in combination with top-level refinement (of any kind) will result in the
     // "intuitive" ("Z...") behavior, whereas `simple` refinement will result in the "counterintuitive" ("C...")
     // behavior that this test is specifically designed to highlight.
-    boolean iter = FacetRequest.DEFAULT_REFINE_IMPL == FacetRequest.RefineMethod.ITERATIVE;
+    boolean iter = FacetRequest.RefineMethod.DEFAULT_IMPL == FacetRequest.RefineMethod.ITERATIVE;
     for (String top_refine : Arrays.asList("true", "simple", "false")) {
       // if our top level facet does *NO* overrequesting, then our shard1 will return "some" as it's
       // (only) top term, which will lose to "z_all" from shard0, and the (single pass) refinement
@@ -1117,7 +1117,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
      */
 
     // the first "absent Z" case relies on `simple` refinement, so (hack) ensure that simple refinement is used.
-    final String childRefineSpec = FacetRequest.DEFAULT_REFINE_IMPL == FacetRequest.RefineMethod.SIMPLE ? "true" : "simple";
+    final String childRefineSpec = FacetRequest.RefineMethod.DEFAULT_IMPL == FacetRequest.RefineMethod.SIMPLE ? "true" : "simple";
 
     client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
                     + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, overrefine:1, refine:true, facet:{"

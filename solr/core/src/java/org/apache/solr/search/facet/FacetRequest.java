@@ -107,8 +107,6 @@ public abstract class FacetRequest {
     }
   }
 
-  static RefineMethod DEFAULT_REFINE_IMPL = RefineMethod.SIMPLE;
-
   public static enum RefineMethod {
     NONE,
     SIMPLE,
@@ -117,7 +115,7 @@ public abstract class FacetRequest {
     public static FacetRequest.RefineMethod fromObj(Object method) {
       if (method == null) return null;
       if (method instanceof  Boolean) {
-        return ((Boolean)method) ? DEFAULT_REFINE_IMPL : NONE;
+        return ((Boolean)method) ? DEFAULT_IMPL : NONE;
       }
       if ("simple".equals(method)) {
         return SIMPLE;
@@ -129,6 +127,7 @@ public abstract class FacetRequest {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown RefineMethod method " + method);
       }
     }
+    static RefineMethod DEFAULT_IMPL = SIMPLE;
   }
 
 
