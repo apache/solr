@@ -325,13 +325,25 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         null,
         null);
 
+    final String leafLabel;
+    switch (FacetRequest.DEFAULT_REFINE_IMPL) {
+      case SIMPLE:
+        leafLabel = "_l";
+        break;
+      case ITERATIVE:
+        leafLabel = "_a";
+        break;
+      default:
+        throw new IllegalStateException();
+    }
+
     // for testing partial _p, we need a partial facet within a partial facet
     doTestRefine("{top:{type:terms, field:Afield, refine:true, limit:1, facet:{x : {type:terms, field:X, limit:1, refine:true} } } }",
         "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}],more:true} } ],more:true } }",
         "{top: {buckets:[{val:'B', count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}],more:true} } ],more:true } }",
         null,
         "=={top: {" +
-            "_p:[  ['A' , {x:{_l:[x1]}} ]  ]" +
+            "_p:[  ['A' , {x:{" + leafLabel + ":[x1]}} ]  ]" +
             "    }  " +
             "}"
     );
@@ -1087,9 +1099,12 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     the intuitive behavior is fundamentally incompatible with the `simple` refinement method.
      */
 
+    // the first "absent Z" case relies on `simple` refinement, so (hack) ensure that simple refinement is used.
+    final String childRefineSpec = FacetRequest.DEFAULT_REFINE_IMPL == FacetRequest.RefineMethod.SIMPLE ? "true" : "simple";
+
     client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
                     + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, overrefine:1, refine:true, facet:{"
-                    + "  child:{ type:terms, field:child_s, limit:10, overrequest:10, refine:true }"
+                    + "  child:{ type:terms, field:child_s, limit:10, overrequest:10, refine:" + childRefineSpec + " }"
                     + "} } }")
             , "facets=={ count: 25,"
                     + "  parent:{ buckets:[ "
