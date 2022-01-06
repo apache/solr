@@ -35,15 +35,6 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class ZkNodeProps implements JSONWriter.Writable {
 
-  /*
-   * Un-used feature flag (do not use) to enable storing the 'base_url' property; originally introduced in SOLR-12182 in an effort
-   * to allow auto-migration from non-SSL to SSL enabled cluster. However, that prevents rolling upgrades from stored to non-stored
-   * as the nodes still running the older code that expects it to be stored will get NPEs.
-   * Also, not storing base_url means a client application cannot have different urlSchemes for multiple clusters concurrently,
-   * which was also raised as a concern on SOLR-12182. This flag was set to true as part of the fix for SOLR-15587.
-   */
-  static final boolean STORE_BASE_URL = true;
-
   protected final Map<String,Object> propMap;
 
   /**
