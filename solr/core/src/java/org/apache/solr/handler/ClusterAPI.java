@@ -96,7 +96,7 @@ public class ClusterAPI {
       if (children != null && !children.isEmpty()) {
         result = new HashMap<>();
       } else {
-        return depth >= 1 ? Collections.emptySet(): null;
+        return Collections.emptySet();
       }
       for (String child: children) {
         Object c = readRecursive(path + "/" + child, zk, depth - 1);
@@ -150,7 +150,7 @@ public class ClusterAPI {
      Map<String, Object> roleModesSupportedMap = new HashMap<>();
     for (NodeRoles.Role role: NodeRoles.Role.values()) {
       roleModesSupportedMap.put(role.toString(),
-              Map.of("modes", role.supportedModes().stream().map(NodeRoles.Mode::toString).collect(Collectors.toList())));
+              Map.of("modes", role.supportedModes()));
     }
     rsp.add("supported-roles", roleModesSupportedMap);
   }
@@ -169,7 +169,7 @@ public class ClusterAPI {
     rsp.add( "node-roles", Map.of(roleStr, Collections.singletonMap(modeStr, nodes)));
   }
 
-   public static List<String> getNodesByRole(NodeRoles.Role role, NodeRoles.Mode mode, DistribStateManager zk)
+   public static List<String> getNodesByRole(NodeRoles.Role role, String mode, DistribStateManager zk)
           throws InterruptedException, IOException, KeeperException {
     try {
       return zk.listData(ZkStateReader.NODE_ROLES + "/" + role + "/" + mode);

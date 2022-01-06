@@ -73,7 +73,7 @@ public class OverseerNodePrioritizer {
       }
     }
 
-    List<String> preferredOverseers = ClusterAPI.getNodesByRole(NodeRoles.Role.OVERSEER, NodeRoles.Mode.PREFERRED,
+    List<String> preferredOverseers = ClusterAPI.getNodesByRole(NodeRoles.Role.OVERSEER, NodeRoles.MODE_PREFERRED,
             new ZkDistribStateManager(zkStateReader.getZkClient()));
     for (String preferred: preferredOverseers) {
       if (overseerDesignates.contains(preferred)) {

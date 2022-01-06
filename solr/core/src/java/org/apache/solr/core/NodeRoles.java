@@ -34,10 +34,10 @@ public class NodeRoles {
   public static final String DEFAULT_ROLES_STRING = "data:on,overseer:allowed";
 
   // Map of roles to mode that are applicable for this node.
-  private Map<Role, Mode> nodeRoles;
+  private Map<Role, String> nodeRoles;
 
   public NodeRoles(String rolesString) {
-    Map<Role, Mode> roles = new EnumMap<>(Role.class);
+    Map<Role, String> roles = new EnumMap<>(Role.class);
     if (StringUtils.isEmpty(rolesString)) {
      rolesString = DEFAULT_ROLES_STRING;
     }
@@ -45,7 +45,7 @@ public class NodeRoles {
     for (String s: rolesList) {
       List<String> roleMode =  StrUtils.splitSmart(s,':');
       Role r = Role.getRole(roleMode.get(0));
-      Mode m = Mode.valueOf(roleMode.get(1).toUpperCase(Locale.ROOT));
+      String m = roleMode.get(1);
       if (r.supportedModes().contains(m)) {
         roles.put(r, m);
       } else {
@@ -61,51 +61,44 @@ public class NodeRoles {
     nodeRoles = Collections.unmodifiableMap(roles);
   }
 
-  public Map<Role, Mode> getRoles() {
+  public Map<Role, String> getRoles() {
     return nodeRoles;
   }
 
-  public Mode getRoleMode(Role role) {
+  public String getRoleMode(Role role) {
     return nodeRoles.get(role);
   }
 
   public boolean isOverseerAllowedOrPreferred() {
-    Mode roleMode = nodeRoles.get(Role.OVERSEER);
-    return Mode.ALLOWED.equals(roleMode) || Mode.PREFERRED.equals(roleMode);
+    String roleMode = nodeRoles.get(Role.OVERSEER);
+    return MODE_ALLOWED.equals(roleMode) || MODE_PREFERRED.equals(roleMode);
   }
 
-  public enum Mode {
-    ON, OFF, ALLOWED, PREFERRED, DISALLOWED;
-
-    /**
-     * Need this lowercasing so that the ZK references use the lowercase form, which is
-     * also the form documented in user facing documentation.
-     */
-    @Override
-    public String toString() {
-      return name().toLowerCase(Locale.ROOT);
-    }
-  };
+  public final static String MODE_ON = "on";
+  public final static String MODE_OFF = "off";
+  public final static String MODE_ALLOWED = "allowed";
+  public final static String MODE_PREFERRED = "preferred";
+  public final static String MODE_DISALLOWED = "disallowed";
 
   public enum Role {
     DATA("data") {
       @Override
-      public Set<Mode> supportedModes() {
-        return Set.of(Mode.ON, Mode.OFF);
+      public Set<String> supportedModes() {
+        return Set.of(MODE_ON, MODE_OFF);
       }
       @Override
-      public Mode modeWhenRoleIsAbsent() {
-        return Mode.OFF;
+      public String modeWhenRoleIsAbsent() {
+        return MODE_OFF;
       }
     },
     OVERSEER("overseer") {
       @Override
-      public Set<Mode> supportedModes() {
-        return Set.of(Mode.ALLOWED, Mode.PREFERRED, Mode.DISALLOWED);
+      public Set<String> supportedModes() {
+        return Set.of(MODE_ALLOWED, MODE_PREFERRED, MODE_DISALLOWED);
       }
       @Override
-      public Mode modeWhenRoleIsAbsent() {
-        return Mode.DISALLOWED;
+      public String modeWhenRoleIsAbsent() {
+        return MODE_DISALLOWED;
       }
     };
 
@@ -122,12 +115,12 @@ public class NodeRoles {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown role: " + value);
     }
 
-    public abstract Set<Mode> supportedModes();
+    public abstract Set<String> supportedModes();
 
     /**
      * Default mode for a role in nodes where this role is not specified.
      */
-    public abstract Mode modeWhenRoleIsAbsent();
+    public abstract String modeWhenRoleIsAbsent();
 
     @Override
     public String toString() {
@@ -139,7 +132,7 @@ public class NodeRoles {
     return ZkStateReader.NODE_ROLES + "/" + role.roleName;
   }
 
-  public static String getZNodeForRoleMode(Role role, Mode mode) {
+  public static String getZNodeForRoleMode(Role role, String mode) {
     return ZkStateReader.NODE_ROLES + "/" + role.roleName + "/" + mode;
   }
 

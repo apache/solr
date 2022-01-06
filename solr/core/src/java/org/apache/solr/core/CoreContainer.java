@@ -947,7 +947,7 @@ public class CoreContainer {
       });
 
       clusterSingletons.setReady();
-      if (NodeRoles.Mode.PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
+      if (NodeRoles.MODE_PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
         try {
           log.info("This node has been started as a preferred overseer");
           zkSys.getZkController().setPreferredOverseer();

@@ -860,7 +860,7 @@ public class ZkController implements Closeable {
     cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES, zkClient);
     for (NodeRoles.Role role: NodeRoles.Role.values()) {
       cmdExecutor.ensureExists(NodeRoles.getZNodeForRole(role), zkClient);
-      for (NodeRoles.Mode mode: role.supportedModes()) {
+      for (String mode: role.supportedModes()) {
         cmdExecutor.ensureExists(NodeRoles.getZNodeForRoleMode(role, mode), zkClient);
       }
     }
@@ -2230,7 +2230,7 @@ public class ZkController implements Closeable {
         "node", getNodeName(),
         "role", "overseer",
         "persist", "false");
-    log.info("Going to add role {} ", props);
+    log.warn("Going to add role {}. It is deprecated to use ADDROLE and consider using Node Roles instead.", props);
     getOverseerCollectionQueue().offer(Utils.toJSON(props));
   }
 

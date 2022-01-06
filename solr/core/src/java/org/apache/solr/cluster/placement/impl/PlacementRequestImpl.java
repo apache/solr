@@ -86,7 +86,7 @@ public class PlacementRequestImpl implements PlacementRequest {
         throw new Assign.AssignmentException("Bad assign request: empty list of nodes for collection " + solrCollection.getName());
       }
     } else {
-      nodes = cluster.getLiveNodes(true);
+      nodes = cluster.getLiveDataNodes();
       if (nodes.isEmpty()) {
         throw new Assign.AssignmentException("Impossible assign request: no live nodes for collection " + solrCollection.getName());
       }

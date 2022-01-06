@@ -43,7 +43,7 @@ class ClusterAbstractionsForTest {
     }
 
     @Override
-    public Set<Node> getLiveNodes(boolean filterNonDataNodes) {
+    public Set<Node> getLiveDataNodes() {
       return liveNodes;
     }
 

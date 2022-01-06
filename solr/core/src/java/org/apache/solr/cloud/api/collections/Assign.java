@@ -244,7 +244,7 @@ public class Assign {
 
   public static Collection<String> filterNonDataNodes(DistribStateManager zk, Collection<String> liveNodes) {
     try {
-     List<String> noData =  ClusterAPI.getNodesByRole(NodeRoles.Role.DATA, NodeRoles.Mode.OFF, zk);
+     List<String> noData =  ClusterAPI.getNodesByRole(NodeRoles.Role.DATA, NodeRoles.MODE_OFF, zk);
       if (noData.isEmpty()) {
         return liveNodes;
       } else {
