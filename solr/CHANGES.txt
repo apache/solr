@@ -194,6 +194,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15890: Add a limit to the Admin SQL panel if one is not included in the stmt (Joel Bernstein)
 
+* SOLR-15887: Remove <jmx/> from shipped solrconfig.xm. (Eric Pugh)
+
 Build
 ---------------------
 
