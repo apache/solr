@@ -21,6 +21,8 @@ import com.github.zafarkhaja.semver.Version;
 import com.github.zafarkhaja.semver.expr.ExpressionParser;
 import org.apache.solr.common.SolrException;
 
+import java.util.Locale;
+
 /**
  * Simple Solr version representation backed by a <a href="https://devhints.io/semver">Semantic Versioning</a> library.
  * Provides a constant for current Solr version as well as methods to parse string versions and
@@ -31,7 +33,7 @@ public final class SolrVersion implements Comparable<SolrVersion> {
   private final Version version;
 
   // This static variable should be bumped for each release
-  private static final String LATEST_STRING = "9.0.0";
+  private static final String LATEST_STRING = "10.0.0";
 
   /**
    * This instance represents the current (latest) version of Solr.
@@ -57,7 +59,17 @@ public final class SolrVersion implements Comparable<SolrVersion> {
    */
   @Override
   public String toString() {
-    return version.toString();
+    // Workaround for bug https://github.com/zafarkhaja/jsemver/issues/32
+    // TODO: Needs to find a newer SemVer lib
+    StringBuilder sb = new StringBuilder(String.format(Locale.ROOT, "%d.%d.%d",
+        version.getMajorVersion(), version.getMinorVersion(), version.getPatchVersion()));
+    if (!version.getPreReleaseVersion().isEmpty()) {
+      sb.append("-").append(version.getPreReleaseVersion());
+    }
+    if (!version.getBuildMetadata().isEmpty()) {
+      sb.append("+").append(version.getBuildMetadata());
+    }
+    return sb.toString();
   }
 
   public boolean greaterThan(SolrVersion other) {
