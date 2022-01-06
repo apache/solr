@@ -16,8 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.lang.invoke.MethodHandles;
-import java.util.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ZkStateReader;

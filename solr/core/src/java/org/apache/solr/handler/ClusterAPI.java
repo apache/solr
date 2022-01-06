@@ -18,9 +18,6 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
 import org.apache.solr.api.Command;
