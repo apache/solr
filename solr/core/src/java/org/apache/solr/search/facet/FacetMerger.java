@@ -46,8 +46,9 @@ public abstract class FacetMerger {
     private final BitSet sawShard = new BitSet(); // [bucket0_shard0, bucket0_shard1, bucket0_shard2,  bucket1_shard0, bucket1_shard1, bucket1_shard2]
     private Map<String,Integer> shardmap = new HashMap<>();
 
-    public Context(int numShards) {
+    public Context(int numShards, FacetRequest rootReq) {
       this.numShards = numShards;
+      this.passLimit = 1 + getPassLimit(rootReq);
     }
 
     Object root;  // per-shard response
@@ -59,6 +60,7 @@ public abstract class FacetMerger {
     private PendingRefinement ancestorHasPendingRefinement = PendingRefinement.NO;
     private boolean hasPendingTopLevel;
     private boolean refinementComplete;
+    private final int passLimit;
 
     public void newShard(String shard) {
       Integer prev = shardmap.put(shard, ++shardNum);
@@ -141,17 +143,31 @@ public abstract class FacetMerger {
       return pass;
     }
 
-    public Context resetPerPass() {
+    public boolean resetPerPass() {
+      assert pass < passLimit;
       resetPerShard();
       pass++;
       hasPendingTopLevel = false;
-      return this;
+      return pass < passLimit;
     }
 
     public Context resetPerShard() {
       ancestorHasPendingRefinement = PendingRefinement.NO;
       refinementComplete = true;
       return this;
+    }
+
+    private static int getPassLimit(FacetRequest freq) {
+      final int baseLimit = freq.doRefine() ? 1 : 0;
+      int max = baseLimit;
+      for (FacetRequest sub : freq.subFacets.values()) {
+        if (sub.getRefineMethod() == FacetRequest.RefineMethod.ITERATIVE) {
+          max = Math.max(max, baseLimit + getPassLimit(sub) + (sub.evaluateAsTopLevel() ? 1 : 0));
+        } else {
+          max = Math.max(max, getPassLimit(sub) + (sub.evaluateAsTopLevel() ? 1 : 0));
+        }
+      }
+      return max;
     }
 
     private Map<FacetRequest, Collection<String>> refineSubMap = new IdentityHashMap<>(4);

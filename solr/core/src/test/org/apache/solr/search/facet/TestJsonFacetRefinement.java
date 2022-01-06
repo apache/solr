@@ -141,7 +141,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       FacetRequest facetRequest = parser.parse(jsonFacet);
 
       FacetMerger merger = null;
-      FacetMerger.Context ctx = new FacetMerger.Context(nShards);
+      FacetMerger.Context ctx = new FacetMerger.Context(nShards, facetRequest);
       for (int i = 0; i < nShards; i++) {
         Object response = fromJSON(responsesAndTests[i]);
         if (i == 0) {

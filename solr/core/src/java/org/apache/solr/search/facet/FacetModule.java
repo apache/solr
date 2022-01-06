@@ -189,7 +189,12 @@ public class FacetModule extends SearchComponent {
     // requests in the outgoing queue at once.
 
     assert rb.shards.length == facetState.mcontext.numShards;
-    facetState.mcontext.resetPerPass();
+    if (!facetState.mcontext.resetPerPass()) {
+      // we've reached the max possible refinement pass iteration. Shortcircuit now for efficiency, but if
+      // we did _not_ shortcircuit here, it should be functionally equivalent (e.g., pass all tests, etc.).
+      facetState.done = true;
+      return ResponseBuilder.STAGE_DONE;
+    }
     int ret = ResponseBuilder.STAGE_DONE;
     for (String shard : rb.shards) {
       facetState.mcontext.setShard(shard);
@@ -310,7 +315,7 @@ public class FacetModule extends SearchComponent {
       }
       if (facetState.merger == null) {
         facetState.merger = facetState.facetRequest.createFacetMerger(facet);
-        facetState.mcontext = new FacetMerger.Context(sreq.responses.size());
+        facetState.mcontext = new FacetMerger.Context(sreq.responses.size(), facetState.facetRequest);
       }
 
       if ((sreq.purpose & PURPOSE_REFINE_JSON_FACETS) != 0) {
