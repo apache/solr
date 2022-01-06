@@ -1138,6 +1138,33 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                     + "      ] } },"
                     + "  ] } }"
     );
+
+    // we should achieve the same result by using the `iterative` refinement method:
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
+                    + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, overrefine:1, refine:true, facet:{"
+                    + "  child:{ type:terms, field:child_s, limit:10, overrequest:10, refine:iterative }"
+                    + "} } }")
+            , "facets=={ count: 25,"
+                    + "  parent:{ buckets:[ "
+                    + "    { val:A, count: 10,"
+                    + "      child:{ buckets:[ "
+                    + "                   {val:X0,count:2},"
+                    + "                   {val:X1,count:2},"
+                    + "                   {val:X2,count:2},"
+                    + "                   {val:X3,count:2},"
+                    + "                   {val:X4,count:2}"
+                    + "      ] } },"
+                    + "    { val:C, count: 10,"
+                    + "      child:{ buckets:[ "
+                    + "                   {val:Z, count:5}," // `refine:iterative` child allows this value to be present
+                    + "                   {val:Y0, count:1},"
+                    + "                   {val:Y1, count:1},"
+                    + "                   {val:Y2, count:1},"
+                    + "                   {val:Y3, count:1},"
+                    + "                   {val:Y4, count:1}"
+                    + "      ] } },"
+                    + "  ] } }"
+    );
   }
 
   @Test
