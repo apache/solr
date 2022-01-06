@@ -107,6 +107,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   // tip: when debugging failures, change this variable to DEFAULT_METHOD
   // (or if only one method is problematic, set to that explicitly)
+  // Test suite parameters can also be passed directly on command-line test invocation, e.g.:
+  // gradlew :solr:core:test --tests "org.apache.solr.search.facet.TestJsonFacets.* {p0=DV}"
   private static final FacetField.FacetMethod TEST_ONLY_ONE_FACET_METHOD
     = null; // FacetField.FacetMethod.DEFAULT_METHOD;
 
