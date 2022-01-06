@@ -19,7 +19,6 @@ package org.apache.solr.cluster.placement.impl;
 
 import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.cloud.api.collections.Assign;
@@ -28,8 +27,6 @@ import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.PlacementRequest;
-import org.apache.solr.core.NodeRoles;
-import org.apache.solr.handler.ClusterAPI;
 
 public class PlacementRequestImpl implements PlacementRequest {
   private final SolrCollection solrCollection;
