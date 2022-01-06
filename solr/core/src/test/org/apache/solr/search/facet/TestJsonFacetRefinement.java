@@ -754,7 +754,12 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     //
     // NOTE: parent facet limit is 1, testing with various top level overrequest/refine params to see
     // how different refinement code paths of parent effect the child refinement
-    for (String top_refine : Arrays.asList("true", "false")) {
+    //
+    // NOTE: `iterative` refinement in combination with top-level refinement (of any kind) will result in the
+    // "intuitive" ("Z...") behavior, whereas `simple` refinement will result in the "counterintuitive" ("C...")
+    // behavior that this test is specifically designed to highlight.
+    boolean iter = FacetRequest.DEFAULT_REFINE_IMPL == FacetRequest.RefineMethod.ITERATIVE;
+    for (String top_refine : Arrays.asList("true", "simple", "false")) {
       // if our top level facet does *NO* overrequesting, then our shard1 will return "some" as it's
       // (only) top term, which will lose to "z_all" from shard0, and the (single pass) refinement
       // logic will have no choice but to choose & refine the child facet terms from shard0: A,B,C
@@ -774,12 +779,12 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                     + "    cat_count:{ buckets:[ "
                     + "                 {val:A,count:1},"
                     + "                 {val:B,count:1},"
-                    + "                 {val:C,count:6},"
+                    + "                 "+(iter && !"false".equals(top_refine) ? "{val:Z,count:2}" : "{val:C,count:6}")+","
                     + "    ] },"
                     + "    cat_price:{ buckets:[ "
                     + "                 {val:A,count:1,sum_p:1.0},"
                     + "                 {val:B,count:1,sum_p:1.0},"
-                    + "                 {val:C,count:6,sum_p:6.0},"
+                    + "                 "+(iter && !"false".equals(top_refine) ? "{val:Z,count:2,sum_p:2.0}" : "{val:C,count:6,sum_p:6.0}")+","
                     + "    ] }"
                     + "} ] } }"
                     );
