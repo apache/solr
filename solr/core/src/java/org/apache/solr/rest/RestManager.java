@@ -42,6 +42,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -352,7 +353,10 @@ public class RestManager {
 
     private void doHead(ManagedEndpoint managedEndpoint) {
       // truncating the content-length removes the response body
-      managedEndpoint.getSolrResponse().setHttpHeader("Content-Length", "0");
+      //managedEndpoint.getSolrResponse().setHttpHeader("Content-Length", "0");
+      NamedList<Object> blank = new SimpleOrderedMap<>();
+      managedEndpoint.getSolrResponse().setAllValues(blank);
+
     }
 
     protected void doDelete() {
