@@ -21,6 +21,8 @@ import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 
+import java.util.*;
+
 public class NodeRoles {
   public static final String NODE_ROLES_PROP = "solr.node.roles";
 
@@ -33,7 +35,7 @@ public class NodeRoles {
   private Map<Role, String> nodeRoles;
 
   public NodeRoles(String rolesString) {
-    Map<Role, String> roles = new EnumMap<>(Role.class);
+    Map<Role, String> roles = new EnumMap<Role, String>(Role.class);
     if (StringUtils.isEmpty(rolesString)) {
      rolesString = DEFAULT_ROLES_STRING;
     }
