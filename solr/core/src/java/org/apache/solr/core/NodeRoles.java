@@ -22,8 +22,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class NodeRoles {
   public static final String NODE_ROLES_PROP = "solr.node.roles";
