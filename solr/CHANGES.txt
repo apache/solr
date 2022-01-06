@@ -190,6 +190,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15213: Atomic updates: "add" now uses add-or-replace logic for child documents.  They can
   also themselves be atomic updates.  (James Ashbourne, Endika Posadas via David Smiley)
 
+* SOLR-15887: Remove <jmx/> from shipped solrconfig.xm. (Eric Pugh)
+
 Build
 ---------------------
 
