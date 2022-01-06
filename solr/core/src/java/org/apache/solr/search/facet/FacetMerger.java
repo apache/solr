@@ -122,9 +122,10 @@ public abstract class FacetMerger {
         case NO:
           return currentPassRefinement ? PendingRefinement.PENDING_RESULTS : PendingRefinement.NO;
         case PENDING_RESULTS:
-          refinementComplete = false;
-          return currentPassRefinement ? PendingRefinement.ONGOING : PendingRefinement.PENDING_RESULTS;
         case ONGOING:
+          // even when parent refinement is PENDING_RESULTS, the previous pass may have introduced new values at
+          // this (child) level that have been integrated but not yet evaluated for possible further refinement;
+          // so we should consider refinement at this (child) level to be ONGOING.
           refinementComplete = false;
           return PendingRefinement.ONGOING;
         default:

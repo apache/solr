@@ -1016,6 +1016,25 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                   + "      ] } },"
                   + "  ] } }"
                   );
+
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
+                    + "processEmpty:"+ancestorsProcessEmpty+","
+                    + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, refine:simple, facet:{"
+                    + "  processEmpty:"+ancestorsProcessEmpty+","
+                    + "  debug:'debug(numShards)',"
+                    + "  child:{ type:terms, field:child_s, limit:2, overrequest:0, refine:simple,"
+                    + "          facet:{ processEmpty:true, debug:'debug(numShards)' } }"
+                    + "} } }")
+            , "facets=={ count: "+numDocs+","
+                    + "  parent:{ buckets:[ "
+                    + "    { val:pY, count: 24,"
+                    + "      debug:"+(ancestorsProcessEmpty ? numClients : numClients - 1)+", "
+                    + "      child:{ buckets:[] } }," // for `refine:simple`, we expect all child stats to be incomplete
+                    + "    { val:pX, count: 13,"
+                    + "      debug:"+(ancestorsProcessEmpty ? numClients : numClients - 1)+", "
+                    + "      child:{ buckets:[] } }," // for `refine:simple`, we expect all child stats to be incomplete
+                    + "  ] } }"
+    );
   }
 
   @Test

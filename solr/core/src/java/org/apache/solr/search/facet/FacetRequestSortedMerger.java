@@ -166,10 +166,10 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
   }
 
   boolean isBucketComplete(FacetBucket bucket, Context mcontext) {
-    if (mcontext.numShards <= 1 || shardHasMoreBuckets==null) return true;
+    if (mcontext.numShards <= 1 || (shardHasMoreBuckets==null && !freq.processEmpty)) return true;
     for (int shard=0; shard < mcontext.numShards; shard++) {
       // bucket is incomplete if we didn't see the bucket for this shard, and the shard has more buckets
-      if (!mcontext.getShardFlag(bucket.bucketNumber, shard) && shardHasMoreBuckets!=null && shardHasMoreBuckets.get(shard)) {
+      if (!mcontext.getShardFlag(bucket.bucketNumber, shard) && (freq.processEmpty || (shardHasMoreBuckets!=null && shardHasMoreBuckets.get(shard)))) {
         return false;
       }
     }
@@ -298,6 +298,9 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
           case ITERATIVE:
             // iterative refinement -- we might need to refine again
             pendingRefinement = mcontext.maybeIterativeRefinement(currentPassRefinement);
+            if (sortedBuckets != null && sortedBuckets.size() < buckets.size()) {
+              sortedBuckets = null;
+            }
             break;
           default:
             throw new IllegalStateException();
