@@ -20,7 +20,7 @@ if (skipErrorProne) {
   configure(rootProject) {
     task errorProneSkipped() {
       doFirst {
-        logger.warn("WARNING: errorprone disabled (won't work with JDK ${rootProject.runtimeJavaVersion} if used as alternate runtime JVM)")
+        logger.warn("WARNING: errorprone disabled (won't work with JDK ${rootProject.runtimeJavaVersion} if used as alternative java toolchain)")
       }
     }
   }
