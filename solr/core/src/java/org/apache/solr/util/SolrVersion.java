@@ -61,7 +61,8 @@ public final class SolrVersion implements Comparable<SolrVersion> {
   public String toString() {
     // Workaround for bug https://github.com/zafarkhaja/jsemver/issues/32
     // TODO: Needs to find a newer SemVer lib
-    StringBuilder sb = new StringBuilder(String.format(Locale.ROOT, "%d.%d.%d", getMajorVersion(), getMinorVersion(), getPatchVersion()));
+    StringBuilder sb = new StringBuilder(String.format(Locale.ROOT, "%d.%d.%d",
+        version.getMajorVersion(), version.getMinorVersion(), version.getPatchVersion()));
     if (!version.getPreReleaseVersion().isEmpty()) {
       sb.append("-").append(version.getPreReleaseVersion());
     }
