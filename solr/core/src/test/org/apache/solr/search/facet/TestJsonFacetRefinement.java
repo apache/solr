@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.util.TestUtil;
 
 import org.apache.solr.JSONTestUtil;
@@ -39,6 +40,7 @@ import org.noggit.ObjectBuilder;
 public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing
+  private static FacetRequest.RefineMethod origDefaultRefineImpl;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -48,6 +50,10 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
+
+    origDefaultRefineImpl = FacetRequest.RefineMethod.DEFAULT_IMPL;
+    // instead of the following, see the constructor
+    // FacetRequest.RefineMethod.DEFAULT_IMPL = rand(FacetRequest.RefineMethod.VALID_DEFAULT_REFINE_IMPLS);
   }
 
   public static void initServers() throws Exception {
@@ -64,6 +70,30 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       servers = null;
     }
     systemClearPropertySolrDisableUrlAllowList();
+    FacetRequest.RefineMethod.DEFAULT_IMPL = origDefaultRefineImpl;
+  }
+
+  // tip: when debugging failures, change this variable to DEFAULT_IMPL
+  // (or if only one impl is problematic, set to that explicitly)
+  // Test suite parameters can also be passed directly on command-line test invocation, e.g.:
+  // gradlew :solr:core:test --tests "org.apache.solr.search.facet.TestJsonFacetRefinement.* {p0=ITERATIVE}"
+  private static final FacetRequest.RefineMethod TEST_ONLY_ONE_DEFAULT_REFINE_IMPL
+          = null; // FacetRequest.RefineMethod.DEFAULT_IMPL;
+
+  @ParametersFactory
+  public static Iterable<Object[]> parameters() {
+    if (null != TEST_ONLY_ONE_DEFAULT_REFINE_IMPL) {
+      return Arrays.<Object[]>asList(new Object[] { TEST_ONLY_ONE_DEFAULT_REFINE_IMPL });
+    }
+
+    // wrap each enum val in an Object[] and return as Iterable
+    return () -> Arrays.stream(FacetRequest.RefineMethod.VALID_DEFAULT_REFINE_IMPLS)
+            .map(it -> new Object[]{it}).iterator();
+  }
+
+  public TestJsonFacetRefinement(FacetRequest.RefineMethod defImpl) {
+    assert Arrays.asList(FacetRequest.RefineMethod.VALID_DEFAULT_REFINE_IMPLS).contains(defImpl);
+    FacetRequest.RefineMethod.DEFAULT_IMPL = defImpl; // note: the real default is restored in afterTests
   }
 
 

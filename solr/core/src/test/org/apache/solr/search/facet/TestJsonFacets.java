@@ -74,7 +74,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // we vary RefineMethod.DEFAULT_IMPL the inelegant way, because combinatorial variation with default FacetMethod
     // would be unwieldy/unwarranted.
     origDefaultRefineImpl = FacetRequest.RefineMethod.DEFAULT_IMPL;
-    FacetRequest.RefineMethod.DEFAULT_IMPL = random().nextBoolean() ? FacetRequest.RefineMethod.SIMPLE : FacetRequest.RefineMethod.ITERATIVE;
+    FacetRequest.RefineMethod.DEFAULT_IMPL = rand(FacetRequest.RefineMethod.VALID_DEFAULT_REFINE_IMPLS);
 
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");

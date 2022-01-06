@@ -128,6 +128,7 @@ public abstract class FacetRequest {
       }
     }
     static RefineMethod DEFAULT_IMPL = SIMPLE;
+    static final RefineMethod[] VALID_DEFAULT_REFINE_IMPLS = new RefineMethod[] { SIMPLE, ITERATIVE };
   }
 
 
