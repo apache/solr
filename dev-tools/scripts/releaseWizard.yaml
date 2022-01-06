@@ -423,12 +423,7 @@ groups:
         cmd: git add -u .  && git commit -m "Add next major version {{ next_version }}"  && git push
         logfile: commit-stable.log
     post_description: |
-      Make sure to follow the manual instructions printed by the script:
-
-      * Move backcompat oldIndexes to unsupportedIndexes in TestBackwardsCompatibility
-      * Update IndexFormatTooOldException throw cases
-
-      There may be other steps needed as well
+      Make sure to follow the manual instructions printed by the script.
   - !Todo
     id: add_version_minor
     title: Add a new minor version on stable branch
