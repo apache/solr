@@ -192,12 +192,18 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     long last = Math.min(sortedBuckets.size(), end);
     List<FacetBucket> prunedBuckets = new ArrayList<>(Math.max(0, (int)(last - first)));
     boolean refine = freq.refine != null && freq.refine != FacetRequest.RefineMethod.NONE;
+    final boolean isRangeFacet = this instanceof FacetRangeMerger;
     int off = (int)freq.offset;
     int lim = freq.limit >= 0 ? (int)freq.limit : Integer.MAX_VALUE;
     for (FacetBucket bucket : sortedBuckets) {
       if (bucket.getCount() < freq.mincount) {
         // prune all buckets not meeting mincount
         buckets.remove(bucket.bucketValue);
+        continue;
+      }
+      if (isRangeFacet) {
+        // mimic behavior of rangeFacet, which only checks mincount (doesn't check offset, bucketComplete, etc...)
+        prunedBuckets.add(bucket);
         continue;
       }
       if (refine && !isBucketComplete(bucket,mcontext)) {
@@ -283,10 +289,16 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       // reset pass trackers
       if (lastPass == -1) {
         // the first time we see this, assume there is pending refinement if refinement is enabled
-        pendingRefinement = freq.doRefine() ? Context.PendingRefinement.ONGOING : Context.PendingRefinement.NO;
-        if (freq.refine == FacetRequest.RefineMethod.ITERATIVE) {
-          // TODO: make this a switch statement
-          pendingRefinement = mcontext.maybeIterativeRefinement(true);
+        switch (freq.refine == null ? FacetRequest.RefineMethod.NONE : freq.refine) {
+          case SIMPLE:
+            pendingRefinement = Context.PendingRefinement.ONGOING;
+            break;
+          case ITERATIVE:
+            pendingRefinement = mcontext.maybeIterativeRefinement(true, true);
+            break;
+          default:
+            pendingRefinement = Context.PendingRefinement.NO;
+            break;
         }
       } else {
         assert freq.refine != null;
@@ -297,7 +309,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
             break;
           case ITERATIVE:
             // iterative refinement -- we might need to refine again
-            pendingRefinement = mcontext.maybeIterativeRefinement(currentPassRefinement);
+            pendingRefinement = mcontext.maybeIterativeRefinement(currentPassRefinement, false);
             if (sortedBuckets != null && sortedBuckets.size() < buckets.size()) {
               sortedBuckets = null;
             }

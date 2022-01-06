@@ -119,10 +119,17 @@ public abstract class FacetMerger {
       return refinementComplete && !hasPendingTopLevel;
     }
 
-    public PendingRefinement maybeIterativeRefinement(boolean currentPassRefinement) {
+    public PendingRefinement maybeIterativeRefinement(boolean currentPassRefinement, boolean initialPass) {
       switch (ancestorHasPendingRefinement) {
         case NO:
-          return currentPassRefinement ? PendingRefinement.PENDING_RESULTS : PendingRefinement.NO;
+          if (initialPass) {
+            // first pass should always be `ONGOING`
+            return PendingRefinement.ONGOING;
+          } else if (currentPassRefinement) {
+            return PendingRefinement.PENDING_RESULTS;
+          } else {
+            return PendingRefinement.NO;
+          }
         case PENDING_RESULTS:
         case ONGOING:
           // even when parent refinement is PENDING_RESULTS, the previous pass may have introduced new values at
