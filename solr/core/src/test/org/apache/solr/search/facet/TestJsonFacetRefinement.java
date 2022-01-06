@@ -433,6 +433,18 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                  "=={x:{_l:[x3]}}",
                  "=={x:{_l:[x1,x9]}}");
 
+    final String leafLabel;
+    switch (FacetRequest.DEFAULT_REFINE_IMPL) {
+      case SIMPLE:
+        leafLabel = "_l";
+        break;
+      case ITERATIVE:
+        leafLabel = "_a";
+        break;
+      default:
+        throw new IllegalStateException();
+    }
+
     // hueristic refinement of nested facets
     // limit=1 + 10% + 4 =~ 5 total (at each level)
     // -> x2 is fully populated and child buckets are consistent - no refinement needed at all
@@ -463,12 +475,12 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                  "    ], more:true } }",
                  // 
                  "=={x: {" +
-                 "        _p:[  ['x3' , {y:{_l:[y31,y32,y33,y34,y35]}} ]  ]," +
+                 "        _p:[  ['x3' , {y:{" + leafLabel + ":[y31,y32,y33,y34,y35]}} ]  ]," +
                  "        _s:[  ['x4' , {y:{_l:[y4b]}} ]  ]," +
                  "    } }",
                  "=={x: {" +
-                 "        _p:[  ['x1' , {y:{_l:[y11,y12]}} ],   " +
-                 "              ['x5' , {y:{_l:[y51,y52]}} ]  ]," +
+                 "        _p:[  ['x1' , {y:{" + leafLabel + ":[y11,y12]}} ],   " +
+                 "              ['x5' , {y:{" + leafLabel + ":[y51,y52]}} ]  ]," +
                  "        _s:[  ['x4' , {y:{_l:[y4a,y4d]}} ]  ]," +
                  "    } }");
                  
