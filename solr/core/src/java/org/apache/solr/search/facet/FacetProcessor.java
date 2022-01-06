@@ -443,17 +443,28 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
     }
   }
 
-  private static final class AugmentEntries {
+  static final class AugmentEntries {
     private final int leafEntries;
     private final int partialEntries;
     private final Map<Object, Object> entries;
     private final Map<String, Object> origFacetInfo;
+    private Function<Object, Object> toNativeType;
 
     private AugmentEntries(int leafEntries, int partialEntries, Map<Object, Object> entries, Map<String, Object> origFacetInfo) {
       this.leafEntries = leafEntries;
       this.partialEntries = partialEntries;
       this.entries = entries;
       this.origFacetInfo = origFacetInfo;
+    }
+
+    void transformKeysToNativeType(Function<Object, Object> toNativeType) {
+      this.toNativeType = toNativeType;
+      for (final Object key : entries.keySet().toArray()) {
+        final Object transformed = toNativeType.apply(key);
+        if (key.getClass() != transformed.getClass()) {
+          entries.put(transformed, entries.remove(key));
+        }
+      }
     }
 
     private Map<String, Object> getBulkPhasePartialFacetInfo() {
@@ -519,14 +530,13 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
     } else {
       augmentPartial = (List<List<Object>>) tmp;
     }
-    final Function<Object, Object> toNativeType = toNativeType();
     Map<Object, Object> ret = null;
     int leafSize = 0;
     int partialSize = 0;
     if (augmentLeaf != null) {
       ret = new HashMap<>((leafSize = augmentLeaf.size()) + (augmentPartial == null ? 0 : (partialSize = augmentPartial.size())));
       for (Object o : augmentLeaf) {
-        ret.put(toNativeType.apply(o), null);
+        ret.put(o, null);
       }
     }
     if (augmentPartial != null) {
@@ -534,7 +544,7 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         ret = new HashMap<>(partialSize = augmentPartial.size());
       }
       for (List<Object> o : augmentPartial) {
-        ret.put(toNativeType.apply(o.get(0)), o.get(1));
+        ret.put(o.get(0), o.get(1));
       }
     }
     return new AugmentEntries(leafSize, partialSize, ret, facetInfoSub);
@@ -589,6 +599,7 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
       // make a new context for each sub-facet since they can change the domain
       FacetContext subContext = fcontext.sub(filter, domain);
       subContext.facetInfo = facetInfoSub;
+      subContext.augment = augment;
       if (!skip) subContext.flags &= ~FacetContext.SKIP_FACET;  // turn off the skip flag if we're not skipping this bucket
 
       if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true
@@ -614,7 +625,7 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         //            -Ptests.jvms=4 -Ptests.jvmargs=-XX:TieredStopAtLevel=1 -Ptests.seed=8B4038889D0A1CB1
         //            -Ptests.file.encoding=US-ASCII
         Object val = null;
-        final Function<Object, Object> toNativeType = toNativeType();
+        final Function<Object, Object> toNativeType = augment.toNativeType;
         for (SimpleOrderedMap<?> bucket : buckets) {
           // prune any enumerated values that are already represented as a result of bulk collection
           augment.entries.remove(val = toNativeType.apply(bucket.get("val")));

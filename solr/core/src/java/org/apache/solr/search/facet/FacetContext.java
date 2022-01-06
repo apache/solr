@@ -32,6 +32,7 @@ public class FacetContext {
 
   FacetProcessor<?> processor;
   Map<String,Object> facetInfo; // refinement info for this node
+  FacetProcessor.AugmentEntries augment;
   QueryContext qcontext;
   SolrQueryRequest req;  // TODO: replace with params?
   SolrIndexSearcher searcher;

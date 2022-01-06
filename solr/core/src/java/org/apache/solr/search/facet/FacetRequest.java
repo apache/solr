@@ -427,6 +427,9 @@ public abstract class FacetRequest {
   /** Process the request with the facet context settings, a parameter-object. */
   final Object process(FacetContext fcontext) throws IOException {
     FacetProcessor<?> facetProcessor = createFacetProcessor(fcontext);
+    if (fcontext.augment != null) {
+      fcontext.augment.transformKeysToNativeType(facetProcessor.toNativeType());
+    }
 
     FacetDebugInfo debugInfo = fcontext.getDebugInfo();
     if (debugInfo == null) {
