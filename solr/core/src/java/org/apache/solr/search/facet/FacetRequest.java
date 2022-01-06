@@ -38,8 +38,6 @@ import org.apache.solr.search.join.GraphQuery;
 import org.apache.solr.search.join.GraphQueryParser;
 import org.apache.solr.util.RTimer;
 
-import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
-
 /**
  * A request to do facets/stats that might itself be composed of sub-FacetRequests.
  * This is a cornerstone of the facet module.
@@ -109,6 +107,8 @@ public abstract class FacetRequest {
     }
   }
 
+  static RefineMethod DEFAULT_REFINE_IMPL = RefineMethod.SIMPLE;
+
   public static enum RefineMethod {
     NONE,
     SIMPLE,
@@ -117,7 +117,7 @@ public abstract class FacetRequest {
     public static FacetRequest.RefineMethod fromObj(Object method) {
       if (method == null) return null;
       if (method instanceof  Boolean) {
-        return ((Boolean)method) ? SIMPLE : NONE;
+        return ((Boolean)method) ? DEFAULT_REFINE_IMPL : NONE;
       }
       if ("simple".equals(method)) {
         return SIMPLE;
@@ -363,7 +363,7 @@ public abstract class FacetRequest {
   }
 
   public boolean doRefine() {
-    return !(getRefineMethod()==null || getRefineMethod()==NONE);
+    return !(getRefineMethod() == null || getRefineMethod() == RefineMethod.NONE);
   }
 
   /** Returns true if this facet can return just some of the facet buckets that match all the criteria.
