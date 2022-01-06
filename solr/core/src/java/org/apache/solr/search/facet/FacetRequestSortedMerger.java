@@ -338,7 +338,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       // NOTE: you cannot prune buckets while parental refinement is ongoing, because there could be
       // shards with _leaf_ buckets at the parent level that can contribute new counts in phase#2 (affecting sort,
       // and therefore pruning), and even contribute entirely new values (even if the child facet has
-      // specified `refine:NONE`) -- hence the condition above on `mcontext.hasPendingRefinement()`. See:
+      // specified `refine:NONE`) -- hence the condition above on `mcontext.ancestorHasPendingRefinement()`. See:
       //
       // gradlew :solr:core:test --tests "org.apache.solr.search.facet.TestCloudJSONFacetJoinDomain.testRandom" -Ptests.jvms=4
       //     -Ptests.jvmargs=-XX:TieredStopAtLevel=1 -Ptests.seed=A4C143860EF04282 -Ptests.file.encoding=US-ASCII
