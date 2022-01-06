@@ -248,7 +248,7 @@ public class Assign {
       if (noData.isEmpty()) {
         return liveNodes;
       } else {
-        liveNodes  = new HashSet<>(liveNodes);
+        liveNodes = new HashSet<>(liveNodes);
         liveNodes.removeAll(noData);
         return liveNodes;
       }

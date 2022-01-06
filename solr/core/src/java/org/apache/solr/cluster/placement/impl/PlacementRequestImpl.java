@@ -19,6 +19,7 @@ package org.apache.solr.cluster.placement.impl;
 
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.cloud.api.collections.Assign;
@@ -27,6 +28,8 @@ import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.PlacementRequest;
+import org.apache.solr.core.NodeRoles;
+import org.apache.solr.handler.ClusterAPI;
 
 public class PlacementRequestImpl implements PlacementRequest {
   private final SolrCollection solrCollection;
@@ -82,6 +85,12 @@ public class PlacementRequestImpl implements PlacementRequest {
     // If no nodes specified, use all live nodes. If nodes are specified, use specified list.
     if (assignRequest.nodes != null) {
       nodes = SimpleClusterAbstractionsImpl.NodeImpl.getNodes(assignRequest.nodes);
+
+      for (Node n: nodes) {
+        if (!cluster.getLiveDataNodes().contains(n)) {
+          throw new Assign.AssignmentException("Bad assign request: specified node is a non-data hosting node (" + n.getName() + ") for collection " + solrCollection.getName());
+        }
+      }
       if (nodes.isEmpty()) {
         throw new Assign.AssignmentException("Bad assign request: empty list of nodes for collection " + solrCollection.getName());
       }

@@ -947,18 +947,17 @@ public class CoreContainer {
       });
 
       clusterSingletons.setReady();
-      if (NodeRoles.MODE_PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
-        try {
-          log.info("This node has been started as a preferred overseer");
-          zkSys.getZkController().setPreferredOverseer();
-        } catch (KeeperException | InterruptedException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
-      }
       if (!distributedCollectionCommandRunner.isPresent()) {
+        if (NodeRoles.MODE_PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
+          try {
+            log.info("This node is started as a preferred overseer");
+            zkSys.getZkController().setPreferredOverseer();
+          } catch (KeeperException | InterruptedException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        }
         zkSys.getZkController().checkOverseerDesignate();
       }
-
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
