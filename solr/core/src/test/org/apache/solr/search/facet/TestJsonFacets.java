@@ -56,6 +56,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   private static SolrInstances servers;  // for distributed testing
   private static int origTableSize;
   private static FacetField.FacetMethod origDefaultFacetMethod;
+  private static FacetRequest.RefineMethod origDefaultRefineImpl;
 
   @SuppressWarnings("deprecation")
   @BeforeClass
@@ -69,6 +70,11 @@ public class TestJsonFacets extends SolrTestCaseHS {
     origDefaultFacetMethod = FacetField.FacetMethod.DEFAULT_METHOD;
     // instead of the following, see the constructor
     //FacetField.FacetMethod.DEFAULT_METHOD = rand(FacetField.FacetMethod.values());
+
+    // we vary RefineMethod.DEFAULT_IMPL the inelegant way, because combinatorial variation with default FacetMethod
+    // would be unwieldy/unwarranted.
+    origDefaultRefineImpl = FacetRequest.RefineMethod.DEFAULT_IMPL;
+    FacetRequest.RefineMethod.DEFAULT_IMPL = random().nextBoolean() ? FacetRequest.RefineMethod.SIMPLE : FacetRequest.RefineMethod.ITERATIVE;
 
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
@@ -92,6 +98,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     JSONTestUtil.failRepeatedKeys = false;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
     FacetField.FacetMethod.DEFAULT_METHOD = origDefaultFacetMethod;
+    FacetRequest.RefineMethod.DEFAULT_IMPL = origDefaultRefineImpl;
     if (servers != null) {
       servers.stop();
       servers = null;
