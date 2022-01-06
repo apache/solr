@@ -75,7 +75,7 @@ dependencies {
     builtBy 'createDockerfileOfficial'
   }
 
-  solrTgz project(path: ":solr:distribution:", configuration: 'solrTgz')
+  solrTgz project(path: ":solr:packaging", configuration: "solrTgz")
   solrTgzSignature project(path: ":solr:distribution", configuration: 'solrTgzSignature')
 
   dockerImage files(imageIdFile) {

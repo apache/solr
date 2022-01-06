@@ -50,27 +50,23 @@ if (project.ext.useGpgForSigning) {
 // Prepare the "source" distribution artifact.
 apply from: buildscript.sourceFile.toPath().resolveSibling("source-release.gradle")
 
-// Prepare the "binary" distribution artifact.
-apply from: buildscript.sourceFile.toPath().resolveSibling("binary-release.gradle")
-
-// Configure artifact signing.
-apply from: buildscript.sourceFile.toPath().resolveSibling("artifact-signing.gradle")
-
 
 // Set up the HTML-rendered "changes" distribution artifact by linking to documentation's output.
 configurations {
   changesHtml
   solrTgz
+  solrZip
   solrTgzSignature
   docker
 }
 
 artifacts {
-  solrTgz assembleBinaryTgz
-  solrTgzSignature file(assembleBinaryTgz.archiveFileName.get() + ".asc")
+  solrTgzSignature file("foo.asc") // NOCOMMIT
 }
 
 dependencies {
+  solrTgz project(path: ":solr:packaging", configuration: "solrTgz")
+  solrZip project(path: ":solr:packaging", configuration: "solrZip")
   changesHtml project(path: ":solr:documentation", configuration: "changesHtml")
   docker project(path: ':solr:docker', configuration: project.ext.withSignedArtifacts ? 'packagingOfficial' : 'packaging')
 }
@@ -82,16 +78,29 @@ task computeChecksums(type: Checksum) {
   files = objects.fileCollection()
   [
       tasks.assembleSourceTgz,
-      tasks.assembleBinaryTgz,
-      tasks.assembleBinaryZip,
+      configurations.solrTgz,
+      configurations.solrZip,
   ].each { dep ->
-    dependsOn dep
-    files += dep.outputs.files
+    if (dep instanceof Task) {
+      dependsOn dep
+      files += dep.outputs.files
+    }
+    if (dep instanceof Configuration) {
+      files += dep
+    }
   }
 
   outputDir = file("${buildDir}/checksums")
 }
 
+task signReleaseArchives(type: Sign) {
+  sign rootProject.getTasksByName("distTar", true)[0]
+  sign rootProject.getTasksByName("distZip", true)[0]
+
+  // The source tgz is not an archive task so be explicit about the outputs to sign.
+  dependsOn tasks.assembleSourceTgz
+  sign tasks.assembleSourceTgz.destination
+}
 
 task prepareGitRev() {
   dependsOn ":gitStatus"
@@ -127,8 +136,8 @@ task assembleRelease(type: Sync) {
 
   from tasks.prepareGitRev
   from tasks.assembleSourceTgz
-  from tasks.assembleBinaryTgz
-  from tasks.assembleBinaryZip
+  from configurations.solrTgz
+  from configurations.solrZip
 
   from tasks.computeChecksums
 
@@ -145,8 +154,6 @@ task assembleRelease(type: Sync) {
 // sense at the user-level help.
 tasks.matching {it.name in [
     "assembleSourceTgz",
-    "assembleBinaryTgz",
-    "assembleBinaryZip",
     "assembleRelease",
 ]}.all {
   group "distribution"

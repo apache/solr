@@ -40,6 +40,13 @@ configurations {
   server
   docs
   docker
+  solrTgz
+  solrZip
+}
+
+artifacts {
+  solrTgz(distTar)
+  solrZip(distZip)
 }
 
 dependencies {
@@ -146,9 +153,5 @@ task dev(type: Copy) {
   from installDist.outputs
   into devDir
 }
-
-// Hack to
-tasks.distZip.enabled = false
-tasks.distTar.enabled = false
 
 assemble.dependsOn installDist
