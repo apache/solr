@@ -76,7 +76,6 @@ dependencies {
   }
 
   solrTgz project(path: ":solr:packaging", configuration: "solrTgz")
-  solrTgzSignature project(path: ":solr:distribution", configuration: 'solrTgzSignature')
 
   dockerImage files(imageIdFile) {
     builtBy 'dockerBuild'
@@ -346,7 +345,7 @@ task testBuildDockerfileOfficial(type: Copy) {
   dependsOn createDockerfileOfficial
   dependsOn configurations.solrTgz
   dependsOn configurations.solrTgzSignature
-  
+
   def mockHttpdHome = file("$smokeTestOfficial/mock-httpd-home");
   
   inputs.file("$dockerfilesDirPath/Dockerfile.official")
