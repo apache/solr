@@ -315,7 +315,8 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
             }
             break;
           default:
-            throw new IllegalStateException();
+            pendingRefinement = Context.PendingRefinement.NO;
+            break;
         }
       }
       currentPassRefinement = false;
