@@ -1187,10 +1187,14 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     client.commit();
 
+    // randomize topLevel to clarify the fact that in this case, we expect results to be equivalent regardless of
+    // the setting of `topLevel` -- this simply verifies that `topLevel` doesn't break.
+    final boolean topLevel = random().nextBoolean();
+
     client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
                     + "parent:{ type:terms, field:parent_s, limit:10, refine:false, facet:{"
                     + "  child:{ type:terms, field:child_s, limit:10, refine:false, facet:{"
-                    + "    leaf:{ type:terms, field:leaf_s, limit:10, refine:true, topLevel:true }"
+                    + "    leaf:{ type:terms, field:leaf_s, limit:10, refine:true, topLevel:"+topLevel+" }"
                     + "} } } } }")
             , "facets=={ count: 20,"
                     + "  parent:{ buckets:[ "
