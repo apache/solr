@@ -206,6 +206,8 @@ Build
 
 * SOLR-15793: Pin http_parser.rb to specific version to allow Solr Ref Guide on Jekyll to run (Eric Pugh)
 
+* SOLR-15867: Make the gradle build ready for 9.0 release (janhoy, Houston Putman, Dawid Weiss)
+
 Other Changes
 ----------------------
 * SOLR-15603: Add an option to activate Gradle build cache, build task cleanups (Alexis Tual, Dawid Weiss)
