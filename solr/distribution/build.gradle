@@ -82,13 +82,24 @@ task computeChecksums(type: Checksum) {
   outputDir = file("${buildDir}/checksums")
 }
 
-task signReleaseArchives(type: Sign) {
+task signBinaryTgz(type: Sign) {
   sign distTarTask
+}
+task signBinaryZip(type: Sign) {
   sign distZipTask
-
+}
+task signSourceTgz(type: Sign) {
   // The source tgz is not an archive task so be explicit about the outputs to sign.
   dependsOn tasks.assembleSourceTgz
   sign tasks.assembleSourceTgz.destination
+}
+
+task signReleaseArchives(type: Sync) {
+  from tasks.signBinaryTgz
+  from tasks.signBinaryZip
+  from tasks.signSourceTgz
+
+  into "${buildDir}/signatures"
 }
 
 task prepareGitRev() {

@@ -41,6 +41,7 @@ configurations {
   docs
   docker
   solrTgz
+  solrTgzSignature
   solrZip
 }
 
@@ -79,6 +80,10 @@ dependencies {
   docs project(path: ':solr:documentation', configuration: 'minimalSite')
 
   docker project(path: ':solr:docker', configuration: 'packaging')
+
+  solrTgzSignature files("$buildDir/distributions/solr-${version}.tgz.asc") {
+    builtBy ":solr:distribution:signBinaryTgz"
+  }
 }
 
 distributions {
@@ -152,6 +157,10 @@ task dev(type: Copy) {
 
   from installDist.outputs
   into devDir
+}
+
+distTar {
+  compression = Compression.GZIP
 }
 
 assemble.dependsOn installDist
