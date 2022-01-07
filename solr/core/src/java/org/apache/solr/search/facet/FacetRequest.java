@@ -384,8 +384,21 @@ public abstract class FacetRequest {
     return false;
   }
 
-  public boolean evaluateAsTopLevel() {
-    return false;
+  /**
+   * If true, this facet should be evaluated as a "top-level" facet for only the exact parent buckets that
+   * are guaranteed to be returned to the client. This has the effect of deferring evaluation until parent
+   * facet refinement is complete. For non-distributed, and/or "actual" top-level facets, this setting
+   * inherently has no effect.
+   *
+   * NOTE: setting this to <code>true</code> will result in more shard-level requests, the negative performance impact
+   * of which may be offset by the exclusion of parental overrequest (and consequent reduction in the number of parent
+   * buckets for which the facet must be evaluated). In most cases, a user would set this value to <code>true</code>
+   * in order to increase the accuracy of faceting/refinement for this facet. See SOLR-15836.
+   */
+  boolean topLevel;
+
+  public final boolean evaluateAsTopLevel() {
+    return topLevel;
   }
 
   public void addStat(String key, AggValueSource stat) {

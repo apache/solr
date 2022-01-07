@@ -201,6 +201,9 @@ abstract class FacetParser<T extends FacetRequest> {
     if (o instanceof Map) {
       @SuppressWarnings({"unchecked"})
       Map<String,Object> m = (Map<String,Object>)o;
+
+      facet.topLevel = getBoolean(m, "topLevel", facet.topLevel);
+
       List<String> excludeTags = getStringList(m, "excludeTags");
       if (excludeTags != null) {
         getDomain().excludeTags = excludeTags;
@@ -548,7 +551,6 @@ abstract class FacetParser<T extends FacetRequest> {
 
         // TODO: pull up to higher level?
         facet.refine = FacetRequest.RefineMethod.fromObj(m.get("refine"));
-        facet.topLevel = getBoolean(m, "topLevel", facet.topLevel);
 
         facet.perSeg = getBooleanOrNull(m, "perSeg");
 
