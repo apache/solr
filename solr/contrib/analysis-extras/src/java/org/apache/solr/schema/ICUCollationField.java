@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -86,17 +85,15 @@ import com.ibm.icu.util.ULocale;
  * @see RuleBasedCollator
  */
 public class ICUCollationField extends FieldType {
-  private static final boolean STRICT_NO_UDVAS = true;
   private Analyzer analyzer;
 
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
-    properties |= TOKENIZED; // this ensures our analyzer gets hit
-    if (!on(trueProperties, USE_DOCVALUES_AS_STORED)) {
-      properties &= ~USE_DOCVALUES_AS_STORED;
-    } else if (STRICT_NO_UDVAS) {
+    if (on(trueProperties, USE_DOCVALUES_AS_STORED)) {
       throw new IllegalArgumentException("useDocValuesAsStored is not supported for " + ICUCollationField.class);
     }
+    properties &= ~USE_DOCVALUES_AS_STORED;
+    properties |= TOKENIZED; // this ensures our analyzer gets hit
     setup(schema.getResourceLoader(), args);
     super.init(schema, args);
   }
@@ -288,31 +285,6 @@ public class ICUCollationField extends FieldType {
 
   @Override
   protected void checkSupportsDocValues() { // we support DocValues
-  }
-
-  @Override
-  public Object toObject(IndexableField f) {
-    if (STRICT_NO_UDVAS) {
-      // TODO: if we ultimately adopt the strict approach, we should remove this method (not override)
-      return super.toObject(f);
-    }
-    BytesRef bytes = f.binaryValue();
-    if (bytes != null) {
-      return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
-    } else {
-      // this method must deal with raw bytes from docValues (above), but also with String values
-      // (e.g., for stored fields); in the latter case, fall back to `super.toObject(f)`, which
-      // handles Strings as Strings.
-      return super.toObject(f);
-    }
-  }
-
-  @Override
-  public ByteBuffer toObject(SchemaField sf, BytesRef bytes) {
-    assert !STRICT_NO_UDVAS;
-    // TODO: if we ultimately adopt the strict approach, we should remove this method (not override)
-    bytes = BytesRef.deepCopyOf(bytes);
-    return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
   }
 
   @Override
