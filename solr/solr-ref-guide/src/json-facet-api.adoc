@@ -676,6 +676,8 @@ These sub-facets are then evaluated against the domains defined by the set of al
 The syntax is identical to top-level facets - just add a `facet` command to the facet command block of the parent facet.
 Technically, every facet command is actually a sub-facet since we start off with a single facet bucket with a domain defined by the main query and filters.
 
+For distributed requests, specifying the `topLevel:true` property on a subfacet blocks evaluation of the associated subfacet until its parent facet has been completely evaluated (including any refinement). When the parent facet has determined the exact buckets that it will return, only then will the subfacet be evaluated, under only those particular parent buckets (as if it were a "top level" facet). This allows decoupling child-level fanout from parental overrequest, at the expense of more intra-cluster requests.
+
 === Nested Facet Example
 
 Let's start off with a simple non-nested terms facet on the category field `cat`:
