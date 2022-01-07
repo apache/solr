@@ -445,8 +445,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     for (Facet extra : Arrays.asList(null,  new RelatednessFacet(multiStrField(2)+":9", null))) {
       // choose single value strings so we know both 'dv' (sweep) and 'dvhash' (no sweep) can be specified
       // choose 'id' for the parent facet so we are garunteed some child facets
-      final TermFacet parent = new TermFacet("id", 1, 0, "skg desc", false);
-      final TermFacet child = new TermFacet(soloStrField(7), 1, 0, "skg desc", false);
+      final TermFacet parent = new TermFacet("id", 1, 0, "skg desc", "none");
+      final TermFacet child = new TermFacet(soloStrField(7), 1, 0, "skg desc", "none");
       parent.subFacets.put("child", child);
       if (null != extra) {
         parent.subFacets.put("skg_extra", extra);
@@ -528,7 +528,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     
     { // trivial single level facet w/sorting on skg and refinement explicitly disabled
       Map<String,TermFacet> facets = new LinkedHashMap<>();
-      facets.put("xxx", new TermFacet(multiStrField(9), UNIQUE_FIELD_VALS, 0, "skg desc", false));
+      facets.put("xxx", new TermFacet(multiStrField(9), UNIQUE_FIELD_VALS, 0, "skg desc", "none"));
       assertFacetSKGsAreConsistent(facets, multiStrField(7)+":11", multiStrField(5)+":9", "*:*");
     }
     
@@ -558,13 +558,14 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
       // because it causes FacetField.returnsPartial() to be "true"
       for (int limit : new int[] { 999999999, -1 }) {
         Map<String,TermFacet> facets = new LinkedHashMap<>();
-        facets.put("top_facet_limit__" + limit, new TermFacet(multiStrField(9), limit, 0, "skg desc", true));
+        final String refine = random().nextBoolean() ? "simple" : "iterative";
+        facets.put("top_facet_limit__" + limit, new TermFacet(multiStrField(9), limit, 0, "skg desc", refine));
         assertFacetSKGsAreConsistent(facets, multiStrField(7)+":11", multiStrField(5)+":9", "*:*");
       }
     }
     
     { // multi-valued facet field w/infinite limit and an extra (non-SKG / non-sweeping) stat
-      final TermFacet xxx = new TermFacet(multiStrField(12), -1, 0, "count asc", false);
+      final TermFacet xxx = new TermFacet(multiStrField(12), -1, 0, "count asc", "none");
       xxx.subFacets.put("sum", new SumFacet(multiIntField(4)));
       final Map<String,TermFacet> facets = new LinkedHashMap<>();
       facets.put("xxx", xxx);
@@ -618,7 +619,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
       for (String facetFieldName : Arrays.asList(soloStrField(facetFieldNum), multiStrField(facetFieldNum))) {
         for (int limit : Arrays.asList(10, -1)) {
           for (String sort : Arrays.asList("count desc", "skg desc", "index asc")) {
-            for (Boolean refine : Arrays.asList(false, true)) {
+            for (String refine : Arrays.asList("none", "simple", "iterative")) {
               { // 1 additional (non-SKG / non-sweeping) stat
                 final TermFacet xxx = new TermFacet(facetFieldName, map("limit", limit,
                                                                         "overrequest", 0,
@@ -913,7 +914,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     }
 
     /** all params except field can be null */
-    public TermFacet(String field, Integer limit, Integer overrequest, String sort, Boolean refine) {
+    public TermFacet(String field, Integer limit, Integer overrequest, String sort, String refine) {
       this(field, map("limit", limit, "overrequest", overrequest, "sort", sort, "refine", refine));
     }
     
@@ -996,14 +997,15 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     /**
      * picks a random value for the "refine" param, biased in favor of interesting test cases
      *
-     * @return a Boolean, may be null
+     * @return a String, may be null
      */
-    public static Boolean randomRefineParam(final Random r) {
+    public static String randomRefineParam(final Random r) {
 
-      switch(r.nextInt(3)) {
+      switch(r.nextInt(4)) {
         case 0: return null;
-        case 1: return true;
-        case 2: return false;
+        case 1: return "none";
+        case 2: return "simple";
+        case 3: return "iterative";
         default: throw new RuntimeException("Broken case statement");
       }
     }

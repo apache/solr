@@ -550,7 +550,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       jsonData.put("type", "terms");
       jsonData.put("field", field);
       // see class javadocs for why we always use refine:true & the query:'*:*' domain for this test.
-      jsonData.put("refine", true);
+      jsonData.put("refine", random().nextBoolean() ? "simple" : "iterative");
       jsonData.put("domain", map("query","*:*"));
       
     }
