@@ -566,7 +566,7 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
     for (Map.Entry<String,FacetRequest> sub : freq.getSubFacets().entrySet()) {
       FacetRequest subRequest = sub.getValue();
 
-      Map<String,Object>facetInfoSub = null;
+      Map<String,Object> facetInfoSub = null;
       if (facetInfo != null) {
         facetInfoSub = (Map<String,Object>)facetInfo.get(sub.getKey());
       }

@@ -52,7 +52,7 @@ import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
  */
 abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   SchemaField sf;
-  final Function<Object, Object> toNativeType;
+  private final Function<Object, Object> toNativeType;
   SlotAcc indexOrderAcc;
   int effectiveMincount;
   final boolean singlePassSlotAccCollection;

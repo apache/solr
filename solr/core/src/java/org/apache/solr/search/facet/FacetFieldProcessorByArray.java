@@ -19,8 +19,6 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
 import java.util.function.IntFunction;
 
 import org.apache.lucene.util.BytesRef;

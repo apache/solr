@@ -391,6 +391,8 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       }
     }
 
+    final FacetRequest.FacetSort initial_sort = null == freq.prelim_sort ? freq.sort : freq.prelim_sort;
+
     // Tags for sub facets that have partial facets somewhere in their children.
     // If we are missing a bucket for this shard, we'll need to get the specific buckets that need refining.
     Collection<String> tagsWithPartial = mcontext.getSubsWithPartial(freq);
@@ -413,8 +415,6 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         return skipBuckets.isEmpty() ? null : Collections.singletonMap("_s", skipBuckets);
       }
     }
-
-    final FacetRequest.FacetSort initial_sort = null == freq.prelim_sort ? freq.sort : freq.prelim_sort;
 
     long numBucketsToCheck = Integer.MAX_VALUE; // use max-int instead of max-long to avoid overflow
     if (freq.limit >= 0) {

@@ -363,7 +363,7 @@ public abstract class FacetRequest {
   }
 
   public boolean doRefine() {
-    return !(getRefineMethod() == null || getRefineMethod() == RefineMethod.NONE);
+    return !(getRefineMethod()==null || getRefineMethod()==RefineMethod.NONE);
   }
 
   /** Returns true if this facet can return just some of the facet buckets that match all the criteria.
