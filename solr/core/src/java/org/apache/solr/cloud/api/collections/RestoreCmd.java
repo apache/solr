@@ -182,7 +182,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
 
       this.shardHandler = ccc.newShardHandler();
       this.nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(
-              zkStateReader.getClusterState().getLiveNodes(), message, CollectionHandlingUtils.RANDOM);
+              zkStateReader.getClusterState().getLiveNodes(), message, CollectionHandlingUtils.RANDOM, container.getZkController().getSolrCloudManager().getDistribStateManager());
     }
 
     @Override

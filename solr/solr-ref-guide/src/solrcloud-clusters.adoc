@@ -3,6 +3,7 @@
     solrcloud-recoveries-and-write-tolerance, \
     solrcloud-distributed-requests, \
     aliases, \
+    node-roles, \
     cluster-node-management, \
     shard-management, \
     replica-management, \
@@ -47,6 +48,9 @@ ZooKeeper is a critical component of SolrCloud, used to manage shard and replica
 | <<solrcloud-recoveries-and-write-tolerance.adoc#,SolrCloud Recoveries and Write Tolerance>>: Recovery in a SolrCloud cluster.
 | <<solrcloud-distributed-requests.adoc#,SolrCloud Distributed Requests>>: Query routing in a SolrCloud cluster.
 | <<aliases.adoc#,Aliases>>: Alternative names for collections.
+2+^h| Cluster Management
+| <<node-roles.adoc#,Node Roles>>: Functional roles for nodes for multi-tiered clusters.
+|
 2+^h| Collections API
 |<<cluster-node-management.adoc#,Cluster and Node Management>>: Cluster management commands of the Collections API.
 | <<shard-management.adoc#,Shard Management>>: Shard management commands of the Collections API.

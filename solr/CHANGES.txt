@@ -44,6 +44,8 @@ New Features
 
 * SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
 
+* SOLR-15694: Node roles (Ishan Chattopadhyaya, noble)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
