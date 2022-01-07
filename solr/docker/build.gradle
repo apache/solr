@@ -435,7 +435,6 @@ task testDockerfileOfficial(type: TestDockerImageTask, dependsOn: configurations
   description = 'Smoke Test Solr docker image built from Dockerfile.official'
 
   idFile = file(imageIdFileOfficial)
-  idFile = file(imageIdFileOfficial)
   outputDir = file("$smokeTestOfficial/test-results")
   
   // This test does not respect the include/exclude properties that `testDocker` does.
