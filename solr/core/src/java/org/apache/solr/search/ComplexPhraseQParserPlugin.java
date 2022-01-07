@@ -24,7 +24,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.parser.QueryParser;
+import org.apache.solr.parser.Operator;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -70,13 +70,13 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       protected org.apache.lucene.search.Query getWildcardQuery(String field, String termStr) throws SyntaxError {
         return super.getWildcardQuery(field, termStr);
       }
-      
+
       @Override
       protected org.apache.lucene.search.Query getRangeQuery(String field, String part1, String part2,
           boolean startInclusive, boolean endInclusive) throws SyntaxError {
         return super.getRangeQuery(field, part1, part2, startInclusive, endInclusive);
       }
-      
+
       @Override
       protected boolean isRangeShouldBeProtectedFromReverse(String field, String part1) {
         return super.isRangeShouldBeProtectedFromReverse(field, part1);
@@ -112,7 +112,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       String defaultField = getParam(CommonParams.DF);
 
       SolrQueryParserDelegate reverseAwareParser = new SolrQueryParserDelegate(this, defaultField);
-      
+
       lparser = new ComplexPhraseQueryParser(defaultField, getReq().getSchema().getQueryAnalyzer())
           {
               protected Query newWildcardQuery(org.apache.lucene.index.Term t) {
@@ -132,30 +132,30 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
                 }
                 return query;
               }
-              
+
               protected Query newRangeQuery(String field, String part1, String part2, boolean startInclusive,
                   boolean endInclusive) {
                 boolean reverse = reverseAwareParser.isRangeShouldBeProtectedFromReverse(field, part1);
-                return super.newRangeQuery(field, 
-                                            reverse ? reverseAwareParser.getLowerBoundForReverse() : part1, 
+                return super.newRangeQuery(field,
+                                            reverse ? reverseAwareParser.getLowerBoundForReverse() : part1,
                                             part2,
-                                            startInclusive || reverse, 
+                                            startInclusive || reverse,
                                             endInclusive);
               }
           }
           ;
 
       lparser.setAllowLeadingWildcard(true);
-          
+
       if (localParams != null) {
         inOrder = localParams.getBool("inOrder", inOrder);
       }
-      
+
       lparser.setInOrder(inOrder);
 
-      QueryParser.Operator defaultOperator = QueryParsing.parseOP(getParam(QueryParsing.OP));
+      Operator defaultOperator = QueryParsing.parseOP(getParam(QueryParsing.OP));
 
-      if (QueryParser.Operator.AND.equals(defaultOperator))
+      if (Operator.AND.equals(defaultOperator))
         lparser.setDefaultOperator(org.apache.lucene.queryparser.classic.QueryParser.Operator.AND);
       else
         lparser.setDefaultOperator(org.apache.lucene.queryparser.classic.QueryParser.Operator.OR);

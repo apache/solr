@@ -21,7 +21,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.parser.QueryParser;
+import org.apache.solr.parser.Operator;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
@@ -51,18 +51,18 @@ public class DisMaxQParser extends QParser {
   private static String IMPOSSIBLE_FIELD_NAME = "\uFFFC\uFFFC\uFFFC";
 
   /**
-   * Applies the appropriate default rules for the "mm" param based on the 
+   * Applies the appropriate default rules for the "mm" param based on the
    * effective value of the "q.op" param
    *
    * @see QueryParsing#OP
    * @see DisMaxParams#MM
    */
-  public static String parseMinShouldMatch(final IndexSchema schema, 
+  public static String parseMinShouldMatch(final IndexSchema schema,
                                            final SolrParams params) {
-    org.apache.solr.parser.QueryParser.Operator op = QueryParsing.parseOP(params.get(QueryParsing.OP));
-    
-    return params.get(DisMaxParams.MM, 
-                      op.equals(QueryParser.Operator.AND) ? "100%" : "0%");
+    Operator op = QueryParsing.parseOP(params.get(QueryParsing.OP));
+
+    return params.get(DisMaxParams.MM,
+                      op.equals(Operator.AND) ? "100%" : "0%");
   }
 
   /**
@@ -98,12 +98,12 @@ public class DisMaxQParser extends QParser {
 
   @Override
   public Query parse() throws SyntaxError {
-    
+
     parsed = true;
     SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
 
     queryFields = parseQueryFields(req.getSchema(), solrParams);
-    
+
     /* the main query we will execute.  we disable the coord because
      * this query is an artificial construct
      */
