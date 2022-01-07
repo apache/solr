@@ -64,7 +64,7 @@ templates:
     (( template=vote_logic ))
     .Mail template {% if passed %}successful{% else %}failed{% endif %} vote
     ----
-    To: dev@lucene.apache.org
+    To: dev@solr.apache.org
     Subject: [{% if passed %}RESULT{% else %}FAILED{% endif %}] [VOTE] Release Lucene/Solr {{ release_version }} RC{{ rc_number }}
 
     It's been >72h since the vote was initiated and the result is:
@@ -113,7 +113,7 @@ templates:
 
     Solr {{ release_version }} is available for immediate download at:
 
-      <https://lucene.apache.org/solr/downloads.html>
+      <https://solr.apache.org/downloads.html>
 
     ### Solr {{ release_version }} Release Highlights:
 
@@ -122,11 +122,11 @@ templates:
 
     Please refer to the Upgrade Notes in the Solr Ref Guide for information on upgrading from previous Solr versions:
 
-      <https://lucene.apache.org/solr/guide/{{ release_version_refguide }}/solr-upgrade-notes.html>
+      <https://solr.apache.org/guide/{{ release_version_refguide }}/solr-upgrade-notes.html>
 
     Please read CHANGES.txt for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
 
-      <https://lucene.apache.org/solr/{{ release_version_underscore }}/changes/Changes.html>
+      <https://solr.apache.org/{{ release_version_underscore }}/changes/Changes.html>
 
     Solr {{ release_version }} also includes {% if is_feature_release %}features, optimizations and {% endif %}bugfixes in the corresponding Apache Lucene release:
 
@@ -137,7 +137,7 @@ templates:
 
     .Mail template
     ----
-    To: dev@lucene.apache.org, general@lucene.apache.org, java-user@lucene.apache.org
+    To: dev@solr.apache.org, users@solr.apache.org
     Subject: [ANNOUNCE] Apache Lucene {{ release_version }} released
 
     (( template=announce_lucene_mail_body ))
@@ -171,7 +171,7 @@ templates:
 
     .Mail template
     ----
-    To: dev@lucene.apache.org, general@lucene.apache.org, solr-user@lucene.apache.org
+    To: dev@solr.apache.org, users@solr.apache.org
     Subject: [ANNOUNCE] Apache Solr {{ release_version }} released
 
     (( template=announce_solr_mail_body ))
@@ -548,7 +548,7 @@ groups:
 
       .Mail template
       ----
-      To: dev@lucene.apache.org
+      To: dev@solr.apache.org
       Subject: New branch and feature freeze for Lucene/Solr {{ release_version }}
 
       NOTICE:
@@ -588,7 +588,7 @@ groups:
 
       .Mail template
       ----
-      To: dev@lucene.apache.org
+      To: dev@solr.apache.org
       Subject: Bugfix release Lucene/Solr {{ release_version }}
 
       NOTICE:
@@ -643,6 +643,19 @@ groups:
     links:
     - https://issues.apache.org/jira/plugins/servlet/project-config/LUCENE/versions
     - https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions
+  - !Todo
+    id: jira_blocker_refguide
+    title: Add a blocker JIRA for RefGuide
+    description: |-
+      To make sure a new release is not announced before the reference guide is complete, add a new
+      Blocker JIRA issue for version {{ release_version }} with subject
+      "Complete Major changes and Upgrade Notes in RefGudie for {{ release_version }}".
+      Note that this does not block the RC and voting process, but will block announcing the release.
+    types:
+    - major
+    - minor
+    links:
+    - https://issues.apache.org/jira/browse/SOLR
 - !TodoGroup
   id: artifacts
   title: Build the release artifacts
@@ -799,7 +812,7 @@ groups:
 
       .Mail template
       ----
-      To: dev@lucene.apache.org
+      To: dev@solr.apache.org
       Subject: [VOTE] Release Lucene/Solr {{ release_version }} RC{{ rc_number }}
 
       Please vote for release candidate {{ rc_number }} for Lucene/Solr {{ release_version }}
@@ -1068,6 +1081,96 @@ groups:
         logfile: add-docs-solr.log
         comment: Add docs for Solr
   - !Todo
+    id: check_ref_guide_complete
+    title: Check that the reference guide is ready
+    types:
+      - major
+      - minor
+    description: |
+      Ensure that the reference Guide is updated for {{ release_version }}. In particular, the sections "Solr Upgrade Notes"
+      and (if applicable) also the "Major changes in Solr ..." section must be up to date for the latest release.
+      Check that the the Blocker JIRA issue created in the beginning of the release process is resolved.
+  - !Todo
+    id: build_final_ref_guide
+    title: Build the ref guide
+    links:
+      - https://solr.apache.org/guide/{{ release_version_refguide }}
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Build the Solr Ref Guide
+      commands:
+        - !Command
+          cmd: "{{ gradle_cmd }} solr:solr-ref-guide:clean"
+          comment: Clean the Ref Guide build
+        - !Command
+          cmd: "{{ gradle_cmd }} solr:solr-ref-guide:buildSite -PsolrGuideDraft=false"
+          comment: Build Ref Guide
+  - !Todo
+    id: upload_final_ref_guide_new
+    title: Upload the ref guide
+    links:
+      - https://solr.apache.org/guide/{{ release_version_refguide }}
+    depends:
+      - build_final_ref_guide
+    types:
+      - major
+      - minor
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Upload the Solr Ref Guide to SVN production tree
+      commands:
+        - !Command
+          cmd: svn -m "Add Solr Ref Guide {{ release_version }}" import {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site  https://svn.apache.org/repos/infra/sites/solr/guide/{{ release_version_refguide }}
+          logfile: svn-upload-ref-guide.log
+          comment: Upload Solr Ref Guide
+  - !Todo
+    id: upload_final_ref_guide_changes
+    title: Upload (and overwrite-write) the ref guide
+    links:
+      - https://solr.apache.org/guide/{{ release_version_refguide }}
+    depends:
+      - build_final_ref_guide
+    types:
+      - bugfix
+    commands: !Commands
+      root_folder: '{{ ref_guide_svn_folder }}'
+      commands_text: Upload the Solr Ref Guide to SVN production tree, overwriting the previous version
+      confirm_each_command: true
+      commands:
+        - !Command
+          cmd: svn co https://svn.apache.org/repos/infra/sites/solr/guide/{{ release_version_refguide }} "{{ ref_guide_svn_folder }}"
+          logfile: ref-guide-svn-co.log
+          comment: Checkout the existing Solr Ref Guide for version {{ ref_guide_svn_folder }}
+          cwd: '{{ git_checkout_folder }}'
+        - !Command
+          cmd: cp -r {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site {{ ref_guide_svn_folder }}
+          comment: Copy and overwrite new Solr Ref Guide
+          cwd: '{{ git_checkout_folder }}'
+        - !Command
+          cmd: svn status
+          comment: Check that the changes in the ref-guide look good for this bugfix version
+          stdout: true
+        - !Command
+          cmd: svn status | grep '^!' | awk '{print $2}'
+          comment: List files that will be deleted in online refguide
+        - !Command
+          cmd: svn status | grep '^!' | awk '{print $2}' | xargs svn delete
+          comment: Confirm delete of files in SVN (DOUBLE CHECK)
+        - !Command
+          cmd: svn add --force .
+          comment: Add new and modified files in SVN
+        - !Command
+          cmd: svn status
+          comment: There should be no staged changes left in svn, all should be ready to commit
+          stdout: true
+        - !Command
+          cmd: diff {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site {{ ref_guide_svn_folder }}
+          comment: There should be no difference between the ref-guide build and the version in svn.
+          stdout: true
+        - !Command
+          cmd: svn commit -m "Update Solr Ref Guide {{ release_version_refguide }}, for version {{ release_version }}"
+          comment: Upload Solr Ref Guide
+  - !Todo
     id: website_git_clone
     title: Do a clean git clone of the website repo
     description: This is where we'll commit later updates for the website.
@@ -1232,7 +1335,7 @@ groups:
       - stage_website
     description: |
       Push the website changes to 'production' branch. This will build and publish the live site on
-      https://lucene.apache.org
+      https://solr.apache.org
     commands: !Commands
       root_folder: '{{ git_website_folder }}'
       commands:

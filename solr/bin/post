@@ -52,7 +52,7 @@ fi
 
 # ===== post specific code
 
-TOOL_JAR=("$SOLR_TIP/dist"/solr-core-*.jar)
+TOOL_JAR=("$SOLR_TIP/server/solr-webapp/webapp/WEB-INF/lib"/solr-core-*.jar)
 
 function print_usage() {
   echo ""

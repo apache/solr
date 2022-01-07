@@ -35,10 +35,8 @@ import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.*;
  */
 public class CoreApiMapping {
   public enum Meta implements CommandMeta {
-    CREATE(CORES_COMMANDS, POST, CoreAdminAction.CREATE, "create", Collections.singletonMap("config", "configSet")),
     UNLOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.UNLOAD, "unload", null),
     RELOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.RELOAD, "reload", null),
-    STATUS(CORES_STATUS, GET, CoreAdminAction.STATUS, "status", null),
     SWAP(PER_CORE_COMMANDS, POST, CoreAdminAction.SWAP, "swap", Collections.singletonMap("other", "with")),
     RENAME(PER_CORE_COMMANDS, POST, CoreAdminAction.RENAME, "rename", Collections.singletonMap("other", "to")),
     MERGEINDEXES(PER_CORE_COMMANDS, POST, CoreAdminAction.MERGEINDEXES, "merge-indexes", null),
@@ -87,8 +85,6 @@ public class CoreApiMapping {
   }
 
   public enum EndPoint implements ApiMapping.V2EndPoint {
-    CORES_STATUS("cores.Status"),
-    CORES_COMMANDS("cores.Commands"),
     PER_CORE_COMMANDS("cores.core.Commands");
 
     final String specName;

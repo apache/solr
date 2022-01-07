@@ -17,7 +17,7 @@
 package org.apache.solr.handler.admin;
 
 import com.codahale.metrics.Gauge;
-import org.apache.lucene.LucenePackage;
+import org.apache.lucene.util.Version;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.common.cloud.UrlScheme;
@@ -370,10 +370,8 @@ public class SystemInfoHandler extends RequestHandlerBase
     info.add( "solr-spec-version", p.getSpecificationVersion() );
     info.add( "solr-impl-version", p.getImplementationVersion() );
   
-    p = LucenePackage.class.getPackage();
-
-    info.add( "lucene-spec-version", p.getSpecificationVersion() );
-    info.add( "lucene-impl-version", p.getImplementationVersion() );
+    info.add( "lucene-spec-version", Version.LATEST.toString() );
+    info.add( "lucene-impl-version", Version.getPackageImplementationVersion() );
 
     return info;
   }

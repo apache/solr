@@ -689,18 +689,13 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     
     assertEquals(numberOfSlices * numberOfReplica, coreNames.size());
     for (int i = 1; i <= numberOfSlices; i++) {
+      Set<String> foundNodeNames = new HashSet<>(numberOfReplica);
       for (int j = 1; j <= numberOfReplica; j++) {
         String coreName = coreNames.get((i-1) * numberOfReplica + (j-1));
-        
-        if (dontShuffleCreateNodeSet) {
-          final String expectedNodeName = nodeUrlWithoutProtocolPartForLiveNodes.get((numberOfReplica * (i - 1) + (j - 1)) % nodeUrlWithoutProtocolPartForLiveNodes.size());
-          assertFalse("expectedNodeName is null for coreName="+coreName, null == expectedNodeName);
-          
-          final String actualNodeName = coreName_TO_nodeUrlWithoutProtocolPartForLiveNodes_map.get(coreName);
-          assertFalse("actualNodeName is null for coreName="+coreName, null == actualNodeName);
 
-          assertTrue("node name mismatch for coreName="+coreName+" ( actual="+actualNodeName+" versus expected="+expectedNodeName+" )", actualNodeName.equals(expectedNodeName));
-        }
+        String foundNode = coreName_TO_nodeUrlWithoutProtocolPartForLiveNodes_map.get(coreName);
+        assertTrue("Multiple replicas scheduled for node: "+foundNode, foundNodeNames.add(foundNode));
+        assertTrue("Assigned node name not in list of given nodes: "+foundNode, nodeUrlWithoutProtocolPartForLiveNodes.contains(foundNode));
       }
     }
     
