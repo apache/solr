@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -90,6 +91,9 @@ public class ICUCollationField extends FieldType {
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     properties |= TOKENIZED; // this ensures our analyzer gets hit
+    if (!on(trueProperties, USE_DOCVALUES_AS_STORED)) {
+      properties &= ~USE_DOCVALUES_AS_STORED;
+    }
     setup(schema.getResourceLoader(), args);
     super.init(schema, args);
   }
@@ -281,6 +285,22 @@ public class ICUCollationField extends FieldType {
 
   @Override
   protected void checkSupportsDocValues() { // we support DocValues
+  }
+
+  @Override
+  public Object toObject(IndexableField f) {
+    BytesRef bytes = f.binaryValue();
+    if (bytes != null) {
+      return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
+    } else {
+      return super.toObject(f);
+    }
+  }
+
+  @Override
+  public ByteBuffer toObject(SchemaField sf, BytesRef bytes) {
+    bytes = BytesRef.deepCopyOf(bytes);
+    return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
   }
 
   @Override

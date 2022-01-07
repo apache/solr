@@ -551,8 +551,9 @@ public class SolrDocumentFetcher {
         if (sdv != null && sdv.advanceExact(localId)) {
           final BytesRef bRef = sdv.lookupOrd(sdv.ordValue());
           // Special handling for Boolean fields since they're stored as 'T' and 'F'.
-          if (schemaField.getType() instanceof BoolField) {
-            return schemaField.getType().toObject(schemaField, bRef);
+          final org.apache.solr.schema.FieldType ft = schemaField.getType();
+          if (!ft.isUtf8Field()) {
+            return ft.toObject(schemaField, bRef);
           } else {
             return bRef.utf8ToString();
           }
