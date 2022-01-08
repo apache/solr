@@ -155,7 +155,7 @@ templates:
 #         you should introduce the task in more detail. You can use {{ jinja_var }} to
 #         reference variables. See `releaseWizard.py` for list of global vars supported.
 #         You can reference state saved from earlier TODO items using syntax
-#           {{ todi_id.var_name }}
+#           {{ todo_id.var_name }}
 #         with `var_name` being either fetched from user_input or persist_vars
 #     depends:  # One or more dependencies which will bar execution
 #     - todo_id1
@@ -633,7 +633,7 @@ groups:
     vars:
       logfile: '{{ [rc_folder, ''logs'', ''buildAndPushRelease.log''] | path_join }}'
       git_rev: '{{ current_git_rev }}' # Note, git_rev will be recorded in todo state AFTER completion of commands
-      local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'      
+      local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     persist_vars:
     - git_rev
     commands: !Commands
@@ -661,8 +661,8 @@ groups:
         cmd: git pull --ff-only
         tee: true
       - !Command
-        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg_key | default("<gpg_key_id>", True) }}
-        comment: "NOTE: Remember to type your GPG pass-phrase at the prompt!"
+        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg_key | default("<gpg_key_id>", True) }}{% if gpg.use_gradle %}  --sign-method-gradle{% endif %}{% if not gpg.prompt_pass %}  --gpg-pass-noprompt{% endif %}
+        comment: "{% if gpg.use_gradle == 'gradle' %}Using gradle for signing, please configure your gradle.properties.{% else %}NOTE: Remember to type your GPG pass-phrase at the prompt!{% endif %}"
         logfile: build_rc.log
         tee: true
   - !Todo
