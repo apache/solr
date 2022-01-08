@@ -348,8 +348,8 @@ class ReleaseState:
             releases_str = load("https://projects.apache.org/json/foundation/releases.json", "utf-8")
             releases_lucene_solr = json.loads(releases_str)['lucene']
             releases_solr = json.loads(releases_str)['solr']
-            versions_l_s = [ r for r in list(map(lambda y: y[7:], filter(lambda x: x.startswith('solr-'), list(releases_lucene_solr.keys())))) ]
-            versions_s = [ r for r in list(map(lambda y: y[7:], filter(lambda x: re.match(r'^solr-(9|1\d)\.', x), list(releases_solr.keys())))) ]
+            versions_l_s = [ r for r in list(map(lambda y: y[5:], filter(lambda x: x.startswith('solr-'), list(releases_lucene_solr.keys())))) ]
+            versions_s = [ r for r in list(map(lambda y: y[5:], filter(lambda x: re.match(r'^solr-(9|1\d)\.', x), list(releases_solr.keys())))) ]
             state.mirrored_versions = versions_l_s + versions_s
         return state.mirrored_versions
 
