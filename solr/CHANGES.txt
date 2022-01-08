@@ -193,6 +193,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15213: Atomic updates: "add" now uses add-or-replace logic for child documents.  They can
   also themselves be atomic updates.  (James Ashbourne, Endika Posadas via David Smiley)
 
+* SOLR-10321: highlighting (hl.method=unified): When there are no highlights for a field, don't
+  return the field in the response at all.  (David Smiley)
+
 * SOLR-15890: Add a limit to the Admin SQL panel if one is not included in the stmt (Joel Bernstein)
 
 * SOLR-15887: Remove <jmx/> from shipped solrconfig.xm. (Eric Pugh)
