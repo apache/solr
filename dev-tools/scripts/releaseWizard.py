@@ -351,9 +351,7 @@ class ReleaseState:
             versions_l_s = [ r for r in list(map(lambda y: y[7:], filter(lambda x: x.startswith('solr-'), list(releases_lucene_solr.keys())))) ]
             versions_s = [ r for r in list(map(lambda y: y[7:], filter(lambda x: re.match(r'^solr-(9|1\d)\.', x), list(releases_solr.keys())))) ]
             state.mirrored_versions = versions_l_s + versions_s
-        return ["7.7.3", "8.11.1"]
-        # NOCOMMIT
-        #return state.mirrored_versions
+        return state.mirrored_versions
 
     def get_mirrored_versions_to_delete(self):
         versions = self.get_mirrored_versions()
