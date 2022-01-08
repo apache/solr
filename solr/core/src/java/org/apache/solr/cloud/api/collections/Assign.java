@@ -21,20 +21,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -54,6 +41,8 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeRoles;
+import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -229,7 +218,9 @@ public class Assign {
     return false;
   }
 
-  public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random) {
+  public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random,
+                                                               DistribStateManager zk) {
+
     List<String> nodeList;
     final String createNodeSetStr = message.getStr(CREATE_NODE_SET);
     final List<String> createNodeList = (createNodeSetStr == null) ? null :
@@ -244,11 +235,26 @@ public class Assign {
         Collections.shuffle(nodeList, random);
       }
     } else {
-      nodeList = new ArrayList<>(liveNodes);
+      nodeList = new ArrayList<>(filterNonDataNodes(zk, liveNodes));
       Collections.shuffle(nodeList, random);
     }
 
     return nodeList;
+  }
+
+  public static Collection<String> filterNonDataNodes(DistribStateManager zk, Collection<String> liveNodes) {
+    try {
+     List<String> noData =  ClusterAPI.getNodesByRole(NodeRoles.Role.DATA, NodeRoles.MODE_OFF, zk);
+      if (noData.isEmpty()) {
+        return liveNodes;
+      } else {
+        liveNodes = new HashSet<>(liveNodes);
+        liveNodes.removeAll(noData);
+        return liveNodes;
+      }
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching roles from Zookeeper", e);
+    }
   }
 
   static class ReplicaCount {

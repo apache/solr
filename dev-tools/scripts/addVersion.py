@@ -137,7 +137,6 @@ def parse_properties_file(filename):
 
 def get_solr_init_changes():
   return dedent('''
-    Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
     Docker and contrib modules have separate CHANGES.md files.
 
     ''')
