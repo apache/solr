@@ -212,7 +212,7 @@ def pushLocal(version, root, rcNum, localDir):
   dir = 'solr-%s-RC%d-rev-%s' % (version, rcNum, rev)
   os.makedirs('%s/%s/solr' % (localDir, dir))
   print('  Solr')
-  solr_dist_dir = '%s/solr/packaging/build/distributions' % root
+  solr_dist_dir = '%s/solr/distribution/build/release' % root
   os.chdir(solr_dist_dir)
   print('    archive...')
   if os.path.exists('solr.tar'):
