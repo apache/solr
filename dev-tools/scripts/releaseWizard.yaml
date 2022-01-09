@@ -378,7 +378,7 @@ groups:
         cmd: git checkout -b {{ stable_branch }}
         tee: true
       - !Command
-        cmd: git push origin {{ stable_branch }}
+        cmd: git push --set-upstream origin {{ stable_branch }}
         tee: true
   - !Todo
     id: create_minor_branch
@@ -407,7 +407,7 @@ groups:
         cmd: git checkout -b {{ release_branch }}
         tee: true
       - !Command
-        cmd: git push origin {{ release_branch }}
+        cmd: git push --set-upstream origin {{ release_branch }}
         tee: true
   - !Todo
     id: add_version_major
