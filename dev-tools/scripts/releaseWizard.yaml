@@ -254,12 +254,21 @@ groups:
         committer. This makes you a part of the GPG "web of trust" (WoT). Ask a committer
         that you know personally to sign your key for you, providing them with the
         fingerprint for the key.
+
+      You can choose between signing the release with the gpg program or with the
+      gradle signing plugin. Read about the difference in https://github.com/apache/solr/blob/main/help/publishing.txt
+
+      This wizard can prompt you securely for your passphrase (will not be stored) and pass it on to
+      buildAndPushRelease in a secure way. However, you can also configure your passphrase in advance
+      and avoid having to type it in the terminal. This can be done with either a gpg-agent (for gpg tool)
+      or in `gradle.properties` or an ENV.var (for gradle), See `./gradlew helpPublishing` for details.
     function: configure_pgp
     links:
     - https://infra.apache.org/release-signing.html
     - https://infra.apache.org/openpgp.html#apache-wot
     - https://id.apache.org
     - https://dist.apache.org/repos/dist/release/solr/KEYS
+    - https://github.com/apache/solr/blob/main/help/publishing.txt
   - !Todo
     id: jira_permissions
     title: Obtain the necessary permissions for Apache Jira
@@ -662,7 +671,7 @@ groups:
         tee: true
       - !Command
         cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg_key | default("<gpg_key_id>", True) }}{% if gpg.use_gradle %}  --sign-method-gradle{% endif %}{% if not gpg.prompt_pass %}  --gpg-pass-noprompt{% endif %}
-        comment: "{% if gpg.use_gradle == 'gradle' %}Using gradle for signing, please configure your gradle.properties.{% else %}NOTE: Remember to type your GPG pass-phrase at the prompt!{% endif %}"
+        comment: "Using {% if gpg.use_gradle %}gradle{% else %}gpg command{% endif %} for signing.{% if gpg.prompt_pass %} Remember to type your GPG pass-phrase at the prompt!{% endif %}"
         logfile: build_rc.log
         tee: true
   - !Todo

@@ -1222,8 +1222,8 @@ def configure_pgp(gpg_todo):
     gpg_state['gpg_key'] = gpg_id
 
     print(textwrap.dedent("""\
-            You can choose between signing the release with the gpg program or with a
-            native gradle signing plugin. Read about the difference by running
+            You can choose between signing the release with the gpg program or with
+            the gradle signing plugin. Read about the difference by running
             ./gradlew helpPublishing"""))
 
     gpg_state['use_gradle'] = ask_yes_no("Do you want to sign the release with gradle plugin? No means gpg")
