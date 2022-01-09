@@ -1655,15 +1655,15 @@ class Commands(SecretYamlObject):
             for line in cmd.display_cmd():
                 print("  %s" % line)
         print()
+        confirm_each = (not self.confirm_each_command is False) and len(commands) > 1
         if not self.enable_execute is False:
             if self.run_text:
                 print("\n%s\n" % self.get_run_text())
-            if len(commands) > 1:
-                if not self.confirm_each_command is False:
-                    print("You will get prompted before running each individual command.")
-                else:
-                    print(
-                        "You will not be prompted for each command but will see the ouput of each. If one command fails the execution will stop.")
+            if confirm_each:
+                print("You will get prompted before running each individual command.")
+            else:
+                print(
+                    "You will not be prompted for each command but will see the ouput of each. If one command fails the execution will stop.")
             success = True
             if ask_yes_no("Do you want me to run these commands now?"):
                 if self.remove_files:
@@ -1692,8 +1692,10 @@ class Commands(SecretYamlObject):
                     folder_prefix = ''
                     if cmd.cwd:
                         folder_prefix = cmd.cwd + "_"
-                    if self.confirm_each_command is False or len(commands) == 1 or ask_yes_no("Shall I run '%s' in folder '%s'" % (cmd, cwd)):
-                        if self.confirm_each_command is False:
+                    if confirm_each and cmd.comment:
+                        print("# %s\n" % cmd.get_comment())
+                    if not confirm_each or ask_yes_no("Shall I run '%s' in folder '%s'" % (cmd, cwd)):
+                        if not confirm_each:
                             print("------------\nRunning '%s' in folder '%s'" % (cmd, cwd))
                         logfilename = cmd.logfile
                         logfile = None
