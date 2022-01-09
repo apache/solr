@@ -24,7 +24,9 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
+import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -44,6 +46,7 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.*;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.CREATE;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -72,6 +75,8 @@ public class V2CoresAPIMappingTest extends SolrTestCaseJ4 {
 
         apiBag = new ApiBag(false);
         apiBag.registerObject(new CreateCoreAPI(mockCoreAdminHandler));
+        apiBag.registerObject(new SingleCoreStatusAPI(mockCoreAdminHandler));
+        apiBag.registerObject(new AllCoresStatusAPI(mockCoreAdminHandler));
     }
 
     @Test
@@ -120,6 +125,26 @@ public class V2CoresAPIMappingTest extends SolrTestCaseJ4 {
         assertEquals("requestTrackingId", v1Params.get(ASYNC));
     }
 
+    @Test
+    public void testSpecificCoreStatusApiAllParams() throws Exception {
+        final SolrParams v1Params = captureConvertedV1Params("/cores/someCore", "GET",
+                Map.of(INDEX_INFO, new String[] { "true" }));
+
+        assertEquals(STATUS.name().toLowerCase(Locale.ROOT), v1Params.get(ACTION));
+        assertEquals("someCore", v1Params.get(CORE));
+        assertEquals(true, v1Params.getPrimitiveBool(INDEX_INFO));
+    }
+
+    @Test
+    public void testAllCoreStatusApiAllParams() throws Exception {
+        final SolrParams v1Params = captureConvertedV1Params("/cores", "GET",
+                Map.of(INDEX_INFO, new String[] { "true" }));
+
+        assertEquals(STATUS.name().toLowerCase(Locale.ROOT), v1Params.get(ACTION));
+        assertNull("Expected 'core' parameter to be null", v1Params.get(CORE));
+        assertEquals(true, v1Params.getPrimitiveBool(INDEX_INFO));
+    }
+
     private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody) throws Exception {
         final HashMap<String, String> parts = new HashMap<>();
         final Api api = apiBag.lookup(path, method, parts);
@@ -129,6 +154,33 @@ public class V2CoresAPIMappingTest extends SolrTestCaseJ4 {
             public List<CommandOperation> getCommands(boolean validateInput) {
                 if (v2RequestBody == null) return Collections.emptyList();
                 return ApiBag.getCommandOperations(new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
+            }
+
+            @Override
+            public Map<String, String> getPathTemplateValues() {
+                return parts;
+            }
+
+            @Override
+            public String getHttpMethod() {
+                return method;
+            }
+        };
+
+
+        api.call(req, rsp);
+        verify(mockCoreAdminHandler).handleRequestBody(queryRequestCaptor.capture(), any());
+        return queryRequestCaptor.getValue().getParams();
+    }
+
+    private SolrParams captureConvertedV1Params(String path, String method, Map<String, String[]> queryParams) throws Exception {
+        final HashMap<String, String> parts = new HashMap<>();
+        final Api api = apiBag.lookup(path, method, parts);
+        final SolrQueryResponse rsp = new SolrQueryResponse();
+        final LocalSolrQueryRequest req = new LocalSolrQueryRequest(null, queryParams) {
+            @Override
+            public List<CommandOperation> getCommands(boolean validateInput) {
+                return Collections.emptyList();
             }
 
             @Override

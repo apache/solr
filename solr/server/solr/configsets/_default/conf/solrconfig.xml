@@ -247,25 +247,6 @@
     <!-- <infoStream file="INFOSTREAM.txt">false</infoStream> -->
   </indexConfig>
 
-
-  <!-- JMX
-
-       This example enables JMX if and only if an existing MBeanServer
-       is found, use this if you want to configure JMX through JVM
-       parameters. Remove this to disable exposing Solr configuration
-       and statistics to JMX.
-
-       For more details see https://solr.apache.org/guide/jmx-with-solr.html
-    -->
-  <jmx />
-  <!-- If you want to connect to a particular server, specify the
-       agentId
-    -->
-  <!-- <jmx agentId="myAgent" /> -->
-  <!-- If you want to start a new MBeanServer, specify the serviceUrl -->
-  <!-- <jmx serviceUrl="service:jmx:rmi:///jndi/rmi://localhost:9999/solr"/>
-    -->
-
   <!-- The default high-performance update handler -->
   <updateHandler class="solr.DirectUpdateHandler2">
 
@@ -735,7 +716,7 @@
 
   <!-- Request Handlers
 
-       https://lucene.apache.org/solr/guide/requesthandlers-and-searchcomponents-in-solrconfig.html
+       https://solr.apache.org/guide/requesthandlers-and-searchcomponents-in-solrconfig.html
 
        Incoming queries will be dispatched to a specific handler by name based on the path specified in the request.
 
@@ -778,7 +759,7 @@
        The spell check component can return a list of alternative spelling
        suggestions.
 
-       https://lucene.apache.org/solr/guide/spell-checking.html
+       https://solr.apache.org/guide/spell-checking.html
     -->
   <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
 
@@ -835,7 +816,7 @@
        IN OTHER WORDS, THERE IS REALLY GOOD CHANCE THE SETUP BELOW IS
        NOT WHAT YOU WANT FOR YOUR PRODUCTION SYSTEM!
 
-       See https://lucene.apache.org/solr/guide/spell-checking.html for details
+       See https://solr.apache.org/guide/spell-checking.html for details
        on the request parameters.
     -->
   <requestHandler name="/spell" class="solr.SearchHandler" startup="lazy">
@@ -862,7 +843,7 @@
 
   <!-- Highlighting Component
 
-       https://lucene.apache.org/solr/guide/highlighting.html
+       https://solr.apache.org/guide/highlighting.html
     -->
   <searchComponent class="solr.HighlightComponent" name="highlight">
     <highlighting>
@@ -967,7 +948,7 @@
   </searchComponent>
 
   <!-- Update Request Processors
-       https://lucene.apache.org/solr/guide/update-request-processors.html
+       https://solr.apache.org/guide/update-request-processors.html
 
        Chains or individual Update Request Processor Factories can be declared and referenced
        to preprocess documents sent to Update Request Handlers.
@@ -986,7 +967,7 @@
        declaring schemaFactory as ManagedIndexSchemaFactory, with
        mutable specified as true.
 
-       See https://lucene.apache.org/solr/guide/schemaless-mode.html for further explanation.
+       See https://solr.apache.org/guide/schemaless-mode.html for further explanation.
 
     -->
   <updateProcessor class="solr.UUIDUpdateProcessorFactory" name="uuid"/>
@@ -1108,7 +1089,7 @@
 
   <!-- Query Parsers
 
-       https://lucene.apache.org/solr/guide/query-syntax-and-parsing.html
+       https://solr.apache.org/guide/query-syntax-and-parsing.html
 
        Multiple QParserPlugins can be registered by name, and then
        used in either the "defType" param for the QueryComponent (used

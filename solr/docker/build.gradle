@@ -29,7 +29,7 @@ def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER
 def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
 def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
 
-def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName','');
+def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId',''));
 
 // Build directory locations
 def imageIdFile = "$buildDir/image-id"
@@ -39,6 +39,9 @@ def imageIdFileOfficial = "$smokeTestOfficial/image-id"
 
 configurations {
   packaging {
+    canBeResolved = true
+  }
+  packagingOfficial {
     canBeResolved = true
   }
   solrTgz {
@@ -59,6 +62,7 @@ configurations {
 }
 
 ext {
+  dockerfilesDirPath = "${buildDir}/dockerfiles"
   packagingDir = file("${buildDir}/packaging")
 }
 
@@ -67,7 +71,11 @@ dependencies {
     builtBy 'assemblePackaging'
   }
 
-  solrTgz project(path: ":solr:packaging", configuration: 'solrTgz')
+  packagingOfficial files("${dockerfilesDirPath}/Dockerfile.official") {
+    builtBy 'createDockerfileOfficial'
+  }
+
+  solrTgz project(path: ":solr:packaging", configuration: "solrTgz")
   solrTgzSignature project(path: ":solr:packaging", configuration: 'solrTgzSignature')
 
   dockerImage files(imageIdFile) {
@@ -98,7 +106,7 @@ task assemblePackaging(type: Sync) {
   from(projectDir, {
     include "scripts/**"
   })
-  from(buildDir, {
+  from(dockerfilesDirPath, {
     include 'Dockerfile.local'
   })
   into packagingDir
@@ -271,7 +279,7 @@ The final Dockerfiles are merely the snippet headers combined with the snippet b
  */
 [ dfLocalDetails, dfOfficialDetails ].each{ details ->
   def fileName = "Dockerfile.${ -> details.name.toLowerCase(Locale.ROOT) }"
-  def outFile = file("$buildDir/${fileName}")
+  def outFile = file("$dockerfilesDirPath/${fileName}")
   
   def props = [
     // Values defined here should be common (and consistent) across both Dockerfiles
@@ -327,7 +335,7 @@ tasks.createDockerfileOfficial.dependsOn configurations.solrTgz // to lazy compu
 if (''.equals(releaseGpgFingerprint)) {
   gradle.taskGraph.whenReady { graph ->
     if ( graph.hasTask(createDockerfileOfficial) ) {
-      throw new GradleException("No GPG keyName found, please see help/gpgSigning.txt (GPG key is neccessary to create Dockerfile.official)")
+      throw new GradleException("No GPG keyName found, please see help/publishing.txt (GPG key is neccessary to create Dockerfile.official)")
     }
   }
 }
@@ -338,10 +346,10 @@ task testBuildDockerfileOfficial(type: Copy) {
   dependsOn createDockerfileOfficial
   dependsOn configurations.solrTgz
   dependsOn configurations.solrTgzSignature
-  
+
   def mockHttpdHome = file("$smokeTestOfficial/mock-httpd-home");
   
-  inputs.file("$buildDir/Dockerfile.official")
+  inputs.file("$dockerfilesDirPath/Dockerfile.official")
   outputs.dir(mockHttpdHome)
   outputs.file(imageIdFileOfficial)
 
@@ -383,7 +391,7 @@ task testBuildDockerfileOfficial(type: Copy) {
         // *NOW* we can actually run our docker build command...
         logger.lifecycle('Running docker build on Dockerfile.official...');
         exec {
-          standardInput = file("${buildDir}/Dockerfile.official").newDataInputStream()
+          standardInput = file("${dockerfilesDirPath}/Dockerfile.official").newDataInputStream()
           commandLine 'docker', 'build',
             '--add-host', "mock-solr-dl-server:${mockServerIp}",
             '--no-cache', // force fresh downloads from our current network
