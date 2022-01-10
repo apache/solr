@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.neural;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -80,7 +81,7 @@ public class KnnQParser extends QParser {
                     " The expected format is:'[f1,f2..f3]' where each element f is a float");
         }
 
-        String[] elements = value.substring(1, value.length() - 1).split(",");
+        String[] elements = StringUtils.split(value.substring(1, value.length() - 1),',');
         if (elements.length != dimension) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector dimension." +
                     " The vector value has size "
