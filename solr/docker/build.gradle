@@ -502,8 +502,8 @@ abstract class TestDockerImageTask extends DefaultTask {
         environment "TEST_DIR", testCaseDir
         environment "BUILD_DIR", testCaseBuildDir
 
-        standardOutput new FileOutputStream("${testCaseWorkDir}/test.std.out")
-        errorOutput new FileOutputStream("${testCaseWorkDir}/test.err.out")
+        //standardOutput new FileOutputStream("${testCaseWorkDir}/test.std.out")
+        //errorOutput new FileOutputStream("${testCaseWorkDir}/test.err.out")
 
         commandLine "bash", "${testCaseDir}/test.sh", getParameters().getImageId().get()
       }
