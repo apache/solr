@@ -105,6 +105,74 @@ Accepted values: `euclidean`, `dot_product`  or `cosine`.
 * `dot_product`: https://en.wikipedia.org/wiki/Dot_product[Dot product]. *NOTE*: this similarity is intended as an optimized way to perform cosine similarity. In order to use it, all vectors must be of unit length, including both document and query vectors. Using dot product with vectors that are not unit length can result in errors or poor search results..
 * `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]. *NOTE*: the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
 
+*N.B.* To use the following advanced parameters that customise the codec format
+and the hyper-parameter of the HNSW algorithm make sure you set this configuration in the solrconfig.xml:
+[source,xml]
+<config>
+<codecFactory class="solr.SchemaCodecFactory"/>
+...
+
+Here's how `DenseVectorField` can be configured with the advanced codec hyper-parameters:
+
+[source,xml]
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" codecFormat="Lucene90HnswVectorsFormat" hnswMaxConnections="10" hnswBeamWidth="40"/>
+<field name="vector" type="knn_vector" indexed="true" stored="true"/>
+
+`codecFormat`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `Lucene90HnswVectorsFormat`
+|===
++
+(advanced) Specifies the knn codec implementation to use
++
+
+Accepted values: `Lucene90HnswVectorsFormat`.
+
+Please note that the `codecFormat` accepted values may change in future releases.
+
+
+
+[NOTE]
+Lucene index back-compatibility is only supported for the default codec.
+If you choose to customize the `codecFormat` in your schema, upgrading to a future version of Solr may require you to either switch back to the default codec and optimize your index to rewrite it into the default codec before upgrading, or re-build your entire index from scratch after upgrading.
+
+`hnswMaxConnections`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 16
+|===
++
+(advanced) This parameter is specific for the `Lucene90HnswVectorsFormat` codec format:
++
+Controls how many of the nearest neighbor candidates are connected to the new node.
++
+See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs [2014]] and https://arxiv.org/abs/1603.09320[this paper [2018]] for details.
++
+It has the same meaning as `M` from the later paper.
++
+Accepted values:
+Integer.
+
+`hnswBeamWidth`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 100
+|===
++
+(advanced) This parameter is specific for the `Lucene90HnswVectorsFormat` codec format:
++
+It is the number of nearest neighbor candidates to track while searching the graph for each newly inserted node.
++
+See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs [2014]] and https://arxiv.org/abs/1603.09320[this paper [2018]] for details.
++
+It has the same meaning as `efConstruction` from the later paper.
++
+Accepted values:
+Integer.
 
 DenseVectorField supports the attributes: `indexed`, `stored`.
 
