@@ -85,7 +85,6 @@ allprojects { prj ->
             '-Xep:BadInstanceof:OFF',
             '-Xep:BadShiftAmount:OFF',
             '-Xep:ClassCanBeStatic:OFF',
-            '-Xep:CollectionIncompatibleType:OFF',
             '-Xep:CollectionUndefinedEquality:OFF',
             '-Xep:ComplexBooleanConstant:OFF',
             '-Xep:DoubleBraceInitialization:OFF',
