@@ -43,6 +43,11 @@ class ClusterAbstractionsForTest {
     }
 
     @Override
+    public Set<Node> getLiveDataNodes() {
+      return liveNodes;
+    }
+
+    @Override
     public SolrCollection getCollection(String collectionName) {
       return collections.get(collectionName);
     }

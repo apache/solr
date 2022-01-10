@@ -4,9 +4,32 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/src/solr-upgrade-notes.adoc
 
+==================  10.0.0 ==================
+
+Docker and contrib modules have separate CHANGES.md files.
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.0.0 ==================
 
-Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
 Docker and contrib modules have separate CHANGES.md files.
 
 New Features
@@ -42,6 +65,10 @@ New Features
 * SOLR-15423: JWTAuthPlugin now supports separate config for what SSL certs to trust when talking to IdPs (janhoy)
 
 * SOLR-15613: Enforce error-prone checks to catch all URLEqualsHashCode violations and use java.net.URI instead (Collins Abanda)
+
+* SOLR-15694: Node roles (Ishan Chattopadhyaya, noble)
+
+* SOLR-15197: Support temporal graph queries with DAY and WEEKDAY windows (Joel Bernstein)
 
 Improvements
 ----------------------
@@ -190,6 +217,15 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15213: Atomic updates: "add" now uses add-or-replace logic for child documents.  They can
   also themselves be atomic updates.  (James Ashbourne, Endika Posadas via David Smiley)
 
+* SOLR-10321: highlighting (hl.method=unified): When there are no highlights for a field, don't
+  return the field in the response at all.  (David Smiley)
+
+* SOLR-15890: Add a limit to the Admin SQL panel if one is not included in the stmt (Joel Bernstein)
+
+* SOLR-15887: Remove <jmx/> from shipped solrconfig.xm. (Eric Pugh)
+
+* SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
+
 Build
 ---------------------
 
@@ -198,6 +234,10 @@ Build
 * SOLR-13671: Remove check for bare "var" declarations in validate-source-patterns (Erick Erickson, Alex Bulygin, janhoy)
 
 * SOLR-15793: Pin http_parser.rb to specific version to allow Solr Ref Guide on Jekyll to run (Eric Pugh)
+
+* SOLR-15867: Make the gradle build ready for 9.0 release (janhoy, Houston Putman, Dawid Weiss)
+
+* SOLR-15891: The Solr Docker image uses the default file permissions from the tarball artifact (Houston Putman, janhoy)
 
 Other Changes
 ----------------------
@@ -427,6 +467,8 @@ Other Changes
 
 * SOLR-15807: New LogListener class for tests to use to make assertions about what Log messages should or should not be produced by a test (hossman)
 
+* SOLR-15845: Add a new SolrVersion class to manage Solr's version independently from the Lucene version we consume (janhoy)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
@@ -452,13 +494,15 @@ Bug Fixes
 
 * SOLR-14781: Removed many unused classes that accumulated over the years. (Bence Szabo, David Smiley)
 
-* SOLR-15871: Update Log4J to 2.17 (weidongkl via janhoy)
+* SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
+
+* SOLR-15854: Let RealtimeGet component support negative filters (Tomás Fernández Löbbe)
 
 ==================  8.11.2 ==================
 
 Bug Fixes
 ---------------------
-* SOLR-15871: Update Log4J to 2.17 (weidongkl via janhoy)
+* SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
 
 ==================  8.11.1 ==================
 

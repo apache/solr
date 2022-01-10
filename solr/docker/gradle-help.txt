@@ -93,7 +93,7 @@ All users should build custom images using the instructions above.
 NOTE: All gradle commands for the Official Dockerfile below require the Solr artifacts to be signed with a GPG Key.
 For necessary inputs and properties, please refer to:
 
-gradlew helpGpgSigning
+gradlew helpPublishing
 
 You can use the following command to build an official Solr Dockerfile.
 The Dockerfile will be created at: solr/docker/build/Dockerfile.official
