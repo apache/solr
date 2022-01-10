@@ -66,8 +66,6 @@ New Features
 
 * SOLR-15613: Enforce error-prone checks to catch all URLEqualsHashCode violations and use java.net.URI instead (Collins Abanda)
 
-* SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
-
 * SOLR-15694: Node roles (Ishan Chattopadhyaya, noble)
 
 Improvements
@@ -223,6 +221,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15890: Add a limit to the Admin SQL panel if one is not included in the stmt (Joel Bernstein)
 
 * SOLR-15887: Remove <jmx/> from shipped solrconfig.xm. (Eric Pugh)
+
+* SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
 
 Build
 ---------------------
