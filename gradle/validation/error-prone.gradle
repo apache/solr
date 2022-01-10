@@ -54,22 +54,18 @@ allprojects { prj ->
             '-Xep:InlineMeSuggester:OFF', // We don't use this annotation
 
             // test
-            '-Xep:ExtendingJUnitAssert:OFF',
-            '-Xep:UseCorrectAssertInTests:OFF',
+            '-Xep:ExtendingJUnitAssert:OFF', // we inherit from LuceneTestCase which extends Assert
+            '-Xep:UseCorrectAssertInTests:OFF', // and this is a consequence of the above
             '-Xep:FloatingPointLiteralPrecision:OFF',
             '-Xep:CatchFail:OFF',
             '-Xep:TryFailThrowable:OFF',
-            '-Xep:MathAbsoluteRandom:OFF',
             '-Xep:AssertionFailureIgnored:OFF',
-            '-Xep:JUnit4TestNotRun:OFF',
-            '-Xep:FallThrough:OFF',
+            '-Xep:JUnit4TestNotRun:OFF', // the randomized runner finds unannotated test methods
             '-Xep:CatchAndPrintStackTrace:OFF',
-            '-Xep:ToStringReturnsNull:OFF',
             '-Xep:ArrayAsKeyOfSetOrMap:OFF',
             '-Xep:StaticAssignmentInConstructor:OFF',
             '-Xep:SelfAssignment:OFF',
             '-Xep:InvalidPatternSyntax:OFF',
-            '-Xep:MissingFail:OFF',
             '-Xep:ComparableType:OFF',
             '-Xep:InfiniteRecursion:OFF',
             '-Xep:MisusedDayOfYear:OFF',
