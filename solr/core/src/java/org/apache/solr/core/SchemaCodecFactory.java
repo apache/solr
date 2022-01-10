@@ -16,22 +16,25 @@
  */
 package org.apache.solr.core;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.Locale;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec.Mode;
+import org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * Per-field CodecFactory implementation, extends Lucene's 
@@ -113,6 +116,25 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
           }
         }
         return super.getDocValuesFormatForField(field);
+      }
+
+      @Override
+      public KnnVectorsFormat getKnnVectorsFormatForField(String field) {
+        final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
+        if (schemaField != null && schemaField.getType() instanceof DenseVectorField) {
+          DenseVectorField vectorType = (DenseVectorField) schemaField.getType();
+          String knnVectorFormatName = vectorType.getCodecFormat();
+          if (knnVectorFormatName != null) {
+            if (knnVectorFormatName.equals(Lucene90HnswVectorsFormat.class.getSimpleName())) {
+              int maxConn = vectorType.getHnswMaxConn();
+              int beamWidth = vectorType.getHnswBeamWidth();
+              return new Lucene90HnswVectorsFormat(maxConn, beamWidth);
+            } else {
+              return KnnVectorsFormat.forName(knnVectorFormatName);
+            }
+          }
+        }
+        return super.getKnnVectorsFormatForField(field);
       }
     };
   }

@@ -35,7 +35,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     @Test
     public void fieldTypeDefinition_badVectorDimension_shouldThrowException() throws Exception {
         assertConfigs("solrconfig-basic.xml", "bad-schema-densevector-dimension.xml",
-                "the vector dimension must be an integer");
+                "For input string: \"4.6\"");
     }
 
     @Test
@@ -97,6 +97,46 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
             assertTrue(vector.indexed());
             assertTrue(vector.stored());
+        } finally {
+            deleteCore();
+        }
+    }
+
+    @Test
+    public void fieldDefinition_advancedCodecHyperParamer_shouldLoadSchemaField() throws Exception {
+        try {
+            initCore("solrconfig_codec.xml", "schema-densevector-codec-hyperparamer.xml");
+            IndexSchema schema = h.getCore().getLatestSchema();
+
+            SchemaField vector = schema.getField("vector");
+            assertNotNull(vector);
+
+            DenseVectorField type1 = (DenseVectorField) vector.getType();
+            MatcherAssert.assertThat(type1.similarityFunction, is(VectorSimilarityFunction.COSINE));
+            MatcherAssert.assertThat(type1.dimension, is(4));
+            MatcherAssert.assertThat(type1.codecFormat, is("Lucene90HnswVectorsFormat"));
+            MatcherAssert.assertThat(type1.hnswMaxConn, is(10));
+            MatcherAssert.assertThat(type1.hnswBeamWidth, is(40));
+
+            SchemaField vector2 = schema.getField("vector2");
+            assertNotNull(vector2);
+
+            DenseVectorField type2 = (DenseVectorField) vector2.getType();
+            MatcherAssert.assertThat(type2.similarityFunction, is(VectorSimilarityFunction.COSINE));
+            MatcherAssert.assertThat(type2.dimension, is(4));
+            MatcherAssert.assertThat(type2.codecFormat, is("Lucene90HnswVectorsFormat"));
+            MatcherAssert.assertThat(type2.hnswMaxConn, is(6));
+            MatcherAssert.assertThat(type2.hnswBeamWidth, is(60));
+
+            SchemaField vectorDefault = schema.getField("vector_default");
+            assertNotNull(vectorDefault);
+
+            DenseVectorField typeDefault = (DenseVectorField) vectorDefault.getType();
+            MatcherAssert.assertThat(typeDefault.similarityFunction, is(VectorSimilarityFunction.COSINE));
+            MatcherAssert.assertThat(typeDefault.dimension, is(4));
+            assertNull(typeDefault.codecFormat);
+            MatcherAssert.assertThat(typeDefault.hnswMaxConn, is(16));
+            MatcherAssert.assertThat(typeDefault.hnswBeamWidth, is(100));
         } finally {
             deleteCore();
         }

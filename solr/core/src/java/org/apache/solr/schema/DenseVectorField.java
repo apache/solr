@@ -16,6 +16,7 @@
  */
 package org.apache.solr.schema;
 
+import org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;
@@ -23,6 +24,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.KnnVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader;
@@ -33,6 +35,8 @@ import java.util.Locale;
 import java.util.Map;
 
 import static java.util.Optional.ofNullable;
+import static org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
+import static org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat.DEFAULT_MAX_CONN;
 
 /**
  * Provides a field type to support Lucene's {@link
@@ -40,7 +44,12 @@ import static java.util.Optional.ofNullable;
  * See {@link org.apache.lucene.search.KnnVectorQuery} for more details.
  * It supports a fixed cardinality dimension for the vector and a fixed similarity function.
  * The default similarity is EUCLIDEAN_HNSW (L2).
- * See subclasses for details.
+ * The default index codec format is specified in the Lucene Codec constructor.
+ * For Lucene 9.0 e.g.
+ * See {@link org.apache.lucene.codecs.lucene90.Lucene90Codec}
+ * Currently only {@link org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat} is supported for
+ * advanced hyper-parameter customisation.
+ * See {@link org.apache.lucene.util.hnsw.HnswGraph} for more details about the implementation. 
  *
  * <br>
  * Only {@code Indexed} and {@code Stored} attributes are supported.
@@ -49,15 +58,34 @@ public class DenseVectorField extends FloatPointField {
 
     static final String KNN_VECTOR_DIMENSION = "vectorDimension";
     static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
+    
+    static final String CODEC_FORMAT = "codecFormat";
+    static final String HNSW_MAX_CONNECTIONS = "hnswMaxConnections";
+    static final String HNSW_BEAM_WIDTH = "hnswBeamWidth";
 
     int dimension;
     VectorSimilarityFunction similarityFunction;
     VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
 
+    String codecFormat;
+    /**
+     * This parameter is coupled with the {@link Lucene90HnswVectorsFormat} format implementation.
+     * Controls how many of the nearest neighbor candidates are connected to the new node. Defaults to
+     * {@link Lucene90HnswVectorsFormat#DEFAULT_MAX_CONN}. See {@link HnswGraph} for more details.
+     */
+    int hnswMaxConn;
+    /**
+     * This parameter is coupled with the {@link Lucene90HnswVectorsFormat} format implementation.
+     * The number of candidate neighbors to track while searching the graph for each newly inserted
+     * node. Defaults to to {@link Lucene90HnswVectorsFormat#DEFAULT_BEAM_WIDTH}. See {@link
+     * HnswGraph} for details.
+     */
+    int hnswBeamWidth;
+
     @Override
     public void init(IndexSchema schema, Map<String, String> args) {
         this.dimension = ofNullable(args.get(KNN_VECTOR_DIMENSION))
-                .map(value -> parseDimensionParameter(value))
+                .map(value -> Integer.parseInt(value))
                 .orElseThrow(() -> new SolrException(SolrException.ErrorCode.SERVER_ERROR, "the vector dimension is a mandatory parameter"));
         args.remove(KNN_VECTOR_DIMENSION);
 
@@ -66,22 +94,39 @@ public class DenseVectorField extends FloatPointField {
                 .orElse(DEFAULT_SIMILARITY);
         args.remove(KNN_SIMILARITY_FUNCTION);
 
+        this.codecFormat = args.get(CODEC_FORMAT);
+        args.remove(CODEC_FORMAT);
+
+        this.hnswMaxConn = ofNullable(args.get(HNSW_MAX_CONNECTIONS))
+                .map(value -> Integer.parseInt(value))
+                .orElse(DEFAULT_MAX_CONN);
+        args.remove(HNSW_MAX_CONNECTIONS);
+
+        this.hnswBeamWidth = ofNullable(args.get(HNSW_BEAM_WIDTH))
+                .map(value -> Integer.parseInt(value))
+                .orElse(DEFAULT_BEAM_WIDTH);
+        args.remove(HNSW_BEAM_WIDTH);
+
         this.properties &= ~MULTIVALUED;
         this.properties &= ~UNINVERTIBLE;
         
         super.init(schema, args);
     }
 
-    private int parseDimensionParameter(String value) {
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "the vector dimension must be an integer");
-        }
-    }
-
     public int getDimension() {
         return dimension;
+    }
+
+    public String getCodecFormat() {
+        return codecFormat;
+    }
+
+    public Integer getHnswMaxConn() {
+        return hnswMaxConn;
+    }
+
+    public Integer getHnswBeamWidth() {
+        return hnswBeamWidth;
     }
 
     @Override
