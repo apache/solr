@@ -137,7 +137,7 @@ solrAdminApp.config([
       }).
       when('/:core/paramsets', {
         templateUrl: 'partials/paramsets.html',
-        controller: 'ParamsetsController'
+        controller: 'ParamSetsController'
       }).
       when('/:core/files', {
         templateUrl: 'partials/files.html',

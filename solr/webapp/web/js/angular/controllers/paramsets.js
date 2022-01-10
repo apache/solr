@@ -16,76 +16,72 @@
  */
 //helper for formatting JSON and others
 
-solrAdminApp.controller('ParamsetsController',
-  function($scope, $rootScope, $routeParams, $location, Set, FileUpload, Constants) {
+solrAdminApp.controller('ParamSetsController',
+  function($scope, $routeParams, ParamSet, Constants) {
     $scope.resetMenu("paramsets", Constants.IS_COLLECTION_PAGE);
 
     $scope.refresh = function () {
-      $scope.paramset = "";
-      $scope.handler = "/set";
-      $scope.type = "json";
+      $scope.commitWithin = 1000;
+      $scope.overwrite = true;
+      $scope.paramsetContent = "";
+      $scope.placeholder = "{\n" +
+        "  \"set\": {\n" +
+        "    \"myQueries\": {\n" +
+        "      \"defType\": \"edismax\",\n" +
+        "      \"rows\": \"5\",\n" +
+        "      \"df\": \"text_all\"\n" +
+        "    }\n" +
+        "  }\n" +
+        "}"
     };
 
     $scope.refresh();
 
+
+
     $scope.submit = function () {
-      /*
-      var myHeaders = new Headers();
-      myHeaders.append("Content-type", "application/json");
-
-      var raw = JSON.stringify({
-        "set": {
-          "queryParam": {
-            "facet": "true",
-            "facet.limit": 5
-          }
-        }
-      });
-
-      var requestOptions = {
-        method: 'POST',
-        headers: myHeaders,
-        body: raw,
-        redirect: 'follow'
-      };
-
-      fetch("http://localhost:8983/solr/gettingstarted/config/params", requestOptions)
-        .then(response => response.text())
-        .then(result => console.log(result))
-        .catch(error => console.log('error', error));
-      */
-      var contentType = "";
-      var postData = "";
       var params = {};
 
-      if ($scope.handler[0] == '/') {
-        params.handler = $scope.handler.substring(1);
-      } else {
-        params.handler = 'set';
-        params.qt = $scope.handler;
-      }
-
+      params.commitWithin = $scope.commitWithin;
+      params.overwrite = $scope.overwrite;
       params.core = $routeParams.core;
       params.wt = "json";
 
-      if ($scope.type == "json") {
-        postData = "[" + $scope.paramset + "]";
-        contentType = "json";
-      } else {
-          alert("Cannot identify content type")
-      }
+      ParamSet.submit(params, $scope.paramsetContent, callback, failure);
 
-      var callback = function (success) {
+      ///////
+      function callback(success) {
         $scope.responseStatus = "success";
         delete success.$promise;
         delete success.$resolved;
         $scope.response = JSON.stringify(success, null, '  ');
-      };
-      var failure = function (failure) {
+      }
+      function failure (failure) {
         $scope.responseStatus = failure;
-      };
-      if (contentType == "json") {
-        Set.postJson(params, postData, callback, failure);
+      }
+    }
+
+    $scope.getParamsets = function () {
+      $scope.refresh();
+
+      var params = {};
+      params.core = $routeParams.core;
+      params.wt = "json";
+      params.name = $scope.name;
+
+      ParamSet.get(params, callback, failure);
+
+      ///////
+
+      function callback(success) {
+        $scope.responseStatus = "success";
+        delete success.$promise;
+        delete success.$resolved;
+        $scope.response = JSON.stringify(success, null, '  ');
+      }
+
+      function failure (failure) {
+        $scope.responseStatus = failure;
       }
     }
   });
