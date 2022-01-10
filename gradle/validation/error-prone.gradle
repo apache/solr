@@ -56,7 +56,6 @@ allprojects { prj ->
             // test
             '-Xep:ExtendingJUnitAssert:OFF',
             '-Xep:UseCorrectAssertInTests:OFF',
-            '-Xep:DefaultPackage:OFF',
             '-Xep:FloatingPointLiteralPrecision:OFF',
             '-Xep:CatchFail:OFF',
             '-Xep:TryFailThrowable:OFF',

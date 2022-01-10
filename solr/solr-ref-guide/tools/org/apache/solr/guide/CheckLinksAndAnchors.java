@@ -1,4 +1,4 @@
-/*
+package org.apache.solr.guide;/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,7 +38,7 @@ import org.jsoup.select.Elements;
  * Check various things regarding anchors, links &amp; general doc structure in the generated HTML site.
  *
  * <p>
- * Usage: <code>java CheckLinksAndAnchors some-html-dir-name/ [-check-all-relative-links] [-bare-bones]</code>
+ * Usage: <code>java org.apache.solr.guide.CheckLinksAndAnchors some-html-dir-name/ [-check-all-relative-links] [-bare-bones]</code>
 
  * </p>
  * <p>
@@ -119,7 +119,7 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
     int problems = 0;
 
     if (args.length < 1) {
-      System.err.println("usage: CheckLinksAndAnchors <htmldir> [-check-all-relative-links] [-bare-bones]");
+      System.err.println("usage: org.apache.solr.guide.CheckLinksAndAnchors <htmldir> [-check-all-relative-links] [-bare-bones]");
       System.exit(-1);
     }
     final File htmlDir = new File(args[0]);
@@ -133,14 +133,14 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
     final boolean checkAllRelativeLinks = options.remove("-check-all-relative-links");
     if (! options.isEmpty()) {
       for (String brokenOpt : options) {
-        System.err.println("CheckLinksAndAnchors: Unrecognized option: " + brokenOpt);
+        System.err.println("org.apache.solr.guide.CheckLinksAndAnchors: Unrecognized option: " + brokenOpt);
       }
       System.exit(-1);
     }
 
     final File[] pages = htmlDir.listFiles(new HtmlFileFilter());
     if (0 == pages.length) {
-      System.err.println("CheckLinksAndAnchors: No HTML Files found, wrong htmlDir? forgot to built the site?");
+      System.err.println("org.apache.solr.guide.CheckLinksAndAnchors: No HTML Files found, wrong htmlDir? forgot to built the site?");
       System.exit(-1);
     }
 
