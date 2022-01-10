@@ -81,8 +81,6 @@ ext {
 
   minJavaVersion = JavaVersion.VERSION_11
 
-  luceneBaseVersion = (file("${rootDir}/versions.props").getText("UTF-8") =~ /org.apache.lucene:\*=(.+)/)[0][1]
-
   // Declare script dependency versions outside of palantir's
   // version unification control. These are not our main dependencies.
   scriptDepVersions = [
