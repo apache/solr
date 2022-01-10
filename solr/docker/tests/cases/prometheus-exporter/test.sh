@@ -29,21 +29,19 @@ wait_for_container_and_solr "${container_name}-solr"
 solr_ip=$(docker inspect --format="{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "${container_name}-solr")
 
 docker run --name "$container_name" --add-host "solr-host:${solr_ip}" -d \
-  -p "127.0.0.1:8989:8989" \
-  --env "PORT=8989" \
   --env "SOLR_URL=http://solr-host:8983/solr" \
   --env "SCRAPE_INTERVAL=1" \
   "$tag" "solr-exporter"
 
+wait_for_container_and_solr_exporter "${container_name}"
+
 echo "Submitting Solr query"
 docker exec --user=solr "${container_name}-solr" wget -q -O - 'http://localhost:8983/solr/demo/select?q=id%3Adell' > /dev/null
-
-sleep 2
 
 echo "Checking prometheus data"
 data=$(docker exec --user=solr "$container_name" wget -q -O - 'http://localhost:8989/metrics')
 
-if ! grep -E -q 'solr_metrics_core_query_local_count{category="QUERY",searchHandler="/select",core="demo",base_url="http://solr-host:8983/solr",} 2.0' <<<"$data"; then
+if ! grep -E -q 'solr_metrics_core_query_local_count{category="QUERY",searchHandler="/select",core="demo",base_url="http://solr-host:8983/solr",} \d+.0' <<<"$data"; then
   echo "Test $TEST_NAME $tag failed; did not find correct data"
   echo "$data"
   exit 1
