@@ -625,8 +625,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       doc.addField("number_tl", i);
       doc.addField("number_tf", i);
       doc.addField("number_td", i);
-      doc.addField("point", i + "," + i);
-      doc.addField("pointD", i + "," + i);
       doc.addField("store", (i * 5) + "," + (i * 5));
       doc.addField("boolean_b", true);
       doc.addField("multi_int_with_docvals", i);
@@ -668,6 +666,20 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     Number down = (Number) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "replicas", "down");
     assertTrue("should be some down replicas, but there were none in shard1:" + rsp, down.intValue() > 0);
+
+    // test for a collection with implicit router
+    String implicitColl = "implicitColl";
+    CollectionAdminRequest.createCollection(implicitColl, "conf2", 2, 1)
+        .setRouterName("implicit")
+        .setRouterField("routerField")
+        .setShards("shardA,shardB")
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(implicitColl, 2, 2);
+    req = CollectionAdminRequest.collectionStatus(implicitColl);
+    rsp = req.process(cluster.getSolrClient());
+    assertNotNull(rsp.getResponse().get(implicitColl));
+    assertNotNull(rsp.toString(), rsp.getResponse().findRecursive(implicitColl, "shards", "shardA"));
+    assertNotNull(rsp.toString(), rsp.getResponse().findRecursive(implicitColl, "shards", "shardB"));
   }
   
   @Test

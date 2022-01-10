@@ -117,6 +117,7 @@ import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
@@ -173,6 +174,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -469,7 +471,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return indexReaderFactory;
   }
 
-  public long getIndexSize() {
+  /**
+   * Recalculates the index size.
+   *
+   * Should only be called from {@code getIndexSize}.
+   *
+   * @return The index size in bytes.
+   */
+  private long calculateIndexSize() {
     Directory dir;
     long size = 0;
     try {
@@ -485,6 +494,28 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       SolrException.log(log, "IO error while trying to get the size of the Directory", e);
     }
     return size;
+  }
+
+  public long getIndexSize() {
+    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+    if (requestInfo != null) {
+      return (Long)requestInfo.getReq().getContext().computeIfAbsent(cachedIndexSizeKeyName(), key -> calculateIndexSize());
+    } else {
+      return calculateIndexSize();
+    }
+  }
+
+  private String cachedIndexSizeKeyName() {
+    // avoid collision when we put index sizes for multiple cores in the same metrics request
+    return "indexSize_"+getName();
+  }
+
+  public int getSegmentCount() {
+    try {
+      return withSearcher( solrIndexSearcher -> solrIndexSearcher.getRawReader().getIndexCommit().getSegmentCount());
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
+    }
   }
 
   @Override
@@ -1201,6 +1232,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     parentContext.gauge(() -> getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
     parentContext.gauge(() -> isClosed() ? parentContext.nullString() : getIndexDir(), true, "indexDir", Category.CORE.toString());
     parentContext.gauge(() -> isClosed() ? parentContext.nullNumber() : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
+    parentContext.gauge(() -> isClosed() ? parentContext.nullNumber() : getSegmentCount(), true, "segments", Category.INDEX.toString());
     parentContext.gauge(() -> isClosed() ? parentContext.nullString() : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
 
     final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
@@ -1552,7 +1584,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     int count = refCount.decrementAndGet();
     if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
-      log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, this);
+      log.error("Too many close [count:{}] on {}. Please report this exception to users@solr.apache.org", count, this);
       assert false : "Too many closes on SolrCore";
       return;
     }
@@ -2255,7 +2287,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             searcherLock.wait();
           } catch (InterruptedException e) {
             if (log.isInfoEnabled()) {
-              log.info(SolrException.toStr(e));
+              log.info("Interupted waiting for searcherLock", e);
             }
           }
         }
@@ -2286,7 +2318,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             searcherLock.wait();
           } catch (InterruptedException e) {
             if (log.isInfoEnabled()) {
-              log.info(SolrException.toStr(e));
+              log.info("Interupted waiting for searcherLock", e);
             }
           }
           continue;  // go back to the top of the loop and retry

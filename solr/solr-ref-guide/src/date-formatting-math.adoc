@@ -19,7 +19,8 @@
 == Date Formatting
 
 Solr's date fields (`DatePointField`, `DateRangeField` and the deprecated `TrieDateField`) represent "dates" as a point in time with millisecond precision.
-The format used is a restricted form of the canonical representation of dateTime in the http://www.w3.org/TR/xmlschema-2/#dateTime[XML Schema specification] – a restricted subset of https://en.wikipedia.org/wiki/ISO_8601[ISO-8601]. For those familiar with Java date handling, Solr uses {java-javadocs}java/time/format/DateTimeFormatter.html#ISO_INSTANT[DateTimeFormatter.ISO_INSTANT] for formatting, and parsing too with "leniency".
+The format used is a restricted form of the canonical representation of dateTime in the http://www.w3.org/TR/xmlschema-2/#dateTime[XML Schema specification] – a restricted subset of https://en.wikipedia.org/wiki/ISO_8601[ISO-8601].
+For those familiar with Java date handling, Solr uses {java-javadocs}java/time/format/DateTimeFormatter.html#ISO_INSTANT[DateTimeFormatter.ISO_INSTANT] for formatting, and parsing too with "leniency".
 
 `YYYY-MM-DDThh:mm:ssZ`
 
@@ -115,7 +116,7 @@ Note that while date math is most commonly used relative to `NOW` it can be appl
 ==== NOW
 
 The `NOW` parameter is used internally by Solr to ensure consistent date math expression parsing across multiple nodes in a distributed request.
-But it can be specified to instruct Solr to use an arbitrary moment in time (past or future) to override for all situations where the the special value of "```NOW```" would impact date math expressions.
+But it can be specified to instruct Solr to use an arbitrary moment in time (past or future) to override for all situations where the special value of `NOW` would impact date math expressions.
 
 It must be specified as a (long valued) milliseconds since epoch.
 

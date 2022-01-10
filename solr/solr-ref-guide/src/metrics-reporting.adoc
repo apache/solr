@@ -763,7 +763,31 @@ Examples:
 * `key=solr.jvm:system.properties:user.name`
 
 +
-*NOTE: when this parameter is used, other selection methods listed above are ignored.*
+*NOTE: when this parameter is used, any other selection methods are ignored.*
+
+`expr`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Extended notation of the `key` selection criteria, which supports regular expressions for each of the parts supported by the `key` selector.
+This parameter can be specified multiple times to retrieve metrics that match
+any expression.
+The API guarantees that the output will consist only of unique metric names even if multiple expressions match the same metric name.
+Note: the order of multiple `expr` parameters matters here - only the first value of the first matching expression will be recorded, subsequent values for the same metric name produced by matching other expressions will be skipped.
++
+Fully-qualified expression consists of at least two and at most three regex patterns separated by colons: a registry pattern, colon, a metric pattern, and then an optional colon and metric property pattern.
+Colons and other regex meta-characters in names and in regular expressions MUST be escaped using backslash (`\`) character.
++
+Examples:
+
+* `expr=solr\.core\..*:QUERY\..*\.requestTimes:max_ms`
+* `expr=solr\.jvm:system\.properties:user\..*`
+
++
+*NOTE: when this parameter is used, any other selection methods are ignored.*
 
 `compact`::
 +
@@ -845,3 +869,8 @@ Request only "user.name" property of "system.properties" metric from registry "s
 
 [source,text]
 http://localhost:8983/solr/admin/metrics?wt=xml&key=solr.jvm:system.properties:user.name
+
+Request query rates (but not histograms) from any core in any collection in any QUERY handler:
+
+[source,text]
+http://localhost:8983/solr/admin/metrics?expr=solr\.core\..*:QUERY\..*\.requestTimes:.*Rate

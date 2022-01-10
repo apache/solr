@@ -177,6 +177,10 @@ solrAdminApp.config([
         templateUrl: 'partials/schema-designer.html',
         controller: 'SchemaDesignerController'
       }).
+      when('/~security', {
+        templateUrl: 'partials/security.html',
+        controller: 'SecurityController'
+      }).
       otherwise({
         templateUrl: 'partials/unknown.html',
         controller: 'UnknownController'
@@ -407,6 +411,9 @@ solrAdminApp.config([
     if (rejection.config.headers.doNotIntercept) {
         return rejection;
     }
+
+    // Schema Designer handles errors internally to provide a better user experience than the global error handler
+    var isHandledBySchemaDesigner = rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/");
     if (rejection.status === 0) {
       $rootScope.$broadcast('connectionStatusActive');
       if (!$rootScope.retryCount) $rootScope.retryCount=0;
@@ -414,7 +421,7 @@ solrAdminApp.config([
       var $http = $injector.get('$http');
       var result = $http(rejection.config);
       return result;
-    } else if (rejection.status === 401) {
+    } else if (rejection.status === 401 && !isHandledBySchemaDesigner) {
       // Authentication redirect
       var headers = rejection.headers();
       var wwwAuthHeader = headers['www-authenticate'];
@@ -436,8 +443,7 @@ solrAdminApp.config([
         $location.path('/login');
       }
     } else {
-      // schema designer prefers to handle errors itselft
-      var isHandledBySchemaDesigner = rejection.config.url && rejection.config.url.startsWith("/api/schema-designer/");
+      // schema designer prefers to handle errors itself
       if (!isHandledBySchemaDesigner) {
         $rootScope.exceptions[rejection.config.url] = rejection.data.error;
       }
@@ -468,7 +474,7 @@ solrAdminApp.config([
     };
 });
 
-solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, Collections, System, Ping, Constants) {
+solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $location, Cores, Collections, System, Ping, Constants, SchemaDesigner) {
 
   $rootScope.exceptions={};
 
@@ -502,6 +508,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       $scope.initFailures = data.initFailures;
     });
 
+    $scope.isSchemaDesignerEnabled = true;
     System.get(function(data) {
       $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
 
@@ -539,6 +546,14 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
               $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
             }
             $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
+
+            SchemaDesigner.get({path: "configs"}, function (ignore) {
+              // no-op, just checking if we have access to this path
+            }, function(e) {
+              if (e.status === 401 || e.status === 403) {
+                $scope.isSchemaDesignerEnabled = false;
+              }
+            });
           });
         });
       }

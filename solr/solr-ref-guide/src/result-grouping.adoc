@@ -29,7 +29,8 @@ There are features unique to both, and they have different performance character
 That said, in most cases Collapse and Expand is preferable to Result Grouping.
 ====
 
-Result Grouping is separate from <<faceting.adoc#,Faceting>>. Though it is conceptually similar, faceting returns all relevant results and allows the user to refine the results based on the facet category.
+Result Grouping is separate from <<faceting.adoc#,Faceting>>.
+Though it is conceptually similar, faceting returns all relevant results and allows the user to refine the results based on the facet category.
 For example, if you search for "shoes" on a footwear retailer's e-commerce site, Solr would return all results for that query term, along with selectable facets such as "size," "color," "brand," and so on.
 
 You can however combine grouping with faceting.
@@ -384,6 +385,6 @@ This is because one result for "memory" did not have a price assigned to it.
 
 Grouping is supported for <<cluster-types.adoc#solrcloud-mode,distributed searches>>, with some caveats:
 
-* Currently `group.func` is is not supported in any distributed searches
+* Currently `group.func` is not supported in any distributed searches
 * `group.ngroups` and `group.facet` require that all documents in each group must be co-located on the same shard in order for accurate counts to be returned.
 <<solrcloud-shards-indexing.adoc#,Document routing via composite keys>> can be a useful solution in many situations.

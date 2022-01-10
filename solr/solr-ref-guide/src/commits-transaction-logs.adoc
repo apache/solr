@@ -177,7 +177,7 @@ In the event of un-graceful shutdown, it can take up to the time specified in `a
 The time chosen for `autoSoftCommit` determines the maximum time after a document is sent to Solr before it becomes searchable and does not affect the transaction log.
 
 Choose as long an interval as your application can tolerate for this value, often 15-60 seconds is reasonable, or even longer depending on the requirements.
-In situations where the the time is set to a very short interval (say 1 second), consider disabling your caches (queryResultCache and filterCache especially) as they will have little utility.
+In situations where the time is set to a very short interval (say 1 second), consider disabling your caches (queryResultCache and filterCache especially) as they will have little utility.
 
 TIP: For extremely high bulk indexing, especially for the initial load if there is no searching, consider turning off `autoSoftCommit` by specifying a value of `-1` for the maxTime parameter.
 
@@ -257,7 +257,7 @@ These settings would primarily impact SolrCloud cluster configurations:
 |Optional |Default: `100`
 |===
 +
-The number of update records to keep per log.
+The minimum number of update records to keep across all the transaction log files.
 
 `maxNumLogsToKeep`::
 +
@@ -266,7 +266,7 @@ The number of update records to keep per log.
 |Optional |Default: `10`
 |===
 +
-The maximum number of logs keep.
+The maximum number of transaction log files to keep.
 
 `numVersionBuckets`::
 +

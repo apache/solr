@@ -1,3 +1,18 @@
+#-# Licensed to the Apache Software Foundation (ASF) under one or more
+#-# contributor license agreements.  See the NOTICE file distributed with
+#-# this work for additional information regarding copyright ownership.
+#-# The ASF licenses this file to You under the Apache License, Version 2.0
+#-# (the "License"); you may not use this file except in compliance with
+#-# the License.  You may obtain a copy of the License at
+#-#
+#-#     http://www.apache.org/licenses/LICENSE-2.0
+#-#
+#-# Unless required by applicable law or agreed to in writing, software
+#-# distributed under the License is distributed on an "AS IS" BASIS,
+#-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#-# See the License for the specific language governing permissions and
+#-# limitations under the License.
+
 #-#
 #-# This template is used as the primary body of both "local" and "official" Apache Solr Dockerfiles.
 #-# It contains everything that should be "common" between both files.
@@ -15,24 +30,18 @@
 #  TODO; arguably these permissions should have been set correctly previously in the TAR
 RUN set -ex; \
   (cd /opt; ln -s solr-*/ solr); \
-  rm -Rf /opt/solr/docs /opt/solr/docker/Dockerfile* /opt/solr/dist/{solr-solrj-*.jar,solrj-lib}; \
+  rm -Rf /opt/solr/docs /opt/solr/dist/solr-solrj-*.jar /opt/solr/dist/solrj-lib /opt/solr/dist/solr-core-*.jar; \
   find /opt/solr/ -type d -print0 | xargs -0 chmod 0755; \
   find /opt/solr/ -type f -print0 | xargs -0 chmod 0644; \
   chmod -R 0755 /opt/solr/docker/scripts /opt/solr/bin /opt/solr/contrib/prometheus-exporter/bin/solr-exporter /opt/solr/server/scripts/cloud-scripts
 
 LABEL maintainer="The Apache Lucene/Solr Project"
 LABEL repository="https://github.com/apache/lucene-solr"
-  
-# Override the default github URL to provide a mirror for github releases.
-ARG GITHUB_URL=github.com
 
 RUN set -ex; \
     apt-get update; \
-    apt-get -y install acl dirmngr lsof procps wget netcat gosu tini; \
-    rm -rf /var/lib/apt/lists/*; \
-    cd /usr/local/bin; wget -nv https://${GITHUB_URL}/apangin/jattach/releases/download/v1.5/jattach; chmod 755 jattach; \
-    echo >jattach.sha512 "d8eedbb3e192a8596c08efedff99b9acf1075331e1747107c07cdb1718db2abe259ef168109e46bd4cf80d47d43028ff469f95e6ddcbdda4d7ffa73a20e852f9  jattach"; \
-    sha512sum -c jattach.sha512; rm jattach.sha512
+    apt-get -y install acl dirmngr lsof procps wget netcat gosu tini jattach; \
+    rm -rf /var/lib/apt/lists/*;
 
 ENV SOLR_USER="solr" \
     SOLR_UID="8983" \

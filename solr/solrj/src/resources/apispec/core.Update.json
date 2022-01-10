@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/uploading-data-with-index-handlers.html",
+  "documentation": "https://solr.apache.org/guide/indexing-with-update-handlers.html",
   "methods": [
     "POST"
   ],

@@ -186,7 +186,8 @@ fq={!collapse cost=1000 field=group_field}
 
 === Block Collapsing
 
-When collapsing on the `\_root_` field, using `nullPolicy=expand` or `nullPolicy=ignore`, the Collapsing Query Parser can take advantage of the fact that all docs with identical field values are adjacent to each other in the index in a single <<indexing-nested-documents.adoc#,"block" of nested documents>>. This allows the collapsing logic to be much faster and more memory efficient.
+When collapsing on the `\_root_` field, using `nullPolicy=expand` or `nullPolicy=ignore`, the Collapsing Query Parser can take advantage of the fact that all docs with identical field values are adjacent to each other in the index in a single <<indexing-nested-documents.adoc#,"block" of nested documents>>.
+This allows the collapsing logic to be much faster and more memory efficient.
 
 The default collapsing logic must keep track of all group head documents -- for all groups encountered so far -- until it has evaluated all documents, because each document it considers may become the new group head of any group.
 
@@ -200,7 +201,7 @@ For example: searching for "grand child" documents and collapsing on a field tha
 ====
 Specifing `hint=block` when collapsing on a field that is not unique per contiguous block of documents is not supported and may fail in unexpected ways; including the possibility of silently returning incorrect results.
 
-The implementation does not offer any safeguards against misuse on an unsupported field, since doing so would require the the same group level tracking as the non-Block collapsing implementation -- defeating the purpose of this optimization.
+The implementation does not offer any safeguards against misuse on an unsupported field, since doing so would require the same group level tracking as the non-Block collapsing implementation -- defeating the purpose of this optimization.
 ====
 
 == Expand Component

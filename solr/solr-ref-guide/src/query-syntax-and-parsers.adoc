@@ -11,8 +11,9 @@
     join-query-parser, \
     spatial-search, \
     other-parsers, \
-    parallel-sql-interface, \
-    query-screen
+    sql-query, \
+    query-screen, \
+    sql-screen
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -40,7 +41,8 @@ This section explains how to specify a query parser and describes the syntax and
 There are some query parameters common to all Solr parsers; these are discussed in the section <<common-query-parameters.adoc#common-query-parameters,Common Query Parameters>>.
 
 Query parsers are also called `QParserPlugins`.
-They are all subclasses of {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin]. If you have custom parsing needs, you may want to extend that class to create your own query parser.
+They are all subclasses of {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin].
+If you have custom parsing needs, you may want to extend that class to create your own query parser.
 
 ****
 // This tags the below list so it can be used in the parent page section list
@@ -59,8 +61,9 @@ They are all subclasses of {solr-javadocs}/core/org/apache/solr/search/QParserPl
 | <<join-query-parser.adoc#,Join Query Parser>>: Query parser to facilitate joins.
 | <<spatial-search.adoc#,Spatial Search>>: Solr's spatial search capabilities.
 | <<other-parsers.adoc#,Other Parsers>>: More parsers designed for use in specific situations.
-| <<parallel-sql-interface.adoc#,Parallel SQL Interface>>: SQL interface for Solr.
+| <<sql-query.adoc#,SQL Query>>: SQL language support for Solr.
 | <<query-screen.adoc#,Query Screen>>: Form-based query builder.
+| <<sql-screen.adoc#,SQL Screen>>: SQL query runner with tabular results.
 |===
 // end::parser-sections[]
 ****

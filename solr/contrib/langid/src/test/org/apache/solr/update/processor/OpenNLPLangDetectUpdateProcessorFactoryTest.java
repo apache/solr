@@ -17,11 +17,13 @@
 
 package org.apache.solr.update.processor;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Test;
 
+@ThreadLeakLingering(linger = 0)
 public class OpenNLPLangDetectUpdateProcessorFactoryTest extends LanguageIdentifierUpdateProcessorFactoryTestCase {
   private static final String TEST_MODEL = "opennlp-langdetect.eng-swe-spa-rus-deu.bin";
   

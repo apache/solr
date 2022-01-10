@@ -19,7 +19,8 @@
 You might want to interpret some document fields in more than one way.
 Solr has a mechanism for making copies of fields so that you can apply several distinct field types to a single piece of incoming information.
 
-The name of the field you want to copy is the _source_, and the name of the copy is the _destination_. In `schema.xml`, it's very simple to make copies of fields:
+The name of the field you want to copy is the _source_, and the name of the copy is the _destination_.
+In the schema file, it's very simple to make copies of fields:
 
 [source,xml]
 ----

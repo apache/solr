@@ -44,10 +44,10 @@ import org.apache.solr.util.LongIterator;
  *
  * This data structure is interoperable with the implementations found at:
  * <ul>
- *   <li><a href="https://github.com/aggregateknowledge/postgresql-hll">postgresql-hll</a>, and</li>
+ *   <li><a href="https://github.com/citusdata/postgresql-hll/blob/v2.9.0/README.markdown">postgresql-hll</a>, and</li>
  *   <li><a href="https://github.com/aggregateknowledge/js-hll">js-hll</a></li>
  * </ul>
- * when <a href="https://github.com/aggregateknowledge/postgresql-hll/blob/master/STORAGE.markdown">properly serialized</a>.
+ * when <a href="https://github.com/citusdata/postgresql-hll/blob/v2.9.0/STORAGE.markdown">properly serialized</a>.
  */
 public class HLL implements Cloneable {
     // minimum and maximum values for the log-base-2 of the number of registers
@@ -292,7 +292,7 @@ public class HLL implements Cloneable {
      *         value <em>already be hashed</em> with a strong (but not
      *         necessarily cryptographic) hash function. For instance, the
      *         Murmur3 implementation in
-     *         <a href="http://guava-libraries.googlecode.com/git/guava/src/com/google/common/hash/Murmur3_128HashFunction.java">
+     *         <a href="https://github.com/google/guava/blob/master/guava/src/com/google/common/hash/Murmur3_128HashFunction.java">
      *         Google's Guava</a> library is an excellent hash function for this
      *         purpose and, for seeds greater than zero, matches the output
      *         of the hash provided in the PostgreSQL implementation.

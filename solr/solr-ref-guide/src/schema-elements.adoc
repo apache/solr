@@ -21,7 +21,7 @@ Solr stores details about the field types and fields it is expected to understan
 == Solr's Schema File
 The name and location of Solr's schema file may vary depending on how you initially configured Solr or if you modified it later.
 
-* `managed-schema` is the name for the schema file Solr uses by default to support making schema changes at runtime via the <<schema-api.adoc#,Schema API>>, or <<schemaless-mode.adoc#,Schemaless Mode>> features.
+* `managed-schema.xml` is the name for the schema file Solr uses by default to support making schema changes at runtime via the <<schema-api.adoc#,Schema API>>, or <<schemaless-mode.adoc#,Schemaless Mode>> features.
 +
 You may <<schema-factory.adoc#,explicitly configure the managed schema features>> to use an alternative filename if you choose, but the contents of the files are still updated automatically by Solr.
 * `schema.xml` is the traditional name for a schema file which can be edited manually by users who use the <<schema-factory.adoc#,`ClassicIndexSchemaFactory`>>.
@@ -33,7 +33,7 @@ However, the way you interact with the file will change.
 If you are using the managed schema, it is expected that you only interact with the file with the Schema API, and never make manual edits.
 If you do not use the managed schema, you will only be able to make manual edits to the file, the Schema API will not support any modifications.
 
-Note that if you are not using the Schema API yet you do use SolrCloud, you will need to interact with `schema.xml` through ZooKeeper using `upconfig` and `downconfig` commands to make a local copy and upload your changes.
+Note that if you are not using the Schema API yet you do use SolrCloud, you will need to interact with the schema file through ZooKeeper using `upconfig` and `downconfig` commands to make a local copy and upload your changes.
 The options for doing this are described in <<solr-control-script-reference.adoc#,Solr Control Script Reference>> and <<zookeeper-file-management.adoc#,ZooKeeper File Management>>.
 
 == Structure of the Schema File
@@ -97,7 +97,7 @@ Similarity is a Lucene class used to score a document in searching.
 Each collection has one "global" Similarity.
 By default Solr uses an implicit {solr-javadocs}/core/org/apache/solr/search/similarities/SchemaSimilarityFactory.html[`SchemaSimilarityFactory`] which allows individual field types to be configured with a "per-type" specific Similarity and implicitly uses `BM25Similarity` for any field type which does not have an explicit Similarity.
 
-This default behavior can be overridden by declaring a top level `<similarity/>` element in your `schema.xml`, outside of any single field type.
+This default behavior can be overridden by declaring a top level `<similarity/>` element in your schema, outside of any single field type.
 This similarity declaration can either refer directly to the name of a class with a no-argument constructor, such as in this example showing `BM25Similarity`:
 
 [source,xml]
@@ -117,7 +117,7 @@ or by referencing a `SimilarityFactory` implementation, which may take optional 
 </similarity>
 ----
 
-In most cases, specifying global level similarity like this will cause an error if your `schema.xml` also includes field type specific `<similarity/>` declarations.
+In most cases, specifying global level similarity like this will cause an error if your schema also includes field type specific `<similarity/>` declarations.
 One key exception to this is that you may explicitly declare a {solr-javadocs}/core/org/apache/solr/search/similarities/SchemaSimilarityFactory.html[`SchemaSimilarityFactory`] and specify what that default behavior will be for all field types that do not declare an explicit Similarity using the name of field type (specified by `defaultSimFromFieldType`) that _is_ configured with a specific similarity:
 
 [source,xml]
@@ -152,7 +152,7 @@ One key exception to this is that you may explicitly declare a {solr-javadocs}/c
 
 In the example above `IBSimilarityFactory` (using the Information-Based model) will be used for any fields of type `text_ib`, while `DFRSimilarityFactory` (divergence from random) will be used for any fields of type `text_dfr`, as well as any fields using a type that does not explicitly specify a `<similarity/>`.
 
-If `SchemaSimilarityFactory` is explicitly declared without configuring a `defaultSimFromFieldType`, then `BM25Similarity` is implicitly used as the default for `luceneMatchVersion >= 8.0.0` and otherwise `LegacyBM25Similarity` is used to mimic the same BM25 formula that was the default in those versions.
+If `SchemaSimilarityFactory` is explicitly declared without configuring a `defaultSimFromFieldType`, then `BM25Similarity` is implicitly used as the default.
 
-In addition to the various factories mentioned on this page, there are several other similarity implementations that can be used such as the `SweetSpotSimilarityFactory`, `ClassicSimilarityFactory`, `LegacyBM25SimilarityFactory` etc.
+In addition to the various factories mentioned on this page, there are several other similarity implementations that can be used such as the `SweetSpotSimilarityFactory`, `ClassicSimilarityFactory` etc.
 For details, see the Solr Javadocs for the {solr-javadocs}/core/org/apache/solr/schema/SimilarityFactory.html[similarity factories].

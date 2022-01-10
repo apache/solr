@@ -18,6 +18,7 @@ package org.apache.solr.search.grouping.distributed.responseprocessor;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -156,12 +157,11 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         continue;
       }
 
-      @SuppressWarnings({"rawtypes"})
-      TopGroups<BytesRef>[] topGroupsArr = new TopGroups[topGroups.size()];
+      TopGroups<BytesRef>[] topGroupsArr = (TopGroups<BytesRef>[]) Array.newInstance(TopGroups.class, topGroups.size());
       int docsPerGroup = docsPerGroupDefault;
       if (docsPerGroup < 0) {
         docsPerGroup = 0;
-        for (@SuppressWarnings({"rawtypes"})TopGroups subTopGroups : topGroups) {
+        for (TopGroups<?> subTopGroups : topGroups) {
           docsPerGroup += subTopGroups.totalGroupedHitCount;
         }
       }

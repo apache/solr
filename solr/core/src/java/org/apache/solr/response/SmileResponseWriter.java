@@ -55,8 +55,6 @@ public class SmileResponseWriter extends BinaryResponseWriter {
 
     @Override
     public void writeResponse() throws IOException {
-      //we always write header , it is just 4 bytes and not worth optimizing
-      gen.writeHeader();
       super.writeNamedList(null, rsp.getValues());
       gen.close();
     }

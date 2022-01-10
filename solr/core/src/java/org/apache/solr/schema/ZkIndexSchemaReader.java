@@ -48,8 +48,8 @@ public class ZkIndexSchemaReader implements OnReconnect {
     this.managedIndexSchemaFactory = managedIndexSchemaFactory;
     zkLoader = (ZkSolrResourceLoader)managedIndexSchemaFactory.getResourceLoader();
     this.zkClient = zkLoader.getZkController().getZkClient();
-    this.managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedIndexSchemaFactory.getManagedSchemaResourceName();
-    this.uniqueCoreId = solrCore.getName()+":"+solrCore.getStartNanoTime();
+    this.managedSchemaPath = managedIndexSchemaFactory.lookupZKManagedSchemaPath();
+    this.uniqueCoreId = solrCore.getName() + ":" + solrCore.getStartNanoTime();
 
     // register a CloseHook for the core this reader is linked to, so that we can de-register the listener
     solrCore.addCloseHook(new CloseHook() {
@@ -172,10 +172,10 @@ public class ZkIndexSchemaReader implements OnReconnect {
           }
           long start = System.nanoTime();
           String resourceName = managedIndexSchemaFactory.getManagedSchemaResourceName();
-          ManagedIndexSchema newSchema = new ManagedIndexSchema
-                  (managedIndexSchemaFactory.getConfig(), resourceName,
-                          () -> IndexSchemaFactory.getParsedSchema(new ByteArrayInputStream(data),zkLoader , resourceName), managedIndexSchemaFactory.isMutable(),
-                          resourceName, stat.getVersion(), oldSchema.getSchemaUpdateLock());
+          ManagedIndexSchema newSchema = new ManagedIndexSchema(managedIndexSchemaFactory.getConfig(), resourceName,
+             () -> IndexSchemaFactory.getParsedSchema(new ByteArrayInputStream(data), zkLoader, resourceName),
+             managedIndexSchemaFactory.isMutable(),
+             resourceName, stat.getVersion(), oldSchema.getSchemaUpdateLock());
           managedIndexSchemaFactory.setSchema(newSchema);
           long stop = System.nanoTime();
           log.info("Finished refreshing schema in {} ms", TimeUnit.MILLISECONDS.convert(stop - start, TimeUnit.NANOSECONDS));
@@ -198,7 +198,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
       // force update now as the schema may have changed while our zk session was expired
       updateSchema(null, -1);
     } catch (Exception exc) {
-      log.error("Failed to update managed-schema watcher after session expiration due to: {}", exc);
+      log.error("Failed to update managed schema watcher after session expiration due to: {}", exc);
     }
   }
 

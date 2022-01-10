@@ -289,7 +289,6 @@ s|Required |Default: none
 |===
 +
 http://www.rfc-editor.org/rfc/rfc3066.txt[RFC 3066] locale ID.
-See http://demo.icu-project.org/icu-bin/locexp[the ICU locale explorer] for a list of supported locales.
 
 `strength`::
 +
@@ -416,7 +415,8 @@ If you specify "de" as the language and "CH" as the country, you will get German
 <copyField source="manu" dest="manuGERMAN"/>
 ----
 
-In the example above, we defined the strength as "primary". The strength of the collation determines how strict the sort order will be, but it also depends upon the language.
+In the example above, we defined the strength as "primary".
+The strength of the collation determines how strict the sort order will be, but it also depends upon the language.
 For example, in English, "primary" strength ignores differences in case and accents.
 
 Another example:
@@ -1079,6 +1079,7 @@ The languages covered here are:
 | <<Italian>>
 | <<Irish>>
 | <<Japanese>>
+| <<Korean>>
 | <<Latvian>>
 | <<Norwegian>>
 | <<Persian>>
@@ -1093,6 +1094,8 @@ The languages covered here are:
 | <<Thai>>
 | <<Turkish>>
 | <<Ukrainian>>
+|
+|
 |===
 
 === Arabic
@@ -1435,7 +1438,8 @@ See the example under <<Traditional Chinese>>.
 
 === Simplified Chinese
 
-For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<HMM Chinese Tokenizer>>. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model.
+For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<HMM Chinese Tokenizer>>.
+This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model.
 To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
 See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
 
@@ -2418,6 +2422,130 @@ Example:
 ====
 --
 
+=== Korean
+
+The Korean (nori) analyzer integrates Lucene's nori analysis module into Solr.
+It uses the https://bitbucket.org/eunjeon/mecab-ko-dic[mecab-ko-dic] dictionary to perform morphological analysis of Korean texts.
+
+The dictionary was built with http://taku910.github.io/mecab/[MeCab] and defines a format for the features adapted for the Korean language.
+
+Nori also has a user dictionary feature that allows overriding the statistical model with your own entries for segmentation, part-of-speech tags, and readings without a need to specify weights.
+
+*Example*:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-lang-korean]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<fieldType name="text_ko" class="solr.TextField" positionIncrementGap="100">
+  <analyzer>
+    <tokenizer name="korean" decompoundMode="discard" outputUnknownUnigrams="false"/>
+    <filter name="koreanPartOfSpeechStop" />
+    <filter name="koreanReadingForm" />
+    <filter name="lowercase" />
+  </analyzer>
+</fieldType>
+----
+====
+
+[example.tab-pane#byclass-lang-korean]
+====
+[.tab-label]*With class name (legacy)*
+[source,xml]
+----
+<fieldType name="text_ko" class="solr.TextField" positionIncrementGap="100">
+  <analyzer>
+    <tokenizer class="solr.KoreanTokenizerFactory" decompoundMode="discard" outputUnknownUnigrams="false"/>
+    <filter class="solr.KoreanPartOfSpeechStopFilterFactory" />
+    <filter class="solr.KoreanReadingFormFilterFactory" />
+    <filter class="solr.LowerCaseFilterFactory" />
+  </analyzer>
+</fieldType>
+----
+====
+--
+
+
+==== Korean Tokenizer
+
+*Factory class*: `solr.KoreanTokenizerFactory`
+
+*SPI name*: `korean`
+
+*Arguments*:
+
+`userDictionary`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Path to a user-supplied dictionary to add custom nouns or compound terms to the default dictionary.
+
+`userDictionaryEncoding`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Character encoding of the user dictionary.
+
+`decompoundMode`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `discard`
+|===
++
+Defines how to handle compound tokens. The options are:
+
+* `none`: No decomposition for tokens.
+* `discard`: Tokens are decomposed and the original form is discarded.
+* `mixed`: Tokens are decomposed and the original form is retained.
+
+`outputUnknownUnigrams`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, unigrams will be output for unknown words.
+
+`discardPunctuation`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true`, punctuation will be discarded.
+
+==== Korean Part of Speech Stop Filter
+
+This filter removes tokens that match parts of speech tags.
+
+*Factory class*: `solr.KoreanPartOfSpeechStopFilterFactory`
+
+*SPI name*: `koreanPartOfSpeechStop`
+
+*Arguments*: None.
+
+==== Korean Reading Form Filter
+
+This filter replaces term text with the Reading Attribute, the Hangul transcription of Hanja characters.
+
+*Factory class*: `solr.KoreanReadingFormFilterFactory`
+
+*SPI name*: `koreanReadingForm`
+
+*Arguments*: None.
+
 [[hebrew-lao-myanmar-khmer]]
 === Hebrew, Lao, Myanmar, Khmer
 
@@ -2487,7 +2615,8 @@ For normalization, there is a `NorwegianNormalizationFilterFactory` which is a v
 ==== Norwegian Light Stemmer
 
 The `NorwegianLightStemFilterFactory` requires a "two-pass" sort for the -dom and -het endings.
-This means that in the first pass the word "kristendom" is stemmed to "kristen", and then all the general rules apply so it will be further stemmed to "krist". The effect of this is that "kristen," "kristendom," "kristendommen," and "kristendommens" will all be stemmed to "krist."
+This means that in the first pass the word "kristendom" is stemmed to "kristen", and then all the general rules apply so it will be further stemmed to "krist".
+The effect of this is that "kristen," "kristendom," "kristendommen," and "kristendommens" will all be stemmed to "krist."
 
 The second pass is to pick up -dom and -het endings.
 Consider this example:
@@ -2609,7 +2738,8 @@ Valid values are:
 
 ==== Norwegian Normalization Filter
 
-This filter normalize use of the interchangeable Scandinavian characters æÆäÄöÖøØåÅ and folded variants (ae, oe and aa) by transforming them to æÆøØåÅ. This is a variant of `ScandinavianNormalizationFilter`, with folding rules customized for Norwegian.
+This filter normalize use of the interchangeable Scandinavian characters æÆäÄöÖøØåÅ and folded variants (ae, oe and aa) by transforming them to æÆøØåÅ.
+This is a variant of `ScandinavianNormalizationFilter`, with folding rules customized for Norwegian.
 
 *Factory class:* `solr.NorwegianNormalizationFilterFactory`
 
@@ -2914,7 +3044,9 @@ Scandinavian is a language group spanning three languages <<Norwegian>>, <<Swedi
 Swedish å, ä, ö are in fact the same letters as Norwegian and Danish å, æ, ø and thus interchangeable when used between these languages.
 They are however folded differently when people type them on a keyboard lacking these characters.
 
-In that situation almost all Swedish people use a, a, o instead of å, ä, ö. Norwegians and Danes on the other hand usually type aa, ae and oe instead of å, æ and ø. Some do however use a, a, o, oo, ao and sometimes permutations of everything above.
+In that situation almost all Swedish people use a, a, o instead of å, ä, ö.
+Norwegians and Danes on the other hand usually type aa, ae and oe instead of å, æ and ø.
+Some do however use a, a, o, oo, ao and sometimes permutations of everything above.
 
 There are two filters for helping with normalization between Scandinavian languages: one is `solr.ScandinavianNormalizationFilterFactory` trying to preserve the special characters (æäöå) and another `solr.ScandinavianFoldingFilterFactory` which folds these to the more broad ø/ö -> o, etc.
 

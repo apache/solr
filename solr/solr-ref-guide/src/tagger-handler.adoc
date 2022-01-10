@@ -182,16 +182,13 @@ Solr's parameters for controlling the response format are also supported, such a
 
 This is a tutorial that demonstrates how to configure and use the text
 tagger with the popular http://www.geonames.org/[Geonames] data set.
-It's more than a tutorial;
-it's a how-to with information that wasn't described above.
+It's more than a tutorial; it's a how-to with information that wasn't described above.
 
 === Create and Configure a Solr Collection
 
-Create a Solr collection named "geonames". For the tutorial, we'll
-assume the default "data-driven" configuration.
-It's good for
-experimentation and getting going fast but not for production or being
-optimal.
+Create a Solr collection named "geonames".
+For the tutorial, we'll assume the default "data-driven" configuration.
+It's good for experimentation and getting going fast but not for production or being optimal.
 
 [source,bash]
 bin/solr create -c geonames

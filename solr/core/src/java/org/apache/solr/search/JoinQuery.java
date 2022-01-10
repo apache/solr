@@ -17,7 +17,6 @@
 
 package org.apache.solr.search;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -140,21 +139,9 @@ class JoinQuery extends Query {
 
         if (fromRef != null) {
           final RefCounted<SolrIndexSearcher> ref = fromRef;
-          info.addCloseHook(new Closeable() {
-            @Override
-            public void close() {
-              ref.decref();
-            }
-          });
+          info.addCloseHook(ref::decref);
         }
-
-        info.addCloseHook(new Closeable() {
-          @Override
-          public void close() {
-            fromCore.close();
-          }
-        });
-
+        info.addCloseHook(fromCore);
       }
       this.toSearcher = searcher;
     }
@@ -371,6 +358,11 @@ class JoinQuery extends Query {
             // use the filterCache to get a DocSet
             if (toTermsEnum.docFreq() >= minDocFreqTo || resultBits == null) {
               // use filter cache
+              SolrCache<?, ?> filterCache = toSearcher.getFilterCache();
+              if (filterCache != null && !filterCache.isRecursionSupported()) {
+                throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
+                    "Using join queries with synchronous filterCache is not supported! Details can be found in Solr Reference Guide under 'query-settings-in-solrconfig'.");
+              }
               DocSet toTermSet = toSearcher.getDocSet(toDeState);
               resultListDocs += toTermSet.size();
               if (resultBits != null) {

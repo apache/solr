@@ -21,18 +21,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -52,6 +41,8 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeRoles;
+import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -177,7 +168,7 @@ public class Assign {
   }
 
   private static int defaultCounterValue(DocCollection collection, boolean newCollection, String shard) {
-    if (newCollection) return 0;
+    if (newCollection || collection == null) return 0;
 
     int defaultValue;
     if (collection.getSlice(shard) != null && collection.getSlice(shard).getReplicas().isEmpty()) {
@@ -201,20 +192,20 @@ public class Assign {
     return defaultValue;
   }
 
-  public static String buildSolrCoreName(DistribStateManager stateManager, DocCollection collection, String shard, Replica.Type type, boolean newCollection) {
-    Slice slice = collection.getSlice(shard);
+  public static String buildSolrCoreName(DistribStateManager stateManager, String collectionName, DocCollection collection, String shard, Replica.Type type, boolean newCollection) {
+
     int defaultValue = defaultCounterValue(collection, newCollection, shard);
-    int replicaNum = incAndGetId(stateManager, collection.getName(), defaultValue);
-    String coreName = buildSolrCoreName(collection.getName(), shard, type, replicaNum);
-    while (existCoreName(coreName, slice)) {
-      replicaNum = incAndGetId(stateManager, collection.getName(), defaultValue);
-      coreName = buildSolrCoreName(collection.getName(), shard, type, replicaNum);
+    int replicaNum = incAndGetId(stateManager, collectionName, defaultValue);
+    String coreName = buildSolrCoreName(collectionName, shard, type, replicaNum);
+    while (collection != null && existCoreName(coreName, collection.getSlice(shard))) {
+      replicaNum = incAndGetId(stateManager, collectionName, defaultValue);
+      coreName = buildSolrCoreName(collectionName, shard, type, replicaNum);
     }
     return coreName;
   }
 
   public static String buildSolrCoreName(DistribStateManager stateManager, DocCollection collection, String shard, Replica.Type type) {
-    return buildSolrCoreName(stateManager, collection, shard, type, false);
+    return buildSolrCoreName(stateManager, collection.getName(), collection, shard, type, false);
   }
 
   private static boolean existCoreName(String coreName, Slice slice) {
@@ -227,7 +218,9 @@ public class Assign {
     return false;
   }
 
-  public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random) {
+  public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random,
+                                                               DistribStateManager zk) {
+
     List<String> nodeList;
     final String createNodeSetStr = message.getStr(CREATE_NODE_SET);
     final List<String> createNodeList = (createNodeSetStr == null) ? null :
@@ -242,24 +235,44 @@ public class Assign {
         Collections.shuffle(nodeList, random);
       }
     } else {
-      nodeList = new ArrayList<>(liveNodes);
+      nodeList = new ArrayList<>(filterNonDataNodes(zk, liveNodes));
       Collections.shuffle(nodeList, random);
     }
 
     return nodeList;
   }
 
+  public static Collection<String> filterNonDataNodes(DistribStateManager zk, Collection<String> liveNodes) {
+    try {
+     List<String> noData =  ClusterAPI.getNodesByRole(NodeRoles.Role.DATA, NodeRoles.MODE_OFF, zk);
+      if (noData.isEmpty()) {
+        return liveNodes;
+      } else {
+        liveNodes = new HashSet<>(liveNodes);
+        liveNodes.removeAll(noData);
+        return liveNodes;
+      }
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching roles from Zookeeper", e);
+    }
+  }
+
   static class ReplicaCount {
     public final String nodeName;
-    public int thisCollectionNodes = 0;
-    public int totalNodes = 0;
+    public Map<String, Integer> collectionReplicas;
+    public int totalReplicas = 0;
 
     ReplicaCount(String nodeName) {
       this.nodeName = nodeName;
+      this.collectionReplicas = new HashMap<>();
     }
 
-    public int weight() {
-      return (thisCollectionNodes * 100) + totalNodes;
+    public int weight(String collection) {
+      return (collectionReplicas.getOrDefault(collection, 0) * 100) + totalReplicas;
+    }
+
+    public String nodeName() {
+      return nodeName;
     }
   }
 
@@ -274,8 +287,7 @@ public class Assign {
                                                           CoreContainer coreContainer) throws IOException, InterruptedException, AssignmentException {
     log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
         , shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
-    DocCollection coll = clusterState.getCollection(collectionName);
-    List<String> createNodeList = null;
+    List<String> createNodeList;
 
     if (createNodeSet instanceof List) {
       createNodeList = (List<String>) createNodeSet;
@@ -297,28 +309,18 @@ public class Assign {
         .assignPullReplicas(pullReplicas)
         .onNodes(createNodeList)
         .build();
-    AssignStrategy assignStrategy = createAssignStrategy(coreContainer, clusterState, coll);
+    AssignStrategy assignStrategy = createAssignStrategy(coreContainer);
     return assignStrategy.assign(cloudManager, assignRequest);
   }
 
-  static HashMap<String, ReplicaCount> getNodeNameVsShardCount(String collectionName,
-                                                                       ClusterState clusterState, List<String> createNodeList) {
-    HashMap<String, ReplicaCount> nodeNameVsShardCount = new HashMap<>();
-    List<String> liveNodes = createNodeList == null || createNodeList.isEmpty() ?
-        new ArrayList<>(clusterState.getLiveNodes()) :
-        checkLiveNodes(createNodeList, clusterState);
+  static void addNodeNameVsShardCount(ClusterState clusterState, HashMap<String, ReplicaCount> nodeNameVsShardCount) {
+    Collection<String> liveNodes = clusterState.getLiveNodes();
 
     for (String s : liveNodes) {
-      nodeNameVsShardCount.put(s, new ReplicaCount(s));
-    }
-
-    // if we were given a list, just use that, don't worry about counts
-    if (createNodeList != null) {
-      return nodeNameVsShardCount;
+      nodeNameVsShardCount.putIfAbsent(s, new ReplicaCount(s));
     }
 
     // if we get here we were not given a createNodeList, build a map with real counts.
-    DocCollection coll = clusterState.getCollection(collectionName);
     Map<String, DocCollection> collections = clusterState.getCollectionsMap();
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
       DocCollection c = entry.getValue();
@@ -328,19 +330,16 @@ public class Assign {
         for (Replica replica : replicas) {
           ReplicaCount count = nodeNameVsShardCount.get(replica.getNodeName());
           if (count != null) {
-            count.totalNodes++; // Used to "weigh" whether this node should be used later.
-            if (entry.getKey().equals(collectionName)) {
-              count.thisCollectionNodes++;
-            }
+            // Used to "weigh" whether this node should be used later.
+            count.collectionReplicas.merge(entry.getKey(), 1, Integer::sum);
+            count.totalReplicas++;
           }
         }
       }
     }
-
-    return nodeNameVsShardCount;
   }
 
-  // throw an exception if any node int the supplied list is not live.
+  // throw an exception if any node in the supplied list is not live.
   // Empty or null list always succeeds and returns the input.
   private static List<String> checkLiveNodes(List<String> createNodeList, ClusterState clusterState) {
     Set<String> liveNodes = clusterState.getLiveNodes();
@@ -348,12 +347,32 @@ public class Assign {
       if (!liveNodes.containsAll(createNodeList)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "At least one of the node(s) specified " + createNodeList + " are not currently active in "
-                + createNodeList + ", no action taken.");
+                + liveNodes + ", no action taken.");
       }
       // the logic that was extracted to this method used to create a defensive copy but no code
       // was modifying the copy, if this method is made protected or public we want to go back to that
     }
     return createNodeList; // unmodified, but return for inline use
+  }
+
+  // throw an exception if all nodes in the supplied list are not live.
+  // Empty list will also fail.
+  // Returns the input
+  private static List<String> checkAnyLiveNodes(List<String> createNodeList, ClusterState clusterState) {
+    Set<String> liveNodes = clusterState.getLiveNodes();
+    if (createNodeList == null) {
+      createNodeList = Collections.emptyList();
+    }
+    boolean anyLiveNodes = false;
+    for (String node : createNodeList) {
+      anyLiveNodes |= liveNodes.contains(node);
+    }
+    if (!anyLiveNodes) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "None of the node(s) specified " + createNodeList + " are currently active in "
+              + liveNodes + ", no action taken.");
+    }
+    return createNodeList; // unmodified, but return for inline use. Only modified if empty, and that will throw an error
   }
 
   /**
@@ -387,12 +406,32 @@ public class Assign {
 
     /**
      * Assign new replicas to nodes.
+     * If multiple {@link AssignRequest}s are provided, then every {@link ReplicaPosition} made for an
+     * {@link AssignRequest} will be applied to the {@link SolrCloudManager}'s state when processing subsequent {@link AssignRequest}s.
+     * Therefore, the order in which {@link AssignRequest}s are provided can and will affect the {@link ReplicaPosition}s returned.
+     *
      * @param solrCloudManager current instance of {@link SolrCloudManager}.
-     * @param assignRequest assign request.
+     * @param assignRequests assign request.
      * @return list of {@link ReplicaPosition}-s for new replicas.
      * @throws AssignmentException when assignment request cannot produce any valid assignments.
      */
-    List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest)
+    default List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest... assignRequests)
+        throws AssignmentException, IOException, InterruptedException {
+      return assign(solrCloudManager, Arrays.asList(assignRequests));
+    }
+
+    /**
+     * Assign new replicas to nodes.
+     * If multiple {@link AssignRequest}s are provided, then every {@link ReplicaPosition} made for an
+     * {@link AssignRequest} will be applied to the {@link SolrCloudManager}'s state when processing subsequent {@link AssignRequest}s.
+     * Therefore, the order in which {@link AssignRequest}s are provided can and will affect the {@link ReplicaPosition}s returned.
+     *
+     * @param solrCloudManager current instance of {@link SolrCloudManager}.
+     * @param assignRequests list of assign requests to process together ().
+     * @return list of {@link ReplicaPosition}-s for new replicas.
+     * @throws AssignmentException when assignment request cannot produce any valid assignments.
+     */
+    List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, List<AssignRequest> assignRequests)
         throws AssignmentException, IOException, InterruptedException;
 
     /**
@@ -488,32 +527,45 @@ public class Assign {
 
   public static class LegacyAssignStrategy implements AssignStrategy {
     @Override
-    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
+    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, List<AssignRequest> assignRequests) throws Assign.AssignmentException, IOException, InterruptedException {
       ClusterState clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
-      List<String> nodeList = assignRequest.nodes; // can this be empty list?
 
-      if (nodeList == null || nodeList.isEmpty()) {
-        HashMap<String, Assign.ReplicaCount> nodeNameVsShardCount =
-            Assign.getNodeNameVsShardCount(assignRequest.collectionName, clusterState, nodeList);
-        // if nodelist was empty, this map will be empty too. (passing null above however gets a full map)
-        ArrayList<Assign.ReplicaCount> sortedNodeList = new ArrayList<>(nodeNameVsShardCount.values());
-        sortedNodeList.sort(Comparator.comparingInt(Assign.ReplicaCount::weight));
-        nodeList = sortedNodeList.stream().map(replicaCount -> replicaCount.nodeName).collect(Collectors.toList());
-      }
-
-      // otherwise we get a div/0 below
-      assert !nodeList.isEmpty();
-
-      int i = 0;
       List<ReplicaPosition> result = new ArrayList<>();
-      for (String aShard : assignRequest.shardNames) {
-        for (Map.Entry<Replica.Type, Integer> e : countsPerReplicaType(assignRequest).entrySet()) {
-          for (int j = 0; j < e.getValue(); j++) {
-            result.add(new ReplicaPosition(aShard, j, e.getKey(), nodeList.get(i % nodeList.size())));
-            i++;
+
+      HashMap<String, Assign.ReplicaCount> nodeNameVsShardCount = new HashMap<>();
+      addNodeNameVsShardCount(clusterState, nodeNameVsShardCount);
+      for (AssignRequest assignRequest : assignRequests) {
+        Collection<ReplicaCount> replicaCounts = nodeNameVsShardCount.values();
+
+        if (assignRequest.nodes != null && !assignRequest.nodes.isEmpty()) {
+          // Throw an error if there are any non-live nodes.
+          checkLiveNodes(assignRequest.nodes, clusterState);
+          HashSet<String> nodeSet = new HashSet<>(assignRequest.nodes);
+          replicaCounts = replicaCounts.stream().filter(rc -> nodeSet.contains(rc.nodeName)).collect(Collectors.toList());
+        } else if (nodeNameVsShardCount.values().isEmpty()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "There are no live nodes in the cluster");
+        }
+
+        for (String aShard : assignRequest.shardNames) {
+          // Reset the ordering of the nodes for each shard, using the replicas added in the previous shards and assign requests
+          List<String> nodeList = replicaCounts.stream()
+                  .sorted(Comparator.<ReplicaCount>comparingInt(rc -> rc.weight(assignRequest.collectionName)).thenComparing(ReplicaCount::nodeName))
+                  .map(ReplicaCount::nodeName)
+                  .collect(Collectors.toList());
+          int i = 0;
+          for (Map.Entry<Replica.Type, Integer> e : countsPerReplicaType(assignRequest).entrySet()) {
+            for (int j = 0; j < e.getValue(); j++) {
+              String assignedNode = nodeList.get(i % nodeList.size());
+              result.add(new ReplicaPosition(assignRequest.collectionName, aShard, j, e.getKey(), assignedNode));
+              i++;
+              ReplicaCount replicaCount = nodeNameVsShardCount.computeIfAbsent(assignedNode, ReplicaCount::new);
+              replicaCount.totalReplicas++;
+              replicaCount.collectionReplicas.merge(assignRequest.collectionName, 1, Integer::sum);
+            }
           }
         }
       }
+
       return result;
     }
 
@@ -533,11 +585,11 @@ public class Assign {
    * <p>If {@link PlacementPlugin} instance is null this call will return {@link LegacyAssignStrategy}, otherwise
    * {@link PlacementPluginAssignStrategy} will be used.</p>
    */
-  public static AssignStrategy createAssignStrategy(CoreContainer coreContainer, ClusterState clusterState, DocCollection collection) {
+  public static AssignStrategy createAssignStrategy(CoreContainer coreContainer) {
     PlacementPlugin placementPlugin = coreContainer.getPlacementPluginFactory().createPluginInstance();
     if (placementPlugin != null) {
       // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin)
-      return new PlacementPluginAssignStrategy(collection, placementPlugin);
+      return new PlacementPluginAssignStrategy(placementPlugin);
     }  else {
         return new LegacyAssignStrategy();
       }

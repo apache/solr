@@ -44,7 +44,7 @@ Solr can sort query responses according to:
 * A SortableTextField which implicitly uses `docValues="true"` by default to allow sorting on the original input string regardless of the analyzers used for Searching.
 * A single-valued TextField that uses an analyzer (such as the KeywordTokenizer) that produces only a single term per document.
 TextField does not support `docValues="true"`, but a DocValue-like structure will be built on the fly at runtime.
-** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, <<copy-fields.adoc#,use a `copyField` directive>> in the the Schema to clone the field.
+** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, <<copy-fields.adoc#,use a `copyField` directive>> in the Schema to clone the field.
 Then search on the field and sort on its clone.
 
 In the case of primitive fields, or SortableTextFields, that are `multiValued="true"` the representative value used for each doc when sorting depends on the sort direction: The minimum value in each document is used for ascending (`asc`) sorting, while the maximal value in each document is used for descending (`desc`) sorting.
@@ -186,6 +186,8 @@ The fields must be either `stored="true"` or `docValues="true"``.`
 The field list can be specified as a space-separated or comma-separated list of field names.
 The string "score" can be used to indicate that the score of each document for the particular query should be returned as a field.
 The wildcard character `*` selects all the fields in the document which are either `stored="true"` or `docValues="true"` and `useDocValuesAsStored="true"` (which is the default when docValues are enabled).
+Combine the wildcard character with field name to make a glob pattern for matching multiple field names.
+
 You can also add pseudo-fields, functions and transformers to the field list request.
 
 This table shows some basic examples of how to use `fl`:
@@ -196,6 +198,8 @@ This table shows some basic examples of how to use `fl`:
 |id name price |Return only the id, name, and price fields.
 |id,name,price |Return only the id, name, and price fields.
 |id name, price |Return only the id, name, and price fields.
+|id na* price |Return the id, name, name_exact, and price fields.
+|id na*e price |Return the id, name, and price fields.
 |id score |Return the id field and the score.
 |* |Return all the `stored` fields in each document, as well as any `docValues` fields that have `useDocValuesAsStored="true"`. This is the default value of the fl parameter.
 |* score |Return all the fields in each document, along with each field's score.
@@ -222,7 +226,9 @@ fl=id,title,[explain]
 
 === Field Name Aliases
 
-You can change the key used to in the response for a field, function, or transformer by prefixing it with a `_"displayName_:`". For example:
+You can change the key used to in the response for a field, function, or transformer by prefixing it with a `_displayName_:` value.
+
+For example, `why_score` is the display name below:
 
 [source,text]
 ----
