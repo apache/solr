@@ -143,7 +143,6 @@ distributions {
           "**/bin/solr",
           "**/bin/init.d/solr",
           "**/bin/solr-exporter",
-          "**/bin/solr-exporter",
       ]) { copy ->
         copy.setMode(0755)
       }
