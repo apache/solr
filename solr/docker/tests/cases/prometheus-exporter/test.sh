@@ -41,7 +41,7 @@ docker exec --user=solr "${container_name}-solr" wget -q -O - 'http://localhost:
 echo "Checking prometheus data"
 data=$(docker exec --user=solr "$container_name" wget -q -O - 'http://localhost:8989/metrics')
 
-if ! grep -E -q 'solr_metrics_core_query_local_count{category="QUERY",searchHandler="/select",core="demo",base_url="http://solr-host:8983/solr",} \d+.0' <<<"$data"; then
+if ! grep -E -q 'solr_metrics_core_query_local_count{category="QUERY",searchHandler="/select",core="demo",base_url="http://solr-host:8983/solr",} [0-9]+.0' <<<"$data"; then
   echo "Test $TEST_NAME $tag failed; did not find correct data"
   echo "$data"
   exit 1
