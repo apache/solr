@@ -89,19 +89,6 @@ distributions {
     contents {
       // TODO: This is missing module README files, as compared to 8x
 
-      // Manually correct posix permissions (matters when packaging on Windows).
-      filesMatching([
-          "**/*.sh",
-          "**/bin/post",
-          "**/bin/postlogs",
-          "**/bin/solr",
-          "**/bin/init.d/solr",
-          "**/bin/solr-exporter",
-          "**/docker/scripts/*",
-      ]) { copy ->
-        copy.setMode(0755)
-      }
-
       from(project(":solr").projectDir, {
         include "bin/**"
         include "licenses/**"
@@ -111,14 +98,6 @@ distributions {
         include "NOTICE.txt"
         include "README.md"
       })
-
-      // Should we include Lucene changes?
-      /*
-        from(project(":lucene").projectDir, {
-          include "CHANGES.txt"
-          rename { file -> 'LUCENE_CHANGES.txt' }
-        })
-      */
 
       from(configurations.contrib, {
         into "contrib"
@@ -146,7 +125,25 @@ distributions {
 
       from(configurations.docker, {
         into "docker"
+        filesMatching([
+            "scripts/**",
+        ]) { copy ->
+          copy.setMode(0755)
+        }
       })
+
+      // Manually correct posix permissions (matters when packaging on Windows).
+      filesMatching([
+          "**/*.sh",
+          "**/bin/post",
+          "**/bin/postlogs",
+          "**/bin/solr",
+          "**/bin/init.d/solr",
+          "**/bin/solr-exporter",
+          "**/bin/solr-exporter",
+      ]) { copy ->
+        copy.setMode(0755)
+      }
 
     }
   }

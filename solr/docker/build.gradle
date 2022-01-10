@@ -118,10 +118,6 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
   doLast {
     exec {
       standardInput = configurations.solrTgz.singleFile.newDataInputStream()
-      // Needed for the --chmod flag in the Dockerfile.local COPY layer
-      environment([
-          'DOCKER_BUILDKIT': '1'
-      ])
       commandLine "docker", "build",
               "-f", "solr-${version}/docker/Dockerfile.local",
               "--iidfile", imageIdFile,

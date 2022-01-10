@@ -31,9 +31,7 @@
 #  TODO; arguably these permissions should have been set correctly previously in the TAR
 RUN set -ex; \
   (cd /opt; ln -s solr-*/ solr); \
-  rm -Rf /opt/solr/docs /opt/solr/docker/Dockerfile* /opt/solr/dist/solr-solrj-*.jar /opt/solr/dist/solrj-lib /opt/solr/dist/solr-core-*.jar; \
-  find /opt/solr/ -type d -print0 | xargs -0 chmod 0755; \
-  chmod -R 0755 /opt/solr/docker/scripts /opt/solr/bin /opt/solr/contrib/prometheus-exporter/bin/solr-exporter /opt/solr/server/scripts/cloud-scripts
+  rm -Rf /opt/solr/docs /opt/solr/docker/Dockerfile* /opt/solr/dist/solr-solrj-*.jar /opt/solr/dist/solrj-lib /opt/solr/dist/solr-core-*.jar;
 
 LABEL maintainer="The Apache Solr Project"
 LABEL url="https://solr.apache.org"
