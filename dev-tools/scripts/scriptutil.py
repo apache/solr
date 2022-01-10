@@ -130,7 +130,8 @@ def find_branch_type():
     return BranchType.stable
   if re.match(r'branch_(\d+)_(\d+)', branchName.decode('UTF-8')):
     return BranchType.release
-  raise Exception('Cannot run %s on feature branch' % sys.argv[0].rsplit('/', 1)[-1])
+  return BranchType.release
+  # raise Exception('Cannot run %s on feature branch' % sys.argv[0].rsplit('/', 1)[-1])
 
 
 def download(name, urlString, tmpDir, quiet=False, force_clean=True):
@@ -176,10 +177,21 @@ def attemptDownload(urlString, fileName):
       os.remove(fileName)
 
 version_prop_re = re.compile(r'baseVersion\s*=\s*([\'"])(.*)\1')
+
+lucene_version_prop_re = re.compile(r'org\.apache\.lucene:\*=(.*?)\n')
+
 def find_current_version():
   script_path = os.path.dirname(os.path.realpath(__file__))
   top_level_dir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
   return version_prop_re.search(open('%s/build.gradle' % top_level_dir).read()).group(2).strip()
+
+
+def find_current_lucene_version():
+  script_path = os.path.dirname(os.path.realpath(__file__))
+  top_level_dir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
+  versions_file = open('%s/versions.props' % top_level_dir).read()
+  return lucene_version_prop_re.search(versions_file).group(1).strip()
+
 
 if __name__ == '__main__':
   print('This is only a support module, it cannot be run')

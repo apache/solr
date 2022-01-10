@@ -35,7 +35,7 @@ apply from: file('gradle/globals.gradle')
 // Calculate project version:
 version = {
   // Release manager: update base version here after release:
-  String baseVersion = '9.0.0'
+  String baseVersion = '10.0.0'
 
   // On a release explicitly set release version in one go:
   //  -Dversion.release=x.y.z
@@ -81,6 +81,8 @@ ext {
 
   minJavaVersion = JavaVersion.VERSION_11
 
+  luceneBaseVersion = '9.0.0' // TODO: Use org.apache.lucene.util.Version.LATEST.toString()
+
   // Declare script dependency versions outside of palantir's
   // version unification control. These are not our main dependencies.
   scriptDepVersions = [
@@ -125,7 +127,6 @@ apply from: file('gradle/java/jar-manifest.gradle')
 
 // Publishing and releasing
 apply from: file('gradle/maven/defaults-maven.gradle')
-apply from: file('gradle/releasing.gradle')
 
 // IDE support, settings and specials.
 apply from: file('gradle/ide/intellij-idea.gradle')
