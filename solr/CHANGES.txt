@@ -44,6 +44,8 @@ New Features
 
 * SOLR-15694: Node roles (Ishan Chattopadhyaya, noble)
 
+* SOLR-15197: Support temporal graph queries with DAY and WEEKDAY windows (Joel Bernstein)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
