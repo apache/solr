@@ -66,8 +66,6 @@ New Features
 
 * SOLR-15613: Enforce error-prone checks to catch all URLEqualsHashCode violations and use java.net.URI instead (Collins Abanda)
 
-* SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
-
 * SOLR-15694: Node roles (Ishan Chattopadhyaya, noble)
 
 Improvements
@@ -224,6 +222,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15887: Remove <jmx/> from shipped solrconfig.xm. (Eric Pugh)
 
+* SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
+
 Build
 ---------------------
 
@@ -236,6 +236,8 @@ Build
 * SOLR-15867: Make the gradle build ready for 9.0 release (janhoy, Houston Putman, Dawid Weiss)
 
 * SOLR-15852: Update dev-tools/scripts for the 9.0 release, including releaseWizard (janhoy)
+
+* SOLR-15891: The Solr Docker image uses the default file permissions from the tarball artifact (Houston Putman, janhoy)
 
 Other Changes
 ----------------------
