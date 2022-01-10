@@ -244,7 +244,13 @@ public abstract class ConfigSetService {
               ) ? false: true;
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
-      return new ConfigSet(configSetName(dcore), solrConfig, force -> createIndexSchema(dcore, solrConfig, force), properties, trusted);
+      return new ConfigSet(configSetName(dcore), solrConfig, force -> {
+        try {
+          return createIndexSchema(dcore, solrConfig, force);
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+        }
+      }, properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load conf for core " + dcore.getName() +
@@ -288,7 +294,7 @@ public abstract class ConfigSetService {
    * @param solrConfig the core's SolrConfig
    * @return an IndexSchema
    */
-  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig, boolean forceFetch) {
+  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig, boolean forceFetch) throws IOException {
     // This is the schema name from the core descriptor.  Sometimes users specify a custom schema file.
     //   Important:  indexSchemaFactory.create wants this!
     String cdSchemaName = cd.getSchemaName();
@@ -301,11 +307,7 @@ public abstract class ConfigSetService {
     String configSet = cd.getConfigSet();
     if (configSet != null && schemaCache != null) {
       String guessSchemaName = indexSchemaFactory.getSchemaResourceName(cdSchemaName);
-      Long modVersion = null;
-      try {
-        modVersion = getCurrentSchemaModificationVersion(configSet, solrConfig, guessSchemaName);
-      } catch (IOException e) {
-      }
+      Long modVersion = getCurrentSchemaModificationVersion(configSet, solrConfig, guessSchemaName);
       if (modVersion != null) {
         // note: luceneMatchVersion influences the schema
         String cacheKey = configSet + "/" + guessSchemaName + "/" + modVersion + "/" + solrConfig.luceneMatchVersion;
@@ -333,7 +335,7 @@ public abstract class ConfigSetService {
    * @param loader the core's resource loader
    * @return the ConfigSet properties
    */
-  protected NamedList<Object> loadConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) {
+  protected NamedList<Object> loadConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) throws IOException {
     return ConfigSetProperties.readFromResourceLoader(loader, cd.getConfigSetPropertiesName());
   }
 
