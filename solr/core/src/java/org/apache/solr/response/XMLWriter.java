@@ -299,17 +299,17 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeArray(String name, Object[] val) throws IOException {
-    writeArray(name, Arrays.asList(val).iterator());
+  public void writeArray(String name, Object[] val, boolean raw) throws IOException {
+    writeArray(name, Arrays.asList(val).iterator(), raw);
   }
 
   @Override
-  public void writeArray(String name, Iterator<?> iter) throws IOException {
+  public void writeArray(String name, Iterator<?> iter, boolean raw) throws IOException {
     if( iter.hasNext() ) {
       startTag("arr", name, false );
       incLevel();
       while( iter.hasNext() ) {
-        writeVal(null, iter.next());
+        writeVal(null, iter.next(), raw);
       }
       decLevel();
       if (doIndent) indent();
@@ -321,7 +321,7 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeIterator(String name, IteratorWriter val) throws IOException {
+  public void writeIterator(String name, IteratorWriter val, boolean raw) throws IOException {
     // As the size is not known. So, always both startTag and endTag is written
     // irrespective of number of entries in IteratorWriter
     startTag("arr", name, false );
@@ -330,7 +330,7 @@ public class XMLWriter extends TextResponseWriter {
     val.writeIter(new IteratorWriter.ItemWriter() {
       @Override
       public IteratorWriter.ItemWriter add(Object o) throws IOException {
-        writeVal(null, o);
+        writeVal(null, o, raw);
         return this;
       }
     });

@@ -106,7 +106,7 @@ public abstract class TextResponseWriter implements TextWriter {
   }
 
 
-  public final void writeVal(String name, Object val) throws IOException {
+  public final void writeVal(String name, Object val, boolean raw) throws IOException {
 
     // if there get to be enough types, perhaps hashing on the type
     // to get a handler might be faster (but types must be exact to do that...)
@@ -150,7 +150,7 @@ public abstract class TextResponseWriter implements TextWriter {
       BytesRef arr = (BytesRef)val;
       writeByteArr(name, arr.bytes, arr.offset, arr.length);
     } else {
-      TextWriter.super.writeVal(name, val);
+      TextWriter.super.writeVal(name, val, raw);
     }
   }
   // names are passed when writing primitives like writeInt to allow many different

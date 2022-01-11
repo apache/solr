@@ -230,9 +230,9 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   }
 
   @Override
-  public void writeArray(String name, Iterator<?> val) throws IOException {
+  public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
     ifNeededWriteTypeAndValueKey("array");
-    super.writeArray(name, val);
+    super.writeArray(name, val, raw);
   }
 
   @Override

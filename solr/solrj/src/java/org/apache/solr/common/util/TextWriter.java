@@ -43,6 +43,10 @@ import org.apache.solr.common.PushWriter;
 public interface TextWriter extends PushWriter {
 
   default void writeVal(String name, Object val) throws IOException {
+    writeVal(name, val, false);
+  }
+
+  default void writeVal(String name, Object val, boolean raw) throws IOException {
 
     // if there get to be enough types, perhaps hashing on the type
     // to get a handler might be faster (but types must be exact to do that...)
@@ -67,7 +71,7 @@ public interface TextWriter extends PushWriter {
     } else if (val instanceof Path) {
       writeStr(name, ((Path) val).toAbsolutePath().toString(), true);
     } else if (val instanceof IteratorWriter) {
-      writeIterator(name, (IteratorWriter) val);
+      writeIterator(name, (IteratorWriter) val, raw);
     } else if (val instanceof MapWriter) {
       writeMap(name, (MapWriter) val);
     } else if (val instanceof MapSerializable) {
@@ -76,11 +80,11 @@ public interface TextWriter extends PushWriter {
     } else if (val instanceof Map) {
       writeMap(name, (Map)val, false, true);
     } else if (val instanceof Iterator) { // very generic; keep towards the end
-      writeArray(name, (Iterator) val);
+      writeArray(name, (Iterator) val, raw);
     } else if (val instanceof Iterable) { // very generic; keep towards the end
-      writeArray(name,((Iterable)val).iterator());
+      writeArray(name,((Iterable)val).iterator(), raw);
     } else if (val instanceof Object[]) {
-      writeArray(name,(Object[])val);
+      writeArray(name,(Object[])val, raw);
     } else if (val instanceof byte[]) {
       byte[] arr = (byte[])val;
       writeByteArr(name, arr, 0, arr.length);
@@ -98,7 +102,7 @@ public interface TextWriter extends PushWriter {
 
   void writeMap(String name, Map<?, ?> val, boolean excludeOuter, boolean isFirstVal) throws IOException;
 
-  void writeArray(String name, Iterator<?> val) throws IOException;
+  void writeArray(String name, Iterator<?> val, boolean raw) throws IOException;
 
   void writeNull(String name) throws IOException;
 
@@ -153,12 +157,12 @@ public interface TextWriter extends PushWriter {
     }
   }
 
-  default void writeArray(String name, Object[] val) throws IOException {
-    writeArray(name, Arrays.asList(val));
+  default void writeArray(String name, Object[] val, boolean raw) throws IOException {
+    writeArray(name, Arrays.asList(val), raw);
   }
 
-  default void writeArray(String name, List<?> l) throws IOException {
-    writeArray(name, l.iterator());
+  default void writeArray(String name, List<?> l, boolean raw) throws IOException {
+    writeArray(name, l.iterator(), raw);
   }
 
 
@@ -224,7 +228,7 @@ public interface TextWriter extends PushWriter {
     /*todo*/
   }
 
-  default void writeIterator(String name, IteratorWriter iw) throws IOException {
+  default void writeIterator(String name, IteratorWriter iw, boolean raw) throws IOException {
     writeIterator(iw);
   }
 
