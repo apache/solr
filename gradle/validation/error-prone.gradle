@@ -56,12 +56,12 @@ allprojects { prj ->
             // test
             '-Xep:ExtendingJUnitAssert:OFF', // we inherit from LuceneTestCase which extends Assert
             '-Xep:UseCorrectAssertInTests:OFF', // and this is a consequence of the above
-            '-Xep:FloatingPointLiteralPrecision:OFF',
             '-Xep:CatchFail:OFF',
             '-Xep:TryFailThrowable:OFF',
             '-Xep:AssertionFailureIgnored:OFF',
             '-Xep:JUnit4TestNotRun:OFF', // RandomizedRunner finds unannotated test methods no problem
             '-Xep:CatchAndPrintStackTrace:OFF', // TODO: there's a lot of these but they should be easy to address
+            '-Xep:FloatingPointLiteralPrecision:OFF', // TODO: a lot of these in our tests, likely unintentional
             '-Xep:StaticAssignmentInConstructor:OFF',
             '-Xep:SelfAssignment:OFF',
             '-Xep:InvalidPatternSyntax:OFF',
