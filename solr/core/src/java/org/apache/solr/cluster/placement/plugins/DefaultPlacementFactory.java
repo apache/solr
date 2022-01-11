@@ -74,10 +74,6 @@ public class DefaultPlacementFactory implements PlacementPluginFactory<Placement
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "There are no live nodes in the cluster");
         }
 
-        if (replicaCounts.size() < totalReplicasPerShard) {
-          throw new PlacementException("Cluster size too small for number of replicas per shard");
-        }
-
         for (String shard : request.getShardNames()) {
           // Reset the ordering of the nodes for each shard, using the replicas added in the previous shards and assign requests
           List<Node> nodeList = replicaCounts.stream()
