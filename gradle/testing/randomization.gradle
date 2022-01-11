@@ -36,8 +36,6 @@ buildscript {
 
 def resources = scriptResources(buildscript)
 
-def luceneVersionProvider = project.provider { getVersion('org.apache.lucene:lucene-core') }
-
 // Pick the "root" seed from which everything else is derived.
 configure(rootProject) {
   ext {
@@ -101,7 +99,6 @@ allprojects {
           // test data
           [propName: 'tests.linedocsfile', value: 'europarl.lines.txt.gz', description: "Test data file path."],
           // miscellaneous; some of them very weird.
-          [propName: 'tests.LUCENE_VERSION', value: "${-> luceneVersionProvider.get()}", description: "Base Lucene version."],
           [propName: 'tests.bwcdir', value: null, description: "Data for backward-compatibility indexes."],
       ]
     }
@@ -113,7 +110,6 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
   plugins.withType(JavaPlugin) {
     ext {
       testOptions += [
-          [propName: 'tests.luceneMatchVersion', value: "${-> luceneVersionProvider.get()}", description: "Base Lucene version."],
           [propName: 'common-solr.dir',
            value: project(":solr").projectDir,
            description: "Solr base dir.",
@@ -181,7 +177,22 @@ allprojects {
         if (Boolean.parseBoolean(testOptionsResolved["tests.failfast"])) {
           failFast true
         }
-
+        
+        // The Lucene version is only available after resolving was done, so add lately using a provider:
+        jvmArgumentProviders.add({
+          def luceneVersion = getVersion('org.apache.lucene:lucene-core')
+          def m = (luceneVersion =~ /^\d+\.\d+\b/)
+          if (!m) {
+            throw GradleException("Can't strip luceneMatchVersion from " + luceneVersion)
+          }
+          def luceneMatchVersion = m[0]
+          logger.lifecycle('Lucene match version for tests: {}', luceneMatchVersion)
+          return [
+            "-Dtests.LUCENE_VERSION=${luceneMatchVersion}",
+            "-Dtests.luceneMatchVersion=${luceneMatchVersion}",
+          ]
+        } as CommandLineArgumentProvider)
+        
         // Enable security manager, if requested. We could move the selection of security manager and security policy
         // to each project's build/ configuration but it seems compact enough to keep it here for now.
         if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
