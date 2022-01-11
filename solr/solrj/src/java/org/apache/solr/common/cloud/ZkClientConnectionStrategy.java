@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCredentialsProvider.ZkCredentials;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +90,7 @@ public abstract class ZkClientConnectionStrategy {
   }
 
   public interface ZkUpdate {
-    void update(SolrZooKeeper zooKeeper) throws InterruptedException, TimeoutException, IOException;
+    void update(ZooKeeper zooKeeper) throws InterruptedException, TimeoutException, IOException;
   }
 
   public void setZkCredentialsToAddAutomatically(ZkCredentialsProvider zkCredentialsToAddAutomatically) {

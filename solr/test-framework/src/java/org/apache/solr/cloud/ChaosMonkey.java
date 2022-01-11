@@ -48,6 +48,8 @@ import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.TestableZooKeeper;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -170,6 +172,10 @@ public class ChaosMonkey {
     if (cores != null) {
       monkeyLog("Will cause connection loss on " + jetty.getLocalPort());
       SolrZkClient zkClient = cores.getZkController().getZkClient();
+      ZooKeeper zk = zkClient.getSolrZooKeeper();
+      if (zk instanceof TestableZooKeeper) {
+        ((TestableZooKeeper) zk).testableConnloss();
+      }
       zkClient.getSolrZooKeeper().closeCnxn();
     }
   }

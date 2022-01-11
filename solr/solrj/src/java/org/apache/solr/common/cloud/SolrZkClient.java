@@ -70,7 +70,7 @@ public class SolrZkClient implements Closeable {
 
   private ConnectionManager connManager;
 
-  private volatile SolrZooKeeper keeper;
+  private volatile ZooKeeper keeper;
 
   private ZkCmdExecutor zkCmdExecutor;
 
@@ -146,7 +146,7 @@ public class SolrZkClient implements Closeable {
     try {
       strat.connect(zkServerAddress, zkClientTimeout, wrapWatcher(connManager),
           zooKeeper -> {
-            SolrZooKeeper oldKeeper = keeper;
+            ZooKeeper oldKeeper = keeper;
             keeper = zooKeeper;
             try {
               closeKeeper(oldKeeper);
@@ -644,8 +644,8 @@ public class SolrZkClient implements Closeable {
   /**
    * Allows package private classes to update volatile ZooKeeper.
    */
-  void updateKeeper(SolrZooKeeper keeper) throws InterruptedException {
-   SolrZooKeeper oldKeeper = this.keeper;
+  void updateKeeper(ZooKeeper keeper) throws InterruptedException {
+   ZooKeeper oldKeeper = this.keeper;
    this.keeper = keeper;
    if (oldKeeper != null) {
      oldKeeper.close();
@@ -654,11 +654,11 @@ public class SolrZkClient implements Closeable {
    if (isClosed) this.keeper.close();
   }
 
-  public SolrZooKeeper getSolrZooKeeper() {
+  public ZooKeeper getSolrZooKeeper() {
     return keeper;
   }
 
-  private void closeKeeper(SolrZooKeeper keeper) {
+  private void closeKeeper(ZooKeeper keeper) {
     if (keeper != null) {
       try {
         keeper.close();
