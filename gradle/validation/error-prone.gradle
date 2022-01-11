@@ -61,7 +61,7 @@ allprojects { prj ->
             '-Xep:TryFailThrowable:OFF',
             '-Xep:AssertionFailureIgnored:OFF',
             '-Xep:JUnit4TestNotRun:OFF', // the randomized runner finds unannotated test methods
-            '-Xep:CatchAndPrintStackTrace:OFF',
+            '-Xep:CatchAndPrintStackTrace:OFF', // TODO: there's a lot of these but they should be easy to address
             '-Xep:ArrayAsKeyOfSetOrMap:OFF',
             '-Xep:StaticAssignmentInConstructor:OFF',
             '-Xep:SelfAssignment:OFF',
