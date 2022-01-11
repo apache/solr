@@ -1,0 +1,168 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.cluster.placement.plugins;
+
+import com.google.common.collect.ImmutableMap;
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.cloud.api.collections.Assign;
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.Shard;
+import org.apache.solr.cluster.SolrCollection;
+import org.apache.solr.cluster.placement.PlacementContext;
+import org.apache.solr.cluster.placement.PlacementException;
+import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PlacementPlanFactory;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.PlacementRequest;
+import org.apache.solr.cluster.placement.ReplicaPlacement;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ReplicaPosition;
+import org.apache.solr.common.cloud.Slice;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * <p>Factory for creating {@link DefaultPlacementPlugin}, a placement plugin implementing random placement for new
+ * collection creation while preventing two replicas of same shard from being placed on same node.</p>
+ *
+ * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.</p>
+ */
+public class DefaultPlacementFactory implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
+
+  @Override
+  public PlacementPlugin createPluginInstance() {
+    return new DefaultPlacementPlugin();
+  }
+
+  public static class DefaultPlacementPlugin implements PlacementPlugin {
+    @Override
+    public List<PlacementPlan> computePlacements(Collection<PlacementRequest> requests, PlacementContext placementContext) throws PlacementException {
+      List<PlacementPlan> placementPlans = new ArrayList<>(requests.size());
+      Map<Node, ReplicaCount> nodeVsShardCount = getNodeVsShardCount(placementContext);
+      for (PlacementRequest request : requests) {
+        int totalReplicasPerShard = 0;
+        for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
+          totalReplicasPerShard += request.getCountReplicasToCreate(rt);
+        }
+
+        Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
+
+        Collection<ReplicaCount> replicaCounts = nodeVsShardCount.values();
+
+        if (request.getTargetNodes().size() < replicaCounts.size()) {
+          replicaCounts = replicaCounts.stream().filter(rc -> request.getTargetNodes().contains(rc.node())).collect(Collectors.toList());
+        } else if (placementContext.getCluster().getLiveDataNodes().isEmpty()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "There are no live nodes in the cluster");
+        }
+
+        if (replicaCounts.size() < totalReplicasPerShard) {
+          throw new PlacementException("Cluster size too small for number of replicas per shard");
+        }
+
+        for (String shard : request.getShardNames()) {
+          // Reset the ordering of the nodes for each shard, using the replicas added in the previous shards and assign requests
+          List<Node> nodeList = replicaCounts.stream()
+              .sorted(Comparator.<ReplicaCount>comparingInt(rc -> rc.weight(request.getCollection().getName())).thenComparing(ReplicaCount::nodeName))
+              .map(ReplicaCount::node)
+              .collect(Collectors.toList());
+          int i = 0;
+          for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
+            for (int replica = 0; replica < request.getCountReplicasToCreate(replicaType); replica++) {
+              Node assignedNode = nodeList.get(i % nodeList.size());
+
+              replicaPlacements.add(placementContext.getPlacementPlanFactory().createReplicaPlacement(request.getCollection(), shard, assignedNode, replicaType));
+
+              i++;
+              ReplicaCount replicaCount = nodeVsShardCount.computeIfAbsent(assignedNode, ReplicaCount::new);
+              replicaCount.totalReplicas++;
+              replicaCount.collectionReplicas.merge(request.getCollection().getName(), 1, Integer::sum);
+            }
+          }
+        }
+
+        placementPlans.add(placementContext.getPlacementPlanFactory().createPlacementPlan(request, replicaPlacements));
+      }
+      return placementPlans;
+    }
+
+    private Map<Node, ReplicaCount> getNodeVsShardCount(PlacementContext placementContext) {
+      HashMap<Node, ReplicaCount> nodeVsShardCount = new HashMap<>();
+
+      for (Node s : placementContext.getCluster().getLiveDataNodes()) {
+        nodeVsShardCount.computeIfAbsent(s, ReplicaCount::new);
+      }
+
+      // if we get here we were not given a createNodeList, build a map with real counts.
+      for (SolrCollection collection : placementContext.getCluster().collections()) {
+        //identify suitable nodes  by checking the no:of cores in each of them
+        for (Shard shard : collection.shards()) {
+          for (Replica replica : shard.replicas()) {
+            ReplicaCount count = nodeVsShardCount.get(replica.getNode());
+            if (count != null) {
+              count.addReplica(collection.getName(), shard.getShardName());
+            }
+          }
+        }
+      }
+      return nodeVsShardCount;
+    }
+  }
+
+  static class ReplicaCount {
+    public final Node node;
+    public Map<String, Integer> collectionReplicas;
+    public int totalReplicas = 0;
+
+    ReplicaCount(Node node) {
+      this.node = node;
+      this.collectionReplicas = new HashMap<>();
+    }
+
+    public int weight(String collection) {
+      return (collectionReplicas.getOrDefault(collection, 0) * 5) + totalReplicas;
+    }
+
+    public void addReplica(String collection, String shard) {
+      // Used to "weigh" whether this node should be used later.
+      collectionReplicas.merge(collection, 1, Integer::sum);
+    }
+
+    public Node node() {
+      return node;
+    }
+
+    public String nodeName() {
+      return node.getName();
+    }
+  }
+}
