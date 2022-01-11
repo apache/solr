@@ -20,7 +20,14 @@
 configure(project(":solr")) {
   task validateConfigFileSanity() {
     doFirst {
-      def matchVersion = rootProject.luceneMatchVersionProvider.get()
+      def matchVersion = {
+        def version = rootProject.luceneMatchVersionProvider.get()
+        def m = (version =~ /^\d+\.\d+\b/)
+        if (!m) {
+          throw new GradleException("Can't strip Lucene version to just x.y: " + version)
+        }
+        return m[0]
+      }()
 
       // Verify solrconfig.xml files declare proper luceneMatchVersion.
       [
