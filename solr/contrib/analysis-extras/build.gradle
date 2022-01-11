@@ -30,6 +30,7 @@ dependencies {
   implementation "org.apache.lucene:lucene-analysis-opennlp"
   implementation "org.apache.lucene:lucene-analysis-smartcn"
   implementation "org.apache.lucene:lucene-analysis-stempel"
+  implementation 'org.slf4j:slf4j-api'
 
   testImplementation project(':solr:test-framework')
   testImplementation('org.mockito:mockito-core', {

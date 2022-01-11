@@ -28,6 +28,7 @@ dependencies {
   implementation 'commons-io:commons-io'
 
   implementation 'org.carrot2:carrot2-core'
+  implementation 'org.slf4j:slf4j-api'
 
   testImplementation project(':solr:test-framework')
 }
