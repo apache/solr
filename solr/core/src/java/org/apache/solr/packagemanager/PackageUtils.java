@@ -48,12 +48,12 @@ import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.zafarkhaja.semver.Version;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
+import org.apache.solr.util.semver.Semver;
 
 public class PackageUtils {
 
@@ -193,7 +193,7 @@ public class PackageUtils {
    * Compares two versions v1 and v2. Returns negative if v1 isLessThan v2, positive if v1 isGreaterThan v2 and 0 if equal.
    */
   public static int compareVersions(String v1, String v2) {
-    return Version.valueOf(v1).compareTo(Version.valueOf(v2));
+    return (new Semver(v1, Semver.SemverType.NPM)).compareTo(new Semver(v2, Semver.SemverType.NPM));
   }
 
   public static String BLACK = "\u001B[30m";

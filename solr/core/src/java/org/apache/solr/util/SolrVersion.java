@@ -16,12 +16,12 @@
  */
 package org.apache.solr.util;
 
-import com.github.zafarkhaja.semver.ParseException;
-import com.github.zafarkhaja.semver.Version;
-import com.github.zafarkhaja.semver.expr.ExpressionParser;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.util.semver.Semver;
 
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * Simple Solr version representation backed by a <a href="https://devhints.io/semver">Semantic Versioning</a> library.
@@ -30,7 +30,7 @@ import java.util.Locale;
  */
 public final class SolrVersion implements Comparable<SolrVersion> {
   // Backing SemVer version
-  private final Version version;
+  private final Semver version;
 
   // This static variable should be bumped for each release
   private static final String LATEST_STRING = "10.0.0";
@@ -44,14 +44,14 @@ public final class SolrVersion implements Comparable<SolrVersion> {
    * Create a SolrVersion instance from string value. The string must comply to the SemVer spec
    */
   public static SolrVersion valueOf(String version) {
-    return new SolrVersion(Version.valueOf(version));
+    return new SolrVersion(new Semver(version, Semver.SemverType.STRICT));
   }
 
   /**
    * Create a SolrVersion instance from set of integer values. Must comply to the SemVer spec
    */
   public static SolrVersion forIntegers(int major, int minor, int patch) {
-    return new SolrVersion(Version.forIntegers(major, minor, patch));
+    return new SolrVersion(new Semver(String.format(Locale.ROOT, "%d.%d.%d", major, minor, patch)));
   }
 
   /**
@@ -59,33 +59,23 @@ public final class SolrVersion implements Comparable<SolrVersion> {
    */
   @Override
   public String toString() {
-    // Workaround for bug https://github.com/zafarkhaja/jsemver/issues/32
-    // TODO: Needs to find a newer SemVer lib
-    StringBuilder sb = new StringBuilder(String.format(Locale.ROOT, "%d.%d.%d",
-        version.getMajorVersion(), version.getMinorVersion(), version.getPatchVersion()));
-    if (!version.getPreReleaseVersion().isEmpty()) {
-      sb.append("-").append(version.getPreReleaseVersion());
-    }
-    if (!version.getBuildMetadata().isEmpty()) {
-      sb.append("+").append(version.getBuildMetadata());
-    }
-    return sb.toString();
+    return version.toString();
   }
 
   public boolean greaterThan(SolrVersion other) {
-    return version.greaterThan(other.version);
+    return version.isGreaterThan(other.version);
   }
 
   public boolean greaterThanOrEqualTo(SolrVersion other) {
-    return version.greaterThanOrEqualTo(other.version);
+    return version.isGreaterThanOrEqualTo(other.version);
   }
 
   public boolean lessThan(SolrVersion other) {
-    return version.lessThan(other.version);
+    return version.isLowerThan(other.version);
   }
 
   public boolean lessThanOrEqualTo(SolrVersion other) {
-    return version.lessThanOrEqualTo(other.version);
+    return version.isLowerThanOrEqualTo(other.version);
   }
 
   /**
@@ -95,30 +85,31 @@ public final class SolrVersion implements Comparable<SolrVersion> {
    */
   public boolean satisfies(String semVerExpression) {
     try {
-      return ExpressionParser.newInstance().parse(semVerExpression).interpret(version);
-    } catch (ParseException parseException) {
-      throw new InvalidSemVerExpressionException();
+      Semver semNPM = new Semver(toString(), Semver.SemverType.NPM);
+      return semNPM.satisfies(semVerExpression); // true
+    } catch (Exception parseException) {
+      throw new InvalidSemVerExpressionException(parseException, semVerExpression);
     }
   }
 
   public int getMajorVersion() {
-    return version.getMajorVersion();
+    return version.getMajor();
   }
 
   public int getMinorVersion() {
-    return version.getMinorVersion();
+    return version.getMinor();
   }
 
   public int getPatchVersion() {
-    return version.getPatchVersion();
+    return version.getPatch();
   }
 
   public String getPrereleaseVersion() {
-    return version.getPreReleaseVersion();
+    return Arrays.stream(version.getSuffixTokens()).collect(Collectors.joining("."));
   }
 
   // Private constructor. Should be instantiated from static factory methods
-  private SolrVersion(Version version) {
+  private SolrVersion(Semver version) {
     this.version = version;
   }
 
@@ -144,8 +135,8 @@ public final class SolrVersion implements Comparable<SolrVersion> {
   }
 
   public static class InvalidSemVerExpressionException extends SolrException {
-    public InvalidSemVerExpressionException() {
-      super(ErrorCode.BAD_REQUEST, "Invalid SemVer expression");
+    public InvalidSemVerExpressionException(Exception exception, String expression) {
+      super(ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "Invalid SemVer expression: %s", expression), exception);
     }
   }
 }

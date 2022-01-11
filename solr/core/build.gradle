@@ -90,8 +90,6 @@ dependencies {
   runtimeOnly ('org.apache.curator:curator-recipes')
 
   // For Package Manager
-  implementation 'com.github.zafarkhaja:java-semver'
-
   implementation('com.jayway.jsonpath:json-path', {
     exclude group: "net.minidev", module: "json-smart"
   })

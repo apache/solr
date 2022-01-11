@@ -95,6 +95,10 @@ This project includes the Malihu Custom Scrollbar Plugin
 Copyright (c) Manos Malihutsakis, http://manos.malihu.gr/
 License: MIT https://github.com/malihu/malihu-custom-scrollbar-plugin/blob/master/LICENSE.txt
 
+This project includes code forked from the semver4j
+Copyright (c) 2015-present Vincent DURMONT vdurmont@gmail.com, https://github.com/vdurmont/semver4j
+License: MIT https://github.com/vdurmont/semver4j/blob/master/LICENSE.md
+
 =========================================================================
 ==  Antlr2 Notice                                                       ==
 =========================================================================

@@ -498,6 +498,9 @@ Bug Fixes
 
 * SOLR-15854: Let RealtimeGet component support negative filters (Tomás Fernández Löbbe)
 
+* SOLR-15854: Use new semver library to fix versioning constraint bugs in the PackageManager.
+    This library is forked from https://github.com/vdurmont/semver4j (Houston Putman)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
