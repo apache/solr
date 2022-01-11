@@ -60,9 +60,8 @@ allprojects { prj ->
             '-Xep:CatchFail:OFF',
             '-Xep:TryFailThrowable:OFF',
             '-Xep:AssertionFailureIgnored:OFF',
-            '-Xep:JUnit4TestNotRun:OFF', // the randomized runner finds unannotated test methods
+            '-Xep:JUnit4TestNotRun:OFF', // RandomizedRunner finds unannotated test methods no problem
             '-Xep:CatchAndPrintStackTrace:OFF', // TODO: there's a lot of these but they should be easy to address
-            '-Xep:ArrayAsKeyOfSetOrMap:OFF',
             '-Xep:StaticAssignmentInConstructor:OFF',
             '-Xep:SelfAssignment:OFF',
             '-Xep:InvalidPatternSyntax:OFF',
@@ -75,7 +74,7 @@ allprojects { prj ->
             '-Xep:ArrayEquals:OFF',
             '-Xep:ArrayHashCode:OFF',
             '-Xep:ArrayToString:OFF',
-            '-Xep:BadImport:OFF',
+            '-Xep:BadImport:OFF', // style preference that we don't want to enforce
             '-Xep:BadInstanceof:OFF',
             '-Xep:BadShiftAmount:OFF',
             '-Xep:ClassCanBeStatic:OFF',
