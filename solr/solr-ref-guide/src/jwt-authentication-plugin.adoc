@@ -23,9 +23,8 @@ The typical use case is to integrate Solr with an https://en.wikipedia.org/wiki/
 
 == Contrib package
 
-This is a Solr Contrib package with the name `jwt-auth`. It needs to be added to the main classpah, not the classpath
-of a core/collection. This can be done through declaring the contrib jar in `sharedLib`.
-See <<Configuring solr.xml>> for details.
+This is provided via a Solr Contrib package that needs to be added to the classpah before use. Since this is a node-level
+plugin it must go in `sharedLib`, see <<configuring-solr-xml.adoc#,Configuring solr.xml>> for details.
 
 == Enable JWT Authentication
 
