@@ -132,14 +132,18 @@ if (luceneDevRepo != null) {
     // certain aspects of the build so that things work with it.
     
     // replace luceneBaseVersionProvider by one evaluating the included build:
-    def line = new File(gradle.includedBuild('lucene').projectDir, 'build.gradle').readLines("UTF-8").find { it =~ /\bbaseVersion\s+=/ }
-    if (!line) {
-      throw new GradleException('Cannot extract Lucene baseVersion from build.gradle file.')
+    configure(rootProject) {
+      def line = new File(gradle.includedBuild('lucene').projectDir, 'build.gradle').readLines("UTF-8").find { it =~ /\bbaseVersion\s+=/ }
+      if (!line) {
+        throw new GradleException('Cannot extract Lucene baseVersion from build.gradle file.')
+      }
+      def luceneBaseVersion = evaluate(line)
+      
+      ext {
+        luceneBaseVersionProvider = provider { luceneBaseVersion }
+        logger.lifecycle("Local Lucene development repository will override luceneBaseVersion with: {}", luceneBaseVersion)
+      }
     }
-    rootProject.ext.luceneBaseVersionProvider = rootProject.provider {
-      return evaluate(line)
-    }
-    logger.lifecycle("Local Lucene development repository will override luceneBaseVersion with: {}", rootProject.ext.luceneBaseVersionProvider.get())
 
     // Security policy requires read access to the repo path.
     allprojects {
