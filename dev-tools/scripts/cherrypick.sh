@@ -24,30 +24,34 @@ function LOG() {
 }
 
 function usage() {
-  echo "Script simplifying the process of back-porting a single commit to other branches"
-  echo ""
-  echo "Usage: dev-tools/scripts/cherrypick.sh -b <target-branch> [-p <remote>] [-m <merge-tool>] [-t] <commit-hash> [<commit-hash>...]"
-  echo "   -b <target-branch> sets the branch to cherry-pick to, typically branch_Nx or branch_x_y"
-  echo "   -s skips precommit test. WARNING: Always run precommit for non-trivial backports"
-  echo "   -n skips git pull of target branch. Useful if you are without internet access."
-  echo "   -t runs the full test suite during check, not only precommit"
-  echo "   -a enters automated mode, where failure to cherry-pick will not prompt but abort merge and exit with error"
-  echo "   -r <remote> Specify remote if other than 'origin'"
-  echo "   -p will push to given remote, or 'origin' if not specified, only if both cherry-pick and tests succeeds."
-  echo "      WARNING: Never push changes to a remote branch before a thorough test."
-  echo "   <commit-hash> are the commit hash(es) (on main branch) to cherry-pick. May be several in a sequence"
-  echo ""
-  echo "   On merge conflict the script will run 'git mergetool', unless -a is given. See 'git mergetool --help' for"
-  echo "   help on configuring your favourite merge tool. Check out Sublime Merge (smerge)"
-  echo ""
+  cat << EOF
+Usage: dev-tools/scripts/cherrypick.sh [<options>] <commit-hash> [<commit-hash>...]
+ -b <branch> Sets the branch to cherry-pick to, typically branch_Nx or branch_x_y
+ -s          Skips precommit test. WARNING: Always run precommit for code- and ref-guide changes
+ -t          Run the full test suite during check, not only precommit
+ -n          Skips git pull of target branch. Useful if you are without internet access
+ -a          Enters automated mode. Failure to cherry-pick will not prompt but abort merge and exit
+ -r <remote> Specify remote to push to. Defaults to if other than 'origin'
+ -p          Push to remote. Only done if both cherry-pick and tests succeeded
+    WARNING: Never push changes to a remote branch before a thorough local test
+
+Simple script for aiding in back-porting one more (trivial) commits to other branches.
+On merge conflict the script will run 'git mergetool', unless -a is given. See 'git mergetool --help'
+for help on configuring your favourite merge tool. Check out Sublime Merge (smerge).
+
+Example:
+  # Backport two commits to both stable and release branch
+  dev-tools/scripts/cherrypick.sh -b branch_9x  deadbeef0000 cafebabe1111
+  dev-tools/scripts/cherrypick.sh -b branch_9_0 deadbeef0000 cafebabe1111
+EOF
 }
 
 function yesno() {
   question=$1
   unset answer
-  echo $question
+  echo "$question"
   while [[ "$answer" != "y" ]] && [[ "$answer" != "n" ]]; do
-    read answer
+    read -r answer
     if [[ "$answer" == "y" ]]; then
       true
     else
@@ -58,7 +62,7 @@ function yesno() {
 
 GIT_COMMAND=git
 PRECOMMIT="true"
-TESTARG=" -x test"
+TESTARG="-x test"
 TEST=
 TESTS_PASSED=
 PUSH=
@@ -159,8 +163,8 @@ for i in "${COMMITS[@]}"
 LOG INFO "All cherry-pick succeeded"
 
 if [[ "$PRECOMMIT" ]] || [[ "$TEST" ]]; then
-  LOG "INFO" "Testing the cherry-pick by running 'gradlew check${TESTARG}'"
-  ./gradlew check${TESTARG}
+  LOG "INFO" "Testing the cherry-pick by running 'gradlew check ${TESTARG}'"
+  ./gradlew check "${TESTARG}"
   if [ $? -gt 0 ]; then
     LOG "WARN" "Tests failed. Please fix and push manually"
     exit 2
