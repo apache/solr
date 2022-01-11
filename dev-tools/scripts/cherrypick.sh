@@ -27,16 +27,16 @@ function usage() {
   cat << EOF
 Usage: dev-tools/scripts/cherrypick.sh [<options>] <commit-hash> [<commit-hash>...]
  -b <branch> Sets the branch to cherry-pick to, typically branch_Nx or branch_x_y
- -s          Skips precommit test. WARNING: Always run precommit for code- and ref-guide changes
+ -s          Skips precommit test. WARNING: Always run precommit for code- and doc changes
  -t          Run the full test suite during check, not only precommit
  -n          Skips git pull of target branch. Useful if you are without internet access
- -a          Enters automated mode. Failure to cherry-pick will not prompt but abort merge and exit
+ -a          Enters automated mode. Aborts cherry-pick and exits on error
  -r <remote> Specify remote to push to. Defaults to if other than 'origin'
  -p          Push to remote. Only done if both cherry-pick and tests succeeded
     WARNING: Never push changes to a remote branch before a thorough local test
 
 Simple script for aiding in back-porting one more (trivial) commits to other branches.
-On merge conflict the script will run 'git mergetool', unless -a is given. See 'git mergetool --help'
+On merge conflict the script will run 'git mergetool'. See 'git mergetool --help'
 for help on configuring your favourite merge tool. Check out Sublime Merge (smerge).
 
 Example:
