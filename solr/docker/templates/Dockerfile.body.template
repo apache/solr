@@ -26,9 +26,7 @@
 #-#
 #-#
 
-# remove what we don't want; ensure permissions are right
-# In the header templates, all solr files/directories are set to 0644 permissions, so we need to update that.
-#  TODO; arguably these permissions should have been set correctly previously in the TAR
+# add symlink to /opt/solr, remove what we don't want
 RUN set -ex; \
   (cd /opt; ln -s solr-*/ solr); \
   rm -Rf /opt/solr/docs /opt/solr/dist/solr-solrj-*.jar /opt/solr/dist/solrj-lib /opt/solr/dist/solr-core-*.jar;
