@@ -781,7 +781,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   }
 
   /** Response for authentication attempt */
-  static class JWTAuthenticationResponse {
+  protected static class JWTAuthenticationResponse {
     private final Principal principal;
     private String errorMessage;
     private final AuthCode authCode;

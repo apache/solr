@@ -378,8 +378,7 @@ public class JWTIssuerConfig {
     return this.trustedCerts;
   }
 
-  /** */
-  static class HttpsJwksFactory {
+  public static class HttpsJwksFactory {
     private final long jwkCacheDuration;
     private final long refreshReprieveThreshold;
     private Collection<X509Certificate> trustedCerts;
@@ -398,7 +397,7 @@ public class JWTIssuerConfig {
       this.trustedCerts = trustedCerts;
     }
 
-    /**
+    /*
      * While the class name is HttpsJwks, it actually works with plain http formatted url as well.
      *
      * @param url the Url to connect to for JWK details.
