@@ -177,6 +177,6 @@ TBD
     for help on configuring your favourite merge tool. Check out Sublime Merge (smerge).
     
     Example:
-    # Backport two commits to both stable and release branch
-    dev-tools/scripts/cherrypick.sh -b branch_9x  deadbeef0000 cafebabe1111
-    dev-tools/scripts/cherrypick.sh -b branch_9_0 deadbeef0000 cafebabe1111
+      # Backport two commits to both stable and release branch
+      dev-tools/scripts/cherrypick.sh -b branch_9x  deadbeef0000 cafebabe1111
+      dev-tools/scripts/cherrypick.sh -b branch_9_0 deadbeef0000 cafebabe1111
