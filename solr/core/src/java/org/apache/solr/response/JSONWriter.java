@@ -26,7 +26,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.ReturnFields;
-import org.apache.solr.search.SolrReturnFields;
 
 public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
   static final int    JSON_NL_STYLE_COUNT = 5; // for use by JSONWriterTest
