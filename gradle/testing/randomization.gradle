@@ -180,13 +180,7 @@ allprojects {
         
         // The Lucene version is only available after resolving was done, so add lately using a provider:
         jvmArgumentProviders.add({
-          def luceneVersion = getVersion('org.apache.lucene:lucene-core')
-          def m = (luceneVersion =~ /^\d+\.\d+\b/)
-          if (!m) {
-            throw GradleException("Can't strip luceneMatchVersion from " + luceneVersion)
-          }
-          def luceneMatchVersion = m[0]
-          logger.lifecycle('Lucene match version for tests: {}', luceneMatchVersion)
+          def luceneMatchVersion = rootProject.luceneMatchVersionProvider.get()
           return [
             "-Dtests.LUCENE_VERSION=${luceneMatchVersion}",
             "-Dtests.luceneMatchVersion=${luceneMatchVersion}",

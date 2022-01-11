@@ -99,6 +99,17 @@ ext {
     logger.info("External tool '${name}' resolved to: ${resolved}")
     return resolved
   }
+  
+  luceneMatchVersionProvider = project.provider { 
+    def luceneVersion = getVersion('org.apache.lucene:lucene-core')
+    def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
+    if (!m) {
+      throw GradleException("Can't strip luceneMatchVersion from " + luceneVersion)
+    }
+    def luceneMatchVersion = m[0]
+    logger.lifecycle('Lucene match version for tests and config file sanity checks: {}', luceneMatchVersion)
+    return luceneMatchVersion
+  }
 }
 
 // Include smaller chunks configuring dedicated build areas.

@@ -20,10 +20,7 @@
 configure(project(":solr")) {
   task validateConfigFileSanity() {
     doFirst {
-      def matchVersion = project(":solr:core").resolvedTestOption('tests.luceneMatchVersion')
-      if (!matchVersion) {
-        throw new GradleException("tests.luceneMatchVersion not defined?")
-      }
+      def matchVersion = rootProject.luceneMatchVersionProvider.get()
 
       // Verify solrconfig.xml files declare proper luceneMatchVersion.
       [
