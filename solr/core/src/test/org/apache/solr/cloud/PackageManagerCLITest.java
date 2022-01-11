@@ -39,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LogLevel("org.apache=INFO")
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15902")
 public class PackageManagerCLITest extends SolrCloudTestCase {
 
   // Note for those who want to modify the jar files used in the packages used in this test:
