@@ -139,21 +139,9 @@ public class SolrZkClient implements Closeable {
 
     this.zkClientTimeout = zkClientTimeout;
     // we must retry at least as long as the session timeout
-    zkCmdExecutor = new ZkCmdExecutor(zkClientTimeout, new IsClosed() {
-
-      @Override
-      public boolean isClosed() {
-        return SolrZkClient.this.isClosed();
-      }
-    });
+    zkCmdExecutor = new ZkCmdExecutor(zkClientTimeout, SolrZkClient.this::isClosed);
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
-        + zkServerAddress, this, zkServerAddress, strat, onReconnect, beforeReconnect, new IsClosed() {
-
-          @Override
-          public boolean isClosed() {
-            return SolrZkClient.this.isClosed();
-          }
-        });
+        + zkServerAddress, this, zkServerAddress, strat, onReconnect, beforeReconnect, SolrZkClient.this::isClosed);
 
     try {
       strat.connect(zkServerAddress, zkClientTimeout, wrapWatcher(connManager),

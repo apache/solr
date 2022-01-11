@@ -73,8 +73,8 @@ public class ConnectionManager implements Watcher {
     }
   }
 
-  public static abstract class IsClosed {
-    public abstract boolean isClosed();
+  public interface IsClosed {
+    boolean isClosed();
   }
 
   private volatile LikelyExpiredState likelyExpiredState = LikelyExpiredState.EXPIRED;

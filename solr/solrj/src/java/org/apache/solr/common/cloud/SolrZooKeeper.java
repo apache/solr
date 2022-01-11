@@ -92,11 +92,6 @@ public class SolrZooKeeper extends ZooKeeper {
     t.start();
   }
   
-  @Override
-  public synchronized void close() throws InterruptedException {
-    super.close();
-  }
-  
 //  public static void assertCloses() {
 //    if (clients.size() > 0) {
 //      Iterator<Exception> stacktraces = clients.values().iterator();

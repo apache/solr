@@ -448,12 +448,7 @@ public class ZkController implements Closeable {
         closeOutstandingElections(descriptorsSupplier);
         markAllAsNotLeader(descriptorsSupplier);
       }
-    }, zkACLProvider, new ConnectionManager.IsClosed() {
-
-      @Override
-      public boolean isClosed() {
-        return cc.isShutDown();
-      }});
+    }, zkACLProvider, cc::isShutDown);
 
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
