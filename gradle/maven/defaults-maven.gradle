@@ -34,6 +34,7 @@ configure(rootProject) {
         ":solr:contrib:gcs-repository",
         ":solr:contrib:langid",
         ":solr:contrib:jaegertracer-configurator",
+        ":solr:contrib:jwt-auth",
         ":solr:contrib:prometheus-exporter",
         ":solr:contrib:s3-repository",
         ":solr:contrib:scripting",

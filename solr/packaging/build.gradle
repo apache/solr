@@ -59,6 +59,7 @@ dependencies {
    ":solr:contrib:clustering",
    ":solr:contrib:gcs-repository",
    ":solr:contrib:jaegertracer-configurator",
+   ":solr:contrib:jwt-auth",
    ":solr:contrib:langid",
    ":solr:contrib:ltr",
    ":solr:contrib:prometheus-exporter",

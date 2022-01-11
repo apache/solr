@@ -115,6 +115,10 @@ dependencies {
 
   testImplementation 'org.slf4j:jcl-over-slf4j'
 
+  // JWT Auth plugin
+  // TODO: Need to remove this, but then slf4j is not found???
+  api 'org.bitbucket.b_c:jose4j'
+
   // For faster XML processing than the JDK
   implementation (group: 'com.fasterxml.woodstox', name: 'woodstox-core')
 
