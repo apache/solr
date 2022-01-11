@@ -22,7 +22,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -49,8 +48,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableMap;
 
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -466,7 +463,7 @@ public class Assign {
   /**
    * Creates the appropriate instance of {@link AssignStrategy} based on how the cluster and/or individual collections are
    * configured.
-   * <p>If {@link PlacementPlugin} instance is null this call will return {@link DefaultPlacementFactory.DefaultPlacementPlugin}, otherwise
+   * <p>If {@link PlacementPlugin} instance is null this call will return a strategy from {@link DefaultPlacementFactory}, otherwise
    * {@link PlacementPluginAssignStrategy} will be used.</p>
    */
   public static AssignStrategy createAssignStrategy(CoreContainer coreContainer) {
