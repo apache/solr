@@ -435,7 +435,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin
               SolrException.ErrorCode.SERVER_ERROR,
               "JWTAuth plugin says AUTHENTICATED but no token extracted");
         }
-        if (log.isDebugEnabled()) log.debug("Authentication SUCCESS");
+        if (log.isDebugEnabled()) {
+          log.debug("Authentication SUCCESS");
+        }
         numAuthenticated.inc();
         filterChain.doFilter(request, response);
         return true;
