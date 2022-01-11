@@ -55,12 +55,14 @@ public abstract class TextResponseWriter implements TextWriter {
 
   protected Calendar cal;  // reusable calendar instance
 
+  private final TextResponseWriter rawShim;
 
   public TextResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     this.writer = writer == null ? null: FastWriter.wrap(writer);
     this.schema = req.getSchema();
     this.req = req;
     this.rsp = rsp;
+    this.rawShim = new RawShimTextResponseWriter(this);
     String indent = req.getParams().get("indent");
     if (null == indent || !("off".equals(indent) || "false".equals(indent))){
       doIndent=true;
@@ -76,6 +78,7 @@ public abstract class TextResponseWriter implements TextWriter {
     this.rsp = null;
     returnFields = null;
     this.doIndent = indent;
+    this.rawShim = null;
   }
 
   /** done with this ResponseWriter... make sure any buffers are flushed to writer */
@@ -122,8 +125,7 @@ public abstract class TextResponseWriter implements TextWriter {
       IndexableField f = (IndexableField)val;
       SchemaField sf = schema.getFieldOrNull( f.name() );
       if( sf != null ) {
-        // TODO: what if `raw` here?
-        sf.getType().write(this, name, f);
+        sf.getType().write(raw ? rawShim : this, name, f);
       } else if (raw) {
         writeStrRaw(name, f.stringValue());
       } else {

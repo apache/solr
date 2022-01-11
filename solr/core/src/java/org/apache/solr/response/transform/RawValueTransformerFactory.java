@@ -138,19 +138,8 @@ public class RawValueTransformerFactory extends TransformerFactory
     @Override
     public void transform(SolrDocument doc, int docid) {
       Object val = doc.remove(field);
-      if(val==null) {
-        return;
-      }
-      if(val instanceof Collection) {
-        Collection<?> current = (Collection<?>)val;
-        ArrayList<WriteableStringValue> vals = new ArrayList<RawValueTransformerFactory.WriteableStringValue>();
-        for(Object v : current) {
-          vals.add(new WriteableStringValue(v));
-        }
-        doc.setField(display, vals);
-      }
-      else {
-        doc.setField(display, new WriteableStringValue(val));
+      if(val != null) {
+        doc.setField(display, val);
       }
     }
 
