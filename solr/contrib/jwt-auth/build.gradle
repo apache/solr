@@ -20,6 +20,13 @@ apply plugin: 'java-library'
 
 description = 'Language Identifier contrib for extracting language from a document being indexed'
 
+configurations.all {
+  exclude group: 'log4j', module: 'log4j'
+  exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+  exclude group: 'org.apache.yetus', module: 'audience-annotations'
+  // be conservative on what's added here.  Affects *all* configs, including internal ones.
+}
+
 dependencies {
   implementation project(':solr:core')
 
