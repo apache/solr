@@ -133,7 +133,7 @@ if (luceneDevRepo != null) {
     
     // replace luceneBaseVersionProvider by one evaluating the included build:
     configure(rootProject) {
-      def line = new File(gradle.includedBuild('lucene').projectDir, 'build.gradle').readLines("UTF-8").find { it =~ /\bbaseVersion\s+=/ }
+      def line = new File(gradle.includedBuild('lucene').projectDir, 'build.gradle').readLines("UTF-8").find { it =~ /\bbaseVersion\s*=\s*['"]/ }
       if (!line) {
         throw new GradleException('Cannot extract Lucene baseVersion from build.gradle file.')
       }
