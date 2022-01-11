@@ -32,7 +32,8 @@ function usage() {
   echo "   -n skips git pull of target branch. Useful if you are without internet access."
   echo "   -t runs the full test suite during check, not only precommit"
   echo "   -a enters automated mode, where failure to cherry-pick will not prompt but abort merge and exit with error"
-  echo "   -p <remote> will push to given remote if both cherry-pick and tests succeeds."
+  echo "   -r <remote> Specify remote if other than 'origin'"
+  echo "   -p will push to given remote, or 'origin' if not specified, only if both cherry-pick and tests succeeds."
   echo "      WARNING: Never push changes to a remote branch before a thorough test."
   echo "   <commit-hash> are the commit hash(es) (on main branch) to cherry-pick. May be several in a sequence"
   echo ""
@@ -55,21 +56,26 @@ function yesno() {
   done
 }
 
+GIT_COMMAND=git
 PRECOMMIT="true"
 TESTARG=" -x test"
 TEST=
 TESTS_PASSED=
-PUSH_REMOTE=
+PUSH=
+REMOTE=origin
 NOPULL=
 AUTO_MODE=
 
-while getopts ":b:p:hstna" opt; do
+while getopts ":b:phstnar:" opt; do
   case ${opt} in
     b)
       BRANCH=$OPTARG
       ;;
+    r)
+      REMOTE=$OPTARG
+      ;;
     p)
-      PUSH_REMOTE=$OPTARG
+      PUSH=true
       ;;
     s)
       PRECOMMIT=
@@ -110,10 +116,10 @@ if [ ${#COMMITS[@]} -eq 0 ]; then
   exit
 fi
 
-LOG INFO "Checking out target branch $BRANCH and pulling"
-git checkout "$BRANCH"
-if [[ ! $NOPULL ]]; then
-  git pull --ff-only
+LOG INFO "Checking out target branch $BRANCH"
+$GIT_COMMAND checkout "$BRANCH"
+if [[ ! "$NOPULL" ]]; then
+  $GIT_COMMAND pull --ff-only
 else
   LOG INFO "Skipping git pull"
 fi
@@ -125,34 +131,34 @@ for i in "${COMMITS[@]}"
     LOG "INFO" "Processing commit          : $i"
     LOG "INFO" "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::";
 
-    git cherry-pick "$i" -x
+    $GIT_COMMAND cherry-pick "$i" -x
     if [ $? -eq 0 ]; then
       LOG "INFO" "Cherry pick of $i completed successfully."
       continue;
     fi
     LOG "ERROR" "Cherry pick encountered an error."
-    if [[ $AUTO_MODE ]]; then
+    if [[ "$AUTO_MODE" ]]; then
       LOG ERROR "Aborting cherry-pick and exiting. Please handle this manually"
-      git cherry-pick --abort
+      $GIT_COMMAND cherry-pick --abort
       exit 2
     fi
     if yesno "Do you want me to open mergetool? (y/n) "; then
-      git mergetool
+      $GIT_COMMAND mergetool
     fi
     if yesno "Have you resolved the merge conflict? (y/n) "; then
       LOG INFO "Continuing..."
     else
       if yesno "Clean up by aborting the cherry-pick? (y/n) "; then
-        git cherry-pick --abort
+        $GIT_COMMAND cherry-pick --abort
       fi
       LOG INFO "Bye"
       exit 1
     fi
   done
 
-LOG INFO "Cherry-pick succeeded"
+LOG INFO "All cherry-pick succeeded"
 
-if [[ "$PRECOMMIT" ]] || [[ $TEST ]]; then
+if [[ "$PRECOMMIT" ]] || [[ "$TEST" ]]; then
   LOG "INFO" "Testing the cherry-pick by running 'gradlew check${TESTARG}'"
   ./gradlew check${TESTARG}
   if [ $? -gt 0 ]; then
@@ -165,15 +171,15 @@ else
   LOG "INFO" "Skipping tests"
 fi
 
-if [[ $PUSH_REMOTE ]]; then
+if [[ "$PUSH" ]]; then
   if [[ ! $TESTS_PASSED ]]; then
     LOG "WARN" "Cannot auto push if tests are disabled" 
     exit 1
   fi
-  LOG "INFO" "Pushing changes to branch $BRANCH on remote $PUSH_REMOTE"
-  git push "$PUSH_REMOTE"
+  LOG "INFO" "Pushing changes to $REMOTE/$BRANCH"
+  $GIT_COMMAND push "$REMOTE"
   if [ $? -gt 0 ]; then
-    LOG "WARN" "Push to $PUSH_REMOTE/$BRANCH failed, please clean up an proceed manually"
+    LOG "WARN" "PUSH to $REMOTE/$BRANCH failed, please clean up an proceed manually"
     exit 2
   fi
   LOG "INFO" "Pushed to remote. Cherry-pick complete."
