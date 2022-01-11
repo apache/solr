@@ -467,6 +467,9 @@ Other Changes
 
 * SOLR-15845: Add a new SolrVersion class to manage Solr's version independently from the Lucene version we consume (janhoy)
 
+* SOLR-14858: Add the server WEB-INF/lib directory to the classpath for the solr-exporter script. Will allow the script
+  to work when the dist/solrj-lib jars are missing in the Docker image. (Houston Putman)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
