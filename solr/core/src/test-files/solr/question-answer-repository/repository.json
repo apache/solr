@@ -13,7 +13,7 @@
           }
         ],
         "manifest": {
-          "version-constraint": "8 - 9",
+          "version-constraint": ">8",
           "plugins": [
             {
               "name": "request-handler",
