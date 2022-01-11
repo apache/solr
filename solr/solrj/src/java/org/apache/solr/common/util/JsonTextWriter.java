@@ -65,6 +65,10 @@ public interface JsonTextWriter extends TextWriter {
     _writeChar(']');
   }
 
+  default void writeStrRaw(String name, String val) throws IOException {
+    _writeStr(val);
+  }
+
   default void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     // it might be more efficient to use a stringbuilder or write substrings
     // if writing chars to the stream is slow.

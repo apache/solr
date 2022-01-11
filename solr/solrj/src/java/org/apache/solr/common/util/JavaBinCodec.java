@@ -103,6 +103,7 @@ public class JavaBinCodec implements PushWriter {
           ENUM_FIELD_VALUE = 18,
           MAP_ENTRY = 19,
           UUID = 20, // This is reserved to be used only in LogCodec
+          RAW_WRAPPED = 21,
           // types that combine tag + length (or other info) in a single byte
           TAG_AND_LEN = (byte) (1 << 5),
           STR = (byte) (1 << 5),
@@ -328,6 +329,8 @@ public class JavaBinCodec implements PushWriter {
         return dis.readShort();
       case MAP:
         return readMap(dis);
+      case RAW_WRAPPED:
+        return readRawWrapped(dis);
       case SOLRDOC:
         return readSolrDocument(dis);
       case SOLRDOCLST:
@@ -429,6 +432,10 @@ public class JavaBinCodec implements PushWriter {
     }
     if (val instanceof AtomicBoolean) {
       writeBoolean(((AtomicBoolean) val).get());
+      return true;
+    }
+    if (val instanceof TextWriter.RawWrapped) {
+      writeRawWrapped((TextWriter.RawWrapped) val);
       return true;
     }
     return false;
@@ -536,6 +543,11 @@ public class JavaBinCodec implements PushWriter {
   private boolean ignoreWritable =false;
   private MapWriter.EntryWriter cew;
 
+  public void writeRawWrapped(TextWriter.RawWrapped raw)  throws IOException {
+    writeTag(RAW_WRAPPED);
+    writeVal(raw.val);
+  }
+
   public void writeSolrDocument(SolrDocument doc) throws IOException {
     List<SolrDocument> children = doc.getChildDocuments();
     int fieldsCount = 0;
@@ -566,6 +578,10 @@ public class JavaBinCodec implements PushWriter {
 
   protected boolean toWrite(String key) {
     return writableDocFields == null || ignoreWritable || writableDocFields.isWritable(key);
+  }
+
+  public TextWriter.RawWrapped readRawWrapped(DataInputInputStream dis) throws IOException {
+    return new TextWriter.RawWrapped(readVal(dis));
   }
 
   public SolrDocument readSolrDocument(DataInputInputStream dis) throws IOException {

@@ -42,18 +42,37 @@ import org.apache.solr.common.PushWriter;
 //Base interface for all text based writers
 public interface TextWriter extends PushWriter {
 
+
+  final class RawWrapped {
+    final Object val;
+    public RawWrapped(Object val) {
+      this.val = val;
+    }
+  }
+
+  private boolean assign(Object val) {
+    return false;
+  }
+
   default void writeVal(String name, Object val) throws IOException {
 
     // if there get to be enough types, perhaps hashing on the type
     // to get a handler might be faster (but types must be exact to do that...)
     //    (see a patch on LUCENE-3041 for inspiration)
 
+    boolean notRaw = true;
     // go in order of most common to least common, however some of the more general types like Map belong towards the end
     if (val == null) {
       writeNull(name);
+    } else if (val instanceof RawWrapped && (notRaw = assign(val = ((RawWrapped)val).val))) {
+      // no-op here
     } else if (val instanceof CharSequence) {
-      writeStr(name, val.toString(), true);
-      // micro-optimization... using toString() avoids a cast first
+      if (notRaw) {
+        writeStr(name, val.toString(), true);
+        // micro-optimization... using toString() avoids a cast first
+      } else {
+        writeStrRaw(name, val.toString());
+      }
     } else if (val instanceof Number) {
       writeNumber(name, (Number) val);
     } else if (val instanceof Boolean) {
@@ -65,7 +84,12 @@ public interface TextWriter extends PushWriter {
     } else if (val instanceof NamedList) {
       writeNamedList(name, (NamedList)val);
     } else if (val instanceof Path) {
-      writeStr(name, ((Path) val).toAbsolutePath().toString(), true);
+      val = ((Path) val).toAbsolutePath();
+      if (notRaw) {
+        writeStr(name, val.toString(), true);
+      } else {
+        writeStrRaw(name, val.toString());
+      }
     } else if (val instanceof IteratorWriter) {
       writeIterator(name, (IteratorWriter) val);
     } else if (val instanceof MapWriter) {
@@ -85,13 +109,25 @@ public interface TextWriter extends PushWriter {
       byte[] arr = (byte[])val;
       writeByteArr(name, arr, 0, arr.length);
     } else if (val instanceof EnumFieldValue) {
-      writeStr(name, val.toString(), true);
+      if (notRaw) {
+        writeStr(name, val.toString(), true);
+      } else {
+        writeStrRaw(name, val.toString());
+      }
     } else if (val instanceof WriteableValue) {
       ((WriteableValue)val).write(name, this);
     } else {
       // default... for debugging only.  Would be nice to "assert false" ?
-      writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
+      if (notRaw) {
+        writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
+      } else {
+        writeStrRaw(name, val.getClass().getName() + ':' + val);
+      }
     }
+  }
+
+  default void writeStrRaw(String name, String val) throws IOException {
+    writeStr(name, val, false);
   }
 
   void writeStr(String name, String val, boolean needsEscaping) throws IOException;

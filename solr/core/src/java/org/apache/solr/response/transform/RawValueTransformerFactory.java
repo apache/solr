@@ -64,8 +64,11 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
     // When a 'wt' is specified in the transformer, only apply it to the same wt
     boolean apply = true;
+    String qwt = null;
+    String origQwt = null;
     if(applyToWT!=null) {
-      String qwt = req.getParams().get(CommonParams.WT);
+      qwt = req.getParams().get(CommonParams.WT);
+      origQwt = "json";//req.getParams().get("orig.wt");
       if(qwt==null) {
         QueryResponseWriter qw = req.getCore().getQueryResponseWriter(req);
         QueryResponseWriter dw = req.getCore().getQueryResponseWriter(applyToWT);
@@ -80,6 +83,12 @@ public class RawValueTransformerFactory extends TransformerFactory
 
     if(apply) {
       return new RawTransformer( field, display );
+    } else if ("javabin".equals(qwt) && origQwt != null) {
+      switch (origQwt) {
+        case "json":
+        case "xml":
+          return new RawWrappingTransformer(field, display);
+      }
     }
     
     if (field.equals(display)) {
@@ -88,7 +97,45 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
     return new RenameFieldTransformer( field, display, false );
   }
-  
+
+  static class RawWrappingTransformer extends DocTransformer {
+    final String field;
+    final String display;
+
+    public RawWrappingTransformer( String field, String display ) {
+      this.field = field;
+      this.display = display;
+    }
+
+    @Override
+    public String getName() {
+      return display;
+    }
+
+    @Override
+    public void transform(SolrDocument doc, int docid) {
+      Object val = doc.remove(field);
+      if(val==null) {
+        return;
+      }
+      if(val instanceof Collection) {
+        Collection<?> current = (Collection<?>)val;
+        ArrayList<TextWriter.RawWrapped> vals = new ArrayList<>();
+        for(Object v : current) {
+          vals.add(new TextWriter.RawWrapped(v));
+        }
+        doc.setField(display, vals);
+      }
+      else {
+        doc.setField(display, new TextWriter.RawWrapped(val));
+      }
+    }
+
+    @Override
+    public String[] getExtraRequestFields() {
+      return new String[] {this.field};
+    }
+  }
   static class RawTransformer extends DocTransformer
   {
     final String field;
