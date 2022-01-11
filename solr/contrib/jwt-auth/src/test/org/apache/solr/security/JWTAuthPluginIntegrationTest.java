@@ -16,7 +16,6 @@
  */
 package org.apache.solr.security;
 
-import com.nimbusds.jwt.JWT;
 import no.nav.security.mock.oauth2.MockOAuth2Server;
 import no.nav.security.mock.oauth2.OAuth2Config;
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper;
