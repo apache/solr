@@ -180,7 +180,7 @@ allprojects {
         
         // The Lucene version is only available after resolving was done, so add lately using a provider:
         jvmArgumentProviders.add({
-          def luceneMatchVersion = rootProject.luceneMatchVersionProvider.get()
+          def luceneMatchVersion = rootProject.luceneBaseVersionProvider.get()
           return [
             "-Dtests.LUCENE_VERSION=${luceneMatchVersion}",
             "-Dtests.luceneMatchVersion=${luceneMatchVersion}",

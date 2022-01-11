@@ -46,7 +46,7 @@ version = {
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
   return propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
 }()
-description = 'Grandparent project for Apache Lucene Core and Apache Solr'
+description = 'Grandparent project for Apache Solr'
 
 // Propagate version and derived properties across projects.
 allprojects {
@@ -100,15 +100,15 @@ ext {
     return resolved
   }
   
-  luceneMatchVersionProvider = project.provider { 
+  luceneBaseVersionProvider = project.provider { 
     def luceneVersion = getVersion('org.apache.lucene:lucene-core')
     def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
     if (!m) {
-      throw GradleException("Can't strip luceneMatchVersion from " + luceneVersion)
+      throw GradleException("Can't strip base version from " + luceneVersion)
     }
-    def luceneMatchVersion = m[0]
-    logger.lifecycle('Lucene match version for tests and config file sanity checks: {}', luceneMatchVersion)
-    return luceneMatchVersion
+    def luceneBaseVersion = m[0]
+    logger.debug('Lucene base version (without suffix): {}', luceneBaseVersion)
+    return luceneBaseVersion
   }
 }
 

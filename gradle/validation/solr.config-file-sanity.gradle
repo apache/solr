@@ -20,7 +20,7 @@
 configure(project(":solr")) {
   task validateConfigFileSanity() {
     doFirst {
-      def (major, minor) = rootProject.luceneMatchVersionProvider.get().tokenize('.')
+      def (major, minor) = rootProject.luceneBaseVersionProvider.get().tokenize('.')
       def matchVersion = "${major}.${minor}"
 
       // Verify solrconfig.xml files declare proper luceneMatchVersion.
