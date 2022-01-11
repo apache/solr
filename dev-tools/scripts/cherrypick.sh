@@ -164,7 +164,7 @@ LOG INFO "All cherry-pick succeeded"
 
 if [[ "$PRECOMMIT" ]] || [[ "$TEST" ]]; then
   LOG "INFO" "Testing the cherry-pick by running 'gradlew check ${TESTARG}'"
-  ./gradlew check "${TESTARG}"
+  ./gradlew check -q "${TESTARG}"
   if [ $? -gt 0 ]; then
     LOG "WARN" "Tests failed. Please fix and push manually"
     exit 2
