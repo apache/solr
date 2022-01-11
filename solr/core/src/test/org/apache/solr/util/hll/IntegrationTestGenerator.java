@@ -504,7 +504,7 @@ public class IntegrationTestGenerator {
      *         and {@link #SPARSE_THRESHOLD}) specified above.
      */
     private static HLL newHLL(final HLLType type) {
-        return newHLL(type);
+        return new HLL(LOG2M, REGWIDTH, EXPLICIT_THRESHOLD, SPARSE_THRESHOLD, type);
     }
 
     /**

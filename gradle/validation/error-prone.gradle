@@ -53,7 +53,7 @@ allprojects { prj ->
         options.errorprone.errorproneArgs = [
             '-Xep:InlineMeSuggester:OFF', // We don't use this annotation
 
-            // test
+            // bug patterns related to our tests
             '-Xep:ExtendingJUnitAssert:OFF', // we inherit from LuceneTestCase which extends Assert
             '-Xep:UseCorrectAssertInTests:OFF', // and this is a consequence of the above
             '-Xep:CatchFail:OFF', // our code is generally descriptive enough, fix case by case if tests fail
@@ -62,7 +62,6 @@ allprojects { prj ->
             '-Xep:FloatingPointLiteralPrecision:OFF', // TODO: a lot of these in our tests, likely unintentional
             '-Xep:StaticAssignmentInConstructor:OFF',
             '-Xep:ComparableType:OFF', // SolrTestCaseJ4.Doc and Fld are messy
-            '-Xep:InfiniteRecursion:OFF',
 
             '-Xep:AlmostJavadoc:OFF',
             '-Xep:AmbiguousMethodReference:OFF',
