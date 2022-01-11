@@ -1,4 +1,4 @@
-package org.apache.solr.guide;/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,6 +14,8 @@ package org.apache.solr.guide;/*
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.solr.guide;
 
 import java.io.*;
 import java.io.FilenameFilter;
