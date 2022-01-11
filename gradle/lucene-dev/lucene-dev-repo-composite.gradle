@@ -139,9 +139,10 @@ if (luceneDevRepo != null) {
       }
       def luceneBaseVersion = evaluate(line)
       
+      logger.lifecycle("Local Lucene development repository will override luceneBaseVersion with: {}", luceneBaseVersion)
+
       ext {
         luceneBaseVersionProvider = provider { luceneBaseVersion }
-        logger.lifecycle("Local Lucene development repository will override luceneBaseVersion with: {}", luceneBaseVersion)
       }
     }
 
