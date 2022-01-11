@@ -62,8 +62,7 @@ allprojects { prj ->
             '-Xep:CatchAndPrintStackTrace:OFF', // TODO: there's a lot of these but they should be easy to address
             '-Xep:FloatingPointLiteralPrecision:OFF', // TODO: a lot of these in our tests, likely unintentional
             '-Xep:StaticAssignmentInConstructor:OFF',
-            '-Xep:InvalidPatternSyntax:OFF',
-            '-Xep:ComparableType:OFF',
+            '-Xep:ComparableType:OFF', // SolrTestCaseJ4.Doc and Fld are messy
             '-Xep:InfiniteRecursion:OFF',
 
             '-Xep:AlmostJavadoc:OFF',
