@@ -64,6 +64,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   // Shared with other tests
   static HashMap<String, Object> testJwk;
 
+  public static Path JWT_TEST_PATH() { return getFile("solr/security").getParentFile().toPath(); }
+
   static {
     // Generate an RSA key pair, which will be used for signing and verification of the JWT, wrapped in a JWK
     try {
@@ -78,7 +80,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
       testJwk.put("alg", rsaJsonWebKey.getAlgorithm());
       testJwk.put("n", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getModulus()));
 
-      trustedPemCert = Files.readString(TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem"));
+      trustedPemCert = Files.readString(JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem"));
     } catch (JoseException | IOException e) {
       fail("Failed static initialization: " + e.getMessage());
     }
@@ -160,7 +162,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void initFromSecurityJSONLocalJWK() throws Exception {
-    Path securityJson = TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json");
+    Path securityJson = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json");
     InputStream is = Files.newInputStream(securityJson);
     Map<String,Object> securityConf = (Map<String, Object>) Utils.fromJSON(is);
     Map<String, Object> authConf = (Map<String, Object>) securityConf.get("authentication");
@@ -169,14 +171,14 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void initFromSecurityJSONUrlJwk() throws Exception {
-    Path securityJson = TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_url_security.json");
+    Path securityJson = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_url_security.json");
     InputStream is = Files.newInputStream(securityJson);
     Map<String,Object> securityConf = (Map<String, Object>) Utils.fromJSON(is);
     Map<String, Object> authConf = (Map<String, Object>) securityConf.get("authentication");
     plugin.init(authConf);
 
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
     assertTrue(resp.getJwtException().getMessage().contains("Connection refused"));
   }
 
@@ -222,7 +224,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(minimalConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertFalse(resp.isAuthenticated());
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
 
     testConfig.put("principalClaim","sub");  // testConfig has subject = solruser
     plugin.init(testConfig);
@@ -236,7 +238,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertFalse(resp.isAuthenticated());
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
 
     testConfig.put("iss", "IDServer");
     plugin.init(testConfig);
@@ -250,7 +252,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertFalse(resp.isAuthenticated());
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
 
     testConfig.put("aud", "Solr");
     plugin.init(testConfig);
@@ -269,7 +271,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     resp = plugin.authenticate(testHeader);
     assertFalse(resp.isAuthenticated());
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PRINCIPAL_MISSING, resp.getAuthCode());
+    assertEquals(PRINCIPAL_MISSING, resp.getAuthCode());
   }
 
   @Test
@@ -289,13 +291,13 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     shouldMatch.put("claim9", "NA");
     plugin.init(testConfig);
     resp = plugin.authenticate(testHeader);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.CLAIM_MISMATCH, resp.getAuthCode());
+    assertEquals(CLAIM_MISMATCH, resp.getAuthCode());
 
     // Required claim does not match regex
     shouldMatch.clear();
     shouldMatch.put("claim1", "NA");
     resp = plugin.authenticate(testHeader);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.CLAIM_MISMATCH, resp.getAuthCode());
+    assertEquals(CLAIM_MISMATCH, resp.getAuthCode());
   }
 
   @Test
@@ -310,14 +312,14 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("requireExp", true);
     plugin.init(testConfig);
     resp = plugin.authenticate(slimHeader);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
     testConfig.put("requireExp", false);
 
     // Missing issuer claim
     testConfig.put("requireIss", true);
     plugin.init(testConfig);
     resp = plugin.authenticate(slimHeader);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
   }
 
   @Test
@@ -325,7 +327,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("algAllowlist", Arrays.asList("PS384", "PS512"));
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
     assertTrue(resp.getErrorMessage().contains("not a permitted algorithm"));
   }
 
@@ -384,7 +386,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("blockUnknown", false);
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(null);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PASS_THROUGH, resp.getAuthCode());
+    assertEquals(PASS_THROUGH, resp.getAuthCode());
   }
 
   @Test
@@ -392,22 +394,22 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     minimalConfig.put("blockUnknown", false);
     plugin.init(minimalConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(null);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PASS_THROUGH, resp.getAuthCode());
+    assertEquals(PASS_THROUGH, resp.getAuthCode());
   }
 
   @Test
   public void wellKnownConfigNoHeaderPassThrough() {
-    String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
+    String wellKnownUrl = JWT_TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(null);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PASS_THROUGH, resp.getAuthCode());
+    assertEquals(PASS_THROUGH, resp.getAuthCode());
   }
 
   @Test
   public void defaultRealm() {
-    String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
+    String wellKnownUrl = JWT_TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
     plugin.init(testConfig);
@@ -416,7 +418,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void configureRealm() {
-    String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
+    String wellKnownUrl = JWT_TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
     testConfig.put("realm", "myRealm");
@@ -497,7 +499,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void initWithTrustedCertsFile() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
-    authConf.put("trustedCertsFile", TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem").toString());
+    authConf.put("trustedCertsFile", JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem").toString());
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
     assertEquals(2, plugin.getIssuerConfigs().get(0).getTrustedCerts().size());
@@ -516,7 +518,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void initWithInvalidTrustedCertsFile() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
-    authConf.put("trustedCertsFile", TEST_PATH().resolve("security").resolve("jwt_plugin_idp_invalidcert.pem").toString());
+    authConf.put("trustedCertsFile", JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_invalidcert.pem").toString());
     plugin = new JWTAuthPlugin();
     expectThrows(SolrException.class, () -> plugin.init(authConf));
   }
@@ -552,7 +554,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void extractCertificate() throws IOException {
-    Path pemFilePath = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
+    Path pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
     String cert = CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath));
     assertEquals(2, CryptoKeys.parseX509Certs(IOUtils.toInputStream(cert, StandardCharsets.UTF_8)).size());
   }

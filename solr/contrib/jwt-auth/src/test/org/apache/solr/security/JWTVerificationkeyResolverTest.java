@@ -34,14 +34,13 @@ import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
 import static java.util.Arrays.asList;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
 
 /**
  * Tests the multi jwks resolver that can fetch keys from multiple JWKs
@@ -76,18 +75,18 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     k4 = new KeyHolder("k4");
     k5 = new KeyHolder("k5");
 
-    when(firstJwkList.getJsonWebKeys()).thenReturn(asList(k1.getJwk(), k2.getJwk()));
-    doAnswer(invocation -> {
+    Mockito.when(firstJwkList.getJsonWebKeys()).thenReturn(asList(k1.getJwk(), k2.getJwk()));
+    Mockito.doAnswer(invocation -> {
       keysToReturnFromSecondJwk = refreshSequenceForSecondJwk.next();
       System.out.println("Refresh called, next to return is " + keysToReturnFromSecondJwk);
       return null;
     }).when(secondJwkList).refresh();
-    when(secondJwkList.getJsonWebKeys()).then(inv -> {
+    Mockito.when(secondJwkList.getJsonWebKeys()).then(inv -> {
       if (keysToReturnFromSecondJwk == null)
         keysToReturnFromSecondJwk = refreshSequenceForSecondJwk.next();
       return keysToReturnFromSecondJwk;
     });
-    when(httpsJwksFactory.createList(anyList())).thenReturn(asList(firstJwkList, secondJwkList));
+    Mockito.when(httpsJwksFactory.createList(ArgumentMatchers.anyList())).thenReturn(asList(firstJwkList, secondJwkList));
 
     JWTIssuerConfig issuerConfig = new JWTIssuerConfig("primary").setIss("foo").setJwksUrl(asList("url1", "url2"));
     JWTIssuerConfig.setHttpsJwksFactory(httpsJwksFactory);

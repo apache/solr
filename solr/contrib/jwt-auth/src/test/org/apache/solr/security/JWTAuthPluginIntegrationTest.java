@@ -16,6 +16,7 @@
  */
 package org.apache.solr.security;
 
+import com.nimbusds.jwt.JWT;
 import no.nav.security.mock.oauth2.MockOAuth2Server;
 import no.nav.security.mock.oauth2.OAuth2Config;
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper;
@@ -47,6 +48,7 @@ import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
+import org.jose4j.lang.JoseException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -77,6 +79,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.security.JWTAuthPluginTest.JWT_TEST_PATH;
 
 /**
  * Validate that JWT token authentication works in a real cluster.
@@ -100,9 +103,9 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     // Setup an OAuth2 mock server with SSL
-    Path p12Cert = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_certs.p12");
-    pemFilePath = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
-    wrongPemFilePath = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
+    Path p12Cert = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_certs.p12");
+    pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
+    wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
 
     mockOAuth2Server = createMockOAuthServer(p12Cert,"secret");
     mockOAuth2Server.start();
@@ -205,13 +208,15 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     getAndFail(baseUrl + "/" + COLLECTION + "/query?q=*:*", null);
     assertAuthMetricsMinimums(2, 1, 0, 0, 1, 0);
     executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", jws);
-    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "false", 20, jws);
+    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "false", 20,
+        getBearerAuthHeader(jws));
     // Pass through
     verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
     // Now succeeds since blockUnknown=false 
     get(baseUrl + "/" + COLLECTION + "/query?q=*:*", null);
     executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", null);
-    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, jws);
+    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20,
+        getBearerAuthHeader(jws));
 
     assertAuthMetricsMinimums(9, 4, 4, 0, 1, 0);
     
@@ -248,6 +253,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     assertPkiAuthMetricsMinimums(4, 4, 0, 0, 0, 0);
 
     HttpClientUtil.close(cl);
+  }
+
+  static String getBearerAuthHeader(JsonWebSignature jws) throws JoseException {
+    return "Bearer " + jws.getCompactSerialization();
   }
 
   /**
