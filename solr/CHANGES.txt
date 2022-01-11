@@ -68,6 +68,8 @@ New Features
 
 * SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
 
+* SOLR-15694: Node roles (Ishan Chattopadhyaya, noble)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -215,6 +217,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15213: Atomic updates: "add" now uses add-or-replace logic for child documents.  They can
   also themselves be atomic updates.  (James Ashbourne, Endika Posadas via David Smiley)
 
+* SOLR-10321: highlighting (hl.method=unified): When there are no highlights for a field, don't
+  return the field in the response at all.  (David Smiley)
+
 * SOLR-15890: Add a limit to the Admin SQL panel if one is not included in the stmt (Joel Bernstein)
 
 * SOLR-15887: Remove <jmx/> from shipped solrconfig.xm. (Eric Pugh)
@@ -227,6 +232,8 @@ Build
 * SOLR-13671: Remove check for bare "var" declarations in validate-source-patterns (Erick Erickson, Alex Bulygin, janhoy)
 
 * SOLR-15793: Pin http_parser.rb to specific version to allow Solr Ref Guide on Jekyll to run (Eric Pugh)
+
+* SOLR-15867: Make the gradle build ready for 9.0 release (janhoy, Houston Putman, Dawid Weiss)
 
 Other Changes
 ----------------------
@@ -484,6 +491,8 @@ Bug Fixes
 * SOLR-14781: Removed many unused classes that accumulated over the years. (Bence Szabo, David Smiley)
 
 * SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
+
+* SOLR-15854: Let RealtimeGet component support negative filters (Tomás Fernández Löbbe)
 
 ==================  8.11.2 ==================
 
