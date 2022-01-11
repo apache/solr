@@ -501,6 +501,10 @@ Bug Fixes
 
 * SOLR-15854: Let RealtimeGet component support negative filters (Tomás Fernández Löbbe)
 
+* SOLR-15501: GCSBackupRepository no longer strictly requires a pointer to a service account JSON file, allowing users running within GCP
+              to take advantage of it's "Workload Identity" and other role-based access feature. (Jacek Kikiewicz, Martin Stocker
+              via Jason Gerlowski)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
