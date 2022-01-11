@@ -62,7 +62,7 @@ public class RateLimitManager implements ClusterPropertiesListener {
   public boolean onChange(Map<String, Object> properties) {
 
     // Hack: We only support query rate limiting for now
-    QueryRateLimiter queryRateLimiter = (QueryRateLimiter) requestRateLimiterMap.get(SolrRequest.SolrRequestType.QUERY);
+    QueryRateLimiter queryRateLimiter = (QueryRateLimiter) getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
     if (queryRateLimiter != null) {
       try {
