@@ -68,7 +68,6 @@ allprojects { prj ->
             '-Xep:InvalidPatternSyntax:OFF',
             '-Xep:ComparableType:OFF',
             '-Xep:InfiniteRecursion:OFF',
-            '-Xep:MisusedDayOfYear:OFF',
 
             '-Xep:AlmostJavadoc:OFF',
             '-Xep:AmbiguousMethodReference:OFF',
