@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Calendar;
 import java.util.Iterator;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
@@ -31,10 +32,12 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.common.util.TextWriter;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.transform.RawValueTransformerFactory;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrReturnFields;
 
 /** Base class for text-oriented response writers.
  *
@@ -55,20 +58,34 @@ public abstract class TextResponseWriter implements TextWriter {
 
   protected Calendar cal;  // reusable calendar instance
 
+  private static final ReturnFields DUMMY_RETURN_FIELDS = new SolrReturnFields();
   private final TextResponseWriter rawShim;
+  private final Set<String> rawFields;
+  private final ReturnFields rawReturnFields;
 
   public TextResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+    this(writer, req, rsp, null);
+  }
+
+  public TextResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp, Set<String> rawFields) {
     this.writer = writer == null ? null: FastWriter.wrap(writer);
     this.schema = req.getSchema();
     this.req = req;
     this.rsp = rsp;
-    this.rawShim = new RawShimTextResponseWriter(this);
     String indent = req.getParams().get("indent");
     if (null == indent || !("off".equals(indent) || "false".equals(indent))){
       doIndent=true;
     }
     returnFields = rsp.getReturnFields();
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) rsp.removeResponseHeader();
+    this.rawFields = rawFields;
+    if (rawFields == null) {
+      this.rawShim = null;
+      this.rawReturnFields = DUMMY_RETURN_FIELDS;
+    } else {
+      this.rawShim = new RawShimTextResponseWriter(this);
+      this.rawReturnFields = returnFields;
+    }
   }
   //only for test purposes
    TextResponseWriter(Writer writer, boolean indent) {
@@ -79,6 +96,21 @@ public abstract class TextResponseWriter implements TextWriter {
     returnFields = null;
     this.doIndent = indent;
     this.rawShim = null;
+    this.rawFields = null;
+    this.rawReturnFields = null;
+  }
+
+  protected static Set<String> getRawFields(SolrQueryRequest req, SolrQueryResponse rsp, String requireWt) {
+    final String wt = req.getParams().get(CommonParams.WT);
+    if (!requireWt.equals(wt)) {
+      return null;
+    } else {
+      return RawValueTransformerFactory.getRawFields(rsp.getReturnFields().getTransformer(), wt);
+    }
+  }
+
+  protected boolean shouldWriteRaw(String fname, ReturnFields returnFields) {
+    return rawReturnFields == returnFields && rawFields.contains(fname);
   }
 
   /** done with this ResponseWriter... make sure any buffers are flushed to writer */

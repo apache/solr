@@ -63,11 +63,7 @@ public class XMLWriter extends TextResponseWriter {
 
   private static final char[] XML_START2_NOSCHEMA=("<response>\n").toCharArray();
 
-  private static final ReturnFields DUMMY_RETURN_FIELDS = new SolrReturnFields();
-
   final int version;
-  private final ReturnFields topLevelReturnFields;
-  private final Set<String> rawFields;
 
   public static void writeResponse(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     XMLWriter xmlWriter = null;
@@ -80,7 +76,7 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   public XMLWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
-    super(writer, req, rsp);
+    super(writer, req, rsp, getRawFields(req, rsp, "xml"));
 
     String version = req.getParams().get(CommonParams.VERSION);
     float ver = version==null? CURRENT_VERSION : Float.parseFloat(version);
@@ -88,15 +84,6 @@ public class XMLWriter extends TextResponseWriter {
     if( this.version < 2200 ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
           "XMLWriter does not support version: "+version );
-    }
-    final String wt = req.getParams().get(CommonParams.WT);
-    final ReturnFields topLevelReturnFields = rsp.getReturnFields();
-    if ("xml".equals(wt)) {
-      this.rawFields = RawValueTransformerFactory.getRawFields(topLevelReturnFields.getTransformer(), wt);
-      this.topLevelReturnFields = this.rawFields == null ? DUMMY_RETURN_FIELDS : topLevelReturnFields;
-    } else {
-      this.rawFields = null;
-      this.topLevelReturnFields = DUMMY_RETURN_FIELDS;
     }
   }
 
@@ -222,7 +209,7 @@ public class XMLWriter extends TextResponseWriter {
           log.debug(String.valueOf(val));
         }
       }
-      writeVal(fname, val, topLevelReturnFields == returnFields && rawFields.contains(fname));
+      writeVal(fname, val, shouldWriteRaw(fname, returnFields));
     }
 
     if(doc.hasChildDocuments()) {
