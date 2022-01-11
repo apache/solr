@@ -352,6 +352,15 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
+  public void writeStrRaw(String name, String val) throws IOException {
+    int contentLen;
+    if (val == null || (contentLen = val.length()) == 0) {
+      return;
+    }
+    writer.write(val, 0, contentLen);
+  }
+
+  @Override
   public void writeStr(String name, String val, boolean escape) throws IOException {
     writePrim("str",name,val,escape);
   }
