@@ -56,8 +56,12 @@ public interface TextWriter extends PushWriter {
     if (val == null) {
       writeNull(name);
     } else if (val instanceof CharSequence) {
-      writeStr(name, val.toString(), true);
-      // micro-optimization... using toString() avoids a cast first
+      if (raw) {
+        writeStrRaw(name, val.toString());
+      } else {
+        writeStr(name, val.toString(), true);
+        // micro-optimization... using toString() avoids a cast first
+      }
     } else if (val instanceof Number) {
       writeNumber(name, (Number) val);
     } else if (val instanceof Boolean) {
@@ -69,7 +73,12 @@ public interface TextWriter extends PushWriter {
     } else if (val instanceof NamedList) {
       writeNamedList(name, (NamedList)val);
     } else if (val instanceof Path) {
-      writeStr(name, ((Path) val).toAbsolutePath().toString(), true);
+      final String pathStr = ((Path) val).toAbsolutePath().toString();
+      if (raw) {
+        writeStrRaw(name, pathStr);
+      } else {
+        writeStr(name, pathStr, true);
+      }
     } else if (val instanceof IteratorWriter) {
       writeIterator(name, (IteratorWriter) val, raw);
     } else if (val instanceof MapWriter) {
@@ -89,13 +98,21 @@ public interface TextWriter extends PushWriter {
       byte[] arr = (byte[])val;
       writeByteArr(name, arr, 0, arr.length);
     } else if (val instanceof EnumFieldValue) {
-      writeStr(name, val.toString(), true);
+      if (raw) {
+        writeStrRaw(name, val.toString());
+      } else {
+        writeStr(name, val.toString(), true);
+      }
     } else if (val instanceof WriteableValue) {
       ((WriteableValue)val).write(name, this);
     } else {
       // default... for debugging only.  Would be nice to "assert false" ?
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
     }
+  }
+
+  default void writeStrRaw(String name, String val) throws IOException {
+    throw new UnsupportedOperationException();
   }
 
   void writeStr(String name, String val, boolean needsEscaping) throws IOException;

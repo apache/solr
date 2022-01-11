@@ -122,9 +122,11 @@ public abstract class TextResponseWriter implements TextWriter {
       IndexableField f = (IndexableField)val;
       SchemaField sf = schema.getFieldOrNull( f.name() );
       if( sf != null ) {
+        // TODO: what if `raw` here?
         sf.getType().write(this, name, f);
-      }
-      else {
+      } else if (raw) {
+        writeStrRaw(name, f.stringValue());
+      } else {
         writeStr(name, f.stringValue(), true);
       }
     } else if (val instanceof Document) {

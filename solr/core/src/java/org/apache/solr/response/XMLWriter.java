@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -31,6 +32,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.transform.RawValueTransformerFactory;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrReturnFields;
 import org.slf4j.Logger;
@@ -61,7 +63,11 @@ public class XMLWriter extends TextResponseWriter {
 
   private static final char[] XML_START2_NOSCHEMA=("<response>\n").toCharArray();
 
+  private static final ReturnFields DUMMY_RETURN_FIELDS = new SolrReturnFields();
+
   final int version;
+  private final ReturnFields topLevelReturnFields;
+  private final Set<String> rawFields;
 
   public static void writeResponse(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     XMLWriter xmlWriter = null;
@@ -82,6 +88,15 @@ public class XMLWriter extends TextResponseWriter {
     if( this.version < 2200 ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
           "XMLWriter does not support version: "+version );
+    }
+    final String wt = req.getParams().get(CommonParams.WT);
+    final ReturnFields topLevelReturnFields = rsp.getReturnFields();
+    if ("xml".equals(wt)) {
+      this.rawFields = RawValueTransformerFactory.getRawFields(topLevelReturnFields.getTransformer(), wt);
+      this.topLevelReturnFields = this.rawFields == null ? DUMMY_RETURN_FIELDS : topLevelReturnFields;
+    } else {
+      this.rawFields = null;
+      this.topLevelReturnFields = DUMMY_RETURN_FIELDS;
     }
   }
 
@@ -207,7 +222,7 @@ public class XMLWriter extends TextResponseWriter {
           log.debug(String.valueOf(val));
         }
       }
-      writeVal(fname, val);
+      writeVal(fname, val, topLevelReturnFields == returnFields && rawFields.contains(fname));
     }
 
     if(doc.hasChildDocuments()) {

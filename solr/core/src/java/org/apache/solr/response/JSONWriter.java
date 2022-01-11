@@ -20,18 +20,25 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.transform.RawValueTransformerFactory;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrReturnFields;
 
 public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
   static final int    JSON_NL_STYLE_COUNT = 5; // for use by JSONWriterTest
   static final String JSON_WRAPPER_FUNCTION="json.wrf";
+  private static final ReturnFields DUMMY_RETURN_FIELDS = new SolrReturnFields();
 
   final protected String namedListStyle;
   protected String wrapperFunction;
+  private final Set<String> rawFields;
+  private final ReturnFields topLevelReturnFields;
 
   public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     this(writer, req, rsp,
@@ -44,11 +51,21 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     super(writer, req, rsp);
     this.wrapperFunction = wrapperFunction;
     this.namedListStyle = namedListStyle;
+    final String wt = req.getParams().get(CommonParams.WT);
+    final ReturnFields topLevelReturnFields = rsp.getReturnFields();
+    if ("json".equals(wt)) {
+      this.rawFields = RawValueTransformerFactory.getRawFields(topLevelReturnFields.getTransformer(), wt);
+      this.topLevelReturnFields = this.rawFields == null ? DUMMY_RETURN_FIELDS : topLevelReturnFields;
+    } else {
+      this.rawFields = null;
+      this.topLevelReturnFields = DUMMY_RETURN_FIELDS;
+    }
   }
   private JSONWriter(Writer writer, boolean indent, String namedListStyle) throws IOException {
     super(writer, indent);
     this.namedListStyle = namedListStyle;
-
+    this.rawFields = null;
+    this.topLevelReturnFields = DUMMY_RETURN_FIELDS;
   }
 
   /**Strictly for testing only
@@ -103,7 +120,7 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
       indent();
       writeKey(fname, true);
       Object val = doc.getFieldValue(fname);
-      writeVal(fname, val);
+      writeVal(fname, val, topLevelReturnFields == returnFields && rawFields.contains(fname));
     }
 
     if(doc.hasChildDocuments()) {

@@ -19,6 +19,10 @@ package org.apache.solr.response.transform;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import com.google.common.base.Strings;
 import org.apache.lucene.index.IndexableField;
@@ -79,7 +83,7 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
 
     if(apply) {
-      return new RawTransformer( field, display );
+      return new RawTransformer( field, display, applyToWT );
     }
     
     if (field.equals(display)) {
@@ -88,16 +92,41 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
     return new RenameFieldTransformer( field, display, false );
   }
-  
+
+  public static Set<String> getRawFields(DocTransformer t, String wt) {
+    if (t == null || wt == null) {
+      return null;
+    } else if (t instanceof RawTransformer) {
+      RawTransformer rt = (RawTransformer) t;
+      if (wt.equals(rt.applyToWT)) {
+        return Collections.singleton(((RawTransformer)t).display);
+      }
+    } else if (t instanceof DocTransformers) {
+      DocTransformers ts = (DocTransformers) t;
+      List<String> fields = new ArrayList<>(ts.size());
+      for (int i = ts.size() - 1; i >= 0; i--) {
+        t = ts.getTransformer(i);
+        RawTransformer rt;
+        if (t instanceof RawTransformer && wt.equals((rt = (RawTransformer) t).applyToWT)){
+          fields.add(rt.display);
+        }
+      }
+      return fields.isEmpty() ? null : new HashSet<>(fields);
+    }
+    return null;
+  }
+
   static class RawTransformer extends DocTransformer
   {
     final String field;
     final String display;
+    final String applyToWT;
 
-    public RawTransformer( String field, String display )
+    public RawTransformer( String field, String display, String applyToWT )
     {
       this.field = field;
       this.display = display;
+      this.applyToWT = applyToWT;
     }
 
     @Override
