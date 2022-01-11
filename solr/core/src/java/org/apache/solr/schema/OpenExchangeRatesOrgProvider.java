@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.StrUtils;
 import org.noggit.JSONParser;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -71,10 +70,13 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   private final ExecutorService executorService = ExecutorUtil.newMDCAwareSingleThreadExecutor(
       new SolrNamedThreadFactory("currencyProvider"));
 
-  // todo: add thread synchronization
+  private volatile boolean reloading = false;
+  private volatile long lastReloadTimestamp;
+
   protected OpenExchangeRates rates;
 
   public OpenExchangeRatesOrgProvider() {
+    log.debug("Adding ExecutorService to be tracked by ObjectReleaseTracker");
     assert ObjectReleaseTracker.track(executorService); // ensure that in unclean shutdown tests we still close this
   }
 
@@ -99,10 +101,12 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot get exchange rate; currency was null.");
     }
 
-    reloadIfExpired();
+    OpenExchangeRates currentRates = rates;
 
-    Double source = rates.getRates().get(sourceCurrencyCode);
-    Double target = rates.getRates().get(targetCurrencyCode);
+    reload();
+
+    Double source = currentRates.getRates().get(sourceCurrencyCode);
+    Double target = currentRates.getRates().get(targetCurrencyCode);
 
     if (source == null || target == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -110,16 +114,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
           + "Available rates are "+listAvailableCurrencies());
     }
 
-    // todo: does it really use new exchange rates after reloading?
-
     return target / source;
-  }
-
-  private void reloadIfExpired() {
-    if ((rates.getTimestamp() + refreshIntervalSeconds) < TimeUnit.NANOSECONDS.toSeconds(System.nanoTime())) {
-      log.debug("Refresh interval has expired. Refreshing exchange rates.");
-      reload();
-    }
   }
 
   @Override
@@ -149,38 +144,47 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     return rates.getRates().keySet();
   }
 
-  public boolean reloadNow() throws SolrException {
-    InputStream ratesJsonStream = null;
+  public void reloadNow() throws SolrException {
     try {
       log.debug("Reloading exchange rates from {}", ratesFileLocation);
-      try {
-        ratesJsonStream = (new URL(ratesFileLocation)).openStream();
-      } catch (Exception e) {
-        ratesJsonStream = resourceLoader.openResource(ratesFileLocation);
-      }
 
-      rates = new OpenExchangeRates(ratesJsonStream);
+      // We set the timestamp based on the monotonic time not the time from openexchangerates.com because
+      // in the reload() method we will be comparing it to the monotonic time. If we took the time
+      // from openexchangerates.com and the timestamp was off or the system clock was set to a different time, we could
+      // be refreshing the exchange rates too often (even on every search request) or too rarely. Also, it's necessary
+      // to set the timestamp to the current time and to do it before the actual reload, so in the case
+      // when the openexchangerates.com server is down for more than 60 minutes, we don't try to refresh the rates
+      // on every search request.
+      lastReloadTimestamp = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
+
+      rates = new OpenExchangeRates();
       log.debug("Successfully reloaded exchange rates from {}", ratesFileLocation);
-      return true;
     } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error reloading exchange rates", e);
+      log.error("Error reloading exchange rates", e);
     } finally {
-      if (ratesJsonStream != null) {
-        try {
-          ratesJsonStream.close();
-        } catch (IOException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Error closing stream", e);
-        }
-      }
+      reloading = false;
     }
   }
 
   @Override
   public boolean reload() throws SolrException {
-    log.debug("Submitting currency reload task to executor service");
-    Runnable reloadTask = this::reloadNow;
-    executorService.submit(reloadTask);
+    if ((lastReloadTimestamp + refreshIntervalSeconds) >= TimeUnit.NANOSECONDS.toSeconds(System.nanoTime())) {
+      return true;
+    }
+
+    synchronized (this) {
+      if (!reloading) {
+        log.debug("Refresh interval has expired. Refreshing exchange rates (in a separate thread).");
+        reloading = true;
+        executorService.submit(this::reloadNow);
+      }
+    }
     return true;
+  }
+
+  public static void shutdown() {
+    //TODO: this is never called. Find a place from where we can call executorService.shutdown();
+    log.debug("shutdown called on OpenExchangeRatesOrgProvider");
   }
 
   @Override
@@ -215,20 +219,6 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     log.debug("inform with ResourceLoader called");
     resourceLoader = loader;
     reloadNow();
-
-//    executorService = Executors.newSingleThreadScheduledExecutor(new SolrNamedThreadFactory("currencyFetcher"));
-//    executorService.scheduleWithFixedDelay(task, refreshIntervalSeconds, refreshIntervalSeconds, TimeUnit.SECONDS);
-//    log.debug("Currency fetcher scheduled at an interval of {}s", refreshIntervalSeconds);
-    // todo: should it reload immediately?
-    // todo: close?
-  }
-
-  public void shutdown() {
-    log.debug("Shutting down currency fetcher scheduler");
-//    ExecutorUtil.shutdownAndAwaitTermination(executorService);
-//    ExecutorUtil.shutdownNowAndAwaitTermination(executorService);
-//    executorService.shutdown();
-    ExecutorUtil.shutdownAndAwaitTermination(executorService);
   }
 
   private String getParam(String param, String defaultParam) {
@@ -238,16 +228,30 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   /**
    * A simple class encapsulating the JSON data from openexchangerates.org
    */
-  static class OpenExchangeRates {
+  class OpenExchangeRates {
     private Map<String, Double> rates;
     private String baseCurrency;
-    private long timestamp;
     private String disclaimer;
     private String license;
-    private JSONParser parser;
 
-    public OpenExchangeRates(InputStream ratesStream) throws IOException {
-      parser = new JSONParser(new InputStreamReader(ratesStream, StandardCharsets.UTF_8));
+    public OpenExchangeRates() throws IOException {
+      InputStream ratesJsonStream;
+      try {
+        ratesJsonStream = (new URL(ratesFileLocation)).openStream();
+      } catch (Exception e) {
+        ratesJsonStream = resourceLoader.openResource(ratesFileLocation);
+      }
+
+      try {
+        parse(ratesJsonStream);
+      }
+      finally {
+        ratesJsonStream.close();
+      }
+    }
+
+    private void parse(InputStream ratesJsonStream) throws IOException {
+      JSONParser parser = new JSONParser(new InputStreamReader(ratesJsonStream, StandardCharsets.UTF_8));
       rates = new HashMap<>();
 
       int ev;
@@ -255,9 +259,9 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
         ev = parser.nextEvent();
         switch( ev ) {
           case JSONParser.STRING:
-            if( parser.wasKey() ) {
+            if (parser.wasKey()) {
               String key = parser.getString();
-              if(key.equals("disclaimer")) {
+              if (key.equals("disclaimer")) {
                 parser.nextEvent();
                 disclaimer = parser.getString();
               } else if(key.equals("license")) {
@@ -282,11 +286,10 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
               } else {
                 log.warn("Unknown key {}", key);
               }
-              break;
             } else {
               log.warn("Expected key, got {}", JSONParser.getEventString(ev));
-              break;
             }
+            break;
 
           case JSONParser.OBJECT_END:
           case JSONParser.OBJECT_START:
@@ -299,27 +302,11 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
             }
             break;
         }
-      } while( ev != JSONParser.EOF);
-
-      // We set the timestamp based on the monotonic time not the time from openexchangerates.com because
-      // in the method reloadIfExpired we will be comparing it to the monotonic time. If we took the time
-      // from openexchangerates.com and there was a desynchronization (or some other error), we could
-      // be refreshing the exchange rates too often or too rarely.
-      timestamp = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
+      } while (ev != JSONParser.EOF);
     }
 
     public Map<String, Double> getRates() {
       return rates;
-    }
-
-    public long getTimestamp() {
-      return timestamp;
-    }
-    /** Package protected method for test purposes
-     * @lucene.internal
-     */
-    void setTimestamp(long timestamp) {
-      this.timestamp = timestamp;
     }
 
     public String getDisclaimer() {

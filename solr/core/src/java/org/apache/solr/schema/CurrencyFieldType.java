@@ -190,10 +190,6 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     return schema.getField(field.getName() + POLY_FIELD_SEPARATOR + fieldSuffixCurrency);
   }
 
-  public void shutdown() {
-    log.debug("shutdown called on CurrencyFieldType");
-  }
-
   /**
    * When index schema is informed, get field types for the configured dynamic sub-fields
    *
