@@ -467,6 +467,8 @@ Other Changes
 
 * SOLR-15807: New LogListener class for tests to use to make assertions about what Log messages should or should not be produced by a test (hossman)
 
+* SOLR-15907: Move JWT Authenticaion plugin to contrib module 'jwt-auth' (janhoy)
+
 * SOLR-15845: Add a new SolrVersion class to manage Solr's version independently from the Lucene version we consume (janhoy)
 
 Bug Fixes
