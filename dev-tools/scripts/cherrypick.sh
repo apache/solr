@@ -128,13 +128,15 @@ for BRANCH in "${BRANCHES[@]}"; do
   LOG "INFO" "============================================";
   echo ""
   LOG INFO "Checking out target branch $BRANCH"
-  $GIT_COMMAND checkout "$BRANCH"
+  # shellcheck disable=SC2086
+  $GIT_COMMAND checkout $BRANCH
   if [ $? -gt 0 ]; then
     LOG ERROR "Failed checking out branch $BRANCH"
     exit 2
   fi
   if [[ ! "$NOPULL" ]]; then
-    $GIT_COMMAND pull --ff-only "$REMOTE"
+    # shellcheck disable=SC2086
+    $GIT_COMMAND pull --ff-only $REMOTE
   else
     LOG INFO "Skipping git pull"
   fi
@@ -175,7 +177,8 @@ for BRANCH in "${BRANCHES[@]}"; do
 
   if [[ "$PRECOMMIT" ]] || [[ "$TEST" ]]; then
     LOG "INFO" "Testing the cherry-pick on $BRANCH by running 'gradlew check ${TESTARG}'"
-    ./gradlew check -q "${TESTARG}"
+    # shellcheck disable=SC2086
+    ./gradlew check -q $TESTARG
     if [ $? -gt 0 ]; then
       LOG "WARN" "Tests failed. Please fix and push manually"
       exit 2
@@ -192,7 +195,8 @@ for BRANCH in "${BRANCHES[@]}"; do
       exit 1
     fi
     LOG "INFO" "Pushing changes to $REMOTE/$BRANCH"
-    $GIT_COMMAND push "$REMOTE" "$BRANCH"
+    # shellcheck disable=SC2086
+    $GIT_COMMAND push $REMOTE $BRANCH
     if [ $? -gt 0 ]; then
       LOG "WARN" "PUSH to $REMOTE/$BRANCH failed, please clean up an proceed manually"
       exit 2
