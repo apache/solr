@@ -187,11 +187,7 @@ public class SolrReturnFields extends ReturnFields {
         for(int j=i+1; j<rename.size(); j++) {
           if(from.equals(rename.getName(j))) {
             rename.setName(j, to); // copy from the current target
-            // TODO: below should be unnecessary? replace with `assert reqFieldNames.contains(to);`?
-            if(reqFieldNames==null) {
-              reqFieldNames = new LinkedHashSet<>();
-            }
-            reqFieldNames.add(to); // don't rename our current target
+            assert reqFieldNames.contains(to);
           }
         }
       }
