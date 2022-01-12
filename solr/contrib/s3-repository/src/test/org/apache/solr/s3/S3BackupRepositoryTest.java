@@ -157,6 +157,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   /** Check - pushing a file to the repo (backup). - pulling a file from the repo (restore). */
   @Test
+  @SuppressWarnings("InlineMeInliner")
   public void testCopyFiles() throws Exception {
 
     // basic test with a small file
@@ -225,6 +226,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   /** Check reading input with random access stream. */
   @Test
+  @SuppressWarnings("InlineMeInliner")
   public void testRandomAccessInput() throws Exception {
 
     // Test with a short text that fills in the buffer
@@ -246,7 +248,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   private void doRandomAccessTest(String content, int position) throws Exception {
 
     try (S3BackupRepository repo = getRepository()) {
-      File tmp = temporaryFolder.newFolder();
+      temporaryFolder.newFolder();
 
       // Open an index input on a file
       pushObject("/my-repo/content", content);
@@ -273,6 +275,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   /** Check we gracefully fail when seeking before current position of the stream. */
   @Test
+  @SuppressWarnings("InlineMeInliner")
   public void testBackwardRandomAccess() throws Exception {
 
     try (S3BackupRepository repo = getRepository()) {
