@@ -28,7 +28,6 @@ import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
-import org.apache.solr.common.SolrException;
 
 import java.util.ArrayList;
 import java.util.Collection;
