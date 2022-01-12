@@ -49,6 +49,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Method;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -438,6 +440,21 @@ public class ZkTestServer {
     log.info("STARTING ZK TEST SERVER");
 
     if (clientPort == 0) {
+      // Hacks to get PortAssignment to work with our test runner partitioning
+      String processCount = System.getProperty("tests.jvms", "1");
+      String cmdLine = System.getProperty("sun.java.command"); // worker.org.gradle.process.internal.worker.GradleWorkerMain 'Gradle Test Executor 2'
+      cmdLine = cmdLine.replace("Executor ", "threadid=");
+      try {
+        // We can set up the port range ourselves
+        Method setupPortRange = PortAssignment.class.getDeclaredMethod("setupPortRange", String.class, String.class);
+        setupPortRange.setAccessible(true);
+        setupPortRange.invoke(null, processCount, cmdLine);
+      } catch (Exception e) {
+        // Or set system properties and hope that will work properly
+        // System.setProperty("test.junit.threads", processCount);
+        System.setProperty("zookeeper.junit.threadid", cmdLine);
+      }
+
       clientPort = PortAssignment.unique();
     }
 
@@ -503,24 +520,28 @@ public class ZkTestServer {
   public static boolean waitForServerUp(String hp, long timeoutMs) {
     log.info("waitForServerUp: {}", hp);
     final TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    while (true) {
+    while (!timeout.hasTimedOut()) {
       try {
         HostPort hpobj = parseHostPortList(hp).get(0);
         send4LetterWord(hpobj.host, hpobj.port, "stat");
         return true;
+      } catch (ConnectException e) {
+        if (log.isInfoEnabled()) {
+          log.info("Server is not up yet? Exception: {}", e.getMessage());
+        }
       } catch (IOException e) {
-        log.info("", e);
+        log.info("Failed to connect, will retry: ", e);
       }
 
-      if (timeout.hasTimedOut()) {
-        throw new RuntimeException("Time out waiting for ZooKeeper to startup!");
-      }
       try {
         Thread.sleep(250);
       } catch (InterruptedException e) {
         // ignore
       }
     }
+
+    // better would be return false or TimeOutException but let's keep the old behaviour for now
+    throw new RuntimeException("Time out waiting for ZooKeeper to startup!");
   }
 
   public static class HostPort {
