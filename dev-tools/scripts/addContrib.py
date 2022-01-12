@@ -88,13 +88,6 @@ def get_build_gradle(description):
 
 description = '%s'
 
-configurations.all {
-  exclude group: 'log4j', module: 'log4j'
-  exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-  exclude group: 'org.apache.yetus', module: 'audience-annotations'
-  // be conservative on what's added here.  Affects *all* configs, including internal ones.
-}
-
 dependencies {
   implementation project(':solr:core')
   implementation 'org.slf4j:slf4j-api'
