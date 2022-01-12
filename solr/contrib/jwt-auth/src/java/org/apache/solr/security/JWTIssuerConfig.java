@@ -48,7 +48,6 @@ import org.slf4j.LoggerFactory;
 
 /** Holds information about an IdP (issuer), such as issuer ID, JWK url(s), keys etc */
 public class JWTIssuerConfig {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final String PARAM_ISS_NAME = "name";
   static final String PARAM_JWKS_URL = "jwksUrl";
   static final String PARAM_JWK = "jwk";

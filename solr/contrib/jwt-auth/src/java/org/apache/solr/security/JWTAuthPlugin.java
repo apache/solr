@@ -102,7 +102,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   @Deprecated(since = "9.0") // Remove in 10.0
   private static final String PARAM_ALG_WHITELIST = "algWhitelist";
 
-  private static final Set<String> PROPS =
+  private static final ImmutableSet<String> PROPS =
       ImmutableSet.of(
           PARAM_BLOCK_UNKNOWN,
           PARAM_PRINCIPAL_CLAIM,
