@@ -74,7 +74,7 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   public XMLWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
-    super(writer, req, rsp, getRawFields(req, rsp, "xml"));
+    super(writer, req, rsp);
 
     String version = req.getParams().get(CommonParams.VERSION);
     float ver = version==null? CURRENT_VERSION : Float.parseFloat(version);

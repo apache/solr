@@ -64,10 +64,6 @@ public abstract class TextResponseWriter implements TextWriter {
   private final ReturnFields rawReturnFields;
 
   public TextResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
-    this(writer, req, rsp, null);
-  }
-
-  public TextResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp, Set<String> rawFields) {
     this.writer = writer == null ? null: FastWriter.wrap(writer);
     this.schema = req.getSchema();
     this.req = req;
@@ -78,7 +74,7 @@ public abstract class TextResponseWriter implements TextWriter {
     }
     returnFields = rsp.getReturnFields();
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) rsp.removeResponseHeader();
-    this.rawFields = rawFields;
+    this.rawFields = RawValueTransformerFactory.getRawFields(returnFields.getTransformer());
     if (rawFields == null) {
       this.rawShim = null;
       this.rawReturnFields = DUMMY_RETURN_FIELDS;
@@ -98,15 +94,6 @@ public abstract class TextResponseWriter implements TextWriter {
     this.rawShim = null;
     this.rawFields = null;
     this.rawReturnFields = null;
-  }
-
-  protected static Set<String> getRawFields(SolrQueryRequest req, SolrQueryResponse rsp, String requireWt) {
-    final String wt = req.getParams().get(CommonParams.WT);
-    if (!requireWt.equals(wt)) {
-      return null;
-    } else {
-      return RawValueTransformerFactory.getRawFields(rsp.getReturnFields().getTransformer(), wt);
-    }
   }
 
   protected boolean shouldWriteRaw(String fname, ReturnFields returnFields) {

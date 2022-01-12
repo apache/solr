@@ -82,7 +82,7 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
 
     if(apply) {
-      return new RawTransformer( field, display, applyToWT );
+      return new RawTransformer( field, display );
     }
     
     if (field.equals(display)) {
@@ -92,22 +92,18 @@ public class RawValueTransformerFactory extends TransformerFactory
     return new RenameFieldTransformer( field, display, false );
   }
 
-  public static Set<String> getRawFields(DocTransformer t, String wt) {
-    if (t == null || wt == null) {
+  public static Set<String> getRawFields(DocTransformer t) {
+    if (t == null) {
       return null;
     } else if (t instanceof RawTransformer) {
-      RawTransformer rt = (RawTransformer) t;
-      if (wt.equals(rt.applyToWT)) {
-        return Collections.singleton(((RawTransformer)t).display);
-      }
+      return Collections.singleton(((RawTransformer)t).display);
     } else if (t instanceof DocTransformers) {
       DocTransformers ts = (DocTransformers) t;
       List<String> fields = new ArrayList<>(ts.size());
       for (int i = ts.size() - 1; i >= 0; i--) {
         t = ts.getTransformer(i);
-        RawTransformer rt;
-        if (t instanceof RawTransformer && wt.equals((rt = (RawTransformer) t).applyToWT)){
-          fields.add(rt.display);
+        if (t instanceof RawTransformer) {
+          fields.add(((RawTransformer) t).display);
         }
       }
       return fields.isEmpty() ? null : new HashSet<>(fields);
@@ -119,13 +115,11 @@ public class RawValueTransformerFactory extends TransformerFactory
   {
     final String field;
     final String display;
-    final String applyToWT;
 
-    public RawTransformer( String field, String display, String applyToWT )
+    public RawTransformer( String field, String display )
     {
       this.field = field;
       this.display = display;
-      this.applyToWT = applyToWT;
     }
 
     @Override

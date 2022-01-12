@@ -41,7 +41,7 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
 
   public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp,
                     String wrapperFunction, String namedListStyle) {
-    super(writer, req, rsp, getRawFields(req, rsp, "json"));
+    super(writer, req, rsp);
     this.wrapperFunction = wrapperFunction;
     this.namedListStyle = namedListStyle;
   }
