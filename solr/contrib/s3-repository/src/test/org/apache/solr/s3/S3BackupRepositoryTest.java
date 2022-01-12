@@ -248,8 +248,6 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   private void doRandomAccessTest(String content, int position) throws Exception {
 
     try (S3BackupRepository repo = getRepository()) {
-      temporaryFolder.newFolder();
-
       // Open an index input on a file
       pushObject("/my-repo/content", content);
       IndexInput input = repo.openInput(new URI("s3://my-repo"), "content", IOContext.DEFAULT);
