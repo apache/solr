@@ -245,6 +245,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("InlineMeInliner")
   public void testIsAbsolute() throws Exception {
     try(HdfsDirectoryFactory hdfsFactory = new HdfsDirectoryFactory()) {
       String relativePath = Strings.repeat(
