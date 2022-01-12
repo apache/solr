@@ -302,9 +302,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
             .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
             .build();
     String securityJson = createMockOAuthSecurityJson(pemFilePath);
-    myCluster
-        .getZkClient()
-        .setData("/security.json", securityJson.getBytes(Charset.defaultCharset()), true);
+    myCluster.zkSetData("/security.json", securityJson.getBytes(Charset.defaultCharset()), true);
     RTimer timer = new RTimer();
     do { // Wait timeoutMs time for the security.json change to take effect
       Thread.sleep(200);
