@@ -48,6 +48,7 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
   private JSONWriter(Writer writer, boolean indent, String namedListStyle) throws IOException {
     super(writer, indent);
     this.namedListStyle = namedListStyle;
+
   }
 
   /**Strictly for testing only
