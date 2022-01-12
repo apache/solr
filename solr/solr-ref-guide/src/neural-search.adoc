@@ -23,7 +23,7 @@ Search comprises of performing four primary steps:
 * match the query and the document representations from the corpus of information
 * assign a score to each matched document in order to establish a meaningful document ranking by relevance in the results
 
-With the *Neural Search* module Apache Solr is introducing support for neural networks based techniques that can improve various aspects of search.
+The Apache Solr *Neural Search* module adds support for neural networks based techniques that can improve various aspects of search.
 
 These techniques can be differentiated based on whether they affect the query representation, the document representation, or the estimation of the relevance score.
 
