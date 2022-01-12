@@ -447,6 +447,7 @@ public class ZkTestServer {
     configuration.setProperty("maxSessionTimeout", String.valueOf(maxSessionTimeout));
     configuration.setProperty("minSessionTimeout", String.valueOf(minSessionTimeout));
 
+    Files.createDirectories(zkDir);
     try {
       zkse = ZooKeeperServerEmbedded.builder()
               .baseDir(zkDir)
@@ -468,7 +469,9 @@ public class ZkTestServer {
 
   public void shutdown() throws IOException, InterruptedException {
     log.info("Shutting down ZkTestServer.");
-    zkse.close();
+    if (zkse != null) { // if there were problems during startup
+      zkse.close();
+    }
     IOUtils.closeQuietly(rootClient);
     IOUtils.closeQuietly(chRootClient);
     ObjectReleaseTracker.release(this);
@@ -505,7 +508,7 @@ public class ZkTestServer {
         send4LetterWord(hpobj.host, hpobj.port, "stat");
         return true;
       } catch (IOException e) {
-        e.printStackTrace();
+        log.info("", e);
       }
 
       if (timeout.hasTimedOut()) {
