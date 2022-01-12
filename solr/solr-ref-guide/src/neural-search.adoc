@@ -286,7 +286,7 @@ The `knn` query parser can be used with filter queries:
 
 [IMPORTANT]
 ====
-When using `knn` in these scenarios make sure you have clear how filter queries work in Apache Solr:
+When using `knn` in these scenarios make sure you have a clear understanding of how filter queries work in Apache Solr:
 
 The Ranked List of document IDs resulting from the main query `q` is intersected with the set of document IDs deriving from each filter query `fq`.
 
