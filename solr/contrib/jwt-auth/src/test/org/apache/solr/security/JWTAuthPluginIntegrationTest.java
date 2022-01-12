@@ -297,7 +297,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     MiniSolrCloudCluster myCluster =
         configureCluster(numNodes) // nodes
             .addConfig(
-                "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+                "conf1", JWT_TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
             .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
             .build();
     String securityJson = createMockOAuthSecurityJson(pemFilePath);
@@ -326,9 +326,9 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
       throws Exception {
     MiniSolrCloudCluster myCluster =
         configureCluster(2) // nodes
-            .withSecurityJson(TEST_PATH().resolve("security").resolve(securityJsonFilename))
+            .withSecurityJson(JWT_TEST_PATH().resolve("security").resolve(securityJsonFilename))
             .addConfig(
-                "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+                "conf1", JWT_TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
             .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
             .build();
 
