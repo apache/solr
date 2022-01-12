@@ -28,7 +28,7 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'com.github.jruby-gradle.base' version '2.0.1'
+    id 'com.github.jruby-gradle.base' version '2.1.0-alpha.2'
 }
 
 // This project does not contribute anything to main dependencies.
