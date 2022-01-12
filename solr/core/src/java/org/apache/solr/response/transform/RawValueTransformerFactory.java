@@ -89,7 +89,7 @@ public class RawValueTransformerFactory extends TransformerFactory
       // we have to ensure the field is returned
       return new DocTransformer.NoopFieldTransformer(field);
     }
-    return new RenameFieldTransformer( field, display, false );
+    return new RenameFieldTransformer( field, display, false, true );
   }
 
   public static Set<String> getRawFields(DocTransformer t) {
