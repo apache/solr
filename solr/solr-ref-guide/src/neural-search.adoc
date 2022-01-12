@@ -310,7 +310,9 @@ the K-nearest neighbors(*in the whole index*) of the target vector to search.
 
 This means the second pass `knn` is executed on the whole index anyway, which is a current limitation.
 
-The final ranked list of results will have the first pass score(main query `q`) combined with the second pass score(the approximated similarityFunction distance to the target vector to search).
+The final ranked list of results will have the first pass score(main query `q`) added to the second pass score(the approximated similarityFunction distance to the target vector to search) multiplied by a multiplicative factor(reRankWeight).
+
+Details about using the ReRank Query Parser can be found in the <<query-re-ranking.adoc#,Query Re-Ranking>> section.
 ====
 
 == Additional Neural Search Resources
