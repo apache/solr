@@ -96,14 +96,12 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       new RenameFieldValueValidator("bbb_i", "my_int_field_alias"),
       new SimpleFieldValueValidator("ccc_s"),
       new RenameFieldValueValidator("ddd_s", "my_str_field_alias"),
-      //
-      // SOLR-9376: RawValueTransformerFactory doesn't work in cloud mode 
-      //
-      // new RawFieldValueValidator("json", "eee_s", "my_json_field_alias"),
-      // new RawFieldValueValidator("json", "fff_s"),
-      // new RawFieldValueValidator("xml", "ggg_s", "my_xml_field_alias"),
-      // new RawFieldValueValidator("xml", "hhh_s"),
-      //
+
+       new RawFieldValueValidator("json", "eee_s", "my_json_field_alias"),
+       new RawFieldValueValidator("json", "fff_s"),
+       new RawFieldValueValidator("xml", "ggg_s", "my_xml_field_alias"),
+       new RawFieldValueValidator("xml", "hhh_s"),
+
       new NotIncludedValidator("bogus_unused_field_ss"),
       new NotIncludedValidator("bogus_alias","bogus_alias:other_bogus_field_i"),
       new NotIncludedValidator("bogus_raw_alias","bogus_raw_alias:[xml f=bogus_raw_field_ss]"),
@@ -188,7 +186,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     // items should only be added to this list if it's known that they do not work with RTG
     // and a specific Jira for fixing this is listed as a comment
     final List<String> knownBugs = Arrays.asList
-      ( "xml","json", // SOLR-9376
+      (
         "child" // way to complicatd to vet with this test, see SOLR-9379 instead
       );
 
@@ -398,7 +396,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       assert 1 == idsToRequest.size();
       params.add("id",idsToRequest.get(0));
     }
-    
+
     final QueryResponse rsp = client.query(params);
     assertNotNull(params.toString(), rsp);
 
@@ -589,7 +587,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * What we're primarily concerned with is that the transformer does it's job and puts the string 
    * in the response, regardless of cloud/RTG/uncommited state of the document.
    */
-  @SuppressWarnings("UnusedNestedClass") // SOLR-9376
   private static class RawFieldValueValidator extends RenameFieldValueValidator {
     final String type;
     final String alias;
