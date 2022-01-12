@@ -205,4 +205,4 @@ for BRANCH in "${BRANCHES[@]}"; do
   fi
 done
 
-LOG "INFO" "SUCCESS"
+LOG "INFO" "SUCCESS on branches ${BRANCHES[*]} for commits ${COMMITS[*]}"
