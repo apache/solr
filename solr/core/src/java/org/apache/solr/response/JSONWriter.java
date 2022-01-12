@@ -22,7 +22,6 @@ import java.io.Writer;
 import java.util.List;
 
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.ReturnFields;
