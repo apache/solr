@@ -18,20 +18,12 @@
 
 apply plugin: 'java-library'
 
-description = 'Language Identifier contrib for extracting language from a document being indexed'
-
-configurations.all {
-  exclude group: 'log4j', module: 'log4j'
-  exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-  exclude group: 'org.apache.yetus', module: 'audience-annotations'
-  // be conservative on what's added here.  Affects *all* configs, including internal ones.
-}
+description = 'JWT / OpenID Connect / OAuth2 authentication plugin'
 
 dependencies {
   implementation project(':solr:core')
 
   implementation 'org.bitbucket.b_c:jose4j'
-  implementation 'org.apache.zookeeper:zookeeper'
 
   implementation 'commons-io:commons-io'
   implementation 'org.apache.commons:commons-lang3'
