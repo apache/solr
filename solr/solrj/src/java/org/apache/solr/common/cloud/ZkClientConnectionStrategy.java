@@ -105,16 +105,19 @@ public abstract class ZkClientConnectionStrategy {
 
   public ZkCredentialsProvider getZkCredentialsToAddAutomatically() { return zkCredentialsToAddAutomatically; }
 
-  protected SolrZooKeeper createSolrZooKeeper(final String serverAddress, final int zkClientTimeout,
-      final Watcher watcher) throws IOException {
-    SolrZooKeeper result = new SolrZooKeeper(serverAddress, zkClientTimeout, watcher);
+  protected ZooKeeper createZooKeeper(String serverAddress, int zkClientTimeout, Watcher watcher) throws IOException {
+    ZooKeeper zk = newZooKeeperInstance(serverAddress, zkClientTimeout, watcher);
 
     zkCredentialsToAddAutomaticallyUsed = true;
     for (ZkCredentials zkCredentials : zkCredentialsToAddAutomatically.getCredentials()) {
-      result.addAuthInfo(zkCredentials.getScheme(), zkCredentials.getAuth());
+      zk.addAuthInfo(zkCredentials.getScheme(), zkCredentials.getAuth());
     }
 
-    return result;
+    return zk;
   }
 
+  protected ZooKeeper newZooKeeperInstance(String serverAddress, int zkClientTimeout, Watcher watcher)
+      throws IOException {
+    return new ZooKeeper(serverAddress, zkClientTimeout, watcher);
+  }
 }

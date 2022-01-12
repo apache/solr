@@ -36,7 +36,6 @@ import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.ServerCnxn;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ServerConfig;
-import org.apache.zookeeper.server.SessionTracker.Session;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.embedded.ExitHandler;
@@ -419,27 +418,6 @@ public class ZkTestServer {
 
   public int getPort() {
     return clientPort;
-  }
-
-  public void expire(final long sessionId) {
-/*
-    zkServer.zooKeeperServer.expire(new Session() {
-      @Override
-      public long getSessionId() {
-        return sessionId;
-      }
-
-      @Override
-      public int getTimeout() {
-        return 4000;
-      }
-
-      @Override
-      public boolean isClosing() {
-        return false;
-      }
-    });
-*/
   }
 
   public ZKDatabase getZKDatabase() {

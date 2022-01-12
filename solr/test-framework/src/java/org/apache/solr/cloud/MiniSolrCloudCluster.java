@@ -694,14 +694,13 @@ public class MiniSolrCloudCluster {
    * Make the zookeeper session on a particular jetty expire
    */
   public void expireZkSession(JettySolrRunner jetty) {
+    ChaosMonkey.causeConnectionLoss(jetty);
+
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
-      SolrZkClient zkClient = cores.getZkController().getZkClient();
-      zkClient.getSolrZooKeeper().closeCnxn();
-      long sessionId = zkClient.getSolrZooKeeper().getSessionId();
-      zkServer.expire(sessionId);
+      cores.getZkController().getZkClient().getZooKeeper().getTestable().injectSessionExpiration();
       if (log.isInfoEnabled()) {
-        log.info("Expired zookeeper session {} from node {}", sessionId, jetty.getBaseUrl());
+        log.info("Expired zookeeper session from node {}", jetty.getBaseUrl());
       }
     }
   }

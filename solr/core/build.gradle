@@ -83,6 +83,7 @@ dependencies {
 
   // ZooKeeper & Curator
   implementation 'org.apache.zookeeper:zookeeper'
+  testImplementation 'org.apache.zookeeper:zookeeper:3.7.0:tests'
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly ('org.xerial.snappy:snappy-java')
   implementation ('org.apache.curator:curator-client')
