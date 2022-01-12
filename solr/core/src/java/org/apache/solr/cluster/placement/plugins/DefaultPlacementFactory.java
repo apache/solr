@@ -70,8 +70,6 @@ public class DefaultPlacementFactory implements PlacementPluginFactory<Placement
 
         if (request.getTargetNodes().size() < replicaCounts.size()) {
           replicaCounts = replicaCounts.stream().filter(rc -> request.getTargetNodes().contains(rc.node())).collect(Collectors.toList());
-        } else if (placementContext.getCluster().getLiveDataNodes().isEmpty()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "There are no live nodes in the cluster");
         }
 
         for (String shard : request.getShardNames()) {
@@ -80,14 +78,13 @@ public class DefaultPlacementFactory implements PlacementPluginFactory<Placement
               .sorted(Comparator.<ReplicaCount>comparingInt(rc -> rc.weight(request.getCollection().getName())).thenComparing(ReplicaCount::nodeName))
               .map(ReplicaCount::node)
               .collect(Collectors.toList());
-          int i = 0;
+          int replicaNumOfShard = 0;
           for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
-            for (int replica = 0; replica < request.getCountReplicasToCreate(replicaType); replica++) {
-              Node assignedNode = nodeList.get(i % nodeList.size());
+            for (int i = 0; i < request.getCountReplicasToCreate(replicaType); i++) {
+              Node assignedNode = nodeList.get(replicaNumOfShard++ % nodeList.size());
 
               replicaPlacements.add(placementContext.getPlacementPlanFactory().createReplicaPlacement(request.getCollection(), shard, assignedNode, replicaType));
 
-              i++;
               ReplicaCount replicaCount = nodeVsShardCount.computeIfAbsent(assignedNode, ReplicaCount::new);
               replicaCount.totalReplicas++;
               replicaCount.collectionReplicas.merge(request.getCollection().getName(), 1, Integer::sum);

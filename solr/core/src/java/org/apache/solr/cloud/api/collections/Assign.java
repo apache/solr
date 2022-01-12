@@ -467,13 +467,12 @@ public class Assign {
    * {@link PlacementPluginAssignStrategy} will be used.</p>
    */
   public static AssignStrategy createAssignStrategy(CoreContainer coreContainer) {
+    // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin)
     PlacementPlugin placementPlugin = coreContainer.getPlacementPluginFactory().createPluginInstance();
-    if (placementPlugin != null) {
-      // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin)
-      return new PlacementPluginAssignStrategy(placementPlugin);
-    } else {
-      DefaultPlacementFactory defaultPlacementFactory = new DefaultPlacementFactory();
-      return new PlacementPluginAssignStrategy(defaultPlacementFactory.createPluginInstance());
+    if (placementPlugin == null) {
+      // Otherwise use the default
+      placementPlugin = (new DefaultPlacementFactory()).createPluginInstance();
     }
+    return new PlacementPluginAssignStrategy(placementPlugin);
   }
 }
