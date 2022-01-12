@@ -46,7 +46,7 @@ version = {
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
   return propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
 }()
-description = 'Grandparent project for Apache Lucene Core and Apache Solr'
+description = 'Grandparent project for Apache Solr'
 
 // Propagate version and derived properties across projects.
 allprojects {
@@ -81,8 +81,6 @@ ext {
 
   minJavaVersion = JavaVersion.VERSION_11
 
-  luceneBaseVersion = '9.0.0' // TODO: Use org.apache.lucene.util.Version.LATEST.toString()
-
   // Declare script dependency versions outside of palantir's
   // version unification control. These are not our main dependencies.
   scriptDepVersions = [
@@ -100,6 +98,17 @@ ext {
     def resolved = propertyOrDefault("${name}.exe", name as String)
     logger.info("External tool '${name}' resolved to: ${resolved}")
     return resolved
+  }
+  
+  luceneBaseVersionProvider = project.provider { 
+    def luceneVersion = getVersion('org.apache.lucene:lucene-core')
+    def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
+    if (!m) {
+      throw GradleException("Can't strip base version from " + luceneVersion)
+    }
+    def luceneBaseVersion = m[0]
+    logger.debug('Lucene base version (without suffix): {}', luceneBaseVersion)
+    return luceneBaseVersion
   }
 }
 
