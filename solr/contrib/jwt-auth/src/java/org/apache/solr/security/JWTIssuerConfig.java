@@ -428,8 +428,8 @@ public class JWTIssuerConfig {
   }
 
   /**
-   * Config object for a OpenId Connect well-known config Typically exposed through
-   * /.well-known/openid-configuration endpoint
+   * Config object for a OpenId Connect well-known config.
+   * <p>Typically exposed through <code>/.well-known/openid-configuration endpoint</code></p>
    */
   public static class WellKnownDiscoveryConfig {
     private final Map<String, Object> securityConf;
