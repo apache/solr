@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Strings;
@@ -82,7 +83,7 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
 
     if(apply) {
-      return new RawTransformer( field, display );
+      return new RawTransformer( field, display, false );
     }
     
     if (field.equals(display)) {
@@ -115,11 +116,13 @@ public class RawValueTransformerFactory extends TransformerFactory
   {
     final String field;
     final String display;
+    final boolean copy;
 
-    public RawTransformer( String field, String display )
+    public RawTransformer( String field, String display, boolean copy )
     {
       this.field = field;
       this.display = display;
+      this.copy = copy;
     }
 
     @Override
@@ -130,9 +133,30 @@ public class RawValueTransformerFactory extends TransformerFactory
 
     @Override
     public void transform(SolrDocument doc, int docid) {
-      Object val = doc.remove(field);
+      Object val = copy ? doc.get(field) : doc.remove(field);
       if(val != null) {
         doc.setField(display, val);
+      }
+    }
+
+    @Override
+    public DocTransformer replaceIfNecessary(Map<String, String> renamedFields, Set<String> reqFieldNames) {
+      String replaceFrom;
+      assert !copy; // we should only ever be initially constructed in a context where `copy=false` is assumed
+      if (display.equals(field)) {
+        // nobody should be renaming us
+        assert !renamedFields.containsKey(field);
+        return null;
+      } else if ((replaceFrom = renamedFields.get(field)) != null) {
+        // someone else is renaming the `from` field, so use the new name
+        // the other party must also be _using_ the result field, so we must now _copy_ (not rename)
+        return new RenameFieldTransformer(replaceFrom, display, true);
+      } else if (reqFieldNames.contains(field)) {
+        // someone else requires our `from` field, so we have to copy, not replace
+        return new RenameFieldTransformer(field, display, true);
+      } else {
+        renamedFields.put(field, display);
+        return null;
       }
     }
 

@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -173,16 +174,20 @@ public class SolrReturnFields extends ReturnFields {
     for (String fieldList : fl) {
       add(fieldList,rename,augmenters,req);
     }
+    List<RenameFieldTransformer> deferredRenameAugmenters = new ArrayList<>(rename.size());
+    Map<String, String> renamedNotCopied = new HashMap<>();
     for( int i=0; i<rename.size(); i++ ) {
       String from = rename.getName(i);
       String to = rename.getVal(i);
       okFieldNames.add( to );
       boolean copy = (reqFieldNames!=null && reqFieldNames.contains(from));
       if(!copy) {
+        renamedNotCopied.put(from, to);
         // Check that subsequent copy/rename requests have the field they need to copy
         for(int j=i+1; j<rename.size(); j++) {
           if(from.equals(rename.getName(j))) {
             rename.setName(j, to); // copy from the current target
+            // TODO: below should be unnecessary? replace with `assert reqFieldNames.contains(to);`?
             if(reqFieldNames==null) {
               reqFieldNames = new LinkedHashSet<>();
             }
@@ -190,7 +195,12 @@ public class SolrReturnFields extends ReturnFields {
           }
         }
       }
-      augmenters.addTransformer( new RenameFieldTransformer( from, to, copy ) );
+      deferredRenameAugmenters.add(new RenameFieldTransformer( from, to, copy ));
+    }
+    augmenters.replaceIfNecessary(renamedNotCopied, reqFieldNames); // don't need to re-check those done above
+    for (RenameFieldTransformer t : deferredRenameAugmenters) {
+      // now add the "normal path" renames
+      augmenters.addTransformer(t);
     }
     if (rename.size() > 0 ) {
       renameFields = rename.asShallowMap();

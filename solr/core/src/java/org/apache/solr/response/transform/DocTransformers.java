@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.response.ResultContext;
@@ -47,6 +50,18 @@ public class DocTransformers extends DocTransformer
     }
     str.append( "]" );
     return str.toString();
+  }
+
+  public DocTransformer replaceIfNecessary(Map<String, String> renamedFields, Set<String> reqFieldNames) {
+    ListIterator<DocTransformer> iter = children.listIterator();
+    while (iter.hasNext()) {
+      DocTransformer next = iter.next();
+      DocTransformer replaceNext = next.replaceIfNecessary(renamedFields, reqFieldNames);
+      if (replaceNext != null) {
+        iter.set(replaceNext);
+      }
+    }
+    return null;
   }
 
   public void addTransformer( DocTransformer a ) {
