@@ -45,8 +45,6 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     super(writer, req, rsp, getRawFields(req, rsp, "json"));
     this.wrapperFunction = wrapperFunction;
     this.namedListStyle = namedListStyle;
-    final String wt = req.getParams().get(CommonParams.WT);
-    final ReturnFields topLevelReturnFields = rsp.getReturnFields();
   }
   private JSONWriter(Writer writer, boolean indent, String namedListStyle) throws IOException {
     super(writer, indent);
