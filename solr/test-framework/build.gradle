@@ -33,6 +33,7 @@ dependencies {
   }
 
   implementation('org.apache.zookeeper:zookeeper', zkExcludes)
+  // TODO investigate java-test-fixtures plugin?
   implementation('org.apache.zookeeper:zookeeper:3.7.0:tests', zkExcludes)
 
   implementation 'commons-io:commons-io'
