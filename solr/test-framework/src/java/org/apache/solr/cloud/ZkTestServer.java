@@ -446,6 +446,7 @@ public class ZkTestServer {
     configuration.setProperty("tickTime", String.valueOf(theTickTime));
     configuration.setProperty("maxSessionTimeout", String.valueOf(maxSessionTimeout));
     configuration.setProperty("minSessionTimeout", String.valueOf(minSessionTimeout));
+    configuration.setProperty("admin.enableServer", Boolean.FALSE.toString());
 
     Files.createDirectories(zkDir);
     try {
