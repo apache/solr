@@ -21,7 +21,6 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -43,8 +42,6 @@ import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.lang.JoseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Holds information about an IdP (issuer), such as issuer ID, JWK url(s), keys etc */
 public class JWTIssuerConfig {
