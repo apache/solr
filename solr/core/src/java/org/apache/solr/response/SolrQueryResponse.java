@@ -222,7 +222,6 @@ public class SolrQueryResponse {
     return toLog;
   }
 
-  /** @see #getToLogAsString(String) */
   public String getToLogAsString() {
     return getToLogAsString("");
   }
