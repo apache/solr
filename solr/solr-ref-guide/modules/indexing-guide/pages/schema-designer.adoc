@@ -197,7 +197,7 @@ If you need to change the text analysis strategy for a field, you need to edit t
 The *Query Tester* panel lets you experiment with queries executed against your sample document set using the current schema.
 
 Using the Query Tester, you can see how changes to the schema impact the behavior of queries, such as matching, sorting, faceting, and highlighting.
-The Query Tester form is not intended to demonstrate all possible xref:query-guide.adoc[query features] available in Solr.
+The Query Tester form is not intended to demonstrate all possible query features available in Solr.
 
 image::schema-designer/query-tester.png[image]
 

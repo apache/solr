@@ -330,8 +330,9 @@ Solr will run in xref:indexing-guide:schemaless-mode.adoc[] with this configurat
 +
 The configset used can be found in `$SOLR_HOME/server/solr/configsets/_default`.
 
-* *films*: This example starts a single-node Solr instance using a managed schema, as described in the section <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>>, and then uses the Schema API to create some custom fields.
-Solr will run in <<schemaless-mode.adoc#,Schemaless Mode>> with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents as well.  It then loads some sample film data.
+* *films*: This example starts a single-node Solr instance using a managed schema, as described in the section xref:configuration-guide:schema-factory.adoc[], and then uses the Schema API to create some custom fields.
+Solr will run in xref:indexing-guide:schemaless-mode.adoc[] with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents as well.
+It then loads some sample film data.
 +
 The configset used can be found in `$SOLR_HOME/server/solr/configsets/_default`.
 +

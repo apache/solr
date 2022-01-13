@@ -186,7 +186,7 @@ See also <<solrclouddef,SolrCloud>>.
 [[solrclouddef]]xref:deployment-guide:cluster-types.adoc#solrcloud-mode[SolrCloud]::
 Umbrella term for a suite of functionality in Solr which allows managing a <<cluster,Cluster>> of Solr <<node,Nodes>> for scalability, fault tolerance, and high availability.
 
-[[schema]]xref:indexing-guide:solr-schema.adoc[Solr Schema (managed-schema.xml or schema.xml)]::
+[[schema]]xref:indexing-guide:schema-elements.adoc[Solr Schema (managed-schema.xml or schema.xml)]::
 The Solr index Schema defines the fields to be indexed and the type for the field (text, integers, etc.).
 By default schema data can be "managed" at run time using the xref:indexing-guide:schema-api.adoc[] and is typically kept in a file named `managed-schema.xml` which Solr modifies as needed, but a collection may be configured to use a static Schema, which is only loaded on startup from a human edited configuration file - typically named `schema.xml`.
 See xref:configuration-guide:schema-factory.adoc[] for details.

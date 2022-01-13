@@ -31,7 +31,7 @@ The xref:indexing-guide:schema-elements.adoc[] has more details on these options
 Solr offers support for the simplest keyword searching through to complex queries on multiple fields and faceted search results.
 Collapsing and clustering results offer compelling features for e-commerce and storefronts.
 Powerful math expressions provide the backbone for advanced analytics use cases.
-The xref:query-guide:query-guide.adoc[] has more information about searching and queries.
+The xref:query-guide:query-syntax-and-parsers.adoc[] has more information about searching and queries.
 
 If Solr's capabilities are not impressive enough, its ability to handle very high-volume applications should do the trick.
 
