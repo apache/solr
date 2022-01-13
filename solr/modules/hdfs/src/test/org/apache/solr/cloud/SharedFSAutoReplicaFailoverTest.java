@@ -61,7 +61,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;

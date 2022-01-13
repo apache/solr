@@ -25,15 +25,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -120,7 +117,6 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
   private static final boolean TRACE_HTTP = Boolean.getBoolean("hadoopauth.tracehttp");
 
   private AuthenticationFilter authFilter;
-  private final Locale defaultLocale = Locale.getDefault();
   protected final CoreContainer coreContainer;
   private boolean delegationTokenEnabled;
 
@@ -132,20 +128,7 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
   public void init(Map<String,Object> pluginConfig) {
     try {
       delegationTokenEnabled = Boolean.parseBoolean((String) pluginConfig.get(DELEGATION_TOKEN_ENABLED_PROPERTY));
-      authFilter = delegationTokenEnabled ? new HadoopAuthFilter() : new AuthenticationFilter() {
-        @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
-          // A hack until HADOOP-15681 get committed
-          Locale.setDefault(Locale.US);
-          super.doFilter(request, response, filterChain);
-        }
-
-        @Override
-        protected void doFilter(FilterChain filterChain, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-          Locale.setDefault(defaultLocale);
-          super.doFilter(filterChain, request, response);
-        }
-      };
+      authFilter = delegationTokenEnabled ? new HadoopAuthFilter() : new AuthenticationFilter();
 
       // Initialize kerberos before initializing curator instance.
       boolean initKerberosZk = Boolean.parseBoolean((String)pluginConfig.getOrDefault(INIT_KERBEROS_ZK, "false"));

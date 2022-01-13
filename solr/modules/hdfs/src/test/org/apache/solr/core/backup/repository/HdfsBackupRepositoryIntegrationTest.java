@@ -34,7 +34,7 @@ import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.HdfsDirectoryFactory;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -42,7 +42,7 @@ import org.junit.BeforeClass;
 @ThreadLeakFilters(defaultFilters = true, filters = {
         BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-@ThreadLeakLingering(linger = 10)
+@ThreadLeakLingering(linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class HdfsBackupRepositoryIntegrationTest extends AbstractBackupRepositoryTest {
     private static MiniDFSCluster dfsCluster;
     private static String hdfsUri;

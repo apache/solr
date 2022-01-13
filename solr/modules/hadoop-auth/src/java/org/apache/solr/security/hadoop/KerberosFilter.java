@@ -19,13 +19,10 @@ package org.apache.solr.security.hadoop;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
-import java.util.Locale;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
@@ -40,9 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class KerberosFilter extends AuthenticationFilter {
-
-  private final Locale defaultLocale = Locale.getDefault();
-  
   private final CoreContainer coreContainer;
 
   public KerberosFilter(CoreContainer coreContainer) {
@@ -72,8 +66,6 @@ public class KerberosFilter extends AuthenticationFilter {
   @Override
   protected void doFilter(FilterChain filterChain, HttpServletRequest request,
       HttpServletResponse response) throws IOException, ServletException {
-    Locale.setDefault(defaultLocale);
-
     request = substituteOriginalUserRequest(request);
 
     super.doFilter(filterChain, request, response);
@@ -117,13 +109,5 @@ public class KerberosFilter extends AuthenticationFilter {
       }
     }
     return request;
-  }
-
-  @Override
-  public void doFilter(ServletRequest request, ServletResponse response,
-      FilterChain filterChain) throws IOException, ServletException {
-    // A hack until HADOOP-15681 get committed
-    Locale.setDefault(Locale.US);
-    super.doFilter(request, response, filterChain);
   }
 }

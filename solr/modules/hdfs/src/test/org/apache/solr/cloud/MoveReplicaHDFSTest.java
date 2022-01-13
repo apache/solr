@@ -27,7 +27,7 @@ import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

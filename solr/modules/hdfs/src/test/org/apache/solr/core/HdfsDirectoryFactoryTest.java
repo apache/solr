@@ -46,7 +46,7 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.store.hdfs.HdfsLocalityReporter;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -59,7 +59,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-@ThreadLeakLingering(linger = 10)
+@ThreadLeakLingering(linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   private static MiniDFSCluster dfsCluster;
   

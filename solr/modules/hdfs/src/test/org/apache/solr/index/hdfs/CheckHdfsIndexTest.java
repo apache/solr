@@ -33,7 +33,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.store.hdfs.HdfsDirectory;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

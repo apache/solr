@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -56,7 +55,6 @@ import org.apache.zookeeper.data.ACL;
  */
 public class DelegationTokenKerberosFilter extends DelegationTokenAuthenticationFilter {
   private CuratorFramework curatorFramework;
-  private final Locale defaultLocale = Locale.getDefault();
 
   @Override
   public void init(FilterConfig conf) throws ServletException {
@@ -101,7 +99,6 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
       @Override
       public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse)
           throws IOException, ServletException {
-        Locale.setDefault(defaultLocale);
         HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
 
         UserGroupInformation ugi = HttpUserGroupInformation.get();
@@ -115,8 +112,6 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
       }
     };
 
-    // A hack until HADOOP-15681 get committed
-    Locale.setDefault(Locale.US);
     super.doFilter(request, response, filterChainWrapper);
   }
 
