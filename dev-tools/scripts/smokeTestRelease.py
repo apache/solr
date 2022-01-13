@@ -627,10 +627,8 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
       java.run_java17('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
       print("    compile jars w/ Java 17")
       java.run_java17('./gradlew --no-daemon jar -Dversion.release=%s' % version, '%s/compile.log' % unpackPath)
-      testDemo(java.run_java17, isSrc, version, '17')
 
   else:
-
     checkAllJARs(os.getcwd(), gitRevision, version)
 
     print('    copying unpacked distribution for Java 11 ...')
