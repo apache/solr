@@ -136,6 +136,8 @@ for BRANCH in "${BRANCHES[@]}"; do
   fi
   if [[ ! "$NOPULL" ]]; then
     # shellcheck disable=SC2086
+    $GIT_COMMAND fetch $REMOTE
+    # shellcheck disable=SC2086
     $GIT_COMMAND pull --ff-only $REMOTE
   else
     LOG INFO "Skipping git pull"
