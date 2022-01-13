@@ -357,7 +357,29 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         throw new IllegalStateException();
     }
   }
-  
+
+  private static final ResponseParser RAW_XML_RESPONSE_PARSER = new NoOpResponseParser();
+  private static final ResponseParser RAW_JSON_RESPONSE_PARSER = new NoOpResponseParser() {
+    @Override
+    public String getWriterType() {
+      return "json";
+    }
+  };
+
+  private static ResponseParser modifyParser(HttpSolrClient client, final String wt) {
+    final ResponseParser ret = client.getParser();
+    switch (wt) {
+      case "xml":
+        client.setParser(RAW_XML_RESPONSE_PARSER);
+        return ret;
+      case "json":
+        client.setParser(RAW_JSON_RESPONSE_PARSER);
+        return ret;
+      default:
+        return null;
+    }
+  }
+
   /**
    * Does one or more RTG request for the specified docIds with a randomized fl &amp; fq params, asserting
    * that the returned document (if any) makes sense given the expected SolrInputDocuments
@@ -418,25 +440,13 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
 
     String wt = params.get(CommonParams.WT, "javabin");
-    ResponseParser restoreResponseParser = null;
+    final ResponseParser restoreResponseParser;
     if (client instanceof HttpSolrClient) {
-      switch (wt) {
-        case "xml":
-        case "json":
-          HttpSolrClient hsc = (HttpSolrClient) client;
-          restoreResponseParser = hsc.getParser();
-          final String setWt = wt;
-          hsc.setParser(new NoOpResponseParser() {
-            @Override
-            public String getWriterType() {
-              return setWt;
-            }
-          });
-          break;
-      }
+      restoreResponseParser = modifyParser((HttpSolrClient) client, wt);
     } else {
-      // `wt` doesn't matter -- it'll always be binary.
+      // unless HttpSolrClient, `wt` doesn't matter -- it'll always be binary.
       wt = "javabin";
+      restoreResponseParser = null;
     }
 
     final Object rsp;
