@@ -23,9 +23,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -41,6 +39,7 @@ import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.embedded.ExitHandler;
 import org.apache.zookeeper.server.embedded.ZooKeeperServerEmbedded;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
+import org.apache.zookeeper.test.ClientBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +49,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
-import java.net.ConnectException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -63,7 +61,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 public class ZkTestServer {
 
@@ -310,7 +307,7 @@ public class ZkTestServer {
           try {
             int port = cnxnFactory.getLocalPort();
             if (port > 0) {
-              waitForServerDown(getZkHost(), 30000);
+              ClientBase.waitForServerDown(getZkHost(), 30_000);
             }
           } catch (NullPointerException ignored) {
             // server never successfully started
@@ -477,7 +474,7 @@ public class ZkTestServer {
       throw new RuntimeException("Failed to start embedded ZK Server", e);
     }
 
-    waitForServerUp(getZkHost(), 30000);
+    ClientBase.waitForServerUp(getZkHost(), 30_000);
     try {
       init(solrFormat);
     } catch (Exception e) {
@@ -495,73 +492,12 @@ public class ZkTestServer {
     ObjectReleaseTracker.release(this);
   }
 
-  public static boolean waitForServerDown(String hp, long timeoutMs) {
-    log.info("waitForServerDown: {}", hp);
-    final TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    while (true) {
-      try {
-        HostPort hpobj = parseHostPortList(hp).get(0);
-        send4LetterWord(hpobj.host, hpobj.port, "stat");
-      } catch (IOException e) {
-        return true;
-      }
-
-      if (timeout.hasTimedOut()) {
-        throw new RuntimeException("Time out waiting for ZooKeeper shutdown!");
-      }
-      try {
-        Thread.sleep(250);
-      } catch (InterruptedException e) {
-        // ignore
-      }
-    }
-  }
-
-  public static boolean waitForServerUp(String hp, long timeoutMs) {
-    log.info("waitForServerUp: {}", hp);
-    final TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    while (!timeout.hasTimedOut()) {
-      try {
-        HostPort hpobj = parseHostPortList(hp).get(0);
-        send4LetterWord(hpobj.host, hpobj.port, "stat");
-        return true;
-      } catch (ConnectException e) {
-        if (log.isInfoEnabled()) {
-          log.info("Server is not up yet? Exception: {}", e.getMessage());
-        }
-      } catch (IOException e) {
-        log.info("Failed to connect, will retry: ", e);
-      }
-
-      try {
-        Thread.sleep(250);
-      } catch (InterruptedException e) {
-        // ignore
-      }
-    }
-
-    // better would be return false or TimeOutException but let's keep the old behaviour for now
-    throw new RuntimeException("Time out waiting for ZooKeeper to startup!");
-  }
-
-  public static class HostPort {
-    String host;
-    int port;
-
-    HostPort(String host, int port) {
-      assert !host.contains(":") : host;
-      this.host = host;
-      this.port = port;
-    }
-  }
-
   /**
    * Send the 4letterword
    * @param host the destination host
    * @param port the destination port
    * @param cmd the 4letterword
    * @return server response
-
    */
   public static String send4LetterWord(String host, int port, String cmd)
           throws IOException
@@ -588,23 +524,6 @@ public class ZkTestServer {
         reader.close();
       }
     }
-  }
-
-  public static List<HostPort> parseHostPortList(String hplist) {
-    log.info("parse host and port list: {}", hplist);
-    ArrayList<HostPort> alist = new ArrayList<>();
-    for (String hp : hplist.split(",")) {
-      int idx = hp.lastIndexOf(':');
-      String host = hp.substring(0, idx);
-      int port;
-      try {
-        port = Integer.parseInt(hp.substring(idx + 1));
-      } catch (RuntimeException e) {
-        throw new RuntimeException("Problem parsing " + hp + e.toString());
-      }
-      alist.add(new HostPort(host, port));
-    }
-    return alist;
   }
 
   public int getTheTickTime() {
