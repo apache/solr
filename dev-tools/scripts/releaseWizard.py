@@ -69,6 +69,9 @@ from scriptutil import BranchType, Version, download, run
 # Solr-to-Java version mapping
 java_versions = {6: 8, 7: 8, 8: 8, 9: 11, 10: 11}
 editor = None
+state = None
+templates = None
+solr_news_file = None
 
 # Edit this to add other global jinja2 variables or filters
 def expand_jinja(text, vars=None):
@@ -1279,9 +1282,8 @@ class UpdatableSubmenuItem(SubmenuItem):
         """
         :ivar ConsoleMenu self.submenu: The submenu to be opened when this item is selected
         """
-        super(SubmenuItem, self).__init__(text=text, menu=menu, should_exit=should_exit)
+        super(UpdatableSubmenuItem, self).__init__(text=text, menu=menu, should_exit=should_exit, submenu=submenu)
 
-        self.submenu = submenu
         if menu:
             self.get_submenu().parent = menu
 
