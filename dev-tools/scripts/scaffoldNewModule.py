@@ -147,6 +147,8 @@ def scaffold_folder(module_name, module_full_name, module_folder, module_descrip
   update_build(os.path.join('settings.gradle'),
                r'include "solr:contrib:extraction"',
                'include "solr:contrib:%s"\n' % module_name)
+  print("Adding new files to git")
+  run("git add %s" % module_folder)
 
 def main():
   conf = read_config()
