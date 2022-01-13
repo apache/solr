@@ -80,6 +80,10 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
         into "lib"
       })
 
+      from (tasks.jar, {
+        into "lib"
+      })
+
       from ({
         def projectLibs = configurations.runtimeLibs.copyRecursive { dep ->
           (dep instanceof org.gradle.api.artifacts.ProjectDependency)
