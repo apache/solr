@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.logging.LogWatcherConfig;
 
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -206,7 +208,16 @@ public class NodeConfig {
     return solrDataHome;
   }
 
-  /** 
+  /**
+   * Obtain the path of solr's binary installation directory, e.g. <code>/opt/solr</code>
+   * @return path to install dir, or null if property 'solr.install.dir' has not been initialized
+   */
+  public Path getSolrInstallDir() {
+    String prop = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    return prop != null ? Paths.get(prop) : null;
+  }
+
+  /**
    * If null, the lucene default will not be overridden
    *
    * @see IndexSearcher#setMaxClauseCount

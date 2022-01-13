@@ -671,6 +671,10 @@ public class CoreContainer {
     // Always add $SOLR_HOME/lib to the shared resource loader
     Set<String> libDirs = new LinkedHashSet<>();
     libDirs.add("lib");
+    // Always add $SOLR_TIP/lib to the shared resource loader, to allow loading of i.e. /opt/solr/lib/foo.jar
+    if (cfg.getSolrInstallDir() != null) {
+      libDirs.add(cfg.getSolrInstallDir().resolve("lib").toAbsolutePath().normalize().toString());
+    }
 
     if (!StringUtils.isBlank(cfg.getSharedLibDirectory())) {
       List<String> sharedLibs = Arrays.asList(cfg.getSharedLibDirectory().split("\\s*,\\s*"));

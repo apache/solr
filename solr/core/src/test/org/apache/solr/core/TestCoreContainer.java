@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -48,6 +49,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.SAXParseException;
 
+import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
@@ -417,6 +419,30 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cc4.loader.openResource("jar3File").close();
     } finally {
       cc4.shutdown();
+    }
+  }
+
+  @Test
+  public void testSolrInstallDir() throws Exception {
+    Path installDirPath = createTempDir("solrInstallDirTest").toAbsolutePath().normalize();
+    Files.createDirectories(installDirPath.resolve("lib"));
+    try (JarOutputStream jar1 = new JarOutputStream(new FileOutputStream(installDirPath.resolve("lib").resolve("jar1.jar").toFile()))) {
+      jar1.putNextEntry(new JarEntry("solrInstallDirLibResource"));
+      jar1.closeEntry();
+    }
+
+    System.setProperty(SOLR_INSTALL_DIR_ATTRIBUTE, installDirPath.toString());
+
+    final CoreContainer cores = init(CONFIGSETS_SOLR_XML);
+    try {
+      Path solrInstallDir = cores.getConfig().getSolrInstallDir();
+      assertTrue("solrInstallDir was " + solrInstallDir,
+          solrInstallDir != null &&
+          installDirPath.toString().equals(cores.getConfig().getSolrInstallDir().toString()));
+      // Proves that <solr-install-dir>/lib/jar1.jar is found, and the resource inside available
+      assertNotNull(cores.getResourceLoader().openResource("solrInstallDirLibResource"));
+    } finally {
+      cores.shutdown();
     }
   }
 
