@@ -41,7 +41,7 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -63,7 +63,7 @@ import java.util.concurrent.TimeUnit;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-@ThreadLeakLingering(linger = 10)
+@ThreadLeakLingering(linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
   private static final String DELETE_DATA_DIR_COLLECTION = "delete_data_dir";
   private static MiniDFSCluster dfsCluster;

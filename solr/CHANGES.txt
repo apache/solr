@@ -598,6 +598,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-15943: Simplify HDFS cache to account for LUCENE-10366 / LUCENE-10376 (Kevin Risden)
 
+* SOLR-15942: Upgrade Hadoop to 3.3.1 (Kevin Risden)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
