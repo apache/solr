@@ -23,6 +23,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -61,6 +62,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ZkTestServer {
 
@@ -438,19 +441,17 @@ public class ZkTestServer {
 
     if (clientPort == 0) {
       // Hacks to get PortAssignment to work with our test runner partitioning
+/*
       String processCount = System.getProperty("tests.jvms", "1");
+      System.setProperty("test.junit.threads", processCount);
+
       String cmdLine = System.getProperty("sun.java.command"); // worker.org.gradle.process.internal.worker.GradleWorkerMain 'Gradle Test Executor 2'
-      cmdLine = cmdLine.replace("Executor ", "threadid=");
-      try {
-        // We can set up the port range ourselves
-        Method setupPortRange = PortAssignment.class.getDeclaredMethod("setupPortRange", String.class, String.class);
-        setupPortRange.setAccessible(true);
-        setupPortRange.invoke(null, processCount, cmdLine);
-      } catch (Exception e) {
-        // Or set system properties and hope that will work properly
-        // System.setProperty("test.junit.threads", processCount);
-        System.setProperty("zookeeper.junit.threadid", cmdLine);
+      System.getProperties().forEach((k,v) -> log.info("{}={}", k, v));
+      Matcher m = Pattern.compile("Executor (\\d+)").matcher(cmdLine);
+      if (m.find()) {
+        System.setProperty("zookeeper.junit.threadid", m.group(1));
       }
+*/
 
       clientPort = PortAssignment.unique();
     }
