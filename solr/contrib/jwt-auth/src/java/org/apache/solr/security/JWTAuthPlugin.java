@@ -16,7 +16,6 @@
  */
 package org.apache.solr.security;
 
-import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -102,8 +101,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   @Deprecated(since = "9.0") // Remove in 10.0
   private static final String PARAM_ALG_WHITELIST = "algWhitelist";
 
-  private static final ImmutableSet<String> PROPS =
-      ImmutableSet.of(
+  private static final Set<String> PROPS =
+      Set.of(
           PARAM_BLOCK_UNKNOWN,
           PARAM_PRINCIPAL_CLAIM,
           PARAM_REQUIRE_EXPIRATIONTIME,
