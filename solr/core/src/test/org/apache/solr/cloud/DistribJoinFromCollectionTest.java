@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -65,7 +64,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
   
   @BeforeClass
   public static void setupCluster() throws Exception {
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_COLL1_CONF();
 
     String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;
