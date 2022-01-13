@@ -33,7 +33,6 @@ dependencies {
     implementation ('com.google.auth:google-auth-library-oauth2-http') { exclude group: 'com.google.guava', module: 'guava' }
     implementation ('com.google.auth:google-auth-library-credentials') { transitive = false }
     implementation ('org.threeten:threetenbp') { transitive = false }
-    implementation 'org.slf4j:slf4j-api'
 
     implementation('com.google.apis:google-api-services-storage') { transitive = false }
     implementation('com.google.api-client:google-api-client') { exclude group: 'com.google.guava', module: 'guava' }

@@ -28,7 +28,6 @@ dependencies {
   implementation 'com.cybozu.labs:langdetect'
   implementation 'net.arnx:jsonic'
   implementation 'org.apache.opennlp:opennlp-tools'
-  implementation 'org.slf4j:slf4j-api'
 
   testImplementation project(':solr:test-framework')
 }

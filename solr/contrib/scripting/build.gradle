@@ -23,7 +23,6 @@ dependencies {
   implementation project(':solr:core')
   implementation 'commons-io:commons-io'
   implementation ('com.google.guava:guava') { transitive = false }
-  implementation 'org.slf4j:slf4j-api'
 
   testImplementation project(':solr:test-framework')
 }

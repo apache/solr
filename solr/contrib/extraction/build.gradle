@@ -69,7 +69,6 @@ dependencies {
   implementation ('com.epam:parso') { transitive = false }
   implementation ('org.brotli:dec') { transitive = false }
   implementation ('xerces:xercesImpl') { transitive = false }
-  implementation 'org.slf4j:slf4j-api'
 
   implementation ('com.ibm.icu:icu4j')
 

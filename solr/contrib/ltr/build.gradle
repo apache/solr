@@ -24,7 +24,6 @@ dependencies {
 
   implementation 'commons-io:commons-io'
   implementation "org.apache.lucene:lucene-analysis-common"
-  implementation 'org.slf4j:slf4j-api'
 
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"

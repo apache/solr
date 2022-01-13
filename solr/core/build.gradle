@@ -38,6 +38,9 @@ dependencies {
   api "org.apache.lucene:lucene-analysis-common"
   api "org.apache.lucene:lucene-queries"
 
+  // We export logging api with dependencies, which is useful for all contribs
+  api 'org.slf4j:slf4j-api'
+
   api project(':solr:solrj')
   api project(':solr:server')
 
@@ -69,8 +72,6 @@ dependencies {
   runtimeOnly 'commons-collections:commons-collections' // for Hadoop and...?
 
   implementation('com.github.ben-manes.caffeine:caffeine') { transitive = false }
-
-  implementation 'org.slf4j:slf4j-api'
 
   implementation 'commons-codec:commons-codec'
 
