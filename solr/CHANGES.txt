@@ -501,6 +501,8 @@ Bug Fixes
 
 * SOLR-15854: Let RealtimeGet component support negative filters (Tomás Fernández Löbbe)
 
+* SOLR-15919: Replace File with Path for many ZK operations (Mike Drob)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
