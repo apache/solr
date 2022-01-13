@@ -1347,7 +1347,7 @@ class MyScreen(Screen):
 
 class CustomExitItem(ExitItem):
     def show(self, index):
-        return super(ExitItem, self).show(index)
+        return super(CustomExitItem, self).show(index)
 
     def get_return(self):
         return ""
