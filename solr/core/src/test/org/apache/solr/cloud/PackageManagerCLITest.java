@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.LogLevel;
@@ -38,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LogLevel("org.apache=INFO")
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15902")
 public class PackageManagerCLITest extends SolrCloudTestCase {
 
   // Note for those who want to modify the jar files used in the packages used in this test:
@@ -71,7 +73,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   @Test
   public void testPackageManager() throws Exception {
     PackageTool tool = new PackageTool();
-    
+
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
@@ -123,10 +125,10 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       }
       assertPackageVersion("abc", "question-answer", "1.1.0", rhPath, "1.1.0");
     }
-    
+
     log.info("Running undeploy...");
     run(tool, new String[] {"-solrUrl", solrUrl, "undeploy", "question-answer", "-collections", "abc"});
-    
+
     run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
 
   }
