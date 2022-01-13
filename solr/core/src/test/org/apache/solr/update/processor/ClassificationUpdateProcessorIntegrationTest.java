@@ -86,16 +86,13 @@ public class ClassificationUpdateProcessorIntegrationTest extends SolrTestCaseJ4
   @Test
   public void classify_unsupportedFilterQueryConfiguration_shouldThrowExceptionWithDetailedMessage() throws Exception {
     indexTrainingSet();
-    addDoc(adoc(ID, "21",
+    SolrException e = assertThrows(SolrException.class, () -> addDoc(
+        adoc(ID, "21",
         TITLE, "word4 word4 word4",
         CONTENT, "word5 word5 ",
-        AUTHOR, "Name1 Surname1"), BROKEN_CHAIN_FILTER_QUERY);
-    addDoc(adoc(ID, "22",
-        TITLE, "word1 word1",
-        CONTENT, "word2 word2",
-        AUTHOR, "Name Surname"), BROKEN_CHAIN_FILTER_QUERY);
-    SolrException e = assertThrows(SolrException.class, () -> addDoc(commit()));
+        AUTHOR, "Name1 Surname1"), BROKEN_CHAIN_FILTER_QUERY));
     assertEquals("Classification UpdateProcessor Training Filter Query: 'not valid ( lucene query' is not supported", e.getMessage());
+    addDoc(commit());
   }
 
   /**
