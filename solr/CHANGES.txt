@@ -229,6 +229,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
 
+* SOLR-15209: The old LegacyAssignStrategy has been refactored into the SimplePlacementPlugin. This is still the default
+  placement policy for Solr. (Houston Putman, Ilan Ginzburg)
+
 Build
 ---------------------
 
