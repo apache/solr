@@ -33,7 +33,7 @@ import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -43,7 +43,7 @@ import org.junit.BeforeClass;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class
 })
-@ThreadLeakLingering(linger = 10)
+@ThreadLeakLingering(linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class HdfsCloudIncrementalBackupTest extends AbstractIncrementalBackupTest{
     public static final String SOLR_XML = "<solr>\n" +
             "\n" +

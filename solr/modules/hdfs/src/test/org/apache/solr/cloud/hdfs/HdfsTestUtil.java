@@ -45,7 +45,6 @@ import org.apache.hadoop.hdfs.MiniDFSNNTopology;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeResourceChecker;
 import org.apache.hadoop.hdfs.server.namenode.ha.HATestUtil;
-import org.apache.hadoop.http.HttpServer2;
 import org.apache.hadoop.io.nativeio.NativeIO;
 import org.apache.hadoop.metrics2.MetricsSystem;
 import org.apache.hadoop.metrics2.impl.MetricsSystemImpl;
@@ -123,7 +122,6 @@ public class HdfsTestUtil {
         DiskChecker.class,
         FileUtil.class,
         HardLink.class,
-        HttpServer2.class,
         NameNodeResourceChecker.class,
         RawLocalFileSystem.class));
     // Dodge weird scope errors from the compiler (SOLR-14417)
@@ -180,6 +178,8 @@ public class HdfsTestUtil {
     // Disable metrics logging for HDFS
     conf.setInt("dfs.namenode.metrics.logger.period.seconds", 0);
     conf.setInt("dfs.datanode.metrics.logger.period.seconds", 0);
+    // Disable GcTimeMonitor - HDFS-15176 introduced in Hadoop 3.3.0 - causes thead leaks
+    conf.setBoolean("dfs.namenode.gc.time.monitor.enable", false);
 
     System.setProperty("test.build.data", dir + File.separator + "hdfs" + File.separator + "build");
     System.setProperty("test.cache.data", dir + File.separator + "hdfs" + File.separator + "cache");

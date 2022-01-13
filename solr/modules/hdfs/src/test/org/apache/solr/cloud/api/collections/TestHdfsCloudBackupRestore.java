@@ -48,7 +48,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.repository.HdfsBackupRepository;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -68,7 +68,7 @@ import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-@ThreadLeakLingering(linger = 30)
+@ThreadLeakLingering(linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   public static final String SOLR_XML = "<solr>\n" +
       "\n" +

@@ -45,7 +45,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.ShardBackupId;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,7 +66,7 @@ import java.util.Map;
 })
 @SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test
 @LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
-@ThreadLeakLingering(linger = 40)
+@ThreadLeakLingering(linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
   public static final String HDFS_REPO_SOLR_XML = "<solr>\n" +
       "\n" +
