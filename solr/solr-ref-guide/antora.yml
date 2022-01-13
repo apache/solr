@@ -21,7 +21,6 @@ asciidoc:
     idprefix: ''
     solr-javadocs: https://solr.apache.org/docs/9_0_0/
     lucene-javadocs: https://lucene.apache.org/core/9_0_0/
-    solr-root-path: /Users/cass/solr-repos/solr-fork/solr/
     java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
     # Hardcode some version attributes for now TODO
     # This will make some constructed links be 404 since they aren't parsed
