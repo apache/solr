@@ -93,6 +93,9 @@ It is described in more detail in the section <<taking-solr-to-production.adoc#,
 contrib/::
 Solr's `contrib` directory includes add-on plugins for specialized features of Solr.
 
+lib/::
+Optional folder (does not exist on install) where Solr will look for additional plugin jar files.
+
 dist/::
 The `dist` directory contains the main Solr .jar files.
 
