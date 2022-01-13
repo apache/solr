@@ -82,8 +82,8 @@ public class TestExceedMaxTermLength extends SolrTestCaseJ4 {
         jsonStr = String.format(Locale.ROOT, format, longFieldName, longFieldValue);
       }
       Exception e = assertThrows(Exception.class, () -> updateJ(json(jsonStr), null));
-      String msg = e.getCause().getMessage();
-      assertTrue(msg.contains("one immense term in field=\"cat\""));
+      assertNotNull(e.getCause());
+      assertTrue(e.getCause().getMessage().contains("one immense term in field=\"cat\""));
     }
 
     assertU(commit());

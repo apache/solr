@@ -684,7 +684,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     float_vals[5] = Float.MAX_VALUE;
     float_vals[6] = Float.MIN_VALUE;
     float_vals[7] = 1/3f; //0.33333334
-    float_vals[8] = 0.33333333f; //0.33333334, intentional?
+    float_vals[8] = 0.3333333f; //max digits before float loses precision
     float_vals[9] = random().nextFloat();
 
     for (int i = 0; i < numDocs; i++) {
