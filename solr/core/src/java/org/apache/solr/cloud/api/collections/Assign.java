@@ -30,7 +30,7 @@ import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
-import org.apache.solr.cluster.placement.plugins.DefaultPlacementFactory;
+import org.apache.solr.cluster.placement.plugins.LegacyPlacementFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -463,7 +463,7 @@ public class Assign {
   /**
    * Creates the appropriate instance of {@link AssignStrategy} based on how the cluster and/or individual collections are
    * configured.
-   * <p>If {@link PlacementPlugin} instance is null this call will return a strategy from {@link DefaultPlacementFactory}, otherwise
+   * <p>If {@link PlacementPlugin} instance is null this call will return a strategy from {@link LegacyPlacementFactory}, otherwise
    * {@link PlacementPluginAssignStrategy} will be used.</p>
    */
   public static AssignStrategy createAssignStrategy(CoreContainer coreContainer) {
@@ -471,7 +471,8 @@ public class Assign {
     PlacementPlugin placementPlugin = coreContainer.getPlacementPluginFactory().createPluginInstance();
     if (placementPlugin == null) {
       // Otherwise use the default
-      placementPlugin = (new DefaultPlacementFactory()).createPluginInstance();
+      // TODO: Replace this with a better options, such as the AffinityPlacementFactory
+      placementPlugin = (new LegacyPlacementFactory()).createPluginInstance();
     }
     return new PlacementPluginAssignStrategy(placementPlugin);
   }

@@ -40,19 +40,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * <p>Factory for creating {@link DefaultPlacementPlugin}, a placement plugin implementing a smart placement for new
- * replicas, picking nodes with the fewest cores (especially cores of the same collection).</p>
+ * <p>Factory for creating {@link LegacyPlacementPlugin}, a placement plugin implementing the logic from the old <code>LegacyAssignStrategy</code>.
+ *  This chooses nodes with the fewest cores (especially cores of the same collection).</p>
  *
  * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.</p>
  */
-public class DefaultPlacementFactory implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
+public class LegacyPlacementFactory implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
 
   @Override
   public PlacementPlugin createPluginInstance() {
-    return new DefaultPlacementPlugin();
+    return new LegacyPlacementPlugin();
   }
 
-  public static class DefaultPlacementPlugin implements PlacementPlugin {
+  public static class LegacyPlacementPlugin implements PlacementPlugin {
     @Override
     public List<PlacementPlan> computePlacements(Collection<PlacementRequest> requests, PlacementContext placementContext) throws PlacementException {
       List<PlacementPlan> placementPlans = new ArrayList<>(requests.size());
