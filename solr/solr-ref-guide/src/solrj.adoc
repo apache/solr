@@ -65,16 +65,16 @@ To compile code manually that uses SolrJ, use a `javac` command similar to:
 
 [source,bash,subs="attributes"]
 ----
-javac -cp .:$SOLR_HOME/dist/solr-solrj-{solr-docs-version}.0.jar ...
+javac -cp .:$SOLR_HOME/server/solr-webapp/webapp/WEB-INF/lib/solr-solrj-{solr-docs-version}.0.jar ...
 ----
 
 At runtime, you need a few of SolrJ's dependencies, in addition to SolrJ itself.
-For convenience, these dependencies are made available in the `dist/solrj-lib` directory.
+In the Solr distribution these dependencies are not separated from Solr's dependencies, so you must include all.
 Run your project with a classpath like:
 
 [source,bash,subs="attributes"]
 ----
-java -cp .:$SOLR_HOME/dist/solrj-lib/*:$SOLR_HOME/dist/solr-solrj-{solr-docs-version}.0.jar ...
+java -cp .:$SOLR_HOME/server/lib/ext:$SOLR_HOME/server/solr-webapp/webapp/WEB-INF/lib/* ...
 ----
 
 If you are worried about the SolrJ libraries expanding the size of your client application, you can use a code obfuscator like http://proguard.sourceforge.net/[ProGuard] to remove APIs that you are not using.

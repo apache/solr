@@ -551,8 +551,8 @@ This Guide contains documentation to configure the following tools and clients:
 
 For most Java-based clients, the following jars will need to be placed on the client classpath:
 
-* all .jars found in `$SOLR_HOME/dist/solrj-libs`
-* the SolrJ .jar found at `$SOLR_HOME/dist/solr-solrj-<version>.jar`
+* all .jars found in `$SOLR_HOME/server/solr-webapp/webapp/WEB-INF/lib/\*` and `$SOLR_HOME/server/lib/ext/*`
+* the SolrJ .jar found at `$SOLR_HOME/server/solr-webapp/webapp/WEB-INF/lib/solr-solrj-<version>.jar`
 
 If you are using Maven, the `org.apache.solr.solr-solrj` artifact contains the required jars.
 

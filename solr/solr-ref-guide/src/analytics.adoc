@@ -34,7 +34,7 @@ The Analytics Handler should not be used by users to submit analytics requests.
 
 To use the Analytics Component, the first step is to install this contrib module's plugins into Solr -- see the <<solr-plugins.adoc#installing-plugins,Solr Plugins>> section on how to do this.
 Note: Method with `<lib/>` directive doesn't work.
-Instead copy `${solr.install.dir}/dist/solr-analytics-x.x.x.jar` to `${solr.install.dir}/server/solr-webapp/webapp/WEB-INF/lib/`, as described in the <<libs.adoc#lib-directories,lib directories documentation>>.
+Instead copy `${solr.install.dir}/contrib/analytics/lib/solr-analytics-x.x.x.jar` to `${solr.install.dir}/server/solr-webapp/webapp/WEB-INF/lib/`, as described in the <<libs.adoc#lib-directories,lib directories documentation>>.
 
 Next you need to register the request handler and search component.
 Add the following lines to `solrconfig.xml`, near the defintions for other request handlers:
