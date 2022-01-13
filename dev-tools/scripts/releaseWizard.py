@@ -191,7 +191,7 @@ def check_prerequisites(todo=None):
     except:
         sys.exit("You will need git installed")
     try:
-        svn_ver = run("svn --version").splitlines()[0]
+        run("svn --version").splitlines()[0]
     except:
         sys.exit("You will need svn installed")
     if not 'EDITOR' in os.environ:
@@ -420,7 +420,6 @@ class ReleaseState:
     def clear_rc(self):
         if ask_yes_no("Are you sure? This will clear and restart RC%s" % self.rc_number):
             maybe_remove_rc_from_svn()
-            dict = {}
             for g in list(filter(lambda x: x.in_rc_loop(), self.todo_groups)):
                 for t in g.get_todos():
                     t.clear()
@@ -428,7 +427,7 @@ class ReleaseState:
             try:
                 shutil.rmtree(self.get_rc_folder())
                 print("Cleared folder %s" % self.get_rc_folder())
-            except Exception as e:
+            except Exception:
                 print("WARN: Failed to clear %s, please do it manually with higher privileges" % self.get_rc_folder())
             self.save()
 
@@ -593,6 +592,7 @@ class ReleaseState:
             return "%s.%s.0" % (self.release_version_major, self.release_version_minor + 1)
         if self.release_type == 'bugfix':
             return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix + 1)
+        return None
 
     def get_refguide_release(self):
         return "%s_%s" % (self.release_version_major, self.release_version_minor)
@@ -780,7 +780,6 @@ class Todo(SecretYamlObject):
     def display_and_confirm(self):
         try:
             if self.depends:
-                ret_str = ""
                 for dep in ensure_list(self.depends):
                     g = state.get_group_by_id(dep)
                     if not g:
@@ -1367,7 +1366,6 @@ def main():
     release_root = os.path.expanduser("~/.solr-releases")
     if not load_rc() or c.init:
         print("Initializing")
-        dir_ok = False
         root = str(input("Choose root folder: [~/.solr-releases] "))
         if os.path.exists(root) and (not os.path.isdir(root) or not os.access(root, os.W_OK)):
             sys.exit("Root %s exists but is not a directory or is not writable" % root)
@@ -1565,7 +1563,7 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
                         lines_written += 1
                         print_line_cr(line, lines_written, stdout=(fh == sys.stdout), tee=tee)
 
-            except Exception as ioe:
+            except Exception:
                 pass
         if not endstderr:
             try:
@@ -1586,7 +1584,7 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
                         errlines.append("%s\n" % line.rstrip())
                         lines_written += 1
                         print_line_cr(line, lines_written, stdout=(fh == sys.stdout), tee=tee)
-            except Exception as e:
+            except Exception:
                 pass
 
         if not lines_written > lines_before:
@@ -1636,7 +1634,7 @@ class Commands(SecretYamlObject):
         fields = loader.construct_mapping(node, deep = True)
         return Commands(**fields)
 
-    def run(self):
+    def run(self): # pylint: disable=inconsistent-return-statements # TODO
         root = self.get_root_folder()
 
         if self.commands_text:
@@ -1801,6 +1799,8 @@ def abbreviate_homedir(line):
             return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1%HOME%", line)
         elif 'USERPROFILE' in os.environ:
             return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1%USERPROFILE%", line)
+        else:
+            return None
     else:
         return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1~", line)
 
@@ -1881,7 +1881,6 @@ class Command(SecretYamlObject):
 
     def display_cmd(self):
         lines = []
-        pre = post = ''
         if self.comment:
             if is_windows():
                 lines.append("REM %s" % self.get_comment())
@@ -1927,7 +1926,7 @@ class UserInput(SecretYamlObject):
             return result
 
 
-def create_ical(todo):
+def create_ical(todo): # pylint: disable=unused-argument
     if ask_yes_no("Do you want to add a Calendar reminder for the close vote time?"):
         c = Calendar()
         e = Event()
@@ -1974,7 +1973,7 @@ def vote_close_72h_holidays():
     return holidays if len(holidays) > 0 else None
 
 
-def prepare_announce_solr(todo):
+def prepare_announce_solr(todo): # pylint: disable=unused-argument
     if not os.path.exists(solr_news_file):
         solr_text = expand_jinja("(( template=announce_solr ))")
         with open(solr_news_file, 'w') as fp:
@@ -1985,7 +1984,7 @@ def prepare_announce_solr(todo):
     return True
 
 
-def check_artifacts_available(todo):
+def check_artifacts_available(todo): # pylint: disable=unused-argument
   try:
     cdnUrl = expand_jinja("https://dlcdn.apache.org/solr/{{ release_version }}/solr-{{ release_version }}-src.tgz.asc")
     load(cdnUrl)

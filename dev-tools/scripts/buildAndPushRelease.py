@@ -232,7 +232,7 @@ def pushLocal(version, root, rcNum, localDir):
   return 'file://%s/%s' % (os.path.abspath(localDir), dir)
 
 
-def read_version(path):
+def read_version(path): # pylint: disable=unused-argument
   return scriptutil.find_current_version()
 
 
@@ -417,4 +417,3 @@ if __name__ == '__main__':
     main()
   except KeyboardInterrupt:
     print('Keyboard interrupt...exiting')
-

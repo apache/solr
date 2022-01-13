@@ -31,7 +31,6 @@ import textwrap
 import traceback
 import urllib.error
 import urllib.parse
-import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 import zipfile
@@ -192,7 +191,7 @@ def normSlashes(path):
 
 def checkAllJARs(topDir, gitRevision, version):
   print('    verify JAR metadata/identity/no javax.* or java.* classes...')
-  for root, dirs, files in os.walk(topDir):
+  for root, dirs, files in os.walk(topDir): # pylint: disable=unused-variable
 
     normRoot = normSlashes(root)
 
@@ -280,7 +279,7 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
     raise RuntimeError('solr is missing changes-%s' % version)
   testChanges(version, changesURL)
 
-  for artifact, urlString in artifacts:
+  for artifact, urlString in artifacts: # pylint: disable=redefined-argument-from-local
     print('  download %s...' % artifact)
     scriptutil.download(artifact, urlString, tmpDir, force_clean=FORCE_CLEAN)
     verifyDigests(artifact, urlString, tmpDir)
@@ -331,7 +330,7 @@ def testChanges(version, changesURLString):
 
 def testChangesText(dir, version):
   "Checks all CHANGES.txt under this dir."
-  for root, dirs, files in os.walk(dir):
+  for root, dirs, files in os.walk(dir): # pylint: disable=unused-variable
 
     # NOTE: O(N) but N should be smallish:
     if 'CHANGES.txt' in files:
@@ -503,9 +502,10 @@ def getDirEntries(urlString):
     return l
   else:
     links = getHREFs(urlString)
-    for i, (text, subURL) in enumerate(links):
+    for i, (text, subURL) in enumerate(links): # pylint: disable=unused-variable
       if text == 'Parent Directory' or text == '..':
         return links[(i+1):]
+  return None
 
 
 def unpackAndVerify(java, tmpDir, artifact, gitRevision, version, testArgs):
@@ -798,7 +798,7 @@ def getBinaryDistFiles(tmpDir, version, baseURL):
   unpackLogFile = '%s/unpack-%s-getBinaryDistFiles.log' % (tmpDir, distribution)
   run('tar xzf %s/%s' % (tmpDir, distribution), unpackLogFile)
   distributionFiles = []
-  for root, dirs, files in os.walk(destDir):
+  for root, dirs, files in os.walk(destDir): # pylint: disable=unused-variable
     distributionFiles.extend([os.path.join(root, file) for file in files])
   return distributionFiles
 
@@ -1150,4 +1150,3 @@ if __name__ == '__main__':
     main()
   except KeyboardInterrupt:
     print('Keyboard interrupt...exiting')
-
