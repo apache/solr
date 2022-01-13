@@ -25,7 +25,7 @@ import re
 from textwrap import dedent
 
 def update_build(file_path, search_re, replace_line):
-  print('adding contrib into %s' % file_path)
+  print('adding new module into %s' % file_path)
   matcher = re.compile(search_re)
 
   def edit(buffer, match, line):
@@ -42,10 +42,10 @@ def update_build(file_path, search_re, replace_line):
 
 
 def read_config():
-  parser = argparse.ArgumentParser(description='Scaffold new contrib module')
-  parser.add_argument("name")
-  parser.add_argument("full_name")
-  parser.add_argument("description")
+  parser = argparse.ArgumentParser(description='Scaffold new contrib module into solr/contrib/<name>')
+  parser.add_argument("name", help='short-name, e.g. my-module')
+  parser.add_argument("full_name", help='Readable name, e.g. "My Module"')
+  parser.add_argument("description", help='Short description for docs, max one line')
   newconf = parser.parse_args()
   return newconf
 
@@ -117,43 +117,43 @@ def get_overview_tpl(name):
   </body>
   </html>''' % name)
 
-def scaffold_folder(contrib_name, contrib_full_name, contrib_folder, contrib_description):
-  print("\nScaffolding folder %s" % contrib_folder)
-  os.makedirs(contrib_folder)
-  readme = os.path.join(contrib_folder, 'README.md')
+def scaffold_folder(module_name, module_full_name, module_folder, module_description):
+  print("\nScaffolding folder %s" % module_folder)
+  os.makedirs(module_folder)
+  readme = os.path.join(module_folder, 'README.md')
   with open(readme, 'w') as fp:
-    fp.write(get_readme_skel(contrib_full_name))
-  build = os.path.join(contrib_folder, 'build.gradle')
+    fp.write(get_readme_skel(module_full_name))
+  build = os.path.join(module_folder, 'build.gradle')
   with open(build, 'w') as fp:
     fp.write (get_license_header())
     fp.write('\n\n')
-    fp.write (get_build_gradle(contrib_description))
-  src_java_folder = os.path.join(contrib_folder, 'src', 'java')
+    fp.write (get_build_gradle(module_description))
+  src_java_folder = os.path.join(module_folder, 'src', 'java')
   os.makedirs(src_java_folder)
   overview = os.path.join(src_java_folder, 'overview.html')
   with open(overview, 'w') as fp:
-    fp.write (get_overview_tpl(contrib_full_name))
+    fp.write (get_overview_tpl(module_full_name))
 
-  os.makedirs(os.path.join(contrib_folder, 'src', 'resources'))
-  os.makedirs(os.path.join(contrib_folder, 'src', 'test-files'))
-  os.makedirs(os.path.join(contrib_folder, 'src', 'test'))
+  os.makedirs(os.path.join(module_folder, 'src', 'resources'))
+  os.makedirs(os.path.join(module_folder, 'src', 'test-files'))
+  os.makedirs(os.path.join(module_folder, 'src', 'test'))
 
   update_build(os.path.join('solr', 'packaging', 'build.gradle'),
                r':solr:contrib:extraction',
-               '   ":solr:contrib:%s",\n' % contrib_name)
+               '   ":solr:contrib:%s",\n' % module_name)
   update_build(os.path.join('gradle', 'maven', 'defaults-maven.gradle'),
                r':solr:contrib:extraction',
-               '        ":solr:contrib:%s",\n' % contrib_name)
+               '        ":solr:contrib:%s",\n' % module_name)
   update_build(os.path.join('settings.gradle'),
                r'include "solr:contrib:extraction"',
-               'include "solr:contrib:%s"\n' % contrib_name)
+               'include "solr:contrib:%s"\n' % module_name)
 
 def main():
   conf = read_config()
-  contrib_name = conf.name
+  module_name = conf.name
 
-  contrib_folder = os.path.join('solr', 'contrib', contrib_name)
-  scaffold_folder(contrib_name, conf.full_name, contrib_folder, conf.description)
+  module_folder = os.path.join('solr', 'contrib', module_name)
+  scaffold_folder(module_name, conf.full_name, module_folder, conf.description)
 
 
 if __name__ == '__main__':
