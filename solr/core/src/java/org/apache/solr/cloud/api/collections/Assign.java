@@ -21,19 +21,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -42,6 +30,7 @@ import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
+import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -52,13 +41,13 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeRoles;
+import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableMap;
 
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -227,7 +216,9 @@ public class Assign {
     return false;
   }
 
-  public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random) {
+  public static List<String> getLiveOrLiveAndCreateNodeSetList(final Set<String> liveNodes, final ZkNodeProps message, final Random random,
+                                                               DistribStateManager zk) {
+
     List<String> nodeList;
     final String createNodeSetStr = message.getStr(CREATE_NODE_SET);
     final List<String> createNodeList = (createNodeSetStr == null) ? null :
@@ -242,26 +233,29 @@ public class Assign {
         Collections.shuffle(nodeList, random);
       }
     } else {
-      nodeList = new ArrayList<>(liveNodes);
+      nodeList = new ArrayList<>(filterNonDataNodes(zk, liveNodes));
       Collections.shuffle(nodeList, random);
     }
 
     return nodeList;
   }
 
-  static class ReplicaCount {
-    public final String nodeName;
-    public int thisCollectionNodes = 0;
-    public int totalNodes = 0;
-
-    ReplicaCount(String nodeName) {
-      this.nodeName = nodeName;
-    }
-
-    public int weight() {
-      return (thisCollectionNodes * 100) + totalNodes;
+  public static Collection<String> filterNonDataNodes(DistribStateManager zk, Collection<String> liveNodes) {
+    try {
+     List<String> noData =  ClusterAPI.getNodesByRole(NodeRoles.Role.DATA, NodeRoles.MODE_OFF, zk);
+      if (noData.isEmpty()) {
+        return liveNodes;
+      } else {
+        liveNodes = new HashSet<>(liveNodes);
+        liveNodes.removeAll(noData);
+        return liveNodes;
+      }
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching roles from Zookeeper", e);
     }
   }
+
+
 
   // Only called from addReplica (and by extension createShard) (so far).
   //
@@ -274,8 +268,7 @@ public class Assign {
                                                           CoreContainer coreContainer) throws IOException, InterruptedException, AssignmentException {
     log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
         , shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
-    DocCollection coll = clusterState.getCollection(collectionName);
-    List<String> createNodeList = null;
+    List<String> createNodeList;
 
     if (createNodeSet instanceof List) {
       createNodeList = (List<String>) createNodeSet;
@@ -297,50 +290,11 @@ public class Assign {
         .assignPullReplicas(pullReplicas)
         .onNodes(createNodeList)
         .build();
-    AssignStrategy assignStrategy = createAssignStrategy(coreContainer, clusterState, coll);
+    AssignStrategy assignStrategy = createAssignStrategy(coreContainer);
     return assignStrategy.assign(cloudManager, assignRequest);
   }
 
-  static HashMap<String, ReplicaCount> getNodeNameVsShardCount(String collectionName,
-                                                                       ClusterState clusterState, List<String> createNodeList) {
-    HashMap<String, ReplicaCount> nodeNameVsShardCount = new HashMap<>();
-    List<String> liveNodes = createNodeList == null || createNodeList.isEmpty() ?
-        new ArrayList<>(clusterState.getLiveNodes()) :
-        checkLiveNodes(createNodeList, clusterState);
-
-    for (String s : liveNodes) {
-      nodeNameVsShardCount.put(s, new ReplicaCount(s));
-    }
-
-    // if we were given a list, just use that, don't worry about counts
-    if (createNodeList != null) {
-      return nodeNameVsShardCount;
-    }
-
-    // if we get here we were not given a createNodeList, build a map with real counts.
-    DocCollection coll = clusterState.getCollection(collectionName);
-    Map<String, DocCollection> collections = clusterState.getCollectionsMap();
-    for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
-      DocCollection c = entry.getValue();
-      //identify suitable nodes  by checking the no:of cores in each of them
-      for (Slice slice : c.getSlices()) {
-        Collection<Replica> replicas = slice.getReplicas();
-        for (Replica replica : replicas) {
-          ReplicaCount count = nodeNameVsShardCount.get(replica.getNodeName());
-          if (count != null) {
-            count.totalNodes++; // Used to "weigh" whether this node should be used later.
-            if (entry.getKey().equals(collectionName)) {
-              count.thisCollectionNodes++;
-            }
-          }
-        }
-      }
-    }
-
-    return nodeNameVsShardCount;
-  }
-
-  // throw an exception if any node int the supplied list is not live.
+  // throw an exception if any node in the supplied list is not live.
   // Empty or null list always succeeds and returns the input.
   private static List<String> checkLiveNodes(List<String> createNodeList, ClusterState clusterState) {
     Set<String> liveNodes = clusterState.getLiveNodes();
@@ -348,7 +302,7 @@ public class Assign {
       if (!liveNodes.containsAll(createNodeList)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "At least one of the node(s) specified " + createNodeList + " are not currently active in "
-                + createNodeList + ", no action taken.");
+                + liveNodes + ", no action taken.");
       }
       // the logic that was extracted to this method used to create a defensive copy but no code
       // was modifying the copy, if this method is made protected or public we want to go back to that
@@ -387,12 +341,32 @@ public class Assign {
 
     /**
      * Assign new replicas to nodes.
+     * If multiple {@link AssignRequest}s are provided, then every {@link ReplicaPosition} made for an
+     * {@link AssignRequest} will be applied to the {@link SolrCloudManager}'s state when processing subsequent {@link AssignRequest}s.
+     * Therefore, the order in which {@link AssignRequest}s are provided can and will affect the {@link ReplicaPosition}s returned.
+     *
      * @param solrCloudManager current instance of {@link SolrCloudManager}.
-     * @param assignRequest assign request.
+     * @param assignRequests assign request.
      * @return list of {@link ReplicaPosition}-s for new replicas.
      * @throws AssignmentException when assignment request cannot produce any valid assignments.
      */
-    List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest)
+    default List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest... assignRequests)
+        throws AssignmentException, IOException, InterruptedException {
+      return assign(solrCloudManager, Arrays.asList(assignRequests));
+    }
+
+    /**
+     * Assign new replicas to nodes.
+     * If multiple {@link AssignRequest}s are provided, then every {@link ReplicaPosition} made for an
+     * {@link AssignRequest} will be applied to the {@link SolrCloudManager}'s state when processing subsequent {@link AssignRequest}s.
+     * Therefore, the order in which {@link AssignRequest}s are provided can and will affect the {@link ReplicaPosition}s returned.
+     *
+     * @param solrCloudManager current instance of {@link SolrCloudManager}.
+     * @param assignRequests list of assign requests to process together ().
+     * @return list of {@link ReplicaPosition}-s for new replicas.
+     * @throws AssignmentException when assignment request cannot produce any valid assignments.
+     */
+    List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, List<AssignRequest> assignRequests)
         throws AssignmentException, IOException, InterruptedException;
 
     /**
@@ -486,60 +460,20 @@ public class Assign {
     }
   }
 
-  public static class LegacyAssignStrategy implements AssignStrategy {
-    @Override
-    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
-      ClusterState clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
-      List<String> nodeList = assignRequest.nodes; // can this be empty list?
-
-      if (nodeList == null || nodeList.isEmpty()) {
-        HashMap<String, Assign.ReplicaCount> nodeNameVsShardCount =
-            Assign.getNodeNameVsShardCount(assignRequest.collectionName, clusterState, nodeList);
-        // if nodelist was empty, this map will be empty too. (passing null above however gets a full map)
-        ArrayList<Assign.ReplicaCount> sortedNodeList = new ArrayList<>(nodeNameVsShardCount.values());
-        sortedNodeList.sort(Comparator.comparingInt(Assign.ReplicaCount::weight));
-        nodeList = sortedNodeList.stream().map(replicaCount -> replicaCount.nodeName).collect(Collectors.toList());
-      }
-
-      // otherwise we get a div/0 below
-      assert !nodeList.isEmpty();
-
-      int i = 0;
-      List<ReplicaPosition> result = new ArrayList<>();
-      for (String aShard : assignRequest.shardNames) {
-        for (Map.Entry<Replica.Type, Integer> e : countsPerReplicaType(assignRequest).entrySet()) {
-          for (int j = 0; j < e.getValue(); j++) {
-            result.add(new ReplicaPosition(aShard, j, e.getKey(), nodeList.get(i % nodeList.size())));
-            i++;
-          }
-        }
-      }
-      return result;
-    }
-
-    // keeps this big ugly construction block out of otherwise legible code
-    private ImmutableMap<Replica.Type, Integer> countsPerReplicaType(AssignRequest assignRequest) {
-      return ImmutableMap.of(
-          Replica.Type.NRT, assignRequest.numNrtReplicas,
-          Replica.Type.TLOG, assignRequest.numTlogReplicas,
-          Replica.Type.PULL, assignRequest.numPullReplicas
-      );
-    }
-  }
-
   /**
    * Creates the appropriate instance of {@link AssignStrategy} based on how the cluster and/or individual collections are
    * configured.
-   * <p>If {@link PlacementPlugin} instance is null this call will return {@link LegacyAssignStrategy}, otherwise
+   * <p>If {@link PlacementPlugin} instance is null this call will return a strategy from {@link SimplePlacementFactory}, otherwise
    * {@link PlacementPluginAssignStrategy} will be used.</p>
    */
-  public static AssignStrategy createAssignStrategy(CoreContainer coreContainer, ClusterState clusterState, DocCollection collection) {
+  public static AssignStrategy createAssignStrategy(CoreContainer coreContainer) {
+    // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin)
     PlacementPlugin placementPlugin = coreContainer.getPlacementPluginFactory().createPluginInstance();
-    if (placementPlugin != null) {
-      // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin)
-      return new PlacementPluginAssignStrategy(collection, placementPlugin);
-    }  else {
-        return new LegacyAssignStrategy();
-      }
+    if (placementPlugin == null) {
+      // Otherwise use the default
+      // TODO: Replace this with a better options, such as the AffinityPlacementFactory
+      placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
     }
+    return new PlacementPluginAssignStrategy(placementPlugin);
+  }
 }

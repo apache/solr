@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
@@ -349,13 +348,13 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
                 .filter(x -> fileNames.contains(x.getName()))
                 .findAny().get();
         try (FileInputStream fis = new FileInputStream(fileGetCorrupted)){
-            byte[] contents = IOUtils.readFully(fis, (int) fileGetCorrupted.length());
+            byte[] contents = fis.readAllBytes();
             contents[contents.length - CodecUtil.footerLength() - 1] += 1;
             contents[contents.length - CodecUtil.footerLength() - 2] += 1;
             contents[contents.length - CodecUtil.footerLength() - 3] += 1;
             contents[contents.length - CodecUtil.footerLength() - 4] += 1;
             try (FileOutputStream fos = new FileOutputStream(fileGetCorrupted)) {
-                IOUtils.write(contents, fos);
+                fos.write(contents);
             }
         } finally {
             solrCore.close();
@@ -511,11 +510,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             Arrays.sort(files1);
             Arrays.sort(files2);
 
-            try {
-                assertArrayEquals(files1, files2);
-            } catch (AssertionError e) {
-                e.printStackTrace();
-            }
+            assertArrayEquals(files1, files2);
 
             for (int i = 0; i < files1.length; i++) {
                 URI file1Uri = repository.resolve(uri1, files1[i]);

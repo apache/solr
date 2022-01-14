@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 
@@ -36,12 +35,12 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static File SOLRHOME;
+  public static Path SOLRHOME;
   static {
     try {
-      SOLRHOME = new File(SolrTestCaseJ4.TEST_HOME());
+      SOLRHOME = SolrTestCaseJ4.TEST_PATH();
     } catch (RuntimeException e) {
-      log.warn("TEST_HOME() does not exist - solrj test?");
+      log.warn("TEST_PATH() does not exist - solrj test?");
       // solrj tests not working with TEST_HOME()
       // must override getSolrHome
     }

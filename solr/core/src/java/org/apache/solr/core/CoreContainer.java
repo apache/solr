@@ -246,6 +246,8 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
+  public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
+
   private final ClusterSingletons clusterSingletons = new ClusterSingletons(
       () -> getZkController() != null &&
           getZkController().getOverseer() != null &&
@@ -769,6 +771,7 @@ public class CoreContainer {
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
     final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
     ApiRegistrar.registerCollectionApis(containerHandlers.getApiBag(), collectionsHandler);
+    ApiRegistrar.registerShardApis(containerHandlers.getApiBag(), collectionsHandler);
     containerHandlers.getApiBag().registerObject(collectionsAPI);
     containerHandlers.getApiBag().registerObject(collectionsAPI.collectionsCommands);
     final CollectionBackupsAPI collectionBackupsAPI = new CollectionBackupsAPI(collectionsHandler);
@@ -944,6 +947,14 @@ public class CoreContainer {
       });
 
       clusterSingletons.setReady();
+      if (NodeRoles.MODE_PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
+        try {
+          log.info("This node has been started as a preferred overseer");
+          zkSys.getZkController().setPreferredOverseer();
+        } catch (KeeperException | InterruptedException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+      }
       if (!distributedCollectionCommandRunner.isPresent()) {
         zkSys.getZkController().checkOverseerDesignate();
       }
