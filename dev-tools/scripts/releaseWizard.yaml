@@ -643,6 +643,19 @@ groups:
     links:
     - https://issues.apache.org/jira/plugins/servlet/project-config/LUCENE/versions
     - https://issues.apache.org/jira/plugins/servlet/project-config/SOLR/versions
+  - !Todo
+    id: jira_blocker_refguide
+    title: Add a blocker JIRA for RefGuide
+    description: |-
+      To make sure a new release is not announced before the reference guide is complete, add a new
+      Blocker JIRA issue for version {{ release_version }} with subject
+      "Complete Major changes and Upgrade Notes in RefGudie for {{ release_version }}".
+      Note that this does not block the RC and voting process, but will block announcing the release.
+    types:
+    - major
+    - minor
+    links:
+    - https://issues.apache.org/jira/browse/SOLR
 - !TodoGroup
   id: artifacts
   title: Build the release artifacts
@@ -1067,6 +1080,16 @@ groups:
         cmd: svn -m "Add docs, changes and javadocs for Solr {{ release_version }}"  import {{ git_checkout_folder }}/solr/build/docs  https://svn.apache.org/repos/infra/sites/solr/docs/{{ version }}
         logfile: add-docs-solr.log
         comment: Add docs for Solr
+  - !Todo
+    id: check_ref_guide_complete
+    title: Check that the reference guide is ready
+    types:
+      - major
+      - minor
+    description: |
+      Ensure that the reference Guide is updated for {{ release_version }}. In particular, the sections "Solr Upgrade Notes"
+      and (if applicable) also the "Major changes in Solr ..." section must be up to date for the latest release.
+      Check that the the Blocker JIRA issue created in the beginning of the release process is resolved.
   - !Todo
     id: build_final_ref_guide
     title: Build the ref guide

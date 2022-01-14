@@ -1,9 +1,9 @@
 # Developer Scripts
 
 This folder contains various useful scripts for developers, mostly related to
-releasing new versions of Lucene/Solr and testing those.
+releasing new versions of Solr and testing those.
 
-Python scripts require Python 3. To install necessary python modules, please run:
+Python scripts require Python 3.6 or above. To install necessary python modules, please run:
 
     pip3 install -r requirements.txt
 
@@ -31,10 +31,10 @@ the full tests.
     optional arguments:
       -h, --help            show this help message and exit
       --tmp-dir PATH        Temporary directory to test inside, defaults to
-                            /tmp/smoke_lucene_$version_$revision
+                            /tmp/smoke_solr_$version_$revision
       --not-signed          Indicates the release is not signed
       --local-keys PATH     Uses local KEYS file instead of fetching from
-                            https://archive.apache.org/dist/lucene/KEYS
+                            https://archive.apache.org/dist/solr/KEYS
       --revision REVISION   GIT revision number that release was built with,
                             defaults to that in URL
       --version X.Y.Z(-ALPHA|-BETA)?
@@ -45,7 +45,7 @@ the full tests.
       --download-only       Only perform download and sha hash check steps
     
     Example usage:
-    python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC2-revc7510a0...
+    python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/solr/solr-9.0.1-RC2-revc7510a0...
 
 ### releaseWizard.py
 
@@ -85,7 +85,7 @@ of the other tools in this folder.
       --push-local PATH  Push the release to the local path
       --sign KEYID       Sign the release with the given gpg key
       --rc-num NUM       Release Candidate number. Default: 1
-      --root PATH        Root of Git working tree for lucene-solr. Default: "."
+      --root PATH        Root of Git working tree for solr. Default: "."
                          (the current directory)
       --logfile PATH     Specify log file path (default /tmp/release.log)
     
@@ -96,8 +96,7 @@ of the other tools in this folder.
 
     usage: addVersion.py [-h] version
     
-    Add a new version to CHANGES, to Version.java, build.gradle and
-    solrconfig.xml files
+    Add a new version to CHANGES, SolrVersion.java, build.gradle and solrconfig.xml files
     
     positional arguments:
       version
@@ -127,9 +126,9 @@ and prints a regular expression that will match all of them
 
     usage: reproduceJenkinsFailures.py [-h] [--no-git] [--iters N] URL
     
-    Must be run from a Lucene/Solr git workspace. Downloads the Jenkins
+    Must be run from a Solr git workspace. Downloads the Jenkins
     log pointed to by the given URL, parses it for Git revision and failed
-    Lucene/Solr tests, checks out the Git revision in the local workspace,
+    Solr tests, checks out the Git revision in the local workspace,
     groups the failed tests by module, then runs
     'ant test -Dtest.dups=%d -Dtests.class="*.test1[|*.test2[...]]" ...'
     in each module of interest, failing at the end if any of the runs fails.
