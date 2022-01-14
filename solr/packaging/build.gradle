@@ -53,6 +53,7 @@ artifacts {
 dependencies {
   distSolrj project(":solr:solrj")
 
+  // TODO: Can we extract this in a function that scans the contrib folder, so every new module won't need to add itself here
   [":solr:contrib:analysis-extras",
    ":solr:contrib:analytics",
    ":solr:contrib:extraction",
@@ -100,6 +101,10 @@ distributions {
         include "LICENSE.txt"
         include "NOTICE.txt"
         include "README.md"
+      })
+
+      from ('static/lib', {
+        into 'lib'
       })
 
       from(configurations.contrib, {
