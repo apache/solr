@@ -21,7 +21,6 @@ import static org.hamcrest.CoreMatchers.is;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,7 +57,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_COLL1_CONF();
 
     String configName = "solrCloudCollectionConfig";
     int nodeCount = TestUtil.nextInt(random(), 1, 3);
