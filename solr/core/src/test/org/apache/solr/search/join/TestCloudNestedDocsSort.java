@@ -18,7 +18,6 @@ package org.apache.solr.search.join;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -55,7 +54,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
       vals.add(""+Integer.toString(random().nextInt(1000000), Character.MAX_RADIX));
     }
     
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_COLL1_CONF();
 
     String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;
