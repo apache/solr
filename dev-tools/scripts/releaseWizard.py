@@ -1663,7 +1663,7 @@ class Commands(SecretYamlObject):
                 print("You will get prompted before running each individual command.")
             else:
                 print(
-                    "You will not be prompted for each command but will see the ouput of each. If one command fails the execution will stop.")
+                    "You will not be prompted for each command but will see the output of each. If one command fails the execution will stop.")
             success = True
             if ask_yes_no("Do you want me to run these commands now?"):
                 if self.remove_files:
