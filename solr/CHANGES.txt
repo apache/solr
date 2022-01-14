@@ -189,6 +189,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15278: Add V2 equivalent to allow deleting async collection list of statuses. (Eric Pugh)
 
+* SOLR-11623: Every request handler in Solr now implements PermissionNameProvider to explicitly decide on what security
+  permissions are required to access the handler (janhoy, Hrishikesh Gadre, David Smiley)
+
 * SOLR-15608: Remove deprecated methods, classes and constructors from solrj clients (janhoy)
 
 * SOLR-15705: A delete-by-id command is forwarded to all shards when using the CompositeId router with a router field
@@ -225,6 +228,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15887: Remove <jmx/> from shipped solrconfig.xm. (Eric Pugh)
 
 * SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
+
+* SOLR-15209: The old LegacyAssignStrategy has been refactored into the LegacyPlacementPlugin. This is still the default
+  placement policy for Solr. (Houston Putman, Ilan Ginzburg)
 
 Build
 ---------------------
@@ -502,6 +508,10 @@ Bug Fixes
 * SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
 
 * SOLR-15854: Let RealtimeGet component support negative filters (Tomás Fernández Löbbe)
+
+* SOLR-15501: GCSBackupRepository no longer strictly requires a pointer to a service account JSON file, allowing users running within GCP
+              to take advantage of it's "Workload Identity" and other role-based access feature. (Jacek Kikiewicz, Martin Stocker
+              via Jason Gerlowski)
 
 ==================  8.11.2 ==================
 

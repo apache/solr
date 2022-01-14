@@ -149,6 +149,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     
   }
 
+  @SuppressWarnings("AssertionFailureIgnored") // failure happens inside of a thread
   public void testSnapshotsAndBackupsDuringConcurrentCommitsAndOptimizes(final BackupAPIImpl impl) throws Exception {
     final int numBackupIters = 20; // don't use 'atLeast', we don't want to blow up on nightly
     
