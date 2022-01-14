@@ -240,6 +240,8 @@ Build
 
 * SOLR-15867: Make the gradle build ready for 9.0 release (janhoy, Houston Putman, Dawid Weiss)
 
+* SOLR-15852: Update dev-tools/scripts for the 9.0 release, including releaseWizard (janhoy)
+
 * SOLR-15891: The Solr Docker image uses the default file permissions from the tarball artifact (Houston Putman, janhoy)
 
 Other Changes
