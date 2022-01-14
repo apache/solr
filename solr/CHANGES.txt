@@ -599,6 +599,8 @@ Bug Fixes
 
 * SOLR-15324: Upgrade jaegertracing to 1.6.0 and libthrift to 0.14.1 (wcmrnd1, janhoy)
 
+* SOLR-15405: Make HDFS handle little endian LUCENE-9047 (Kevin Risden)
+
 ==================  8.11.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
