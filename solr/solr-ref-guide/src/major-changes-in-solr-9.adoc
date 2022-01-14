@@ -201,7 +201,7 @@ of shipping as part of Solr, due to security concerns.
 * SOLR-14912: Cleaned up solr-extraction contrib to produce solr-extraction-* jar (instead of solr-cell-*). (Dawid Weiss)
 
 * SOLR-15924: Extra lucene libraries used in modules are no longer packaged in `lucene-libs/` under the contrib module directory in the binary release.
-  Instead, these libraries will be included with all other module dependencies in `lib/`. (Houston Putman)
+  Instead, these libraries will be included with all other module dependencies in `lib/`.
 
 == Deprecations & Removed Features
 
