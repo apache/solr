@@ -190,7 +190,7 @@ Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOS
 This embedded zookeeper should not be used in production.
 If you rely upon the previous behavior, then you can change the clientPortAddress in solr/server/solr/zoo.cfg
 
-=== Contrib Changes
+=== Contrib Module Changes
 
 * SOLR-14067: `StatelessScriptUpdateProcessorFactory` moved to `contrib/scripting` package instead of shipping as part of Solr, due to security concerns.
 Renamed to ScriptUpdateProcessorFactory for simpler name.
@@ -201,6 +201,9 @@ of shipping as part of Solr, due to security concerns.
 * SOLR-14926: `contrib/clustering` back and rewritten
 
 * SOLR-14912: Cleaned up solr-extraction contrib to produce solr-extraction-* jar (instead of solr-cell-*). (Dawid Weiss)
+
+* SOLR-15924: Extra lucene libraries used in modules are no longer packaged in `lucene-libs/` under the contrib module directory in the binary release.
+  Instead, these libraries will be included with all other module dependencies in `lib/`.
 
 == Deprecations & Removed Features
 
