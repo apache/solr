@@ -63,7 +63,7 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
   private NamedList<Object> readProperties() throws Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequest req = req();
-    new PropertiesRequestHandler().handleRequestBody(req, rsp);
+    h.getCoreContainer().getInfoHandler().getPropertiesHandler().handleRequestBody(req, rsp);
     return (NamedList<Object>) rsp.getValues().get("system.properties");
   }
 }
