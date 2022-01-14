@@ -28,6 +28,7 @@ def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCK
 def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
 def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
 def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
+def officialDockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}")
 
 def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId',''));
 
@@ -398,9 +399,16 @@ task testBuildDockerfileOfficial(type: Copy) {
             "--iidfile", imageIdFileOfficial,
             '--build-arg', "SOLR_CLOSER_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
             '--build-arg', "SOLR_ARCHIVE_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
+            '--tag', officialDockerImageName,
             '-'
         }
-        
+
+        def officialDockerImageId = file(imageIdFileOfficial).text
+
+        // Print information on the image after it has been created
+        project.logger.lifecycle("\"Official\" Solr Docker Image Tagged")
+        project.logger.lifecycle("\tID: \t$officialDockerImageId")
+        project.logger.lifecycle("\tTag: \t$officialDockerImageName")
       } finally {
         // Try to shut down our mock httpd server....
         if (mockServerIdFile.exists()) {
@@ -429,7 +437,7 @@ task testBuildDockerfileOfficial(type: Copy) {
 
 task testDockerfileOfficial(type: TestDockerImageTask, dependsOn: configurations.dockerOfficialSmokeCheckImage) {
   description = 'Smoke Test Solr docker image built from Dockerfile.official'
-  
+
   idFile = file(imageIdFileOfficial)
   outputDir = file("$smokeTestOfficial/test-results")
   
@@ -445,6 +453,10 @@ abstract class TestDockerImageTask extends DefaultTask {
   // Ensure that the docker image is re-tested if the image ID changes or the test files change
   @InputFile
   abstract public RegularFileProperty getIdFile()
+
+  // Ensure that the docker image is re-tested if the shared test library changes
+  @InputFile
+  File sharedTestLibraryFile = project.file("tests/shared.sh")
 
   @InputDirectory
   File sourceDir = project.file("tests/cases")

@@ -24,6 +24,7 @@
 *** xref:solrcloud-shards-indexing.adoc[]
 *** xref:solrcloud-recoveries-and-write-tolerance.adoc[]
 *** xref:solrcloud-distributed-requests.adoc[]
+*** xref:node-roles.adoc[]
 *** xref:aliases.adoc[]
 *** Collections API
 **** xref:cluster-node-management.adoc[]
