@@ -25,10 +25,10 @@ asciidoc:
     # Hardcode some version attributes for now TODO
     # This will make some constructed links be 404 since they aren't parsed
     solr-docs-version: '9.0'
-    ivy-tika-version: '${ivyTika}'
+    ivy-tika-version: '1.27'
     ivy-opennlp-version: '1.9.1'
     ivy-commons-codec-version: '1.13'
     ivy-zookeeper-version: '3.7.0'
-    ivy-log4j-version: '2.14.1'
+    ivy-log4j-version: '2.17.1'
     ivy-hadoop-version: '3.2.0'
     ivy-dropwizard-version: '4.1.5'
