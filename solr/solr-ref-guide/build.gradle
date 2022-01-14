@@ -175,6 +175,7 @@ ext {
             solrRootPath : project(':solr').projectDir.toString() + File.separator,
             solrDocsVersion : project.ext['solrDocsVersion'],
             solrGuideVersionPath : project.ext['solrGuideVersionPath'],
+            solrFullVersion: project.version,
             buildDate : rootProject.ext['buildDate'],
             buildYear : rootProject.ext['buildYear'],
             * : details.props,
