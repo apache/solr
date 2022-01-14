@@ -668,36 +668,6 @@ public class CoreContainer {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
 
-    // Always add $SOLR_HOME/lib to the shared resource loader
-    Set<String> libDirs = new LinkedHashSet<>();
-    libDirs.add("lib");
-    // Always add $SOLR_TIP/lib to the shared resource loader, to allow loading of i.e. /opt/solr/lib/foo.jar
-    if (cfg.getSolrInstallDir() != null) {
-      libDirs.add(cfg.getSolrInstallDir().resolve("lib").toAbsolutePath().normalize().toString());
-    }
-
-    if (!StringUtils.isBlank(cfg.getSharedLibDirectory())) {
-      List<String> sharedLibs = Arrays.asList(cfg.getSharedLibDirectory().split("\\s*,\\s*"));
-      libDirs.addAll(sharedLibs);
-    }
-
-    boolean modified = false;
-    // add the sharedLib to the shared resource loader before initializing cfg based plugins
-    for (String libDir : libDirs) {
-      Path libPath = Paths.get(getSolrHome()).resolve(libDir);
-      if (Files.exists(libPath)) {
-        try {
-          loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
-          modified = true;
-        } catch (IOException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't load libs: " + e, e);
-        }
-      }
-    }
-    if (modified) {
-      loader.reloadLuceneSPI();
-    }
-
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
     clusterEventProducer = clusterEventProducerFactory;
 

@@ -29,12 +29,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -159,6 +162,8 @@ public class NodeConfig {
     }
     if (null == this.solrHome) throw new NullPointerException("solrHome");
     if (null == this.loader) throw new NullPointerException("loader");
+
+    setupSharedLib();
   }
 
   /**
@@ -369,6 +374,45 @@ public class NodeConfig {
    */
   public List<String> getAllowUrls() {
     return allowUrls;
+  }
+
+  // Configures SOLR_HOME/lib and SOLR_TIP/lib to the shared class loader
+  private void setupSharedLib() {
+    // Always add $SOLR_HOME/lib to the shared resource loader
+    Set<String> libDirs = new LinkedHashSet<>();
+    libDirs.add("lib");
+
+    // Always add $SOLR_TIP/lib to the shared resource loader, to allow loading of i.e. /opt/solr/lib/foo.jar
+    if (getSolrInstallDir() != null) {
+      libDirs.add(getSolrInstallDir().resolve("lib").toAbsolutePath().normalize().toString());
+    }
+
+    if (!StringUtils.isBlank(getSharedLibDirectory())) {
+      List<String> sharedLibs = Arrays.asList(getSharedLibDirectory().split("\\s*,\\s*"));
+      libDirs.addAll(sharedLibs);
+    }
+
+    addFoldersToSharedLib(libDirs);
+  }
+
+  // Finds every jar in each folder and adds it to shardLib, then reloads Lucene SPI
+  private void addFoldersToSharedLib(Set<String> libDirs) {
+    boolean modified = false;
+    // add the sharedLib to the shared resource loader before initializing cfg based plugins
+    for (String libDir : libDirs) {
+      Path libPath = getSolrHome().resolve(libDir);
+      if (Files.exists(libPath)) {
+        try {
+          loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
+          modified = true;
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't load libs: " + e, e);
+        }
+      }
+    }
+    if (modified) {
+      loader.reloadLuceneSPI();
+    }
   }
 
   public static class NodeConfigBuilder {
