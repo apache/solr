@@ -16,6 +16,13 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrDocumentList;
@@ -30,19 +37,9 @@ import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LoggerInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
 import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.util.plugin.SolrCoreAware;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
