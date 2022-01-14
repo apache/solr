@@ -196,7 +196,7 @@ public class ConcurrentDelegatingStorage implements Storage {
   public synchronized Acl getAcl(String bucket, Acl.Entity entity) { return delegate.getAcl(bucket, entity); }
 
   @Override
-  public synchronized boolean deleteAcl(String bucket, Acl.Entity entity, BucketSourceOption... options) { return deleteAcl(bucket, entity, options); }
+  public synchronized boolean deleteAcl(String bucket, Acl.Entity entity, BucketSourceOption... options) { return delegate.deleteAcl(bucket, entity, options); }
 
   @Override
   public synchronized boolean deleteAcl(String bucket, Acl.Entity entity) { return delegate.deleteAcl(bucket, entity); }
