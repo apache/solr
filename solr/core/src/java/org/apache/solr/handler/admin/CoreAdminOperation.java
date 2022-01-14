@@ -63,7 +63,7 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
 import static org.apache.solr.handler.admin.CoreAdminHandler.buildCoreParams;
 import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
-enum CoreAdminOperation implements CoreAdminOp {
+public enum CoreAdminOperation implements CoreAdminOp {
 
   CREATE_OP(CREATE, it -> {
     assert TestInjection.injectRandomDelayInCoreCreation();
@@ -276,7 +276,7 @@ enum CoreAdminOperation implements CoreAdminOp {
    * @throws IOException - LukeRequestHandler can throw an I/O exception
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
+  public static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<>();
 
     if (cores.isCoreLoading(cname)) {
@@ -312,7 +312,7 @@ enum CoreAdminOperation implements CoreAdminOp {
             if (cores.isZooKeeperAware()) {
               info.add("lastPublished", core.getCoreDescriptor().getCloudDescriptor().getLastPublished().toString().toLowerCase(Locale.ROOT));
               info.add("configVersion", core.getSolrConfig().getZnodeVersion());
-              SimpleOrderedMap cloudInfo = new SimpleOrderedMap<>();
+              SimpleOrderedMap<String> cloudInfo = new SimpleOrderedMap<>();
               cloudInfo.add(COLLECTION, core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
               cloudInfo.add(SHARD, core.getCoreDescriptor().getCloudDescriptor().getShardId());
               cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());

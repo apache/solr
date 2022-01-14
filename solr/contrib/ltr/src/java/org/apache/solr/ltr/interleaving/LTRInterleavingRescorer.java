@@ -18,6 +18,7 @@ package org.apache.solr.ltr.interleaving;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -104,7 +105,7 @@ public class LTRInterleavingRescorer extends LTRRescorer {
 
     for (int i = 0; i < rerankingQueries.length; i++) {
       if (originalRankingIndex == null || originalRankingIndex != i) {
-        sortByScore(reRankedPerModel[i]);
+        Arrays.sort(reRankedPerModel[i], scoreComparator);
       }
     }
 
@@ -141,7 +142,10 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       }
       for (int i = 0; i < rerankingQueries.length; i++) {
         if (modelWeights[i] != null) {
-          scoreSingleHit(indexSearcher, topN, modelWeights[i], docBase, hitUpto, new ScoreDoc(hit.doc, hit.score, hit.shardIndex), docID, rerankingQueries[i], scorers[i], rerankedPerModel[i]);
+          final ScoreDoc hit_i = new ScoreDoc(hit.doc, hit.score, hit.shardIndex);
+          if (scoreSingleHit(topN, docBase, hitUpto, hit_i, docID, scorers[i], rerankedPerModel[i])) {
+            logSingleHit(indexSearcher, modelWeights[i], hit_i.doc, rerankingQueries[i]);
+          }
         }
       }
       hitUpto++;

@@ -16,13 +16,13 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
 
@@ -54,7 +54,7 @@ public class NoOpResponseParser extends ResponseParser {
   public NamedList<Object> processResponse(Reader reader) {
     try {
       StringWriter writer = new StringWriter();
-      IOUtils.copy(reader, writer);
+      reader.transferTo(writer);
       String output = writer.toString();
       NamedList<Object> list = new NamedList<>();
       list.add("response", output);
@@ -68,7 +68,7 @@ public class NoOpResponseParser extends ResponseParser {
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     try {
       StringWriter writer = new StringWriter();
-      IOUtils.copy(body, writer, encoding);
+      new InputStreamReader(body, encoding).transferTo(writer);
       String output = writer.toString();
       NamedList<Object> list = new NamedList<>();
       list.add("response", output);

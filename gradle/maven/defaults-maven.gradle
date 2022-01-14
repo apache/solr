@@ -35,6 +35,7 @@ configure(rootProject) {
         ":solr:contrib:langid",
         ":solr:contrib:jaegertracer-configurator",
         ":solr:contrib:prometheus-exporter",
+        ":solr:contrib:s3-repository",
         ":solr:contrib:scripting",
         ":solr:test-framework",
     ]

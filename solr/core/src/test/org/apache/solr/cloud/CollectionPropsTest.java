@@ -201,9 +201,8 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     // Trigger a value change event
     log.info("setting value2");
     collectionProps.setCollectionProperty(collectionName, "property", "value2");
-    if (log.isInfoEnabled()) {
-      log.info("(value2) waitForTrigger=={}", watcher.waitForTrigger());
-    }
+    int wft = watcher.waitForTrigger();
+    log.info("(value2) waitForTrigger=={}", wft);
     assertEquals("value2", watcher.getProps().get("property"));
 
     // Delete the properties znode
@@ -284,15 +283,14 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     }
     
     @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public boolean onStateChanged(Map<String, String> collectionProperties) {
       log.info("{}: state changed...", name);
       if (forceReadPropsFromZk) {
         final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-        props = Collections.unmodifiableMap(new HashMap(zkStateReader.getCollectionProperties(collectionName)));
+        props = Map.copyOf(zkStateReader.getCollectionProperties(collectionName));
         log.info("{}: Setting props from zk={}", name, props);
       } else {
-        props = Collections.unmodifiableMap(new HashMap(collectionProperties));
+        props = Map.copyOf(collectionProperties);
         log.info("{}: Setting props from caller={}", name, props);
       }
       

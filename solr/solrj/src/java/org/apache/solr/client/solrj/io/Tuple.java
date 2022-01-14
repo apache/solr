@@ -16,6 +16,9 @@
  */
 package org.apache.solr.client.solrj.io;
 
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.StreamParams;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -25,9 +28,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.params.StreamParams;
+import java.util.stream.Collectors;
 
 /**
  *  A simple abstraction of a record containing key/value pairs.
@@ -87,10 +88,20 @@ public class Tuple implements Cloneable, MapWriter {
    * @param fields map containing keys and values to be copied to this tuple
    */
   public Tuple(Map<String, ?> fields) {
-    // TODO Use bulk putAll operation that will properly size the map
-    // https://issues.apache.org/jira/browse/SOLR-15480
-    for (Map.Entry<String, ?> entry : fields.entrySet()) {
-      put(entry.getKey(), entry.getValue());
+    putAll(fields);
+  }
+
+  /**
+   * A copy constructor
+   * @param original Tuple that will be copied
+   */
+  public Tuple(Tuple original) {
+    this.putAll(original.fields);
+    if (original.fieldNames != null) {
+      this.fieldNames = new ArrayList<>(original.fieldNames);
+    }
+    if (original.fieldLabels != null) {
+      this.fieldLabels = new HashMap<>(original.fieldLabels);
     }
   }
 
@@ -103,6 +114,16 @@ public class Tuple implements Cloneable, MapWriter {
     if (key.equals(StreamParams.EOF)) {
       EOF = true;
     } else if (key.equals(StreamParams.EXCEPTION)) {
+      EXCEPTION = true;
+    }
+  }
+
+  public void putAll(Map<String, ?> fields) {
+    this.fields.putAll(fields);
+    if (fields.containsKey(StreamParams.EOF)) {
+      EOF = true;
+    }
+    if (fields.containsKey(StreamParams.EXCEPTION)) {
       EXCEPTION = true;
     }
   }
@@ -275,15 +296,33 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   public Tuple clone() {
-    Tuple clone = new Tuple();
-    clone.fields.putAll(fields);
-    // TODO This doesn't copy EOF/Exception https://issues.apache.org/jira/browse/SOLR-15480
+    Tuple clone = new Tuple(this);
     return clone;
   }
-  
+
+  /**
+   * The other tuples fields and fieldLabels will be putAll'd directly to this's fields and fieldLabels while
+   * other's fieldNames will be added such that duplicates aren't present.
+   * @param other Tuple to be merged into this.
+   */
   public void merge(Tuple other) {
-    // TODO This doesn't copy EOF/Exception https://issues.apache.org/jira/browse/SOLR-15480
-    fields.putAll(other.getFields());
+    this.putAll(other.getFields());
+    if (other.fieldNames != null) {
+      if (this.fieldNames != null) {
+        this.fieldNames.addAll(other.fieldNames.stream()
+                                       .filter(otherFieldName -> !this.fieldNames.contains(otherFieldName))
+                                       .collect(Collectors.toList()));
+     } else {
+        this.fieldNames = new ArrayList<>(other.fieldNames);
+      }
+    }
+    if (other.fieldLabels != null) {
+      if (this.fieldLabels != null) {
+        this.fieldLabels.putAll(other.fieldLabels);
+      } else {
+        this.fieldLabels = new HashMap<>(other.fieldLabels);
+      }
+    }
   }
 
   @Override

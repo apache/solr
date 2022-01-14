@@ -110,6 +110,12 @@ The `HdfsDirectoryFactory` has a number of settings defined as part of the `dire
 === Solr HDFS Settings
 
 `solr.hdfs.home`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 A root location in HDFS for Solr to write collection data to.
 Rather than specifying an HDFS location for the data directory or update log directory, use this to specify one root location and have everything automatically created within this HDFS location.
 The structure of this parameter is `hdfs://host:port/path/solr`.
@@ -117,45 +123,91 @@ The structure of this parameter is `hdfs://host:port/path/solr`.
 === Block Cache Settings
 
 `solr.hdfs.blockcache.enabled`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 Enable the blockcache.
-The default is `true`.
 
 `solr.hdfs.blockcache.read.enabled`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 Enable the read cache.
-The default is `true`.
 
 `solr.hdfs.blockcache.direct.memory.allocation`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 Enable direct memory allocation.
 If this is `false`, heap is used.
-The default is `true`.
 
 `solr.hdfs.blockcache.slab.count`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
 Number of memory slabs to allocate.
 Each slab is 128 MB in size.
-The default is `1`.
 
 `solr.hdfs.blockcache.global`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 Enable/Disable using one global cache for all SolrCores.
 The settings used will be from the first HdfsDirectoryFactory created.
-The default is `true`.
 
 === NRTCachingDirectory Settings
 
 `solr.hdfs.nrtcachingdirectory.enable`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
 Enable the use of NRTCachingDirectory.
-The default is `true`.
 
 `solr.hdfs.nrtcachingdirectory.maxmergesizemb`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `16`
+|===
++
 NRTCachingDirectory max segment size for merges.
-The default is `16`.
 
 `solr.hdfs.nrtcachingdirectory.maxcachedmb`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `192`
+|===
++
 NRTCachingDirectory max cache size.
-The default is `192`.
 
 === HDFS Client Configuration Settings
 
 `solr.hdfs.confdir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Pass the location of HDFS client configuration files - needed for HDFS HA for example.
 
 === Kerberos Authentication Settings
@@ -165,15 +217,32 @@ If your HDFS directories are protected using Kerberos, then you need to configur
 To enable Kerberos authentication from Solr, you need to set the following parameters:
 
 `solr.hdfs.security.kerberos.enabled`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 Set to `true` to enable Kerberos authentication.
-The default is `false`.
 
 `solr.hdfs.security.kerberos.keytabfile`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 A keytab file contains pairs of Kerberos principals and encrypted keys which allows for password-less authentication when Solr attempts to authenticate with secure Hadoop.
 +
 This file will need to be present on all Solr servers at the same path provided in this parameter.
 
 `solr.hdfs.security.kerberos.principal`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The Kerberos principal that Solr should use to authenticate to secure Hadoop; the format of a typical Kerberos V5 principal is: `primary/instance@realm`.
 
 == Example solrconfig.xml for HDFS

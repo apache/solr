@@ -52,7 +52,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
          InputStream is = srl.openResource("solrj/README");
          FileOutputStream os = new FileOutputStream(file)) {
       assertNotNull(is);
-      IOUtils.copy(is, os);
+      is.transferTo(os);
     }
 
     ContentStreamBase stream = new ContentStreamBase.FileStream(file);
@@ -76,7 +76,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
          InputStream is = srl.openResource("solrj/README");
          FileOutputStream os = new FileOutputStream(file);
          GZIPOutputStream zos = new GZIPOutputStream(os)) {
-      IOUtils.copy(is, zos);
+      is.transferTo(zos);
     }
 
     ContentStreamBase stream = new ContentStreamBase.FileStream(file);
@@ -101,7 +101,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     try (SolrResourceLoader srl = new SolrResourceLoader(Paths.get("").toAbsolutePath());
          InputStream is = srl.openResource("solrj/README");
          FileOutputStream os = new FileOutputStream(file)) {
-      IOUtils.copy(is, os);
+      is.transferTo(os);
     }
 
     ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
@@ -132,7 +132,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
          InputStream is = srl.openResource("solrj/README");
          FileOutputStream os = new FileOutputStream(file);
          GZIPOutputStream zos = new GZIPOutputStream(os)) {
-      IOUtils.copy(is, zos);
+      is.transferTo(zos);
     }
 
     ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
@@ -158,7 +158,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
          InputStream is = srl.openResource("solrj/README");
          FileOutputStream os = new FileOutputStream(file);
          GZIPOutputStream zos = new GZIPOutputStream(os)) {
-      IOUtils.copy(is, zos);
+      is.transferTo(zos);
     }
 
     ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
@@ -184,7 +184,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
          InputStream is = srl.openResource("solrj/README");
          FileOutputStream os = new FileOutputStream(file);
          GZIPOutputStream zos = new GZIPOutputStream(os)) {
-      IOUtils.copy(is, zos);
+      is.transferTo(zos);
     }
 
     ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));

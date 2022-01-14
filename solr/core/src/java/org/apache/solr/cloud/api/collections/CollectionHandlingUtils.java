@@ -174,8 +174,7 @@ public class CollectionHandlingUtils {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
-  static void commit(@SuppressWarnings({"rawtypes"}) NamedList results, String slice, Replica parentShardLeader) {
+  static void commit(NamedList<Object> results, String slice, Replica parentShardLeader) {
     log.debug("Calling soft commit to make sub shard updates visible");
     String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
     // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
@@ -246,7 +245,7 @@ public class CollectionHandlingUtils {
     }
   }
 
-  static void cleanupCollection(String collectionName, @SuppressWarnings({"rawtypes"})NamedList results, CollectionCommandContext ccc) throws Exception {
+  static void cleanupCollection(String collectionName, NamedList<Object> results, CollectionCommandContext ccc) throws Exception {
     log.error("Cleaning up collection [{}].", collectionName);
     Map<String, Object> props = Map.of(
         Overseer.QUEUE_OPERATION, DELETE.toLower(),
@@ -278,18 +277,17 @@ public class CollectionHandlingUtils {
     return results;
   }
 
-  @SuppressWarnings({"rawtypes"})
   static void cleanBackup(BackupRepository repository, URI backupUri, BackupId backupId, CollectionCommandContext ccc) throws Exception {
-    new DeleteBackupCmd(ccc).deleteBackupIds(backupUri, repository, Collections.singleton(backupId), new NamedList());
+    new DeleteBackupCmd(ccc).deleteBackupIds(backupUri, repository, Collections.singleton(backupId), new NamedList<>());
   }
 
   static void deleteBackup(BackupRepository repository, URI backupPath, int maxNumBackup,
-                    @SuppressWarnings({"rawtypes"}) NamedList results, CollectionCommandContext ccc) throws Exception {
+                    NamedList<Object> results, CollectionCommandContext ccc) throws Exception {
     new DeleteBackupCmd(ccc).keepNumberOfBackup(repository, backupPath, maxNumBackup, results);
   }
 
   static List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message,
-                                      @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete, CollectionCommandContext ccc)
+                                      NamedList<Object> results, Runnable onComplete, CollectionCommandContext ccc)
       throws Exception {
 
     return new AddReplicaCmd(ccc).addReplica(clusterState, message, results, onComplete);
@@ -332,7 +330,6 @@ public class CollectionHandlingUtils {
     processResponse(results, e, nodeName, solrResponse, shard, okayExceptions);
   }
 
-  @SuppressWarnings("deprecation")
   static void processResponse(NamedList<Object> results, Throwable e, String nodeName, SolrResponse solrResponse, String shard, Set<String> okayExceptions) {
     String rootThrowable = null;
     if (e instanceof BaseHttpSolrClient.RemoteSolrException) {
@@ -347,8 +344,8 @@ public class CollectionHandlingUtils {
     }
   }
 
-  @SuppressWarnings("unchecked")
   private static void addFailure(NamedList<Object> results, String key, Object value) {
+    @SuppressWarnings("unchecked")
     SimpleOrderedMap<Object> failure = (SimpleOrderedMap<Object>) results.get("failure");
     if (failure == null) {
       failure = new SimpleOrderedMap<>();
@@ -357,8 +354,8 @@ public class CollectionHandlingUtils {
     failure.add(key, value);
   }
 
-  @SuppressWarnings("unchecked")
   private static void addSuccess(NamedList<Object> results, String key, Object value) {
+    @SuppressWarnings("unchecked")
     SimpleOrderedMap<Object> success = (SimpleOrderedMap<Object>) results.get("success");
     if (success == null) {
       success = new SimpleOrderedMap<>();
@@ -377,7 +374,7 @@ public class CollectionHandlingUtils {
     do {
       sreq = new ShardRequest();
       params.set("qt", adminPath);
-      sreq.purpose = 1;
+      sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
       String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
       sreq.shards = new String[] {replica};
       sreq.actualShards = sreq.shards;
@@ -501,7 +498,7 @@ public class CollectionHandlingUtils {
 
       ShardRequest sreq = new ShardRequest();
       params.set("qt", adminPath);
-      sreq.purpose = 1;
+      sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
       String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
       sreq.shards = new String[] {replica};
       sreq.actualShards = sreq.shards;

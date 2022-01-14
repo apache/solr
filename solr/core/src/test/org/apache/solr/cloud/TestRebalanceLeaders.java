@@ -19,10 +19,10 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -181,7 +182,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
           break;
         }
 
-        TimeUnit.MILLISECONDS.sleep(100);
+        TimeUnit.MILLISECONDS.sleep(50);
       }
       if (count != 1 || rightRep == false) {
         fail("The property " + prop + " was not uniquely distributed in slice " + slice.getName()
@@ -203,7 +204,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
         checkElectionQueues();
         return;
       }
-      TimeUnit.MILLISECONDS.sleep(100);
+      TimeUnit.MILLISECONDS.sleep(50);
     }
 
     log.error("Leaders are not all preferres {}", cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME));
@@ -446,8 +447,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       params.set("shardUnique", "true");
     }
 
-    @SuppressWarnings({"rawtypes"})
-    SolrRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     cluster.getSolrClient().request(request);
     String propLC = prop.toLowerCase(Locale.ROOT);
@@ -491,18 +491,41 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     // Now we have a list of jettys, and there is one missing. Stop all of the remaining jettys, then start them again
     // to concentrate the leaders. It's not necessary that all shards have a leader.
 
+    ExecutorService executorService = ExecutorUtil.newMDCAwareCachedThreadPool("Start Jetty");
+
     for (JettySolrRunner jetty : jettys) {
       cluster.stopJettySolrRunner(jetty);
+    }
+
+    ExecutorUtil.shutdownAndAwaitTermination(executorService);
+
+    for (JettySolrRunner jetty : jettys) {
+      cluster.stopJettySolrRunner(jetty);
+    }
+
+
+    for (JettySolrRunner jetty : jettys) {
       cluster.waitForJettyToStop(jetty);
     }
     checkReplicasInactive(jettys);
 
+    executorService = ExecutorUtil.newMDCAwareCachedThreadPool("Start Jetty");
+
     for (int idx = 0; idx < jettys.size(); ++idx) {
-      cluster.startJettySolrRunner(jettys.get(idx));
+      int finalIdx = idx;
+      executorService.submit(()->{
+        try {
+          cluster.startJettySolrRunner(jettys.get(finalIdx));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      });
     }
     cluster.waitForAllNodes(60);
     // the nodes are present, but are all replica active?
     checkAllReplicasActive();
+
+    ExecutorUtil.shutdownAndAwaitTermination(executorService);
   }
 
   // while banging my nead against a wall, I put a lot of force refresh statements in. Want to leave them in
@@ -614,7 +637,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       if (checkdUniquePropPerShard(uniquePropMaps, prop)) {
         return uniquePropMaps;
       }
-      TimeUnit.MILLISECONDS.sleep(100);
+      TimeUnit.MILLISECONDS.sleep(10);
     }
     fail("There should be exactly one replica with value " + prop + " set to true per shard: "
         + cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).toString());

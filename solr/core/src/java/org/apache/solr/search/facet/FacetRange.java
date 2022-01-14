@@ -41,8 +41,7 @@ public class FacetRange extends FacetRequestSorted {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
-  public FacetProcessor createFacetProcessor(FacetContext fcontext) {
+  public FacetProcessor<FacetRange> createFacetProcessor(FacetContext fcontext) {
     return new FacetRangeProcessor(fcontext, this);
   }
 

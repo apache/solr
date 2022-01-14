@@ -27,6 +27,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
@@ -34,6 +36,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -59,8 +62,7 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     String source = message.getStr(CollectionParams.SOURCE_NODE, message.getStr("source"));
     String target = message.getStr(CollectionParams.TARGET_NODE, message.getStr("target"));
@@ -78,6 +80,8 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     }
     if (target != null && !clusterState.liveNodesContain(target)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Target Node: " + target + " is not live");
+    } else if (clusterState.getLiveNodes().size() <= 1) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No nodes other than the source node: " + source + " are live, therefore replicas cannot be moved");
     }
     List<ZkNodeProps> sourceReplicas = getReplicasOfNode(source, clusterState);
     // how many leaders are we moving? for these replicas we have to make sure that either:
@@ -98,90 +102,99 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(sourceReplicas.size(), ccc.getCloseableToLatchOn());
 
     SolrCloseableLatch replicasToRecover = new SolrCloseableLatch(numLeaders, ccc.getCloseableToLatchOn());
-    try {
+
+    List<ReplicaPosition> replicaPositions = null;
+    if (target == null || target.isEmpty()) {
+      List<Assign.AssignRequest> assignRequests = new ArrayList<>(sourceReplicas.size());
       for (ZkNodeProps sourceReplica : sourceReplicas) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList nl = new NamedList();
-        String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
-        if (log.isInfoEnabled()) {
-          log.info("Going to create replica for collection={} shard={} on node={}", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
-        }
-        String targetNode = target;
-        if (targetNode == null) {
-          Replica.Type replicaType = Replica.Type.get(sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
-          int numNrtReplicas = replicaType == Replica.Type.NRT ? 1 : 0;
-          int numTlogReplicas = replicaType == Replica.Type.TLOG ? 1 : 0;
-          int numPullReplicas = replicaType == Replica.Type.PULL ? 1 : 0;
-          Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
-              .forCollection(sourceCollection)
-              .forShard(Collections.singletonList(sourceReplica.getStr(SHARD_ID_PROP)))
-              .assignNrtReplicas(numNrtReplicas)
-              .assignTlogReplicas(numTlogReplicas)
-              .assignPullReplicas(numPullReplicas)
-              .onNodes(new ArrayList<>(ccc.getSolrCloudManager().getClusterStateProvider().getLiveNodes()))
-              .build();
-          Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
-              ccc.getCoreContainer(),
-              clusterState, clusterState.getCollection(sourceCollection));
-          targetNode = assignStrategy.assign(ccc.getSolrCloudManager(), assignRequest).get(0).node;
-        }
-        ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
-        if (async != null) msg.getProperties().put(ASYNC, async);
-        final ZkNodeProps addedReplica = new AddReplicaCmd(ccc).addReplica(clusterState,
-            msg, nl, () -> {
-              countDownLatch.countDown();
-              if (nl.get("failure") != null) {
-                String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
-                    " on node=%s", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
-                log.warn(errorString);
-                // one replica creation failed. Make the best attempt to
-                // delete all the replicas created so far in the target
-                // and exit
-                synchronized (results) {
-                  results.add("failure", errorString);
-                  anyOneFailed.set(true);
-                }
-              } else {
-                if (log.isDebugEnabled()) {
-                  log.debug("Successfully created replica for collection={} shard={} on node={}",
-                      sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
-                }
-              }
-            }).get(0);
-
-        if (addedReplica != null) {
-          createdReplicas.add(addedReplica);
-          if (sourceReplica.getBool(ZkStateReader.LEADER_PROP, false) || waitForFinalState) {
-            String shardName = sourceReplica.getStr(SHARD_ID_PROP);
-            String replicaName = sourceReplica.getStr(ZkStateReader.REPLICA_PROP);
-            String collectionName = sourceCollection;
-            String key = collectionName + "_" + replicaName;
-            CollectionStateWatcher watcher;
-            if (waitForFinalState) {
-              watcher = new ActiveReplicaWatcher(collectionName, null,
-                  Collections.singletonList(addedReplica.getStr(ZkStateReader.CORE_NAME_PROP)), replicasToRecover);
-            } else {
-              watcher = new LeaderRecoveryWatcher(collectionName, shardName, replicaName,
-                  addedReplica.getStr(ZkStateReader.CORE_NAME_PROP), replicasToRecover);
-            }
-            watchers.put(key, watcher);
-            log.debug("--- adding {}, {}", key, watcher);
-            zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
-          } else {
-            log.debug("--- not waiting for {}", addedReplica);
-          }
-        }
+        Replica.Type replicaType = Replica.Type.get(sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
+        int numNrtReplicas = replicaType == Replica.Type.NRT ? 1 : 0;
+        int numTlogReplicas = replicaType == Replica.Type.TLOG ? 1 : 0;
+        int numPullReplicas = replicaType == Replica.Type.PULL ? 1 : 0;
+        Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
+            .forCollection(sourceReplica.getStr(COLLECTION_PROP))
+            .forShard(Collections.singletonList(sourceReplica.getStr(SHARD_ID_PROP)))
+            .assignNrtReplicas(numNrtReplicas)
+            .assignTlogReplicas(numTlogReplicas)
+            .assignPullReplicas(numPullReplicas)
+            .onNodes(ccc.getSolrCloudManager().getClusterStateProvider().getLiveNodes().stream().filter(node -> !node.equals(source)).collect(Collectors.toList()))
+            .build();
+        assignRequests.add(assignRequest);
       }
-
-      log.debug("Waiting for replicas to be added");
-      if (!countDownLatch.await(timeout, TimeUnit.SECONDS)) {
-        log.info("Timed out waiting for replicas to be added");
-        anyOneFailed.set(true);
-      } else {
-        log.debug("Finished waiting for replicas to be added");
-      }
-    } finally {
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
+      replicaPositions = assignStrategy.assign(ccc.getSolrCloudManager(), assignRequests);
     }
+    int replicaPositionIdx = 0;
+    for (ZkNodeProps sourceReplica : sourceReplicas) {
+      String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
+      if (log.isInfoEnabled()) {
+        log.info("Going to create replica for collection={} shard={} on node={}", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
+      }
+      String targetNode;
+      // Use the assigned replica positions, if target is null or empty (checked above)
+      if (replicaPositions != null) {
+        targetNode = replicaPositions.get(replicaPositionIdx).node;
+        replicaPositionIdx++;
+      } else {
+        targetNode = target;
+      }
+      ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
+      if (async != null) msg.getProperties().put(ASYNC, async);
+      NamedList<Object> nl = new NamedList<>();
+      final ZkNodeProps addedReplica = new AddReplicaCmd(ccc).addReplica(clusterState,
+          msg, nl, () -> {
+            countDownLatch.countDown();
+            if (nl.get("failure") != null) {
+              String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
+                  " on node=%s", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
+              log.warn(errorString);
+              // one replica creation failed. Make the best attempt to
+              // delete all the replicas created so far in the target
+              // and exit
+              synchronized (results) {
+                results.add("failure", errorString);
+                anyOneFailed.set(true);
+              }
+            } else {
+              if (log.isDebugEnabled()) {
+                log.debug("Successfully created replica for collection={} shard={} on node={}",
+                    sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
+              }
+            }
+          }).get(0);
+
+      if (addedReplica != null) {
+        createdReplicas.add(addedReplica);
+        if (sourceReplica.getBool(ZkStateReader.LEADER_PROP, false) || waitForFinalState) {
+          String shardName = sourceReplica.getStr(SHARD_ID_PROP);
+          String replicaName = sourceReplica.getStr(ZkStateReader.REPLICA_PROP);
+          String collectionName = sourceCollection;
+          String key = collectionName + "_" + replicaName;
+          CollectionStateWatcher watcher;
+          if (waitForFinalState) {
+            watcher = new ActiveReplicaWatcher(collectionName, null,
+                Collections.singletonList(addedReplica.getStr(ZkStateReader.CORE_NAME_PROP)), replicasToRecover);
+          } else {
+            watcher = new LeaderRecoveryWatcher(collectionName, shardName, replicaName,
+                addedReplica.getStr(ZkStateReader.CORE_NAME_PROP), replicasToRecover);
+          }
+          watchers.put(key, watcher);
+          log.debug("--- adding {}, {}", key, watcher);
+          zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
+        } else {
+          log.debug("--- not waiting for {}", addedReplica);
+        }
+      }
+    }
+
+    log.debug("Waiting for replicas to be added");
+    if (!countDownLatch.await(timeout, TimeUnit.SECONDS)) {
+      log.info("Timed out waiting for replicas to be added");
+      anyOneFailed.set(true);
+    } else {
+      log.debug("Finished waiting for replicas to be added");
+    }
+
     // now wait for leader replicas to recover
     log.debug("Waiting for {} leader replicas to recover", numLeaders);
     if (!replicasToRecover.await(timeout, TimeUnit.SECONDS)) {
@@ -200,8 +213,7 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
       log.info("Failed to create some replicas. Cleaning up all replicas on target node");
       SolrCloseableLatch cleanupLatch = new SolrCloseableLatch(createdReplicas.size(), ccc.getCloseableToLatchOn());
       for (ZkNodeProps createdReplica : createdReplicas) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList deleteResult = new NamedList();
+        NamedList<Object> deleteResult = new NamedList<>();
         try {
           new DeleteReplicaCmd(ccc).deleteReplica(zkStateReader.getClusterState(), createdReplica.plus("parallel", "true"), deleteResult, () -> {
             cleanupLatch.countDown();

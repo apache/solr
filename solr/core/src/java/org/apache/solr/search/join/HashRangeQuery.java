@@ -88,19 +88,15 @@ public class HashRangeQuery extends Query {
         }
 
         IndexReader.CacheKey cacheKey = cacheHelper.getKey();
-        synchronized (cacheKey) {
-          int[] hashes = cache.get(cacheKey);
-          if (hashes == null) {
-            hashes = new int[context.reader().maxDoc()];
-            SortedDocValues docValues = context.reader().getSortedDocValues(field);
-            int doc;
-            while ((doc = docValues.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-              hashes[doc] = hash(docValues);
-            }
-            cache.put(cacheKey, hashes);
+        return cache.computeIfAbsent(cacheKey, ck -> {
+          int[] hashes = new int[context.reader().maxDoc()];
+          SortedDocValues docValues = context.reader().getSortedDocValues(field);
+          int doc;
+          while ((doc = docValues.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            hashes[doc] = hash(docValues);
           }
           return hashes;
-        }
+        });
       }
 
       private int hash(SortedDocValues docValues) throws IOException {
@@ -128,9 +124,7 @@ public class HashRangeQuery extends Query {
   }
 
   private boolean equalsTo(HashRangeQuery other) {
-    return Objects.equals(field, other.field) &&
-            Objects.equals(lower, other.lower) &&
-            Objects.equals(upper, other.upper);
+    return lower == other.lower && upper == other.upper && Objects.equals(field, other.field);
   }
 
   @Override

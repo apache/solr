@@ -33,7 +33,6 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.jmx.ManagedUtil;
-import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.ServerCnxn;
 import org.apache.zookeeper.server.ServerCnxnFactory;
@@ -57,8 +56,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -262,33 +259,6 @@ public class ZkTestServer {
       }
     }
 
-    private class TestServerCnxn extends NIOServerCnxn {
-
-      private final WatchLimiter limiter;
-
-      public TestServerCnxn(ZooKeeperServer zk, SocketChannel sock, SelectionKey sk,
-                            NIOServerCnxnFactory factory, WatchLimiter limiter) throws IOException {
-        super(zk, sock, sk, factory, null);
-        this.limiter = limiter;
-      }
-
-      @Override
-      public synchronized void process(WatchedEvent event) {
-        limiter.updateForFire(event);
-        super.process(event);
-      }
-    }
-
-    private class TestServerCnxnFactory extends NIOServerCnxnFactory {
-
-      private final WatchLimiter limiter;
-
-      public TestServerCnxnFactory(WatchLimiter limiter) throws IOException {
-        super();
-        this.limiter = limiter;
-      }
-    }
-
     private class TestZKDatabase extends ZKDatabase {
 
       private final WatchLimiter limiter;
@@ -341,7 +311,7 @@ public class ZkTestServer {
             config.getMinSessionTimeout(), config.getMaxSessionTimeout(),
             config.getClientPortListenBacklog(),
             new TestZKDatabase(ftxn, limiter), "");
-        cnxnFactory = new TestServerCnxnFactory(limiter);
+        cnxnFactory = new NIOServerCnxnFactory();
         cnxnFactory.configure(config.getClientPortAddress(),
             config.getMaxClientCnxns());
         cnxnFactory.startup(zooKeeperServer);

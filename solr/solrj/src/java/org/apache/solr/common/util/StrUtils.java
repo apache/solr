@@ -17,6 +17,7 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
+import java.nio.CharBuffer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -112,13 +113,13 @@ public class StrUtils {
    */
   public static List<String> splitSmart(String s, String separator, boolean decode) {
     ArrayList<String> lst = new ArrayList<>(2);
-    StringBuilder sb = new StringBuilder();
+    CharBuffer buffer = CharBuffer.allocate(s.length());
     int pos = 0, end = s.length();
     while (pos < end) {
       if (s.startsWith(separator, pos)) {
-        if (sb.length() > 0) {
-          lst.add(sb.toString());
-          sb = new StringBuilder();
+        if (buffer.position() > 0) {
+          lst.add(buffer.flip().toString());
+          buffer.clear();
         }
         pos += separator.length();
         continue;
@@ -126,7 +127,7 @@ public class StrUtils {
 
       char ch = s.charAt(pos++);
       if (ch == '\\') {
-        if (!decode) sb.append(ch);
+        if (!decode) buffer.append(ch);
         if (pos >= end) break;  // ERROR, or let it go?
         ch = s.charAt(pos++);
         if (decode) {
@@ -150,11 +151,11 @@ public class StrUtils {
         }
       }
 
-      sb.append(ch);
+      buffer.append(ch);
     }
 
-    if (sb.length() > 0) {
-      lst.add(sb.toString());
+    if (buffer.position() > 0) {
+      lst.add(buffer.flip().toString());
     }
 
     return lst;

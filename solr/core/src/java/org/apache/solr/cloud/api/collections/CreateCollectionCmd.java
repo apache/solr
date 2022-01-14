@@ -89,8 +89,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
     if (ccc.getZkStateReader().aliasesManager != null) { // not a mock ZkStateReader
       ccc.getZkStateReader().aliasesManager.update();
     }
@@ -197,8 +196,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
       final List<ReplicaPosition> replicaPositions;
       try {
-        replicaPositions = buildReplicaPositions(ccc.getCoreContainer(), ccc.getSolrCloudManager(), clusterState, newColl,
-            message, shardNames);
+        replicaPositions = buildReplicaPositions(ccc.getCoreContainer(), ccc.getSolrCloudManager(), clusterState, message, shardNames);
       } catch (Assign.AssignmentException e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
         new DeleteCollectionCmd(ccc).call(clusterState, deleteMessage, results);
@@ -232,8 +230,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       for (ReplicaPosition replicaPosition : replicaPositions) {
         String nodeName = replicaPosition.node;
 
-        String coreName = Assign.buildSolrCoreName(ccc.getSolrCloudManager().getDistribStateManager(),
-            ccc.getSolrCloudManager().getClusterStateProvider().getClusterState().getCollection(collectionName),
+        String coreName = Assign.buildSolrCoreName(ccc.getSolrCloudManager().getDistribStateManager(), collectionName,
+            ccc.getSolrCloudManager().getClusterStateProvider().getClusterState().getCollectionOrNull(collectionName),
             replicaPosition.shard, replicaPosition.type, true);
         if (log.isDebugEnabled()) {
           log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}"
@@ -295,7 +293,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         ShardRequest sreq = new ShardRequest();
         sreq.nodeName = nodeName;
         params.set("qt", ccc.getAdminPath());
-        sreq.purpose = 1;
+        sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
         sreq.shards = new String[]{baseUrl};
         sreq.actualShards = sreq.shards;
         sreq.params = params;
@@ -334,8 +332,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       }
 
       shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
-      @SuppressWarnings({"rawtypes"})
-      boolean failure = results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0;
+      boolean failure = results.get("failure") != null && ((SimpleOrderedMap<?>)results.get("failure")).size() > 0;
       if (isPRS) {
         TimeOut timeout = new TimeOut(Integer.getInteger("solr.waitToSeeReplicasInStateTimeoutSeconds", 120), TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource()); // could be a big cluster
         PerReplicaStates prs = PerReplicaStates.fetch(collectionPath, ccc.getZkStateReader().getZkClient(), null);
@@ -391,7 +388,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   private static List<ReplicaPosition> buildReplicaPositions(CoreContainer coreContainer, SolrCloudManager cloudManager, ClusterState clusterState,
-                                                             DocCollection docCollection,
                                                              ZkNodeProps message,
                                                              List<String> shardNames) throws IOException, InterruptedException, Assign.AssignmentException {
     final String collectionName = message.getStr(NAME);
@@ -408,7 +404,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     // but (for now) require that each core goes on a distinct node.
 
     List<ReplicaPosition> replicaPositions;
-    List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, CollectionHandlingUtils.RANDOM);
+    List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, CollectionHandlingUtils.RANDOM, cloudManager.getDistribStateManager());
     if (nodeList.isEmpty()) {
       log.warn("It is unusual to create a collection ({}) without cores.", collectionName);
 
@@ -432,7 +428,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           .assignPullReplicas(numPullReplicas)
           .onNodes(nodeList)
           .build();
-      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(coreContainer, clusterState, docCollection);
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(coreContainer);
       replicaPositions = assignStrategy.assign(cloudManager, assignRequest);
     }
     return replicaPositions;

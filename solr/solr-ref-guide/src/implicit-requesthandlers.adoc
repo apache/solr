@@ -48,7 +48,8 @@ Health:: Report the health of the node (_available only in SolrCloud mode_)
 v2: `api/node/health` |{solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler] |
 |===
 +
-This endpoint also accepts additional request parameters. Please see {solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[Javadocs] for details.
+This endpoint also accepts additional request parameters.
+Please see {solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[Javadocs] for details.
 
 Logging:: Retrieve and modify registered loggers.
 +
@@ -60,7 +61,8 @@ Logging:: Retrieve and modify registered loggers.
 v2: `api/node/logging` |{solr-javadocs}/core/org/apache/solr/handler/admin/LoggingHandler.html[LoggingHandler] |`_ADMIN_LOGGING`
 |===
 
-Luke:: Expose the internal Lucene index. This handler must have a collection name in the path to the endpoint.
+Luke:: Expose the internal Lucene index.
+This handler must have a collection name in the path to the endpoint.
 +
 *Documentation*: <<luke-request-handler.adoc#,Luke Request Handler>>
 +
@@ -70,7 +72,8 @@ Luke:: Expose the internal Lucene index. This handler must have a collection nam
 |`solr/<collection>/admin/luke` |{solr-javadocs}/core/org/apache/solr/handler/admin/LukeRequestHandler.html[LukeRequestHandler] |`_ADMIN_LUKE`
 |===
 
-MBeans:: Provide info about all registered {solr-javadocs}/core/org/apache/solr/core/SolrInfoBean.html[SolrInfoMBeans]. This handler must have a collection name in the path to the endpoint.
+MBeans:: Provide info about all registered {solr-javadocs}/core/org/apache/solr/core/SolrInfoBean.html[SolrInfoMBeans].
+This handler must have a collection name in the path to the endpoint.
 +
 *Documentation*: <<mbean-request-handler.adoc#,MBean Request Handler>>
 +
@@ -80,7 +83,8 @@ MBeans:: Provide info about all registered {solr-javadocs}/core/org/apache/solr/
 |`solr/<collection>/admin/mbeans` |{solr-javadocs}/core/org/apache/solr/handler/admin/SolrInfoMBeanHandler.html[SolrInfoMBeanHandler] |`_ADMIN_MBEANS`
 |===
 
-Ping:: Health check. This handler must have a collection name in the path to the endpoint.
+Ping:: Health check.
+This handler must have a collection name in the path to the endpoint.
 +
 *Documentation*: <<ping.adoc#,Ping>>
 +
@@ -90,7 +94,8 @@ Ping:: Health check. This handler must have a collection name in the path to the
 |`solr/<collection>/admin/ping` |{solr-javadocs}/core/org/apache/solr/handler/PingRequestHandler.html[PingRequestHandler] |`_ADMIN_PING`
 |===
 
-Plugins:: Return info about all registered plugins. This handler must have a collection name in the path to the endpoint.
+Plugins:: Return info about all registered plugins.
+This handler must have a collection name in the path to the endpoint.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -237,9 +242,9 @@ Graph Traversal:: Return http://graphml.graphdrawing.org/[GraphML] formatted out
 |`solr/<collection>/graph` |{solr-javadocs}/core/org/apache/solr/handler/GraphHandler.html[GraphHandler] |`_ADMIN_GRAPH`
 |===
 
-SQL:: Front end of the Parallel SQL interface.
+SQL:: SQL query support.
 +
-*Documentation*: <<parallel-sql-interface.adoc#sql-request-handler,SQL Request Handler>>
+*Documentation*: <<sql-query.adoc#sql-request-handler,SQL Request Handler>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===

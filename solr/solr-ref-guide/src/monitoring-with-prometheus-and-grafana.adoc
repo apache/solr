@@ -88,67 +88,139 @@ The list of available parameters for the Prometheus Exporter.
 All parameters can be provided via an environment variable, instead of through the command line.
 
 `h`, `--help`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Displays command line help and usage.
 
 `-p`, `--port`, `$PORT`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `8989`
+|===
++
 The port where Prometheus will listen for new data.
 This port will be used to configure Prometheus.
 It can be any port not already in use on your server.
-The default is `8989`.
 
 `-b`, `--baseurl`, `$SOLR_URL`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
 The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in a user-managed cluster or a single-node installation.
 If you are running SolrCloud, do not specify this parameter.
 If neither the `-b` parameter nor the `-z` parameter are defined, the default is `-b \http://localhost:8983/solr`.
 
 `-z`, `--zkhost`, `$ZK_HOST`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
 The ZooKeeper connect string (such as `localhost:9983`, or `localhost:2181/solr`) when Solr is running SolrCloud.
 If you are running a user-managed cluster or single-node installation, do not specify this parameter.
 If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` parameter default is used.
 
 `-f`, `--config-file`, `$CONFIG_FILE`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `contrib/prometheus-exporter/conf/solr-exporter-config.xml`
+|===
++
 The path to the configuration file that defines the Solr metrics to read.
-The default is `contrib/prometheus-exporter/conf/solr-exporter-config.xml`.
 
 `-n`, `--num-threads`, `$NUM_THREADS`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
 The number of threads.
 The `solr-exporter` creates thread pools for requests to Solr.
 Request latency can be improved by increasing the number of threads.
-The default is `1`.
 
 `-s`, `--scrape-interval`, `$SCRAPE_INTERVAL`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `60` seconds
+|===
++
 The number of seconds between collecting metrics from Solr.
 The `solr-exporter` collects metrics from Solr every few seconds controlled by this setting.
 These metrics are cached and returned regardless of how frequently prometheus is configured to pull metrics from this tool.
 The freshness of the metrics can be improved by reducing the scrape interval but do not set it to a very low value because metrics collection can be expensive and can execute arbitrary searches to ping Solr.
-The default value is 60 seconds.
 
-The Solr's metrics exposed by `solr-exporter` can be seen at: `\http://localhost:8983/solr/admin/metrics`.
+The metrics exposed by `solr-exporter` can be seen at the metrics endpoint: `\http://localhost:8983/solr/admin/metrics`.
 
 === Environment Variable Options
 
 The `./bin` scripts provided with the Prometheus Exporter support the use of custom java options through the following environment variables:
 
 `JAVA_HEAP`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `512m`
+|===
++
 Sets the initial (`Xms`) and max (`Xmx`) Java heap size.
-The default is `512m`.
 
 `JAVA_MEM`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Custom java memory settings (e.g., `-Xms1g -Xmx2g`).
 This is ignored if `JAVA_HEAP` is provided.
 
 `GC_TUNE`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `-XX:+UseG1GC`
+|===
++
 Custom Java garbage collection settings.
-The default is `-XX:+UseG1GC`.
 
 `JAVA_OPTS`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Extra JVM options.
 
 `ZK_CREDS_AND_ACLS`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Credentials for connecting to a ZooKeeper host that is protected with ACLs.
 For more information on what to include in this variable, refer to the section <<zookeeper-access-control.adoc#zookeeper-acls-in-solr-scripts,ZooKeeper Access Control>> or the <<getting-metrics-from-a-secured-solrcloud,example below>>.
 
 `CLASSPATH_PREFIX`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Location of extra libraries to load when starting the `solr-exporter`.
 
 All <<#command-line-parameters,command line parameters>> are able to be provided via environment variables when using the `./bin` scripts.
@@ -208,7 +280,7 @@ Below is a slightly shortened version of it:
             {
               name         : "solr_ping",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/ping.html",
+              help         : "See following URL: https://solr.apache.org/guide/ping.html",
               label_names  : [],
               label_values : [],
               value        : $value
@@ -240,7 +312,7 @@ Below is a slightly shortened version of it:
             {
             name         : "solr_metrics_jetty_response_total",
             type         : "COUNTER",
-            help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+            help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
             label_names  : ["status"],
             label_values : [$status],
             value        : $value
@@ -265,7 +337,7 @@ Below is a slightly shortened version of it:
             {
               name         : "solr_collections_live_nodes",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
+              help         : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
               label_names  : [],
               label_values : [],
               value        : $value
@@ -349,13 +421,44 @@ To do this, we define two additional elements:
 Defines the query parameter(s) used for the request.
 This section uses several additional properties to define your query:
 
-`collection`::: The collection to issue the query against.
+`collection`:::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The collection to issue the query against.
 Only used with SolrCloud clusters.
-`core`::: The core to issue the query against.
+
+`core`:::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The core to issue the query against.
 Only used with user-managed clusters or single-node installations.
-`path`::: The path to the query endpoint where the request will be sent.
+
+`path`:::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The path to the query endpoint where the request will be sent.
 Examples include `admin/metrics` or `/select` or `admin/collections`.
-`params`::: Additional query parameters.
+
+`params`:::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Additional query parameters.
 These will vary depending on the request type and the endpoint.
 For example, if using the Metrics endpoint, you can add parameters to limit the query to a certain group and/or prefix.
 If you're using the Collections API, the command you want to use would be a parameter.
@@ -371,7 +474,7 @@ A jq query has to output JSON in the following format:
 {
   "name": "solr_ping",
   "type": "GAUGE",
-  "help": "See following URL: https://lucene.apache.org/solr/guide/ping.html",
+  "help": "See following URL: https://solr.apache.org/guide/ping.html",
   "label_names": ["base_url","core"],
   "label_values": ["http://localhost:8983/solr","collection1"],
   "value": 1.0
@@ -421,7 +524,7 @@ For example, `solr-exporter` converts the JSON in the previous section to the fo
 [source,plain]
 ----
 # TYPE solr_ping gauge
-# HELP solr_ping See following URL: https://lucene.apache.org/solr/guide/ping.html
+# HELP solr_ping See following URL: https://solr.apache.org/guide/ping.html
 solr_ping{base_url="http://localhost:8983/solr",core="collection1"} 1.0
 ----
 
@@ -449,7 +552,6 @@ doing a query for `solr_ping` metric in the Prometheus GUI:
 
 .Prometheus Solr Ping expression
 image::images/monitoring-with-prometheus-and-grafana/prometheus-solr-ping.png[image,width=800]
-
 
 == Sample Grafana Dashboard
 

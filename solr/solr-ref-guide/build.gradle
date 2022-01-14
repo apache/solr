@@ -28,7 +28,7 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'com.github.jruby-gradle.base' version '2.0.0'
+    id 'com.github.jruby-gradle.base' version '2.0.1'
 }
 
 // This project does not contribute anything to main dependencies.
@@ -67,8 +67,10 @@ dependencies {
     depVer('org.apache.tika:tika-core')
     depVer('org.apache.zookeeper:zookeeper')
 
-    // jekyll dependencies
-    gems 'rubygems:jekyll:4.2.0'
+    // jekyll dependencies: we cannot use jekyll >=4, as this version uses native lib
+    // ("sassc" instead of deprecated "sass") which fails to compile on some platforms.
+    // See https://issues.apache.org/jira/browse/SOLR-15520 for more details.
+    gems 'rubygems:jekyll:3.9.1'
     gems 'rubygems:jekyll-asciidoc:3.0.0'
 
     // don't know why we have to explicitly add these deps but it doesn't resolve them
@@ -76,6 +78,9 @@ dependencies {
     gems 'rubygems:tilt:2.0.10'
     gems 'rubygems:slim:4.1.0'
     gems 'rubygems:concurrent-ruby:1.1.9'
+    gems 'rubygems:http_parser.rb:0.6.0'
+
+
 }
 
 sourceSets {
@@ -165,7 +170,7 @@ ext {
 
         props.putAll([
             htmlOutDir: "../${details.path}",
-            javadocLink : "https://docs.oracle.com/en/java/javase/11/docs/api/",
+            javadocLink : "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
             solrGuideDraftStatus : propertyOrDefault('solrGuideDraft', "true").toBoolean() ? "DRAFT" : "",
             solrRootPath : project(':solr').projectDir.toString() + File.separator,
             solrDocsVersion : project.ext['solrDocsVersion'],
@@ -182,6 +187,7 @@ ext {
         group "Documentation"
         description "Builds the ${details.desc}"
 
+        outputs.cacheIf { true }
         inputs.dir contentDir
         outputs.dir htmlDir
 
@@ -194,7 +200,7 @@ ext {
         dependsOn "build${details.name}"
 
         classpath = sourceSets.main.runtimeClasspath
-        main = 'CheckLinksAndAnchors'
+        main = 'org.apache.solr.guide.CheckLinksAndAnchors'
         workingDir = contentDir
 
         // NOTE: even for the 'real' site, we check all relative links
@@ -207,26 +213,29 @@ ext {
 // Hook in our dependency on all top level documentation in order to check local javadoc links
 checkLocalJavadocLinksSite.dependsOn ':documentation'
 
-// Hook up custom tasks with standard tasks.
-check.dependsOn checkLocalJavadocLinksSite, checkSite
+// Attach building the ref guide to standard convention tasks. This
+// can be optionally turned off (see SOLR-15670).
+if (propertyOrEnvOrDefault('refguide.include', 'SOLR_REF_GUIDE_INCLUDE', "true").toBoolean()) {
+  check.dependsOn checkLocalJavadocLinksSite, checkSite
+  assemble.dependsOn buildSite
+}
 
-// Hook site building to assemble.
-assemble.dependsOn buildSite
-
+@CacheableTask
 abstract class PrepareSources extends DefaultTask {
     // Original Source files we'll be syncing <b>FROM</b>
     @InputDirectory
-    public DirectoryProperty srcDir = project.objects.directoryProperty()
+    @PathSensitive(PathSensitivity.RELATIVE)
+    abstract DirectoryProperty getSrcDir()
 
     // Destination folder.
     @OutputDirectory
-    public DirectoryProperty outDir = project.objects.directoryProperty()
+    abstract DirectoryProperty getOutDir()
 
     /**
      * Task specific props (lazy provider)
      */
     @Input
-    public MapProperty<String, String> props = project.objects.mapProperty(String, String)
+    abstract MapProperty<String, String> getProps()
 
     public PrepareSources() {
         // setup 'dependsOn classes, configurations.depVer' here
@@ -276,7 +285,7 @@ abstract class PrepareSources extends DefaultTask {
                                       .getPlugin(JavaPluginConvention.class)
                                       .getSourceSets().getByName("main").getRuntimeClasspath() )
                 execSpec.setWorkingDir( intoDir )
-                execSpec.setMain( 'BuildNavDataFiles' )
+                execSpec.setMain( 'org.apache.solr.guide.BuildNavDataFiles' )
                 execSpec.args([ intoDir, p.property('mainPage') ])
             })
         }

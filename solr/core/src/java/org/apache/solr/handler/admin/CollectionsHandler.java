@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
@@ -109,15 +108,8 @@ import java.util.stream.Collectors;
 
 import static org.apache.solr.client.solrj.response.RequestStatusState.*;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_EMPTY;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_SLICES;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_ACTIVE_NODES;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_IF_DOWN;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARDS_PROP;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.*;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
@@ -139,7 +131,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final CoreContainer coreContainer;
-  private final CollectionHandlerApi v2Handler;
   private final Optional<DistributedCollectionConfigSetCommandRunner> distributedCollectionConfigSetCommandRunner;
 
   public CollectionsHandler() {
@@ -156,7 +147,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
    */
   public CollectionsHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    v2Handler = new CollectionHandlerApi(this);
     distributedCollectionConfigSetCommandRunner = coreContainer != null ? coreContainer.getDistributedCollectionCommandRunner() : Optional.empty();
   }
 
@@ -1055,7 +1045,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         String prop = entry.getKey();
         if ("".equals(entry.getValue())) {
           // set to an empty string is equivalent to removing the property, see SOLR-12507
-          m.put(prop, null);
+          entry.setValue(null);
         }
         DocCollection.verifyProp(m, prop);
       }
@@ -1093,7 +1083,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       boolean incremental = req.getParams().getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
 
       // Check if the specified location is valid for this repository.
-      final URI uri = repository.createURI(location);
+      final URI uri = repository.createDirectoryURI(location);
       try {
         if (!repository.exists(uri)) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
@@ -1142,13 +1132,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       // Check if the specified location is valid for this repository.
-      final URI uri = repository.createURI(location);
+      final URI uri = repository.createDirectoryURI(location);
       try {
         if (!repository.exists(uri)) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
         }
       } catch (IOException ex) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existence of " + uri + ". Is it valid?", ex);
       }
 
       final String createNodeArg = req.getParams().get(CREATE_NODE_SET);
@@ -1193,13 +1183,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
 
         // Check if the specified location is valid for this repository.
-        URI uri = repository.createURI(location);
+        URI uri = repository.createDirectoryURI(location);
         try {
           if (!repository.exists(uri)) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "specified location " + uri + " does not exist.");
           }
         } catch (IOException ex) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existence of " + uri + ". Is it valid?", ex);
         }
 
         int deletionModesProvided = 0;
@@ -1221,7 +1211,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         return params;
       }
     }),
-    @SuppressWarnings({"unchecked", "rawtypes"})
     LISTBACKUP_OP(LISTBACKUP, (req, rsp, h) -> {
       req.getParams().required().check(NAME);
 
@@ -1241,13 +1230,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
 
         String backupName = req.getParams().get(NAME);
-        final URI locationURI = repository.createURI(location);
+        final URI locationURI = repository.createDirectoryURI(location);
         try {
           if (!repository.exists(locationURI)) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "specified location " + locationURI + " does not exist.");
           }
         } catch (IOException ex) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + locationURI + ". Is it valid?", ex);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existence of " + locationURI + ". Is it valid?", ex);
         }
         URI backupLocation = BackupFilePaths.buildExistingBackupLocationURI(repository, locationURI, backupName);
         if (repository.exists(repository.resolve(backupLocation, BackupManager.TRADITIONAL_BACKUP_PROPS_FILE))) {
@@ -1260,7 +1249,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         List<BackupId> propsFiles = BackupFilePaths.findAllBackupIdsFromFileListing(subFiles);
 
         NamedList<Object> results = new NamedList<>();
-        ArrayList<Map> backups = new ArrayList<>();
+        ArrayList<Map<Object,Object>> backups = new ArrayList<>();
         String collectionName = null;
         for (BackupId backupId: propsFiles) {
           BackupProperties properties = BackupProperties.readFrom(repository, backupLocation, BackupFilePaths.getBackupPropsName(backupId));
@@ -1563,11 +1552,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   interface CollectionOp {
     Map<String, Object> execute(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception;
 
-  }
-
-  @Override
-  public Collection<Api> getApis() {
-    return v2Handler.getApis();
   }
 
   @Override

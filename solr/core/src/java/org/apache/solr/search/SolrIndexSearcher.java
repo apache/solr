@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+
 import com.codahale.metrics.Gauge;
 import com.google.common.collect.Iterables;
 import org.apache.lucene.document.Document;
@@ -81,6 +82,7 @@ import org.apache.solr.search.stats.StatsSource;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
+import org.apache.solr.util.IOFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,10 +100,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
-  @SuppressWarnings({"rawtypes"})
-  private static final Map<String,SolrCache> NO_GENERIC_CACHES = Collections.emptyMap();
-  @SuppressWarnings({"rawtypes"})
-  private static final SolrCache[] NO_CACHES = new SolrCache[0];
+  private static final Map<String,SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
+  private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
 
   private final SolrCore core;
   private final IndexSchema schema;
@@ -125,8 +125,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final SolrCache<String,UnInvertedField> fieldValueCache;
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
-  @SuppressWarnings({"rawtypes"})
-  private final Map<String,SolrCache> cacheMap;
+  private final Map<String,SolrCache<?, ?>> cacheMap;
 
   // list of all caches associated with this searcher.
   @SuppressWarnings({"rawtypes"})
@@ -307,7 +306,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } else {
         cacheMap = new HashMap<>(solrConfig.userCacheConfigs.size());
         for (Map.Entry<String,CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
-          SolrCache cache = e.getValue().newInstance();
+          SolrCache<?, ?> cache = e.getValue().newInstance();
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
             clist.add(cache);
@@ -447,12 +446,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // register self
     infoRegistry.put(STATISTICS_KEY, this);
     infoRegistry.put(name, this);
-    for (@SuppressWarnings({"rawtypes"})SolrCache cache : cacheList) {
+    for (SolrCache<?,?> cache : cacheList) {
       cache.setState(SolrCache.State.LIVE);
       infoRegistry.put(cache.name(), cache);
     }
     this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
-    for (@SuppressWarnings({"rawtypes"})SolrCache cache : cacheList) {
+    for (SolrCache<?,?> cache : cacheList) {
       cache.initializeMetrics(solrMetricsContext, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
     initializeMetrics(solrMetricsContext, STATISTICS_KEY);
@@ -470,7 +469,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (cachingEnabled) {
         final StringBuilder sb = new StringBuilder();
         sb.append("Closing ").append(name);
-        for (@SuppressWarnings({"rawtypes"})SolrCache cache : cacheList) {
+        for (SolrCache<?,?> cache : cacheList) {
           sb.append("\n\t");
           sb.append(cache);
         }
@@ -497,7 +496,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       core.getDeletionPolicy().releaseCommitPoint(cpg);
     }
 
-    for (@SuppressWarnings({"rawtypes"})SolrCache cache : cacheList) {
+    for (SolrCache<?,?> cache : cacheList) {
       try {
         cache.close();
       } catch (Exception e) {
@@ -543,10 +542,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (solrConfig.fieldValueCacheConfig != null && solrConfig.fieldValueCacheConfig.getRegenerator() == null) {
       solrConfig.fieldValueCacheConfig.setRegenerator(new CacheRegenerator() {
         @Override
-        public boolean regenerateItem(SolrIndexSearcher newSearcher,
-                                      @SuppressWarnings({"rawtypes"})SolrCache newCache,
-                                      @SuppressWarnings({"rawtypes"})SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
+        public <K,V> boolean regenerateItem(SolrIndexSearcher newSearcher,
+                                      SolrCache<K,V> newCache,
+                                      SolrCache<K,V> oldCache,
+            K oldKey, V oldVal) throws IOException {
           if (oldVal instanceof UnInvertedField) {
             UnInvertedField.getUnInvertedField((String) oldKey, newSearcher);
           }
@@ -558,10 +557,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (solrConfig.filterCacheConfig != null && solrConfig.filterCacheConfig.getRegenerator() == null) {
       solrConfig.filterCacheConfig.setRegenerator(new CacheRegenerator() {
         @Override
-        @SuppressWarnings({"rawtypes"})public boolean regenerateItem(SolrIndexSearcher newSearcher
-                , @SuppressWarnings({"rawtypes"})SolrCache newCache
-                , @SuppressWarnings({"rawtypes"})SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
+        public <K,V> boolean regenerateItem(SolrIndexSearcher newSearcher
+                , SolrCache<K,V> newCache
+                , SolrCache<K,V> oldCache,
+            K oldKey, V oldVal) throws IOException {
           newSearcher.cacheDocSet((Query) oldKey, null, false);
           return true;
         }
@@ -572,9 +571,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final int queryResultWindowSize = solrConfig.queryResultWindowSize;
       solrConfig.queryResultCacheConfig.setRegenerator(new CacheRegenerator() {
         @Override
-        @SuppressWarnings({"rawtypes"})
-        public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache,
-            Object oldKey, Object oldVal) throws IOException {
+        public <K,V> boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache<K,V> newCache, SolrCache<K,V> oldCache,
+            K oldKey, V oldVal) throws IOException {
           QueryResultKey key = (QueryResultKey) oldKey;
           int nDocs = 1;
           // request 1 doc and let caching round up to the next window size...
@@ -808,24 +806,56 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   // only handle positive (non negative) queries
-  DocSet getPositiveDocSet(Query q) throws IOException {
-    DocSet answer;
-    if (filterCache != null) {
-      answer = filterCache.get(q);
-      if (answer != null) return answer;
+  DocSet getPositiveDocSet(Query query) throws IOException {
+    // TODO duplicated code with getDocSet?
+    boolean doCache = filterCache != null;
+    if (query instanceof ExtendedQuery) {
+      if (!((ExtendedQuery) query).getCache()) {
+        doCache = false;
+      }
+      if (query instanceof WrappedQuery) {
+        query = ((WrappedQuery) query).getWrappedQuery();
+      }
     }
-    answer = getDocSetNC(q, null);
-    if (filterCache != null) filterCache.put(q, answer);
-    return answer;
+
+    if (doCache) {
+      return getAndCacheDocSet(query);
+    }
+
+    return getDocSetNC(query, null);
+  }
+
+  /**
+   * Attempt to read the query from the filter cache, if not will compute the result and insert back into the cache
+   * <p>Callers must ensure that:
+   * <ul><li>The query is unwrapped
+   * <li>The query has caching enabled
+   * <li>The filter cache exists
+   * @param query the query to compute.
+   * @return the DocSet answer
+   */
+  private DocSet getAndCacheDocSet(Query query) throws IOException {
+    assert !(query instanceof WrappedQuery) : "should have unwrapped";
+    assert filterCache != null : "must check for caching before calling this method";
+
+    if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled()) {
+      // If there is a possibility of timeout for this query, then don't reserve a computation slot. Further, we can't
+      // naively wait for an in progress computation to finish, because if we time out before it does then we won't
+      // even have partial results to provide. We could possibly wait for the query to finish in parallel with our own
+      // results and if they complete first use that instead, but we'll leave that to implement later.
+      DocSet answer = filterCache.get(query);
+      if (answer != null) {
+        return answer;
+      }
+      answer = getDocSetNC(query, null);
+      filterCache.put(query, answer);
+      return answer;
+    }
+    return filterCache.computeIfAbsent(query, q -> getDocSetNC(q, null));
   }
 
   private static Query matchAllDocsQuery = new MatchAllDocsQuery();
   private volatile BitDocSet liveDocs;
-
-  @Deprecated // TODO remove for 8.0
-  public BitDocSet getLiveDocs() throws IOException {
-    return getLiveDocSet();
-  }
 
   /**
    * Returns an efficient random-access {@link DocSet} of the live docs.  It's cached.  Never null.
@@ -1063,14 +1093,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public DocSet getDocSet(DocsEnumState deState) throws IOException {
     int largestPossible = deState.termsEnum.docFreq();
     boolean useCache = filterCache != null && largestPossible >= deState.minSetSizeCached;
-    TermQuery key = null;
 
     if (useCache) {
-      key = new TermQuery(new Term(deState.fieldName, deState.termsEnum.term()));
-      DocSet result = filterCache.get(key);
-      if (result != null) return result;
+      TermQuery key = new TermQuery(new Term(deState.fieldName, deState.termsEnum.term()));
+      return filterCache.computeIfAbsent(key,
+              (IOFunction<? super Query, ? extends DocSet>) k -> getResult(deState, largestPossible));
     }
 
+    return getResult(deState, largestPossible);
+  }
+
+  private DocSet getResult(DocsEnumState deState, int largestPossible) throws IOException {
     int smallSetSize = DocSetUtil.smallSetSize(maxDoc());
     int scratchSize = Math.min(smallSetSize, largestPossible);
     if (deState.scratch == null || deState.scratch.length < scratchSize) deState.scratch = new int[scratchSize];
@@ -1132,11 +1165,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     } else {
       result = upto == 0 ? DocSet.empty() : new SortedIntDocSet(Arrays.copyOf(docs, upto));
     }
-
-    if (useCache) {
-      filterCache.put(key, result);
-    }
-
     return result;
   }
 
@@ -1186,12 +1214,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     Query absQ = QueryUtils.getAbs(query);
     boolean positive = absQ == query;
 
-    // note: can't use computeIfAbsent because can be recursive
-    DocSet absAnswer = filterCache.get(absQ);
-    if (absAnswer == null) {
-      absAnswer = getDocSetNC(absQ, null);
-      filterCache.put(absQ, absAnswer);
-    }
+    DocSet absAnswer = getAndCacheDocSet(absQ);
 
     if (filter == null) {
       return positive ? absAnswer : getLiveDocSet().andNot(absAnswer);
@@ -1482,8 +1505,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @param cmd
    *          The Command whose properties should determine the type of TopDocsCollector to use.
    */
-  @SuppressWarnings({"rawtypes"})
-  private TopDocsCollector buildTopDocsCollector(int len, QueryCommand cmd) throws IOException {
+  private TopDocsCollector<? extends ScoreDoc> buildTopDocsCollector(int len, QueryCommand cmd) throws IOException {
     int minNumFound = cmd.getMinExactCount();
     Query q = cmd.getQuery();
     if (q instanceof RankQuery) {
@@ -1678,8 +1700,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
-      @SuppressWarnings({"rawtypes"})
-      final TopDocsCollector topCollector = buildTopDocsCollector(len, cmd);
+      final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
       DocSetCollector setCollector = new DocSetCollector(maxDoc);
       MaxScoreCollector maxScoreCollector = null;
       List<Collector> collectors = new ArrayList<>(Arrays.asList(topCollector, setCollector));
@@ -1999,8 +2020,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // bit of a hack to tell if a set is sorted - do it better in the future.
     boolean inOrder = set instanceof BitDocSet || set instanceof SortedIntDocSet;
 
-    @SuppressWarnings({"rawtypes"})
-    TopDocsCollector topCollector = buildTopDocsCollector(nDocs, cmd);
+    TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(nDocs, cmd);
 
     DocIterator iter = set.iterator();
     int base = 0;

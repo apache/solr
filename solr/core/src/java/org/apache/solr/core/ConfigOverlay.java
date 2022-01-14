@@ -174,8 +174,7 @@ public class ConfigOverlay implements MapSerializable {
   //The path maps to the xml xpath and value of 1 means it is a tag with a string value and value
   // of 0 means it is an attribute with string value
 
-  @SuppressWarnings({"rawtypes"})
-  private static Map editable_prop_map = (Map) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
+  private static Map<?, ?> editable_prop_map = (Map<?, ?>) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
 
   public static boolean isEditableProp(String path, boolean isXpath, List<String> hierarchy) {
     return !(checkEditable(path, isXpath, hierarchy) == null);
@@ -250,6 +249,10 @@ public class ConfigOverlay implements MapSerializable {
     Map<String, Map<String, Object>> reqHandlers = (Map<String, Map<String, Object>>) data.get(typ);
     if (reqHandlers == null) return Collections.emptyMap();
     return Collections.unmodifiableMap(reqHandlers);
+  }
+
+  boolean hasKey(String key) {
+    return props.containsKey(key);
   }
 
 

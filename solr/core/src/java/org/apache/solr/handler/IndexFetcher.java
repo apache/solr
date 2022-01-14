@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -299,7 +300,7 @@ public class IndexFetcher {
   /**
    * Gets the latest commit version and generation from the leader
    */
-  NamedList<Object> getLatestVersion() throws IOException {
+  public NamedList<Object> getLatestVersion() throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
     params.set(CommonParams.WT, JAVABIN);
@@ -903,8 +904,8 @@ public class IndexFetcher {
     // todo stop keeping solrCore around
     SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName());
     try {
-      @SuppressWarnings({"rawtypes"})
-      Future[] waitSearcher = new Future[1];
+      @SuppressWarnings("unchecked")
+      Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
       searcher = core.getSearcher(true, true, waitSearcher, true);
       if (waitSearcher[0] != null) {
         try {

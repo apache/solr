@@ -29,15 +29,17 @@ See the section <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>>
 .Hand editing of the managed schema is discouraged
 [NOTE]
 ====
-The file named "managed-schema" in the example configurations may include a note that recommends never hand-editing the file.
+The file named "managed-schema.xml" in the example configurations may include a note that recommends never hand-editing the file.
 Before the Schema API existed, such edits were the only way to make changes to the schema, and users may have a strong desire to continue making changes this way.
 
 The reason that this is discouraged is because hand-edits of the schema may be lost if the Schema API described here is later used to make a change, unless the core or collection is reloaded or Solr is restarted before using the Schema API.
 If care is taken to always reload or restart after a manual edit, then there is no problem at all with doing those edits.
+
+Prior to Solr 9, this xml file was referred to as `managed-schema` with no file extension.
 ====
 
 The API allows two output modes for all calls: JSON or XML.
-When requesting the complete schema, there is another output mode which is XML modeled after the managed-schema file itself, which is in XML format.
+When requesting the complete schema, there is another output mode which is XML modeled after the managed-schema.xml file itself, which is in XML format.
 
 When modifying the schema with the API, a core reload will automatically occur in order for the changes to be available immediately for documents indexed thereafter.
 Previously indexed documents will *not* be automatically updated - they *must* be reindexed if existing index data uses schema elements that you changed.
@@ -93,7 +95,7 @@ Previously indexed documents will *not* be automatically handled - they *must* b
 The `add-field` command adds a new field definition to your schema.
 If a field with the same name exists an error is thrown.
 
-All of the properties available when defining a field with manual `schema.xml` edits can be passed via the API.
+All of the properties available when defining a field with manual schema edits can be passed via the API.
 These request attributes are described in detail in the section <<fields.adoc#,Fields>>.
 
 For example, to define a new stored field named "sell_by", of type "pdate", you would POST the following request:
@@ -167,7 +169,7 @@ The `replace-field` command replaces a field's definition.
 Note that you must supply the full definition for a field - this command will *not* partially modify a field's definition.
 If the field does not exist in the schema an error is thrown.
 
-All of the properties available when defining a field with manual `schema.xml` edits can be passed via the API.
+All of the properties available when defining a field with manual schema edits can be passed via the API.
 These request attributes are described in detail in the section <<fields.adoc#,Fields>>.
 
 For example, to replace the definition of an existing field "sell_by", to make it be of type "date" and to not be stored, you would POST the following request:
@@ -207,7 +209,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 The `add-dynamic-field` command adds a new dynamic field rule to your schema.
 
-All of the properties available when editing `schema.xml` can be passed with the POST request.
+All of the properties available when editing the schema can be passed with the POST request.
 The section <<dynamic-fields.adoc#,Dynamic Fields>> has details on all of the attributes that can be defined for a dynamic field rule.
 
 For example, to create a new dynamic field rule where all incoming fields ending with "_s" would be stored and have field type "string", you can POST a request like this:
@@ -281,7 +283,7 @@ The `replace-dynamic-field` command replaces a dynamic field rule in your schema
 Note that you must supply the full definition for a dynamic field rule - this command will *not* partially modify a dynamic field rule's definition.
 If the dynamic field rule does not exist in the schema an error is thrown.
 
-All of the properties available when editing `schema.xml` can be passed with the POST request.
+All of the properties available when editing the schema can be passed with the POST request.
 The section <<dynamic-fields.adoc#,Dynamic Fields>> has details on all of the attributes that can be defined for a dynamic field rule.
 
 For example, to replace the definition of the "*_s" dynamic field rule with one where the field type is "text_general" and it's not stored, you can POST a request like this:
@@ -321,7 +323,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 The `add-field-type` command adds a new field type to your schema.
 
-All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request.
+All of the field type properties available when editing the schema by hand are available for use in a POST request.
 The structure of the command is a JSON mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc.
 Details of all of the available options are described in the section <<field-types.adoc#,Field Types>>.
 
@@ -440,7 +442,7 @@ The `replace-field-type` command replaces a field type in your schema.
 Note that you must supply the full definition for a field type - this command will *not* partially modify a field type's definition.
 If the field type does not exist in the schema an error is thrown.
 
-All of the field type properties available when editing `schema.xml` by hand are available for use in a POST request.
+All of the field type properties available when editing the schema by hand are available for use in a POST request.
 The structure of the command is a JSON mapping of the standard field type definition, including the name, class, index and query analyzer definitions, etc.
 Details of all of the available options are described in the section <<field-types.adoc#,Field Types>>.
 
@@ -487,17 +489,33 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 
 The `add-copy-field` command adds a new copy field rule to your schema.
 
-The attributes supported by the command are the same as when creating copy field rules by manually editing the `schema.xml`, as below:
+The attributes supported by the command are the same as when creating copy field rules by manually editing the schema, as below:
 
 `source`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The source field.
-This parameter is required.
 
 `dest`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 A field or an array of fields to which the source field will be copied.
-This parameter is required.
 
 `maxChars`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The upper limit for the number of characters to be copied.
 The section <<copy-fields.adoc#,Copy Fields>> has more details.
 
@@ -636,7 +654,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/solr/techproducts/schema
 ----
 
-=== Schema Changes among Replicas
+=== Schema Changes Among Replicas
 
 When running in SolrCloud mode, changes made to the schema on one node will propagate to all replicas in the collection.
 
@@ -667,6 +685,12 @@ To modify the schema, see the previous section <<Modify the Schema>>.
 *Path Parameters*
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The collection (or core) name.
 
 *Query Parameters*
@@ -674,9 +698,14 @@ The collection (or core) name.
 The query parameters should be added to the API request after '?'.
 
 `wt`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
++
 Defines the format of the response.
-The options are *json*, *xml* or *schema.xml*.
-If not specified, JSON will be returned by default.
+The options are `json`, `xml` or `schema.xml`.
 
 ==== Retrieve Schema Response
 
@@ -845,9 +874,21 @@ Get a list of all fields.
 *Path Parameters*
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The collection (or core) name.
 
 `fieldname`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The specific fieldname (if limiting the request to a single field).
 
 *Query Parameters*
@@ -855,24 +896,47 @@ The specific fieldname (if limiting the request to a single field).
 The query parameters can be added to the API request after a '?'.
 
 `wt`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
++
 Defines the format of the response.
 The options are `json` or `xml`.
-If not specified, JSON will be returned by default.
 
 `fl`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Comma- or space-separated list of one or more fields to return.
 If not specified, all fields will be returned by default.
 
 `includeDynamic`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, and if the `fl` query parameter is specified or the `fieldname` path parameter is used, matching dynamic fields are included in the response and identified with the `dynamicBase` property.
 +
 If neither the `fl` query parameter nor the `fieldname` path parameter is specified, the `includeDynamic` query parameter is ignored.
 +
-If `false`, the default, matching dynamic fields will not be returned.
+If `false`, matching dynamic fields will not be returned.
 
 `showDefaults`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, all default field properties from each field's field type will be included in the response (e.g., `tokenized` for `solr.TextField`).
-If `false`, the default, only explicitly specified field properties will be included.
+If `false`, only explicitly specified field properties will be included.
 
 ==== List Fields Response
 
@@ -951,9 +1015,21 @@ The sample output below has been truncated to only show a few fields.
 *Path Parameters*
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The collection (or core) name.
 
 `name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The name of the dynamic field rule (if limiting request to a single dynamic field rule).
 
 *Query Parameters*
@@ -961,13 +1037,24 @@ The name of the dynamic field rule (if limiting request to a single dynamic fiel
 The query parameters can be added to the API request after a '?'.
 
 `wt`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
++
 Defines the format of the response.
 The options are `json` or `xml`.
-If not specified, JSON will be returned by default.
 
 `showDefaults`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, all default field properties from each dynamic field's field type will be included in the response (e.g., `tokenized` for `solr.TextField`).
-If `false`, the default, only explicitly specified field properties will be included.
+If `false`, only explicitly specified field properties will be included.
 
 ==== List Dynamic Field Response
 
@@ -1056,9 +1143,21 @@ The sample output below has been truncated.
 *Path Parameters*
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The collection (or core) name.
 
 `name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 The name of the field type (if limiting request to a single field type).
 
 *Query Parameters*
@@ -1066,13 +1165,24 @@ The name of the field type (if limiting request to a single field type).
 The query parameters can be added to the API request after a '?'.
 
 `wt`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
++
 Defines the format of the response.
 The options are `json` or `xml`.
-If not specified, JSON will be returned by default.
 
 `showDefaults`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, all default field properties from each dynamic field's field type will be included in the response (e.g., `tokenized` for `solr.TextField`).
-If `false`, the default, only explicitly specified field properties will be included.
+If `false`, only explicitly specified field properties will be included.
 
 ==== List Field Type Response
 
@@ -1134,24 +1244,14 @@ The sample output below has been truncated to show a few different field types f
                 }
             },
             "class": "solr.TextField",
-            "dynamicFields": [],
-            "fields": [],
             "name": "alphaOnlySort",
             "omitNorms": true,
             "sortMissingLast": true
         },
         {
             "class": "solr.FloatPointField",
-            "dynamicFields": [
-                "*_fs",
-                "*_f"
-            ],
-            "fields": [
-                "price",
-                "weight"
-            ],
             "name": "float",
-            "positionIncrementGap": "0",
+            "positionIncrementGap": "0"
         }]
 }
 ----
@@ -1165,6 +1265,12 @@ The sample output below has been truncated to show a few different field types f
 *Path Parameters*
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The collection (or core) name.
 
 *Query Parameters*
@@ -1172,16 +1278,33 @@ The collection (or core) name.
 The query parameters can be added to the API request after a '?'.
 
 `wt`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
++
 Defines the format of the response.
 The options are `json` or `xml`.
-If not specified, JSON will be returned by default.
 
 `source.fl`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Comma- or space-separated list of one or more copyField source fields to include in the response.
 CopyField directives with all other source fields will be excluded from the response.
 If not specified, all copyField-s will be included in the response.
 
 `dest.fl`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Comma- or space-separated list of one or more copyField destination fields to include in the response.
 CopyField directives with all other `dest` fields will be excluded.
 If not specified, all copyField-s will be included in the response.
@@ -1255,6 +1378,12 @@ The sample output below has been truncated to the first few copy definitions.
 *Path Parameters*
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The collection (or core) name.
 
 *Query Parameters*
@@ -1262,9 +1391,14 @@ The collection (or core) name.
 The query parameters can be added to the API request after a '?'.
 
 `wt`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
++
 Defines the format of the response.
 The options are `json` or `xml`.
-If not specified, JSON will be returned by default.
 
 ==== Show Schema Response
 
@@ -1313,7 +1447,13 @@ curl -X GET "http://localhost:8983/api/collections/techproducts/schema/name"
 
 *Path Parameters*
 
-collection::
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The collection (or core) name.
 
 *Query Parameters*
@@ -1321,9 +1461,14 @@ The collection (or core) name.
 The query parameters can be added to the API request after a '?'.
 
 `wt`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
++
 Defines the format of the response.
 The options are `json` or `xml`.
-If not specified, JSON will be returned by default.
 
 ==== Show Schema Version Response
 
@@ -1371,18 +1516,28 @@ curl -X GET "http://localhost:8983/api/collections/techproducts/schema/version"
 
 *Path Parameters*
 
-|`collection`::
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The collection (or core) name.
-
 
 *Query Parameters*
 
 The query parameters can be added to the API request after a '?'.
 
 `wt`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
++
 Defines the format of the response.
 The options are `json` or `xml`.
-If not specified, JSON will be returned by default.
 
 ==== List UniqueKey Response
 
@@ -1431,6 +1586,12 @@ curl -X GET "http://localhost:8983/api/collections/techproducts/schema/uniquekey
 *Path Parameters*
 
 `collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The collection (or core) name.
 
 *Query Parameters*
@@ -1438,9 +1599,14 @@ The collection (or core) name.
 The query parameters can be added to the API request after a '?'.
 
 `wt`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
++
 Defines the format of the response.
 The options are `json` or `xml`.
-If not specified, JSON will be returned by default.
 
 ==== Show Global Similary Response
 

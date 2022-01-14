@@ -439,8 +439,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         //because the QueryElevationComponent runs after the Queries are constructed.
 
         IntIntHashMap boostDocsMap = null;
-        @SuppressWarnings({"rawtypes"})
-        Map context = null;
+        Map<Object,Object> context = null;
         SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
         if(info != null) {
           context = info.getReq().getContext();
@@ -2004,9 +2003,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * If it is, then "this" will be added to the readerContext
      * using the "CSCORE" key, and true will be returned.  If not returns false.
      */
-    @SuppressWarnings({"unchecked"})
     public boolean setupIfNeeded(final GroupHeadSelector groupHeadSelector,
-                                 @SuppressWarnings({"rawtypes"})final Map readerContext) {
+                                 final Map<? super String, ? super CollapseScore> readerContext) {
       // HACK, but not really any better options until/unless we can recursively
       // ask value sources if they depend on score
       if (wantsCScore(groupHeadSelector.selectorText)) {
@@ -2340,8 +2338,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private ValueSource valueSource;
     private FunctionValues functionValues;
     private IntFloatDynamicMap ordVals;
-    @SuppressWarnings({"rawtypes"})
-    private Map rcontext;
+    private Map<Object, Object> rcontext;
     private final CollapseScore collapseScore = new CollapseScore();
     private boolean needsScores4Collapsing;
 
@@ -2374,7 +2371,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       collapseScore.setupIfNeeded(groupHeadSelector, rcontext);
     }
 
-    @SuppressWarnings({"unchecked"})
     public void setNextReader(LeafReaderContext context) throws IOException {
       functionValues = this.valueSource.getValues(rcontext, context);
     }
@@ -2812,8 +2808,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     private ValueSource valueSource;
     private FunctionValues functionValues;
-    @SuppressWarnings({"rawtypes"})
-    private Map rcontext;
+    private Map<Object, Object> rcontext;
     private final CollapseScore collapseScore = new CollapseScore();
     private int index=-1;
     private boolean needsScores4Collapsing;

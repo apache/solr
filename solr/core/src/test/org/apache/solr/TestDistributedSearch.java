@@ -18,6 +18,7 @@ package org.apache.solr;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1155,7 +1156,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   protected void queryPartialResults(final List<String> upShards,
                                      final List<SolrClient> upClients,
                                      Object... q) throws Exception {
@@ -1187,9 +1187,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       log.info("starting stress...");
       Set<Future<Object>> pending = new HashSet<>();;
       ExecutorCompletionService<Object> cs = new ExecutorCompletionService<>(executor);
-      Callable[] threads = new Callable[nThreads];
+      @SuppressWarnings("unchecked")
+      Callable<Object>[] threads = (Callable<Object>[]) Array.newInstance(Callable.class, nThreads);
       for (int i = 0; i < threads.length; i++) {
-        threads[i] = new Callable() {
+        threads[i] = new Callable<>() {
           @Override
           public Object call() {
             for (int j = 0; j < stress; j++) {

@@ -60,8 +60,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
 
   @Test
   public void testHealthCheckHandler() throws Exception {
-    @SuppressWarnings({"rawtypes"})
-    SolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, new ModifiableSolrParams());
+    GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, new ModifiableSolrParams());
 
     // positive check that our only existing "healthy" node works with cloud client
     // NOTE: this is using GenericSolrRequest, not HealthCheckRequest which is why it passes

@@ -18,7 +18,7 @@
 
 The Stats component returns simple statistics for numeric, string, and date fields within the document set.
 
-The sample queries in this section assume you are running the "```techproducts```" example included with Solr:
+The sample queries in this section assume you are running the "techproducts" example included with Solr:
 
 [source,bash]
 ----
@@ -30,13 +30,25 @@ bin/solr -e techproducts
 The Stats Component accepts the following parameters:
 
 `stats`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
 If `true`, then invokes the Stats component.
 
 `stats.field`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 Specifies a field for which statistics should be generated.
 This parameter may be invoked multiple times in a query in order to request statistics on multiple fields.
 +
-<<local-params.adoc#,Local Params>> may be used to indicate which subset of the supported statistics should be computed, and/or that statistics should be computed over the results of an arbitrary numeric function (or query) instead of a simple field name.
+<<local-params.adoc#,Local Params>> may be used to indicate a subset of the supported statistics should be computed, and/or that statistics should be computed over the results of an arbitrary numeric function (or query) instead of a simple field name.
 See the examples below.
 
 
@@ -129,7 +141,8 @@ This statistic is computed for numeric and date field types and is computed by d
 
 `percentiles`::
 A list of percentile values based on cut-off points specified by the parameter value, such as `1,99,99.9`.
-These values are an approximation, using the https://github.com/tdunning/t-digest/blob/master/docs/t-digest-paper/histo.pdf[t-digest algorithm]. This statistic is computed for numeric field types and is not computed by default.
+These values are an approximation, using the https://github.com/tdunning/t-digest/blob/master/docs/t-digest-paper/histo.pdf[t-digest algorithm].
+This statistic is computed for numeric field types and is not computed by default.
 
 `distinctValues`::
 The set of all distinct values for the field/function in all of the documents in the set.

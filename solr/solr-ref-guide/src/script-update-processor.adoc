@@ -61,20 +61,37 @@ However, it is also possible to skip this level and configure the parameters dir
 Below follows a list of each configuration parameters and their meaning:
 
 `script`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
 The script file name.
-The script file must be placed in the `conf/ directory.
+The script file must be placed in the `conf/` directory.
 There can be one or more "script" parameters specified; multiple scripts are executed in the order specified.
 
 `engine`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Optionally specifies the scripting engine to use.
 This is only needed if the extension of the script file is not a standard mapping to the scripting engine.
-For example, if your script file was coded in JavaScript but the file name was called `update-script.foo`, use "javascript" as the engine name.
+For example, if your script file was coded in JavaScript but the file name was called `update-script.foo`, use `javascript` as the engine name.
 
 `params`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
 Optional parameters that are passed into the script execution context.
 This is specified as a named list (`<lst>`) structure with nested typed parameters.
 If specified, the script context will get a "params" object, otherwise there will be no "params" object available.
-
 
 == Script Execution Context
 
@@ -109,7 +126,7 @@ You can see the message recorded in the Solr logging UI.
 
 === Javascript
 
-Note: There is a JavaScript example `update-script.js` as part of the `techproducts` configset.
+Note: There is a JavaScript example `update-script.js` as part of the "techproducts" configset.
 Check `solrconfig.xml` and uncomment the update request processor definition to enable this feature.
 
 [source,javascript]
@@ -202,7 +219,7 @@ end
 
 ==== Known Issues
 
-The following in JRuby does not work as expected for some reason, though it does work properly in JavaScript:
+The following in JRuby does not work as expected, though it does work properly in JavaScript:
 
 [source,ruby]
 ----

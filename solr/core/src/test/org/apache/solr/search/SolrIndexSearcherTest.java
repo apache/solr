@@ -281,8 +281,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    @SuppressWarnings({"rawtypes"})
-    public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
+    public TopDocsCollector<ScoreDoc> getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
       return new ReRankCollector(len, len, new Rescorer() {
         @Override
         public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN) {

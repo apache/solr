@@ -99,15 +99,44 @@ clientPort=2181
 
 The parameters are as follows:
 
-`tickTime`:: Part of what ZooKeeper does is determine which servers are up and running at any given time, and the minimum session time out is defined as two "ticks". The `tickTime` parameter specifies in milliseconds how long each tick should be.
+`tickTime`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Part of what ZooKeeper does is determine which servers are up and running at any given time, and the minimum session timeout is defined as two "ticks".
+The `tickTime` parameter specifies in milliseconds how long each tick should be.
 
-`dataDir`:: This is the directory in which ZooKeeper will store data about the cluster.
+`dataDir`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+This is the directory in which ZooKeeper will store data about the cluster.
 This directory must be empty before starting ZooKeeper for the first time.
 
-`clientPort`:: This is the port on which Solr will access ZooKeeper.
+`clientPort`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+This is the port on which Solr will access ZooKeeper.
 
-`4lw.commands.whitelist`:: This allows the Solr admin UI to query ZooKeeper.
-Optionally use "*" to enable all "4 letter words", the three listed will enable the admin UI.
+`4lw.commands.whitelist`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+This allows the Solr admin UI to query ZooKeeper.
+Optionally use `*` to enable all "4 letter words", the three listed (`mntr`, `conf`, `ruok`) will enable the admin UI.
 
 These are the basic parameters that need to be in use on each ZooKeeper node, so this file must be copied to or created on each node.
 
@@ -140,13 +169,34 @@ autopurge.purgeInterval=1
 
 We've added these parameters to the three we had already:
 
-`initLimit`:: Amount of time, in ticks, to allow followers to connect and sync to a leader.
-In this case, you have 5 ticks, each of which is 2000 milliseconds long, so the server will wait as long as 10 seconds to connect and sync with the leader.
+`initLimit`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Amount of time, in ticks, to allow followers to connect and sync to a leader.
+In this case, you have `5` ticks, each of which is 2000 milliseconds long, so the server will wait as long as `10` seconds to connect and sync with the leader.
 
-`syncLimit`:: Amount of time, in ticks, to allow followers to sync with ZooKeeper.
+`syncLimit`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Amount of time, in ticks, to allow followers to sync with ZooKeeper.
 If followers fall too far behind a leader, they will be dropped.
 
-`server._X_`:: These are the server IDs (the `_X_` part), hostnames (or IP addresses) and ports for all servers in the ensemble.
+`server._X_`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+These are the server IDs (the `_X_` part), hostnames (or IP addresses) and ports for all servers in the ensemble.
 The IDs differentiate each node of the ensemble, and allow each node to know where each of the other node is located.
 The ports can be any ports you choose; ZooKeeper's default ports are `2888:3888`.
 +
@@ -159,17 +209,31 @@ In the case of the configuration example above, you would create the file `/var/
 [source,bash]
 1
 
-`autopurge.snapRetainCount`:: The number of snapshots and corresponding transaction logs to retain when purging old snapshots and transaction logs.
+`autopurge.snapRetainCount`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `3`
+|===
++
+The number of snapshots and corresponding transaction logs to retain when purging old snapshots and transaction logs.
 +
 ZooKeeper automatically keeps a transaction log and writes to it as changes are made.
 A snapshot of the current state is taken periodically, and this snapshot supersedes transaction logs older than the snapshot.
 However, ZooKeeper never cleans up either the old snapshots or the old transaction logs; over time they will silently fill available disk space on each server.
 +
 To avoid this, set the `autopurge.snapRetainCount` and `autopurge.purgeInterval` parameters to enable an automatic clean up (purge) to occur at regular intervals.
-The `autopurge.snapRetainCount` parameter will keep the set number of snapshots and transaction logs when a clean up occurs.
+The `autopurge.snapRetainCount` parameter will keep the defined number of snapshots and transaction logs when a clean up occurs.
 This parameter can be configured higher than `3`, but cannot be set lower than 3.
 
-`autopurge.purgeInterval`:: The time in hours between purge tasks.
+`autopurge.purgeInterval`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
+The time in hours between purge tasks.
 The default for this parameter is `0`, so must be set to `1` or higher to enable automatic clean up of snapshots and transaction logs.
 Setting it as high as `24`, for once a day, is acceptable if preferred.
 
@@ -323,6 +387,8 @@ See the section <<solr-control-script-reference.adoc#create-a-znode-supports-chr
 
 Once the znode is created, it behaves in a similar way to a directory on a filesystem: the data stored by Solr in ZooKeeper is nested beneath the main data directory and won't be mixed with data from another system or process that uses the same ZooKeeper ensemble.
 
+Alternatively, Solr can create the znode automatically as part of the first Solr instance's startup, read below for an example.
+
 === Using the -z Parameter with bin/solr
 
 Pointing Solr at the ZooKeeper ensemble you've created is a simple matter of using the `-z` parameter when using the `bin/solr` script.
@@ -332,6 +398,13 @@ For example, to point the Solr instance to the ZooKeeper you've started on port 
 [source,bash]
 ----
 bin/solr start -e cloud -z zk1:2181,zk2:2181,zk3:2181/solr
+----
+
+If the znode does not exist, you can set the ZK_CREATE_CHROOT environment variable to true to create it automatically on start-up:
+
+[source,bash]
+----
+ZK_CREATE_CHROOT=true bin/solr start -e cloud -z zk1:2181,zk2:2181,zk3:2181/solr
 ----
 
 === Updating Solr Include Files

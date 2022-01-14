@@ -64,6 +64,7 @@ import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -167,11 +168,11 @@ public class IndexSchema {
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
-  public IndexSchema(String name, IndexSchemaFactory.ConfigResource schemaResource, Version luceneVersion, SolrResourceLoader resourceLoader, Properties substitutableProperties) {
+  public IndexSchema(String name, ConfigSetService.ConfigResource schemaResource, Version luceneVersion, SolrResourceLoader resourceLoader, Properties substitutableProperties) {
     this(luceneVersion, resourceLoader, substitutableProperties);
 
     this.resourceName = Objects.requireNonNull(name);
-    ConfigNode.SUBSTITUTES.set(substitutableProperties::getProperty);
+    if(substitutableProperties !=null) ConfigNode.SUBSTITUTES.set(substitutableProperties::getProperty);
     try {
       readSchema(schemaResource);
       loader.inform(loader);
@@ -489,7 +490,7 @@ public class IndexSchema {
     }
   }
 
-  protected void readSchema(IndexSchemaFactory.ConfigResource is) {
+  protected void readSchema(ConfigSetService.ConfigResource is) {
     assert null != is : "schema InputSource should never be null";
     try {
       rootNode = is.get();
@@ -512,9 +513,9 @@ public class IndexSchema {
       // load the Field Types
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
 
-      List<ConfigNode> fTypes = rootNode.children(null, FIELDTYPE_KEYS);
+      List<ConfigNode> fTypes = rootNode.getAll(null, FIELDTYPE_KEYS);
       ConfigNode types = rootNode.child(TYPES);
-      if(types != null) fTypes.addAll(types.children(null, FIELDTYPE_KEYS));
+      if(types != null) fTypes.addAll(types.getAll(null, FIELDTYPE_KEYS));
       typeLoader.load(solrClassLoader, fTypes);
 
       // load the fields
@@ -559,7 +560,7 @@ public class IndexSchema {
       if (node==null) {
         log.warn("no {} specified in schema.", UNIQUE_KEY);
       } else {
-        uniqueKeyField=getIndexedField(node.textValue().trim());
+        uniqueKeyField=getIndexedField(node.txt().trim());
         uniqueKeyFieldName=uniqueKeyField.getName();
         uniqueKeyFieldType=uniqueKeyField.getType();
         
@@ -646,10 +647,11 @@ public class IndexSchema {
     
     ArrayList<DynamicField> dFields = new ArrayList<>();
 
-    List<ConfigNode> nodes = n.children(null,  FIELD_KEYS);
+    List<ConfigNode> nodes = n.getAll(null,  FIELD_KEYS);
     ConfigNode child = n.child(FIELDS);
     if(child != null) {
-      nodes.addAll(child.children(null, FIELD_KEYS));
+      nodes = new ArrayList<>(nodes);
+      nodes.addAll(child.getAll(null, FIELD_KEYS));
     }
 
     for (ConfigNode node : nodes) {
@@ -729,12 +731,11 @@ public class IndexSchema {
    * Loads the copy fields
    */
   protected synchronized void loadCopyFields(ConfigNode n) {
-    List<ConfigNode> nodes = n.children(COPY_FIELD);
+    List<ConfigNode> nodes = n.getAll(COPY_FIELD);
     ConfigNode f = n.child(FIELDS);
     if (f != null) {
-      List<ConfigNode> c = f.children(COPY_FIELD);
-      if (nodes.isEmpty()) nodes = c;
-      else nodes.addAll(c);
+      nodes = new ArrayList<>(nodes);
+      nodes.addAll(f.getAll(COPY_FIELD));
     }
     for (ConfigNode node : nodes) {
 
@@ -1407,9 +1408,8 @@ public class IndexSchema {
           .map(it -> it.getNamedPropertyValues(sp.showDefaults))
           .collect(Collectors.toList())),
 
-      @SuppressWarnings({"unchecked", "rawtypes"})
       FIELDS(IndexSchema.FIELDS, sp -> {
-        List<SimpleOrderedMap> result = (sp.requestedFields != null ? sp.requestedFields : new TreeSet<>(sp.schema.fields.keySet()))
+        List<SimpleOrderedMap<Object>> result = (sp.requestedFields != null ? sp.requestedFields : new TreeSet<>(sp.schema.fields.keySet()))
             .stream()
             .map(sp.schema::getFieldOrNull)
             .filter(it -> it != null)
@@ -1460,9 +1460,9 @@ public class IndexSchema {
       requestedFields = readMultiVals(CommonParams.FL);
 
     }
-    @SuppressWarnings({"rawtypes"})
-    public Collection applyDynamic(){
-      return (Collection) Handler.DYNAMIC_FIELDS.fun.apply(this);
+    @SuppressWarnings("unchecked")
+    public Collection<SimpleOrderedMap<Object>> applyDynamic() {
+      return (List<SimpleOrderedMap<Object>>) Handler.DYNAMIC_FIELDS.fun.apply(this);
     }
 
     private Set<String> readMultiVals(String name) {
@@ -1480,8 +1480,7 @@ public class IndexSchema {
     }
 
 
-    @SuppressWarnings({"rawtypes"})
-    SimpleOrderedMap getProperties(SchemaField sf) {
+    SimpleOrderedMap<Object> getProperties(SchemaField sf) {
       SimpleOrderedMap<Object> result = sf.getNamedPropertyValues(showDefaults);
       if (schema.isDynamicField(sf.name)) {
         String dynamicBase = schema.getDynamicPattern(sf.getName());

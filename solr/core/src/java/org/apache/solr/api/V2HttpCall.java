@@ -77,7 +77,7 @@ public class V2HttpCall extends HttpSolrCall {
         api = new Api(null) {
           @Override
           public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-            rsp.add("documentation", "https://lucene.apache.org/solr/guide/v2-api.html");
+            rsp.add("documentation", "https://solr.apache.org/guide/v2-api.html");
             rsp.add("description", "V2 API root path");
           }
         };
@@ -266,7 +266,6 @@ public class V2HttpCall extends HttpSolrCall {
     return api;
   }
 
-  @SuppressWarnings({"unchecked"})
   private static CompositeApi getSubPathApi(PluginBag<SolrRequestHandler> requestHandlers, String path, String fullPath, CompositeApi compositeApi) {
 
     String newPath = path.endsWith(CommonParams.INTROSPECT) ? path.substring(0, path.length() - CommonParams.INTROSPECT.length()) : path;
@@ -288,8 +287,8 @@ public class V2HttpCall extends HttpSolrCall {
           result.put(prefix + e.getKey(), e.getValue());
         }
 
-        @SuppressWarnings({"rawtypes"})
-        Map m = (Map) rsp.getValues().get("availableSubPaths");
+        @SuppressWarnings({"unchecked"})
+        Map<Object, Object> m = (Map<Object, Object>) rsp.getValues().get("availableSubPaths");
         if(m != null){
           m.putAll(result);
         } else {

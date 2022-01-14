@@ -209,12 +209,10 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
     final String joinQ = "{!join " + (anyScoreMode(isScoresTest))
         + "from=join_s fromIndex=" + wrongName + " to=join_s}match_s:c";
     final QueryRequest qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-    try {
-      cluster.getSolrClient().request(qr);
-    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-      assertTrue(ex.getMessage().contains(wrongName));
-    }
+    BaseHttpSolrClient.RemoteSolrException ex = assertThrows(BaseHttpSolrClient.RemoteSolrException.class, () ->
+      cluster.getSolrClient().request(qr));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains(wrongName));
   }
 
   protected static String indexDoc(String collection, int id, String joinField, String matchField, String getField) throws Exception {
