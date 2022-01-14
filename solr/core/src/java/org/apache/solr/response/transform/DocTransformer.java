@@ -17,6 +17,7 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -66,6 +67,10 @@ public abstract class DocTransformer {
    */
   public DocTransformer replaceIfNecessary(Map<String, String> renamedFields, Set<String> reqFieldNames) {
     return null;
+  }
+
+  public Collection<String> getRawFields(Collection<String> addToExisting) {
+    return addToExisting;
   }
 
   /**

@@ -16,24 +16,16 @@
  */
 package org.apache.solr.response.transform;
 
-import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Strings;
-import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.common.util.JavaBinCodec.ObjectResolver;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TextWriter;
-import org.apache.solr.common.util.WriteableValue;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 
@@ -93,25 +85,6 @@ public class RawValueTransformerFactory extends TransformerFactory
     return new RenameFieldTransformer( field, display, false, true );
   }
 
-  public static Set<String> getRawFields(DocTransformer t) {
-    if (t == null) {
-      return null;
-    } else if (t instanceof RawTransformer) {
-      return Collections.singleton(((RawTransformer)t).display);
-    } else if (t instanceof DocTransformers) {
-      DocTransformers ts = (DocTransformers) t;
-      List<String> fields = new ArrayList<>(ts.size());
-      for (int i = ts.size() - 1; i >= 0; i--) {
-        t = ts.getTransformer(i);
-        if (t instanceof RawTransformer) {
-          fields.add(((RawTransformer) t).display);
-        }
-      }
-      return fields.isEmpty() ? null : new HashSet<>(fields);
-    }
-    return null;
-  }
-
   static class RawTransformer extends DocTransformer
   {
     final String field;
@@ -129,6 +102,16 @@ public class RawValueTransformerFactory extends TransformerFactory
     public String getName()
     {
       return display;
+    }
+
+    @Override
+    public Collection<String> getRawFields(Collection<String> addToExisting) {
+      if (addToExisting == null) {
+        return Collections.singleton(display);
+      } else {
+        addToExisting.add(display);
+        return  addToExisting;
+      }
     }
 
     @Override
@@ -163,36 +146,6 @@ public class RawValueTransformerFactory extends TransformerFactory
     @Override
     public String[] getExtraRequestFields() {
       return new String[] {this.field};
-    }
-  }
-  
-  public static class WriteableStringValue extends WriteableValue {
-    public final Object val;
-    
-    public WriteableStringValue(Object val) {
-      this.val = val;
-    }
-    
-    @Override
-    public void write(String name, TextWriter writer) throws IOException {
-      String str = null;
-      if(val instanceof IndexableField) { // delays holding it in memory
-        str = ((IndexableField)val).stringValue();
-      }
-      else {
-        str = val.toString();
-      }
-      writer.getWriter().write(str);
-    }
-
-    @Override
-    public Object resolve(Object o, JavaBinCodec codec) throws IOException {
-      ObjectResolver orig = codec.getResolver();
-      if(orig != null) {
-        codec.writeVal(orig.resolve(val, codec));
-        return null;
-      }
-      return val.toString();
     }
   }
 }

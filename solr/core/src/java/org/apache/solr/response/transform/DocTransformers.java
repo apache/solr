@@ -18,6 +18,7 @@ package org.apache.solr.response.transform;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -62,6 +63,15 @@ public class DocTransformers extends DocTransformer
       }
     }
     return null;
+  }
+
+  @Override
+  public Collection<String> getRawFields(Collection<String> addToExisting) {
+    Collection<String> fields = addToExisting == null ? new ArrayList<>(size()) : addToExisting;
+    for (DocTransformer t : children) {
+      t.getRawFields(fields);
+    }
+    return fields.isEmpty() ? null : fields;
   }
 
   public void addTransformer( DocTransformer a ) {

@@ -19,6 +19,9 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -32,7 +35,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.common.util.TextWriter;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.transform.RawValueTransformerFactory;
+import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
@@ -74,11 +77,15 @@ public abstract class TextResponseWriter implements TextWriter {
     }
     returnFields = rsp.getReturnFields();
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) rsp.removeResponseHeader();
-    this.rawFields = RawValueTransformerFactory.getRawFields(returnFields.getTransformer());
+    DocTransformer rootDocTransformer = returnFields.getTransformer();
+    Collection<String> rawFields = rootDocTransformer == null ? null : rootDocTransformer.getRawFields(null);
     if (rawFields == null) {
+      this.rawFields = null;
       this.rawShim = null;
       this.rawReturnFields = DUMMY_RETURN_FIELDS;
     } else {
+      assert !rawFields.isEmpty();
+      this.rawFields = rawFields.size() == 1 ? Collections.singleton(rawFields.iterator().next()) : new HashSet<>(rawFields);
       this.rawShim = new RawShimTextResponseWriter(this);
       this.rawReturnFields = returnFields;
     }
