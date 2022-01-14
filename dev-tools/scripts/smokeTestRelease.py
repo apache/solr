@@ -173,9 +173,7 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
     notice = decodeUTF8(z.read(NOTICE_FILE_NAME))
     license = decodeUTF8(z.read(LICENSE_FILE_NAME))
 
-    if SOLR_LICENSE is None:
-      raise RuntimeError('BUG in smokeTestRelease!')
-    if SOLR_NOTICE is None:
+    if SOLR_LICENSE is None or SOLR_NOTICE is None:
       raise RuntimeError('BUG in smokeTestRelease!')
     if notice != SOLR_NOTICE:
       raise RuntimeError('%s: %s contents doesn\'t match main NOTICE.txt' % \
