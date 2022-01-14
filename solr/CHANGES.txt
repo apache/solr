@@ -189,6 +189,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15278: Add V2 equivalent to allow deleting async collection list of statuses. (Eric Pugh)
 
+* SOLR-11623: Every request handler in Solr now implements PermissionNameProvider to explicitly decide on what security
+  permissions are required to access the handler (janhoy, Hrishikesh Gadre, David Smiley)
+
 * SOLR-15608: Remove deprecated methods, classes and constructors from solrj clients (janhoy)
 
 * SOLR-15705: A delete-by-id command is forwarded to all shards when using the CompositeId router with a router field
@@ -226,6 +229,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
 
+* SOLR-15209: The old LegacyAssignStrategy has been refactored into the SimplePlacementPlugin. This is still the default
+  placement policy for Solr. (Houston Putman, Ilan Ginzburg)
+
 Build
 ---------------------
 
@@ -236,6 +242,8 @@ Build
 * SOLR-15793: Pin http_parser.rb to specific version to allow Solr Ref Guide on Jekyll to run (Eric Pugh)
 
 * SOLR-15867: Make the gradle build ready for 9.0 release (janhoy, Houston Putman, Dawid Weiss)
+
+* SOLR-15852: Update dev-tools/scripts for the 9.0 release, including releaseWizard (janhoy)
 
 * SOLR-15891: The Solr Docker image uses the default file permissions from the tarball artifact (Houston Putman, janhoy)
 
@@ -472,6 +480,8 @@ Other Changes
 * SOLR-14858: Add the server WEB-INF/lib directory to the classpath for the solr-exporter script. Will allow the script
   to work when the dist/solrj-lib jars are missing in the Docker image. (Houston Putman)
 
+* SOLR-15924: Remove lucene-libs from contrib module packaging. The lucene libraries will be included in lib/ with all other dependencies. (Houston Putman)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
@@ -500,6 +510,12 @@ Bug Fixes
 * SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
 
 * SOLR-15854: Let RealtimeGet component support negative filters (Tomás Fernández Löbbe)
+
+* SOLR-15501: GCSBackupRepository no longer strictly requires a pointer to a service account JSON file, allowing users running within GCP
+              to take advantage of it's "Workload Identity" and other role-based access feature. (Jacek Kikiewicz, Martin Stocker
+              via Jason Gerlowski)
+
+* SOLR-15919: Replace File with Path for many ZK operations (Mike Drob)
 
 ==================  8.11.2 ==================
 

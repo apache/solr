@@ -72,23 +72,18 @@ public class TestExceedMaxTermLength extends SolrTestCaseJ4 {
       assertFailedU(doc);
     } else {
       //Use JSON
-      try {
-        if(includeOkayFields) {
-          String jsonStr = "[{'id':'1','%s':'%s', '%s': '%s'}]";
-          jsonStr = String.format(Locale.ROOT, jsonStr, longFieldName, longFieldValue, 
-                                  okayFieldName, okayFieldValue);
-          updateJ(json(jsonStr), null);
-        } else {
-          String jsonStr = "[{'id':'1','%s':'%s'}]";
-          jsonStr = String.format(Locale.ROOT, jsonStr, longFieldName, longFieldValue);
-          updateJ(json(jsonStr), null);
-        }
-      } catch (Exception e) {
-        //expected
-        String msg= e.getCause().getMessage();
-        assertTrue(msg.contains("one immense term in field=\"cat\""));
+      final String jsonStr;
+      if(includeOkayFields) {
+        String format = "[{'id':'1','%s':'%s', '%s': '%s'}]";
+        jsonStr = String.format(Locale.ROOT, format, longFieldName, longFieldValue,
+            okayFieldName, okayFieldValue);
+      } else {
+        String format = "[{'id':'1','%s':'%s'}]";
+        jsonStr = String.format(Locale.ROOT, format, longFieldName, longFieldValue);
       }
-
+      Exception e = assertThrows(Exception.class, () -> updateJ(json(jsonStr), null));
+      assertNotNull(e.getCause());
+      assertTrue(e.getCause().getMessage().contains("one immense term in field=\"cat\""));
     }
 
     assertU(commit());

@@ -43,6 +43,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -51,9 +52,10 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 
 /**
- *
+ * Base class for all request handlers.
  */
-public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport {
+public abstract class RequestHandlerBase implements
+    SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport, PermissionNameProvider {
 
   protected NamedList<?> initArgs = null;
   protected SolrParams defaults;
@@ -333,5 +335,3 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     return ImmutableList.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
   }
 }
-
-
