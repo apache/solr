@@ -53,18 +53,6 @@ public class DocTransformers extends DocTransformer
     return str.toString();
   }
 
-  public DocTransformer replaceIfNecessary(Map<String, String> renamedFields, Set<String> reqFieldNames) {
-    ListIterator<DocTransformer> iter = children.listIterator();
-    while (iter.hasNext()) {
-      DocTransformer next = iter.next();
-      DocTransformer replaceNext = next.replaceIfNecessary(renamedFields, reqFieldNames);
-      if (replaceNext != null) {
-        iter.set(replaceNext);
-      }
-    }
-    return null;
-  }
-
   @Override
   public Collection<String> getRawFields(Collection<String> addToExisting) {
     Collection<String> fields = addToExisting == null ? new ArrayList<>(size()) : addToExisting;

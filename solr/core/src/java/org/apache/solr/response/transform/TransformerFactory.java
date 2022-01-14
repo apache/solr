@@ -18,6 +18,7 @@ package org.apache.solr.response.transform;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -39,6 +40,10 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin
   }
 
   public abstract DocTransformer create(String field, SolrParams params, SolrQueryRequest req);
+
+  public interface FieldRenamer {
+    DocTransformer create(String field, SolrParams params, SolrQueryRequest req, Map<String, String> renamedFields, Set<String> reqFieldNames);
+  }
 
   public static final Map<String,TransformerFactory> defaultFactories = new HashMap<>(9, 1.0f);
   static {

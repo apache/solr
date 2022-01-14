@@ -32,7 +32,7 @@ import org.apache.solr.response.QueryResponseWriter;
 /**
  * @since solr 5.2
  */
-public class RawValueTransformerFactory extends TransformerFactory
+public class RawValueTransformerFactory extends TransformerFactory implements TransformerFactory.FieldRenamer
 {
   String applyToWT = null;
   
@@ -54,10 +54,21 @@ public class RawValueTransformerFactory extends TransformerFactory
   
   @Override
   public DocTransformer create(String display, SolrParams params, SolrQueryRequest req) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public DocTransformer create(String display, SolrParams params, SolrQueryRequest req,
+                               Map<String, String> renamedFields, Set<String> reqFieldNames) {
     String field = params.get("f");
     if(Strings.isNullOrEmpty(field)) {
       field = display;
     }
+    String renameFrom = renamedFields.get(field);
+    if (renameFrom != null) {
+      field = renameFrom;
+    }
+    final boolean copy = reqFieldNames != null && reqFieldNames.contains(field);
     // When a 'wt' is specified in the transformer, only apply it to the same wt
     boolean apply = true;
     if(applyToWT!=null) {
@@ -75,14 +86,14 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
 
     if(apply) {
-      return new RawTransformer( field, display, false );
+      return new RawTransformer( field, display, copy );
     }
     
     if (field.equals(display)) {
       // we have to ensure the field is returned
       return new DocTransformer.NoopFieldTransformer(field);
     }
-    return new RenameFieldTransformer( field, display, false, true );
+    return new RenameFieldTransformer( field, display, copy );
   }
 
   static class RawTransformer extends DocTransformer
@@ -119,27 +130,6 @@ public class RawValueTransformerFactory extends TransformerFactory
       Object val = copy ? doc.get(field) : doc.remove(field);
       if(val != null) {
         doc.setField(display, val);
-      }
-    }
-
-    @Override
-    public DocTransformer replaceIfNecessary(Map<String, String> renamedFields, Set<String> reqFieldNames) {
-      String replaceFrom;
-      assert !copy; // we should only ever be initially constructed in a context where `copy=false` is assumed
-      if (display.equals(field)) {
-        // nobody should be renaming us
-        assert !renamedFields.containsKey(field);
-        return null;
-      } else if ((replaceFrom = renamedFields.get(field)) != null) {
-        // someone else is renaming the `from` field, so use the new name
-        // the other party must also be _using_ the result field, so we must now _copy_ (not rename)
-        return new RenameFieldTransformer(replaceFrom, display, true);
-      } else if (reqFieldNames.contains(field)) {
-        // someone else requires our `from` field, so we have to copy, not replace
-        return new RenameFieldTransformer(field, display, true);
-      } else {
-        renamedFields.put(field, display);
-        return null;
       }
     }
 

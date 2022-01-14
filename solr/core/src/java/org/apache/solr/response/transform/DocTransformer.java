@@ -55,20 +55,6 @@ public abstract class DocTransformer {
 
   }
 
-  /**
-   * Based on interactions of field renaming, it can be impossible to parse DocTransformers in a single
-   * pass. This method may be called exactly once to offer this DocTransformer an opportunity to replace
-   * itself with a modified DocTransformer (according to interactions with other DocTransformers as
-   * communicated by the specified input args.
-   *
-   * @param renamedFields Fields that have been renamed (with source field removed) by other DocTransformers
-   * @param reqFieldNames Fields explicitly requested by other DocTransformers
-   * @return A DocTransformer to replace this one, or <code>null</code> if no change required
-   */
-  public DocTransformer replaceIfNecessary(Map<String, String> renamedFields, Set<String> reqFieldNames) {
-    return null;
-  }
-
   public Collection<String> getRawFields(Collection<String> addToExisting) {
     return addToExisting;
   }
