@@ -243,6 +243,8 @@ Build
 
 * SOLR-15867: Make the gradle build ready for 9.0 release (janhoy, Houston Putman, Dawid Weiss)
 
+* SOLR-15852: Update dev-tools/scripts for the 9.0 release, including releaseWizard (janhoy)
+
 * SOLR-15891: The Solr Docker image uses the default file permissions from the tarball artifact (Houston Putman, janhoy)
 
 Other Changes
@@ -512,6 +514,8 @@ Bug Fixes
 * SOLR-15501: GCSBackupRepository no longer strictly requires a pointer to a service account JSON file, allowing users running within GCP
               to take advantage of it's "Workload Identity" and other role-based access feature. (Jacek Kikiewicz, Martin Stocker
               via Jason Gerlowski)
+
+* SOLR-15919: Replace File with Path for many ZK operations (Mike Drob)
 
 ==================  8.11.2 ==================
 

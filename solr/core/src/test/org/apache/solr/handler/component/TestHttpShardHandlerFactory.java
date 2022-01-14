@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -65,7 +64,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   }
 
   public void testLoadBalancerRequestsMinMax() throws Exception {
-    final Path home = Paths.get(TEST_HOME());
+    final Path home = TEST_PATH();
     CoreContainer cc = null;
     ShardHandlerFactory factory = null;
     try {
@@ -114,7 +113,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
     CoreContainer cc = null;
     ShardHandlerFactory factory = null;
     try {
-      final Path home = Paths.get(TEST_HOME());
+      final Path home = TEST_PATH();
       cc = CoreContainer.createAndLoad(home, home.resolve("solr.xml"));
       factory = cc.getShardHandlerFactory();
       assertTrue(factory instanceof HttpShardHandlerFactory);

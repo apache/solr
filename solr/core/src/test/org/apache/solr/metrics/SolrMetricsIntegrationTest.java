@@ -17,8 +17,9 @@
 
 package org.apache.solr.metrics;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Random;
 
@@ -26,7 +27,6 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
@@ -66,11 +66,11 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
   @Before
   public void beforeTest() throws Exception {
-    Path home = Paths.get(TEST_HOME());
+    Path home = TEST_PATH();
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-metricreporter.xml").toFile(), "UTF-8");
+    String solrXml = Files.readString(home.resolve("solr-metricreporter.xml"), StandardCharsets.UTF_8);
     NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
     cc = createCoreContainer(cfg, new TestHarness.TestCoresLocator
                              (DEFAULT_TEST_CORENAME, initAndGetDataDir().getAbsolutePath(),

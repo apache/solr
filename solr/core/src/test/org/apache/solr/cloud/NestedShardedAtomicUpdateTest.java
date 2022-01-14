@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,8 +51,8 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase { // used t
         .addConfig("_default", configset("cloud-minimal"))
         .configure();
     // replace schema.xml with schema-test.xml
-    Path schemaPath = Paths.get(TEST_HOME()).resolve("collection1").resolve("conf").resolve("schema-nest.xml");
-    cluster.getZkClient().setData("/configs/_default/schema.xml", schemaPath.toFile(),true);
+    Path schemaPath = TEST_COLL1_CONF().resolve("schema-nest.xml");
+    cluster.getZkClient().setData("/configs/_default/schema.xml", schemaPath, true);
 
     cloudClient = cluster.getSolrClient();
     cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
