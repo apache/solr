@@ -510,6 +510,8 @@ Bug Fixes
               to take advantage of it's "Workload Identity" and other role-based access feature. (Jacek Kikiewicz, Martin Stocker
               via Jason Gerlowski)
 
+* SOLR-15919: Replace File with Path for many ZK operations (Mike Drob)
+
 ==================  8.11.2 ==================
 
 Bug Fixes

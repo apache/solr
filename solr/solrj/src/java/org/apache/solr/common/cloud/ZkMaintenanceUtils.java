@@ -295,12 +295,12 @@ public class ZkMaintenanceUtils {
         try {
           // if the path exists (and presumably we're uploading data to it) just set its data
           if (file.toFile().getName().equals(ZKNODE_DATA_FILE) && zkClient.exists(zkNode, true)) {
-            zkClient.setData(zkNode, file.toFile(), true);
+            zkClient.setData(zkNode, file, true);
           } else {
-            zkClient.makePath(zkNode, file.toFile(), false, true);
+            zkClient.makePath(zkNode, file, false, true);
           }
         } catch (KeeperException | InterruptedException e) {
-          throw new IOException("Error uploading file " + file.toString() + " to zookeeper path " + zkNode,
+          throw new IOException("Error uploading file " + file + " to zookeeper path " + zkNode,
               SolrZkClient.checkInterrupted(e));
         }
         return FileVisitResult.CONTINUE;
@@ -320,11 +320,11 @@ public class ZkMaintenanceUtils {
     return znodeStat.getEphemeralOwner() != 0;
   }
 
-  private static int copyDataDown(SolrZkClient zkClient, String zkPath, File file) throws IOException, KeeperException, InterruptedException {
+  private static int copyDataDown(SolrZkClient zkClient, String zkPath, Path file) throws IOException, KeeperException, InterruptedException {
     byte[] data = zkClient.getData(zkPath, null, null, true);
     if (data != null && data.length > 0) { // There are apparently basically empty ZNodes.
       log.info("Writing file {}", file);
-      Files.write(file.toPath(), data);
+      Files.write(file, data);
       return data.length;
     }
     return 0;
@@ -338,14 +338,14 @@ public class ZkMaintenanceUtils {
       if (children.size() == 0) {
         // If we didn't copy data down, then we also didn't create the file. But we still need a marker on the local
         // disk so create an empty file.
-        if (copyDataDown(zkClient, zkPath, file.toFile()) == 0) {
+        if (copyDataDown(zkClient, zkPath, file) == 0) {
           Files.createFile(file);
         }
       } else {
         Files.createDirectories(file); // Make parent dir.
         // ZK nodes, whether leaf or not can have data. If it's a non-leaf node and
         // has associated data write it into the special file.
-        copyDataDown(zkClient, zkPath, new File(file.toFile(), ZKNODE_DATA_FILE));
+        copyDataDown(zkClient, zkPath, file.resolve(ZKNODE_DATA_FILE));
 
         for (String child : children) {
           String zkChild = zkPath;
