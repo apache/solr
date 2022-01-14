@@ -533,15 +533,15 @@ SOLR_NOTICE = None
 SOLR_LICENSE = None
 
 def is_in_list(in_folder, files, indent=4):
-  for fileName in files:
-    print("%sChecking %s" % (" "*indent, fileName))
+  for file_name in files:
+    print("%sChecking %s" % (" "*indent, file_name))
     found = False
-    for f in [fileName, fileName + '.txt', fileName + '.md']:
+    for f in [file_name, file_name + '.txt', file_name + '.md']:
       if f in in_folder:
         in_folder.remove(f)
         found = True
     if not found:
-      raise RuntimeError('file "%s" is missing' % fileName)
+      raise RuntimeError('file "%s" is missing' % file_name)
 
 
 def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
