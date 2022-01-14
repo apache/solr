@@ -173,6 +173,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
       log.trace("'ALL' perm applies to all requests; perm applies.");
       return true; //'ALL' applies to everything!
     } else if (! (context.getHandler() instanceof PermissionNameProvider)) {
+      // TODO: Is this code path needed anymore, now that all handlers implement the interface? context.getHandler returns Object and is not documented
       if (log.isTraceEnabled()) {
         log.trace("Request handler [{}] is not a PermissionNameProvider, perm doesnt apply", context.getHandler());
       }
