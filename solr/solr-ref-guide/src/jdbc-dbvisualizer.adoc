@@ -20,7 +20,7 @@ Solr's JDBC driver supports https://www.dbvis.com/[DbVisualizer] for querying So
 
 For DbVisualizer, you will need to create a new driver for Solr using the DbVisualizer Driver Manager.
 This will add several SolrJ client (and dependency) `.jar` s to the DbVisualizer classpath.
-<<#add_driver_files_to_classpath,See below>> for the required files.
+<<#add-driver-files-to-classpath,See below>> for the required files.
 
 Once the driver has been created, you can create a connection to Solr with the connection string format outlined in the generic section and use the SQL Commander to issue queries.
 
