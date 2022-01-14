@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -65,10 +67,15 @@ import org.locationtech.spatial4j.shape.Shape;
  * </ul>
  * 
  */
-public class GeoTransformerFactory extends TransformerFactory
-{ 
+public class GeoTransformerFactory extends TransformerFactory implements TransformerFactory.FieldRenamer {
+
   @Override
   public DocTransformer create(String display, SolrParams params, SolrQueryRequest req) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public DocTransformer create(String display, SolrParams params, SolrQueryRequest req, Map<String, String> renamedFields, Set<String> reqFieldNames) {
 
     String fname = params.get("f", display);
     if(fname.startsWith("[") && fname.endsWith("]")) {
@@ -141,12 +148,18 @@ public class GeoTransformerFactory extends TransformerFactory
 
     }
     
+    // if source has been renamed, update reference
+    updater.field = renamedFields.getOrDefault(updater.field, updater.field);
+
+    // don't remove fields that were explicitly requested by others
+    final boolean copy = reqFieldNames != null && reqFieldNames.contains(updater.field);
+
     // Using the raw stored values
     return new GeoDocTransformer(updater) {
       
       @Override
       public void transform(SolrDocument doc, int docid) throws IOException {
-        Object val = doc.remove(updater.field);
+        Object val = copy ? doc.get(updater.field) : doc.remove(updater.field);
         if(val!=null) {
           updater.setValue(doc, val);
         }
