@@ -20,7 +20,6 @@ import java.util.Set;
 
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.SolrCore;
 
 /**
  * Interface for providing pluggable exchange rate providers to @CurrencyField
