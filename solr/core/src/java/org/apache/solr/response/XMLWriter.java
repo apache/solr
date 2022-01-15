@@ -353,10 +353,11 @@ public class XMLWriter extends TextResponseWriter {
 
   @Override
   public void writeStrRaw(String name, String val) throws IOException {
-    int contentLen;
-    if (val != null && (contentLen = val.length()) > 0) {
-      writer.write(val, 0, contentLen);
-    }
+    int contentLen = val == null ? 0 : val.length();
+    startTag("raw", name, contentLen == 0);
+    if (contentLen == 0) return;
+    writer.write(val, 0, contentLen);
+    writer.write("</raw>");
   }
 
   @Override

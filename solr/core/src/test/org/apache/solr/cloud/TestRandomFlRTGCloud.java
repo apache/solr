@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,6 +42,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -60,6 +62,8 @@ import org.junit.BeforeClass;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.xml.stream.XMLStreamException;
 
 /** @see TestCloudPseudoReturnFields */
 @RandomizeSSL(clientAuth=0.0,reason="client auth uses too much RAM")
@@ -324,8 +328,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
                                        "ddd_s", TestUtil.randomSimpleString(random()),
                                        "eee_s", makeJson(TestUtil.randomSimpleString(random())),
                                        "fff_s", makeJson(TestUtil.randomSimpleString(random())),
-                                       "ggg_s", TestUtil.randomSimpleString(random()),
-                                       "hhh_s", TestUtil.randomSimpleString(random()),
+                                       "ggg_s", makeXml(TestUtil.randomSimpleString(random())),
+                                       "hhh_s", makeXml(TestUtil.randomSimpleString(random())),
                                        //
                                        "geo_1_srpt", GeoTransformerValidator.getValueForIndexing(random()),
                                        "geo_2_srpt", GeoTransformerValidator.getValueForIndexing(random()),
@@ -353,6 +357,22 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       case 2:
         // map
         return "{\"" + s + "\":\"" + s + "\"}";
+      default:
+        throw new IllegalStateException();
+    }
+  }
+
+  private String makeXml(String s) {
+    switch (random().nextInt(3)) {
+      case 0:
+        // simple string
+        return s;
+      case 1:
+        // simple element
+        return "<root>" + s + "</root>";
+      case 2:
+        // slightly more complex
+        return "<root><inner1>" + s + "</inner1><inner2>" + s + "</inner2></root>";
       default:
         throw new IllegalStateException();
     }
@@ -470,7 +490,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           break;
         case "xml":
           docs = getDocsFromXmlResponse(askForList, textResult);
-          if (true) return;
           break;
         default:
           throw new IllegalStateException();
@@ -551,8 +570,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   private static SolrDocumentList getDocsFromXmlResponse(final boolean expectList, final String rsp) {
-    System.out.println("XXX "+expectList+" "+rsp);
-    return null;
+    return getDocsFromRTGResponse(expectList, new QueryResponse(new XMLResponseParser().processResponse(new StringReader(rsp)), null));
   }
 
   /**
@@ -754,6 +772,14 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           expected = expected.deepCopy(); // need to copy before modifying expected!
           expected.setField(expectedFieldName, parsedExpected);
         } catch (IOException ex) {
+          // swallow the exception and use the un-parsed String?
+        }
+      } else if ("xml".equals(wt) && "xml".equals(type)) {
+        try {
+          Object parsedExpected = XMLResponseParser.convertRawContent((String) expected.getFieldValue(expectedFieldName));
+          expected = expected.deepCopy(); // need to copy before modifying expected!
+          expected.setField(expectedFieldName, parsedExpected);
+        } catch (XMLStreamException ex) {
           // swallow the exception and use the un-parsed String?
         }
       }
