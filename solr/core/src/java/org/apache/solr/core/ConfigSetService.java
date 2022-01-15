@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
@@ -109,14 +108,14 @@ public abstract class ConfigSetService {
 
   private void bootstrapDefaultConf() throws IOException {
     if (this.checkConfigExists("_default") == false) {
-      String configDirPath = getDefaultConfigDirPath();
+      Path configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {
         log.warn(
             "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
             "intended to be the default. Current 'solr.default.confdir' value:",
             System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
-        this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, Paths.get(configDirPath));
+        this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
       }
     }
   }
@@ -139,31 +138,25 @@ public abstract class ConfigSetService {
    * @lucene.internal
    * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
    */
-  public static String getDefaultConfigDirPath() {
-    String configDirPath = null;
-    String serverSubPath =
-        "solr"
-            + File.separator
-            + "configsets"
-            + File.separator
-            + "_default"
-            + File.separator
-            + "conf";
-    String subPath = File.separator + "server" + File.separator + serverSubPath;
-    if (System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE) != null
-        && new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE))
-            .exists()) {
-      configDirPath =
-          new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE))
-              .getAbsolutePath();
-    } else if (System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) != null
-        && new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath)
-            .exists()) {
-      configDirPath =
-          new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath)
-              .getAbsolutePath();
+  public static Path getDefaultConfigDirPath() {
+    String confDir = System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+    if (confDir != null) {
+      Path path = Path.of(confDir);
+      if (Files.exists(path)) {
+        return path;
+      }
     }
-    return configDirPath;
+
+    String installDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    if (installDir != null) {
+      Path subPath = Path.of("server", "solr", "configsets", "_default", "conf");
+      Path path = Path.of(installDir).resolve(subPath);
+      if (Files.exists(path)) {
+        return path;
+      }
+    }
+
+    return null;
   }
 
   // Order is important here since "confDir" may be

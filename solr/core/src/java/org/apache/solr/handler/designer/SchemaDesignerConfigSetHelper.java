@@ -18,15 +18,17 @@
 package org.apache.solr.handler.designer;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1012,51 +1014,41 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   byte[] downloadAndZipConfigSet(String configId) throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     Path tmpDirectory = Files.createTempDirectory("schema-designer-" + FilenameUtils.getName(configId));
-    File tmpDir = tmpDirectory.toFile();
     try {
       cc.getConfigSetService().downloadConfig(configId, tmpDirectory);
       try (ZipOutputStream zipOut = new ZipOutputStream(baos)) {
-        zipIt(tmpDir, "", zipOut);
+        Files.walkFileTree(tmpDirectory, new SimpleFileVisitor<>() {
+          @Override
+          public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            if (Files.isHidden(dir)) {
+              return FileVisitResult.SKIP_SUBTREE;
+            }
+
+            String dirName = dir.toString();
+            if (!dirName.endsWith("/")) {
+              dirName += "/";
+            }
+            zipOut.putNextEntry(new ZipEntry(dirName));
+            zipOut.closeEntry();
+            return FileVisitResult.CONTINUE;
+          }
+
+          @Override
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            if (! Files.isHidden(file)) {
+              try (InputStream fis = Files.newInputStream(file)) {
+                ZipEntry zipEntry = new ZipEntry(file.toString());
+                zipOut.putNextEntry(zipEntry);
+                fis.transferTo(zipOut);
+              }
+            }
+            return FileVisitResult.CONTINUE;
+          }
+        });
       }
     } finally {
-      FileUtils.deleteDirectory(tmpDir);
+      FileUtils.deleteDirectory(tmpDirectory.toFile());
     }
     return baos.toByteArray();
-  }
-
-  protected void zipIt(File f, String fileName, ZipOutputStream zipOut) throws IOException {
-    if (f.isHidden()) {
-      return;
-    }
-
-    if (f.isDirectory()) {
-      String dirPrefix = "";
-      if (fileName.endsWith("/")) {
-        zipOut.putNextEntry(new ZipEntry(fileName));
-        zipOut.closeEntry();
-        dirPrefix = fileName;
-      } else if (!fileName.isEmpty()) {
-        dirPrefix = fileName + "/";
-        zipOut.putNextEntry(new ZipEntry(dirPrefix));
-        zipOut.closeEntry();
-      }
-      File[] files = f.listFiles();
-      if (files != null) {
-        for (File child : files) {
-          zipIt(child, dirPrefix + child.getName(), zipOut);
-        }
-      }
-      return;
-    }
-
-    byte[] bytes = new byte[1024];
-    int r;
-    try (FileInputStream fis = new FileInputStream(f)) {
-      ZipEntry zipEntry = new ZipEntry(fileName);
-      zipOut.putNextEntry(zipEntry);
-      while ((r = fis.read(bytes)) >= 0) {
-        zipOut.write(bytes, 0, r);
-      }
-    }
   }
 }
