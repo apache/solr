@@ -15,11 +15,33 @@
  * limitations under the License.
  */
 
+def skipErrorProne = rootProject.usesAltJvm && rootProject.runtimeJavaVersion > JavaVersion.VERSION_15;
+if (skipErrorProne) {
+  configure(rootProject) {
+    task errorProneSkipped() {
+      doFirst {
+        logger.warn("WARNING: errorprone disabled (won't work with JDK ${rootProject.runtimeJavaVersion} if used as alternative java toolchain)")
+      }
+    }
+  }
+}
+
 allprojects { prj ->
   plugins.withType(JavaPlugin) {
-    // LUCENE-9650: Errorprone on master/gradle does not work with JDK-16+
-    // this is a hack to keep the dependency (so that palantir's version check doesn't complain)
+    // LUCENE-9650: Errorprone on master/gradle does not work with JDK-16+ when running as plugin
+    // inside a forked Javac process. Javac running inside Gradle works, because we have
+    // additional module system opens in place.
+    // This is a hack to keep the dependency (so that palantir's version check doesn't complain)
     // but don't include the plugin (which fails on JDK16+).
+    if (skipErrorProne) {
+      tasks.withType(JavaCompile) { task -> task.dependsOn ":errorProneSkipped" }
+      configurations {
+        errorprone
+      }
+      dependencies {
+        errorprone("com.google.errorprone:error_prone_core")
+      }
+    } else {
       prj.apply plugin: 'net.ltgt.errorprone'
 
       dependencies {
@@ -31,27 +53,15 @@ allprojects { prj ->
         options.errorprone.errorproneArgs = [
             '-Xep:InlineMeSuggester:OFF', // We don't use this annotation
 
-            // test
-            '-Xep:ExtendingJUnitAssert:OFF',
-            '-Xep:UseCorrectAssertInTests:OFF',
-            '-Xep:DefaultPackage:OFF',
-            '-Xep:FloatingPointLiteralPrecision:OFF',
-            '-Xep:CatchFail:OFF',
-            '-Xep:TryFailThrowable:OFF',
-            '-Xep:MathAbsoluteRandom:OFF',
-            '-Xep:AssertionFailureIgnored:OFF',
-            '-Xep:JUnit4TestNotRun:OFF',
-            '-Xep:FallThrough:OFF',
-            '-Xep:CatchAndPrintStackTrace:OFF',
-            '-Xep:ToStringReturnsNull:OFF',
-            '-Xep:ArrayAsKeyOfSetOrMap:OFF',
-            '-Xep:StaticAssignmentInConstructor:OFF',
-            '-Xep:SelfAssignment:OFF',
-            '-Xep:InvalidPatternSyntax:OFF',
-            '-Xep:MissingFail:OFF',
-            '-Xep:ComparableType:OFF',
-            '-Xep:InfiniteRecursion:OFF',
-            '-Xep:MisusedDayOfYear:OFF',
+            // bug patterns related to our tests
+            '-Xep:ExtendingJUnitAssert:OFF', // we inherit from LuceneTestCase which extends Assert
+            '-Xep:UseCorrectAssertInTests:OFF', // and this is a consequence of the above
+            '-Xep:CatchFail:OFF', // our code is generally descriptive enough, fix case by case if tests fail
+            '-Xep:JUnit4TestNotRun:OFF', // RandomizedRunner finds unannotated test methods no problem
+            '-Xep:CatchAndPrintStackTrace:OFF', // TODO: there's a lot of these but they should be easy to address
+            '-Xep:FloatingPointLiteralPrecision:OFF', // TODO: a lot of these in our tests, likely unintentional
+            '-Xep:StaticAssignmentInConstructor:OFF', // we assign SolrTestCaseJ4.configString in many tests, difficult to untangle
+            '-Xep:ComparableType:OFF', // SolrTestCaseJ4.Doc and Fld are messy
 
             '-Xep:AlmostJavadoc:OFF',
             '-Xep:AmbiguousMethodReference:OFF',
@@ -59,11 +69,10 @@ allprojects { prj ->
             '-Xep:ArrayEquals:OFF',
             '-Xep:ArrayHashCode:OFF',
             '-Xep:ArrayToString:OFF',
-            '-Xep:BadImport:OFF',
+            '-Xep:BadImport:OFF', // style preference that we don't want to enforce
             '-Xep:BadInstanceof:OFF',
             '-Xep:BadShiftAmount:OFF',
             '-Xep:ClassCanBeStatic:OFF',
-            '-Xep:CollectionIncompatibleType:OFF',
             '-Xep:CollectionUndefinedEquality:OFF',
             '-Xep:ComplexBooleanConstant:OFF',
             '-Xep:DoubleBraceInitialization:OFF',
@@ -81,7 +90,6 @@ allprojects { prj ->
             '-Xep:IdentityHashMapUsage:OFF',
             '-Xep:ImmutableEnumChecker:OFF',
             '-Xep:InconsistentCapitalization:OFF',
-            '-Xep:InconsistentHashCode:OFF',
             '-Xep:InlineFormatString:OFF',
             '-Xep:InputStreamSlowMultibyteRead:OFF',
             '-Xep:IntLongMath:OFF',
@@ -91,7 +99,6 @@ allprojects { prj ->
             '-Xep:JavaLangClash:OFF',
             '-Xep:JavaUtilDate:OFF',
             '-Xep:JdkObsolete:OFF',
-            '-Xep:LockNotBeforeTry:OFF',
             '-Xep:LogicalAssignment:OFF',
             '-Xep:MissingOverride:OFF',
             '-Xep:MissingSummary:OFF',
@@ -106,7 +113,6 @@ allprojects { prj ->
             '-Xep:ObjectsHashCodePrimitive:OFF',
             '-Xep:OperatorPrecedence:OFF',
             '-Xep:ProtectedMembersInFinalClass:OFF',
-            '-Xep:PublicConstructorForAbstractClass:OFF',
             '-Xep:ReferenceEquality:OFF',
             '-Xep:ReturnValueIgnored:OFF',
             '-Xep:SameNameButDifferent:OFF',
@@ -129,6 +135,7 @@ allprojects { prj ->
             '-Xep:UnusedVariable:OFF',
             '-Xep:WaitNotInLoop:OFF',
         ]
+      }
     }
   }
 }

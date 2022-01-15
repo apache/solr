@@ -27,12 +27,12 @@ public class TestSolrVersion extends SolrTestCase {
   }
 
   public void testVersionComponents() {
-    SolrVersion v9_0_1_rc1 = SolrVersion.valueOf("9.0.1-rc1");
-    assertEquals("9.0.1-rc1", v9_0_1_rc1.toString());
+    SolrVersion v9_0_1_rc1 = SolrVersion.valueOf("9.0.1-rc1.0+b123");
+    assertEquals("9.0.1-rc1.0+b123", v9_0_1_rc1.toString());
     assertEquals(9, v9_0_1_rc1.getMajorVersion());
     assertEquals(0, v9_0_1_rc1.getMinorVersion());
     assertEquals(1, v9_0_1_rc1.getPatchVersion());
-    assertEquals("rc1", v9_0_1_rc1.getPrereleaseVersion());
+    assertEquals("rc1.0", v9_0_1_rc1.getPrereleaseVersion());
   }
 
   public void testLatestInitialized() {

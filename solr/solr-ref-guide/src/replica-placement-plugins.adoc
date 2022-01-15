@@ -32,18 +32,9 @@ There are several placement plugins included in the Solr distribution.
 Additional placement plugins can be added - they have to implement a `PlacementPluginFactory` interface.
 The configuration entry may also contain a `config` element if the plugin implements the `ConfigurablePlugin` interface.
 
-== Legacy Replica Placement
-By default Solr 9.0 uses a legacy method for replica placements, which doesn't use a placement plugin at all.
-This method is used whenever the placement plugin configuration is missing or invalid.
-
-Legacy placement simply assigns new replicas to live nodes in a round-robin fashion: first it prepares a sorted list of nodes with the smallest number of existing replicas of the collection.
-Then for each shard in the request it adds the replicas to consecutive nodes in this order, wrapping around to the first node if the number of replicas is larger than the number of nodes.
-
-This placement strategy doesn't ensure that no more than 1 replica of a shard is placed on the same node.
-Also, the round-robin assignment only roughly approximates an even spread of replicas across the nodes.
-
 == Placement Plugins Included with Solr
-The following placement plugins are available out-of-the-box in Solr 9.0 (however, as described above the default configuration doesn't use any of them, instead it uses the legacy replica placement method).
+The following placement plugins are available out-of-the-box in Solr 9.0.
+If no placement plugin is defined, Solr will default to using the <<#simpleplacementfactory,SimplePlacementPlugin>>.
 
 In order to use a plugin its configuration must be added using the `/cluster/plugin` API.
 For example, in order to use the `AffinityPlacementFactory` plugin the following command should be executed:
@@ -74,6 +65,18 @@ Similarly, the configuration can be updated or removed.
 
 NOTE: Placement plugin configuration MUST use the predefined name `.placement-plugin`.
 There can be only one (or none) placement configuration defined.
+
+=== SimplePlacementFactory
+By default Solr 9.0 uses a legacy method for replica placements, the `SimplePlacementFactory`.
+This method is used whenever the placement plugin configuration is missing or invalid.
+
+Simple placement simply assigns new replicas to live nodes in a round-robin fashion: first it prepares a sorted list of nodes with the smallest number of existing replicas, especially of the collection.
+Then for each shard in the request it adds the replicas to consecutive nodes in this order, wrapping around to the first node if the number of replicas is larger than the number of nodes.
+
+This placement strategy doesn't ensure that no more than 1 replica of a shard is placed on the same node.
+Also, the round-robin assignment only roughly approximates an even spread of replicas across the nodes.
+
+NOTE: This was the default non-autoscaling behavior prior to 9.0, at the time called the LegacyAssignStrategy.
 
 === RandomPlacementFactory
 This plugin creates random placements, while preventing two replicas of the same shard from being placed on the same node.
