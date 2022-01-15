@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -117,13 +116,10 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
    * Retrieves permission names for a given set of roles
    */
   public Set<String> getPermissionNamesForRoles(Set<String> roles) {
-    Set<String> permissions = new HashSet<>();
-    for (String r : roles) {
-      if (roleToPermissionsMap.containsKey(r)) {
-        permissions.addAll(roleToPermissionsMap.get(r).stream().map(p -> p.name).filter(Objects::nonNull).collect(Collectors.toSet()));
-      }
-    }
-    return permissions;
+    return roles.stream().filter(roleToPermissionsMap::containsKey)
+        .flatMap(r -> roleToPermissionsMap.get(r).stream())
+        .map(p -> p.name)
+        .collect(Collectors.toSet());
   }
 
   private MatchStatus checkCollPerm(WildCardSupportMap pathVsPerms, AuthorizationContext context) {
@@ -302,9 +298,11 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
         perms.add(permission);
       }
     }
-    for (String r : permission.role) {
-      Set<Permission> rm = roleToPermissionsMap.computeIfAbsent(r, k -> new HashSet<>());
-      rm.add(permission);
+    if (permission.role != null) {
+      for (String r : permission.role) {
+        Set<Permission> rm = roleToPermissionsMap.computeIfAbsent(r, k -> new HashSet<>());
+        rm.add(permission);
+      }
     }
   }
 
