@@ -18,9 +18,6 @@ package org.apache.solr.response.transform;
 
 import org.apache.solr.common.SolrDocument;
 
-import java.util.Map;
-import java.util.Set;
-
 /**
  * Return a field with a name that is different that what is indexed
  *

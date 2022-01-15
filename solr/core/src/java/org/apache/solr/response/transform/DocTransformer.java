@@ -18,8 +18,6 @@ package org.apache.solr.response.transform;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.response.QueryResponseWriter;
