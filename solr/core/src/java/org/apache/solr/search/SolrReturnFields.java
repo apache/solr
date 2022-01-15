@@ -435,6 +435,9 @@ public class SolrReturnFields extends ReturnFields {
       String from = params.get(SOURCE_FIELD_ARGNAME);
       from = renamedFields.getOrDefault(from, from);
       final boolean copy = reqFieldNames != null && reqFieldNames.contains(from);
+      if (!copy) {
+        renamedFields.put(from, to);
+      }
       return new RenameFieldTransformer(from, to, copy);
     }
   };

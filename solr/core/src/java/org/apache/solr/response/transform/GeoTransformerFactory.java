@@ -153,6 +153,9 @@ public class GeoTransformerFactory extends TransformerFactory implements Transfo
 
     // don't remove fields that were explicitly requested by others
     final boolean copy = reqFieldNames != null && reqFieldNames.contains(updater.field);
+    if (!copy) {
+      renamedFields.put(updater.field, updater.display);
+    }
 
     // Using the raw stored values
     return new GeoDocTransformer(updater) {

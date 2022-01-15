@@ -65,7 +65,11 @@ public class RawValueTransformerFactory extends TransformerFactory implements Tr
       field = display;
     }
     field = renamedFields.getOrDefault(field, field);
-    final boolean copy = reqFieldNames != null && reqFieldNames.contains(field);
+    final boolean rename = !field.equals(display);
+    final boolean copy = rename && reqFieldNames != null && reqFieldNames.contains(field);
+    if (!copy) {
+      renamedFields.put(field, display);
+    }
     // When a 'wt' is specified in the transformer, only apply it to the same wt
     boolean apply = true;
     if(applyToWT!=null) {
@@ -86,7 +90,7 @@ public class RawValueTransformerFactory extends TransformerFactory implements Tr
       return new RawTransformer( field, display, copy );
     }
     
-    if (field.equals(display)) {
+    if (!rename) {
       // we have to ensure the field is returned
       return new DocTransformer.NoopFieldTransformer(field);
     }
