@@ -64,10 +64,7 @@ public class RawValueTransformerFactory extends TransformerFactory implements Tr
     if(Strings.isNullOrEmpty(field)) {
       field = display;
     }
-    String renameFrom = renamedFields.get(field);
-    if (renameFrom != null) {
-      field = renameFrom;
-    }
+    field = renamedFields.getOrDefault(field, field);
     final boolean copy = reqFieldNames != null && reqFieldNames.contains(field);
     // When a 'wt' is specified in the transformer, only apply it to the same wt
     boolean apply = true;
