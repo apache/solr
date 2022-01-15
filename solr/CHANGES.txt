@@ -243,6 +243,8 @@ Build
 
 * SOLR-13671: Remove check for bare "var" declarations in validate-source-patterns (Erick Erickson, Alex Bulygin, janhoy)
 
+* SOLR-14857: Add optional gradle property to run docker tests in parallel (hossman, Houston Putman)
+
 * SOLR-15793: Pin http_parser.rb to specific version to allow Solr Ref Guide on Jekyll to run (Eric Pugh)
 
 * SOLR-15867: Make the gradle build ready for 9.0 release (janhoy, Houston Putman, Dawid Weiss)
@@ -251,11 +253,7 @@ Build
 
 * SOLR-15891: The Solr Docker image uses the default file permissions from the tarball artifact (Houston Putman, janhoy)
 
-Other Changes
-----------------------
 * SOLR-15603: Add an option to activate Gradle build cache, build task cleanups (Alexis Tual, Dawid Weiss)
-
-* SOLR-14857: Add optional gradle property to run docker tests in parallel (hossman, Houston Putman)
 
 * SOLR-15670: Introduce Gradle parameter to skip ref-guide tasks (Houston Putman, Dawid Weiss)
 
