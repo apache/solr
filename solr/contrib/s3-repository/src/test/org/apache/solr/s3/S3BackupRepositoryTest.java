@@ -19,7 +19,6 @@ package org.apache.solr.s3;
 import static org.apache.solr.s3.S3BackupRepository.S3_SCHEME;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
-import com.google.common.base.Strings;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -165,7 +164,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     doTestCopyFileTo(content);
 
     // copy a 10Mb file
-    content += Strings.repeat("1234567890", 1024 * 1024);
+    content += "1234567890".repeat(1024 * 1024);
     doTestCopyFileFrom(content);
     doTestCopyFileTo(content);
   }
@@ -232,7 +231,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     doRandomAccessTest(content, content.indexOf("content"));
 
     // Large text, we force to refill the buffer
-    String blank = Strings.repeat(" ", 5 * BufferedIndexInput.BUFFER_SIZE);
+    String blank = " ".repeat(5 * BufferedIndexInput.BUFFER_SIZE);
     content = "This is a super large" + blank + "content";
     doRandomAccessTest(content, content.indexOf("content"));
   }
@@ -246,8 +245,6 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   private void doRandomAccessTest(String content, int position) throws Exception {
 
     try (S3BackupRepository repo = getRepository()) {
-      File tmp = temporaryFolder.newFolder();
-
       // Open an index input on a file
       pushObject("/my-repo/content", content);
       IndexInput input = repo.openInput(new URI("s3://my-repo"), "content", IOContext.DEFAULT);
@@ -278,7 +275,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
     try (S3BackupRepository repo = getRepository()) {
 
       // Open an index input on a file
-      String blank = Strings.repeat(" ", 5 * BufferedIndexInput.BUFFER_SIZE);
+      String blank = " ".repeat(5 * BufferedIndexInput.BUFFER_SIZE);
       String content = "This is the file " + blank + "content";
 
       pushObject("/content", content);

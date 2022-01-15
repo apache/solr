@@ -35,6 +35,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodeHealthAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -280,5 +281,10 @@ public class HealthCheckHandler extends RequestHandlerBase {
   @Override
   public Collection<Api> getApis() {
     return AnnotatedApi.getApis(new NodeHealthAPI(this));
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.HEALTH_PERM;
   }
 }

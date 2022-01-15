@@ -71,7 +71,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   @Test
   public void testPackageManager() throws Exception {
     PackageTool tool = new PackageTool();
-    
+
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
@@ -123,10 +123,10 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       }
       assertPackageVersion("abc", "question-answer", "1.1.0", rhPath, "1.1.0");
     }
-    
+
     log.info("Running undeploy...");
     run(tool, new String[] {"-solrUrl", solrUrl, "undeploy", "question-answer", "-collections", "abc"});
-    
+
     run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
 
   }
