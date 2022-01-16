@@ -26,7 +26,7 @@ Bug Fixes
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
 
 ==================  9.0.0 ==================
 
