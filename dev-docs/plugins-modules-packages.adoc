@@ -20,8 +20,16 @@ on the class-path. A module can contain multiple Plugins.
 
 === Package
 
-A Package is a Module (or in theory multiple modules) that is provisioned with a `manifest.json`
-to enable discovering and loading through https://solr.apache.org/guide/package-manager.html[Solr's package manager].
+A Package is some server-side functionality for Solr that is provisioned with a `manifest.json`
+to enable discovering and loading through https://solr.apache.org/guide/package-manager.html[Solr's package manager]. Packages are loaded from a "package repository" which is
+simply a json file on a HTTP server. Packages can be maintained by 3rd party devs and hosted on
+GitHub, like https://github.com/yasa-org/yasa[YASA],
+https://github.com/rohitbemax/dataimporthandler[DataImportHandler],
+https://github.com/erikhatcher/solr-velocity[Velocity] and
+https://github.com/cominvent/request-sanitizer-component[RequestSanitizerComponent].
+But the Solr project is also working on packaging our own (1st party) modules as packages,
+and host them either inside the binary tarball distribution of Solr or later also in the
+ASF download repos.
 
 == Dev guide for creating modules
 
