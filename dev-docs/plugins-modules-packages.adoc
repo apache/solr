@@ -7,7 +7,7 @@ This document discusses how developers can group features into Plugins, Modules 
 
 === Plugin
 
-A plugin is a low level class that implements a certain Solr interface, such as
+A plugin is a low level class that implements a certain Lucene or Solr interface, such as
 `QParserPlugin`, `AuthPlugin`, `UpdateRequestProcessor`, `QueryResponseWriter` etc.
 See ref guide page https://solr.apache.org/guide/solr-plugins.html[Solr Plugins] for details.
 
