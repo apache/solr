@@ -130,7 +130,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15484")
   public void mockOAuth2Server() throws Exception {
     MiniSolrCloudCluster myCluster = configureClusterMockOauth(2, pemFilePath, 10000);
     String baseUrl = myCluster.getRandomJetty(random()).getBaseUrl().toString();
@@ -484,22 +483,17 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
    * and trusting its SSL
    */
   private static String createMockOAuthSecurityJson(Path pemFilePath) throws IOException {
-    String wellKnown = mockOAuth2Server.wellKnownUrl("default").toString();
-    String pemCert =
-        CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath))
-            .replaceAll("\n", "\\\\n");
-    return "{\n"
-        + "  \"authentication\" : {\n"
-        + "    \"class\": \"solr.JWTAuthPlugin\",\n"
-        + "    \"wellKnownUrl\": \""
-        + wellKnown
-        + "\",\n"
-        + "    \"blockUnknown\": true\n"
-        + "    \"trustedCerts\": \""
-        + pemCert
-        + "\"\n"
-        + "  }\n"
-        + "}";
+    String wellKnown = mockOAuth2Server.wellKnownUrl("default").toString()
+        .replace(".localdomain", ""); // Use only 'localhost' to match our SSL cert
+    String pemCert = CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath)).replaceAll("\n", "\\\\n"); // Use literal \n to play well with JSON
+    return "{\n" +
+        "  \"authentication\" : {\n" +
+        "    \"class\": \"solr.JWTAuthPlugin\",\n" +
+        "    \"wellKnownUrl\": \"" + wellKnown + "\",\n" +
+        "    \"blockUnknown\": true\n" +
+        "    \"trustedCerts\": \"" + pemCert + "\"\n" +
+        "  }\n" +
+        "}";
   }
 
   /**
