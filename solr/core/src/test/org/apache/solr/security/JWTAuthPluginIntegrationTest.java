@@ -127,6 +127,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15484")
   public void mockOAuth2Server() throws Exception {
     MiniSolrCloudCluster myCluster = configureClusterMockOauth(2, pemFilePath, 10000);
     String baseUrl = myCluster.getRandomJetty(random()).getBaseUrl().toString();
