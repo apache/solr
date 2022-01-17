@@ -92,7 +92,7 @@ distributions {
     contents {
       // TODO: This is missing module README files, as compared to 8x
 
-      from(rootProject.projectDir, {
+      from(rootDir, {
         include "LICENSE.txt"
         include "NOTICE.txt"
       })
