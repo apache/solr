@@ -13,20 +13,28 @@ See ref guide page https://solr.apache.org/guide/solr-plugins.html[Solr Plugins]
 
 === Module
 
-Earlier referred to as "Contrib". This is a well-defined piece of functionality that is
-separate from solr-core and produces a separate `.jar` file in the build. Modules help
-keep the solr-core small and lean and also reduces risk by including only needed java classes
-on the class-path. A module can contain multiple Plugins.
+Solr modules are addon Solr plugins that are not part of solr-core, but officially maintained
+by the Solr project. They provide well-defined features such as the "extracting" module which lets
+users index rich text documents with Apache Tika. Modules were earlier known as "contribs".
+
+Each module produces a separate `.jar` file in the build, and thus help keep the solr-core small and lean,
+and also reduces risk by including only needed java classes on the class-path.
+
+A single module can contain multiple Plugins.
 
 === Package
 
-A Package is some server-side functionality for Solr that is provisioned with a `manifest.json`
+A Package is a module or a 3rd party plugin for Solr provisioned with a `manifest.json`
 to enable discovering and loading through https://solr.apache.org/guide/package-manager.html[Solr's package manager]. Packages are loaded from a "package repository" which is
-simply a json file on a HTTP server. Packages can be maintained by 3rd party devs and hosted on
+simply a json file on a HTTP server.
+
+Packages can be maintained by 3rd party devs and hosted on
 GitHub, like https://github.com/yasa-org/yasa[YASA],
 https://github.com/rohitbemax/dataimporthandler[DataImportHandler],
-https://github.com/erikhatcher/solr-velocity[Velocity] and
-https://github.com/cominvent/request-sanitizer-component[RequestSanitizerComponent].
+https://github.com/erikhatcher/solr-velocity[Velocity],
+https://github.com/cominvent/request-sanitizer-component[RequestSanitizerComponent]
+and several others. Such packages are not endorsed by the Solr project and must be used at own risk.
+
 But the Solr project is also working on packaging our own (1st party) modules as packages,
 and host them either inside the binary tarball distribution of Solr or later also in the
 ASF download repos.
