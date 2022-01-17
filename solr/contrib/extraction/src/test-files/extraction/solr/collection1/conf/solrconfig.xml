@@ -19,7 +19,6 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  <jmx />
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
