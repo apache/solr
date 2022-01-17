@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import org.apache.solr.common.params.CommonParams;
@@ -1206,6 +1207,17 @@ public class SolrQuery extends ModifiableSolrParams
   */
   public Integer getTimeAllowed() {
     return this.getInt(CommonParams.TIME_ALLOWED);
+  }
+
+  /**
+   * This method is used to set solr query params
+   * through solr query consumer
+   *
+   * @return modifiable solr query object for easy chaining
+   */
+  public SolrQuery accept(Consumer<SolrQuery> queryConsumer) {
+    queryConsumer.accept(this);
+    return this;
   }
 
   ///////////////////////
