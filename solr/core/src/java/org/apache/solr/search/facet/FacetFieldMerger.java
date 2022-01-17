@@ -20,10 +20,8 @@ package org.apache.solr.search.facet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -45,23 +43,22 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public void merge(Object facetResult, Context mcontext) {
     super.merge(facetResult, mcontext);
     if (numReturnedPerShard == null) {
       numReturnedPerShard = new int[mcontext.numShards];
     }
-    merge((SimpleOrderedMap)facetResult, mcontext);
+    merge((SimpleOrderedMap<?>)facetResult, mcontext);
   }
 
-  protected void merge(@SuppressWarnings("rawtypes") SimpleOrderedMap facetResult, Context mcontext) {
+  protected void merge(SimpleOrderedMap<?> facetResult, Context mcontext) {
     if (freq.missing) {
       Object o = facetResult.get("missing");
       if (o != null) {
         if (missingBucket == null) {
           missingBucket = newBucket(null, mcontext);
         }
-        missingBucket.mergeBucket((SimpleOrderedMap)o , mcontext);
+        missingBucket.mergeBucket((SimpleOrderedMap<?>)o , mcontext);
       }
     }
 
@@ -71,13 +68,13 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
         if (allBuckets == null) {
           allBuckets = newBucket(null, mcontext);
         }
-        allBuckets.mergeBucket((SimpleOrderedMap)o , mcontext);
+        allBuckets.mergeBucket((SimpleOrderedMap<?>)o , mcontext);
       }
     }
 
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    List<SimpleOrderedMap> bucketList = (List<SimpleOrderedMap>) facetResult.get("buckets");
+    @SuppressWarnings("unchecked")
+    List<SimpleOrderedMap<?>> bucketList = (List<SimpleOrderedMap<?>>) facetResult.get("buckets");
     numReturnedPerShard[mcontext.shardNum] = bucketList.size();
     numReturnedBuckets += bucketList.size();
     mergeBucketList(bucketList , mcontext);
@@ -98,9 +95,8 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
 
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public Object getMergedResult() {
-    SimpleOrderedMap result = new SimpleOrderedMap();
+    SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
 
     if (numBuckets != null) {
       result.add("numBuckets", ((Number)numBuckets.getMergedResult()).longValue());
@@ -112,7 +108,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     long end = freq.limit >=0 ? first + (int) freq.limit : Integer.MAX_VALUE;
     long last = Math.min(sortedBuckets.size(), end);
 
-    List<SimpleOrderedMap> resultBuckets = new ArrayList<>(Math.max(0, (int)(last - first)));
+    List<SimpleOrderedMap<?>> resultBuckets = new ArrayList<>(Math.max(0, (int)(last - first)));
 
     /** this only works if there are no filters (like mincount)
     for (int i=first; i<last; i++) {
@@ -194,46 +190,5 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
       refinement.put(label, bucketRefinement);
     }
     return refinement;
-  }
-
-  private static class FacetNumBucketsMerger extends FacetMerger {
-    long sumBuckets;
-    long shardsMissingSum;
-    long shardsTruncatedSum;
-    Set<Object> values;
-
-    @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public void merge(Object facetResult, Context mcontext) {
-      SimpleOrderedMap map = (SimpleOrderedMap)facetResult;
-      long numBuckets = ((Number)map.get("numBuckets")).longValue();
-      sumBuckets += numBuckets;
-
-      List vals = (List)map.get("vals");
-      if (vals != null) {
-        if (values == null) {
-          values = new HashSet<>(vals.size()*4);
-        }
-        values.addAll(vals);
-        if (numBuckets > values.size()) {
-          shardsTruncatedSum += numBuckets - values.size();
-        }
-      } else {
-        shardsMissingSum += numBuckets;
-      }
-    }
-
-    @Override
-    public void finish(Context mcontext) {
-      // nothing to do
-    }
-
-    @Override
-    public Object getMergedResult() {
-      long exactCount = values == null ? 0 : values.size();
-      return exactCount + shardsMissingSum + shardsTruncatedSum;
-      // TODO: reduce count by (at least) number of buckets that fail to hit mincount (after merging)
-      // that should make things match for most of the small tests at least
-    }
   }
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -28,7 +29,6 @@ import java.util.Map;
 import java.util.Random;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
-import com.google.common.base.Strings;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Directory;
@@ -54,11 +54,12 @@ import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
-@ThreadLeakFilters(defaultFilters = true, filters = {
+@ThreadLeakFilters(filters = {
     SolrIgnoredThreadsFilter.class,
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 10)
 public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   private static MiniDFSCluster dfsCluster;
   
@@ -244,14 +245,16 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testIsAbsolute() throws Exception {
-    try(HdfsDirectoryFactory hdfsFactory = new HdfsDirectoryFactory()) {
-      String relativePath = Strings.repeat(
-          RandomStrings.randomAsciiAlphanumOfLength(random(), random().nextInt(10) + 1) + '/',
-          random().nextInt(5) + 1);
+    try (HdfsDirectoryFactory hdfsFactory = new HdfsDirectoryFactory()) {
+      String pathToRepeat = RandomStrings.randomAsciiAlphanumOfLength(
+          random(),
+          random().nextInt(10) + 1
+      ) + '/';
+      String relativePath =pathToRepeat.repeat(random().nextInt(5) + 1);
       assertFalse(hdfsFactory.isAbsolute(relativePath));
       assertFalse(hdfsFactory.isAbsolute("/" + relativePath));
 
-      for(String rootPrefix : Arrays.asList("file://", "hdfs://", "s3a://", "foo://")) {
+      for (String rootPrefix : Arrays.asList("file://", "hdfs://", "s3a://", "foo://")) {
         assertTrue(hdfsFactory.isAbsolute(rootPrefix + relativePath));
       }
     }

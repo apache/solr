@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -124,7 +123,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     final int numNodes = (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_COLL1_CONF();
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     
@@ -496,8 +495,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     try {
       final QueryResponse rsp = (new QueryRequest(params)).process(getRandClient(random()));
       assertNotNull(params + " is null rsp?", rsp);
-      @SuppressWarnings({"rawtypes"})
-      final NamedList topNamedList = rsp.getResponse();
+      final NamedList<?> topNamedList = rsp.getResponse();
       assertNotNull(params + " is null topNamedList?", topNamedList);
       
       // skip past the (implicit) top Facet query to get it's "sub-facets" (the real facets)...
@@ -725,8 +723,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     try {
 
       // start by recording the results of the purely "default" behavior...
-      @SuppressWarnings({"rawtypes"})
-      final NamedList expected = getFacetResponse(basicParams);
+      final NamedList<?> expected = getFacetResponse(basicParams);
 
       // now loop over all permutations of processors and sweep values and and compare them to the "default"...
       for (FacetMethod method : EnumSet.allOf(FacetMethod.class)) {
@@ -737,8 +734,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
             options.add("sweep_val", sweep.toString());
           }
           
-          @SuppressWarnings({"rawtypes"})
-          final NamedList actual = getFacetResponse(SolrParams.wrapAppended(options, basicParams));
+          final NamedList<?> actual = getFacetResponse(SolrParams.wrapAppended(options, basicParams));
           
           // we can't rely on a trivial assertEquals() comparison...
           // 
@@ -768,14 +764,13 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    * We ignore {@link QueryResponse#getJsonFacetingResponse()} because it isn't as useful for
    * doing a "deep equals" comparison across requests
    */
-  @SuppressWarnings({"rawtypes"})
-  private NamedList getFacetResponse(final SolrParams params) {
+  private NamedList<?> getFacetResponse(final SolrParams params) {
     try {
       final QueryResponse rsp = (new QueryRequest(params)).process(getRandClient(random()));
       assertNotNull(params + " is null rsp?", rsp);
-      final NamedList topNamedList = rsp.getResponse();
+      final NamedList<Object> topNamedList = rsp.getResponse();
       assertNotNull(params + " is null topNamedList?", topNamedList);
-      final NamedList facetResponse = (NamedList) topNamedList.get("facets");
+      final NamedList<?> facetResponse = (NamedList<?>) topNamedList.get("facets");
       assertNotNull("null facet results?", facetResponse);
       assertEquals("numFound mismatch with top count?",
                    rsp.getResults().getNumFound(), ((Number)facetResponse.get("count")).longValue());

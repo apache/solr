@@ -47,6 +47,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.VersionedFile;
 import org.slf4j.Logger;
@@ -165,32 +166,23 @@ public class FileFloatSource extends ValueSource {
 
   /** Internal cache. (from lucene FieldCache) */
   abstract static class Cache {
-    @SuppressWarnings({"rawtypes"})
-    private final Map readerCache = new WeakHashMap();
+    private final Map<IndexReader, Map<Object, Object>> readerCache = new WeakHashMap<>();
 
     protected abstract Object createValue(IndexReader reader, Object key);
 
-    @SuppressWarnings({"unchecked"})
     public void refresh(IndexReader reader, Object key) {
       Object refreshedValues = createValue(reader, key);
       synchronized (readerCache) {
-        @SuppressWarnings({"rawtypes"})
-        Map innerCache = (Map) readerCache.get(reader);
-        if (innerCache == null) {
-          innerCache = new HashMap<>();
-          readerCache.put(reader, innerCache);
-        }
+        Map<Object, Object> innerCache = readerCache.computeIfAbsent(reader, k -> new HashMap<>());
         innerCache.put(key, refreshedValues);
       }
     }
 
-    @SuppressWarnings({"unchecked"})
     public Object get(IndexReader reader, Object key) {
-      @SuppressWarnings({"rawtypes"})
-      Map innerCache;
+      Map<Object, Object> innerCache;
       Object value;
       synchronized (readerCache) {
-        innerCache = (Map) readerCache.get(reader);
+        innerCache = readerCache.get(reader);
         if (innerCache == null) {
           innerCache = new HashMap<>();
           readerCache.put(reader, innerCache);
@@ -370,6 +362,11 @@ public class FileFloatSource extends ValueSource {
     @Override
     public String getDescription() {
       return "Reload readerCache request handler";
+    }
+
+    @Override
+    public Name getPermissionName(AuthorizationContext request) {
+      return Name.UPDATE_PERM;
     }
   }
 }

@@ -70,7 +70,7 @@
       {
       name: "solr_metrics_core_query_{UNIQUE}",
       type: "{TYPE}",
-      help: "See: https://lucene.apache.org/solr/guide/performance-statistics-reference.html",
+      help: "See: https://solr.apache.org/guide/performance-statistics-reference.html",
       label_names: ["category", "searchHandler", "core"],
       label_values: [$category, $handler, $core],
       value: $value
@@ -79,7 +79,7 @@
       {
       name: "solr_metrics_core_query_{UNIQUE}",
       type: "{TYPE}",
-      help: "See: https://lucene.apache.org/solr/guide/performance-statistics-reference.html",
+      help: "See: https://solr.apache.org/guide/performance-statistics-reference.html",
       label_names: ["category", "searchHandler", "core", "collection", "shard", "replica"],
       label_values: [$category, $handler, $core, $collection, $shard, $replica],
       value: $value
@@ -104,7 +104,7 @@
       {
       name: "solr_metrics_core_{UNIQUE}",
       type: "{TYPE}",
-      help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+      help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
       label_names: ["category", "handler", "core"],
       label_values: [$category, $handler, $core],
       value: $value
@@ -113,7 +113,7 @@
       {
       name: "solr_metrics_core_{UNIQUE}",
       type: "{TYPE}",
-      help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+      help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
       label_names: ["category", "handler", "core", "collection", "shard", "replica"],
       label_values: [$category, $handler, $core, $collection, $shard, $replica],
       value: $value
@@ -137,7 +137,7 @@
       {
       name: "solr_metrics_core_{UNIQUE}",
       type: "{TYPE}",
-      help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+      help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
       label_names: ["category", "handler", "core"],
       label_values: [$category, $handler, $core],
       value: $value
@@ -146,7 +146,7 @@
       {
       name: "solr_metrics_core_{UNIQUE}",
       type: "{TYPE}",
-      help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+      help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
       label_names: ["category", "handler", "core", "collection", "shard", "replica"],
       label_values: [$category, $handler, $core, $collection, $shard, $replica],
       value: $value
@@ -161,7 +161,7 @@
       {
       name         : "solr_metrics_node_{UNIQUE}",
       type         : "{TYPE}",
-      help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+      help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
       label_names  : ["category", "handler"],
       label_values : [$category, $handler],
       value        : $value
@@ -186,7 +186,7 @@
       {
       name: "solr_metrics_core_searcher_{UNIQUE}",
       type: "{TYPE}",
-      help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+      help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
       label_names: ["category", "core", "type", "item"],
       label_values: [$category, $core, $type, $item],
       value: $value
@@ -195,7 +195,7 @@
       {
       name: "solr_metrics_core_searcher_{UNIQUE}",
       type: "{TYPE}",
-      help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+      help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
       label_names: ["category", "core", "collection", "shard", "replica", "type", "item"],
       label_values: [$category, $core, $collection, $shard, $replica, $type, $item],
       value: $value
@@ -213,7 +213,7 @@
       {
       name         : "solr_metrics_node_thread_pool_{UNIQUE}",
       type         : "{TYPE}",
-      help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+      help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
       label_names  : ["category", "handler", "executor"],
       label_values : [$category, $handler, $executor],
       value        : $value
@@ -226,7 +226,7 @@
       {
       name         : "solr_metrics_jvm_{UNIQUE}",
       type         : "{TYPE}",
-      help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+      help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
       label_names  : ["item"],
       label_values : [$item],
       value        : $value
@@ -248,7 +248,7 @@
             {
               name         : "solr_ping",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/ping.html",
+              help         : "See following URL: https://solr.apache.org/guide/ping.html",
               label_names  : [],
               label_values : [],
               value        : $value
@@ -263,10 +263,23 @@
         <lst name="query">
           <str name="path">/admin/metrics</str>
           <lst name="params">
-            <str name="group">all</str>
-            <str name="type">all</str>
-            <str name="prefix"></str>
-            <str name="property"></str>
+            <!--
+              trim some of these expressions as needed if you don't care about
+              a particular group of metrics.
+            -->
+            <str name="expr">solr\.jetty:.*DefaultHandler.*</str>
+            <str name="expr">solr\.jvm:.*</str>
+            <str name="expr">solr\.node:.*</str>
+            <str name="expr">solr\.overseer:.*</str>
+            <str name="expr">solr\.core\..*:QUERY\..*</str>
+            <str name="expr">solr\.core\..*:ADMIN\..*</str>
+            <str name="expr">solr\.core\..*:CACHE\..*</str>
+            <str name="expr">solr\.core\..*:UPDATE\.updateHandler\..*</str>
+            <str name="expr">solr\.core\..*:CORE\.fs\..*</str>
+            <str name="expr">solr\.core\..*:HIGHLIGHTER\..*</str>
+            <str name="expr">solr\.core\..*:INDEX\..*</str>
+            <str name="expr">solr\.core\..*:REPLICATION\.replication\..*</str>
+            <str name="expr">solr\.core\..*:SEARCHER\.searcher\..*</str>
           </lst>
         </lst>
         <arr name="jsonQueries">
@@ -280,7 +293,7 @@
             {
             name         : "solr_metrics_jetty_response_total",
             type         : "COUNTER",
-            help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+            help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
             label_names  : ["status"],
             label_values : [$status],
             value        : $value
@@ -293,7 +306,7 @@
             {
               name         : "solr_metrics_jetty_requests_total",
               type         : "COUNTER",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : ["method"],
               label_values : [$method],
               value        : $value
@@ -305,7 +318,7 @@
             {
               name         : "solr_metrics_jetty_dispatches_total",
               type         : "COUNTER",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : [],
               label_values : [],
               value        : $value
@@ -321,7 +334,7 @@
             {
               name         : "solr_metrics_jvm_buffers",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : ["pool"],
               label_values : [$pool],
               value        : $value
@@ -335,7 +348,7 @@
             {
               name         : "solr_metrics_jvm_buffers_bytes",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : ["pool", "item"],
               label_values : [$pool, $item],
               value        : $value
@@ -348,7 +361,7 @@
             {
               name         : "solr_metrics_jvm_gc_total",
               type         : "COUNTER",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : ["item"],
               label_values : [$item],
               value        : $value
@@ -361,7 +374,7 @@
             {
               name         : "solr_metrics_jvm_gc_seconds_total",
               type         : "COUNTER",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : ["item"],
               label_values : [$item],
               value        : $value
@@ -385,7 +398,7 @@
             {
               name         : "solr_metrics_jvm_memory_pools_bytes",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : ["space", "item"],
               label_values : [$space, $item],
               value        : $value
@@ -411,7 +424,7 @@
             {
               name         : "solr_metrics_jvm_os_cpu_time_seconds",
               type         : "COUNTER",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : ["item"],
               label_values : ["processCpuTime"],
               value        : $value
@@ -423,7 +436,7 @@
             {
               name         : "solr_metrics_jvm_os_load_average",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : ["item"],
               label_values : ["systemLoadAverage"],
               value        : $value
@@ -436,7 +449,7 @@
             {
               name         : "solr_metrics_jvm_threads",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : ["item"],
               label_values : [$item],
               value        : $value
@@ -453,7 +466,7 @@
             {
             name         : "solr_metrics_overseer_collectionWorkQueueSize",
             type         : "GAUGE",
-            help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+            help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
             label_names  : [],
             label_values : [],
             value        : $value
@@ -467,7 +480,7 @@
             {
             name         : "solr_metrics_overseer_stateUpdateQueueSize",
             type         : "GAUGE",
-            help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+            help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
             label_names  : [],
             label_values : [],
             value        : $value
@@ -502,7 +515,7 @@
             {
               name         : "solr_metrics_node_cores",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : ["category", "item"],
               label_values : [$category, $item],
               value        : $value
@@ -518,7 +531,7 @@
             {
               name         : "solr_metrics_node_core_root_fs_bytes",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : ["category", "item"],
               label_values : [$category, $item],
               value        : $value
@@ -544,7 +557,7 @@
             {
               name         : "solr_metrics_node_connections",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names  : ["category", "handler", "item"],
               label_values : [$category, $handler, $item],
               value        : $value
@@ -643,7 +656,7 @@
             {
             name: "solr_metrics_core_field_cache_total",
             type: "COUNTER",
-            help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+            help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
             label_names: ["category", "core"],
             label_values: [$category, $core],
             value: $value
@@ -652,7 +665,7 @@
             {
             name: "solr_metrics_core_field_cache_total",
             type: "COUNTER",
-            help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+            help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
             label_names: ["category", "core", "collection", "shard", "replica"],
             label_values: [$category, $core, $collection, $shard, $replica],
             value: $value
@@ -746,7 +759,7 @@
             {
               name: "solr_metrics_core_fs_bytes",
               type: "GAUGE",
-              help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "core", "item"],
               label_values: [$category, $core, $item],
               value: $value
@@ -755,7 +768,7 @@
             {
               name: "solr_metrics_core_fs_bytes",
               type: "GAUGE",
-              help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "core", "collection", "shard", "replica", "item"],
               label_values: [$category, $core, $collection, $shard, $replica, $item],
               value: $value
@@ -780,7 +793,7 @@
             {
               name: "solr_metrics_core_highlighter_request_total",
               type: "COUNTER",
-              help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "core", "name", "item"],
               label_values: [$category, $core, $name, $item],
               value: $value
@@ -789,7 +802,7 @@
             {
               name: "solr_metrics_core_highlighter_request_total",
               type: "COUNTER",
-              help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "core", "collection", "shard", "replica", "name", "item"],
               label_values: [$category, $core, $collection, $shard, $replica, $name, $item],
               value: $value
@@ -812,7 +825,7 @@
             {
               name: "solr_metrics_core_index_size_bytes",
               type: "GAUGE",
-              help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "core"],
               label_values: [$category, $core],
               value: $value
@@ -821,7 +834,7 @@
             {
               name: "solr_metrics_core_index_size_bytes",
               type: "GAUGE",
-              help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "core", "collection", "shard", "replica"],
               label_values: [$category, $core, $collection, $shard, $replica],
               value: $value
@@ -845,7 +858,7 @@
             {
               name: "solr_metrics_core_replication_master",
               type: "GAUGE",
-              help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "handler", "core"],
               label_values: [$category, $handler, $core],
               value: $value
@@ -854,7 +867,7 @@
             {
               name: "solr_metrics_core_replication_master",
               type: "GAUGE",
-              help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "handler", "core", "collection", "shard", "replica"],
               label_values: [$category, $handler, $core, $collection, $shard, $replica],
               value: $value
@@ -878,7 +891,7 @@
             {
               name: "solr_metrics_core_replication_follower",
               type: "GAUGE",
-              help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "handler", "core"],
               label_values: [$category, $handler, $core],
               value: $value
@@ -887,7 +900,7 @@
             {
               name: "solr_metrics_core_replication_follower",
               type: "GAUGE",
-              help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "handler", "core", "collection", "shard", "replica"],
               label_values: [$category, $handler, $core, $collection, $shard, $replica],
               value: $value
@@ -911,7 +924,7 @@
             {
               name: "solr_metrics_core_searcher_documents",
               type: "GAUGE",
-              help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "core", "item"],
               label_values: [$category, $core, $item],
               value: $value
@@ -920,7 +933,7 @@
             {
               name: "solr_metrics_core_searcher_documents",
               type: "GAUGE",
-              help: "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+              help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "core", "collection", "shard", "replica", "item"],
               label_values: [$category, $core, $collection, $shard, $replica, $item],
               value: $value
@@ -945,7 +958,7 @@
             {
               name         : "solr_collections_live_nodes",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
+              help         : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
               label_names  : [],
               label_values : [],
               value        : $value
@@ -958,7 +971,7 @@
             {
               name         : "solr_collections_pull_replicas",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
+              help         : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
               label_names  : ["collection"],
               label_values : [$collection],
               value        : $value
@@ -971,7 +984,7 @@
             {
               name         : "solr_collections_nrt_replicas",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
+              help         : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
               label_names  : ["collection"],
               label_values : [$collection],
               value        : $value
@@ -984,7 +997,7 @@
             {
               name         : "solr_collections_tlog_replicas",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
+              help         : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
               label_names  : ["collection"],
               label_values : [$collection],
               value        : $value
@@ -999,7 +1012,7 @@
             {
               name         : "solr_collections_shard_state",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
+              help         : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
               label_names  : ["collection","shard"],
               label_values : [$collection,$shard],
               value        : $value
@@ -1022,7 +1035,7 @@
             {
               name         : "solr_collections_replica_state",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
+              help         : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
               label_names  : ["collection", "shard", "replica", "replica_name", "core", "base_url", "node_name", "type", "state"],
               label_values : [$collection, $shard, $replica, $replica_name, $core, $base_url, $node_name, $type, $state],
               value        : $value
@@ -1045,7 +1058,7 @@
             {
               name         : "solr_collections_shard_leader",
               type         : "GAUGE",
-              help         : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
+              help         : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
               label_names  : ["collection", "shard", "replica", "replica_name", "core", "base_url", "node_name", "type"],
               label_values : [$collection, $shard, $replica, $replica_name, $core, $base_url, $node_name, $type],
               value        : $value

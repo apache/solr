@@ -379,15 +379,12 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
     initDateTimeFormatters(args);
     initBooleanParsing(args);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  protected void initDateTimeFormatters(NamedList args) {
-
+  protected void initDateTimeFormatters(NamedList<?> args) {
     Locale locale = Locale.US;
     String localeParam = (String) args.remove(LOCALE_PARAM);
     if (null != localeParam) {
@@ -413,8 +410,7 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  protected void initBooleanParsing(NamedList args) {
+  protected void initBooleanParsing(NamedList<?> args) {
     Object caseSensitiveParam = args.remove(CASE_SENSITIVE_PARAM);
     if (null != caseSensitiveParam) {
       if (caseSensitiveParam instanceof Boolean) {

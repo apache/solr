@@ -21,7 +21,6 @@
 plugins {
   id 'base'
   id 'distribution'
-  id 'signing'
 }
 
 description = 'Solr distribution packaging'
@@ -63,6 +62,7 @@ dependencies {
    ":solr:contrib:langid",
    ":solr:contrib:ltr",
    ":solr:contrib:prometheus-exporter",
+   ":solr:contrib:s3-repository",
    ":solr:contrib:scripting"
   ].each { contribName ->
     distSolr project(contribName)
@@ -80,6 +80,10 @@ dependencies {
   docs project(path: ':solr:documentation', configuration: 'minimalSite')
 
   docker project(path: ':solr:docker', configuration: 'packaging')
+
+  solrTgzSignature files("$buildDir/distributions/solr-${version}.tgz.asc") {
+    builtBy ":solr:distribution:signBinaryTgz"
+  }
 }
 
 distributions {
@@ -87,19 +91,6 @@ distributions {
     distributionBaseName = 'solr'
     contents {
       // TODO: This is missing module README files, as compared to 8x
-
-      // Manually correct posix permissions (matters when packaging on Windows).
-      filesMatching([
-          "**/*.sh",
-          "**/bin/post",
-          "**/bin/postlogs",
-          "**/bin/solr",
-          "**/bin/init.d/solr",
-          "**/bin/solr-exporter",
-          "**/docker/scripts/*",
-      ]) { copy ->
-        copy.setMode(0755)
-      }
 
       from(project(":solr").projectDir, {
         include "bin/**"
@@ -110,14 +101,6 @@ distributions {
         include "NOTICE.txt"
         include "README.md"
       })
-
-      // Should we include Lucene changes?
-      /*
-        from(project(":lucene").projectDir, {
-          include "CHANGES.txt"
-          rename { file -> 'LUCENE_CHANGES.txt' }
-        })
-      */
 
       from(configurations.contrib, {
         into "contrib"
@@ -145,7 +128,24 @@ distributions {
 
       from(configurations.docker, {
         into "docker"
+        filesMatching([
+            "scripts/**",
+        ]) { copy ->
+          copy.setMode(0755)
+        }
       })
+
+      // Manually correct posix permissions (matters when packaging on Windows).
+      filesMatching([
+          "**/*.sh",
+          "**/bin/post",
+          "**/bin/postlogs",
+          "**/bin/solr",
+          "**/bin/init.d/solr",
+          "**/bin/solr-exporter",
+      ]) { copy ->
+        copy.setMode(0755)
+      }
 
     }
   }
@@ -163,48 +163,8 @@ task dev(type: Copy) {
   into devDir
 }
 
+distTar {
+  compression = Compression.GZIP
+}
+
 assemble.dependsOn installDist
-
-
-// NOTE: we don't use the convinence DSL of the 'signing' extension to define our 'Sign' tasks because
-// that (by default) adds our signature files to the 'archives' configuration -- which is what
-// assemble & installDist try to copy/sync, so they wouldn't work w/o GPG installed (which would be bad).
-//
-// We also want to hook in our own property check dependency since the default error message from Sign task
-// refers to the wrong (internal only) property name ("signatory.keyId")
-signing {
-  useGpgCmd() // so gpg-agent can be used
-}
-task failUnlessGpgKeyProperty {
-  // placeholder that can be depended on by any task needing GPG key which will 'fail fast' if it's not set.
-  def propName = 'signing.gnupg.keyName'
-
-  // This explicitly checks the taskGraph (instead of a simple 'doFirst') so it can fail the user's gradle
-  // invocation immediately before any unrelated build tasks may run in parallel
-  if ( ! project.hasProperty(propName) ) {
-    gradle.taskGraph.whenReady { graph ->
-      if ( graph.hasTask(failUnlessGpgKeyProperty) ) {
-        // TODO: it would be really nice if taskGraph was an actual graph and we could report what tasks in (transitive) depend on us
-        throw new GradleException("'$propName' property must be set for GPG signing, please see help/gpgSigning.txt")
-      }
-    }
-  }
-}
-task signDistTar(type: Sign) {
-  dependsOn failUnlessGpgKeyProperty
-  sign configurations.solrTgz
-}
-dependencies {
-  solrTgzSignature files(tasks.signDistTar.signatureFiles.singleFile) {
-    builtBy signDistTar
-  }
-}
-task signDistZip(type: Sign) {
-  dependsOn failUnlessGpgKeyProperty
-  sign configurations.solrZip
-}
-task signDist {
-  group = 'Distribution'
-  description = 'GPG Signs the main distributions'
-  dependsOn signDistTar, signDistZip
-}

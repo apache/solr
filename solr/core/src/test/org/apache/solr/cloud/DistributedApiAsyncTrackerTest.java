@@ -49,7 +49,6 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testBasic() throws Exception {
     DistributedApiAsyncTracker daat = new DistributedApiAsyncTracker(zkClient, "/basic");
 
@@ -70,7 +69,7 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
     daat.setTaskRunning(asyncId);
     assertEquals(RequestStatusState.RUNNING, daat.getAsyncTaskRequestStatus(asyncId).first());
 
-    NamedList nl = new NamedList();
+    NamedList<Object> nl = new NamedList<>();
     nl.add("MyList", "myValue");
     daat.setTaskCompleted(asyncId, new OverseerSolrResponse(nl));
     assertEquals(RequestStatusState.COMPLETED, daat.getAsyncTaskRequestStatus(asyncId).first());
@@ -113,7 +112,6 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testDisconnectAfterCompletion() throws Exception {
     final String TRACKER_ROOT = "/multiConn";
     DistributedApiAsyncTracker daat = new DistributedApiAsyncTracker(zkClient, TRACKER_ROOT);
@@ -125,7 +123,7 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
       assertTrue("Could not create async task " + asyncId ,transientDaat.createNewAsyncJobTracker(asyncId));
 
       // The task completes, then connection lost
-      NamedList nl = new NamedList();
+      NamedList<Object> nl = new NamedList<>();
       nl.add("status", "I made it");
       transientDaat.setTaskCompleted(asyncId, new OverseerSolrResponse(nl));
 
@@ -144,7 +142,6 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testIdCleanup() throws Exception {
     final int maxTasks = 30; // When cleaning up, 3 async id's will be removed
     DistributedApiAsyncTracker daat = new DistributedApiAsyncTracker(zkClient, "/manyIds", maxTasks);
@@ -175,7 +172,7 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
     // 2 is also in progress and was also cleaned up. It should be markable complete without issues (since that's what will happen when it completed).
     String cleanedUpId2 = Integer.toString(2);
     assertEquals("Another cleaned up ID (2) should not be visible", RequestStatusState.NOT_FOUND, daat.getAsyncTaskRequestStatus(cleanedUpId2).first());
-    NamedList nl = new NamedList();
+    NamedList<Object> nl = new NamedList<>();
     nl.add("code", "da vinci");
     daat.setTaskCompleted(cleanedUpId2, new OverseerSolrResponse(nl));
 

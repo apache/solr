@@ -16,12 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -30,13 +26,22 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.NodeLoggingAPI;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LoggerInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -47,8 +52,7 @@ import org.slf4j.LoggerFactory;
 public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @SuppressWarnings({"rawtypes"})
-  private LogWatcher watcher;
+  private LogWatcher<?> watcher;
   private final CoreContainer cc;
   
   public LoggingHandler(CoreContainer cc) {
@@ -142,7 +146,6 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     else {
       rsp.add("levels", watcher.getAllLevels());
   
-      @SuppressWarnings({"unchecked"})
       List<LoggerInfo> loggers = new ArrayList<>(watcher.getAllLoggers());
       Collections.sort(loggers);
   
@@ -170,4 +173,22 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     return Category.ADMIN;
   }
 
+  @Override
+  public Collection<Api> getApis() {
+    return AnnotatedApi.getApis(new NodeLoggingAPI(this));
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    if (request.getParams().get("set") != null) {
+      return Name.CONFIG_EDIT_PERM; // Change log level
+    } else {
+      return Name.CONFIG_READ_PERM;
+    }
+  }
 }

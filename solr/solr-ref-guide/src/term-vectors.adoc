@@ -16,18 +16,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This section of the user guide presents an overview of the text analysis, text analytics
-and TF-IDF term vector functions in math expressions.
+This section of the user guide presents an overview of the text analysis, text analytics and TF-IDF term vector functions in math expressions.
 
 == Text Analysis
 
-The `analyze` function applies a Solr analyzer to a text field and returns the tokens
-emitted by the analyzer in an array. Any analyzer chain that is attached to a field in Solr's
-schema can be used with the `analyze` function.
+The `analyze` function applies a Solr analyzer to a text field and returns the tokens emitted by the analyzer in an array.
+Any analyzer chain that is attached to a field in Solr's schema can be used with the `analyze` function.
 
-In the example below, the text "hello world" is analyzed using the analyzer chain attached to the `subject` field in
-the schema. The `subject` field is defined as the field type `text_general` and the text is analyzed using the
-analysis chain configured for the `text_general` field type.
+In the example below, the text "hello world" is analyzed using the analyzer chain attached to the `subject` field in the schema.
+The `subject` field is defined as the field type `text_general` and the text is analyzed using the analysis chain configured for the `text_general` field type.
 
 [source,text]
 ----
@@ -107,9 +104,7 @@ Notice in the output that an array of bigram terms have been added to the tuples
 
 === Text Analytics
 
-The `cartesianProduct` function can be used in conjunction
-with the `analyze` function to perform a wide range
-of text analytics.
+The `cartesianProduct` function can be used in conjunction with the `analyze` function to perform a wide range of text analytics.
 
 The `cartesianProduct` function explodes a multivalued field into a stream of tuples.
 When the `analyze` function is used to create the multivalued field, the `cartesianProduct` function will explode the analyzed tokens into a stream of tuples.
@@ -121,8 +116,7 @@ An example performing phrase aggregation is used to illustrate the power of comb
 
 In this example the `search` expression is performed over a collection of movie reviews.
 The phrase query "Man on Fire" is searched for and the top 5000 results, by score are returned.
-A single field from the results is return which is the `review_t` field that
-contains text of the movie review.
+A single field from the results is return which is the `review_t` field that contains text of the movie review.
 
 Then `cartesianProduct` function is run over the search results.
 The `cartesianProduct` function applies the `analyze` function, which takes the `review_t` field and analyzes it with the Lucene/Solr analyzer attached to the `text_bigrams` schema field.
@@ -130,8 +124,7 @@ This analyzer emits the bigrams found in the text field.
 The `cartesianProduct` function explodes each bigram into its own tuple with the bigram stored in the field `term`.
 
 The stream of tuples, each containing a bigram, is then filtered by the `having` function
-using regular expressions to select bigrams with a length of 12 or greater and to filter
-out bigrams that contain specific characters.
+using regular expressions to select bigrams with a length of 12 or greater and to filter out bigrams that contain specific characters.
 
 The `hashRollup` function then aggregates the bigrams and the `top` function emits the top 10 bigrams by count.
 
@@ -139,9 +132,7 @@ Then Zeppelin-Solr is used to visualize the top 10 ten bigrams.
 
 image::images/math-expressions/text-analytics.png[]
 
-Lucene/Solr analyzers can be configured in many different ways to support
-aggregations over NLP entities (people, places, companies, etc.) as well as
-tokens extracted with regular expressions or dictionaries.
+Lucene/Solr analyzers can be configured in many different ways to support aggregations over NLP entities (people, places, companies, etc.) as well as tokens extracted with regular expressions or dictionaries.
 
 == TF-IDF Term Vectors
 
@@ -169,12 +160,11 @@ The example below builds on the document annotation example.
 
 <1> The `echo` parameter will echo variables `c` and `d`, so the output includes
 the row and column labels, which will be defined later in the expression.
-<2> The list of tuples are stored in variable `a`. The `termVectors` function
-operates over variable `a` and builds a matrix with 2 rows and 4 columns.
+<2> The list of tuples are stored in variable `a`.
+The `termVectors` function operates over variable `a` and builds a matrix with 2 rows and 4 columns.
 <3> The `termVectors` function sets the row and column labels of the term vectors matrix as variable `b`.
 The row labels are the document ids and the column labels are the terms.
-<4> The `getRowLabels` and `getColumnLabels` functions return
-the row and column labels which are then stored in variables *`c`* and *`d`*.
+<4> The `getRowLabels` and `getColumnLabels` functions return the row and column labels which are then stored in variables *`c`* and *`d`*.
 
 When this expression is sent to the `/stream` handler it responds with:
 
@@ -258,14 +248,38 @@ This is also important because eliminating the noisy terms helps keep the term v
 There are four parameters designed to filter noisy terms from the term vector matrix:
 
 `minTermLength`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `3`
+|===
++
 The minimum term length required to include the term in the matrix.
 
 `minDocFreq`::
-The minimum percentage, expressed as a number between 0 and 1, of documents the term must appear in to be included in the index.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `.05`
+|===
++
+The minimum percentage, expressed as a number between `0` and `1`, of documents the term must appear in to be included in the index.
 
 `maxDocFreq`::
-The maximum percentage, expressed as a number between 0 and 1, of documents the term can appear in to be included in the index.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `.5`
+|===
++
+The maximum percentage, expressed as a number between `0` and `1`, of documents the term can appear in to be included in the index.
 
 `exclude`::
-A comma-delimited list of strings used to exclude terms. If a term contains any of the excluded strings that
-term will be excluded from the term vector.
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A comma-delimited list of strings used to exclude terms.
+If a term contains any of the excluded strings that term will be excluded from the term vector.

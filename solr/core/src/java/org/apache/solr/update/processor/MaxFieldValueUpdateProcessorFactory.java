@@ -55,20 +55,15 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
 public final class MaxFieldValueUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public Collection<Object> pickSubset(@SuppressWarnings({"rawtypes"})Collection values) {
-    @SuppressWarnings({"rawtypes"})
-    Collection result = values;
+  public <T> Collection<T> pickSubset(Collection<T> values) {
     try {
-      // NOTE: the extra cast to Object is needed to prevent compile
-      // errors on Eclipse Compiler (ecj) used for javadoc lint
-      result = Collections.singletonList((Object) Collections.max(values));
+      // Use the signature with null comparator to let the JDK deal with unsafe casts, and catch CCE if needed
+      return Collections.singletonList(Collections.max(values, null));
     } catch (ClassCastException e) {
       throw new SolrException
         (BAD_REQUEST, 
          "Field values are not mutually comparable: " + e.getMessage(), e);
     }
-    return result;
   }
 
   @Override

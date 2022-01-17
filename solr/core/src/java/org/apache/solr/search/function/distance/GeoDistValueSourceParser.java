@@ -133,7 +133,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     SpatialStrategyMultiValueSource spatialStrategyMultiValueSource = findSpatialStrategyMultiValueSource(mv1, mv2);
     if (spatialStrategyMultiValueSource != null) {
       if (constants == null)
-        throw new SyntaxError("When using AbstractSpatialFieldType (e.g. RPT not LatLonType)," +
+        throw new SyntaxError("When using AbstractSpatialFieldType (e.g. RPT)," +
             " the point must be supplied as constants");
       // note: uses Haversine by default but can be changed via distCalc=...
       SpatialStrategy strategy = spatialStrategyMultiValueSource.strategy;
@@ -211,8 +211,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     SchemaField sf = fp.getReq().getSchema().getField(sfield);
     FieldType type = sf.getType();
     if (type instanceof AbstractSpatialFieldType) {
-      @SuppressWarnings({"rawtypes"})
-      AbstractSpatialFieldType asft = (AbstractSpatialFieldType) type;
+      AbstractSpatialFieldType<?> asft = (AbstractSpatialFieldType<?>) type;
       return new SpatialStrategyMultiValueSource(asft.getStrategy(sfield), asft.getDistanceUnits());
     }
     ValueSource vs = type.getValueSource(sf, fp);

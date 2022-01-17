@@ -302,8 +302,7 @@ public class PackageLoader implements Closeable {
         return version.copy();
       }
 
-      @SuppressWarnings({"rawtypes"})
-      public Collection getFiles() {
+      public Collection<String> getFiles() {
         return Collections.unmodifiableList(version.files);
       }
 
@@ -361,6 +360,7 @@ public class PackageLoader implements Closeable {
     }
   }
 
+  @SuppressWarnings("CompareToZero") // TODO either document why or fix this
   private static String findBiggest(String lessThan, List<String> sortedList) {
     String latest = null;
     for (String v : sortedList) {

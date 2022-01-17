@@ -424,7 +424,6 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * turns contains sets (field, summary) pairs.
    */
   @Override
-  @SuppressWarnings("unchecked")
   public NamedList<Object> doHighlighting(DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
     SolrParams params = req.getParams();
     if (!isHighlightingEnabled(params)) // also returns early if no unique key field
@@ -461,15 +460,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     IndexReader reader = new TermVectorReusingLeafReader(req.getSearcher().getSlowAtomicReader()); // SOLR-5855
 
     // Highlight each document
-    @SuppressWarnings({"rawtypes"})
-    NamedList fragments = new SimpleOrderedMap();
+    NamedList<Object> fragments = new SimpleOrderedMap<>();
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
       int docId = iterator.nextDoc();
       SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, returnFields);
 
-      @SuppressWarnings("rawtypes")
-      NamedList docHighlights = new SimpleOrderedMap();
+      NamedList<Object> docHighlights = new SimpleOrderedMap<>();
       // Highlight per-field
       for (String fieldName : fieldNames) {
         SchemaField schemaField = schema.getFieldOrNull(fieldName);
@@ -975,11 +972,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     }
   }
 
+
   /**
    * Wraps a DirectoryReader that caches the {@link LeafReader#getTermVectors(int)} so that
    * if the next call has the same ID, then it is reused.
    */
   static class TermVectorReusingLeafReader extends FilterLeafReader {
+
 
     private int lastDocId = -1;
     private Fields tvFields;
@@ -996,6 +995,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       }
       return tvFields;
     }
+
 
     @Override
     public CacheHelper getCoreCacheHelper() {

@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +41,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@ThreadLeakLingering(linger = 60)
 public class DaemonStreamApiTest extends SolrTestCaseJ4 {
 
   private MiniSolrCloudCluster cluster;

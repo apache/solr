@@ -72,8 +72,7 @@ public class CSVParser {
   
   // the following objects are shared to reduce garbage 
   /** A record buffer for getLine(). Grows as necessary and is reused. */
-  @SuppressWarnings({"rawtypes"})
-  private final ArrayList record = new ArrayList();
+  private final ArrayList<String> record = new ArrayList<>();
   private final Token reusableToken = new Token();
   private final CharBuffer wsBuf = new CharBuffer();
   private final CharBuffer code = new CharBuffer(4);
@@ -139,10 +138,8 @@ public class CSVParser {
    * @return matrix of records x values ('null' when end of file)
    * @throws IOException on parse error or input read-failure
    */
-  @SuppressWarnings({"unchecked"})
   public String[][] getAllValues() throws IOException {
-    @SuppressWarnings({"rawtypes"})
-    ArrayList records = new ArrayList();
+    ArrayList<String[]> records = new ArrayList<>();
     String[] values;
     String[][] ret = null;
     while ((values = getLine()) != null)  {
@@ -224,7 +221,7 @@ public class CSVParser {
         }
     }
     if (!record.isEmpty()) {
-      ret = (String[]) record.toArray(new String[record.size()]);
+      ret = record.toArray(new String[record.size()]);
     }
     return ret;
   }
@@ -380,7 +377,7 @@ public class CSVParser {
         tkn.isReady = true;
         break;
       } else if (c == '\\' && strategy.getUnicodeEscapeInterpretation() && in.lookAhead() == 'u') {
-        // interpret unicode escaped chars (like \u0070 -> p)
+        // interpret unicode escaped chars (like "\\u0070" -> p)
         tkn.content.append((char) unicodeEscapeLexer(c));
       } else if (c == strategy.getEscape()) {
         tkn.content.append((char)readEscape(c));

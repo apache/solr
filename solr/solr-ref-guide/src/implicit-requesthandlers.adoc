@@ -1,4 +1,4 @@
-= Implicit RequestHandlers
+= Implicit Request Handlers
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr ships with many out-of-the-box RequestHandlers, which are called implicit because they do not need to be  configured in `solrconfig.xml` before you are able to use them.
+Solr ships with many out-of-the-box request handlers, which are called implicit because they do not need to be configured in `solrconfig.xml` before you are able to use them.
 
 These handlers have pre-defined default parameters, known as _paramsets_, which can be modified if necessary.
 
@@ -29,7 +29,8 @@ NOTE: All endpoint paths listed below should be placed after Solr's host and por
 Many of these handlers are used throughout the Admin UI to show information about Solr.
 
 [horizontal]
-File:: Returns content of files in `${solr.home}/conf/`. This handler must have a collection name in the path to the endpoint.
+File:: Return content of files in `${solr.home}/conf/`.
+This handler must have a collection name in the path to the endpoint.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -37,7 +38,7 @@ File:: Returns content of files in `${solr.home}/conf/`. This handler must have 
 |`solr/<collection>/admin/file` |{solr-javadocs}/core/org/apache/solr/handler/admin/ShowFileRequestHandler.html[ShowFileRequestHandler] |`_ADMIN_FILE`
 |===
 
-Health:: Reporting the health of the node (_available only in SolrCloud mode_)
+Health:: Report the health of the node (_available only in SolrCloud mode_)
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -47,7 +48,8 @@ Health:: Reporting the health of the node (_available only in SolrCloud mode_)
 v2: `api/node/health` |{solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler] |
 |===
 +
-This endpoint also accepts additional request parameters. Please see {solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[Javadocs] for details.
+This endpoint also accepts additional request parameters.
+Please see {solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[Javadocs] for details.
 
 Logging:: Retrieve and modify registered loggers.
 +
@@ -59,7 +61,8 @@ Logging:: Retrieve and modify registered loggers.
 v2: `api/node/logging` |{solr-javadocs}/core/org/apache/solr/handler/admin/LoggingHandler.html[LoggingHandler] |`_ADMIN_LOGGING`
 |===
 
-Luke:: Expose the internal Lucene index. This handler must have a collection name in the path to the endpoint.
+Luke:: Expose the internal Lucene index.
+This handler must have a collection name in the path to the endpoint.
 +
 *Documentation*: <<luke-request-handler.adoc#,Luke Request Handler>>
 +
@@ -69,8 +72,8 @@ Luke:: Expose the internal Lucene index. This handler must have a collection nam
 |`solr/<collection>/admin/luke` |{solr-javadocs}/core/org/apache/solr/handler/admin/LukeRequestHandler.html[LukeRequestHandler] |`_ADMIN_LUKE`
 |===
 
-
-MBeans:: Provide info about all registered {solr-javadocs}/core/org/apache/solr/core/SolrInfoBean.html[SolrInfoMBeans]. This handler must have a collection name in the path to the endpoint.
+MBeans:: Provide info about all registered {solr-javadocs}/core/org/apache/solr/core/SolrInfoBean.html[SolrInfoMBeans].
+This handler must have a collection name in the path to the endpoint.
 +
 *Documentation*: <<mbean-request-handler.adoc#,MBean Request Handler>>
 +
@@ -80,7 +83,8 @@ MBeans:: Provide info about all registered {solr-javadocs}/core/org/apache/solr/
 |`solr/<collection>/admin/mbeans` |{solr-javadocs}/core/org/apache/solr/handler/admin/SolrInfoMBeanHandler.html[SolrInfoMBeanHandler] |`_ADMIN_MBEANS`
 |===
 
-Ping:: Health check. This handler must have a collection name in the path to the endpoint.
+Ping:: Health check.
+This handler must have a collection name in the path to the endpoint.
 +
 *Documentation*: <<ping.adoc#,Ping>>
 +
@@ -90,7 +94,8 @@ Ping:: Health check. This handler must have a collection name in the path to the
 |`solr/<collection>/admin/ping` |{solr-javadocs}/core/org/apache/solr/handler/PingRequestHandler.html[PingRequestHandler] |`_ADMIN_PING`
 |===
 
-Plugins:: Return info about all registered plugins. This handler must have a collection name in the path to the endpoint.
+Plugins:: Return info about all registered plugins.
+This handler must have a collection name in the path to the endpoint.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -151,7 +156,8 @@ Document Analysis:: Return a breakdown of the analysis process of the given docu
 |`solr/<collection>/analysis/document` |{solr-javadocs}/core/org/apache/solr/handler/DocumentAnalysisRequestHandler.html[DocumentAnalysisRequestHandler] |`_ANALYSIS_DOCUMENT`
 |===
 
-Field Analysis:: Return index- and query-time analysis over the given field(s)/field type(s). This handler drives the <<analysis-screen.adoc#,Analysis screen>> in Solr's Admin UI.
+Field Analysis:: Return index- and query-time analysis over the given field(s)/field type(s).
+This handler drives the <<analysis-screen.adoc#,Analysis screen>> in Solr's Admin UI.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -182,7 +188,8 @@ Dump:: Echo the request contents back to the client.
 |`solr/debug/dump` |{solr-javadocs}/core/org/apache/solr/handler/DumpRequestHandler.html[DumpRequestHandler] |`_DEBUG_DUMP`
 |===
 
-Replication:: Replicate indexes for SolrCloud recovery and Leader/Follower index distribution. This handler must have a core name in the path to the endpoint.
+Replication:: Replicate indexes for SolrCloud recovery and user-managed cluster index distribution.
+This handler must have a core name in the path to the endpoint.
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -235,9 +242,9 @@ Graph Traversal:: Return http://graphml.graphdrawing.org/[GraphML] formatted out
 |`solr/<collection>/graph` |{solr-javadocs}/core/org/apache/solr/handler/GraphHandler.html[GraphHandler] |`_ADMIN_GRAPH`
 |===
 
-SQL:: Front end of the Parallel SQL interface.
+SQL:: SQL query support.
 +
-*Documentation*: <<parallel-sql-interface.adoc#sql-request-handler,SQL Request Handler>>
+*Documentation*: <<sql-query.adoc#sql-request-handler,SQL Request Handler>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -257,7 +264,7 @@ Streaming Expressions:: Distributed stream processing.
 
 Terms:: Return a field's indexed terms and the number of documents containing each term.
 +
-*Documentation*: <<the-terms-component.adoc#using-the-terms-component-in-a-request-handler,Using the Terms Component in a Request Handler>>
+*Documentation*: <<terms-component.adoc#using-the-terms-component-in-a-request-handler,Using the Terms Component in a Request Handler>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -270,7 +277,7 @@ Terms:: Return a field's indexed terms and the number of documents containing ea
 [horizontal]
 Update:: Add, delete and update indexed documents formatted as SolrXML, CSV, SolrJSON or javabin.
 +
-*Documentation*: <<uploading-data-with-index-handlers.adoc#,Uploading Data with Index Handlers>>
+*Documentation*: <<indexing-with-update-handlers.adoc#,Indexing with Update Handlers>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -280,7 +287,7 @@ Update:: Add, delete and update indexed documents formatted as SolrXML, CSV, Sol
 
 CSV Updates:: Add and update CSV-formatted documents.
 +
-*Documentation*: <<uploading-data-with-index-handlers.adoc#csv-update-convenience-paths,CSV Update Convenience Paths>>
+*Documentation*: <<indexing-with-update-handlers.adoc#csv-update-convenience-paths,CSV Update Convenience Paths>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -290,7 +297,7 @@ CSV Updates:: Add and update CSV-formatted documents.
 
 JSON Updates:: Add, delete and update SolrJSON-formatted documents.
 +
-*Documentation*: <<uploading-data-with-index-handlers.adoc#json-update-convenience-paths,JSON Update Convenience Paths>>
+*Documentation*: <<indexing-with-update-handlers.adoc#json-update-convenience-paths,JSON Update Convenience Paths>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -312,8 +319,9 @@ Custom JSON Updates:: Add and update custom JSON-formatted documents.
 
 You can see configuration for all request handlers, including the implicit request handlers, via the <<config-api.adoc#,Config API>>.
 
-To include the expanded paramset in the response, as well as the effective parameters from merging the paramset parameters with the built-in parameters, use the `expandParams` request parameter. For the `/export` request handler, you can make a request like this:
+To include the expanded paramset in the response, as well as the effective parameters from merging the paramset parameters with the built-in parameters, use the `expandParams` request parameter.
 
+For example, for the `/export` request handler, you can make a request like this:
 
 [.dynamic-tabs]
 --
@@ -374,4 +382,6 @@ The response will look similar to:
 
 == How to Edit Implicit Handler Paramsets
 
-Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via the <<request-parameters-api.adoc#, Request Parameters API>> using the paramset listed in the above table. However, other parameters, including SearchHandler components, may not be modified. The invariants and appends specified in the implicit configuration cannot be overridden.
+Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via the <<request-parameters-api.adoc#, Request Parameters API>> using the paramset listed in the above table.
+However, other parameters, including SearchHandler components, may not be modified.
+The invariants and appends specified in the implicit configuration cannot be overridden.

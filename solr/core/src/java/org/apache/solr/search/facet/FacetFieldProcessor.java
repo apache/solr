@@ -439,8 +439,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         sortedSlots = Arrays.copyOfRange(sortedSlots, off, endOffset);
       }
     }
-    @SuppressWarnings({"rawtypes"})
-    List<SimpleOrderedMap> bucketList = new ArrayList<>(sortedSlots.length);
+    List<SimpleOrderedMap<?>> bucketList = new ArrayList<>(sortedSlots.length);
 
     for (Slot slot : sortedSlots) {
       SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
@@ -471,9 +470,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
    * Trivial helper method for building up a bucket query given the (Stringified) bucket value
    */
   protected Query makeBucketQuery(final String bucketValue) {
-    // TODO: this isn't viable for things like text fields w/ analyzers that are non-idempotent (ie: stemmers)
-    // TODO: but changing it to just use TermQuery isn't safe for things like numerics, dates, etc...
-    return sf.getType().getFieldQuery(null, sf, bucketValue);
+    return sf.getType().getFieldTermQuery(null, sf, bucketValue);
   }
 
   private void calculateNumBuckets(SimpleOrderedMap<Object> target) throws IOException {
@@ -998,7 +995,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     // fieldQuery currently relies on a string input of the value...
     String bucketStr = bucketVal instanceof Date ? ((Date)bucketVal).toInstant().toString() : bucketVal.toString();
-    Query domainQ = ft.getFieldQuery(null, sf, bucketStr);
+    Query domainQ = ft.getFieldTermQuery(null, sf, bucketStr);
 
     fillBucket(bucket, domainQ, null, skip, facetInfo);
 

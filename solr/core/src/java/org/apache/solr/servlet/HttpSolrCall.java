@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -90,7 +89,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -460,7 +458,7 @@ public class HttpSolrCall {
 
     if (statusCode == AuthorizationResponse.PROMPT.statusCode) {
       @SuppressWarnings({"unchecked"})
-      Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
+      Map<String, String> headers = (Map<String, String>) getReq().getAttribute(AuthenticationPlugin.class.getName());
       if (headers != null) {
         for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
       }
@@ -504,9 +502,6 @@ public class HttpSolrCall {
    * This method processes the request.
    */
   public Action call() throws IOException {
-    MDCLoggingContext.reset();
-    MDCLoggingContext.setTracerId(getSpan().context().toTraceId()); // handles empty string
-    MDCLoggingContext.setNode(cores);
 
     if (cores == null) {
       sendError(503, "Server is shutting down or failed to initialize");
@@ -730,7 +725,7 @@ public class HttpSolrCall {
       }
 
       final HttpResponse response
-          = solrDispatchFilter.httpClient.execute(method, HttpClientUtil.createNewHttpClientRequestContext());
+          = solrDispatchFilter.getHttpClient().execute(method, HttpClientUtil.createNewHttpClientRequestContext());
       int httpStatus = response.getStatusLine().getStatusCode();
       httpEntity = response.getEntity();
 
@@ -758,7 +753,7 @@ public class HttpSolrCall {
         InputStream is = httpEntity.getContent();
         OutputStream os = resp.getOutputStream();
 
-        IOUtils.copyLarge(is, os);
+        is.transferTo(os);
       }
 
     } catch (IOException e) {
@@ -801,8 +796,7 @@ public class HttpSolrCall {
     } finally {
       try {
         if (exp != null) {
-          @SuppressWarnings({"rawtypes"})
-          SimpleOrderedMap info = new SimpleOrderedMap();
+          SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
           int code = ResponseUtils.getErrorInfo(ex, info, log);
           sendError(code, info.toString());
         }
@@ -914,8 +908,7 @@ public class HttpSolrCall {
       if (null != ct) response.setContentType(ct);
 
       if (solrRsp.getException() != null) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList info = new SimpleOrderedMap();
+        NamedList<Object> info = new SimpleOrderedMap<>();
         int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
         solrRsp.add("error", info);
         response.setStatus(code);

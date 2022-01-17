@@ -103,6 +103,16 @@ public class ZkStateReader implements SolrCloseable {
   public static final String STATE_TIMESTAMP_PROP = "stateTimestamp";
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
+
+  // TODO: Deprecate and remove support for roles.json in an upcoming release.
+  /**
+   * The following, node_roles and roles.json are for assigning roles to
+   * nodes. The node_roles is the preferred way (using -Dsolr.node.roles param),
+   * and roles.json is used by legacy ADDROLE API command.
+   */
+  public static final String NODE_ROLES = "/node_roles";
+  public static final String ROLES = "/roles.json";
+
   public static final String ALIASES = "/aliases.json";
   /**
    * This ZooKeeper file is no longer used starting with Solr 9 but keeping the name around to check if it
@@ -124,7 +134,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String TLOG_REPLICAS = "tlogReplicas";
   public static final String READ_ONLY = "readOnly";
 
-  public static final String ROLES = "/roles.json";
 
   public static final String CONFIGS_ZKNODE = "/configs";
   public final static String CONFIGNAME_PROP = "configName";
@@ -230,42 +239,6 @@ public class ZkStateReader implements SolrCloseable {
       CONTAINER_PLUGINS,
       PLACEMENT_PLUGIN
       );
-
-  /**
-   * Returns config set name for collection.
-   * TODO move to DocCollection (state.json).
-   *
-   * @param collection to return config set name for
-   */
-  public String readConfigName(String collection) throws KeeperException {
-
-    String configName = null;
-
-    String path = COLLECTIONS_ZKNODE + "/" + collection;
-    log.debug("Loading collection config from: [{}]", path);
-
-    try {
-      byte[] data = zkClient.getData(path, null, null, true);
-      if (data == null) {
-        log.warn("No config data found at path {}.", path);
-        throw new KeeperException.NoNodeException("No config data found at path: " + path);
-      }
-
-      ZkNodeProps props = ZkNodeProps.load(data);
-      configName = props.getStr(CONFIGNAME_PROP);
-
-      if (configName == null) {
-        log.warn("No config data found at path{}. ", path);
-        throw new KeeperException.NoNodeException("No config data found at path: " + path);
-      }
-    } catch (InterruptedException e) {
-      SolrZkClient.checkInterrupted(e);
-      log.warn("Thread interrupted when loading config name for collection {}", collection);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Thread interrupted when loading config name for collection " + collection, e);
-    }
-
-    return configName;
-  }
 
 
   private final SolrZkClient zkClient;
@@ -452,7 +425,8 @@ public class ZkStateReader implements SolrCloseable {
       });
     } catch (KeeperException.NoNodeException nne) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-          "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready");
+          "Cannot connect to cluster at " + zkClient.getZkServerAddress() + ": cluster not found/not ready." +
+              " Expected node '" + nne.getPath() + "' does not exist.");
     }
   }
 
@@ -1464,7 +1438,11 @@ public class ZkStateReader implements SolrCloseable {
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
-        ClusterState state = ClusterState.createFromJson(stat.getVersion(), data, Collections.emptySet());
+
+        // This factory method can detect a missing configName and supply it by reading it from the old ZK location.
+        // TODO in Solr 10 remove that factory method
+        ClusterState state = ClusterState.createFromJsonSupportingLegacyConfigName(stat.getVersion(), data, Collections.emptySet(), coll, zkClient);
+
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();
       } catch (KeeperException.NoNodeException e) {

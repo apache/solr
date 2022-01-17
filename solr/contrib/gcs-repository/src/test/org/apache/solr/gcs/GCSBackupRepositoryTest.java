@@ -19,16 +19,22 @@ package org.apache.solr.gcs;
 
 import com.google.common.collect.Lists;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
+import static org.apache.solr.gcs.GCSConfigParser.GCS_BUCKET_ENV_VAR_NAME;
+import static org.apache.solr.gcs.GCSConfigParser.GCS_CREDENTIAL_ENV_VAR_NAME;
 
 /**
  * Unit tests for {@link GCSBackupRepository} that use an in-memory Storage object
@@ -38,7 +44,7 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     // Locale langs unsupported by google-cloud-nio's 'Storage' drop-in.  May need added to as Jenkins finds fails.
     // (Note that the issue here is in the test-stub, actual GCS use is fine with these locales).
     private static final List<String> INCOMPATIBLE_LOCALE_LANGS = Lists.newArrayList("ar", "dz", "uz", "ne", "mzn", "pa",
-            "sd", "mr", "ig", "as", "fa", "my", "bn", "lrc", "ur", "ks", "th", "ckb", "ja", "ps");
+            "sd", "mr", "ig", "as", "fa", "my", "bn", "lrc", "ur", "ks", "th", "ckb", "ja", "ps", "hi");
 
     @BeforeClass
     public static void ensureCompatibleLocale() {
@@ -56,7 +62,7 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     @Override
     protected BackupRepository getRepository() {
         final NamedList<Object> config = new NamedList<>();
-        config.add(CoreAdminParams.BACKUP_LOCATION, "backup1");
+        config.add(BACKUP_LOCATION, "backup1");
         final GCSBackupRepository repository = new LocalStorageGCSBackupRepository();
         repository.init(config);
 
@@ -66,5 +72,19 @@ public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
     @Override
     protected URI getBaseUri() throws URISyntaxException {
         return new URI("tmp");
+    }
+
+    @Test
+    public void testInitStoreDoesNotFailWithMissingCredentials()
+    {
+        Map<String, String> config = new HashMap<>();
+        config.put(GCS_BUCKET_ENV_VAR_NAME, "a_bucket_name");
+        // explicitly setting credential name to null; will work inside google-cloud project
+        config.put(GCS_CREDENTIAL_ENV_VAR_NAME, null);
+        config.put(BACKUP_LOCATION, "/==");
+
+        BackupRepository gcsBackupRepository = getRepository();
+
+        gcsBackupRepository.init(new NamedList<>(config));
     }
 }

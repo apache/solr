@@ -79,6 +79,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -90,6 +91,7 @@ import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.AtomicUpdateDocumentMerger;
+import org.apache.solr.util.LongSet;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -207,7 +209,7 @@ public class RealTimeGetComponent extends SearchComponent
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
             QParser fqp = QParser.getParser(fq, req);
-            filters.add(fqp.getQuery());
+            filters.add(QueryUtils.makeQueryable(fqp.getQuery()));
           }
         }
         if (!filters.isEmpty()) {
@@ -254,8 +256,7 @@ public class RealTimeGetComponent extends SearchComponent
          Object o = ulog.lookup(idBytes.get());
          if (o != null) {
            // should currently be a List<Oper,Ver,Doc/Id>
-           @SuppressWarnings({"rawtypes"})
-           List entry = (List)o;
+           List<?> entry = (List<?>)o;
            assert entry.size() >= 3;
            int oper = (Integer)entry.get(UpdateLog.FLAGS_IDX) & UpdateLog.OPERATION_MASK;
            switch (oper) {
@@ -426,7 +427,7 @@ public class RealTimeGetComponent extends SearchComponent
    */
   private static SolrDocument resolveFullDocument(SolrCore core, BytesRef idBytes,
                                                   ReturnFields returnFields, SolrInputDocument partialDoc,
-                                                  @SuppressWarnings({"rawtypes"}) List logEntry) throws IOException {
+                                                  List<?> logEntry) throws IOException {
     Set<String> onlyTheseFields = returnFields.getExplicitlyRequestedFieldNames();
     if (idBytes == null || (logEntry.size() != 5 && logEntry.size() != 6)) {
       throw new SolrException(ErrorCode.INVALID_STATE, "Either Id field not present in partial document or log entry doesn't have previous version.");
@@ -646,8 +647,7 @@ public class RealTimeGetComponent extends SearchComponent
       Object o = ulog.lookup(idBytes);
       if (o != null) {
         // should currently be a List<Oper,Ver,Doc/Id>
-        @SuppressWarnings({"rawtypes"})
-        List entry = (List)o;
+        List<?> entry = (List<?>)o;
         assert entry.size() >= 3;
         int oper = (Integer)entry.get(0) & UpdateLog.OPERATION_MASK;
         if (versionReturned != null) {
@@ -1027,7 +1027,7 @@ public class RealTimeGetComponent extends SearchComponent
    */
   private ShardRequest createShardRequest(final ResponseBuilder rb, final List<String> ids) {
     final ShardRequest sreq = new ShardRequest();
-    sreq.purpose = 1;
+    sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
     sreq.params = new ModifiableSolrParams(rb.req.getParams());
 
     // TODO: how to avoid hardcoding this and hit the same handler?
@@ -1082,8 +1082,7 @@ public class RealTimeGetComponent extends SearchComponent
       // can get more than one response
       for (ShardResponse srsp : sreq.responses) {
         SolrResponse sr = srsp.getSolrResponse();
-        @SuppressWarnings({"rawtypes"})
-        NamedList nl = sr.getResponse();
+        NamedList<?> nl = sr.getResponse();
         SolrDocumentList subList = (SolrDocumentList)nl.get("response");
         docList.addAll(subList);
       }
@@ -1268,10 +1267,12 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: get this from cache instead of rebuilding?
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
+      LongSet updateVersions = new LongSet(versions.size());
       for (Long version : versions) {
         try {
           Object o = recentUpdates.lookup(version);
           if (o == null) continue;
+          updateVersions.add(version);
 
           if (version > 0) {
             minVersion = Math.min(minVersion, version);
@@ -1288,7 +1289,7 @@ public class RealTimeGetComponent extends SearchComponent
       // Must return all delete-by-query commands that occur after the first add requested
       // since they may apply.
       if (params.getBool("skipDbq", false)) {
-        updates.addAll(recentUpdates.getDeleteByQuery(minVersion));
+        updates.addAll(recentUpdates.getDeleteByQuery(minVersion, updateVersions));
       }
 
       rb.rsp.add("updates", updates);

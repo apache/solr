@@ -30,10 +30,9 @@ NOTE: this example requires Docker 1.10.
 
 I'll run these commands from the first machine, trinity10.
 
-Create a network named "netzksolr" for this cluster. The `--ip-range` specifies the range of
-addresses to use for containers, whereas the `--subnet` specifies all possible addresses in this
-network. So effectively, addresses in the subnet but outside the range are reserved for containers
-that specifically use the `--ip` option.
+Create a network named "netzksolr" for this cluster.
+The `--ip-range` specifies the range of addresses to use for containers, whereas the `--subnet` specifies all possible addresses in this network.
+So effectively, addresses in the subnet but outside the range are reserved for containers that specifically use the `--ip` option.
 
 [source,bash]
 ----
@@ -231,9 +230,11 @@ ssh -n trinity10.lan "docker pull brandnetworks/tcpproxy && docker run -p 8001 -
 docker port zksolrproxy 8002
 ----
 
-Or use a suitably configured HAProxy to round-robin between all Solr nodes. Or, instead of the overlay network, use http://www.projectcalico.org[Project Calico] and configure L3 routing so you do not need to mess with proxies.
+Or use a suitably configured HAProxy to round-robin between all Solr nodes.
+Or, instead of the overlay network, use http://www.projectcalico.org[Project Calico] and configure L3 routing so you do not need to mess with proxies.
 
-Now I can get to Solr on `http://trinity10:32774/solr/#/`. In the Cloud -> Tree -> /live_nodes view I see the Solr nodes.
+Now I can get to Solr on `http://trinity10:32774/solr/#/`.
+In the Cloud -> Tree -> /live_nodes view I see the Solr nodes.
 
 From the Solr UI select the collection1 core, and click on Cloud -> Graph to see how it has created
 two shards across our Solr nodes.

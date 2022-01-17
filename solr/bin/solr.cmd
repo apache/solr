@@ -85,12 +85,7 @@ IF NOT DEFINED SOLR_SSL_ENABLED (
 )
 
 IF "%SOLR_SSL_ENABLED%"=="true" (
-  set "SOLR_JETTY_CONFIG=--lib="%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*""
-  if !JAVA_MAJOR_VERSION! GEQ 9  (
-    set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=https"
-  ) else (
-    set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=https8"
-  )
+  set "SOLR_JETTY_CONFIG=--module=https --lib="%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*""
   set SOLR_URL_SCHEME=https
   IF DEFINED SOLR_SSL_KEY_STORE (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"
@@ -159,6 +154,14 @@ IF "%SOLR_REQUESTLOG_ENABLED%"=="true" (
   set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=requestlog"
 )
 
+REM Jetty gzip module enabled by default
+IF NOT DEFINED SOLR_GZIP_ENABLED (
+  set "SOLR_GZIP_ENABLED=true"
+)
+IF "%SOLR_GZIP_ENABLED%"=="true" (
+  set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=gzip"
+)
+
 REM Authentication options
 
 IF NOT DEFINED SOLR_AUTH_TYPE (
@@ -225,9 +228,10 @@ IF "%1"=="status" goto get_info
 IF "%1"=="version" goto get_version
 IF "%1"=="-v" goto get_version
 IF "%1"=="-version" goto get_version
-IF "%1"=="assert" goto run_assert
-IF "%1"=="export" goto run_export
-IF "%1"=="package" goto run_package
+IF "%1"=="assert" goto run_solrcli
+IF "%1"=="export" goto run_solrcli
+IF "%1"=="package" goto run_solrcli
+IF "%1"=="api" goto run_solrcli
 
 REM Only allow the command to be the first argument, assume start if not supplied
 IF "%1"=="start" goto set_script_cmd
@@ -304,7 +308,7 @@ goto done
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export
+@echo        where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
@@ -344,6 +348,7 @@ goto done
 @echo   -z zkHost     Zookeeper connection string; only used when running in SolrCloud mode using -c
 @echo                   If neither ZK_HOST is defined in solr.in.cmd nor the -z parameter is specified,
 @echo                   an embedded ZooKeeper instance will be launched.
+@echo                   Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
 @echo.
 @echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m
@@ -363,6 +368,7 @@ goto done
 @echo       cloud:          SolrCloud example
 @echo       techproducts:   Comprehensive example illustrating many of Solr's core capabilities
 @echo       schemaless:     Schema-less example
+@echo       films:          Example of starting with _default configset and defining explicit fields dynamically
 @echo.
 @echo   -a opts       Additional parameters to pass to the JVM when starting Solr, such as to setup
 @echo                 Java debug options. For example, to enable a Java debugger to attach to the Solr JVM
@@ -1132,18 +1138,6 @@ if !JAVA_MAJOR_VERSION! LSS 9  (
   set IS_64bit=true
 )
 
-REM Clean up and rotate logs. Default to false since 7.4 as log4j2 handles startup rotation
-IF [%SOLR_LOG_PRESTART_ROTATION%] == [] (
-  set SOLR_LOG_PRESTART_ROTATION=false
-)
-IF [%SOLR_LOG_PRESTART_ROTATION%] == [true] (
-  REM Enable any of these if you require old remove/archive behavior
-  REM call :run_utils "-remove_old_solr_logs 7" || echo "Failed removing old solr logs"
-  REM call :run_utils "-archive_gc_logs"        || echo "Failed archiving old GC logs"
-  REM call :run_utils "-archive_console_logs"   || echo "Failed archiving old console logs"
-  call :run_utils "-rotate_solr_logs 9"     || echo "Failed rotating old solr logs"
-)
-
 IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
 
 IF "%SOLR_MODE%"=="solrcloud" (
@@ -1161,6 +1155,11 @@ IF "%SOLR_MODE%"=="solrcloud" (
     IF "%verbose%"=="1" echo Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkRun"
   )
+
+  IF NOT "%ZK_CREATE_CHROOT%"=="" (
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DcreateZkChroot=%ZK_CREATE_CHROOT%"
+  )
+
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
   set CLOUD_MODE_OPTS=
@@ -1170,9 +1169,19 @@ IF "%SOLR_MODE%"=="solrcloud" (
   )
 )
 
+REM Exit if old syntax found
+IF DEFINED SOLR_IP_BLACKLIST (
+  set SCRIPT_ERROR=SOLR_IP_BLACKLIST and SOLR_IP_WHITELIST are no longer supported. Please use SOLR_IP_ALLOWLIST and SOLR_IP_DENYLIST instead.
+  goto err
+)
+IF DEFINED SOLR_IP_WHITELIST (
+  set SCRIPT_ERROR=SOLR_IP_BLACKLIST and SOLR_IP_WHITELIST are no longer supported. Please use SOLR_IP_ALLOWLIST and SOLR_IP_DENYLIST instead.
+  goto err
+)
+
 REM IP-based access control
-set IP_ACL_OPTS=-Dsolr.jetty.inetaccess.includes="%SOLR_IP_WHITELIST%" ^
--Dsolr.jetty.inetaccess.excludes="%SOLR_IP_BLACKLIST%"
+set IP_ACL_OPTS=-Dsolr.jetty.inetaccess.includes="%SOLR_IP_ALLOWLIST%" ^
+-Dsolr.jetty.inetaccess.excludes="%SOLR_IP_DENYLIST%"
 
 REM These are useful for attaching remove profilers like VisualVM/JConsole
 IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
@@ -1452,31 +1461,15 @@ echo ZK_HOST: !ZK_HOST!
   org.apache.solr.util.SolrCLI healthcheck -collection !HEALTHCHECK_COLLECTION! -zkHost !ZK_HOST! %HEALTHCHECK_VERBOSE%
 goto done
 
-:run_assert
+:run_solrcli
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI %* 
+  org.apache.solr.util.SolrCLI %*
 if errorlevel 1 (
    exit /b 1
 )
 goto done
-
-:run_export
-"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI %*
-goto done:
-
-:run_package
-REM TODO: Compute the running Solr URL and populate it as a parameter (as has been done for the shell script)
-REM Without that, users will have to supply -solrUrl parameter in every request. Life can be so hard for Windows users!
-"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI %*
-goto done:
 
 :parse_config_args
 IF [%1]==[] goto run_config
@@ -1519,19 +1512,6 @@ goto done
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.util.SolrCLI version
-goto done
-
-:run_utils
-set "TOOL_CMD=%~1"
-set q="-q"
-IF "%verbose%"=="1"  set q=""
-"%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI utils -s "%DEFAULT_SERVER_DIR%" -l "%SOLR_LOGS_DIR%" %q:"=% %TOOL_CMD%
-if errorlevel 1 (
-   exit /b 1
-)
 goto done
 
 :parse_create_args
@@ -1931,7 +1911,7 @@ IF "!ZK_OP!"=="upconfig" (
 )
 goto done
 
- 
+
 :run_auth
 IF "%1"=="-help" goto usage
 IF "%1"=="-usage" goto usage
@@ -2055,10 +2035,8 @@ FOR /f "usebackq tokens=3" %%a IN (`^""%JAVA%" -version 2^>^&1 ^| findstr "versi
   REM Remove surrounding quotes
   set JAVA_VERSION_INFO=!JAVA_VERSION_INFO:"=!
 
-  echo "java version info is !JAVA_VERSION_INFO!"
   REM Extract the major Java version, e.g. 7, 8, 9, 10 ...
   for /f "tokens=1,2 delims=._-" %%a in ("!JAVA_VERSION_INFO!") do (
-    echo "Extracted major version is %%a"
     if %%a GEQ 9 (
       set JAVA_MAJOR_VERSION=%%a
     ) else (

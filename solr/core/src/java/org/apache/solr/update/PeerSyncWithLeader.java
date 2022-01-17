@@ -392,7 +392,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
     public MissedUpdatesRequest find(List<Long> leaderVersions, Object updateFrom) {
       leaderVersions.sort(absComparator);
-      log.debug("{} sorted versions from {} = {}", logPrefix, leaderVersions, updateFrom);
+      log.debug("{} sorted versions from {} = {}", logPrefix, updateFrom, leaderVersions);
 
       long leaderLowest = leaderVersions.get(leaderVersions.size() - 1);
       if (Math.abs(ourHighest) < Math.abs(leaderLowest)) {

@@ -268,8 +268,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
           "Expected List for ranges but got " + input.getClass().getSimpleName() + " = " + input
       );
     }
-    @SuppressWarnings({"rawtypes"})
-    List intervals = (List) input;
+    List<?> intervals = (List<?>) input;
     List<Range> ranges = new ArrayList<>();
     for (Object obj : intervals) {
       if (!(obj instanceof Map)) {

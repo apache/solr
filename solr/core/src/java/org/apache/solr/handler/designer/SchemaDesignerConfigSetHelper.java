@@ -172,7 +172,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       }
 
       try {
-        if (configSet.equals(zkStateReader().readConfigName(coll)) && e.getValue().get() != null) {
+        if (configSet.equals(e.getValue().get().getConfigName()) && e.getValue().get() != null) {
           collections.add(coll);
         }
       } catch (Exception exc) {
@@ -460,8 +460,9 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   void deleteStoredSampleDocs(String configSet) {
     try {
       cloudClient().deleteByQuery(BLOB_STORE_ID, "id:" + configSet + "_sample/*", 10);
-    } catch (IOException | SolrServerException exc) {
-      log.warn("Failed to delete sample docs from blob store for {}", configSet, exc);
+    } catch (IOException | SolrServerException | SolrException exc) {
+      final String excStr = exc.toString();
+      log.warn("Failed to delete sample docs from blob store for {} due to: {}", configSet, excStr);
     }
   }
 

@@ -18,6 +18,13 @@
 solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, $cookies, $window, Constants, SchemaDesigner, Luke) {
   $scope.resetMenu("schema-designer", Constants.IS_ROOT_PAGE);
 
+  $scope.schemas = [];
+  $scope.publishedSchemas = [];
+  $scope.sampleDocIds = [];
+  $scope.sortableFields = [];
+  $scope.hlFields = [];
+  $scope.types = [];
+
   $scope.onWarning = function (warnMsg, warnDetails) {
     $scope.updateWorking = false;
     delete $scope.updateStatusMessage;
@@ -96,6 +103,8 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   };
 
   $scope.refresh = function () {
+    $scope.isSchemaDesignerEnabled = true;
+
     delete $scope.helpId;
 
     $scope.updateStatusMessage = "";
@@ -141,23 +150,34 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     $scope.query = {q: '*:*', sortBy: 'score', sortDir: 'desc'};
 
     SchemaDesigner.get({path: "configs"}, function (data) {
+
       $scope.schemas = [];
-      $scope.schemasWithDefault = [];
-      $scope.schemasWithDefault.push("_default");
+      $scope.publishedSchemas = ["_default"];
 
       for (var s in data.configSets) {
-        $scope.schemasWithDefault.push(s);
-        if (data.configSets[s]) {
+        // 1 means published but not editable
+        if (data.configSets[s] !== 1) {
           $scope.schemas.push(s);
         }
+
+        // 0 means not published yet (so can't copy from it yet)
+        if (data.configSets[s] > 0) {
+          $scope.publishedSchemas.push(s);
+        }
       }
+
       $scope.schemas.sort();
-      $scope.schemasWithDefault.sort();
+      $scope.publishedSchemas.sort();
 
       // if no schemas available to select, open the pop-up immediately
-      if ($scope.schemas.length == 0) {
+      if ($scope.schemas.length === 0) {
         $scope.firstSchemaMessage = true;
         $scope.showNewSchemaDialog();
+      }
+    }, function(e) {
+      if (e.status === 401 || e.status === 403) {
+        $scope.isSchemaDesignerEnabled = false;
+        $scope.hideAll();
       }
     });
   };
@@ -238,7 +258,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
           $scope.sampleMessage = "Please upload or paste some sample documents to build the '" + $scope.currentSchema + "' schema.";
         }
       }
-    });
+    }, $scope.errorHandler);
   };
 
   $scope.showNewSchemaDialog = function () {
@@ -249,6 +269,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
 
   $scope.addSchema = function () {
     $scope.firstSchemaMessage = false;
+    delete $scope.addMessage;
 
     if (!$scope.newSchema) {
       $scope.addMessage = "Please provide a schema name!";
@@ -266,18 +287,18 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       return;
     }
 
-    if ($scope.schemasWithDefault.includes($scope.newSchema)) {
+    if ($scope.publishedSchemas.includes($scope.newSchema) || $scope.schemas.includes($scope.newSchema)) {
       $scope.addMessage = "Schema '" + $scope.newSchema + "' already exists!";
       return;
     }
 
+    delete $scope.addMessage;
     if (!$scope.copyFrom) {
       $scope.copyFrom = "_default";
     }
 
     $scope.resetSchema();
     $scope.schemas.push($scope.newSchema);
-    $scope.schemasWithDefault.push($scope.newSchema);
     $scope.showNewSchema = false;
     $scope.currentSchema = $scope.newSchema;
     $scope.sampleMessage = "Please upload or paste some sample documents to analyze for building the '" + $scope.currentSchema + "' schema.";
@@ -423,6 +444,8 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
 
     if (data.docIds) {
       $scope.sampleDocIds = data.docIds;
+    } else {
+      $scope.sampleDocIds = [];
     }
 
     // re-apply the filters on the updated schema
@@ -729,7 +752,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
 
       $scope.schemaDiffExists = !(diff.fields == null && diff.fieldTypes == null && dynamicFields == null && diff.copyFields == null);
       $scope.showDiff = true;
-    });
+    }, $scope.errorHandler);
   }
 
   $scope.togglePublish = function (event) {
@@ -827,7 +850,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
       if (data.analysis && data.analysis["field_names"]) {
         $scope.result = processFieldAnalysisData(data.analysis["field_names"][field]);
       }
-    });
+    }, $scope.errorHandler);
   };
 
   $scope.changeLanguages = function () {
@@ -893,7 +916,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
         $scope.showAnalysis = false;
         $scope.selectNodeInTree(id);
       }
-    });
+    }, $scope.errorHandler);
   };
   
   function fieldNodes(src, type) {
@@ -1499,7 +1522,29 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
   };
 
   $scope.downloadConfig = function () {
-    location.href = "/api/schema-designer/download/"+$scope.currentSchema+"_configset.zip?wt=raw&configSet=" + $scope.currentSchema;
+    // have to use an AJAX request so we can supply the Authorization header
+    if (sessionStorage.getItem("auth.header")) {
+      var fileName = $scope.currentSchema+"_configset.zip";
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "/api/schema-designer/download/"+fileName+"?wt=raw&configSet="+$scope.currentSchema, true);
+      xhr.setRequestHeader('Authorization', sessionStorage.getItem("auth.header"));
+      xhr.responseType = 'blob';
+      xhr.addEventListener('load',function() {
+        if (xhr.status === 200) {
+          var url = window.URL.createObjectURL(xhr.response);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          document.body.append(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+        }
+      })
+      xhr.send();
+    } else {
+      location.href = "/api/schema-designer/download/"+$scope.currentSchema+"_configset.zip?wt=raw&configSet=" + $scope.currentSchema;
+    }
   };
 
   function docsToTree(docs) {
@@ -1805,7 +1850,7 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
         }
       }
       $scope.onSelectQueryResultsNode(nodeId);
-    });
+    }, $scope.errorHandler);
   };
 
   $scope.toggleShowAnalysisJson = function () {

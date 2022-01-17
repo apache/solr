@@ -96,6 +96,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -132,6 +133,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   SolrCore core;
   
   private volatile boolean closed = false;
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.READ_PERM;
+  }
 
   private static final class CommitVersionInfo {
     public final long version;
@@ -233,6 +239,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     this.pollListener = pollListener;
   }
 
+  public boolean isFollower() {
+    return this.isFollower;
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
@@ -327,7 +337,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
   
   @SuppressWarnings("unchecked")
-  static <T> T getObjectWithBackwardCompatibility(NamedList<?> params, String preferredKey, String alternativeKey) {
+  public static <T> T getObjectWithBackwardCompatibility(NamedList<?> params, String preferredKey, String alternativeKey) {
     Object value = params.get(preferredKey);
     if (value != null) {
       return (T) value;
@@ -500,7 +510,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       core.getCoreContainer().assertPathAllowed(Paths.get(location));
     }
 
-    URI locationUri = repo.createURI(location);
+    URI locationUri = repo.createDirectoryURI(location);
 
     //If name is not provided then look for the last unnamed( the ones with the snapshot.timestamp format)
     //snapshot folder since we allow snapshots to be taken without providing a name. Pick the latest timestamp.
@@ -611,7 +621,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
 
         // small race here before the commit point is saved
-      URI locationUri = repo.createURI(location);
+      URI locationUri = repo.createDirectoryURI(location);
       String commitName = params.get(CoreAdminParams.COMMIT_NAME);
       SnapShooter snapShooter = new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);
       snapShooter.validateCreateSnapshot();

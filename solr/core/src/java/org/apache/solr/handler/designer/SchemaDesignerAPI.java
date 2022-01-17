@@ -329,22 +329,23 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     rsp.getValues().addAll(Collections.singletonMap("collections", configSetHelper.listCollectionsForConfig(configSet)));
   }
 
-  @EndPoint(method = GET, path = "/schema-designer/configs", permission = CONFIG_READ_PERM)
+  // CONFIG_EDIT_PERM is required here since this endpoint is used by the UI to determine if the user has access to the Schema Designer UI
+  @EndPoint(method = GET, path = "/schema-designer/configs", permission = CONFIG_EDIT_PERM)
   @SuppressWarnings("unchecked")
   public void listConfigs(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     rsp.getValues().addAll(Collections.singletonMap("configSets", listEnabledConfigs()));
   }
 
-  protected Map<String, Boolean> listEnabledConfigs() throws IOException {
+  protected Map<String, Integer> listEnabledConfigs() throws IOException {
     List<String> configsInZk = configSetHelper.listConfigsInZk();
-    final Map<String, Boolean> configs = configsInZk.stream()
+    final Map<String, Integer> configs = configsInZk.stream()
         .filter(c -> !excludeConfigSetNames.contains(c) && !c.startsWith(DESIGNER_PREFIX))
-        .collect(Collectors.toMap(c -> c, c -> !settingsDAO.isDesignerDisabled(c)));
+        .collect(Collectors.toMap(c -> c, c -> settingsDAO.isDesignerDisabled(c) ? 1 : 2));
 
     // add the in-progress but drop the _designer prefix
     configsInZk.stream().filter(c -> c.startsWith(DESIGNER_PREFIX))
         .map(c -> c.substring(DESIGNER_PREFIX.length()))
-        .forEach(c -> configs.putIfAbsent(c, true));
+        .forEach(c -> configs.putIfAbsent(c, 0));
 
     return configs;
   }
@@ -511,7 +512,12 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     }
 
     if (req.getParams().getBool(CLEANUP_TEMP_PARAM, true)) {
-      cleanupTemp(configSet);
+      try {
+        cleanupTemp(configSet);
+      } catch (IOException | SolrServerException | SolrException exc) {
+        final String excStr = exc.toString();
+        log.warn("Failed to clean-up temp collection {} due to: {}", mutableId, excStr);
+      }
     }
 
     settings.setDisabled(req.getParams().getBool(DISABLE_DESIGNER_PARAM, false));
@@ -768,11 +774,9 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       Optional<SchemaField> maybeSchemaField = schemaSuggester.suggestField(normalizedField, sampleValues, schema, langs);
       maybeSchemaField.ifPresent(fieldsToAdd::add);
     }
-
     if (!fieldsToAdd.isEmpty()) {
       schema = (ManagedIndexSchema) schema.addFields(fieldsToAdd);
     }
-    
     return schema;
   }
 
@@ -798,6 +802,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
               "Schema '" + configSet + "' is locked for edits by the schema designer!");
         }
         publishedVersion = configSetHelper.getCurrentSchemaVersion(configSet);
+        log.info("Opening temp copy of {} as {} with publishedVersion {}", configSet, mutableId, publishedVersion);
         // ignore the copyFrom as we're making a mutable temp copy of an already published configSet
         copyConfig(configSet, mutableId);
         copyFrom = null;
@@ -1041,7 +1046,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     final String prefix = configPathInZk + "/";
     final int prefixLen = prefix.length();
     Set<String> stripPrefix = files.stream().map(f -> f.startsWith(prefix) ? f.substring(prefixLen) : f).collect(Collectors.toSet());
-    stripPrefix.remove(DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME);
+    stripPrefix.remove(schema.getResourceName());
     stripPrefix.remove("lang");
     stripPrefix.remove(CONFIGOVERLAY_JSON); // treat this file as private
 
@@ -1137,8 +1142,11 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
           mutableId + " configSet not found! Are you sure " + configSet + " was being edited by the schema designer?");
     }
 
-    // check the versions agree
-    configSetHelper.checkSchemaVersion(mutableId, requireSchemaVersionFromClient(req), -1);
+    final int schemaVersionInZk = configSetHelper.getCurrentSchemaVersion(mutableId);
+    if (schemaVersionInZk != -1) {
+      // check the versions agree
+      configSetHelper.checkSchemaVersion(mutableId, requireSchemaVersionFromClient(req), schemaVersionInZk);
+    } // else the stored is -1, can't really enforce here
 
     return mutableId;
   }

@@ -77,12 +77,11 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
     addReplica(state, message, results, null);
   }
 
-  @SuppressWarnings({"unchecked"})
-  List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
+  List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results, Runnable onComplete)
       throws IOException, InterruptedException, KeeperException {
     if (log.isDebugEnabled()) {
       log.debug("addReplica() : {}", Utils.toJSONString(message));
@@ -154,7 +153,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     final ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
     for (CreateReplica createReplica : createReplicas) {
       assert createReplica.coreName != null;
-      ModifiableSolrParams params = getReplicaParams(clusterState, message, results, collectionName, coll, skipCreateReplicaInClusterState, asyncId, shardHandler, createReplica);
+      ModifiableSolrParams params = getReplicaParams(message, collectionName, coll, skipCreateReplicaInClusterState, createReplica);
       shardRequestTracker.sendShardRequest(createReplica.node, params, shardHandler);
     }
 
@@ -197,7 +196,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
         .collect(Collectors.toList());
   }
 
-  private ModifiableSolrParams getReplicaParams(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, String collectionName, DocCollection coll, boolean skipCreateReplicaInClusterState, String asyncId, ShardHandler shardHandler, CreateReplica createReplica) throws IOException, InterruptedException, KeeperException {
+  private ModifiableSolrParams getReplicaParams(ZkNodeProps message, String collectionName, DocCollection coll, boolean skipCreateReplicaInClusterState, CreateReplica createReplica) throws InterruptedException, KeeperException {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     if (!skipCreateReplicaInClusterState) {
       ZkNodeProps props = new ZkNodeProps(
@@ -227,7 +226,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     params.set(CoreAdminParams.CORE_NODE_NAME,
         CollectionHandlingUtils.waitToSeeReplicasInState(ccc.getZkStateReader(), ccc.getSolrCloudManager().getTimeSource(), collectionName, Collections.singleton(createReplica.coreName)).get(createReplica.coreName).getName());
 
-    String configName = zkStateReader.readConfigName(collectionName);
+    String configName = coll.getConfigName();
     String routeKey = message.getStr(ShardParams._ROUTE_);
     String dataDir = message.getStr(CoreAdminParams.DATA_DIR);
     String ulogDir = message.getStr(CoreAdminParams.ULOG_DIR);
@@ -348,7 +347,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       int i = 0;
       for (Map.Entry<Replica.Type, Integer> entry : replicaTypeVsCount.entrySet()) {
         for (int j = 0; j < entry.getValue(); j++) {
-          positions.add(new ReplicaPosition(sliceName, i++, entry.getKey(), node));
+          positions.add(new ReplicaPosition(collectionName, sliceName, i++, entry.getKey(), node));
         }
       }
     }
