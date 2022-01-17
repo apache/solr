@@ -86,7 +86,7 @@
       </analyzer>
     </fieldType>
 
-    <!-- adds a WordDelimiterFilter producing stacked/synonym tokens -->
+    <!-- adds a WordDelimiterGraphFilter producing stacked/synonym tokens -->
     <fieldType name="tagWDF" class="solr.TextField" positionIncrementGap="100"
                postingsFormat="FST50" omitTermFreqAndPositions="true" omitNorms="true">
       <analyzer type="index">

@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilterFactory;
+import org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilterFactory;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;
@@ -30,10 +30,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
+ * New WordDelimiterGraphFilter tests... most of the tests are in ConvertedLegacyTest
  */
 // TODO: add a low-level test for this factory
-public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
+public class TestWordDelimiterGraphFilterFactory extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -123,24 +123,6 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
     clearIndex();
   }
 
-  /*
-  public void testPerformance() throws IOException {
-    String s = "now is the time-for all good men to come to-the aid of their country.";
-    Token tok = new Token();
-    long start = System.currentTimeMillis();
-    int ret=0;
-    for (int i=0; i<1000000; i++) {
-      StringReader r = new StringReader(s);
-      TokenStream ts = new WhitespaceTokenizer(r);
-      ts = new WordDelimiterFilter(ts, 1,1,1,1,0);
-
-      while (ts.next(tok) != null) ret++;
-    }
-
-    System.out.println("ret="+ret+" time="+(System.currentTimeMillis()-start));
-  }
-  ***/
-
   @Test
   public void testAlphaNumericWords(){
      assertU(adoc("id",  "68","numericsubword","Java/J2SE"));
@@ -207,16 +189,16 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
     args.put("splitOnCaseChange", "1");
     
     /* default behavior */
-    WordDelimiterFilterFactory factoryDefault = new WordDelimiterFilterFactory(args);
+    WordDelimiterGraphFilterFactory factoryDefault = new WordDelimiterGraphFilterFactory(args);
     factoryDefault.inform(loader);
     
     TokenStream ts = factoryDefault.create(whitespaceMockTokenizer(testText));
     BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
-        new String[] { "I", "borrowed", "5", "540000", "400", "00", "at", "25", "interest", "interestrate", "rate" });
+        new String[] { "I", "borrowed", "540000", "5", "400", "00", "at", "25", "interestrate", "interest", "rate" });
 
     ts = factoryDefault.create(whitespaceMockTokenizer("foo\u200Dbar"));
     BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
-        new String[] { "foo", "foobar", "bar" });
+        new String[] { "foobar", "foo", "bar" });
 
     
     /* custom behavior */
@@ -230,12 +212,12 @@ public class TestWordDelimiterFilterFactory extends SolrTestCaseJ4 {
     args.put("catenateAll", "0");
     args.put("splitOnCaseChange", "1");
     args.put("types", "wdftypes.txt");
-    WordDelimiterFilterFactory factoryCustom = new WordDelimiterFilterFactory(args);
+    WordDelimiterGraphFilterFactory factoryCustom = new WordDelimiterGraphFilterFactory(args);
     factoryCustom.inform(loader);
     
     ts = factoryCustom.create(whitespaceMockTokenizer(testText));
     BaseTokenStreamTestCase.assertTokenStreamContents(ts, 
-        new String[] { "I", "borrowed", "$5,400.00", "at", "25%", "interest", "interestrate", "rate" });
+        new String[] { "I", "borrowed", "$5,400.00", "at", "25%", "interestrate", "interest", "rate" });
     
     /* test custom behavior with a char > 0x7F, because we had to make a larger byte[] */
     ts = factoryCustom.create(whitespaceMockTokenizer("foo\u200Dbar"));

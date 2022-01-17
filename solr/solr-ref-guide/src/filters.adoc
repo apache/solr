@@ -3481,20 +3481,6 @@ If `false`, or undefined, the file defined in `types` is used as a denylist.
 ====
 --
 
-== Word Delimiter Filter
-
-This filter splits tokens at word delimiters.
-
-.Word Delimiter Filter has been Deprecated
-[WARNING]
-====
-Word Delimiter Filter has been deprecated in favor of Word Delimiter Graph Filter, which is required to produce a correct token graph so that e.g., phrase queries can work correctly.
-====
-
-*Factory class:* `solr.WordDelimiterFilterFactory`
-
-For a full description, including arguments and examples, see the Word Delimiter Graph Filter below.
-
 == Word Delimiter Graph Filter
 
 This filter splits tokens at word delimiters.
