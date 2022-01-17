@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.ArrayUtils;
-//import org.apache.lucene.document.VectorField;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;
@@ -75,14 +74,29 @@ public class VectorFieldType extends FieldType {
         log.trace("Ignoring unindexed/unstored field: {}", field);
       return null;
     }
-      @SuppressWarnings("unchecked")
-      SolrInputField inValue = (SolrInputField) value;
-      @SuppressWarnings("unchecked")
-      ArrayList<Float> vList = (ArrayList<Float>) inValue.getValue();
-      Float[] values = vList.toArray(new Float[vList.size()]);
-      return new KnnVectorField(field.getName(),  ArrayUtils.toPrimitive(values), KnnVectorField.createFieldType(values.length, VectorSimilarityFunction.DOT_PRODUCT));
-//      return new VectorField(field.getName(),  ArrayUtils.toPrimitive(values), VectorField.createHnswType(values.length, VectorValues.SimilarityFunction.DOT_PRODUCT, 10, 10)); 
-
+      
+      float[] vector = null;
+      if(value instanceof SolrInputField){
+          SolrInputField inValue = (SolrInputField) value;
+          if(inValue.getValue() instanceof ArrayList) {
+          ArrayList<?> vList = (ArrayList<?>) inValue.getValue();
+            vector = new float[vList.size()];
+            for(int i=0; i<vList.size(); ++i) {
+                vector[i] = ((Double)vList.get(i)).floatValue();
+            }
+          }          
+      }
+      
+      if(vector == null)
+      {
+        throw new NullPointerException("Exception:- Vector is Null");
+      }
+      if(vector.length ==  0)
+      {
+        throw new IllegalArgumentException("Exception:- Vector Length is Zero.");
+      }
+      
+      return new KnnVectorField(field.getName(),  vector, KnnVectorField.createFieldType(vector.length, VectorSimilarityFunction.DOT_PRODUCT));      
   }
 
   /**

@@ -2,7 +2,6 @@ package org.apache.solr.vector.search;
 
 
 import java.util.Objects;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 
