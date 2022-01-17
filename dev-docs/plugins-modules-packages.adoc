@@ -103,7 +103,7 @@ Examples:
 === Adding a manifest
 
 Create a file `<my-module>/src/main/resources/manifest.json`. It contents should be at a
-minimum as below.
+minimum something like below:
 
 ```json
 {
@@ -133,5 +133,5 @@ Version constraint must follow SemVer expression syntax, `9` means it is
 compatible with any 9.x version of Solr. It is dangerous to assume compatibility with future versions, and for 1st party modules, we release them with every minor version, so consider
 using e.g. `9.1`, which will be compatible with all bugfix 9.1 releases.
 
-TODO: Move some content from https://solr.apache.org/guide/8_11/package-manager-internals.html
-in here??
+For details about how the package management internals work, please see
+https://solr.apache.org/guide/8_11/package-manager-internals.html[Package Manager Internals] chapter of the reference guide.
