@@ -75,11 +75,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.core.*;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
@@ -123,6 +119,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private Properties extraProperties;
 
   private RateLimitManager rateLimitManager;
+  private boolean isCoordinator;
 
   /**
    * Enum to define action that needs to be processed.
@@ -191,6 +188,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
 
       coresInit = createCoreContainer(computeSolrHome(config), extraProperties);
+      this.isCoordinator = coresInit.nodeRoles.getRoleMode(NodeRoles.Role.COORDINATOR) == NodeRoles.Mode.ON;
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
       
@@ -580,9 +578,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     String path = ServletUtils.getPathAfterContext(request);
 
     if (isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
-      return new V2HttpCall(this, cores, request, response, false);
+      return isCoordinator ?
+              new CoordinatorHttpSolrCall(this, cores, request, response, false) :
+              new V2HttpCall(this, cores, request, response, false);
     } else {
-      return new HttpSolrCall(this, cores, request, response, retry);
+      return isCoordinator ?
+              new CoordinatorHttpSolrCall(this, cores, request, response, retry) :
+              new HttpSolrCall(this, cores, request, response, retry);
     }
   }
 

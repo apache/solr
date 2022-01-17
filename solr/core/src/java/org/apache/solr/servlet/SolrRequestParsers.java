@@ -55,6 +55,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.RequestHandlers;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
@@ -266,6 +267,13 @@ public class SolrRequestParsers {
       public HttpSolrCall getHttpSolrCall() {
         return httpSolrCall;
       }
+      public CoreContainer getCoreContainer() {
+        return httpSolrCall == null ?
+                super.getCoreContainer() :
+                httpSolrCall.cores;
+      }
+
+
     };
     if( streams != null && streams.size() > 0 ) {
       q.setContentStreams( streams );
