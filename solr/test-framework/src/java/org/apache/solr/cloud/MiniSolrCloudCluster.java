@@ -473,6 +473,7 @@ public class MiniSolrCloudCluster {
     JettySolrRunner jetty = !trackJettyMetrics 
       ? new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig)
       : new JettySolrRunnerWithMetrics(runnerPath.toString(), nodeProps, newConfig);
+    if(config.preStartupHook != null) config.preStartupHook.accept(jetty);
     jetty.start();
     jettys.add(jetty);
     synchronized (startupWait) {

@@ -17,6 +17,8 @@
 
 package org.apache.solr.pkg;
 
+import java.io.FileInputStream;
+import java.lang.invoke.MethodHandles;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.pattern.PatternReplaceCharFilterFactory;
@@ -61,6 +63,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -70,8 +73,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
@@ -81,6 +87,8 @@ import static org.apache.solr.filestore.TestDistribPackageStore.*;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
 public class TestPackages extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 
   @Before
   @Override
@@ -111,6 +119,70 @@ public class TestPackages extends SolrCloudTestCase {
 
     @JsonProperty("class")
     public String klass;
+  }
+
+  public void testLocalPackages() throws Exception {
+    String jarName = "mypkg1.jar";
+    String PKG_NAME = "mypkg";
+    String PKG_DIR_NAME = "localpkgs";
+    String COLLECTION_NAME = "testLocalPkgsColl";
+
+    PackageAPI.Packages p = new PackageAPI.Packages();
+    PackageAPI.PkgVersion pkgVersion =  new PackageAPI.PkgVersion();
+    pkgVersion.files = Collections.singletonList(jarName);
+    pkgVersion.version = "0.1";
+    p.packages.put(PKG_NAME, Collections.singletonList(pkgVersion));
+    System.setProperty(PackageLoader.PKGS_DIR, PKG_DIR_NAME);
+    MiniSolrCloudCluster cluster =
+        configureCluster(4)
+            .withJettyConfig(builder -> builder.enableV2(true).withPreStartupHook(jsr -> {
+              try {
+                File pkgDir = new File(jsr.getSolrHome() + File.separator + PKG_DIR_NAME);
+                pkgDir.mkdir();
+                try (FileInputStream fis = new FileInputStream(getFile("runtimecode/runtimelibs.jar.bin"))) {
+                  byte[] buf = new byte[fis.available()];
+                  // TODO: This should check that we read the entire stream
+                  fis.read(buf);
+                  try( FileOutputStream fos = new FileOutputStream( new File(pkgDir, jarName) )) {
+                    fos.write(buf, 0,buf.length);
+                  }
+
+                }
+
+                try( FileOutputStream fos = new FileOutputStream( new File(pkgDir, "packages.json") )) {
+                  fos.write(Utils.toJSON(p));
+                }
+              } catch (IOException e) {
+                throw new RuntimeException("Unable to create files", e);
+              }
+
+            }) )
+            .addConfig("conf", configset("conf2"))
+            .configure();
+
+    try {
+
+      System.out.println("packages.json : "+ Utils.toJSONString(p));
+
+      for (JettySolrRunner jsr : cluster.getJettySolrRunners()) {
+        List<String> packageFiles = Arrays.asList(new File(jsr.getSolrHome() + File.separator + "localpkgs").list());
+       assertTrue(packageFiles.contains("packages.json"));
+       assertTrue(packageFiles.contains(jarName));
+      }
+
+
+      CollectionAdminRequest
+          .createCollection(COLLECTION_NAME, "conf", 2, 2)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
+
+      log.info("collection created successfully");
+
+//      verifyComponent(cluster.getSolrClient(), COLLECTION_NAME, "query", "filterCache", PKG_NAME ,pkgVersion.version );
+
+    } finally {
+      cluster.shutdown();
+    }
   }
 
 

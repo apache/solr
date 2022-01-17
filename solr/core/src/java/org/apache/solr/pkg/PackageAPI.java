@@ -66,14 +66,14 @@ public class PackageAPI {
   public static final String ERR_MSG = "Package loading is not enabled , Start your nodes with -Denable.packages=true";
 
   final CoreContainer coreContainer;
-  private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
+  public static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private final PackageLoader packageLoader;
   Packages pkgs;
 
   public final Edit editAPI = new Edit();
   public final Read readAPI = new Read();
 
-  public PackageAPI(CoreContainer coreContainer, PackageLoader loader) {
+  public PackageAPI(CoreContainer coreContainer, PackageLoader loader, boolean isLocal) {
     if (coreContainer.getPackageStoreAPI() == null) {
       throw new IllegalStateException("Must successfully load PackageStoreAPI first");
     }
@@ -81,6 +81,10 @@ public class PackageAPI {
     this.coreContainer = coreContainer;
     this.packageLoader = loader;
     pkgs = new Packages();
+    if(isLocal) {
+      pkgs = loader.localPackages;
+      return;
+    }
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
     try {
       pkgs = readPkgsFromZk(null, null);

@@ -22,6 +22,7 @@ import javax.servlet.Filter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 
 public class JettyConfig {
 
@@ -47,9 +48,12 @@ public class JettyConfig {
   
   public final int portRetryTime;
 
+  public final Consumer<JettySolrRunner> preStartupHook;
+
   private JettyConfig(boolean onlyHttp1, int port, int portRetryTime , String context, boolean stopAtShutdown,
                       Long waitForLoadingCoresToFinishMs, Map<ServletHolder, String> extraServlets,
-                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, boolean enableV2) {
+                      Map<Class<? extends Filter>, String> extraFilters, SSLConfig sslConfig, boolean enableV2,
+                      Consumer<JettySolrRunner> preStartupHook) {
     this.onlyHttp1 = onlyHttp1;
     this.port = port;
     this.context = context;
@@ -60,6 +64,7 @@ public class JettyConfig {
     this.sslConfig = sslConfig;
     this.portRetryTime = portRetryTime;
     this.enableV2 = enableV2;
+    this.preStartupHook = preStartupHook;
   }
 
   public static Builder builder() {
@@ -89,6 +94,7 @@ public class JettyConfig {
     Map<Class<? extends Filter>, String> extraFilters = new LinkedHashMap<>();
     SSLConfig sslConfig = null;
     int portRetryTime = 60;
+    Consumer<JettySolrRunner> preStartupHook;
 
     public Builder useOnlyHttp1(boolean useOnlyHttp1) {
       this.onlyHttp1 = useOnlyHttp1;
@@ -151,10 +157,15 @@ public class JettyConfig {
       return this;
     }
 
+    public Builder withPreStartupHook(Consumer<JettySolrRunner> preStartupHook) {
+      this.preStartupHook = preStartupHook;
+      return this;
+    }
+
 
     public JettyConfig build() {
       return new JettyConfig(onlyHttp1, port, portRetryTime, context, stopAtShutdown,
-          waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig, enableV2);
+          waitForLoadingCoresToFinishMs, extraServlets, extraFilters, sslConfig, enableV2, preStartupHook);
     }
 
   }

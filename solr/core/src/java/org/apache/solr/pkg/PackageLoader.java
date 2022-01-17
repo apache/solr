@@ -18,6 +18,8 @@
 package org.apache.solr.pkg;
 
 import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -37,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -52,10 +55,12 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 public class PackageLoader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String LATEST = "$LATEST";
+  public static final String PKGS_DIR = "solr.packages.dir";
 
 
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
+  public  PackageAPI.Packages localPackages;
 
   private PackageAPI.Packages myCopy =  new PackageAPI.Packages();
 
@@ -70,9 +75,50 @@ public class PackageLoader implements Closeable {
 
   public PackageLoader(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    packageAPI = new PackageAPI(coreContainer, this);
-    refreshPackageConf();
 
+    String packagesDir = System.getProperty(PKGS_DIR);
+    if(packagesDir != null) {
+      loadLocalPackages(packagesDir);
+      packageAPI = new PackageAPI(coreContainer, this, true);
+
+    } else {
+      packageAPI = new PackageAPI(coreContainer, this, false);
+      refreshPackageConf();
+    }
+
+  }
+
+  private void loadLocalPackages(String packagesDir) {
+
+    final Path packagesPath;
+    if (packagesDir.charAt(0) == File.pathSeparatorChar) {
+      packagesPath = new File(packagesDir).toPath();
+      //this is an absolute path
+    } else {
+      packagesPath = new File(coreContainer.getSolrHome() + File.separator + packagesDir).toPath();
+    }
+    log.info("packages to be loaded from local FS : {}", packagesPath);
+
+    if (!packagesPath.toFile().exists()) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "no such directory :" + packagesPath);
+    }
+    if (!packagesPath.resolve("packages.json").toFile().exists()) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "no file packages.json exists in :" + packagesPath);
+    }
+
+    try {
+      try (InputStream in = new FileInputStream(new File(packagesPath.toFile() , "packages.json"))) {
+        localPackages = PackageAPI.mapper.readValue(in, PackageAPI.Packages.class);
+      }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading packages.json", e);
+    }
+
+    for (Map.Entry<String, List<PackageAPI.PkgVersion>> e : localPackages.packages.entrySet()) {
+      Package p = new Package(e.getKey());
+      p.updateVersions(e.getValue(), packagesPath);
+      packageClassLoaders.put(e.getKey(), p);
+    }
   }
 
   public PackageAPI getPackageAPI() {
@@ -99,7 +145,7 @@ public class PackageLoader implements Closeable {
         if (e.getValue() != null && p == null) {
           packageClassLoaders.put(e.getKey(), p = new Package(e.getKey()));
         }
-        p.updateVersions(e.getValue());
+        p.updateVersions(e.getValue(), null);
         updated.add(p);
       } else {
         Package p = packageClassLoaders.remove(e.getKey());
@@ -181,14 +227,14 @@ public class PackageLoader implements Closeable {
     }
 
 
-    private synchronized void updateVersions(List<PackageAPI.PkgVersion> modified) {
+    private synchronized void updateVersions(List<PackageAPI.PkgVersion> modified, Path localpkgDir) {
       for (PackageAPI.PkgVersion v : modified) {
         Version version = myVersions.get(v.version);
         if (version == null) {
           log.info("A new version: {} added for package: {} with artifacts {}", v.version, this.name, v.files);
           Version ver = null;
           try {
-            ver = new Version(this, v);
+            ver = new Version(this, v, localpkgDir);
           } catch (Exception e) {
             log.error("package could not be loaded {}", ver, e);
             continue;
@@ -274,20 +320,25 @@ public class PackageLoader implements Closeable {
         version.writeMap(ew);
       }
 
-      Version(Package parent, PackageAPI.PkgVersion v) {
+      Version(Package parent, PackageAPI.PkgVersion v, Path localPkgDir) {
         this.parent = parent;
         this.version = v;
         List<Path> paths = new ArrayList<>();
-
-        List<String> errs = new ArrayList<>();
-        coreContainer.getPackageStoreAPI().validateFiles(version.files, true, s -> errs.add(s));
-        if(!errs.isEmpty()) {
-          throw new RuntimeException("Cannot load package: " +errs);
+        if(localPkgDir != null) {
+          for (String file : v.files) {
+            if(file.charAt(0)== '/') file =file.substring(1);
+            paths.add( localPkgDir.resolve(file).toAbsolutePath()) ;
+          }
+        } else {
+          List<String> errs = new ArrayList<>();
+          coreContainer.getPackageStoreAPI().validateFiles(version.files, true, s -> errs.add(s));
+          if(!errs.isEmpty()) {
+            throw new RuntimeException("Cannot load package: " +errs);
+          }
+          for (String file : version.files) {
+            paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
+          }
         }
-        for (String file : version.files) {
-          paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
-        }
-
         loader = new PackageResourceLoader(
             "PACKAGE_LOADER: " + parent.name() + ":" + version,
             paths,
