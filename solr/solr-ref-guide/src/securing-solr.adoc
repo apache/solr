@@ -80,13 +80,6 @@ The authorization plugins that ship with Solr are:
 Audit logging will record an audit trail of incoming reqests to your cluster, such as users being denied access to admin APIs.
 Learn more about audit logging and how to implement an audit logger plugin in the section <<audit-logging.adoc#,Audit Logging>>.
 
-== Request Logging
-
-Every incoming HTTP(s) request in by default logged in the standard https://en.wikipedia.org/wiki/Common_Log_Format[`NCSA format`]
-in the file `$SOLR_LOG_DIR/<yyyy_mm_dd>.request.log`, rolled over daily. By default, 3 days worth of request logs are retained.
-You can disable request logging by setting `SOLR_REQUESTLOG_ENABLED=false` via environment variable or in `solr.in.sh`/`solr.in.cmd`.
-You can change the number of days to retain by system property `-Dsolr.log.requestlog.retaindays`.
-
 == IP Access Control
 
 Restrict network access to specific hosts, by setting `SOLR_IP_ALLOWLIST`/`SOLR_IP_DENYLIST` via environment variables or in `solr.in.sh`/`solr.in.cmd`.
