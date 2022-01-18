@@ -158,6 +158,16 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     }
 
     @Test
+    public void parseVector_notNumericList_shouldThrowException() {
+        toTest = new DenseVectorField(3);
+
+        RuntimeException thrown = Assert.assertThrows("Incorrect elements should throw an exception", SolrException.class, () -> {
+            toTest.parseVector(Arrays.asList(new DenseVectorField(3), new DenseVectorField(4), new DenseVectorField(5)));
+        });
+        MatcherAssert.assertThat(thrown.getMessage(), is("incorrect vector format. The expected format is an array :'[f1,f2..f3]' where each element f is a float"));
+    }
+
+    @Test
     public void parseVector_incorrectVectorDimension_shouldThrowException() {
         toTest = new DenseVectorField(3);
 

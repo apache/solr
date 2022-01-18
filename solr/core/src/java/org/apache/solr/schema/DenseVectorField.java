@@ -228,6 +228,9 @@ public class DenseVectorField extends FloatPointField {
             for (int i = 0; i < dimension; i++) {
                 vector[i] = ((Number) inputVector.get(i)).floatValue();
             }
+        } else {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector format." +
+                    " The expected format is an array :'[f1,f2..f3]' where each element f is a float");
         }
 
         return vector;
