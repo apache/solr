@@ -155,7 +155,7 @@ public class DocumentBuilder {
       SchemaField sfield = schema.getFieldOrNull(name);
       
       List<CopyField> copyFields = schema.getCopyFieldsList(name);
-      if( copyFields.size() == 0 ) copyFields = null;
+      if( copyFields.isEmpty() ) copyFields = null;
 
       // Make sure it has the correct number
       if( sfield!=null && !(sfield.getType() instanceof DenseVectorField) && !sfield.multiValued() && field.getValueCount() > 1 ) {
