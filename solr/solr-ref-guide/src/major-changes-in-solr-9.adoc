@@ -85,7 +85,8 @@ All the usages are replaced by BaseHttpSolrClient.RemoteSolrException and BaseHt
 
 * SOLR-11623: Every request handler in Solr now implements PermissionNameProvider. Any custom or 3rd party request handler must also do this
 
-* SOLR-14142: Jetty low level request-logging on NCSA format is now enabled by default, with a retention of 3 days worth of logs.
+* SOLR-14142: Jetty low level request-logging in NCSA format is now enabled by default, with a retention of 3 days worth of logs.
+  This may require some more disk space for logs than was the case in 8.x. See Reference Guide chapter "Configuring Logging" for how to change this.
 
 == New Features & Enhancements
 
