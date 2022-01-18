@@ -55,7 +55,7 @@ public class KnnQParser extends QParser {
         }
 
         if (vectorToSearch == null || vectorToSearch.isEmpty()) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "the Dense Vector to search is missing");
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "the Dense Vector value 'v' to search is missing");
         }
 
         SchemaField schemaField = req.getCore().getLatestSchema().getField(denseVectorField);
