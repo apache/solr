@@ -39,9 +39,9 @@
       </PatternLayout>
       <Policies>
         <OnStartupTriggeringPolicy />
-        <SizeBasedTriggeringPolicy size="${sys:solr.log.rolloversize:-32 MB}"/>
+        <SizeBasedTriggeringPolicy size="${sys:solr.log.maxsize:-32 MB}"/>
       </Policies>
-      <DefaultRolloverStrategy max="${sys:solr.log.filestokeep:-10}"/>
+      <DefaultRolloverStrategy max="${sys:solr.log.rolloverdays:-10}"/>
     </RollingRandomAccessFile>
 
     <RollingRandomAccessFile
@@ -55,9 +55,9 @@
       </PatternLayout>
       <Policies>
         <OnStartupTriggeringPolicy />
-        <SizeBasedTriggeringPolicy size="${sys:solr.log.rolloversize:-32 MB}"/>
+        <SizeBasedTriggeringPolicy size="${sys:solr.log.maxsize:-32 MB}"/>
       </Policies>
-      <DefaultRolloverStrategy max="${sys:solr.log.filestokeep:-10}"/>
+      <DefaultRolloverStrategy max="${sys:solr.log.rolloverdays:-10}"/>
     </RollingRandomAccessFile>
 
   </Appenders>
