@@ -343,9 +343,6 @@ class ClosingRequestHandler extends EmptyRequestHandler implements SolrCoreAware
       public void preClose(SolrCore core) {
         closed = true;
       }
-
-      @Override
-      public void postClose(SolrCore core) {}
     });
   }
 }

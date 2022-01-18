@@ -483,6 +483,8 @@ Other Changes
 
 * SOLR-15924: Remove lucene-libs from contrib module packaging. The lucene libraries will be included in lib/ with all other dependencies. (Houston Putman)
 
+* SOLR-15934: CloseHook is now an interface with default method implementations instead of an abstract class. (Mike Drob)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
