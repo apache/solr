@@ -75,7 +75,7 @@ public class KnnQParser extends QParser {
      * @param value with format: [f1, f2, f3, f4...fn]
      * @return a float array
      */
-    private float[] parseVector(String value, int dimension) {
+    static private float[] parseVector(String value, int dimension) {
         if (!value.startsWith("[") || !value.endsWith("]")) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incorrect vector format." +
                     " The expected format is:'[f1,f2..f3]' where each element f is a float");
