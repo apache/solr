@@ -46,6 +46,8 @@ ASF download repos.
 Any functionality added to Solr that is not obviously useful for all Solr users and that
 spans more than a single source file, should be considered for a new module.
 
+Solr functionality that requires risky dependencies can more easily be added as a module, because Solr users will not have to load those dependencies by default.
+
 === Module layout
 
 Modules consist of a `solr-<moduleName>-X.Y.Z.jar` artifact as often also a set of dependency
