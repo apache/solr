@@ -706,10 +706,10 @@
   <field name="max_chars" type="string" indexed="false" stored="true"/>
   
   <!-- Dense Vector-->
-  <field name="vector" type="knn_vector" indexed="true" stored="true"/>
-  <field name="vector2" type="knn_vector2" indexed="true" stored="true"/>
-  <field name="vector3" type="knn_vector" indexed="true" stored="true"/>
-  <field name="vector4" type="knn_vector" indexed="true" stored="true"/>
+  <field name="vector" type="knn_vector_cosine" indexed="true" stored="true"/>
+  <field name="vector2" type="knn_vector_dot_product" indexed="true" stored="true"/>
+  <field name="vector3" type="knn_vector_cosine" indexed="true" stored="true"/>
+  <field name="vector4" type="knn_vector_cosine" indexed="true" stored="true"/>
   <field name="vector5" type="knn_vector5" indexed="true" stored="true"/>
   
   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
