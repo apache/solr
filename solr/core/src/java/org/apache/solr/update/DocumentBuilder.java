@@ -16,6 +16,11 @@
  */
 package org.apache.solr.update;
 
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
 import com.google.common.collect.Sets;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -30,11 +35,6 @@ import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Builds a Lucene {@link Document} from a {@link SolrInputDocument}.
@@ -153,9 +153,7 @@ public class DocumentBuilder {
 
       String name = field.getName();
       SchemaField sfield = schema.getFieldOrNull(name);
-      
-      List<CopyField> copyFields = schema.getCopyFieldsList(name);
-      if( copyFields.isEmpty() ) copyFields = null;
+      boolean used = false;
 
       // Make sure it has the correct number
       if( sfield!=null && !sfield.multiValued() && field.getValueCount() > 1 && !(sfield.getType() instanceof DenseVectorField) ) {
@@ -164,9 +162,11 @@ public class DocumentBuilder {
                         sfield.getName() + ": " +field.getValue() );
       }
 
+      List<CopyField> copyFields = schema.getCopyFieldsList(name);
+      if( copyFields.size() == 0 ) copyFields = null;
+
       // load each field value
       boolean hasField = false;
-      boolean used = false;
       try {
         if (sfield != null && sfield.getType() instanceof DenseVectorField) {
           Object vectorValue = field.getValue();
