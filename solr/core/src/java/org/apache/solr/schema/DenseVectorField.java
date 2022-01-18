@@ -193,7 +193,7 @@ public class DenseVectorField extends FloatPointField {
 
     /**
      * Index Time Parsing
-     * The inputValue is an ArrayList with a type that dipends on the loader used:
+     * The inputValue is an ArrayList with a type that depends on the loader used:
      * - {@link org.apache.solr.handler.loader.XMLLoader}, {@link org.apache.solr.handler.loader.CSVLoader} produces an ArrayList of String
      * - {@link org.apache.solr.handler.loader.JsonLoader} produces an ArrayList of Double
      * - {@link org.apache.solr.handler.loader.JavabinLoader} produces an ArrayList of Float
