@@ -164,7 +164,7 @@ public class DenseVectorField extends FloatPointField {
     }
     
     public List<IndexableField> createFields(SchemaField field, Object value) {
-        List<IndexableField> fields = new ArrayList<>();
+        ArrayList<IndexableField> fields = new ArrayList<>();
         float[] parsedVector;
         try {
             parsedVector = parseVector(value);
@@ -176,6 +176,7 @@ public class DenseVectorField extends FloatPointField {
             fields.add(createField(field, parsedVector));
         }
         if (field.stored()) {
+            fields.ensureCapacity(parsedVector.length + 1);
             for (float vectorElement : parsedVector) {
                 fields.add(getStoredField(field, vectorElement));
             }
