@@ -435,7 +435,7 @@ groups:
       Make sure to follow the manual instructions printed by the script.
   - !Todo
     id: add_version_minor
-    title: Add a new minor version on stable branch
+    title: Add a new minor version on stable and unstable branches
     types:
     - major
     - minor
@@ -444,10 +444,20 @@ groups:
       next_version: "{{ release_version_major }}.{{ release_version_minor + 1 }}.0"
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Run these commands to add the new minor version {{ next_version }} to the stable branch
+      commands_text: Run these commands to add the new minor version {{ next_version }} to the stable and unstable branches
       commands:
       - !Command
         cmd: git checkout {{ stable_branch }}
+        tee: true
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
+        tee: true
+      - !Command
+        comment: Make sure the edits done by `addVersion.py` are ok, then push
+        cmd: git add -u .  && git commit -m "Add next minor version {{ next_version }}"  && git push
+        logfile: commit-stable.log
+      - !Command
+        cmd: git checkout main
         tee: true
       - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
