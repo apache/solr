@@ -251,7 +251,7 @@ public class DenseVectorField extends FloatPointField {
     }
 
     /**
-     * Not Supported
+     * Not Supported. Please use the {!knn} query parser to run K nearest neighbors search queries.
      */
     @Override
     public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
