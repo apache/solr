@@ -17,8 +17,8 @@ Solr modules are addon Solr plugins that are not part of solr-core, but official
 by the Solr project. They provide well-defined features such as the "extracting" module which lets
 users index rich text documents with Apache Tika. Modules were earlier known as "contribs".
 
-Each module produces a separate `.jar` file in the build, and thus help keep the solr-core small and lean,
-and also reduces risk by including only needed java classes on the class-path.
+Each module produces a separate `.jar` file in the build, and additional dependencies required by each module are packaged with that module's `.jar` file. This helps keep the solr-core small and lean,
+and also reduces risk by including only needed java classes and dependencies on the class-path.
 
 A single module can contain multiple Plugins.
 
