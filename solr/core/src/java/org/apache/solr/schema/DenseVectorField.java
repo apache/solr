@@ -186,9 +186,8 @@ public class DenseVectorField extends FloatPointField {
 
     @Override
     public IndexableField createField(SchemaField field, Object parsedVector) {
-        float[] typedVector;
         if (parsedVector == null) return null;
-        typedVector = (float[]) parsedVector;
+        float[] typedVector = (float[]) parsedVector;
         return new KnnVectorField(field.getName(), typedVector, similarityFunction);
     }
 
