@@ -1161,7 +1161,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       assertQueryEquals("knn", "{!knn f=vector}[1.0,2.0,3.0,4.0]",
               "{!knn f=vector v=[1.0,2.0,3.0,4.0]}");
     } finally {
-      delQ("*:*");
+      delQ("id:0");
       assertU(commit());
     }
   }
