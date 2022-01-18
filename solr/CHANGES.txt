@@ -481,6 +481,9 @@ Other Changes
 * SOLR-14858: Add the server WEB-INF/lib directory to the classpath for the solr-exporter script. Will allow the script
   to work when the dist/solrj-lib jars are missing in the Docker image. (Houston Putman)
 
+* SOLR-14142: Jetty's RequestLog is enabled by default. If you don't want these logs, you can disable
+  via SOLR_REQUESTLOG_ENABLED=false.  (rmuir, janhoy)
+
 * SOLR-15924: Remove lucene-libs from contrib module packaging. The lucene libraries will be included in lib/ with all other dependencies. (Houston Putman)
 
 Bug Fixes
