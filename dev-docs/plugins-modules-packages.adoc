@@ -35,7 +35,7 @@ https://github.com/erikhatcher/solr-velocity[Velocity],
 https://github.com/cominvent/request-sanitizer-component[RequestSanitizerComponent]
 and https://solr.cool/[several others]. Such packages are not endorsed by the Solr project and must be used at own risk.
 
-But the Solr project is also working on packaging our own (1st party) modules as packages,
+The Solr project is also working on packaging our own (1st party) modules as packages,
 and host them either inside the binary tarball distribution of Solr or later also in the
 ASF download repos.
 
