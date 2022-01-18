@@ -63,24 +63,40 @@ public class DenseVectorField extends FloatPointField {
     static final String HNSW_MAX_CONNECTIONS = "hnswMaxConnections";
     static final String HNSW_BEAM_WIDTH = "hnswBeamWidth";
 
-    int dimension;
-    VectorSimilarityFunction similarityFunction;
-    VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
+    private int dimension;
+    private VectorSimilarityFunction similarityFunction;
+    private VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
 
-    String codecFormat;
+    private String codecFormat;
     /**
      * This parameter is coupled with the {@link Lucene90HnswVectorsFormat} format implementation.
      * Controls how many of the nearest neighbor candidates are connected to the new node. Defaults to
      * {@link Lucene90HnswVectorsFormat#DEFAULT_MAX_CONN}. See {@link HnswGraph} for more details.
      */
-    int hnswMaxConn;
+    private int hnswMaxConn;
     /**
      * This parameter is coupled with the {@link Lucene90HnswVectorsFormat} format implementation.
      * The number of candidate neighbors to track while searching the graph for each newly inserted
      * node. Defaults to to {@link Lucene90HnswVectorsFormat#DEFAULT_BEAM_WIDTH}. See {@link
      * HnswGraph} for details.
      */
-    int hnswBeamWidth;
+    private int hnswBeamWidth;
+
+    public DenseVectorField() {
+        super();
+    }
+    
+    public DenseVectorField(int dimension) {
+        super();
+        this.dimension = dimension;
+        this.similarityFunction = DEFAULT_SIMILARITY;
+    }
+    
+    public DenseVectorField(int dimension, VectorSimilarityFunction similarityFunction) {
+        super();
+        this.dimension = dimension;
+        this.similarityFunction = similarityFunction;
+    }
 
     @Override
     public void init(IndexSchema schema, Map<String, String> args) {
@@ -115,6 +131,10 @@ public class DenseVectorField extends FloatPointField {
 
     public int getDimension() {
         return dimension;
+    }
+
+    public VectorSimilarityFunction getSimilarityFunction() {
+        return similarityFunction;
     }
 
     public String getCodecFormat() {

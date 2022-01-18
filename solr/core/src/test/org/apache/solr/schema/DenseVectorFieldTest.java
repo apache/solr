@@ -72,8 +72,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             assertNotNull(vector);
 
             DenseVectorField type = (DenseVectorField) vector.getType();
-            MatcherAssert.assertThat(type.similarityFunction, is(VectorSimilarityFunction.EUCLIDEAN));
-            MatcherAssert.assertThat(type.dimension, is(4));
+            MatcherAssert.assertThat(type.getSimilarityFunction(), is(VectorSimilarityFunction.EUCLIDEAN));
+            MatcherAssert.assertThat(type.getDimension(), is(4));
 
             assertTrue(vector.indexed());
             assertTrue(vector.stored());
@@ -92,8 +92,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             assertNotNull(vector);
 
             DenseVectorField type = (DenseVectorField) vector.getType();
-            MatcherAssert.assertThat(type.similarityFunction, is(VectorSimilarityFunction.COSINE));
-            MatcherAssert.assertThat(type.dimension, is(4));
+            MatcherAssert.assertThat(type.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+            MatcherAssert.assertThat(type.getDimension(), is(4));
 
             assertTrue(vector.indexed());
             assertTrue(vector.stored());
@@ -112,31 +112,31 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
             assertNotNull(vector);
 
             DenseVectorField type1 = (DenseVectorField) vector.getType();
-            MatcherAssert.assertThat(type1.similarityFunction, is(VectorSimilarityFunction.COSINE));
-            MatcherAssert.assertThat(type1.dimension, is(4));
-            MatcherAssert.assertThat(type1.codecFormat, is("Lucene90HnswVectorsFormat"));
-            MatcherAssert.assertThat(type1.hnswMaxConn, is(10));
-            MatcherAssert.assertThat(type1.hnswBeamWidth, is(40));
+            MatcherAssert.assertThat(type1.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+            MatcherAssert.assertThat(type1.getDimension(), is(4));
+            MatcherAssert.assertThat(type1.getCodecFormat(), is("Lucene90HnswVectorsFormat"));
+            MatcherAssert.assertThat(type1.getHnswMaxConn(), is(10));
+            MatcherAssert.assertThat(type1.getHnswBeamWidth(), is(40));
 
             SchemaField vector2 = schema.getField("vector2");
             assertNotNull(vector2);
 
             DenseVectorField type2 = (DenseVectorField) vector2.getType();
-            MatcherAssert.assertThat(type2.similarityFunction, is(VectorSimilarityFunction.COSINE));
-            MatcherAssert.assertThat(type2.dimension, is(4));
-            MatcherAssert.assertThat(type2.codecFormat, is("Lucene90HnswVectorsFormat"));
-            MatcherAssert.assertThat(type2.hnswMaxConn, is(6));
-            MatcherAssert.assertThat(type2.hnswBeamWidth, is(60));
+            MatcherAssert.assertThat(type2.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+            MatcherAssert.assertThat(type2.getDimension(), is(4));
+            MatcherAssert.assertThat(type2.getCodecFormat(), is("Lucene90HnswVectorsFormat"));
+            MatcherAssert.assertThat(type2.getHnswMaxConn(), is(6));
+            MatcherAssert.assertThat(type2.getHnswBeamWidth(), is(60));
 
             SchemaField vectorDefault = schema.getField("vector_default");
             assertNotNull(vectorDefault);
 
             DenseVectorField typeDefault = (DenseVectorField) vectorDefault.getType();
-            MatcherAssert.assertThat(typeDefault.similarityFunction, is(VectorSimilarityFunction.COSINE));
-            MatcherAssert.assertThat(typeDefault.dimension, is(4));
-            assertNull(typeDefault.codecFormat);
-            MatcherAssert.assertThat(typeDefault.hnswMaxConn, is(16));
-            MatcherAssert.assertThat(typeDefault.hnswBeamWidth, is(100));
+            MatcherAssert.assertThat(typeDefault.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+            MatcherAssert.assertThat(typeDefault.getDimension(), is(4));
+            assertNull(typeDefault.getCodecFormat());
+            MatcherAssert.assertThat(typeDefault.getHnswMaxConn(), is(16));
+            MatcherAssert.assertThat(typeDefault.getHnswBeamWidth(), is(100));
         } finally {
             deleteCore();
         }
@@ -159,7 +159,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
     @Test
     public void parseVector_incorrectVectorDimension_shouldThrowException() {
-        toTest.dimension = 3;
+        toTest = new DenseVectorField(3);
 
         RuntimeException thrown = Assert.assertThrows("Incorrect vector dimension should throw an exception", SolrException.class, () -> {
             toTest.parseVector(Arrays.asList(1.0f, 1.5f));
@@ -169,7 +169,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
     @Test
     public void parseVector_incorrectElement_shouldThrowException() {
-        toTest.dimension = 3;
+        toTest = new DenseVectorField(3);
 
         RuntimeException thrown = Assert.assertThrows("Incorrect elements should throw an exception", SolrException.class, () -> {
             toTest.parseVector(Arrays.asList("1.0f", "string", "string2"));
@@ -183,7 +183,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
      */
     @Test
     public void parseVector_StringArrayList_shouldParseFloatArray() {
-        toTest.dimension = 3;
+        toTest = new DenseVectorField(3);
         float[] expected = new float[]{1.1f, 2.2f, 3.3f};
 
         MatcherAssert.assertThat(toTest.parseVector(Arrays.asList("1.1", "2.2", "3.3")), is(expected));
@@ -195,7 +195,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
      */
     @Test
     public void parseVector_DoubleArrayList_shouldParseFloatArray() {
-        toTest.dimension = 3;
+        toTest = new DenseVectorField(3);
         float[] expected = new float[]{1.7f, 5.4f, 6.6f};
 
         MatcherAssert.assertThat(toTest.parseVector(Arrays.asList(1.7d, 5.4d, 6.6d)), is(expected));
@@ -207,7 +207,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
      */
     @Test
     public void parseVector_FloatArrayList_shouldParseFloatArray() {
-        toTest.dimension = 3;
+        toTest = new DenseVectorField(3);
         float[] expected = new float[]{5.5f, 7.7f, 9.8f};
 
         MatcherAssert.assertThat(toTest.parseVector(Arrays.asList(5.5f, 7.7f, 9.8f)), is(expected));
