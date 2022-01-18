@@ -246,8 +246,8 @@ public class DenseVectorField extends FloatPointField {
                 "Function queries are not supported for Dense Vector fields.");
     }
 
-    public Query getKnnVectorQuery(SchemaField field, float[] vectorToSearch, int topK) {
-        return new KnnVectorQuery(field.getName(), vectorToSearch, topK);
+    public Query getKnnVectorQuery(String fieldName, float[] vectorToSearch, int topK) {
+        return new KnnVectorQuery(fieldName, vectorToSearch, topK);
     }
 
     /**

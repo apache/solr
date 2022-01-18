@@ -66,7 +66,7 @@ public class KnnQParser extends QParser {
 
         DenseVectorField denseVectorType = (DenseVectorField) fieldType;
         float[] parsedVectorToSearch = parseVector(vectorToSearch, denseVectorType.getDimension());
-        return denseVectorType.getKnnVectorQuery(schemaField, parsedVectorToSearch, topK);
+        return denseVectorType.getKnnVectorQuery(schemaField.getName(), parsedVectorToSearch, topK);
     }
 
     /**

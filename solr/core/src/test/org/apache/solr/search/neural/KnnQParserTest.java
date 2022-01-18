@@ -181,7 +181,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     @Test
     public void missingVectorToSearch_shouldThrowException() {
         assertQEx("missing vector to search should throw Exception",
-                "the Dense Vector to search is missing",
+                "the Dense Vector value 'v' to search is missing",
                 req(CommonParams.Q, "{!knn f=vector topK=10}", "fl", "id"),
                 SolrException.ErrorCode.BAD_REQUEST);
     }
