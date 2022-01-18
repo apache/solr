@@ -63,7 +63,9 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 
 /** @see TestCloudPseudoReturnFields */
 @RandomizeSSL(clientAuth=0.0,reason="client auth uses too much RAM")
@@ -570,7 +572,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   private static SolrDocumentList getDocsFromXmlResponse(final boolean expectList, final String rsp) {
-    return getDocsFromRTGResponse(expectList, new QueryResponse(new XMLResponseParser().processResponse(new StringReader(rsp)), null));
+    return getDocsFromRTGResponse(expectList, new QueryResponse(new RawCapableXMLResponseParser().processResponse(new StringReader(rsp)), null));
   }
 
   /**
@@ -776,7 +778,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         }
       } else if ("xml".equals(wt) && "xml".equals(type)) {
         try {
-          Object parsedExpected = XMLResponseParser.convertRawContent((String) expected.getFieldValue(expectedFieldName));
+          Object parsedExpected = RawCapableXMLResponseParser.convertRawContent((String) expected.getFieldValue(expectedFieldName));
           expected = expected.deepCopy(); // need to copy before modifying expected!
           expected.setField(expectedFieldName, parsedExpected);
         } catch (XMLStreamException ex) {
@@ -793,7 +795,52 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       return type;
     }
   }
- 
+
+  /**
+   * Local extension of XMLResponseParser that is capable of handling "raw" xml field values, for the
+   * purpose of validation and consistency between expected vs. actual.
+   */
+  private static class RawCapableXMLResponseParser extends XMLResponseParser {
+
+    private static String convertRawContent(String raw) throws XMLStreamException {
+      return XMLResponseParser.convertRawContent(raw, (parser) -> {
+        try {
+          return consumeRawContent0(parser);
+        } catch (XMLStreamException ex) {
+          // only called in the context of this test, so the extra exception wrapping is totally fine
+          throw new RuntimeException(ex);
+        }
+      });
+    }
+
+    protected String consumeRawContent(XMLStreamReader parser) throws XMLStreamException {
+      return consumeRawContent0(parser);
+    }
+
+    private static String consumeRawContent0(XMLStreamReader parser) throws XMLStreamException {
+      int depth = 0;
+      StringBuilder sb = new StringBuilder();
+      for (;;) {
+        int elementType = parser.next();
+        switch (elementType) {
+          case XMLStreamConstants.START_ELEMENT:
+            depth++;
+            sb.append("START:").append(parser.getLocalName()).append(';');
+            break;
+          case XMLStreamConstants.END_ELEMENT:
+            if (--depth < 0) {
+              // exiting raw element
+              return sb.toString();
+            }
+            sb.append("END:").append(parser.getLocalName()).append(';');
+            break;
+          case XMLStreamConstants.CHARACTERS:
+            sb.append(parser.getText());
+            break;
+        }
+      }
+    }
+  }
 
   /** 
    * enforces that a valid <code>[docid]</code> is present in the response, possibly using a 

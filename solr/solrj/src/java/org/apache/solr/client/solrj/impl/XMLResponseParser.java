@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.EmptyEntityResolver;
@@ -464,7 +465,6 @@ public class XMLResponseParser extends ResponseParser
           depth--;
         } else if( type == KnownType.RAW ) {
           // e.g., from the raw [xml] doc transformer.
-          // for now, don't bother to parse this properly, just close enough for validation in tests
           String raw = consumeRawContent(parser);
           doc.addField(name, raw);
           depth--;
@@ -495,40 +495,28 @@ public class XMLResponseParser extends ResponseParser
   }
 
   /**
-   * Converts raw String input (should valid xml when wrapped in a root element) and converts it to the
-   * a format compatible with how {@link XMLResponseParser} parses from raw xml fields. This method should
-   * mainly be used for test validation.
+   * This is a stub method for handling/validating "raw" xml field values in the context of tests. Before this
+   * stub method was present, "raw" content would have still thrown an exception, albeit a different, more inscrutable
+   * exception.
    */
-  public static String convertRawContent(String raw) throws XMLStreamException {
-    XMLStreamReader parser = factory.createXMLStreamReader(new StringReader("<raw>" + raw + "</raw>"));
-    while (parser.next() != XMLStreamConstants.START_ELEMENT) {
-      // consume any early stuff
-    }
-    return consumeRawContent(parser);
+  protected String consumeRawContent(XMLStreamReader parser) throws XMLStreamException {
+    throw new UnsupportedOperationException(XMLResponseParser.class + " is not capable of consuming field values serialized as raw XML");
   }
 
-  private static String consumeRawContent(XMLStreamReader parser) throws XMLStreamException {
-    int depth = 0;
-    StringBuilder sb = new StringBuilder();
-    for (;;) {
-      int elementType = parser.next();
-      switch (elementType) {
-        case XMLStreamConstants.START_ELEMENT:
-          depth++;
-          sb.append("START:").append(parser.getLocalName()).append(';');
-          break;
-        case XMLStreamConstants.END_ELEMENT:
-          if (--depth < 0) {
-            // exiting raw element
-            return sb.toString();
-          }
-          sb.append("END:").append(parser.getLocalName()).append(';');
-          break;
-        case XMLStreamConstants.CHARACTERS:
-          sb.append(parser.getText());
-          break;
-      }
+  /**
+   * Convenience method that converts raw String input (should be valid xml when wrapped in a root element) and
+   * converts it to a format compatible with how {@link XMLResponseParser} parses from raw xml fields.
+   * This method is intended for test validation.
+   *
+   * The main reason this method exists is to provide a consistent way of configuring and creating and invoking
+   * the sub-parser
+   */
+  protected static String convertRawContent(String raw, Function<XMLStreamReader, String> consumeRawContent) throws XMLStreamException {
+    XMLStreamReader subParser = factory.createXMLStreamReader(new StringReader("<raw>" + raw + "</raw>"));
+    while (subParser.next() != XMLStreamConstants.START_ELEMENT) {
+      // consume any early stuff
     }
+    return consumeRawContent.apply(subParser);
   }
 
 }
