@@ -253,7 +253,8 @@ public class DocumentBuilder {
     return true;
   }
 
-  private static boolean addCopyFields(Object originalFieldValue, FieldType originalFieldType, List<CopyField> copyFields, boolean forInPlaceUpdate, String uniqueKeyFieldName, Document out, Set<String> usedFields) {
+  private static boolean addCopyFields(Object originalFieldValue, FieldType originalFieldType, List<CopyField> copyFields, boolean forInPlaceUpdate,
+                                       String uniqueKeyFieldName, Document out, Set<String> usedFields) {
     boolean used = false;
     for (CopyField cf : copyFields) {
       SchemaField destinationField = cf.getDestination();
