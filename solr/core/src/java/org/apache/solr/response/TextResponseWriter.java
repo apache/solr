@@ -61,7 +61,12 @@ public abstract class TextResponseWriter implements TextWriter {
 
   protected Calendar cal;  // reusable calendar instance
 
-  private static final ReturnFields DUMMY_RETURN_FIELDS = new SolrReturnFields();
+  /**
+   * NOTE: {@link #NO_RAW_FIELDS} is a signal object that must be used to differentiate from <code>null</code>
+   * in strict object equality checks against {@link #rawReturnFields}, in order to determine the appropriate
+   * context in which to write raw field values.
+   */
+  private static final ReturnFields NO_RAW_FIELDS = new SolrReturnFields();
   private final TextResponseWriter rawShim;
   private final Set<String> rawFields;
   private final ReturnFields rawReturnFields;
@@ -82,7 +87,7 @@ public abstract class TextResponseWriter implements TextWriter {
     if (rawFields == null) {
       this.rawFields = null;
       this.rawShim = null;
-      this.rawReturnFields = DUMMY_RETURN_FIELDS;
+      this.rawReturnFields = NO_RAW_FIELDS;
     } else {
       assert !rawFields.isEmpty();
       this.rawFields = rawFields.size() == 1 ? Collections.singleton(rawFields.iterator().next()) : new HashSet<>(rawFields);
@@ -103,7 +108,10 @@ public abstract class TextResponseWriter implements TextWriter {
     this.rawReturnFields = null;
   }
 
-  protected boolean shouldWriteRaw(String fname, ReturnFields returnFields) {
+  /**
+   * NOTE: strict object equality check against {@link #rawReturnFields}; see javadocs for {@link #NO_RAW_FIELDS}
+   */
+  protected final boolean shouldWriteRaw(String fname, ReturnFields returnFields) {
     return rawReturnFields == returnFields && rawFields.contains(fname);
   }
 

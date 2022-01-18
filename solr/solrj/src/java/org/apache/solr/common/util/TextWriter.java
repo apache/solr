@@ -109,6 +109,10 @@ public interface TextWriter extends PushWriter {
     }
   }
 
+  /**
+   * Writes the specified val directly to the backing writer, without wrapping (e.g., in quotes) or escaping
+   * of any kind.
+   */
   default void writeStrRaw(String name, String val) throws IOException {
     throw new UnsupportedOperationException();
   }

@@ -106,10 +106,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       new SimpleFieldValueValidator("ccc_s"),
       new RenameFieldValueValidator("ddd_s", "my_str_field_alias"),
 
-       new RawFieldValueValidator("json", "eee_s", "my_json_field_alias"),
-       new RawFieldValueValidator("json", "fff_s"),
-       new RawFieldValueValidator("xml", "ggg_s", "my_xml_field_alias"),
-       new RawFieldValueValidator("xml", "hhh_s"),
+      new RawFieldValueValidator("json", "eee_s", "my_json_field_alias"),
+      new RawFieldValueValidator("json", "fff_s"),
+      new RawFieldValueValidator("xml", "ggg_s", "my_xml_field_alias"),
+      new RawFieldValueValidator("xml", "hhh_s"),
 
       new NotIncludedValidator("bogus_unused_field_ss"),
       new NotIncludedValidator("bogus_alias","bogus_alias:other_bogus_field_i"),

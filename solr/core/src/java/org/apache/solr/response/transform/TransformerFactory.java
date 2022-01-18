@@ -41,7 +41,42 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin
 
   public abstract DocTransformer create(String field, SolrParams params, SolrQueryRequest req);
 
+  /**
+   * The {@link FieldRenamer} interface should be implemented by any {@link TransformerFactory} capable of generating
+   * transformers that might rename fields, and should implement {@link #create(String, SolrParams, SolrQueryRequest, Map, Set)}
+   * in place of {@link #create(String, SolrParams, SolrQueryRequest)} (with the latter method
+   * overridden to throw {@link UnsupportedOperationException}).
+   *
+   * {@link DocTransformer}s returned via {@link #create(String, SolrParams, SolrQueryRequest, Map, Set)}
+   * will be added in a second pass, allowing simplified logic in {@link TransformerFactory#create(String, SolrParams, SolrQueryRequest)}
+   * for non-renaming factories.
+   *
+   * {@link #create(String, SolrParams, SolrQueryRequest, Map, Set)} must implement extra logic to be aware of
+   * preceding field renames, and to make subsequent {@link FieldRenamer} transformers aware of its own field renames.
+   *
+   * It is harmless for a {@link DocTransformer} that does _not_ in practice rename fields to be returned from a
+   * factory that implements this interface (e.g., for conditional renames?); but doing so opens the possibility of
+   * {@link #create(String, SolrParams, SolrQueryRequest, Map, Set)} being called _after_ fields have been renamed,
+   * so such implementations must still check whether the field with which they are concerned has been renamed ...
+   * and if it _has_, must copy the field back to its original name. This situation also demonstrates the
+   * motivation for separating the creation of {@link DocTransformer}s into two phases: an initial phase involving
+   * no field renames, and a subsequent phase that implement extra logic to properly handle field renames.
+   */
   public interface FieldRenamer {
+    /**
+     *
+     * @param field The destination field
+     * @param params Local params associated with this transformer (e.g., source field)
+     * @param req The current request
+     * @param renamedFields Maps source=&gt;dest renamed fields. Implementations should check this first, updating
+     *                      their own "source" field(s) as necessary, and if renaming (not copying) fields, should
+     *                      also update this map with the implementations "own" introduced source=&gt;dest field
+     *                      mapping
+     * @param reqFieldNames Set of explicitly requested field names; implementations should consult this set to
+     *                      determine whether it's appropriate to rename (vs. copy) a field (e.g.: <code>boolean
+     *                      copy = reqFieldNames != null &amp;&amp; reqFieldNames.contains(sourceField)</code>)
+     * @return A transformer to be used in processing field values in returned documents.
+     */
     DocTransformer create(String field, SolrParams params, SolrQueryRequest req, Map<String, String> renamedFields, Set<String> reqFieldNames);
   }
 

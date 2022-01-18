@@ -160,6 +160,10 @@ public class SolrReturnFields extends ReturnFields {
   }
 
 
+  /**
+   * Parsing is done in two passes (see javadocs for {@link org.apache.solr.response.transform.TransformerFactory.FieldRenamer}
+   * for an explanation of the logic behind deferring creation of "rename field" transformers).
+   */
   private void parseFieldList(String[] fl, SolrQueryRequest req) {
     _wantsScore = false;
     _wantsAllFields = false;

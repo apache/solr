@@ -56,7 +56,7 @@ public class DocTransformers extends DocTransformer
     for (DocTransformer t : children) {
       t.getRawFields(fields);
     }
-    return fields.isEmpty() ? null : fields;
+    return fields.isEmpty() ? addToExisting : fields;
   }
 
   public void addTransformer( DocTransformer a ) {

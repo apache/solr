@@ -24,6 +24,10 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
+/**
+ * Utility class that delegates to another {@link TextResponseWriter}, but converts normal write requests
+ * into "raw" requests that write field values directly to the delegate {@link TextResponseWriter}'s backing writer.
+ */
 public class RawShimTextResponseWriter extends TextResponseWriter {
 
   private final TextResponseWriter backing;
@@ -33,7 +37,7 @@ public class RawShimTextResponseWriter extends TextResponseWriter {
     this.backing = backing;
   }
 
-  // convert non-raw to raw. These are the reason this class exists
+  // convert non-raw to raw. These are the reason this class exists (see class javadocs)
   @Override
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     backing.writeStrRaw(name, val);
