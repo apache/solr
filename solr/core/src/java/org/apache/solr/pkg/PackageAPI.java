@@ -60,7 +60,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.PACKAGE_READ_
  *
  */
 public class PackageAPI {
-  public final boolean enablePackages = Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ERR_MSG = "Package loading is not enabled , Start your nodes with -Denable.packages=true";
@@ -73,7 +72,7 @@ public class PackageAPI {
   public final Edit editAPI = new Edit();
   public final Read readAPI = new Read();
 
-  public PackageAPI(CoreContainer coreContainer, PackageLoader loader, boolean isLocal) {
+  public PackageAPI(CoreContainer coreContainer, PackageLoader loader) {
     if (coreContainer.getPackageStoreAPI() == null) {
       throw new IllegalStateException("Must successfully load PackageStoreAPI first");
     }
@@ -81,10 +80,7 @@ public class PackageAPI {
     this.coreContainer = coreContainer;
     this.packageLoader = loader;
     pkgs = new Packages();
-    if(isLocal) {
-      pkgs = loader.localPackages;
-      return;
-    }
+    if(!loader.enablePackages) return;
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
     try {
       pkgs = readPkgsFromZk(null, null);
@@ -364,11 +360,11 @@ public class PackageAPI {
   }
 
   public boolean isEnabled() {
-    return enablePackages;
+    return packageLoader.enablePackages;
   }
 
   private boolean checkEnabled(CommandOperation payload) {
-    if (!enablePackages) {
+    if (!packageLoader.enablePackages) {
       payload.addError(ERR_MSG);
       return false;
     }

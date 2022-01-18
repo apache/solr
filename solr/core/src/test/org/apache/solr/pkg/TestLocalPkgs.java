@@ -22,7 +22,6 @@ public class TestLocalPkgs extends SolrCloudTestCase {
   public void testLocalPackages() throws Exception {
     String jarName = "mypkg1.jar";
     String PKG_NAME = "mypkg";
-    String PKG_DIR_NAME = "localpkgs";
     String COLLECTION_NAME = "testLocalPkgsColl";
 
     PackageAPI.Packages p = new PackageAPI.Packages();
@@ -31,15 +30,17 @@ public class TestLocalPkgs extends SolrCloudTestCase {
     pkgVersion.version = "0.1";
     pkgVersion.pkg = PKG_NAME;
     p.packages.put(PKG_NAME, Collections.singletonList(pkgVersion));
-    log.info("packages.json : "+ Utils.toJSONString(p));
-    System.setProperty(PackageLoader.PKGS_DIR, PKG_DIR_NAME);
+    log.info("local_packages.json : "+ Utils.toJSONString(p));
+    System.setProperty(PackageLoader.LOCAL_PKGS_PROP, PKG_NAME);
     MiniSolrCloudCluster cluster =
             configureCluster(4)
                     .withJettyConfig(builder -> builder.enableV2(true))
                     .withJettyConfig(it -> it.withPreStartupHook(jsr -> {
                       try {
-                        File pkgDir = new File(jsr.getSolrHome() + File.separator + PKG_DIR_NAME);
-                        pkgDir.mkdir();
+                        File pkgDir = new File(jsr.getSolrHome() + File.separator + PackageLoader.PKGS_DIR);
+                        if(!pkgDir.exists()) {
+                          pkgDir.mkdir();
+                        }
                         try (FileInputStream fis = new FileInputStream(getFile("runtimecode/runtimelibs.jar.bin"))) {
                           byte[] buf = new byte[fis.available()];
 
@@ -50,7 +51,7 @@ public class TestLocalPkgs extends SolrCloudTestCase {
 
                         }
 
-                        try( FileOutputStream fos = new FileOutputStream( new File(pkgDir, "packages.json") )) {
+                        try( FileOutputStream fos = new FileOutputStream( new File(pkgDir, PackageLoader.PKGS_JSON) )) {
                           fos.write(Utils.toJSON(p));
                         }
                       } catch (Exception e) {
@@ -60,17 +61,13 @@ public class TestLocalPkgs extends SolrCloudTestCase {
                     }))
                     .addConfig("conf", configset("conf2"))
                     .configure();
-
+    System.clearProperty(PackageLoader.LOCAL_PKGS_PROP);
     try {
-
-
       for (JettySolrRunner jsr : cluster.getJettySolrRunners()) {
-        List<String> packageFiles = Arrays.asList(new File(jsr.getSolrHome() + File.separator + "localpkgs").list());
-       assertTrue(packageFiles.contains("packages.json"));
+        List<String> packageFiles = Arrays.asList(new File(jsr.getSolrHome() + File.separator + PackageLoader.PKGS_DIR).list());
+       assertTrue(packageFiles.contains(PackageLoader.PKGS_JSON));
        assertTrue(packageFiles.contains(jarName));
       }
-
-
       CollectionAdminRequest
           .createCollection(COLLECTION_NAME, "conf", 2, 2)
           .process(cluster.getSolrClient());

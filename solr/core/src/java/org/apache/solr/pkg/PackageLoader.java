@@ -41,6 +41,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -55,11 +56,14 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 public class PackageLoader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String LATEST = "$LATEST";
-  public static final String PKGS_DIR = "solr.packages.dir";
-
+  public static final String PKGS_DIR = "localpkgs";
+  public static final String LOCAL_PKGS_PROP = "local.packages";
+  public static final String PKGS_JSON = "local_packages.json";
+  public final boolean enablePackages = Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
 
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
+  private final Map<String, Package> localPackageClassLoaders = new HashMap<>();
   public  PackageAPI.Packages localPackages;
 
   private PackageAPI.Packages myCopy =  new PackageAPI.Packages();
@@ -76,48 +80,39 @@ public class PackageLoader implements Closeable {
   public PackageLoader(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
 
-    String packagesDir = System.getProperty(PKGS_DIR);
-    if(packagesDir != null) {
-      loadLocalPackages(packagesDir);
-      packageAPI = new PackageAPI(coreContainer, this, true);
+    List<String> enabledPackages = StrUtils.splitSmart(System.getProperty(LOCAL_PKGS_PROP,""), ',');
+    packageAPI = new PackageAPI(coreContainer, this);
 
-    } else {
-      packageAPI = new PackageAPI(coreContainer, this, false);
-      refreshPackageConf();
+    if(!enabledPackages .isEmpty()) {
+      loadLocalPackages(enabledPackages);
     }
-
+    if(enablePackages) refreshPackageConf();
   }
 
-  private void loadLocalPackages(String packagesDir) {
-
-    final Path packagesPath;
-    if (packagesDir.charAt(0) == File.pathSeparatorChar) {
-      packagesPath = new File(packagesDir).toPath();
-      //this is an absolute path
-    } else {
-      packagesPath = new File(coreContainer.getSolrHome() + File.separator + packagesDir).toPath();
-    }
+  private void loadLocalPackages(List<String> enabledPackages) {
+    final Path packagesPath = new File(coreContainer.getSolrHome() + File.separator + PKGS_DIR).toPath();
     log.info("packages to be loaded from local FS : {}", packagesPath);
 
     if (!packagesPath.toFile().exists()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "no such directory :" + packagesPath);
     }
-    if (!packagesPath.resolve("packages.json").toFile().exists()) {
+    if (!packagesPath.resolve(PKGS_JSON).toFile().exists()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "no file packages.json exists in :" + packagesPath);
     }
 
     try {
-      try (InputStream in = new FileInputStream(new File(packagesPath.toFile() , "packages.json"))) {
+      try (InputStream in = new FileInputStream(new File(packagesPath.toFile() , PKGS_JSON))) {
         localPackages = PackageAPI.mapper.readValue(in, PackageAPI.Packages.class);
       }
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading packages.json", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading local_packages.json", e);
     }
 
     for (Map.Entry<String, List<PackageAPI.PkgVersion>> e : localPackages.packages.entrySet()) {
+      if(!enabledPackages.contains(e.getKey())) continue;
       Package p = new Package(e.getKey());
       p.updateVersions(e.getValue(), packagesPath);
-      packageClassLoaders.put(e.getKey(), p);
+      localPackageClassLoaders.put(e.getKey(), p);
     }
   }
 
@@ -126,7 +121,8 @@ public class PackageLoader implements Closeable {
   }
 
   public Package getPackage(String key) {
-    return packageClassLoaders.get(key);
+    Package result = packageClassLoaders.get(key);
+    return result == null ? localPackageClassLoaders.get(key) : result;
   }
 
   public Map<String, Package> getPackages() {
