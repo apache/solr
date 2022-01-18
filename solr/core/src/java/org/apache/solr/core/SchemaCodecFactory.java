@@ -123,7 +123,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
       public KnnVectorsFormat getKnnVectorsFormatForField(String field) {
         final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
         FieldType fieldType = (schemaField == null ? null : schemaField.getType());
-        if (fieldType != null && fieldType instanceof DenseVectorField) {
+        if (fieldType instanceof DenseVectorField) {
           DenseVectorField vectorType = (DenseVectorField) fieldType;
           String knnVectorFormatName = vectorType.getCodecFormat();
           if (knnVectorFormatName != null) {
