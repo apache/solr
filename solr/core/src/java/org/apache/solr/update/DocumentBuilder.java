@@ -158,7 +158,7 @@ public class DocumentBuilder {
       if( copyFields.isEmpty() ) copyFields = null;
 
       // Make sure it has the correct number
-      if( sfield!=null && !(sfield.getType() instanceof DenseVectorField) && !sfield.multiValued() && field.getValueCount() > 1 ) {
+      if( sfield!=null && !sfield.multiValued() && field.getValueCount() > 1 && !(sfield.getType() instanceof DenseVectorField) ) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
                 "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued field " +
                         sfield.getName() + ": " +field.getValue() );
