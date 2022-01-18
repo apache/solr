@@ -248,6 +248,8 @@ This is the list of Apache Solr query approaches designed to support Neural Sear
 === knn Query Parser
 The `knn` K-Nearest Neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.
 
+The score for a retrieved document is the approximate distance to the target vector(defined by the similarityFunction configured at indexing time).
+
 It takes the following parameters:
 
 `f`::
