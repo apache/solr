@@ -28,6 +28,30 @@ Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
 
+==================  9.1.0 ==================
+
+Docker and contrib modules have separate CHANGES.md files.
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.0.0 ==================
 
 Docker and contrib modules have separate CHANGES.md files.
