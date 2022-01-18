@@ -54,6 +54,8 @@
   <!-- Dense Vector Fields -->
   <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
   <fieldType name="knn_vector2" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="dot_product"/>
+  <fieldType name="knn_vector5" class="solr.DenseVectorField" vectorDimension="5" similarityFunction="dot_product"/>
+
 
 
   <!-- Field type demonstrating an Analyzer failure -->
@@ -707,6 +709,8 @@
   <field name="vector" type="knn_vector" indexed="true" stored="true"/>
   <field name="vector2" type="knn_vector2" indexed="true" stored="true"/>
   <field name="vector3" type="knn_vector" indexed="true" stored="true"/>
+  <field name="vector4" type="knn_vector" indexed="true" stored="true"/>
+  <field name="vector5" type="knn_vector5" indexed="true" stored="true"/>
   
   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
        will be used if the name matches any of the patterns.
@@ -915,6 +919,7 @@
   <copyField source="title" dest="max_chars" maxChars="10"/>
   <copyField source="vector" dest="vector2"/>
   <copyField source="vector3" dest="vector_f_p"/>
+  <copyField source="vector4" dest="vector5"/>
 
   <!-- example of a custom similarity -->
   <similarity class="solr.CustomSimilarityFactory">

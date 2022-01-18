@@ -370,4 +370,19 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     MatcherAssert.assertThat(thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector3'='[1.1, 2.1, 3.1, 4.1]' msg=The copy field destination must be a DenseVectorField: vector_f_p"));
   }
 
+  @Test
+  public void denseVector_incorrectCopyFieldDestinationDimension_shouldThrowException() {
+    SolrCore core = h.getCore();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "0");
+    doc.addField("vector4", Arrays.asList(1.1f, 2.1f, 3.1f, 4.1f));
+
+    RuntimeException thrown = Assert.assertThrows("Incorrect destination dimension should raise exception", SolrException.class, () -> {
+      DocumentBuilder.toDocument(doc, core.getLatestSchema());
+    });
+    MatcherAssert.assertThat(thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]"));
+    MatcherAssert.assertThat(thrown.getCause().getCause().getMessage(), is("incorrect vector dimension. The vector value has size 4 while it is expected a vector with size 5"));
+  }
+
 }
