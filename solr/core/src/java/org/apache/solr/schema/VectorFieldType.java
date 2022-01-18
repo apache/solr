@@ -76,27 +76,21 @@ public class VectorFieldType extends FieldType {
     }
       
       float[] vector = null;
-      if(value instanceof SolrInputField){
+      if(value instanceof SolrInputField) {
           SolrInputField inValue = (SolrInputField) value;
           if(inValue.getValue() instanceof ArrayList) {
-          ArrayList<?> vList = (ArrayList<?>) inValue.getValue();
-            vector = new float[vList.size()];
-            for(int i=0; i<vList.size(); ++i) {
+            ArrayList<?> vList = (ArrayList<?>) inValue.getValue();
+            if(vList != null && vList.size() > 0) {
+              vector = new float[vList.size()];
+              for(int i=0; i<vList.size(); ++i) {
                 vector[i] = ((Double)vList.get(i)).floatValue();
-            }
-          }          
+              }
+            } 
+          }            
       }
       
-      if(vector == null)
-      {
-        throw new NullPointerException("Exception:- Vector is Null");
-      }
-      if(vector.length ==  0)
-      {
-        throw new IllegalArgumentException("Exception:- Vector Length is Zero.");
-      }
       
-      return new KnnVectorField(field.getName(),  vector, KnnVectorField.createFieldType(vector.length, VectorSimilarityFunction.DOT_PRODUCT));      
+      return new KnnVectorField(field.getName(), vector, KnnVectorField.createFieldType(vector.length, VectorSimilarityFunction.DOT_PRODUCT));      
   }
 
   /**
