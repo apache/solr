@@ -52,8 +52,8 @@
   <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
 
   <!-- Dense Vector Fields -->
-  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
-  <fieldType name="knn_vector2" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="dot_product"/>
+  <fieldType name="knn_vector_cosine" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
+  <fieldType name="knn_vector_dot_product" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="dot_product"/>
   <fieldType name="knn_vector5" class="solr.DenseVectorField" vectorDimension="5" similarityFunction="dot_product"/>
 
 
