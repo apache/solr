@@ -27,6 +27,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.DenseVectorField;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -121,8 +122,9 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
       @Override
       public KnnVectorsFormat getKnnVectorsFormatForField(String field) {
         final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
-        if (schemaField != null && schemaField.getType() instanceof DenseVectorField) {
-          DenseVectorField vectorType = (DenseVectorField) schemaField.getType();
+        FieldType fieldType = (schemaField == null ? null : schemaField.getType());
+        if (fieldType != null && fieldType instanceof DenseVectorField) {
+          DenseVectorField vectorType = (DenseVectorField) fieldType;
           String knnVectorFormatName = vectorType.getCodecFormat();
           if (knnVectorFormatName != null) {
             if (knnVectorFormatName.equals(Lucene90HnswVectorsFormat.class.getSimpleName())) {
