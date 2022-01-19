@@ -211,8 +211,6 @@ public class CoreContainerProvider implements ServletContextListener {
         StartupLoggingUtils.changeLogLevel(logLevel);
       }
 
-      StartupLoggingUtils.checkRequestLogging();
-
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
