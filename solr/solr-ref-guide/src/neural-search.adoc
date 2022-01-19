@@ -291,7 +291,7 @@ The `knn` query parser can be used to rerank first pass query results:
 
 [IMPORTANT]
 ====
-When using `knn` in reranking pay attention to the `topK` parameter.
+When using `knn` in re-ranking pay attention to the `topK` parameter.
 
 The second pass score(deriving from knn) is calculated only if the document `d` from the first pass is within
 the k-nearest neighbors(*in the whole index*) of the target vector to search.
