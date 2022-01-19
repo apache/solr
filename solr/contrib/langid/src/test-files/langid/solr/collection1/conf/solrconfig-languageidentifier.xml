@@ -19,7 +19,6 @@
 
 <config>
 
-  <jmx />
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
@@ -59,7 +58,7 @@
     <lst name="defaults">
       <str name="update.chain">lang_id_tika</str>
     </lst>
-  </requestHandler>  
+  </requestHandler>
 
   <updateRequestProcessorChain name="lang_id_tika">
     <processor class="org.apache.solr.update.processor.TikaLanguageIdentifierUpdateProcessorFactory">
@@ -77,7 +76,7 @@
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
-  
+
   <updateRequestProcessorChain name="lang_id_lang_detect">
     <processor class="org.apache.solr.update.processor.LangDetectLanguageIdentifierUpdateProcessorFactory">
       <!-- Can take defaults, invariants and appends just like req handlers-->

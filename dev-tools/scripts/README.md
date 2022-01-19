@@ -155,6 +155,25 @@ and prints a regular expression that will match all of them
       --json         Output as json
       --token TOKEN  Github access token in case you query too often anonymously
 
+### scaffoldNewModule.py
+
+Scaffold a new contrib module and include it into the build. It will set up the folders
+and all for you, so the only thing you need to do is add classes, tests and test-data.
+
+    usage: scaffoldNewModule.py [-h] name full_name description
+    
+    Scaffold new contrib module into solr/contrib/<name>
+    
+    positional arguments:
+        name         code-name/id, e.g. my-module
+        full_name    Readable name, e.g. "My Module"
+        description  Short description for docs
+    
+    optional arguments:
+     -h, --help   show this help message and exit
+
+    Example: ./addContrib.py foo "My Contrib" "Very Useful Contrib module here"
+
 ### gitignore-gen.sh
 
 TBD

@@ -21,7 +21,6 @@ import os
 from enum import Enum
 import time
 import urllib.request, urllib.error, urllib.parse
-import urllib.parse
 
 class Version(object):
   def __init__(self, major, minor, bugfix, prerelease):
