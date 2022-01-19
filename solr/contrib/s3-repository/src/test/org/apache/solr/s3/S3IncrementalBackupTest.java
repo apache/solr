@@ -18,6 +18,7 @@
 package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
@@ -27,9 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.regions.Region;
 
-@LuceneTestCase.SuppressCodecs({
-  "SimpleText"
-}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+// Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs({"SimpleText"})
+@ThreadLeakLingering(linger = 10)
 public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

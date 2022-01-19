@@ -346,12 +346,19 @@ limitations under the License.
         <input type="text" ng-model="val['spellcheck.accuracy']" name="spellcheck.accuracy" id="spellcheck_accuracy">
        </div>
       </fieldset>
-      <fieldset class="additional optional">
-        <label for="custom_parameters">
-          <a rel="help">Raw Query Parameters</a>
-        </label>
-        <input type="text" ng-model="rawParams" id="custom_parameters" value="" placeholder="key1=val1&amp;key2=val2">
-      </fieldset>
+      <label for="custom_parameters" title="Raw Query Parameters">
+        <a rel="help">Raw Query Parameters</a>
+      </label>
+      <div class="multiple" id="custom_parameters">
+        <div class="row clearfix" ng-repeat="param in rawParams">
+          <input type="text" ng-model="param.rawParam" name="rawParamQuery" title="Raw param query.">
+          <div class="buttons">
+            <a class="rem" ng-click="removeRawParam($index)"><span></span></a>
+            <a class="add" ng-click="addRawParam($index)"><span></span></a>
+          </div>
+        </div>
+      </div>
+
 
       <button type="submit" ng-click="doQuery()">Execute Query</button>
     </form>

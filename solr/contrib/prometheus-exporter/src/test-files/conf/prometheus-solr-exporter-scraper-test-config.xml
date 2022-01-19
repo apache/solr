@@ -33,7 +33,7 @@
             {
             name : "solr_ping",
             type : "GAUGE",
-            help : "See following URL: https://lucene.apache.org/solr/guide/ping.html",
+            help : "See following URL: https://solr.apache.org/guide/ping.html",
             label_names : [],
             label_values : [],
             value : $value
@@ -57,7 +57,7 @@
             {
             name : "solr_collections_live_nodes",
             type : "GAUGE",
-            help : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
+            help : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
             label_names : [],
             label_values : [],
             value : $value
@@ -79,7 +79,7 @@
             {
             name : "solr_collections_shard_leader",
             type : "GAUGE",
-            help : "See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus",
+            help : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
             label_names : ["collection", "shard", "replica", "core", "type"],
             label_values : [$collection, $shard, $replica, $core, $type],
             value : $value
@@ -94,8 +94,19 @@
         <lst name="query">
           <str name="path">/admin/metrics</str>
           <lst name="params">
-            <str name="group">all</str>
-            <str name="type">all</str>
+            <str name="expr">solr\.jetty:.*DefaultHandler.*</str>
+            <str name="expr">solr\.jvm:.*</str>
+            <str name="expr">solr\.node:.*</str>
+            <str name="expr">solr\.overseer:.*</str>
+            <str name="expr">solr\.core\..*:QUERY\..*</str>
+            <str name="expr">solr\.core\..*:ADMIN\..*</str>
+            <str name="expr">solr\.core\..*:CACHE\..*</str>
+            <str name="expr">solr\.core\..*:UPDATE\.updateHandler\..*</str>
+            <str name="expr">solr\.core\..*:CORE\.fs\..*</str>
+            <str name="expr">solr\.core\..*:HIGHLIGHTER\..*</str>
+            <str name="expr">solr\.core\..*:INDEX\..*</str>
+            <str name="expr">solr\.core\..*:REPLICATION\.replication\..*</str>
+            <str name="expr">solr\.core\..*:SEARCHER\.searcher\..*</str>
           </lst>
         </lst>
         <arr name="jsonQueries">
@@ -110,7 +121,7 @@
             {
             name : "solr_metrics_jvm_buffers",
             type : "GAUGE",
-            help : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+            help : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
             label_names : ["pool"],
             label_values : [$pool],
             value : $value

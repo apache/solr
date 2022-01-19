@@ -19,7 +19,6 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  <jmx />
   <indexConfig>
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
@@ -33,10 +32,10 @@
 
   <updateHandler class="solr.DirectUpdateHandler2">
 
-    <!-- autocommit pending docs if certain criteria are met 
-    <autoCommit> 
+    <!-- autocommit pending docs if certain criteria are met
+    <autoCommit>
       <maxDocs>10000</maxDocs>
-      <maxTime>3600000</maxTime> 
+      <maxTime>3600000</maxTime>
     </autoCommit>
     -->
 
@@ -198,11 +197,6 @@
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>
   </requestDispatcher>
-
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
-  </admin>
 
   <!-- test getting system property -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"

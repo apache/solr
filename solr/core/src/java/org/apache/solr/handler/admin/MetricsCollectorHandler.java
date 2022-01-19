@@ -40,6 +40,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.reporters.solr.SolrReporter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -135,6 +136,11 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
   @Override
   public String getDescription() {
     return "Handler for collecting and aggregating SolrCloud metric reports.";
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.METRICS_READ_PERM;
   }
 
   private static class MetricUpdateProcessor extends UpdateRequestProcessor {

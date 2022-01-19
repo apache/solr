@@ -20,6 +20,7 @@ package org.apache.solr.servlet;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.UnavailableException;
 import javax.servlet.WriteListener;
 import java.io.IOException;
 import java.util.HashSet;
@@ -34,7 +35,6 @@ import org.eclipse.jetty.server.Response;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-// commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
 public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
   private static final int NUM_SHARD = 3;
@@ -60,7 +60,7 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
     assertCoreChosen(NUM_SHARD * REPLICA_FACTOR, new TestRequest("/collection1/select"));
   }
 
-  private void assertCoreChosen(int numCores, TestRequest testRequest) {
+  private void assertCoreChosen(int numCores, TestRequest testRequest) throws UnavailableException {
     JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(0);
     Set<String> coreNames = new HashSet<>();
     SolrDispatchFilter dispatchFilter = jettySolrRunner.getSolrDispatchFilter();

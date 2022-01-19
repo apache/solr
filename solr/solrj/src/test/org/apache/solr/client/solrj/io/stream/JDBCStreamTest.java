@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -53,6 +54,7 @@ import org.junit.Test;
 
 @SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10960")
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@ThreadLeakLingering(linger = 0)
 public class JDBCStreamTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "jdbc";

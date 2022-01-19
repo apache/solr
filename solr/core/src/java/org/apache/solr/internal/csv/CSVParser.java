@@ -377,7 +377,7 @@ public class CSVParser {
         tkn.isReady = true;
         break;
       } else if (c == '\\' && strategy.getUnicodeEscapeInterpretation() && in.lookAhead() == 'u') {
-        // interpret unicode escaped chars (like \u0070 -> p)
+        // interpret unicode escaped chars (like "\\u0070" -> p)
         tkn.content.append((char) unicodeEscapeLexer(c));
       } else if (c == strategy.getEscape()) {
         tkn.content.append((char)readEscape(c));

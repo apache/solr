@@ -16,26 +16,9 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedList;
-import java.util.Locale;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentProducer;
 import org.apache.http.entity.EntityTemplate;
@@ -60,6 +43,22 @@ import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedList;
+import java.util.Locale;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ConcurrentUpdateSolrClient buffers all added documents and writes
@@ -98,29 +97,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   AtomicInteger emptyQueueLoops;
   
   /**
+   * Use builder to construct this class.
    * Uses the supplied HttpClient to send documents to the Solr server.
-   * 
-   * @deprecated use {@link ConcurrentUpdateSolrClient#ConcurrentUpdateSolrClient(Builder)} instead, as it is a more extension/subclassing-friendly alternative
    */
-  @Deprecated
-  protected ConcurrentUpdateSolrClient(String solrServerUrl,
-                                       HttpClient client, int queueSize, int threadCount,
-                                       ExecutorService es, boolean streamDeletes) {
-    this((streamDeletes) ?
-        new Builder(solrServerUrl)
-        .withHttpClient(client)
-        .withQueueSize(queueSize)
-        .withThreadCount(threadCount)
-        .withExecutorService(es)
-        .alwaysStreamDeletes() :
-          new Builder(solrServerUrl)
-          .withHttpClient(client)
-          .withQueueSize(queueSize)
-          .withThreadCount(threadCount)
-          .withExecutorService(es)
-          .neverStreamDeletes());
-  }
-  
   protected ConcurrentUpdateSolrClient(Builder builder) {
     this.internalHttpClient = (builder.httpClient == null);
     this.client = new HttpSolrClient.Builder(builder.baseSolrUrl)
@@ -777,25 +756,6 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
   
-  /**
-   * @deprecated since 7.0  Use {@link Builder} methods instead. 
-   */
-  @Deprecated
-  public void setConnectionTimeout(int timeout) {
-    this.connectionTimeout = timeout;
-  }
-
-  /**
-   * set soTimeout (read timeout) on the underlying HttpConnectionManager. This is desirable for queries, but probably
-   * not for indexing.
-   * 
-   * @deprecated since 7.0  Use {@link Builder} methods instead. 
-   */
-  @Deprecated
-  public void setSoTimeout(int timeout) {
-    this.soTimeout = timeout;
-  }
-
   public void shutdownNow() {
     if (closed) {
       return;

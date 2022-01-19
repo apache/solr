@@ -74,10 +74,6 @@ public class SolrCmdDistributor implements Closeable {
   private final CompletionService<Object> completionService;
   private final Set<Future<Object>> pending = new HashSet<>();
   
-  public static interface AbortCheck {
-    public boolean abortCheck();
-  }
-  
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     this.clients = new StreamingSolrClients(updateShardHandler);
     this.completionService = new ExecutorCompletionService<>(updateShardHandler.getUpdateExecutor());

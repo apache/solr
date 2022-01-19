@@ -29,25 +29,40 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.MockDirectoryFactory;
+import org.apache.solr.core.StandardDirectoryFactory;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class UpdateLogCloudTest extends SolrCloudTestCase {
 
+  private static Boolean expectVersionsAfterRestart = null;
   private static String COLLECTION;
   private static final int NUM_SHARDS = 1;
   private static final int NUM_REPLICAS = 4;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-
-    // decide collection name ...
-    COLLECTION = "collection"+(1+random().nextInt(100)) ;
+    // choose a directory factory
+    expectVersionsAfterRestart = random().nextBoolean();
+    System.setProperty("solr.directoryFactory",
+        (expectVersionsAfterRestart
+            ? StandardDirectoryFactory.class.getCanonicalName()
+                : MockDirectoryFactory.class.getCanonicalName()));
 
     // create and configure cluster
     configureCluster(NUM_SHARDS*NUM_REPLICAS /* nodeCount */)
     .addConfig("conf", configset("cloud-dynamic"))
     .configure();
+  }
+
+  @Before
+  public void beforeTest() throws Exception {
+
+    // decide collection name ...
+    COLLECTION = "collection"+(1+random().nextInt(100)) ;
 
     // create an empty collection
     CollectionAdminRequest
@@ -56,15 +71,37 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
   }
 
+  @After
+  public void afterTest() throws Exception {
+    CollectionAdminRequest
+    .deleteCollection(COLLECTION)
+    .process(cluster.getSolrClient());
+  }
+
   @Test
   public void test() throws Exception {
 
+    int specialIdx = 0;
+
     final List<SolrClient> solrClients = new ArrayList<>();
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+      if (!jettySolrRunner.getBaseUrl().toString().equals(
+          getCollectionState(COLLECTION).getLeader("shard1").getBaseUrl())) {
+        specialIdx = solrClients.size();
+      }
       solrClients.add(jettySolrRunner.newClient());
     }
 
-    cluster.getJettySolrRunner(0).stop();
+    new UpdateRequest()
+    .add(sdoc("id", "0", "a_t", "zero"))
+    .commit(cluster.getSolrClient(), COLLECTION);
+
+    for (SolrClient solrClient : solrClients) {
+      implTest(solrClient, 1);
+    }
+
+    cluster.getJettySolrRunner(specialIdx).stop();
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
 
     new UpdateRequest()
     .add(sdoc("id", "1", "a_t", "one"))
@@ -72,12 +109,12 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     .deleteByQuery("a_t:three")
     .commit(cluster.getSolrClient(), COLLECTION);
 
-    cluster.getJettySolrRunner(0).start();
+    cluster.getJettySolrRunner(specialIdx).start();
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
 
     int idx = 0;
     for (SolrClient solrClient : solrClients) {
-      implTest(solrClient, idx==0 ? 0 : 3);
+      implTest(solrClient, idx==specialIdx ? (expectVersionsAfterRestart ? 4 : 0) : 4);
       ++idx;
     }
 
@@ -93,7 +130,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
     final QueryRequest reqV = new QueryRequest(params("qt","/get", "getVersions","12345"));
     final NamedList<?> rspV = solrClient.request(reqV, COLLECTION);
     final List<Long> versions = (List<Long>)rspV.get("versions");
-    assertEquals(numExpected, versions.size());
+    assertEquals(versions.toString(), numExpected, versions.size());
     if (numExpected == 0) {
       return;
     }
@@ -110,7 +147,7 @@ public class UpdateLogCloudTest extends SolrCloudTestCase {
       final QueryRequest reqU = new QueryRequest(params("qt","/get", "getUpdates", minVersion + "..."+maxVersion, "skipDbq", Boolean.toString(skipDbq)));
       final NamedList<?> rspU = solrClient.request(reqU, COLLECTION);
       final List<?> updatesList = (List<?>)rspU.get("updates");
-      assertEquals(numExpected + (skipDbq ? 1 : 0), updatesList.size());
+      assertEquals(updatesList.toString(), numExpected, updatesList.size());
     }
 
   }

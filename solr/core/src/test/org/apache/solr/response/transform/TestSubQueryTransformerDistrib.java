@@ -20,9 +20,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -30,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -61,8 +59,8 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     
     differentUniqueId = random().nextBoolean();
-    
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+
+    final Path configDir = TEST_COLL1_CONF();
 
     String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;
@@ -160,11 +158,11 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
     try(final InputStream jsonResponse = node.openStream()){
       final ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
-      IOUtils.copy(jsonResponse, outBuffer);
+      jsonResponse.transferTo(outBuffer);
 
       final Object expected = ((SolrDocumentList) hits.get(0).getFieldValue("depts")).get(0).get("text_t");
       final String err = JSONTestUtil.match("/response/docs/[0]/depts/docs/[0]/text_t"
-          ,outBuffer.toString(Charset.forName("UTF-8").toString()),
+          ,outBuffer.toString(StandardCharsets.UTF_8),
           "\""+expected+"\"");
       assertNull(err,err);
     }

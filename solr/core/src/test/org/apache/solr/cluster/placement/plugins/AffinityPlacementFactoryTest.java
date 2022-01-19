@@ -862,26 +862,38 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     }
 
   }
+
+
   @Test @Slow
   public void testScalability() throws Exception {
+    // for non-nightly we scale a bit, but retain test speed - for nightly test speed can be 2+ minutes
+
+    int numShards = TEST_NIGHTLY ? 100 : 10;
+    int nrtReplicas = TEST_NIGHTLY ? 40 : 4;
+    int tlogReplicas = TEST_NIGHTLY ? 40 : 4;
+    int pullReplicas = TEST_NIGHTLY ? 20 : 2;
+
     log.info("==== numNodes ====");
-    runTestScalability(1000, 100, 40, 40, 20);
-    runTestScalability(2000, 100, 40, 40, 20);
-    runTestScalability(5000, 100, 40, 40, 20);
-    runTestScalability(10000, 100, 40, 40, 20);
-    runTestScalability(20000, 100, 40, 40, 20);
+    runTestScalability(1000, numShards, nrtReplicas, tlogReplicas, pullReplicas);
+    runTestScalability(2000, numShards, nrtReplicas, tlogReplicas, pullReplicas);
+    runTestScalability(5000, numShards, nrtReplicas, tlogReplicas, pullReplicas);
+    runTestScalability(10000, numShards, nrtReplicas, tlogReplicas, pullReplicas);
+    runTestScalability(20000, numShards, nrtReplicas, tlogReplicas, pullReplicas);
+
     log.info("==== numShards ====");
-    runTestScalability(5000, 100, 40, 40, 20);
-    runTestScalability(5000, 200, 40, 40, 20);
-    runTestScalability(5000, 500, 40, 40, 20);
-    runTestScalability(5000, 1000, 40, 40, 20);
-    runTestScalability(5000, 2000, 40, 40, 20);
+    int numNodes = TEST_NIGHTLY ? 5000 : 500;
+    runTestScalability(numNodes, 100, nrtReplicas, tlogReplicas, pullReplicas);
+    runTestScalability(numNodes, 200, nrtReplicas, tlogReplicas, pullReplicas);
+    runTestScalability(numNodes, 500, nrtReplicas, tlogReplicas, pullReplicas);
+    runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas);
+    runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas);
+
     log.info("==== numReplicas ====");
-    runTestScalability(5000, 100, 100, 0, 0);
-    runTestScalability(5000, 100, 200, 0, 0);
-    runTestScalability(5000, 100, 500, 0, 0);
-    runTestScalability(5000, 100, 1000, 0, 0);
-    runTestScalability(5000, 100, 2000, 0, 0);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 100 : 10, 0, 0);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 200 : 20, 0, 0);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 500 : 50, 0, 0);
+    runTestScalability(numNodes, numShards,  TEST_NIGHTLY ? 1000 : 30, 0, 0);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 2000 : 50, 0, 0);
   }
 
   private void runTestScalability(int numNodes, int numShards, int nrtReplicas, int tlogReplicas, int pullReplicas) throws Exception {

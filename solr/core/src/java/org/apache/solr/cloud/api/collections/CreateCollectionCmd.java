@@ -196,8 +196,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
       final List<ReplicaPosition> replicaPositions;
       try {
-        replicaPositions = buildReplicaPositions(ccc.getCoreContainer(), ccc.getSolrCloudManager(), clusterState, newColl,
-            message, shardNames);
+        replicaPositions = buildReplicaPositions(ccc.getCoreContainer(), ccc.getSolrCloudManager(), clusterState, message, shardNames);
       } catch (Assign.AssignmentException e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
         new DeleteCollectionCmd(ccc).call(clusterState, deleteMessage, results);
@@ -294,7 +293,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         ShardRequest sreq = new ShardRequest();
         sreq.nodeName = nodeName;
         params.set("qt", ccc.getAdminPath());
-        sreq.purpose = 1;
+        sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
         sreq.shards = new String[]{baseUrl};
         sreq.actualShards = sreq.shards;
         sreq.params = params;
@@ -389,7 +388,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   private static List<ReplicaPosition> buildReplicaPositions(CoreContainer coreContainer, SolrCloudManager cloudManager, ClusterState clusterState,
-                                                             DocCollection docCollection,
                                                              ZkNodeProps message,
                                                              List<String> shardNames) throws IOException, InterruptedException, Assign.AssignmentException {
     final String collectionName = message.getStr(NAME);
@@ -406,7 +404,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     // but (for now) require that each core goes on a distinct node.
 
     List<ReplicaPosition> replicaPositions;
-    List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, CollectionHandlingUtils.RANDOM);
+    List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, CollectionHandlingUtils.RANDOM, cloudManager.getDistribStateManager());
     if (nodeList.isEmpty()) {
       log.warn("It is unusual to create a collection ({}) without cores.", collectionName);
 
@@ -430,7 +428,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           .assignPullReplicas(numPullReplicas)
           .onNodes(nodeList)
           .build();
-      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(coreContainer, clusterState, docCollection);
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(coreContainer);
       replicaPositions = assignStrategy.assign(cloudManager, assignRequest);
     }
     return replicaPositions;

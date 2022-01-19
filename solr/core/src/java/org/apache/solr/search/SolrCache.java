@@ -21,6 +21,7 @@ import org.apache.solr.util.IOFunction;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.Function;
 
 
 /**
@@ -173,4 +174,14 @@ public interface SolrCache<K,V> extends SolrInfoBean {
    * only on implementations that support it, it's a no-op otherwise.
    */
   void setMaxRamMB(int maxRamMB);
+
+  /**
+   * Check if this SolrCache supports recursive calls to {@link #computeIfAbsent(Object, IOFunction)}.
+   * Caches backed by {@link java.util.concurrent.ConcurrentHashMap#computeIfAbsent(Object, Function)} explicitly do
+   * not support that, but other caches might.
+   * @return whether this cache allows recursive computations
+   */
+  default boolean isRecursionSupported() {
+    return false;
+  }
 }

@@ -40,6 +40,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,10 +120,10 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
     } else {
       dynamicReconfig = true;
       List<String> connStringHosts = hostsFromConnectionString.getServers().stream()
-          .map(h -> h.resolveClientPortAddress() + ":" + h.clientPort)
+          .map(h -> h.resolveClientPortAddress().toLowerCase(Locale.ROOT) + ":" + h.clientPort)
           .sorted().collect(Collectors.toList());
       List<String> dynamicHosts = zkDynamicConfig.getServers().stream()
-          .map(h -> h.resolveClientPortAddress() + ":" +
+          .map(h -> h.resolveClientPortAddress().toLowerCase(Locale.ROOT) + ":" +
                   (h.clientPort != null ? h.clientPort : hostsFromConnectionString.getServers().get(0).clientPort))
           .sorted().collect(Collectors.toList());
       if (!connStringHosts.containsAll(dynamicHosts)) {
@@ -297,7 +298,8 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
         Writer writer = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
         PrintWriter out = new PrintWriter(writer, true);
         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
-      out.println(fourLetterWordCommand);
+      out.print(fourLetterWordCommand);
+      out.flush();
       List<String> response = in.lines().collect(Collectors.toList());
       log.debug("Got response from ZK on host {} and port {}: {}", host, port, response);
       return response;
@@ -328,5 +330,10 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Zookeeper " + zkHostPort + " is not currently serving requests.");
     }
     return true;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.CONFIG_READ_PERM;
   }
 }

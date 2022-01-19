@@ -89,7 +89,7 @@ s|Required |Default: none
 |===
 +
 The authorization plugin to use.
-There are two options: `solr.RuleBasedAuthorizationPlugin` or `solr.ExternalRoleRuleBasedAuthorizationPlugin`.
+There are three options: `solr.RuleBasedAuthorizationPlugin`, `solr.ExternalRoleRuleBasedAuthorizationPlugin`, or `solr.MultiAuthRuleBasedAuthorizationPlugin`.
 
 `permissions`::
 +
@@ -225,6 +225,41 @@ Let's walk through this example:
 <5> The 'admin' role has been defined, and it has permission to edit security settings.
 
 Only requests from users having a JWT token with role "admin" will be granted the `security-edit` permission.
+
+=== Multiple Authorization Plugins
+
+If your `security.json` config uses the `MultiAuthPlugin`, you want to use the `MultiAuthRuleBasedAuthorizationPlugin` to use a different authorization plugin for each authentication plugin.
+
+The following example illustrates using the `MultiAuthRuleBasedAuthorizationPlugin` to configure an authorization plugin for the `Basic` and `Bearer` schemes:
+[source,json]
+----
+{
+  "authorization": {
+    "class": "solr.MultiAuthRuleBasedAuthorizationPlugin",
+    "schemes": [
+      {
+        "scheme": "basic",
+        "class": "solr.RuleBasedAuthorizationPlugin",
+        "user-role": {
+          "k8s-oper": ["k8s"]
+        }
+      },
+      {
+        "scheme": "bearer",
+        "class": "solr.ExternalRoleRuleBasedAuthorizationPlugin"
+      }
+    ],
+    "permissions": []
+  }
+}
+----
+
+It would be uncommon for the same user account to exist in both plugins.
+However, the `MultiAuthRuleBasedAuthorizationPlugin` combines the roles from all plugins together when determining the roles for a user.
+
+Users should take special care to lock down the exact set of endpoints that service accounts need access to when using Basic authentication.
+For example, if the `MultiAuthPlugin` allows a `k8s-oper` user to use Basic authentication (while all other users go through OIDC), then
+the permissions configured for the `k8s-oper` user should only allow access to specific endpoints, such as `/admin/info/system`.
 
 == Permissions
 
@@ -371,7 +406,8 @@ If edit permissions should only be applied to specific collections, a custom per
 * *config-read*: this permission is allowed to read a collection's configuration using the <<config-api.adoc#,Config API>>, the <<request-parameters-api.adoc#,Request Parameters API>>, <<configsets-api.adoc#configsets-list,Configsets API>>, the Admin UI's <<configuration-files.adoc#files-screen,Files Screen>>, and other APIs accessing configuration.
 Note that this allows configuration read permissions for _all_ collections.
 If read permissions should only be applied to specific collections, a custom permission would need to be created.
-* *metrics-read*: this permission allows access to Solr's <<metrics-reporting.adoc#metrics-api,Metrics API>>.
+* *metrics-read*: this permission allows access to Solr's <<metrics-reporting.adoc#metrics-api,Metrics API>>, some <<implicit-requesthandlers#admin-handlers,implicit admin handlers>> such as `solr/<collection>/admin/mbeans` and `solr/<collection>/admin/segments` as well as other admin APIs exposing metrics.
+* *health*: this permission allows access to Solr's <<implicit-requesthandlers#admin-handlers,Health Check and Ping>> endpoints, typically used to monitor whether a node or core is healthy.
 * *core-admin-edit*: Core admin commands that can mutate the system state.
 * *core-admin-read*: Read operations on the core admin API
 * *collection-admin-edit*: this permission is allowed to edit a collection's configuration using the <<collections-api.adoc#,Collections API>>.

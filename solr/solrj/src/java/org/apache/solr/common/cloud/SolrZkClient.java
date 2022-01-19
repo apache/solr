@@ -17,11 +17,11 @@
 package org.apache.solr.common.cloud;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -31,7 +31,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -425,15 +424,15 @@ public class SolrZkClient implements Closeable {
     makePath(path, null, CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
-  public void makePath(String path, File file, boolean failOnExists, boolean retryOnConnLoss)
+  public void makePath(String path, Path data, boolean failOnExists, boolean retryOnConnLoss)
       throws IOException, KeeperException, InterruptedException {
-    makePath(path, FileUtils.readFileToByteArray(file),
+    makePath(path, Files.readAllBytes(data),
         CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
-  public void makePath(String path, File file, boolean retryOnConnLoss) throws IOException,
+  public void makePath(String path, Path data, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
-    makePath(path, FileUtils.readFileToByteArray(file), retryOnConnLoss);
+    makePath(path, Files.readAllBytes(data), retryOnConnLoss);
   }
 
   public void makePath(String path, CreateMode createMode, boolean retryOnConnLoss) throws KeeperException,
@@ -579,15 +578,14 @@ public class SolrZkClient implements Closeable {
    * Write file to ZooKeeper - default system encoding used.
    *
    * @param path path to upload file to e.g. /solr/conf/solrconfig.xml
-   * @param file path to file to be uploaded
+   * @param data a filepath to read data from
    */
-  public Stat setData(String path, File file, boolean retryOnConnLoss) throws IOException,
+  public Stat setData(String path, Path data, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
     if (log.isDebugEnabled()) {
-      log.debug("Write to ZooKeeper: {} to {}", file.getAbsolutePath(), path);
+      log.debug("Write to ZooKeeper: {} to {}", data.toAbsolutePath(), path);
     }
-    byte[] data = FileUtils.readFileToByteArray(file);
-    return setData(path, data, retryOnConnLoss);
+    return setData(path, Files.readAllBytes(data), retryOnConnLoss);
   }
 
   public List<OpResult> multi(final Iterable<Op> ops, boolean retryOnConnLoss) throws InterruptedException, KeeperException  {

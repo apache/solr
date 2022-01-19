@@ -57,7 +57,7 @@ import org.apache.solr.schema.SchemaField;
  * NOTE: The param(s) provided in request handler will override / supersede processor's config.
  *
  * If field name is omitted in processor configuration and not provided in request handler param(s),
- * then  @{link org.apache.solr.schema.IndexSchema#getUniqueKeyField()}
+ * then  {@link org.apache.solr.schema.IndexSchema#getUniqueKeyField()}
  * is used as field and a new <code>UUID</code> will be generated
  * and added as the value of that field. The field type of the uniqueKeyField
  * must be anything which accepts a string or UUID value.

@@ -79,6 +79,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -90,6 +91,7 @@ import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.AtomicUpdateDocumentMerger;
+import org.apache.solr.util.LongSet;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -207,7 +209,7 @@ public class RealTimeGetComponent extends SearchComponent
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
             QParser fqp = QParser.getParser(fq, req);
-            filters.add(fqp.getQuery());
+            filters.add(QueryUtils.makeQueryable(fqp.getQuery()));
           }
         }
         if (!filters.isEmpty()) {
@@ -1025,7 +1027,7 @@ public class RealTimeGetComponent extends SearchComponent
    */
   private ShardRequest createShardRequest(final ResponseBuilder rb, final List<String> ids) {
     final ShardRequest sreq = new ShardRequest();
-    sreq.purpose = 1;
+    sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
     sreq.params = new ModifiableSolrParams(rb.req.getParams());
 
     // TODO: how to avoid hardcoding this and hit the same handler?
@@ -1265,10 +1267,12 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: get this from cache instead of rebuilding?
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
+      LongSet updateVersions = new LongSet(versions.size());
       for (Long version : versions) {
         try {
           Object o = recentUpdates.lookup(version);
           if (o == null) continue;
+          updateVersions.add(version);
 
           if (version > 0) {
             minVersion = Math.min(minVersion, version);
@@ -1285,7 +1289,7 @@ public class RealTimeGetComponent extends SearchComponent
       // Must return all delete-by-query commands that occur after the first add requested
       // since they may apply.
       if (params.getBool("skipDbq", false)) {
-        updates.addAll(recentUpdates.getDeleteByQuery(minVersion));
+        updates.addAll(recentUpdates.getDeleteByQuery(minVersion, updateVersions));
       }
 
       rb.rsp.add("updates", updates);

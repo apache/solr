@@ -37,7 +37,7 @@ Solr supports several modifiers that atomically update values of a document.
 This allows updating only specific fields, which can help speed indexing processes in an environment where speed of index additions is critical to the application.
 
 To use atomic updates, add a modifier to the field that needs to be updated.
-The content can be updated, added to, or incrementally increased if the field has a numeric type.
+The content can be updated, added to, or, if the field has a numeric type, incrementally increased or decreased.
 
 `set`::
 Set or replace the field value(s) with the specified value(s), or remove the values if 'null' or empty list is specified as the new value.
@@ -61,8 +61,8 @@ Removes all occurrences of the specified regex from a multiValued field.
 May be specified as a single value, or as a list.
 
 `inc`::
-Increments a numeric value by a specific amount.
-Must be specified as a single numeric value.
+Increments or decrements a numeric field's value by a specific amount, specified as a single integer or float.
+Postive amounts increment the field's value, and negative decrement.
 
 === Field Storage
 
@@ -74,7 +74,7 @@ If `<copyField/>` destinations are configured as stored, then Solr will attempt 
 If such fields contain some information that comes from the indexing program and some information that comes from copyField, then the information which originally came from the indexing program will be lost when an atomic update is made.
 
 There are other kinds of derived fields that must also be set so they aren't stored.
-Some spatial field types, such as BBoxField and LatLonType, use derived fields.
+Some spatial field types, such as BBoxField and LatLonSpatialFieldType, use derived fields.
 CurrencyFieldType also uses derived fields.
 These types create additional fields which are normally specified by a dynamic field definition.
 That dynamic field definition must be not stored, or indexing will fail.
@@ -101,7 +101,7 @@ And we apply the following update command:
 ----
 {"id":"mydoc",
  "price":{"set":99},
- "popularity":{"inc":20},
+ "popularity":{"inc":-7},
  "categories":{"add":["toys","games"]},
  "sub_categories":{"add-distinct":"under_10"},
  "promo_ids":{"remove":"a123x"},
@@ -115,7 +115,7 @@ The resulting document in our collection will be:
 ----
 {"id":"mydoc",
  "price":99,
- "popularity":62,
+ "popularity":35,
  "categories":["kids","toys","games"],
  "sub_categories":["under_5","under_10"],
  "tags":["buy_now","clearance"]
@@ -217,6 +217,7 @@ curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H '
 } ]'
 ----
 
+Note that this is add-or-replace (by ID).  Meaning, if it happens that doc `P11!S21` already has a child doc with the ID `P11!D99` (the one we are adding), then it will be replaced.
 
 ==== Removing a Child Document
 
@@ -248,15 +249,15 @@ An atomic update operation is performed using this In-Place approach only when t
 * copy targets of updated fields, if any, are also non-indexed, non-stored single valued numeric docValues fields.
 
 To use in-place updates, add a modifier to the field that needs to be updated.
-The content can be updated or incrementally increased.
+The content can be updated or incremented/decremented.
 
 `set`::
 Set or replace the field value(s) with the specified value(s).
 May be specified as a single value.
 
 `inc`::
-Increments a numeric value by a specific amount.
-Must be specified as a single numeric value.
+Increments or decrements a numeric field's value by a specific amount, specified as a single integer or float.
+Postive amounts increment the field's value, and negative decrement.
 
 [TIP]
 ====

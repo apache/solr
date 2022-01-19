@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -113,7 +112,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   private static void createMiniSolrCloudCluster() throws Exception {
     
     final String configName = "solrCloudCollectionConfig";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_COLL1_CONF();
     
     configureCluster(NUM_SERVERS)
       .addConfig(configName, configDir)
