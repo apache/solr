@@ -1403,10 +1403,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         restoreFuture.cancel(false);
       }
     }
-
-    @Override
-    public void postClose(SolrCore core) {
-    }
   };
 
   /**
