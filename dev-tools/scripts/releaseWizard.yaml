@@ -460,6 +460,9 @@ groups:
         cmd: git checkout main
         tee: true
       - !Command
+        cmd: git pull --ff-only
+        tee: true
+      - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
         tee: true
       - !Command
