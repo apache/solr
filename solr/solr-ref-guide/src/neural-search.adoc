@@ -77,7 +77,7 @@ s|Required |Default: none
 The dimension of the dense vector to pass in.
 +
 Accepted values:
-Any integer < = 1024.
+Any integer < = `1024`.
 
 `similarityFunction`::
 +
@@ -131,7 +131,7 @@ If you choose to customize the `codecFormat` in your schema, upgrading to a futu
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: 16
+|Optional |Default: `16`
 |===
 +
 (advanced) This parameter is specific for the `Lucene90HnswVectorsFormat` codec format:
@@ -147,7 +147,7 @@ Any integer.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: 100
+|Optional |Default: `100`
 |===
 +
 (advanced) This parameter is specific for the `Lucene90HnswVectorsFormat` codec format:
