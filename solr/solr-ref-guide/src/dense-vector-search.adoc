@@ -1,4 +1,4 @@
-= Neural Search
+= Dense Vector Search
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,21 +16,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Apache Solr *Neural Search* module adds support for neural network-based techniques that can improve various aspects of search.
+The Apache Solr *Dense Vector Search* module adds support for indexing and searching dense numerical vectors.
 
-These techniques can be differentiated based on whether they affect the query representation, the document representation, or the estimation of the relevance score.
+https://en.wikipedia.org/wiki/Deep_learning[Deep learning] can be used to produce a vector representation of both the query and the documents in a corpus of information.
 
-Neural Search is an industry derivation from the academic field of https://www.microsoft.com/en-us/research/uploads/prod/2017/06/fntir2018-neuralir-mitra.pdf[Neural information Retrieval].
+These neural network-based techniques are usually referred as neural search, an industry derivation from the academic field of https://www.microsoft.com/en-us/research/uploads/prod/2017/06/fntir2018-neuralir-mitra.pdf[Neural information Retrieval].
 
 == Important Concepts
-
-=== Deep Learning
-
-More and more frequently, we hear about how Artificial Intelligence (AI) permeates every aspect of our lives.
-
-In particular the advent of https://en.wikipedia.org/wiki/Deep_learning[Deep Learning] introduced the use of deep neural networks to solve complex problems that could not be solved simply by an algorithm.
-
-Deep Learning can be used to produce a vector representation of both the query and the documents in a corpus of information.
 
 === Dense Vector Representation 
 A dense vector describes information as an array of elements, each of them explicitly defined.
@@ -48,16 +40,16 @@ The strategy implemented in Apache Lucene and used by Apache Solr is based on Na
 
 It provides efficient approximate nearest neighbor search for high dimensional vectors.
 
-See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs [2014]] and https://arxiv.org/abs/1603.09320[this paper [2018]] for details.
+See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs [2014]] and https://arxiv.org/abs/1603.09320[Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs [2018]] for details.
 
 
 == Index Time
-This is the Apache Solr field type designed to support Neural Search:
+This is the Apache Solr field type designed to support dense vector search:
 
 === DenseVectorField
-The Dense Vector field gives the possibility of indexing and searching dense vectors of float elements.
+The dense vector field gives the possibility of indexing and searching dense vectors of float elements.
 
-For example, this array of float elements:
+For example:
 
 `[1.0, 2.5, 3.7, 4.1]` 
 
@@ -236,7 +228,7 @@ client.add(Arrays.asList(d1, d2));
 --
 
 == Query Time
-This is the Apache Solr query approach designed to support Neural Search:
+This is the Apache Solr query approach designed to support dense vector search:
 
 === knn Query Parser
 The `knn` k-nearest neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.
@@ -312,6 +304,5 @@ Details about using the ReRank Query Parser can be found in the <<query-re-ranki
 
 == Additional Resources
 
-* Apache Solr Dense Vectors
-** Blog: https://sease.io/2021/12/apache-solr-neural-search.html
-** Blog: https://sease.io/2021/12/apache-solr-neural-search-knn-benchmark.html
+* Blog: https://sease.io/2021/12/apache-solr-neural-search.html
+* Blog: https://sease.io/2021/12/apache-solr-neural-search-knn-benchmark.html
