@@ -40,7 +40,7 @@ Various deep learning models such as https://en.wikipedia.org/wiki/BERT_(languag
 For additional information you can refer to this https://sease.io/2021/12/using-bert-to-improve-search-relevance.html[blog post].
 
 === Dense Retrieval
-Given a dense vector `v` that models the information need, the easiest approach for providing dense vector retrieval would be to calculate the distance(euclidean, dot product, etc.) between `v` and each vector `d` that represents a document in the corpus of information.
+Given a dense vector `v` that models the information need, the easiest approach for providing dense vector retrieval would be to calculate the distance (euclidean, dot product, etc.) between `v` and each vector `d` that represents a document in the corpus of information.
 
 This approach is quite expensive, so many approximate strategies are currently under active research.
 
