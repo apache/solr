@@ -35,7 +35,7 @@ Deep Learning can be used to produce a vector representation of both the query a
 === Dense Vector Representation 
 A dense vector describes information as an array of elements, each of them explicitly defined.
 
-Various Deep Learning models such as https://en.wikipedia.org/wiki/BERT_(language_model)[BERT] are able to encode textual information as dense vectors, to be used for Dense Retrieval strategies.
+Various deep learning models such as https://en.wikipedia.org/wiki/BERT_(language_model)[BERT] are able to encode textual information as dense vectors, to be used for dense retrieval strategies.
 
 For additional information you can refer to this https://sease.io/2021/12/using-bert-to-improve-search-relevance.html[blog post].
 
