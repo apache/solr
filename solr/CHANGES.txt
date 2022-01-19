@@ -50,7 +50,7 @@ Bug Fixes
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
 
 ==================  9.0.0 ==================
 
@@ -252,8 +252,6 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15887: Remove <jmx/> from shipped solrconfig.xm. (Eric Pugh)
 
 * SOLR-14608: Faster sorting for the /export handler (Joel Bernstein)
-
-* SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
 
 * SOLR-15209: The old LegacyAssignStrategy has been refactored into the SimplePlacementPlugin. This is still the default
   placement policy for Solr. (Houston Putman, Ilan Ginzburg)
