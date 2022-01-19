@@ -22,7 +22,7 @@ These techniques can be differentiated based on whether they affect the query re
 
 Neural Search is an industry derivation from the academic field of https://www.microsoft.com/en-us/research/uploads/prod/2017/06/fntir2018-neuralir-mitra.pdf[Neural information Retrieval].
 
-== Neural Search Concepts
+== Important Concepts
 
 === Deep Learning
 
@@ -303,7 +303,7 @@ The final ranked list of results will have the first pass score(main query `q`) 
 Details about using the ReRank Query Parser can be found in the <<query-re-ranking.adoc#,Query Re-Ranking>> section.
 ====
 
-== Additional Neural Search Resources
+== Additional Resources
 
 * Apache Solr Dense Vectors
 ** Blog: https://sease.io/2021/12/apache-solr-neural-search.html
