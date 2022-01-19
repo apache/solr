@@ -66,6 +66,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
       CLIENT = (HttpSolrClient) JSR.newClient();
       JSR = null;
     }
+    initIndex();
   }
 
   private static void initStandalone() throws Exception {
@@ -123,21 +124,52 @@ public class TestRawTransformer extends SolrCloudTestCase {
     }
   }
 
-  @Test
-  public void testJsonTransformer() throws Exception {
+  private static final int MAX = 10;
+  private static void initIndex() throws Exception {
     // Build a simple index
-    int max = 10;
-    for (int i = 0; i < max; i++) {
+    // TODO: why are we indexing 10 docs here? Wouldn't one suffice?
+    for (int i = 0; i < MAX; i++) {
       SolrInputDocument sdoc = new SolrInputDocument();
       sdoc.addField("id", i);
       sdoc.addField("notid", i);
       sdoc.addField("subject", "{poffL:[{offL:[{oGUID:\"79D5A31D-B3E4-4667-B812-09DF4336B900\",oID:\"OO73XRX\",prmryO:1,oRank:1,addTp:\"Office\",addCd:\"AA4GJ5T\",ad1:\"102 S 3rd St Ste 100\",city:\"Carson City\",st:\"MI\",zip:\"48811\",lat:43.176885,lng:-84.842919,phL:[\"(989) 584-1308\"],faxL:[\"(989) 584-6453\"]}]}]}");
+      sdoc.addField("author", "<root><child1>some</child1><child2>trivial</child2><child3>xml</child3></root>");
       sdoc.addField("title", "title_" + i);
       CLIENT.add("collection1", sdoc);
     }
     CLIENT.commit("collection1");
-    assertEquals(max, CLIENT.query("collection1", new ModifiableSolrParams(Map.of("q", new String[]{"*:*"}))).getResults().getNumFound());
+    assertEquals(MAX, CLIENT.query("collection1", new ModifiableSolrParams(Map.of("q", new String[]{"*:*"}))).getResults().getNumFound());
+  }
 
+  @Test
+  public void testXmlTransformer() throws Exception {
+    QueryRequest req = new QueryRequest(new ModifiableSolrParams(
+            Map.of("q", new String[]{"*:*"}, "fl", new String[]{"author:[xml]"}, "wt", new String[]{"xml"})
+    ));
+    req.setResponseParser(XML_NOOP_RESPONSE_PARSER);
+    String strResponse = (String) CLIENT.request(req,"collection1").get("response");
+    assertTrue("response does not contain raw XML encoding: " + strResponse,
+            strResponse.contains("<raw name=\"author\"><root><child1>some</child1><child2>trivial</child2><child3>xml</child3></root></raw>"));
+
+    req = new QueryRequest(new ModifiableSolrParams(
+            Map.of("q", new String[]{"*:*"}, "fl", new String[]{"author"}, "wt", new String[]{"xml"})
+    ));
+    req.setResponseParser(XML_NOOP_RESPONSE_PARSER);
+    strResponse = (String) CLIENT.request(req, "collection1").get("response");
+    assertTrue("response does not contain escaped XML encoding: " + strResponse,
+            strResponse.contains("<str name=\"author\">&lt;root&gt;&lt;child1"));
+
+    req = new QueryRequest(new ModifiableSolrParams(
+            Map.of("q", new String[]{"*:*"}, "fl", new String[]{"author:[xml]"}, "wt", new String[]{"json"})
+    ));
+    req.setResponseParser(JSON_NOOP_RESPONSE_PARSER);
+    strResponse = (String) CLIENT.request(req, "collection1").get("response");
+    assertTrue("unexpected serialization of XML field value in JSON response: " + strResponse,
+            strResponse.contains("\"author\":\"<root><child1>some</child1>"));
+  }
+
+  @Test
+  public void testJsonTransformer() throws Exception {
     QueryRequest req = new QueryRequest(new ModifiableSolrParams(
       Map.of("q", new String[]{"*:*"}, "fl", new String[]{"subject:[json]"}, "wt", new String[]{"json"})
     ));
@@ -155,6 +187,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
         strResponse.contains("subject\":\""));
   }
 
+  private static final NoOpResponseParser XML_NOOP_RESPONSE_PARSER = new NoOpResponseParser();
   private static final NoOpResponseParser JSON_NOOP_RESPONSE_PARSER = new NoOpResponseParser() {
     @Override
     public String getWriterType() {
