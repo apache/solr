@@ -668,6 +668,8 @@ public class CoreContainer {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
 
+    logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
+
     // Always add $SOLR_HOME/lib to the shared resource loader
     Set<String> libDirs = new LinkedHashSet<>();
     libDirs.add("lib");
@@ -726,9 +728,6 @@ public class CoreContainer {
     CalciteSolrDriver.INSTANCE.setSolrClientCache(solrClientCache);
 
     solrCores.load(loader);
-
-
-    logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     hostName = cfg.getNodeName();
 
