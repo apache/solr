@@ -138,9 +138,7 @@ If you choose to customize the `codecFormat` in your schema, upgrading to a futu
 +
 Controls how many of the nearest neighbor candidates are connected to the new node.
 +
-See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs [2014]] and https://arxiv.org/abs/1603.09320[this paper [2018]] for details.
-+
-It has the same meaning as `M` from the later paper.
+It has the same meaning as `M` from the 2018 paper.
 +
 Accepted values:
 Integer.
@@ -156,9 +154,7 @@ Integer.
 +
 It is the number of nearest neighbor candidates to track while searching the graph for each newly inserted node.
 +
-See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs [2014]] and https://arxiv.org/abs/1603.09320[this paper [2018]] for details.
-+
-It has the same meaning as `efConstruction` from the later paper.
+It has the same meaning as `efConstruction` from the 2018 paper.
 +
 Accepted values:
 Integer.
