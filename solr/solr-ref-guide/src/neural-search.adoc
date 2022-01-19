@@ -52,7 +52,7 @@ See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algori
 
 
 == Index Time
-This is the list of Apache Solr field types designed to support Neural Search:
+This is the Apache Solr field type designed to support Neural Search:
 
 === DenseVectorField
 The Dense Vector field gives the possibility of indexing and searching dense vectors of float elements.
@@ -232,7 +232,7 @@ client.add(Arrays.asList(d1, d2));
 --
 
 == Query Time
-This is the list of Apache Solr query approaches designed to support Neural Search:
+This is the Apache Solr query approach designed to support Neural Search:
 
 === knn Query Parser
 The `knn` K-Nearest Neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.
