@@ -71,7 +71,7 @@ Here's how `DenseVectorField` should be configured in the schema:
 +
 [%autowidth,frame=none]
 |===
-|Mandatory
+s|Required |Default: none
 |===
 +
 The dimension of the dense vector to pass in.
@@ -245,7 +245,7 @@ It takes the following parameters:
 +
 [%autowidth,frame=none]
 |===
-|Mandatory
+s|Required |Default: none
 |===
 +
 The DenseVectorField to search in.
