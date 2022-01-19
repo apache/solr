@@ -20,7 +20,7 @@ The Apache Solr *Dense Vector Search* module adds support for indexing and searc
 
 https://en.wikipedia.org/wiki/Deep_learning[Deep learning] can be used to produce a vector representation of both the query and the documents in a corpus of information.
 
-These neural network-based techniques are usually referred as neural search, an industry derivation from the academic field of https://www.microsoft.com/en-us/research/uploads/prod/2017/06/fntir2018-neuralir-mitra.pdf[Neural information Retrieval].
+These neural network-based techniques are usually referred to as neural search, an industry derivation from the academic field of https://www.microsoft.com/en-us/research/uploads/prod/2017/06/fntir2018-neuralir-mitra.pdf[Neural information Retrieval].
 
 == Important Concepts
 
