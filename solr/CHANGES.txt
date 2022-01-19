@@ -28,6 +28,8 @@ Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
 
+* SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
+
 ==================  9.0.0 ==================
 
 Docker and contrib modules have separate CHANGES.md files.
