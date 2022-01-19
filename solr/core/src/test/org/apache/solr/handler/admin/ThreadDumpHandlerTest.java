@@ -26,13 +26,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.SolrTestCaseJ4;
-
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.junit.BeforeClass;
 
 /**
  * This test is currently flawed because it only ensures the 'test-*' threads don't exit before the asserts,
@@ -245,10 +247,11 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"unchecked"})
   private NamedList<Object> readProperties() throws Exception {
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = req();
-    new ThreadDumpHandler().handleRequestBody(req, rsp);
-    return rsp.getValues();
+    SolrClient client = new EmbeddedSolrServer(h.getCore());
+
+    NamedList<Object> properties = client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/threads",
+            new ModifiableSolrParams()));
+    return properties;
   }
 
   @SuppressWarnings({"unchecked"})

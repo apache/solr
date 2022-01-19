@@ -478,6 +478,8 @@ Other Changes
 * SOLR-14858: Add the server WEB-INF/lib directory to the classpath for the solr-exporter script. Will allow the script
   to work when the dist/solrj-lib jars are missing in the Docker image. (Houston Putman)
 
+* SOLR-15124: Remove container level admin handlers from ImplicitPlugins.json (Nazerke Seidan, David Smiley)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
