@@ -25,9 +25,16 @@ These neural network-based techniques are usually referred to as neural search, 
 == Important Concepts
 
 === Dense Vector Representation 
-A dense vector describes information as an array of elements, each of them explicitly defined.
+A dense vector describes information as an array of elements, most of them different from zero.
 
-Various deep learning models such as https://en.wikipedia.org/wiki/BERT_(language_model)[BERT] are able to encode textual information as dense vectors, to be used for dense retrieval strategies.
+In this context, "sparse" and "dense" refer to the number of zero vs. non-zero elements in the array. 
+
+A sparse vector is one that contains mostly zeros and few non-zero entries. 
+Sparse representation is at the base of traditional information retrieval approaches (such as the https://en.wikipedia.org/wiki/Bag-of-words_model[Bag-of-words model]).
+
+A dense array contains mostly non-zeros.
+
+Among other techniques and use cases, deep learning models such as https://en.wikipedia.org/wiki/BERT_(language_model)[BERT] are able to encode textual information as dense vectors, to be used for dense retrieval strategies.
 
 For additional information you can refer to this https://sease.io/2021/12/using-bert-to-improve-search-relevance.html[blog post].
 
