@@ -232,7 +232,7 @@ client.add(Arrays.asList(d1, d2));
 This is the Apache Solr query approach designed to support Neural Search:
 
 === knn Query Parser
-The `knn` K-Nearest Neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.
+The `knn` k-nearest neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.
 
 The score for a retrieved document is the approximate distance to the target vector(defined by the similarityFunction configured at indexing time).
 
@@ -261,7 +261,7 @@ Here's how to run a KNN search:
 [source,text]
 &q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
 
-The search results retrieved are the K-nearest to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the similarityFunction configured at indexing time.
+The search results retrieved are the k-nearest to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the similarityFunction configured at indexing time.
 
 ==== Usage with Filter Queries
 The `knn` query parser can be used in filter queries:
@@ -294,7 +294,7 @@ The `knn` query parser can be used to rerank first pass query results:
 When using `knn` in reranking pay attention to the `topK` parameter.
 
 The second pass score(deriving from knn) is calculated only if the document `d` from the first pass is within
-the K-nearest neighbors(*in the whole index*) of the target vector to search.
+the k-nearest neighbors(*in the whole index*) of the target vector to search.
 
 This means the second pass `knn` is executed on the whole index anyway, which is a current limitation.
 
