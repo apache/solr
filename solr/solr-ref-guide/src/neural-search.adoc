@@ -57,9 +57,9 @@ This is the list of Apache Solr field types designed to support Neural Search:
 === DenseVectorField
 The Dense Vector field gives the possibility of indexing and searching dense vectors of float elements.
 
-e.g.
+For example, this array of float elements:
 
-`[1.0, 2.5, 3.7, 4.1]` (array of float elements)
+`[1.0, 2.5, 3.7, 4.1]` 
 
 Here's how `DenseVectorField` should be configured in the schema:
 
