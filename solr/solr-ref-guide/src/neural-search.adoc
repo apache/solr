@@ -28,10 +28,6 @@ Neural Search is an industry derivation from the academic field of https://www.m
 
 More and more frequently, we hear about how Artificial Intelligence (AI) permeates every aspect of our lives.
 
-When we talk about AI we are referring to a superset of techniques that enable machines to learn and show intelligence like humans.
-
-Since computing power has strongly and steadily advanced in the recent past, AI has seen a resurgence lately and it is now used in many domains, including software engineering and Information Retrieval (the science that regulates Search Engines and similar systems).
-
 In particular the advent of https://en.wikipedia.org/wiki/Deep_learning[Deep Learning] introduced the use of deep neural networks to solve complex problems that could not be solved simply by an algorithm.
 
 Deep Learning can be used to produce a vector representation of both the query and the documents in a corpus of information.
