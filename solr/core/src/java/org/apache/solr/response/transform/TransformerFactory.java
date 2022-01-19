@@ -64,6 +64,8 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin
    */
   public interface FieldRenamer {
     /**
+     * Analogous to {@link TransformerFactory#create(String, SolrParams, SolrQueryRequest)}, but to be implemented
+     * by {@link TransformerFactory}s that produce {@link DocTransformer}s that may rename fields.
      *
      * @param field The destination field
      * @param params Local params associated with this transformer (e.g., source field)
