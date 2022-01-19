@@ -77,7 +77,7 @@ s|Required |Default: none
 The dimension of the dense vector to pass in.
 +
 Accepted values:
-Integer < = 1024.
+Any integer < = 1024.
 
 `similarityFunction`::
 +
@@ -141,7 +141,7 @@ Controls how many of the nearest neighbor candidates are connected to the new no
 It has the same meaning as `M` from the 2018 paper.
 +
 Accepted values:
-Integer.
+Any integer.
 
 `hnswBeamWidth`::
 +
@@ -157,7 +157,7 @@ It is the number of nearest neighbor candidates to track while searching the gra
 It has the same meaning as `efConstruction` from the 2018 paper.
 +
 Accepted values:
-Integer.
+Any integer.
 
 DenseVectorField supports the attributes: `indexed`, `stored`.
 
