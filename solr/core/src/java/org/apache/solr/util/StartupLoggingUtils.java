@@ -193,12 +193,12 @@ public final class StartupLoggingUtils {
    */
   public static void checkRequestLogging() {
     boolean requestLogEnabled = System.getProperty("sun.java.command", "").contains("module=requestlog");
-    String retainDays = System.getProperty("solr.log.requestlog.retaindays", "3");
+    String retainDays= System.getProperty("solr.log.requestlog.retaindays");
     if (requestLogEnabled) {
-      if (retainDays.equals("3")) {
+      if (retainDays == null) {
         log.warn("Jetty request logging enabled. Will retain logs for last 3 days. See chapter \"Configuring Logging\" in reference guide for how to configure.");
       } else {
-        log.info("Jetty request logging enabled.");
+        log.info("Jetty request logging enabled. Will retain logs for last {} days.", retainDays);
       }
     }
   }
