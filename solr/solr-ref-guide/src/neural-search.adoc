@@ -161,7 +161,8 @@ Any integer.
 
 `DenseVectorField` supports the attributes: `indexed`, `stored`.
 
-*N.B.* currently multivalue is not supported
+[NOTE]
+currently multivalue is not supported
 
 Here's how a `DenseVectorField` should be indexed:
 
