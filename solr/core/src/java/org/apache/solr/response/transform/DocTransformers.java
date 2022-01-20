@@ -51,12 +51,15 @@ public class DocTransformers extends DocTransformer
   }
 
   @Override
-  public Collection<String> getRawFields(Collection<String> addToExisting) {
-    Collection<String> fields = addToExisting == null ? new ArrayList<>(size()) : addToExisting;
+  public Collection<String> getRawFields() {
+    Collection<String> fields = new ArrayList<>(size());
     for (DocTransformer t : children) {
-      t.getRawFields(fields);
+      Collection<String> childFields = t.getRawFields();
+      if (childFields != null) {
+        fields.addAll(childFields);
+      }
     }
-    return fields.isEmpty() ? addToExisting : fields;
+    return fields.isEmpty() ? null : fields;
   }
 
   public void addTransformer( DocTransformer a ) {

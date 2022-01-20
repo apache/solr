@@ -55,20 +55,17 @@ public abstract class DocTransformer {
 
   /**
    * If this transformer wants to bypass escaping in the {@link org.apache.solr.response.TextResponseWriter} and
-   * write content directly to output for certain field(s), the names of any such field(s) should be added to the
-   * specified collection.
+   * write content directly to output for certain field(s), the names of any such field(s) should be returned
    *
    * NOTE: normally this will be conditional on the `wt` param in the request, as supplied to the
    * {@link DocTransformer}'s parent {@link TransformerFactory} at the time of transformer creation.
    *
-   * @param addToExisting Existing collection to which field names should be added.
-   * @return Collection containing field names to be written raw. If a non-null collection was specified as the
-   * method argument, that same collection should be returned. If the method argument is null, a newly-created
-   * collection should be created and returned if any field renames are necessary (locally created return values
-   * need not be externally modifiable -- i.e., {@link java.util.Collections#singleton(Object)} is acceptable).
+   * @return Collection containing field names to be written raw, or <code>null</code> if no field names should
+   * be written raw. Any collection returned collection need not be externally modifiable -- i.e.,
+   * {@link java.util.Collections#singleton(Object)} is acceptable.
    */
-  public Collection<String> getRawFields(Collection<String> addToExisting) {
-    return addToExisting;
+  public Collection<String> getRawFields() {
+    return null;
   }
 
   /**

@@ -123,13 +123,8 @@ public class RawValueTransformerFactory extends TransformerFactory implements Tr
     }
 
     @Override
-    public Collection<String> getRawFields(Collection<String> addToExisting) {
-      if (addToExisting == null) {
-        return Collections.singleton(display);
-      } else {
-        addToExisting.add(display);
-        return  addToExisting;
-      }
+    public Collection<String> getRawFields() {
+      return Collections.singleton(display);
     }
 
     @Override
