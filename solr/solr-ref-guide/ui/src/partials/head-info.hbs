@@ -10,11 +10,11 @@
     {{/with}}
     {{/unless}}
     {{#with page.description}}
-    <meta name="description" content="{{this}}">
+    <meta name="description" content="{{{detag this}}}">
     {{/with}}
     {{#with page.keywords}}
-    <meta name="keywords" content="{{this}}">
+    <meta name="keywords" content="{{{this}}}">
     {{/with}}
     {{#with (or antoraVersion site.antoraVersion)}}
-    <meta name="generator" content="Antora {{this}}">
+    <meta name="generator" content="Antora {{{this}}}">
     {{/with}}
