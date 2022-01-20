@@ -357,6 +357,8 @@ SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
 
 Alternatively, the `SOLR_AUTHENTICATION_OPTS` can take a path to a file, as in:
 
-[source,bash]
+[source,bash,subs="attributes"]
+----
 SOLR_AUTH_TYPE="basic"
-SOLR_AUTHENTICATION_OPTS="-Dsolr.httpclient.config=/path/to/solr-{solr-docs-version}.0/server/solr/basicAuth.conf"
+SOLR_AUTHENTICATION_OPTS="-Dsolr.httpclient.config=/path/to/solr-{solr-full-version}/server/solr/basicAuth.conf"
+----

@@ -28,9 +28,9 @@ Download the latest release https://solr.apache.org/downloads.html.
 
 There are three separate packages:
 
-* `solr-{solr-docs-version}.0.tgz` for Linux/Unix/OSX systems
-* `solr-{solr-docs-version}.0.zip` for Microsoft Windows systems
-* `solr-{solr-docs-version}.0-src.tgz` the package Solr source code.
+* `solr-{solr-full-version}.tgz` for Linux/Unix/OSX systems
+* `solr-{solr-full-version}.zip` for Microsoft Windows systems
+* `solr-{solr-full-version}-src.tgz` the package Solr source code.
 This is useful if you want to develop on Solr without using the official Git repository.
 
 == Preparing for Installation
@@ -63,7 +63,7 @@ To keep things simple for now, extract the Solr distribution archive to your loc
 [source,bash,subs="attributes"]
 ----
 cd ~/
-tar zxf solr-{solr-docs-version}.0.tgz
+tar zxf solr-{solr-full-version}.tgz
 ----
 
 Once extracted, you are now ready to run Solr using the instructions provided in the <<Starting Solr>> section below.
