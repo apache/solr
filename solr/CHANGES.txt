@@ -258,6 +258,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-14916: Add split parameter to timeseries Streaming Expression (Joel Bernstein)
 
+* SOLR-15884: Backup responses now use a map to return information instead of a list (Houston Putman, Christine Poerschke)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
