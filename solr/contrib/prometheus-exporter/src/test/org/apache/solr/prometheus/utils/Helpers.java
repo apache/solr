@@ -52,7 +52,7 @@ public class Helpers {
   public static Pair<String, Double> parseMetricsLine(String line) {
     int spaceIdx = line.lastIndexOf(" ");
     if (spaceIdx == -1) {
-      throw new RuntimeException("Failed parsing metrics line, must contain a space");
+      throw new IllegalArgumentException("Failed parsing metrics line, must contain a space. Line was: " + line);
     }
     return new Pair<>(line.substring(0,spaceIdx), Double.parseDouble(line.substring(spaceIdx)));
   }
