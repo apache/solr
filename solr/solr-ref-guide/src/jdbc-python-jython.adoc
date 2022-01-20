@@ -34,7 +34,7 @@ The CLASSPATH variable must be configured to contain the `solr-solrj` jar and th
 
 pip install JayDeBeApi
 
-export CLASSPATH="$(echo $(ls /opt/solr/dist/solr-solrj* /opt/solr/dist/solrj-lib/*) | tr ' ' ':')"
+export CLASSPATH="/opt/solr/server/lib/ext/*:/opt/solr/server/solr-webapp/webapp/WEB-INF/lib/*"
 
 python solr_jaydebeapi.py
 ----
@@ -74,7 +74,7 @@ The CLASSPATH variable must be configured to contain the solr-solrj jar and the 
 #!/usr/bin/env bash
 # Java and Jython must already be installed
 
-export CLASSPATH="$(echo $(ls /opt/solr/dist/solr-solrj* /opt/solr/dist/solrj-lib/*) | tr ' ' ':')"
+export CLASSPATH="/opt/solr/server/lib/ext/*:/opt/solr/server/solr-webapp/webapp/WEB-INF/lib/*"
 
 jython [solr_java_native.py | solr_zxjdbc.py]
 ----

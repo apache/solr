@@ -31,10 +31,6 @@ ext {
 }
 
 configurations {
-  distSolr {
-    transitive = false
-  }
-  distSolrj
   contrib
   example
   server
@@ -51,8 +47,6 @@ artifacts {
 }
 
 dependencies {
-  distSolrj project(":solr:solrj")
-
   [":solr:contrib:analysis-extras",
    ":solr:contrib:analytics",
    ":solr:contrib:extraction",
@@ -65,13 +59,8 @@ dependencies {
    ":solr:contrib:s3-repository",
    ":solr:contrib:scripting"
   ].each { contribName ->
-    distSolr project(contribName)
     contrib  project(path: contribName, configuration: "packaging")
   }
-
-  distSolr project(":solr:core")
-  distSolr project(":solr:server")
-  distSolr project(":solr:solrj")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
@@ -107,14 +96,6 @@ distributions {
 
       from(configurations.contrib, {
         into "contrib"
-      })
-
-      from(configurations.distSolr, {
-        into "dist"
-      })
-
-      from(configurations.distSolrj - configurations.distSolr, {
-        into "dist/solrj-lib"
       })
 
       from(configurations.example, {

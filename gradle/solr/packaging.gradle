@@ -60,6 +60,10 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
     // An aggregate that configures lib and test-lib in a temporary location.
     task assemblePackaging(type: Sync) {
       from "README.md"
+      
+      from (tasks.jar, {
+        into "lib"
+      })
 
       from ({
         def externalLibs = configurations.runtimeLibs.copyRecursive { dep ->
