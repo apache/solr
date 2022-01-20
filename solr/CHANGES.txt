@@ -234,6 +234,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15209: The old LegacyAssignStrategy has been refactored into the SimplePlacementPlugin. This is still the default
   placement policy for Solr. (Houston Putman, Ilan Ginzburg)
 
+* SOLR-14916: Add split parameter to timeseries Streaming Expression (Joel Bernstein)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
