@@ -4,14 +4,17 @@ site:
   start_page: solr::index.adoc
 content:
   sources:
-#  - url: https://github.com/apache/solr
-#    branches: jira/solr-15556-antora
-#    start_path: solr/solr-ref-guide
-#    edit_url: '{web_url}/tree/{refname}/{path}'
 #  TODO: this section needs to be edited before merging
   - url: https://github.com/apache/solr.git
     branches: jira/solr-15556-antora
     start_path: solr/solr-ref-guide
+    edit_url: '{web_url}/tree/{refname}/{path}'
+# Uncomment these sections for local development but DO NOT COMMIT IT
+#  - url: ../..
+#    branches: HEAD
+#    start_path: solr/solr-ref-guide
+#    edit_url: '{web_url}/tree/{refname}/{path}'
+
 ui:
   bundle:
 # Uncomment next line when developing UI to see local changes before pushing
