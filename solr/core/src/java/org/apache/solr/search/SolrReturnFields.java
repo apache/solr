@@ -19,9 +19,11 @@ package org.apache.solr.search;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -172,7 +174,7 @@ public class SolrReturnFields extends ReturnFields {
       return;
     }
 
-    List<DeferredRenameEntry> deferredRenameAugmenters = new ArrayList<>();
+    Deque<DeferredRenameEntry> deferredRenameAugmenters = new LinkedList<>();
     DocTransformers augmenters = new DocTransformers();
     for (String fieldList : fl) {
       add(fieldList,deferredRenameAugmenters,augmenters,req);
@@ -234,7 +236,7 @@ public class SolrReturnFields extends ReturnFields {
     return null;
   }
 
-  private void add(String fl, Collection<DeferredRenameEntry> deferred, DocTransformers augmenters, SolrQueryRequest req) {
+  private void add(String fl, Deque<DeferredRenameEntry> deferred, DocTransformers augmenters, SolrQueryRequest req) {
     if( fl == null ) {
       return;
     }
@@ -276,7 +278,7 @@ public class SolrReturnFields extends ReturnFields {
           field = sp.getId(null);
           ch = sp.ch();
           if (field != null && (Character.isWhitespace(ch) || ch == ',' || ch==0)) {
-            deferred.add(new DeferredRenameEntry(key, new ModifiableSolrParams().set(SOURCE_FIELD_ARGNAME, field), req, RENAME_FIELD_TRANSFORMER_FACTORY));
+            deferred.addFirst(new DeferredRenameEntry(key, new ModifiableSolrParams().set(SOURCE_FIELD_ARGNAME, field), req, RENAME_FIELD_TRANSFORMER_FACTORY));
             // NOTE: treat as pseudoField below because `fields` will be modified on deferred invocation
             addField(field, key, augmenters, true);
             continue;
@@ -326,7 +328,18 @@ public class SolrReturnFields extends ReturnFields {
 
           TransformerFactory factory = req.getCore().getTransformerFactory( augmenterName );
           if (factory instanceof TransformerFactory.FieldRenamer) {
-            deferred.add(new DeferredRenameEntry(disp, augmenterParams, req, (TransformerFactory.FieldRenamer) factory));
+            // NOTE: `deferred` is a Deque because some TransformerFactories (e.g., `GeoTransformerFactory`) can
+            // subtly modify the representation of the associated value (i.e., it's not just a straight rename). This
+            // subverts the "update source field" phase of `FieldRenamer.create(...)`. We _know_ however that "simple"
+            // field renames don't do any value modification whatsoever, so those are added to the beginning of
+            // the `deferred` Deque so that they will be processed first, and all other `FieldRenamers` are added
+            // to the end (here).
+            final DeferredRenameEntry deferredEntry = new DeferredRenameEntry(disp, augmenterParams, req, (TransformerFactory.FieldRenamer) factory);
+            if (((TransformerFactory.FieldRenamer) factory).mayModifyValue()) {
+              deferred.addLast(deferredEntry);
+            } else {
+              deferred.addFirst(deferredEntry);
+            }
           } else if (factory != null) {
             DocTransformer t = factory.create(disp, augmenterParams, req);
             if(t!=null) {
@@ -416,7 +429,7 @@ public class SolrReturnFields extends ReturnFields {
             // OK, it was an oddly named field
             addField(field, key, augmenters, false);
             if( key != null ) {
-              deferred.add(new DeferredRenameEntry(key, new ModifiableSolrParams().set(SOURCE_FIELD_ARGNAME, field), req, RENAME_FIELD_TRANSFORMER_FACTORY));
+              deferred.addFirst(new DeferredRenameEntry(key, new ModifiableSolrParams().set(SOURCE_FIELD_ARGNAME, field), req, RENAME_FIELD_TRANSFORMER_FACTORY));
             }
           } else {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing fieldname: " + e.getMessage(), e);
@@ -442,6 +455,11 @@ public class SolrReturnFields extends ReturnFields {
         renamedFields.put(from, to);
       }
       return new RenameFieldTransformer(from, to, copy);
+    }
+
+    @Override
+    public boolean mayModifyValue() {
+      return false;
     }
   };
 

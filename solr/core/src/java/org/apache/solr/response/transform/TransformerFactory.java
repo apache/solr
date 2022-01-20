@@ -63,6 +63,11 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin
    * no field renames, and a subsequent phase that implement extra logic to properly handle field renames.
    */
   public interface FieldRenamer {
+    // TODO: Behavior is undefined in the event of a "destination field" collision (e.g., a user maps two fields to
+    //  the same "destination field", or maps a field to a top-level requested field). In the future, the easiest way
+    //  to detect such a case would be by "failing fast" upon renaming to a field that already has an associated value,
+    //  or support for this feature could be expressly added via a hypothetical
+    //  `combined_field:[consolidate fl=field_1,field_2]` transformer.
     /**
      * Analogous to {@link TransformerFactory#create(String, SolrParams, SolrQueryRequest)}, but to be implemented
      * by {@link TransformerFactory}s that produce {@link DocTransformer}s that may rename fields.
@@ -80,6 +85,16 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin
      * @return A transformer to be used in processing field values in returned documents.
      */
     DocTransformer create(String field, SolrParams params, SolrQueryRequest req, Map<String, String> renamedFields, Set<String> reqFieldNames);
+
+    /**
+     * @return <code>true</code> if implementations of this class may (even subtly) modify field values.
+     * ({@link GeoTransformerFactory} may do this, e.g.). To fail safe, the default implementation returns
+     * <code>true</code>. This method should be overridden to return <code>false</code> if the implementing
+     * class is guaranteed to not modify any values for the fields that it renames.
+     */
+    default boolean mayModifyValue() {
+      return true;
+    }
   }
 
   public static final Map<String,TransformerFactory> defaultFactories = new HashMap<>(9, 1.0f);

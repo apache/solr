@@ -103,14 +103,26 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       new ValueAugmenterValidator(1976, "val_alias"),
       //
       new RenameFieldValueValidator("id", "my_id_alias"),
+      // NOTE: we add a SimpleFieldValueValidator below to check that we can enforce the presence of this field,
+      // even when it may have been "renamed" by the transformer above? (this and other such instances are
+      // marked with `//REQ`); also add a RenameFieldValueValidator to "fork" values, marked with `//FORK`.
+      new SimpleFieldValueValidator("id"), //REQ
       new SimpleFieldValueValidator("aaa_i"),
       new RenameFieldValueValidator("bbb_i", "my_int_field_alias"),
+      new RenameFieldValueValidator("bbb_i", "my_int_field_alias2"), //FORK
+      new SimpleFieldValueValidator("bbb_i"), //REQ
       new SimpleFieldValueValidator("ccc_s"),
       new RenameFieldValueValidator("ddd_s", "my_str_field_alias"),
+      new RenameFieldValueValidator("ddd_s", "my_str_field_alias2"), // FORK
+      new SimpleFieldValueValidator("ddd_s"), //REQ
 
       new RawFieldValueValidator("json", "eee_s", "my_json_field_alias"),
+      new RenameFieldValueValidator("eee_s", "my_escaped_json_field_alias"), // FORK
+      new SimpleFieldValueValidator("eee_s"), //REQ
       new RawFieldValueValidator("json", "fff_s"),
       new RawFieldValueValidator("xml", "ggg_s", "my_xml_field_alias"),
+      new RenameFieldValueValidator("ggg_s", "my_escaped_xml_field_alias"), // FORK
+      new SimpleFieldValueValidator("ggg_s"), //REQ
       new RawFieldValueValidator("xml", "hhh_s"),
 
       new NotIncludedValidator("bogus_unused_field_ss"),
@@ -121,6 +133,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       new FunctionValidator("aaa_i", "func_aaa_alias"),
       new GeoTransformerValidator("geo_1_srpt"),
       new GeoTransformerValidator("geo_2_srpt","my_geo_alias"),
+      new RenameFieldValueValidator("geo_2_srpt", "my_geo_alias2"), // FORK
+      new SimpleFieldValueValidator("geo_2_srpt"), //REQ
       new ExplainValidator(),
       new ExplainValidator("explain_alias"),
       new SubQueryValidator(),

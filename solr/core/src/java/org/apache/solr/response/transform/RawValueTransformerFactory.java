@@ -58,6 +58,12 @@ public class RawValueTransformerFactory extends TransformerFactory implements Tr
   }
 
   @Override
+  public boolean mayModifyValue() {
+    // The only thing we may modify is the _serialization_; field values per se are guaranteed to be unmodified.
+    return false;
+  }
+
+  @Override
   public DocTransformer create(String display, SolrParams params, SolrQueryRequest req,
                                Map<String, String> renamedFields, Set<String> reqFieldNames) {
     String field = params.get("f");
