@@ -10,15 +10,15 @@ Please refer to the Solr Reference Guide's section on [Learning To Rank](https:/
 
 1. Download and install [liblinear](https://www.csie.ntu.edu.tw/~cjlin/liblinear/)
 
-2. Change `contrib/ltr/example/config.json` "trainingLibraryLocation" to point to the train directory where you installed liblinear.
+2. Change `modules/ltr/example/config.json` "trainingLibraryLocation" to point to the train directory where you installed liblinear.
 
    Alternatively, leave the `config.json` file unchanged and create a soft-link to your `liblinear` directory e.g.
 
-  `ln -s /Users/YourNameHere/Downloads/liblinear-2.1 ./contrib/ltr/example/liblinear`
+  `ln -s /Users/YourNameHere/Downloads/liblinear-2.1 ./modules/ltr/example/liblinear`
 
 3. Extract features, train a reranking model, and deploy it to Solr.
 
-  `cd contrib/ltr/example`
+  `cd modules/ltr/example`
 
   `python train_and_upload_demo_model.py -c config.json`
 

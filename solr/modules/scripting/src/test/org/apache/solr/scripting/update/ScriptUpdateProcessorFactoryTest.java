@@ -33,7 +33,7 @@ import org.junit.BeforeClass;
 /**
  * Tests {@link ScriptUpdateProcessorFactory}.
  *
- * TODO: This test, to run from an IDE, requires a working directory of &lt;path-to&gt;/solr/contrib/scripting/src/test-files.  Fix!
+ * TODO: This test, to run from an IDE, requires a working directory of &lt;path-to&gt;/solr/modules/scripting/src/test-files.  Fix!
  */
 public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
 

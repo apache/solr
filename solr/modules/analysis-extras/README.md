@@ -9,7 +9,7 @@ analyzers for Chinese and Polish, and integration with
 OpenNLP for multilingual tokenization, part-of-speech tagging
 lemmatization, phrase chunking, and named-entity recognition.
 
-Each of the jars below relies upon including `/contrib/analysis-extras/lib/solr-analysis-extras-X.Y.Z.jar`
+Each of the jars below relies upon including `/modules/analysis-extras/lib/solr-analysis-extras-X.Y.Z.jar`
 in the `solrconfig.xml`
 
 * ICU relies upon `lib/lucene-analyzers-icu-X.Y.jar`

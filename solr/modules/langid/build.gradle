@@ -18,7 +18,7 @@
 
 apply plugin: 'java-library'
 
-description = 'Language Identifier contrib for extracting language from a document being indexed'
+description = 'Language Identifier module for extracting language from a document being indexed'
 
 dependencies {
   implementation project(':solr:core')

@@ -18,6 +18,6 @@ for more information.
 
 Dependencies
 ------------
-The Tika detector depends on Tika Core (which is part of extraction contrib)
+The Tika detector depends on Tika Core (which is part of the extraction module)
 The Langdetect detector depends on LangDetect library
 The OpenNLP detector depends on OpenNLP tools and requires a previously trained user-supplied model
