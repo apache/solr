@@ -22,7 +22,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
@@ -66,27 +70,19 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
                  config.getLoggerConfig(PARENT_LOGGER_NAME));
     assertEquals(Level.DEBUG, config.getLoggerConfig(CLASS_LOGGER_NAME).getLevel());
 
-    assertQ("Show Log Levels OK",
-            req(CommonParams.QT,"/admin/logging")
-            ,"//arr[@name='loggers']/lst/str[.='"+CLASS_LOGGER_NAME+"']/../str[@name='level'][.='DEBUG']"
-            ,"//arr[@name='loggers']/lst/str[.='"+PARENT_LOGGER_NAME+"']/../null[@name='level']"
-            );
+    SolrClient client = new EmbeddedSolrServer(h.getCore());
+    ModifiableSolrParams mparams = new ModifiableSolrParams();
+    mparams.set("set", PARENT_LOGGER_NAME + ":TRACE");
+    client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
 
-    assertQ("Set a (new) level",
-            req(CommonParams.QT,"/admin/logging",  
-                "set", PARENT_LOGGER_NAME+":TRACE")
-            ,"//arr[@name='loggers']/lst/str[.='"+PARENT_LOGGER_NAME+"']/../str[@name='level'][.='TRACE']"
-            );
     assertEquals(Level.TRACE, config.getLoggerConfig(PARENT_LOGGER_NAME).getLevel());
     assertEquals(Level.DEBUG, config.getLoggerConfig(CLASS_LOGGER_NAME).getLevel());
     
     // NOTE: LoggeringHandler doesn't actually "remove" the LoggerConfig, ...
     // evidently so people using they UI can see that it was explicitly turned "OFF" ?
-    assertQ("Remove a level",
-        req(CommonParams.QT,"/admin/logging",  
-            "set", PARENT_LOGGER_NAME+":null")
-        ,"//arr[@name='loggers']/lst/str[.='"+PARENT_LOGGER_NAME+"']/../str[@name='level'][.='OFF']"
-        );
+    mparams.set("set", PARENT_LOGGER_NAME + ":null");
+    client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
+
     assertEquals(Level.OFF, config.getLoggerConfig(PARENT_LOGGER_NAME).getLevel());
     assertEquals(Level.DEBUG, config.getLoggerConfig(CLASS_LOGGER_NAME).getLevel());
 
