@@ -65,9 +65,9 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
       fail("Expected an exception to be thrown from MiniSolrCloudCluster");
     }
     catch (Exception e) {
-      assertEquals("Error starting up MiniSolrCloudCluster", e.getMessage());
+      assertEquals("Incorrect exception", "Error starting up MiniSolrCloudCluster", e.getMessage());
       assertEquals("Expected one suppressed exception", 1, e.getSuppressed().length);
-      assertEquals("Fake exception on startup!", e.getSuppressed()[0].getMessage());
+      assertEquals("Incorrect supressed exception", "Fake exception on startup!", e.getSuppressed()[0].getMessage());
     }
     finally {
       if (cluster != null)

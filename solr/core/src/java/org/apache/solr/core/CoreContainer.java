@@ -1752,7 +1752,7 @@ public class CoreContainer {
 
         if (docCollection != null) {
           Replica replica = docCollection.getReplica(cd.getCloudDescriptor().getCoreNodeName());
-          assert replica != null;
+          assert replica != null : cd.getCloudDescriptor().getCoreNodeName() + " had no replica";
           if (replica.getType() == Replica.Type.TLOG) { // TODO: needed here?
             getZkController().stopReplicationFromLeader(core.getName());
             if (!cd.getCloudDescriptor().isLeader()) {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +49,8 @@ import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.TestableZooKeeper;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,9 +140,8 @@ public class ChaosMonkey {
     if (cores != null) {
       monkeyLog("expire session for " + jetty.getLocalPort() + " !");
       causeConnectionLoss(jetty);
-      long sessionId = cores.getZkController().getZkClient()
-          .getSolrZooKeeper().getSessionId();
-      zkServer.expire(sessionId);
+      cores.getZkController().getZkClient()
+          .getSolrZooKeeper().getTestable().injectSessionExpiration();
     }
 
   }
@@ -164,13 +166,25 @@ public class ChaosMonkey {
       connloss.incrementAndGet();
     }
   }
-  
+
   public static void causeConnectionLoss(JettySolrRunner jetty) {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
       monkeyLog("Will cause connection loss on " + jetty.getLocalPort());
       SolrZkClient zkClient = cores.getZkController().getZkClient();
-      zkClient.getSolrZooKeeper().closeCnxn();
+      causeConnectionLoss(zkClient.getSolrZooKeeper());
+    }
+  }
+
+  public static void causeConnectionLoss(ZooKeeper zooKeeper) {
+    if (zooKeeper instanceof TestableZooKeeper) {
+      try {
+        ((TestableZooKeeper) zooKeeper).testableConnloss();
+      } catch (IOException ignored) {
+        // best effort
+      }
+    } else {
+      // TODO?
     }
   }
 

@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,8 +74,8 @@ public class ConnectionManager implements Watcher {
     }
   }
 
-  public static abstract class IsClosed {
-    public abstract boolean isClosed();
+  public interface IsClosed {
+    boolean isClosed();
   }
 
   private volatile LikelyExpiredState likelyExpiredState = LikelyExpiredState.EXPIRED;
@@ -153,7 +154,7 @@ public class ConnectionManager implements Watcher {
               client.getZkClientTimeout(), this,
               new ZkClientConnectionStrategy.ZkUpdate() {
                 @Override
-                public void update(SolrZooKeeper keeper) {
+                public void update(ZooKeeper keeper) {
                   try {
                     waitForConnected(Long.MAX_VALUE);
 
@@ -176,6 +177,18 @@ public class ConnectionManager implements Watcher {
                     // our retry loop will try to create one again
                     closeKeeper(keeper);
                     throw new RuntimeException(e1);
+                  }
+                }
+
+                private void closeKeeper(ZooKeeper keeper) {
+                  try {
+                    keeper.close();
+                  } catch (InterruptedException e) {
+                    // Restore the interrupted status
+                    Thread.currentThread().interrupt();
+                    log.error("", e);
+                    throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                        "", e);
                   }
                 }
               });
@@ -267,18 +280,6 @@ public class ConnectionManager implements Watcher {
     }
     if (connected) {
       throw new TimeoutException("Did not disconnect");
-    }
-  }
-
-  private void closeKeeper(SolrZooKeeper keeper) {
-    try {
-      keeper.close();
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.error("", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "", e);
     }
   }
 }

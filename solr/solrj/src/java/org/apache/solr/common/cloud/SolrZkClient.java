@@ -60,6 +60,7 @@ import org.slf4j.LoggerFactory;
  * ZooKeeper. This class handles synchronous connects and reconnections.
  *
  */
+// The constructor overloads are a little awkward, in a major version it might be nice to move this to a builder
 public class SolrZkClient implements Closeable {
 
   static final String NEWL = System.getProperty("line.separator");
@@ -70,7 +71,7 @@ public class SolrZkClient implements Closeable {
 
   private ConnectionManager connManager;
 
-  private volatile SolrZooKeeper keeper;
+  private volatile ZooKeeper keeper;
 
   private ZkCmdExecutor zkCmdExecutor;
 
@@ -97,15 +98,15 @@ public class SolrZkClient implements Closeable {
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout) {
-    this(zkServerAddress, zkClientTimeout, new DefaultConnectionStrategy(), null);
+    this(zkServerAddress, zkClientTimeout, DEFAULT_CLIENT_CONNECT_TIMEOUT);
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
-    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, new DefaultConnectionStrategy(), null);
+    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, null);
   }
 
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, OnReconnect onReonnect) {
-    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, new DefaultConnectionStrategy(), onReonnect);
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, OnReconnect onReconnect) {
+    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, null, onReconnect);
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
@@ -115,7 +116,7 @@ public class SolrZkClient implements Closeable {
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout,
       ZkClientConnectionStrategy strat, final OnReconnect onReconnect) {
-    this(zkServerAddress, zkClientTimeout, clientConnectTimeout, strat, onReconnect, null, null, null);
+    this(zkServerAddress, zkClientTimeout, clientConnectTimeout, strat, onReconnect, null );
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout,
@@ -128,7 +129,22 @@ public class SolrZkClient implements Closeable {
     this.zkServerAddress = zkServerAddress;
     this.higherLevelIsClosed = higherLevelIsClosed;
     if (strat == null) {
-      strat = new DefaultConnectionStrategy();
+      // Typically unset but useful for testing
+      String connectionStrategy = System.getProperty("solr.zookeeper.connectionStrategy");
+      if (connectionStrategy != null) {
+        try {
+          strat = Class.forName(connectionStrategy)
+              .asSubclass(ZkClientConnectionStrategy.class)
+              .getConstructor()
+              .newInstance();
+        } catch (Exception e) {
+          log.warn("Exception when loading '{}' ZK connection strategy class.", connectionStrategy, e);
+        }
+      }
+      if (strat == null) {
+        // fall back to the default strategy even if we encountered errors earlier
+        strat = new DefaultConnectionStrategy();
+      }
     }
     this.zkClientConnectionStrategy = strat;
 
@@ -139,26 +155,14 @@ public class SolrZkClient implements Closeable {
 
     this.zkClientTimeout = zkClientTimeout;
     // we must retry at least as long as the session timeout
-    zkCmdExecutor = new ZkCmdExecutor(zkClientTimeout, new IsClosed() {
-
-      @Override
-      public boolean isClosed() {
-        return SolrZkClient.this.isClosed();
-      }
-    });
+    zkCmdExecutor = new ZkCmdExecutor(zkClientTimeout, SolrZkClient.this::isClosed);
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
-        + zkServerAddress, this, zkServerAddress, strat, onReconnect, beforeReconnect, new IsClosed() {
-
-          @Override
-          public boolean isClosed() {
-            return SolrZkClient.this.isClosed();
-          }
-        });
+        + zkServerAddress, this, zkServerAddress, strat, onReconnect, beforeReconnect, SolrZkClient.this::isClosed);
 
     try {
       strat.connect(zkServerAddress, zkClientTimeout, wrapWatcher(connManager),
           zooKeeper -> {
-            SolrZooKeeper oldKeeper = keeper;
+            ZooKeeper oldKeeper = keeper;
             keeper = zooKeeper;
             try {
               closeKeeper(oldKeeper);
@@ -656,8 +660,8 @@ public class SolrZkClient implements Closeable {
   /**
    * Allows package private classes to update volatile ZooKeeper.
    */
-  void updateKeeper(SolrZooKeeper keeper) throws InterruptedException {
-   SolrZooKeeper oldKeeper = this.keeper;
+  void updateKeeper(ZooKeeper keeper) throws InterruptedException {
+   ZooKeeper oldKeeper = this.keeper;
    this.keeper = keeper;
    if (oldKeeper != null) {
      oldKeeper.close();
@@ -666,11 +670,16 @@ public class SolrZkClient implements Closeable {
    if (isClosed) this.keeper.close();
   }
 
-  public SolrZooKeeper getSolrZooKeeper() {
+  public ZooKeeper getZooKeeper() {
     return keeper;
   }
 
-  private void closeKeeper(SolrZooKeeper keeper) {
+  @Deprecated
+  public ZooKeeper getSolrZooKeeper() {
+    return keeper;
+  }
+
+  private void closeKeeper(ZooKeeper keeper) {
     if (keeper != null) {
       try {
         keeper.close();

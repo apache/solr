@@ -23,38 +23,34 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
-import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.PortAssignment;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
-import org.apache.zookeeper.jmx.ManagedUtil;
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.ServerCnxn;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ServerConfig;
-import org.apache.zookeeper.server.SessionTracker.Session;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.zookeeper.server.embedded.ExitHandler;
+import org.apache.zookeeper.server.embedded.ZooKeeperServerEmbedded;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
+import org.apache.zookeeper.test.ClientBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.JMException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.lang.reflect.Method;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,9 +60,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ZkTestServer {
 
@@ -86,13 +83,11 @@ public class ZkTestServer {
   public static final int TIMEOUT = 45000;
   public static final int TICK_TIME = 1000;
 
-  protected final ZKServerMain zkServer = new ZKServerMain();
+  ZooKeeperServerEmbedded zkse;
 
   private volatile Path zkDir;
 
   private volatile int clientPort;
-
-  private volatile Thread zooThread;
 
   private volatile int theTickTime = TICK_TIME;
   // SOLR-12101 - provide defaults to avoid max timeout 20 enforced by our server instance when tick time is 1000
@@ -104,7 +99,7 @@ public class ZkTestServer {
 
   private volatile ZKDatabase zkDb;
 
-  static public enum LimitViolationAction {
+  public enum LimitViolationAction {
     IGNORE,
     REPORT,
     FAIL,
@@ -116,24 +111,6 @@ public class ZkTestServer {
     private volatile ZooKeeperServer zooKeeperServer;
     private volatile LimitViolationAction violationReportAction = LimitViolationAction.REPORT;
     private volatile WatchLimiter limiter = new WatchLimiter(1, LimitViolationAction.IGNORE);
-
-    protected void initializeAndRun(String[] args) throws ConfigException,
-        IOException {
-      try {
-        ManagedUtil.registerLog4jMBeans();
-      } catch (JMException e) {
-        log.warn("Unable to register log4j JMX control", e);
-      }
-
-      ServerConfig config = new ServerConfig();
-      if (args.length == 1) {
-        config.parse(args[0]);
-      } else {
-        config.parse(args);
-      }
-
-      runFromConfig(config);
-    }
 
     private class WatchLimit {
       private long limit;
@@ -172,13 +149,6 @@ public class ZkTestServer {
             if (action == LimitViolationAction.FAIL) throw new AssertionError(msg);
           }
         }
-      }
-
-      public void updateForFire(WatchedEvent event) {
-        if (log.isDebugEnabled()) {
-          log.debug("Watch fired: {}: {}", desc, event.getPath());
-        }
-        counters.decrementAndGet(event.getPath());
       }
 
       private String reportLimitViolations() {
@@ -233,29 +203,6 @@ public class ZkTestServer {
         return statLimit.reportLimitViolations() +
             dataLimit.reportLimitViolations() +
             childrenLimit.reportLimitViolations();
-      }
-
-      private void updateForFire(WatchedEvent event) {
-        switch (event.getType()) {
-          case None:
-            break;
-          case NodeCreated:
-          case NodeDeleted:
-            statLimit.updateForFire(event);
-            break;
-          case NodeDataChanged:
-            dataLimit.updateForFire(event);
-            break;
-          case NodeChildrenChanged:
-            childrenLimit.updateForFire(event);
-            break;
-          case ChildWatchRemoved:
-            break;
-          case DataWatchRemoved:
-            break;
-          case PersistentWatchRemoved:
-            break;
-        }
       }
     }
 
@@ -363,7 +310,7 @@ public class ZkTestServer {
           try {
             int port = cnxnFactory.getLocalPort();
             if (port > 0) {
-              waitForServerDown(getZkHost(), 30000);
+              ClientBase.waitForServerDown(getZkHost(), 30_000);
             }
           } catch (NullPointerException ignored) {
             // server never successfully started
@@ -409,12 +356,12 @@ public class ZkTestServer {
     String reportAction = System.getProperty("tests.zk.violationReportAction");
     if (reportAction != null) {
       log.info("Overriding violation report action to: {}", reportAction);
-      setViolationReportAction(LimitViolationAction.valueOf(reportAction));
+      // setViolationReportAction(LimitViolationAction.valueOf(reportAction));
     }
     String limiterAction = System.getProperty("tests.zk.limiterAction");
     if (limiterAction != null) {
       log.info("Overriding limiter action to: {}", limiterAction);
-      getLimiter().setAction(LimitViolationAction.valueOf(limiterAction));
+      // getLimiter().setAction(LimitViolationAction.valueOf(limiterAction));
     }
 
     ObjectReleaseTracker.track(this);
@@ -438,7 +385,7 @@ public class ZkTestServer {
 
   public String getZkHost() {
     String hostName = System.getProperty("hostName", "127.0.0.1");
-    return hostName + ":" + zkServer.getLocalPort();
+    return hostName + ":" + clientPort;
   }
 
   public String getZkAddress() {
@@ -472,35 +419,17 @@ public class ZkTestServer {
   }
 
   public int getPort() {
-    return zkServer.getLocalPort();
-  }
-
-  public void expire(final long sessionId) {
-    zkServer.zooKeeperServer.expire(new Session() {
-      @Override
-      public long getSessionId() {
-        return sessionId;
-      }
-
-      @Override
-      public int getTimeout() {
-        return 4000;
-      }
-
-      @Override
-      public boolean isClosing() {
-        return false;
-      }
-    });
+    return clientPort;
   }
 
   public ZKDatabase getZKDatabase() {
-    return zkServer.zooKeeperServer.getZKDatabase();
+    return null;
+//    return zkServer.zooKeeperServer.getZKDatabase();
   }
 
   public void setZKDatabase(ZKDatabase zkDb) {
     this.zkDb = zkDb;
-    zkServer.zooKeeperServer.setZKDatabase(zkDb);
+//    zkServer.zooKeeperServer.setZKDatabase(zkDb);
   }
 
   public void run() throws InterruptedException, IOException {
@@ -509,182 +438,59 @@ public class ZkTestServer {
 
   public void run(boolean solrFormat) throws InterruptedException, IOException {
     log.info("STARTING ZK TEST SERVER");
-    AtomicReference<Throwable> zooError = new AtomicReference<>();
+
+    if (clientPort == 0) {
+      // Hacks to get PortAssignment to work with our test runner partitioning
+/*
+      String processCount = System.getProperty("tests.jvms", "1");
+      System.setProperty("test.junit.threads", processCount);
+
+      String cmdLine = System.getProperty("sun.java.command"); // worker.org.gradle.process.internal.worker.GradleWorkerMain 'Gradle Test Executor 2'
+      System.getProperties().forEach((k,v) -> log.info("{}={}", k, v));
+      Matcher m = Pattern.compile("Executor (\\d+)").matcher(cmdLine);
+      if (m.find()) {
+        System.setProperty("zookeeper.junit.threadid", m.group(1));
+      }
+*/
+
+      clientPort = PortAssignment.unique();
+    }
+
+    Properties configuration = new Properties();
+    configuration.setProperty("clientPort", String.valueOf(clientPort));
+    configuration.setProperty("tickTime", String.valueOf(theTickTime));
+    configuration.setProperty("maxSessionTimeout", String.valueOf(maxSessionTimeout));
+    configuration.setProperty("minSessionTimeout", String.valueOf(minSessionTimeout));
+    configuration.setProperty("admin.enableServer", Boolean.FALSE.toString());
+
+    Files.createDirectories(zkDir);
     try {
-      if (zooThread != null) {
-        throw new IllegalStateException("ZK TEST SERVER IS ALREADY RUNNING");
-      }
-      Thread parentThread = Thread.currentThread();
-      // we don't call super.distribSetUp
-      zooThread = new Thread("ZkTestServer Run Thread") {
+      zkse = ZooKeeperServerEmbedded.builder()
+              .baseDir(zkDir)
+              .configuration(configuration)
+              .exitHandler(ExitHandler.LOG_ONLY)
+              .build();
+      zkse.start();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to start embedded ZK Server", e);
+    }
 
-        @Override
-        public void run() {
-          ServerConfig config = new ServerConfig() {
-
-            {
-              setClientPort(ZkTestServer.this.clientPort);
-              this.dataDir = zkDir.toFile();
-              this.dataLogDir = zkDir.toFile();
-              this.tickTime = theTickTime;
-              this.maxSessionTimeout = ZkTestServer.this.maxSessionTimeout;
-              this.minSessionTimeout = ZkTestServer.this.minSessionTimeout;
-            }
-
-            public void setClientPort(int clientPort) {
-              if (clientPortAddress != null) {
-                try {
-                  this.clientPortAddress = new InetSocketAddress(
-                      InetAddress.getByName(clientPortAddress.getHostName()), clientPort);
-                } catch (UnknownHostException e) {
-                  throw new RuntimeException(e);
-                }
-              } else {
-                this.clientPortAddress = new InetSocketAddress(clientPort);
-              }
-              log.info("client port: {}", this.clientPortAddress);
-            }
-          };
-          try {
-            zkServer.runFromConfig(config);
-          } catch (Throwable t) {
-            zooError.set(t);
-            parentThread.interrupt();
-          }
-        }
-      };
-
-      ObjectReleaseTracker.track(zooThread);
-      zooThread.start();
-
-      int cnt = 0;
-      int port = -1;
-      try {
-        port = getPort();
-      } catch (IllegalStateException ignored) {
-        // Possibly fix this API to return null instead of throwing
-      }
-      while (port < 1) {
-        Thread.sleep(100);
-        try {
-          port = getPort();
-        } catch (IllegalStateException ignored) {
-          // Possibly fix this API to return null instead of throwing
-        }
-        if (cnt == 500) {
-          throw new RuntimeException("Could not get the port for ZooKeeper server");
-        }
-        cnt++;
-      }
-      log.info("start zk server on port: {}", port);
-
-      waitForServerUp(getZkHost(), 30000);
-
+    ClientBase.waitForServerUp(getZkHost(), 30_000);
+    try {
       init(solrFormat);
     } catch (Exception e) {
-      RuntimeException toThrow = new RuntimeException("Could not get ZK port");
-      Throwable t = zooError.get();
-      if (t != null) {
-        toThrow.initCause(t);
-        toThrow.addSuppressed(e);
-      } else {
-        toThrow.initCause(e);
-      }
-      throw toThrow;
+      throw new RuntimeException(e);
     }
   }
 
   public void shutdown() throws IOException, InterruptedException {
     log.info("Shutting down ZkTestServer.");
-    try {
-      IOUtils.closeQuietly(rootClient);
-      IOUtils.closeQuietly(chRootClient);
-    } finally {
-
-      // TODO: this can log an exception while trying to unregister a JMX MBean
-      try {
-        zkServer.shutdown();
-      } catch (Exception e) {
-        log.error("Exception shutting down ZooKeeper Test Server",e);
-      }
-
-      if (zkDb != null) {
-        zkDb.close();
-      }
-
-      while (true) {
-        try {
-          if (zooThread != null) {
-            zooThread.join();
-            ObjectReleaseTracker.release(zooThread);
-          }
-          zooThread = null;
-          break;
-        } catch (InterruptedException e) {
-          // don't keep interrupted status
-        } catch (NullPointerException e) {
-          // okay
-          break;
-        }
-      }
+    if (zkse != null) { // if there were problems during startup
+      zkse.close();
     }
+    IOUtils.closeQuietly(rootClient);
+    IOUtils.closeQuietly(chRootClient);
     ObjectReleaseTracker.release(this);
-  }
-
-  public static boolean waitForServerDown(String hp, long timeoutMs) {
-    log.info("waitForServerDown: {}", hp);
-    final TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    while (true) {
-      try {
-        HostPort hpobj = parseHostPortList(hp).get(0);
-        send4LetterWord(hpobj.host, hpobj.port, "stat");
-      } catch (IOException e) {
-        return true;
-      }
-
-      if (timeout.hasTimedOut()) {
-        throw new RuntimeException("Time out waiting for ZooKeeper shutdown!");
-      }
-      try {
-        Thread.sleep(250);
-      } catch (InterruptedException e) {
-        // ignore
-      }
-    }
-  }
-
-  public static boolean waitForServerUp(String hp, long timeoutMs) {
-    log.info("waitForServerUp: {}", hp);
-    final TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    while (true) {
-      try {
-        HostPort hpobj = parseHostPortList(hp).get(0);
-        send4LetterWord(hpobj.host, hpobj.port, "stat");
-        return true;
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-
-      if (timeout.hasTimedOut()) {
-        throw new RuntimeException("Time out waiting for ZooKeeper to startup!");
-      }
-      try {
-        Thread.sleep(250);
-      } catch (InterruptedException e) {
-        // ignore
-      }
-    }
-  }
-
-  public static class HostPort {
-    String host;
-    int port;
-
-    HostPort(String host, int port) {
-      assert !host.contains(":") : host;
-      this.host = host;
-      this.port = port;
-    }
   }
 
   /**
@@ -693,7 +499,6 @@ public class ZkTestServer {
    * @param port the destination port
    * @param cmd the 4letterword
    * @return server response
-
    */
   public static String send4LetterWord(String host, int port, String cmd)
           throws IOException
@@ -722,23 +527,6 @@ public class ZkTestServer {
     }
   }
 
-  public static List<HostPort> parseHostPortList(String hplist) {
-    log.info("parse host and port list: {}", hplist);
-    ArrayList<HostPort> alist = new ArrayList<>();
-    for (String hp : hplist.split(",")) {
-      int idx = hp.lastIndexOf(':');
-      String host = hp.substring(0, idx);
-      int port;
-      try {
-        port = Integer.parseInt(hp.substring(idx + 1));
-      } catch (RuntimeException e) {
-        throw new RuntimeException("Problem parsing " + hp + e.toString());
-      }
-      alist.add(new HostPort(host, port));
-    }
-    return alist;
-  }
-
   public int getTheTickTime() {
     return theTickTime;
   }
@@ -749,14 +537,6 @@ public class ZkTestServer {
 
   public Path getZkDir() {
     return zkDir;
-  }
-
-  public void setViolationReportAction(LimitViolationAction violationReportAction) {
-    zkServer.setViolationReportAction(violationReportAction);
-  }
-
-  public ZKServerMain.WatchLimiter getLimiter() {
-    return zkServer.getLimiter();
   }
 
   public int getMaxSessionTimeout() {

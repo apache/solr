@@ -40,6 +40,8 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
+import org.apache.zookeeper.TestableZooKeeper;
+import org.apache.zookeeper.ZooKeeper;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -493,20 +495,17 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       }
     };
 
-    Thread connLossThread = new Thread() {
-      @Override
-      public void run() {
-
+    Thread connLossThread = new Thread(() -> {
         while (!stopStress) {
           try {
             Thread.sleep(50);
             int j;
             j = random().nextInt(threads.size());
             try {
-              threads.get(j).es.zkClient.getSolrZooKeeper().closeCnxn();
+              ZooKeeper zk = threads.get(j).es.zkClient.getZooKeeper();
+              ((TestableZooKeeper) zk).testableConnloss();
               if (random().nextBoolean()) {
-                long sessionId = zkClient.getSolrZooKeeper().getSessionId();
-                server.expire(sessionId);
+                zk.getTestable().injectSessionExpiration();
               }
             } catch (Exception e) {
               e.printStackTrace();
@@ -517,8 +516,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
           }
         }
-      }
-    };
+    });
 
     scheduleThread.start();
     connLossThread.start();

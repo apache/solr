@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCredentialsProvider.ZkCredentials;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +90,7 @@ public abstract class ZkClientConnectionStrategy {
   }
 
   public interface ZkUpdate {
-    void update(SolrZooKeeper zooKeeper) throws InterruptedException, TimeoutException, IOException;
+    void update(ZooKeeper zooKeeper) throws InterruptedException, TimeoutException, IOException;
   }
 
   public void setZkCredentialsToAddAutomatically(ZkCredentialsProvider zkCredentialsToAddAutomatically) {
@@ -104,16 +105,19 @@ public abstract class ZkClientConnectionStrategy {
 
   public ZkCredentialsProvider getZkCredentialsToAddAutomatically() { return zkCredentialsToAddAutomatically; }
 
-  protected SolrZooKeeper createSolrZooKeeper(final String serverAddress, final int zkClientTimeout,
-      final Watcher watcher) throws IOException {
-    SolrZooKeeper result = new SolrZooKeeper(serverAddress, zkClientTimeout, watcher);
+  protected ZooKeeper createZooKeeper(String serverAddress, int zkClientTimeout, Watcher watcher) throws IOException {
+    ZooKeeper zk = newZooKeeperInstance(serverAddress, zkClientTimeout, watcher);
 
     zkCredentialsToAddAutomaticallyUsed = true;
     for (ZkCredentials zkCredentials : zkCredentialsToAddAutomatically.getCredentials()) {
-      result.addAuthInfo(zkCredentials.getScheme(), zkCredentials.getAuth());
+      zk.addAuthInfo(zkCredentials.getScheme(), zkCredentials.getAuth());
     }
 
-    return result;
+    return zk;
   }
 
+  protected ZooKeeper newZooKeeperInstance(String serverAddress, int zkClientTimeout, Watcher watcher)
+      throws IOException {
+    return new ZooKeeper(serverAddress, zkClientTimeout, watcher);
+  }
 }

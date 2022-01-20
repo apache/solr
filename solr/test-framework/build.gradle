@@ -26,11 +26,15 @@ dependencies {
   api "org.apache.lucene:lucene-test-framework"
   api "org.apache.lucene:lucene-analysis-common"
 
-  implementation('org.apache.zookeeper:zookeeper', {
+  var zkExcludes = {
     exclude group: "org.apache.yetus", module: "audience-annotations"
     exclude group: "log4j", module: "log4j"
     exclude group: "org.slf4j", module: "slf4j-log4j12"
-  })
+  }
+
+  implementation('org.apache.zookeeper:zookeeper', zkExcludes)
+  // TODO investigate java-test-fixtures plugin?
+  implementation('org.apache.zookeeper:zookeeper:3.7.0:tests', zkExcludes)
 
   implementation 'commons-io:commons-io'
   implementation 'org.apache.logging.log4j:log4j-core'

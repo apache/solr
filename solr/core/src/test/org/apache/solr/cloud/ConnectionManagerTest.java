@@ -25,13 +25,14 @@ import java.util.concurrent.TimeoutException;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ConnectionManager;
-import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.zookeeper.TestableZooKeeper;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
+import org.apache.zookeeper.ZooKeeper;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -54,12 +55,11 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       try {
         assertFalse(cm.isLikelyExpired());
 
-        zkClient.getSolrZooKeeper().closeCnxn();
-        
-        long sessionId = zkClient.getSolrZooKeeper().getSessionId();
-        server.expire(sessionId);
-        Thread.sleep(TIMEOUT);
-        
+        ZooKeeper zk = zkClient.getZooKeeper();
+        assertTrue(zk instanceof TestableZooKeeper);
+        ((TestableZooKeeper) zk).testableConnloss();
+        zk.getTestable().injectSessionExpiration();
+
         assertTrue(cm.isLikelyExpired());
       } finally {
         cm.close();
@@ -122,7 +122,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       server.run();
       
       MockZkClientConnectionStrategy strat = new MockZkClientConnectionStrategy();
-      SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT, strat , null);
+      SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT, strat, null);
       ConnectionManager cm = zkClient.getConnectionManager();
       
       try {
@@ -144,7 +144,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
     }
   }
   
-  private static class MockZkClientConnectionStrategy extends DefaultConnectionStrategy {
+  private static class MockZkClientConnectionStrategy extends TestConnectionStrategy {
     int called = 0;
     boolean exceptionThrown = false;
     
