@@ -89,7 +89,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public static String RUNNING = "running";
   public static String COMPLETED = "completed";
   public static String FAILED = "failed";
-  public static String RESPONSE = "Response";
   public static String RESPONSE_STATUS = "STATUS";
   public static String RESPONSE_MESSAGE = "msg";
   public static String OPERATION_RESPONSE = "response";
