@@ -8,8 +8,9 @@ content:
 #    branches: jira/solr-15556-antora
 #    start_path: solr/solr-ref-guide
 #    edit_url: '{web_url}/tree/{refname}/{path}'
-  - url: ../../
-    branches: HEAD
+#  TODO: this section needs to be edited before merging
+  - url: https://github.com/apache/solr.git
+    branches: jira/solr-15556-antora
     start_path: solr/solr-ref-guide
 ui:
   bundle:
@@ -24,3 +25,5 @@ output:
 asciidoc:
   attributes:
     stem:
+runtime:
+  fetch: true
