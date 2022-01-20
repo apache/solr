@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.response.ResultContext;
@@ -52,14 +53,9 @@ public class DocTransformers extends DocTransformer
 
   @Override
   public Collection<String> getRawFields() {
-    Collection<String> fields = new ArrayList<>(size());
-    for (DocTransformer t : children) {
-      Collection<String> childFields = t.getRawFields();
-      if (childFields != null) {
-        fields.addAll(childFields);
-      }
-    }
-    return fields.isEmpty() ? null : fields;
+    return children.stream().map(DocTransformer::getRawFields)
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
   }
 
   public void addTransformer( DocTransformer a ) {

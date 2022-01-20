@@ -18,6 +18,7 @@ package org.apache.solr.response.transform;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.response.QueryResponseWriter;
@@ -60,12 +61,13 @@ public abstract class DocTransformer {
    * NOTE: normally this will be conditional on the `wt` param in the request, as supplied to the
    * {@link DocTransformer}'s parent {@link TransformerFactory} at the time of transformer creation.
    *
-   * @return Collection containing field names to be written raw, or <code>null</code> if no field names should
-   * be written raw. Any collection returned collection need not be externally modifiable -- i.e.,
-   * {@link java.util.Collections#singleton(Object)} is acceptable.
+   * @return Collection containing field names to be written raw; if no field names should
+   * be written raw, an empty collection should be returned. Any collection returned collection
+   * need not be externally modifiable -- i.e., {@link java.util.Collections#singleton(Object)} is
+   * acceptable.
    */
   public Collection<String> getRawFields() {
-    return null;
+    return Collections.emptySet();
   }
 
   /**
