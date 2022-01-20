@@ -197,7 +197,7 @@ public class TransactionLog implements Closeable {
           return;
         }
 
-        channel = FileChannel.open(tlog, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
+        channel = FileChannel.open(tlog, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
         os = Channels.newOutputStream(channel);
         fos = new FastOutputStream(os, new byte[65536], 0);
 

@@ -390,7 +390,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     try (Stream<Path> bufferedTLogs = Files.walk(tlogDir, 1)) {
       existOldBufferLog = bufferedTLogs.anyMatch(path -> path.getFileName().toString().startsWith(prefix));
     } catch (IOException e) {
-      // TODO
+      // Existance of buffered t-logs indicates previous recovery failed and lets us skip peer sync as an optimization
+      // Failing to read them is non-fatal and almost not even worth logging about
+      log.debug("Could not read {} directory searching for buffered transaction log files.", tlogDir, e);
+      existOldBufferLog = false;
     }
     TransactionLog oldLog = null;
     for (String oldLogName : tlogFiles) {
@@ -398,8 +401,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       try {
         oldLog = newTransactionLog(path, null, true);
         addOldLog(oldLog, false);  // don't remove old logs on startup since more than one may be uncapped.
-      } catch (Exception e) {
-        log.error("Failure to open existing log file (non fatal) " + path, e);
+      } catch (RuntimeException e) {
+        // This could be a SolrException, why is it non-fatal?
+        log.error("Failure to open existing log file (non fatal) {} ", path, e);
         deleteFile(path);
       }
     }
