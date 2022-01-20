@@ -32,7 +32,7 @@ If you did, though, and need to restart Solr, issue these commands:
 `./bin/solr start -c -p 8983 -s example/cloud/node1/solr`
 
 This starts the first node.
-When it's done start the second node, and tell it how to connect to to ZooKeeper:
+When it's done start the second node, and tell it how to connect to ZooKeeper:
 
 `./bin/solr start -c -p 7574 -s example/cloud/node2/solr -z localhost:9983`
 
@@ -244,7 +244,7 @@ Each command will produce output similar to the below seen while indexing JSON:
 [source,bash,subs="verbatim,attributes"]
 ----
 $ ./bin/post -c films example/films/films.json
-/bin/java -classpath /solr-{solr-docs-version}.0/dist/solr-core-{solr-docs-version}.0.jar -Dauto=yes -Dc=films -Ddata=files org.apache.solr.util.SimplePostTool example/films/films.json
+/bin/java -classpath /solr-{solr-docs-version}.0/server/solr-webapp/webapp/WEB-INF/lib/solr-core-{solr-docs-version}.0.jar -Dauto=yes -Dc=films -Ddata=files org.apache.solr.util.SimplePostTool example/films/films.json
 SimplePostTool version 5.0.0
 Posting files to [base] url http://localhost:8983/solr/films/update...
 Entering auto mode. File endings considered are xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
@@ -444,7 +444,7 @@ This results in the following response, which shows a facet for each category an
             {
               "field":"directed_by_str",
               "value":"Michael Winterbottom",
-              "count":4}}]}]}}}
+              "count":4}]}]}}}
 
 We've truncated this output as well - you will see a lot of genres and directors in your screen.
 

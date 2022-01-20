@@ -26,7 +26,31 @@ Bug Fixes
 
 Other Changes
 ---------------------
+* SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
+
+==================  9.1.0 ==================
+
+Docker and contrib modules have separate CHANGES.md files.
+
+New Features
+---------------------
 (No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+* SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
 
 ==================  9.0.0 ==================
 
@@ -232,12 +256,20 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15209: The old LegacyAssignStrategy has been refactored into the SimplePlacementPlugin. This is still the default
   placement policy for Solr. (Houston Putman, Ilan Ginzburg)
 
+* SOLR-14916: Add split parameter to timeseries Streaming Expression (Joel Bernstein)
+
 Build
 ---------------------
+* LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
+
+* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+  Deserves mention here as well as Lucene CHANGES.txt since it affects both.
 
 * LUCENE-10104, SOLR-15631: Upgrade forbiddenapis to version 3.2.  (Uwe Schindler)
 
 * SOLR-13671: Remove check for bare "var" declarations in validate-source-patterns (Erick Erickson, Alex Bulygin, janhoy)
+
+* SOLR-14857: Add optional gradle property to run docker tests in parallel (hossman, Houston Putman)
 
 * SOLR-15793: Pin http_parser.rb to specific version to allow Solr Ref Guide on Jekyll to run (Eric Pugh)
 
@@ -247,10 +279,12 @@ Build
 
 * SOLR-15891: The Solr Docker image uses the default file permissions from the tarball artifact (Houston Putman, janhoy)
 
-Other Changes
-----------------------
 * SOLR-15603: Add an option to activate Gradle build cache, build task cleanups (Alexis Tual, Dawid Weiss)
 
+* SOLR-15670: Introduce Gradle parameter to skip ref-guide tasks (Houston Putman, Dawid Weiss)
+
+Other Changes
+----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
 
 * SOLR-14616: CDCR support removed (Ishan Chattopadhyaya)
@@ -309,9 +343,6 @@ Other Changes
 * SOLR-12823: Remove /clusterstate.json support, including support for collections created with stateFormat=1,
   as well as support for Collection API MIGRATESTATEFORMAT action and support for the legacyCloud flag (Ilan Ginzburg).
 
-* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
-  Deserves mention here as well as Lucene CHANGES.txt since it affects both.
-
 * SOLR-12847: Remove support for maxShardsPerNode. (ab)
 
 * SOLR-14244: Remove ReplicaInfo. (ab)
@@ -320,8 +351,6 @@ Other Changes
 
 * SOLR-14702: All references to "master" and "slave" replaced with "leader" and "follower" (MarcusSorealheis,
   Erick Erickson, Tomás Fernández Löbbe)
-
-* LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
 
 * SOLR-14783: Remove Data Import Handler (DIH), previously deprecated (Alexandre Rafalovitch)
 
@@ -433,8 +462,6 @@ Other Changes
 
 * SOLR-15517: Remove unnecessary no-op implementation of SolrCoreAware in ExpandComponent and TermVectorComponent. (Christine Poerschke)
 
-* SOLR-14857: Add optional gradle property to run docker tests in parallel (hossman, Houston Putman)
-
 * SOLR-15309: Add missing IntelliJ IDEA entries to the .gitignore file (Pushkar Raste via Anshum Gupta)
 
 * SOLR-15428: Integrate the OpenJDK JMH micro benchmark framework for micro benchmarks and performance comparisons and investigation.
@@ -449,8 +476,6 @@ Other Changes
 * SOLR-13138: Remove deprecated LegacyBM25SimilarityFactory class. (Christine Poerschke, janhoy)
 
 * SOLR-15480: Make Tuple copy constructor, clone and merge consistent w.r.t. markers (EOF, EXCEPTION), field names and labels. (John Durham, Mike Drob, Christine Poerschke)
-
-* SOLR-15670: Introduce Gradle parameter to skip ref-guide tasks (Houston Putman, Dawid Weiss)
 
 * SOLR-15692: Fix parsing of -zkHost flag for the bin/solr commands (janhoy)
 
@@ -479,6 +504,16 @@ Other Changes
 
 * SOLR-14858: Add the server WEB-INF/lib directory to the classpath for the solr-exporter script. Will allow the script
   to work when the dist/solrj-lib jars are missing in the Docker image. (Houston Putman)
+
+* SOLR-14142: Jetty's RequestLog is enabled by default. If you don't want these logs, you can disable
+  via SOLR_REQUESTLOG_ENABLED=false.  (rmuir, janhoy)
+
+* SOLR-15924: Remove lucene-libs from contrib module packaging. The lucene libraries will be included in lib/ with all other dependencies. (Houston Putman)
+
+* SOLR-15934: CloseHook is now an interface with default method implementations instead of an abstract class. (Mike Drob)
+
+* SOLR-15916: Remove dist/ from the binary release. The solr-core and solrj jars will be included in the server WEB-INF/lib directory,
+and each individual module's jar will be included in its directory's lib/ folder. (Houston Putman)
 
 Bug Fixes
 ---------------------
@@ -563,6 +598,8 @@ Bug Fixes
 * SOLR-15843: Update Log4J to 2.16 (Mike Drob, janhoy)
 
 * SOLR-15324: Upgrade jaegertracing to 1.6.0 and libthrift to 0.14.1 (wcmrnd1, janhoy)
+
+* SOLR-15405: Make HDFS handle little endian LUCENE-9047 (Kevin Risden)
 
 ==================  8.11.0 ==================
 

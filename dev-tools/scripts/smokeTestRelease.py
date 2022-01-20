@@ -558,10 +558,9 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   if isSrc:
     in_solr_folder.extend(os.listdir(os.path.join(unpackPath, 'solr')))
     is_in_list(in_root_folder, ['LICENSE', 'NOTICE', 'README'])
-    is_in_list(in_solr_folder, ['JRE_VERSION_MIGRATION', 'CHANGES', 'MIGRATE', 'SYSTEM_REQUIREMENTS'])
+    is_in_list(in_solr_folder, ['CHANGES', 'README'])
   else:
-    is_in_list(in_root_folder, ['LICENSE', 'NOTICE', 'README', 'JRE_VERSION_MIGRATION', 'CHANGES',
-                                'MIGRATE', 'SYSTEM_REQUIREMENTS'])
+    is_in_list(in_root_folder, ['LICENSE', 'NOTICE', 'README', 'CHANGES'])
 
   if SOLR_NOTICE is None:
     SOLR_NOTICE = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
