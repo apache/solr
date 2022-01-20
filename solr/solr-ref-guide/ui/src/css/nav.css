@@ -62,6 +62,7 @@ html.is-clipped--nav {
 
 .nav-panel-menu {
   overflow-y: scroll;
+  overscroll-behavior: none;
   height: var(--nav-panel-menu-height);
 }
 
@@ -101,7 +102,10 @@ html.is-clipped--nav {
 
 .nav-list {
   margin: 0 0 0 0.75rem;
-  padding: 0;
+}
+
+.nav-menu > ul.nav-list {
+  padding-top: 20px;
 }
 
 .nav-menu > .nav-list + .nav-list {
@@ -110,7 +114,7 @@ html.is-clipped--nav {
 
 .nav-item {
   list-style: none;
-  margin-top: 0.5em;
+  margin-top: 10px;
 }
 
 /* adds some breathing room below a nested list */
@@ -148,10 +152,6 @@ html.is-clipped--nav {
 .is-current-page > .nav-text {
   font-weight: var(--body-font-weight-bold);
   color: var(--color-solr-primary-orange);
-}
-
-.is-current-path {
-  background-color: var(--color-white);
 }
 
 .nav-panel-explore {
