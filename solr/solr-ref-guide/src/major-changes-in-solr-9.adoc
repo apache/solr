@@ -65,7 +65,7 @@ If re-indexing is too onerous, use this mechanism in Solr 8.
 
 The `dist/` directory in the Solr binary release has been removed as of Solr 9.0.
 
-* The `solr-core` and `solr-solrj` jars, they can be found under `server/solr-webapp/webapp/WEB-INF/lib/`.
+* The `solr-core` and `solr-solrj` jars can be found under `server/solr-webapp/webapp/WEB-INF/lib/`.
 * The Solr module jars can be found in `contrib/<module-name>/lib`, packaged individually for each module.
 * The `solrj-deps` (SolrJ Dependencies) are no longer separated out from the other Server jars.
 Please refer to the SolrJ Maven artifact to see the exact dependencies you need to include from `server/solr-webapp/webapp/WEB-INF/lib/` and `server/lib/ext/` if you are loading in SolrJ manually.
