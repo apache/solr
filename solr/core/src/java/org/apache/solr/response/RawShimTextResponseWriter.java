@@ -28,7 +28,7 @@ import java.util.Map;
  * Utility class that delegates to another {@link TextResponseWriter}, but converts normal write requests
  * into "raw" requests that write field values directly to the delegate {@link TextResponseWriter}'s backing writer.
  */
-public class RawShimTextResponseWriter extends TextResponseWriter {
+class RawShimTextResponseWriter extends TextResponseWriter {
 
   private final TextResponseWriter backing;
 

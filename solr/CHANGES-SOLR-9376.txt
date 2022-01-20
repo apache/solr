@@ -14,14 +14,6 @@ Upgrade Notes
   multi-valued fields). Existing clients that parse field values serialized in this
   way will need to be updated accordingly.
 
-* The public `WriteableValue` interface has been removed. Its sole purpose was to
-  support raw serialization of field values (e.g., for raw value `DocTransformer`);
-  but the `WriteableValue` approach to raw serialization is fundamentally ineffective
-  in distributed/SolrCloud operation. Custom plugins that may have leveraged this
-  interface must be updated to implement the new `DocTransformer.getRawFields(...)`
-  method instead (and having done so, plugins will consequently be compatible with
-  distributed/SolrCloud operation).
-
 Improvements
 ----------------------
 * SOLR-9376: Raw value DocTransformers (`[xml]`, `[json]`, `[geo w=GeoJSON]`) now work

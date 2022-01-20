@@ -62,9 +62,9 @@ public abstract class TextResponseWriter implements TextWriter {
   protected Calendar cal;  // reusable calendar instance
 
   /**
-   * NOTE: {@link #NO_RAW_FIELDS} is a signal object that must be used to differentiate from <code>null</code>
-   * in strict object equality checks against {@link #rawReturnFields}, in order to determine the appropriate
-   * context in which to write raw field values.
+   * A signal object that must be used to differentiate from <code>null</code> in strict object equality
+   * checks against {@link #rawReturnFields}, in order to determine the appropriate context in which to
+   * write raw field values.
    */
   private static final ReturnFields NO_RAW_FIELDS = new SolrReturnFields();
   private final TextResponseWriter rawShim;
