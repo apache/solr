@@ -25,6 +25,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 
 import java.util.Collection;
 import java.util.Locale;
@@ -167,5 +168,18 @@ public class InfoHandler extends RequestHandlerBase  {
     list.addAll(handlers.get("system").getApis());
     list.addAll(handlers.get("health").getApis());
     return list.build();
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    // Delegate permission to the actual handler
+    String path = request.getResource();
+    String lastPath = path.substring(path.lastIndexOf("/") +1 );
+    RequestHandlerBase handler = handlers.get(lastPath.toLowerCase(Locale.ROOT));
+    if (handler != null) {
+      return handler.getPermissionName(request);
+    } else {
+      return null;
+    }
   }
 }
