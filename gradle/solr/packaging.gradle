@@ -36,7 +36,7 @@
 // I don't know how to untie these two cleanly.
 //
 
-configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib") }) {
+configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules") }) {
   plugins.withType(JavaPlugin) {
     ext {
       packagingDir = file("${buildDir}/packaging")

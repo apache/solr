@@ -47,17 +47,17 @@ artifacts {
 }
 
 dependencies {
-  [":solr:contrib:analysis-extras",
-   ":solr:contrib:analytics",
-   ":solr:contrib:extraction",
-   ":solr:contrib:clustering",
-   ":solr:contrib:gcs-repository",
-   ":solr:contrib:jaegertracer-configurator",
-   ":solr:contrib:langid",
-   ":solr:contrib:ltr",
-   ":solr:contrib:prometheus-exporter",
-   ":solr:contrib:s3-repository",
-   ":solr:contrib:scripting"
+  [":solr:modules:analysis-extras",
+   ":solr:modules:analytics",
+   ":solr:modules:extraction",
+   ":solr:modules:clustering",
+   ":solr:modules:gcs-repository",
+   ":solr:modules:jaegertracer-configurator",
+   ":solr:modules:langid",
+   ":solr:modules:ltr",
+   ":solr:modules:prometheus-exporter",
+   ":solr:modules:s3-repository",
+   ":solr:modules:scripting"
   ].each { contribName ->
     contrib  project(path: contribName, configuration: "packaging")
   }

@@ -22,8 +22,8 @@ description = 'Solr Integration with Tika for extracting content from binary fil
 dependencies {
   implementation project(':solr:core')
 
-  // We export tika because other contribs depend on it (and its submodules)
-  // and we don't want to duplicate the dependency across different contribs.
+  // We export tika because other modules depend on it (and its submodules)
+  // and we don't want to duplicate the dependency across different modules.
   api ('org.apache.tika:tika-core') { transitive = false }
   api ('org.apache.tika:tika-parsers') { transitive = false }
 

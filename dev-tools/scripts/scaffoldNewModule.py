@@ -139,14 +139,14 @@ def scaffold_folder(module_name, module_full_name, module_folder, module_descrip
   os.makedirs(os.path.join(module_folder, 'src', 'test'))
 
   update_build(os.path.join('solr', 'packaging', 'build.gradle'),
-               r':solr:contrib:extraction',
-               '   ":solr:contrib:%s",\n' % module_name)
+               r':solr:modules:extraction',
+               '   ":solr:modules:%s",\n' % module_name)
   update_build(os.path.join('gradle', 'maven', 'defaults-maven.gradle'),
-               r':solr:contrib:extraction',
-               '        ":solr:contrib:%s",\n' % module_name)
+               r':solr:modules:extraction',
+               '        ":solr:modules:%s",\n' % module_name)
   update_build(os.path.join('settings.gradle'),
-               r'include "solr:contrib:extraction"',
-               'include "solr:contrib:%s"\n' % module_name)
+               r'include "solr:modules:extraction"',
+               'include "solr:modules:%s"\n' % module_name)
   print("Adding new files to git")
   run("git add %s" % module_folder)
 
