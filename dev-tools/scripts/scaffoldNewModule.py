@@ -42,7 +42,7 @@ def update_build(file_path, search_re, replace_line):
 
 
 def read_config():
-  parser = argparse.ArgumentParser(description='Scaffold new contrib module into solr/contrib/<name>')
+  parser = argparse.ArgumentParser(description='Scaffold new  module into solr/modules/<name>')
   parser.add_argument("name", help='short-name, e.g. my-module')
   parser.add_argument("full_name", help='Readable name, e.g. "My Module"')
   parser.add_argument("description", help='Short description for docs, max one line')
@@ -50,7 +50,7 @@ def read_config():
   return newconf
 
 
-def get_readme_skel(conrib_name):
+def get_readme_skel(module_name):
   return dedent('''\
   Apache Solr %s
   =====================================
@@ -62,7 +62,7 @@ def get_readme_skel(conrib_name):
   Getting Started
   ---------------
   TBD
-  ''' % conrib_name)
+  ''' % module_name)
 
 def get_license_header():
   return dedent('''\
@@ -154,7 +154,7 @@ def main():
   conf = read_config()
   module_name = conf.name
 
-  module_folder = os.path.join('solr', 'contrib', module_name)
+  module_folder = os.path.join('solr', 'modules', module_name)
   scaffold_folder(module_name, conf.full_name, module_folder, conf.description)
 
 

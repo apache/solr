@@ -111,7 +111,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
       dependsOn syncLib, syncTestLib
     }
 
-    // Contrib packaging currently depends on internal resolve.
+    // Module packaging currently depends on internal resolve.
     artifacts {
       packaging packagingDir, {
         builtBy assemblePackaging
