@@ -3,9 +3,9 @@ name: solr
 # 'branch_(*)_(*)': $1.$2' (or $1_$2)
 # But this doesn't really work on Jenkins since it calls all checkouts HEAD
 # So declaring the version explicitly here
-version: '9.0'
+version: '9.0.0'
 prerelease: true
-#display_version: '9.0'
+display_version: '9.0'
 title: Solr Reference Guide DRAFT
 nav:
 - modules/getting-started/getting-started-nav.adoc
