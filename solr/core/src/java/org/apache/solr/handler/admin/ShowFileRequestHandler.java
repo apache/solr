@@ -354,7 +354,6 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
   // file system. Respects all the "interesting" stuff around what the resource loader does to find files.
   public static Path getAdminFileFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp,
                                                 Set<String> hiddenFiles) {
-    File adminFile = null;
     final SolrResourceLoader loader = req.getCore().getResourceLoader();
     Path configDir = loader.getConfigPath();
     if (!Files.exists(configDir)) {

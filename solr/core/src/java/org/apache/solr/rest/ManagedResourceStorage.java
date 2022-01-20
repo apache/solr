@@ -121,10 +121,12 @@ public abstract class ManagedResourceStorage {
       // using local fs, if storageDir is not set in the solrconfig.xml, assume the configDir for the core
       if (initArgs.get(STORAGE_DIR_INIT_ARG) == null) {
         Path configDir = resourceLoader.getConfigPath();
-        boolean hasAccess = false;
+        boolean hasAccess;
         try {
           hasAccess = Files.isDirectory(configDir) && Files.isWritable(configDir);
-        } catch (SecurityException noAccess) {}
+        } catch (SecurityException noAccess) {
+          hasAccess = false;
+        }
         
         if (hasAccess) {
           initArgs.add(STORAGE_DIR_INIT_ARG, configDir.toAbsolutePath().toString());
