@@ -25,6 +25,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.solr.SolrTestCaseJ4;
@@ -48,9 +49,7 @@ import org.hamcrest.core.IsInstanceOf;
 import org.junit.Before;
 import org.junit.Test;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
+import static java.util.Collections.*;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -447,6 +446,20 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     // Short names enabled, admin should succeed, admin@EXAMPLE should fail
     rules.put("useShortName", "true");
     checkRules(values, STATUS_OK);
+  }
+
+  @Test
+  public void testGetPermissionNamesForRoles() {
+    // Tests the method that maps role(s) to permissions, used by SystemInfoHandler to provide UI with logged in user's permissions
+    try (RuleBasedAuthorizationPluginBase plugin = createPlugin()) {
+      plugin.init(rules);
+      assertEquals(Set.of("mycoll_update", "read"), plugin.getPermissionNamesForRoles(Set.of("dev")));
+      assertEquals(emptySet(), plugin.getPermissionNamesForRoles(Set.of("user")));
+      assertEquals(Set.of("schema-edit", "collection-admin-edit", "mycoll_update"), plugin.getPermissionNamesForRoles(Set.of("admin")));
+      assertEquals(Set.of("schema-edit", "collection-admin-edit", "mycoll_update", "read"), plugin.getPermissionNamesForRoles(Set.of("admin", "dev")));
+    } catch (IOException e) {
+      ; // swallow error, otherwise a you have to add a _lot_ of exceptions to methods.
+    }
   }
 
   void addPermission(String permissionName, String role, String path, Map<String, Object> params) {
