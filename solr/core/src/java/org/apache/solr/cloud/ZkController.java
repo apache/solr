@@ -2414,10 +2414,6 @@ public class ZkController implements Closeable {
         public void preClose(SolrCore core) {
           unregisterConfListener(confDir, listener);
         }
-
-        @Override
-        public void postClose(SolrCore core) {
-        }
       });
     }
   }

@@ -165,7 +165,7 @@ def main():
     check_solr_version_class_tests()
     check_lucene_match_version_tests()
   else:
-    print('\nNot updating build.gradle, SolrVersion or solrconfig.xml since version added is not latest version' % newconf.version)
+    print('\nNot updating build.gradle, SolrVersion or solrconfig.xml since version added (%s) is not latest version' % newconf.version)
 
   print()
 

@@ -81,13 +81,16 @@ distributions {
     contents {
       // TODO: This is missing module README files, as compared to 8x
 
+      from(rootDir, {
+        include "LICENSE.txt"
+        include "NOTICE.txt"
+      })
+
       from(project(":solr").projectDir, {
         include "bin/**"
         include "licenses/**"
         exclude "licenses/README.committers.txt"
         include "CHANGES.txt"
-        include "LICENSE.txt"
-        include "NOTICE.txt"
         include "README.md"
       })
 
