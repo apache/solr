@@ -93,7 +93,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     clusterStatusWithCollection();
     clusterStatusWithCollectionAndShard();
     clusterStatusWithCollectionAndMultipleShards();
-    clusterStatusWithCollectionHealthState();
+    // TODO: https://issues.apache.org/jira/browse/SOLR-15870 Test TestCollectionAPI fails frequently
+    //  clusterStatusWithCollectionHealthState();
     clusterStatusWithRouteKey();
     clusterStatusAliasTest();
     if (!isDistributedCollectionApi) {
