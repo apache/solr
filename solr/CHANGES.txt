@@ -50,7 +50,7 @@ Bug Fixes
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
 
 ==================  9.0.0 ==================
 
@@ -500,17 +500,18 @@ Other Changes
 
 * SOLR-15845: Add a new SolrVersion class to manage Solr's version independently from the Lucene version we consume (janhoy)
 
-* SOLR-15912: Upgrade guava to version 31.0.1-jre (janhoy)
-
 * SOLR-14858: Add the server WEB-INF/lib directory to the classpath for the solr-exporter script. Will allow the script
   to work when the dist/solrj-lib jars are missing in the Docker image. (Houston Putman)
 
-* SOLR-15124: Remove container level admin handlers from ImplicitPlugins.json (Nazerke Seidan, David Smiley)
+* SOLR-15124: Removed three core level admin API endpoints because they are already registered at the node level where they
+  really belong: /admin/threads, /admin/properties, /admin/logging (Nazerke Seidan, David Smiley)
 
 * SOLR-14142: Jetty's RequestLog is enabled by default. If you don't want these logs, you can disable
   via SOLR_REQUESTLOG_ENABLED=false.  (rmuir, janhoy)
 
 * SOLR-15924: Remove lucene-libs from contrib module packaging. The lucene libraries will be included in lib/ with all other dependencies. (Houston Putman)
+
+* SOLR-15934: CloseHook is now an interface with default method implementations instead of an abstract class. (Mike Drob)
 
 
 Bug Fixes
