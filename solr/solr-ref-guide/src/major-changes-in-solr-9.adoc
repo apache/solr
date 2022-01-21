@@ -105,6 +105,8 @@ The `response` field is now a map, containing information about the backup (`sta
 * SOLR-15884: In Backup request responses, the `response` key now uses a map to return information instead of a list.
 This is only applicable for users returning information in JSON format, which is the default behavior.
 
+* SOLR-15944: The Tagger's JSON response format now always uses an object/map to represent each tag instead of an array.
+
 == New Features & Enhancements
 
 * Replica placement plugins
