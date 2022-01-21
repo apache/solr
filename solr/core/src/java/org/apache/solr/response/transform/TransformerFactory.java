@@ -87,7 +87,7 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin
     DocTransformer create(String field, SolrParams params, SolrQueryRequest req, Map<String, String> renamedFields, Set<String> reqFieldNames);
 
     /**
-     * @return <code>true</code> if implementations of this class may (even subtly) modify field values.
+     * Returns <code>true</code> if implementations of this class may (even subtly) modify field values.
      * ({@link GeoTransformerFactory} may do this, e.g.). To fail safe, the default implementation returns
      * <code>true</code>. This method should be overridden to return <code>false</code> if the implementing
      * class is guaranteed to not modify any values for the fields that it renames.

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,7 +24,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -174,7 +174,7 @@ public class SolrReturnFields extends ReturnFields {
       return;
     }
 
-    Deque<DeferredRenameEntry> deferredRenameAugmenters = new LinkedList<>();
+    Deque<DeferredRenameEntry> deferredRenameAugmenters = new ArrayDeque<>();
     DocTransformers augmenters = new DocTransformers();
     for (String fieldList : fl) {
       add(fieldList,deferredRenameAugmenters,augmenters,req);
