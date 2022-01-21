@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.StringUtils;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -283,6 +284,7 @@ public class ZkMaintenanceUtils {
     if (!Files.exists(rootPath))
       throw new IOException("Path " + rootPath + " does not exist");
 
+    int partsOffset = Path.of(zkPath).getNameCount() - rootPath.getNameCount() - 1; // will be negative
     Files.walkFileTree(rootPath, new SimpleFileVisitor<Path>() {
       @Override
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -297,7 +299,9 @@ public class ZkMaintenanceUtils {
           if (file.toFile().getName().equals(ZKNODE_DATA_FILE) && zkClient.exists(zkNode, true)) {
             zkClient.setData(zkNode, file, true);
           } else {
-            zkClient.makePath(zkNode, file, false, true);
+            // Skip path parts here because they should have been created during preVisitDirectory
+            int pathParts = file.getNameCount() + partsOffset;
+            zkClient.makePath(zkNode, Files.readAllBytes(file), CreateMode.PERSISTENT, null, false, true, pathParts);
           }
         } catch (KeeperException | InterruptedException e) {
           throw new IOException("Error uploading file " + file + " to zookeeper path " + zkNode,
@@ -309,6 +313,21 @@ public class ZkMaintenanceUtils {
       @Override
       public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
         if (dir.getFileName().toString().startsWith(".")) return FileVisitResult.SKIP_SUBTREE;
+
+        String zkNode = createZkNodeName(zkPath, rootPath, dir);
+        try {
+          if (dir.equals(rootPath)) {
+            // Make sure the root path exists, including potential parents
+            zkClient.makePath(zkNode, true);
+          } else {
+            // Skip path parts here because they should have been created during previous visits
+            int pathParts = dir.getNameCount() + partsOffset;
+            zkClient.makePath(zkNode, null, CreateMode.PERSISTENT, null, false, true, pathParts);
+          }
+        } catch (KeeperException | InterruptedException e) {
+          throw new IOException("Error creating intermediate directory " + dir,
+              SolrZkClient.checkInterrupted(e));
+        }
 
         return FileVisitResult.CONTINUE;
       }
