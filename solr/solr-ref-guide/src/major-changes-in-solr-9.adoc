@@ -271,3 +271,5 @@ Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Kh
 Example has been provided in `sample_techproducts_configs` to override content-type.
 
 * `min_rf` deprecated in 7.x
+
+* hl.method=postings highlighter, deprecated in 7.0
