@@ -24,17 +24,21 @@ These neural network-based techniques are usually referred to as neural search, 
 
 == Important Concepts
 
+=== Sparse Vector Representation 
+A traditional tokenized inverted index follows the https://en.wikipedia.org/wiki/Bag-of-words_model[Bag-of-words model].
+
+Text is represented as a sparse vector, in which each term in the corpus dictionary corresponds to one vector dimension.
+
+In such a model, the number of dimensions is generally quite high (corresponding to the term dictionary cardinality), and the vector for any given document contains mostly zeros (hence it is sparse, as only a handful of terms that exist in the overall index will be present in any given document).
+
 === Dense Vector Representation 
-A dense vector describes information as an array of elements, most of them different from zero.
+Dense vector representation contrasts with term-based sparse vector representation in that it distills semantic meaning into a fixed (and limited) number of dimensions.
 
-In this context, "sparse" and "dense" refer to the number of zero vs. non-zero elements in the array. 
+The number of dimensions in this approach is generally much lower than the sparse case, and the vector for any given document is dense, as most of its dimensions are populated by non-zero values.
 
-A sparse vector is one that contains mostly zeros and few non-zero entries. 
-Sparse representation is at the base of traditional information retrieval approaches (such as the https://en.wikipedia.org/wiki/Bag-of-words_model[Bag-of-words model]).
+In contrast to the "sparse" approach (for which tokenizers are used to generate sparse vectors directly from text input) the task of generating vectors must be handled in application logic external to Apache Solr.
 
-A dense array contains mostly non-zeros.
-
-Among other techniques and use cases, deep learning models such as https://en.wikipedia.org/wiki/BERT_(language_model)[BERT] are able to encode textual information as dense vectors, to be used for dense retrieval strategies.
+There may be cases where it makes sense to directly search data that natively exists as a vector (e.g., scientific data); but in a text search context, it is likely that users will leverage deep learning models such as https://en.wikipedia.org/wiki/BERT_(language_model)[BERT] to encode textual information as dense vectors, supplying the resulting vectors to Apache Solr explicitly at index and query time.
 
 For additional information you can refer to this https://sease.io/2021/12/using-bert-to-improve-search-relevance.html[blog post].
 
