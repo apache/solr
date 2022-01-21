@@ -112,7 +112,7 @@ The `licenses` directory includes all of the licenses for 3rd party libraries us
 server/::
 This directory is where the heart of the Solr application resides.
 A README in this directory provides a detailed overview, but here are some highlights:
-* Solr's Admin UI (`server/solr-webapp`)
+* Solr's Admin UI & JAR files (`server/solr-webapp`)
 * Jetty libraries (`server/lib`)
 * Log files (`server/logs`) and log configurations (`server/resources`).
 See the section <<configuring-logging.adoc#,Configuring Logging>> for more details on how to customize Solr's default logging.

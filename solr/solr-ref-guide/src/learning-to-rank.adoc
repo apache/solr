@@ -477,7 +477,7 @@ This example folder is not shipped in the Solr binary release.
 
 == Installation of LTR
 
-The ltr contrib module requires the `dist/solr-ltr-*.jar` JARs.
+The ltr contrib module requires the `contrib/ltr/lib/solr-ltr-*.jar` JARs.
 
 == LTR Configuration
 
@@ -490,7 +490,7 @@ Note that by default paths are relative to the Solr core so they may need adjust
 +
 [source,xml]
 ----
-<lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" />
+<lib dir="${solr.install.dir:../../../..}/contrib/ltr/lib/" regex=".*\.jar" />
 ----
 
 * Declaration of the `ltr` query parser.

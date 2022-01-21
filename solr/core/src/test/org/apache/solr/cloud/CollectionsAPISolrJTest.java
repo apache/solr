@@ -888,11 +888,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     Aliases aliases;
     if (!followAliases) {
-      try {
-        rename.process(cluster.getSolrClient());
-      } catch (Exception e) {
-        assertTrue(e.toString(), e.toString().contains("source collection 'col1' not found"));
-      }
+      Exception e = assertThrows(Exception.class, () ->
+        rename.process(cluster.getSolrClient()));
+      assertTrue(e.toString(), e.toString().contains("source collection 'col1' not found"));
     } else {
       rename.process(cluster.getSolrClient());
       zkStateReader.aliasesManager.update();
@@ -920,30 +918,24 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(compoundAliases.toString(), 1, compoundAliases.size());
     assertTrue(compoundAliases.toString(), compoundAliases.contains(collectionName2));
 
-    try {
-      rename = CollectionAdminRequest.renameCollection("catAlias", "bar");
-      rename.setFollowAliases(followAliases);
-      rename.process(cluster.getSolrClient());
-      fail("category-based alias renaming should fail");
-    } catch (Exception e) {
-      if (followAliases) {
-        assertTrue(e.toString(), e.toString().contains("is a routed alias"));
-      } else {
-        assertTrue(e.toString(), e.toString().contains("source collection 'catAlias' not found"));
-      }
+    CollectionAdminRequest.Rename catRename = CollectionAdminRequest.renameCollection("catAlias", "bar");
+    catRename.setFollowAliases(followAliases);
+    Exception e = assertThrows("category-based alias renaming should fail", Exception.class,
+        () -> catRename.process(cluster.getSolrClient()));
+    if (followAliases) {
+      assertTrue(e.toString(), e.toString().contains("is a routed alias"));
+    } else {
+      assertTrue(e.toString(), e.toString().contains("source collection 'catAlias' not found"));
     }
 
-    try {
-      rename = CollectionAdminRequest.renameCollection("col2", "foo");
-      rename.setFollowAliases(followAliases);
-      rename.process(cluster.getSolrClient());
-      fail("should fail because 'foo' already exists");
-    } catch (Exception e) {
-      if (followAliases) {
-        assertTrue(e.toString(), e.toString().contains("exists"));
-      } else {
-        assertTrue(e.toString(), e.toString().contains("source collection 'col2' not found"));
-      }
+    CollectionAdminRequest.Rename rename2 = CollectionAdminRequest.renameCollection("col2", "foo");
+    rename2.setFollowAliases(followAliases);
+    e = assertThrows("should fail because 'foo' already exists", Exception.class,
+        () -> rename2.process(cluster.getSolrClient()));
+    if (followAliases) {
+      assertTrue(e.toString(), e.toString().contains("exists"));
+    } else {
+      assertTrue(e.toString(), e.toString().contains("source collection 'col2' not found"));
     }
   }
 
