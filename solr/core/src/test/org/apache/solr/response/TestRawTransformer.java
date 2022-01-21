@@ -41,6 +41,7 @@ import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 /**
  * Tests Raw JSON output for fields when used with and without the unique key field.
@@ -70,19 +71,21 @@ public class TestRawTransformer extends SolrCloudTestCase {
   }
 
   private static void initStandalone() throws Exception {
-    initCore("solrconfig-minimal.xml", "schema-minimal-with-another-uniqkey.xml");
+    initCore("solrconfig-minimal.xml", "schema_latest.xml");
     File homeDir = createTempDir().toFile();
     final File collDir = new File(homeDir, "collection1");
     final File confDir = collDir.toPath().resolve("conf").toFile();
     confDir.mkdirs();
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
     String src_dir = TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(src_dir, "schema-minimal-with-another-uniqkey.xml"),
+    FileUtils.copyFile(new File(src_dir, "schema_latest.xml"),
             new File(confDir, "schema.xml"));
     FileUtils.copyFile(new File(src_dir, "solrconfig-minimal.xml"),
             new File(confDir, "solrconfig.xml"));
-    FileUtils.copyFile(new File(src_dir, "solrconfig.snippet.randomindexconfig.xml"),
-            new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
+    for (String file : new String[] {"solrconfig.snippet.randomindexconfig.xml",
+            "stopwords.txt", "synonyms.txt", "protwords.txt", "currency.xml"}) {
+      FileUtils.copyFile(new File(src_dir, file), new File(confDir, file));
+    }
     Files.createFile(collDir.toPath().resolve("core.properties"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", h.getCore().getDataDir());
@@ -98,7 +101,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
 
     Map<String, String> collectionProperties = new LinkedHashMap<>();
     collectionProperties.put("config", "solrconfig-minimal.xml");
-    collectionProperties.put("schema", "schema-minimal-with-another-uniqkey.xml");
+    collectionProperties.put("schema", "schema_latest.xml");
     CloudSolrClient cloudSolrClient = cloud.getSolrClient();
     CollectionAdminRequest.createCollection("collection1", configName, numNodes, 1)
             .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
@@ -131,10 +134,14 @@ public class TestRawTransformer extends SolrCloudTestCase {
     for (int i = 0; i < MAX; i++) {
       SolrInputDocument sdoc = new SolrInputDocument();
       sdoc.addField("id", i);
-      sdoc.addField("notid", i);
+      // below are single-valued fields
       sdoc.addField("subject", "{poffL:[{offL:[{oGUID:\"79D5A31D-B3E4-4667-B812-09DF4336B900\",oID:\"OO73XRX\",prmryO:1,oRank:1,addTp:\"Office\",addCd:\"AA4GJ5T\",ad1:\"102 S 3rd St Ste 100\",city:\"Carson City\",st:\"MI\",zip:\"48811\",lat:43.176885,lng:-84.842919,phL:[\"(989) 584-1308\"],faxL:[\"(989) 584-6453\"]}]}]}");
       sdoc.addField("author", "<root><child1>some</child1><child2>trivial</child2><child3>xml</child3></root>");
-      sdoc.addField("title", "title_" + i);
+      // below are multiValued fields
+      sdoc.addField("links", "{an_array:[1,2,3]}");
+      sdoc.addField("links", "{an_array:[4,5,6]}");
+      sdoc.addField("content_type", "<root>one</root>");
+      sdoc.addField("content_type", "<root>two</root>");
       CLIENT.add("collection1", sdoc);
     }
     CLIENT.commit("collection1");
@@ -144,47 +151,57 @@ public class TestRawTransformer extends SolrCloudTestCase {
   @Test
   public void testXmlTransformer() throws Exception {
     QueryRequest req = new QueryRequest(new ModifiableSolrParams(
-            Map.of("q", new String[]{"*:*"}, "fl", new String[]{"author:[xml]"}, "wt", new String[]{"xml"})
+            Map.of("q", new String[]{"*:*"}, "fl", new String[]{"author:[xml],content_type:[xml]"}, "wt", new String[]{"xml"})
     ));
     req.setResponseParser(XML_NOOP_RESPONSE_PARSER);
     String strResponse = (String) CLIENT.request(req,"collection1").get("response");
     assertTrue("response does not contain raw XML encoding: " + strResponse,
             strResponse.contains("<raw name=\"author\"><root><child1>some</child1><child2>trivial</child2><child3>xml</child3></root></raw>"));
+    assertTrue("response (multiValued) does not contain raw XML encoding: " + strResponse,
+            Pattern.compile("<arr name=\"content_type\">\\s*<raw><root>one</root></raw>\\s*<raw><root>two</root></raw>\\s*</arr>").matcher(strResponse).find());
 
     req = new QueryRequest(new ModifiableSolrParams(
-            Map.of("q", new String[]{"*:*"}, "fl", new String[]{"author"}, "wt", new String[]{"xml"})
+            Map.of("q", new String[]{"*:*"}, "fl", new String[]{"author,content_type"}, "wt", new String[]{"xml"})
     ));
     req.setResponseParser(XML_NOOP_RESPONSE_PARSER);
     strResponse = (String) CLIENT.request(req, "collection1").get("response");
     assertTrue("response does not contain escaped XML encoding: " + strResponse,
             strResponse.contains("<str name=\"author\">&lt;root&gt;&lt;child1"));
+    assertTrue("response (multiValued) does not contain escaped XML encoding: " + strResponse,
+            Pattern.compile("<arr name=\"content_type\">\\s*<str>&lt;root&gt;").matcher(strResponse).find());
 
     req = new QueryRequest(new ModifiableSolrParams(
-            Map.of("q", new String[]{"*:*"}, "fl", new String[]{"author:[xml]"}, "wt", new String[]{"json"})
+            Map.of("q", new String[]{"*:*"}, "fl", new String[]{"author:[xml],content_type:[xml]"}, "wt", new String[]{"json"})
     ));
     req.setResponseParser(JSON_NOOP_RESPONSE_PARSER);
     strResponse = (String) CLIENT.request(req, "collection1").get("response");
     assertTrue("unexpected serialization of XML field value in JSON response: " + strResponse,
             strResponse.contains("\"author\":\"<root><child1>some</child1>"));
+    assertTrue("unexpected (multiValued) serialization of XML field value in JSON response: " + strResponse,
+            strResponse.contains("\"content_type\":[\"<root>one</root>"));
   }
 
   @Test
   public void testJsonTransformer() throws Exception {
     QueryRequest req = new QueryRequest(new ModifiableSolrParams(
-      Map.of("q", new String[]{"*:*"}, "fl", new String[]{"subject:[json]"}, "wt", new String[]{"json"})
+      Map.of("q", new String[]{"*:*"}, "fl", new String[]{"subject:[json],links:[json]"}, "wt", new String[]{"json"})
     ));
     req.setResponseParser(JSON_NOOP_RESPONSE_PARSER);
     String strResponse = (String) CLIENT.request(req,"collection1").get("response");
     assertTrue("response does not contain right JSON encoding: " + strResponse,
         strResponse.contains("\"subject\":{poffL:[{offL:[{oGUID:\"7"));
+    assertTrue("response (multiValued) does not contain right JSON encoding: " + strResponse,
+            Pattern.compile("\"links\":\\[\\{an_array:\\[1,2,3]},\\s*\\{an_array:\\[4,5,6]}]").matcher(strResponse).find());
 
     req = new QueryRequest(new ModifiableSolrParams(
-      Map.of("q", new String[]{"*:*"}, "fl", new String[]{"id", "subject"}, "wt", new String[]{"json"})
+      Map.of("q", new String[]{"*:*"}, "fl", new String[]{"id", "subject,links"}, "wt", new String[]{"json"})
     ));
     req.setResponseParser(JSON_NOOP_RESPONSE_PARSER);
     strResponse = (String) CLIENT.request(req, "collection1").get("response");
     assertTrue("response does not contain right JSON encoding: " + strResponse,
         strResponse.contains("subject\":\""));
+    assertTrue("response (multiValued) does not contain right JSON encoding: " + strResponse,
+            strResponse.contains("\"links\":[\""));
   }
 
   private static final NoOpResponseParser XML_NOOP_RESPONSE_PARSER = new NoOpResponseParser();
