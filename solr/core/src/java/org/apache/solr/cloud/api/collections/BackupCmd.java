@@ -49,6 +49,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -306,6 +307,9 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
         uploadedIndexFileMB = Optional.of(uploadedIndexFileMB.orElse(0.0) + shardUploadedIndexFileMB);
       }
       Optional.ofNullable((String) shardResp.get("shardBackupId")).ifPresent(shardBackupIds::add);
+    }
+    if (backupProps != null) {
+      backupProps.countIndexFiles(indexFileCount.orElse(0), indexSizeMB.orElse(0.0));
     }
     indexFileCount.ifPresent(val -> aggRsp.add("indexFileCount", val));
     uploadedIndexFileCount.ifPresent(val -> aggRsp.add("uploadedIndexFileCount", val));
