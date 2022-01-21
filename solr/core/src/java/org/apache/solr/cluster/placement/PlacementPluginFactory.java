@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.placement;
 
 import org.apache.solr.api.ConfigurablePlugin;
+import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 
 /**
  * Factory implemented by client code and configured in container plugins
@@ -38,8 +39,8 @@ public interface PlacementPluginFactory<T extends PlacementPluginConfig> extends
    * Returns an instance of the plugin that will be repeatedly (and concurrently) called to compute placement. Multiple
    * instances of a plugin can be used in parallel (for example if configuration has to change, but plugin instances with
    * the previous configuration are still being used).
-   * <p>If this method returns null then a simple legacy assignment strategy will be used
-   * (see {@link org.apache.solr.cloud.api.collections.Assign.LegacyAssignStrategy}).</p>
+   * <p>If this method returns null then a simple default assignment strategy will be used
+   * (see {@link SimplePlacementFactory}).</p>
    */
   PlacementPlugin createPluginInstance();
 

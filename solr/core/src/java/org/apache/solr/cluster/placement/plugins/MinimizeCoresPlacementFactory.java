@@ -80,7 +80,7 @@ public class MinimizeCoresPlacementFactory implements PlacementPluginFactory<Pla
           totalReplicasPerShard += request.getCountReplicasToCreate(rt);
         }
 
-        if (placementContext.getCluster().getLiveNodes().size() < totalReplicasPerShard) {
+        if (request.getTargetNodes().size() < totalReplicasPerShard) {
           throw new PlacementException("Cluster size too small for number of replicas per shard");
         }
 

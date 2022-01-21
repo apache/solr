@@ -19,6 +19,7 @@ package org.apache.solr.servlet;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
@@ -68,7 +69,7 @@ public class RateLimitManager implements ClusterPropertiesListener {
       try {
         queryRateLimiter.processConfigChange(properties);
       } catch (IOException e) {
-        throw new RuntimeException("Encountered IOException: " + e.getMessage());
+        throw new UncheckedIOException(e);
       }
     }
 
