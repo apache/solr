@@ -193,7 +193,7 @@ public final class StartupLoggingUtils {
    * The property "solr.log.requestlog.enabled is set in solr/server/etc/jetty-requestlog.xml
    */
   public static void checkRequestLogging() {
-    boolean requestLogEnabled = System.getProperty("solr.log.requestlog.enabled", "false").equals("true");
+    boolean requestLogEnabled = Boolean.getBoolean("solr.log.requestlog.enabled");
     String retainDays= System.getProperty("solr.log.requestlog.retaindays");
     if (requestLogEnabled) {
       if (retainDays == null) {
