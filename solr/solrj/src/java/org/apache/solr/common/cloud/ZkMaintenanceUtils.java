@@ -318,7 +318,7 @@ public class ZkMaintenanceUtils {
         try {
           if (dir.equals(rootPath)) {
             // Make sure the root path exists, including potential parents
-            zkClient.makePath(zkNode, true);
+            zkClient.makePath(zkNode, false, true);
           } else {
             // Skip path parts here because they should have been created during previous visits
             int pathParts = dir.getNameCount() + partsOffset;
