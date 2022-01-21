@@ -131,10 +131,6 @@ public class SolrSuggester implements Accountable {
             log.warn("Could not close the suggester lookup.", e);
           }
         }
-
-        @Override
-        public void postClose(SolrCore core) {
-        }
       });
     }
 

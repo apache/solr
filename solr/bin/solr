@@ -270,7 +270,7 @@ else
 fi
 
 # Requestlog options
-if [ "$SOLR_REQUESTLOG_ENABLED" == "true" ]; then
+if [ "${SOLR_REQUESTLOG_ENABLED:-true}" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=requestlog")
 fi
 

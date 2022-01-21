@@ -82,11 +82,17 @@ public class PlacementRequestImpl implements PlacementRequest {
     // If no nodes specified, use all live nodes. If nodes are specified, use specified list.
     if (assignRequest.nodes != null) {
       nodes = SimpleClusterAbstractionsImpl.NodeImpl.getNodes(assignRequest.nodes);
+
+      for (Node n: nodes) {
+        if (!cluster.getLiveDataNodes().contains(n)) {
+          throw new Assign.AssignmentException("Bad assign request: specified node is a non-data hosting node (" + n.getName() + ") for collection " + solrCollection.getName());
+        }
+      }
       if (nodes.isEmpty()) {
         throw new Assign.AssignmentException("Bad assign request: empty list of nodes for collection " + solrCollection.getName());
       }
     } else {
-      nodes = cluster.getLiveNodes();
+      nodes = cluster.getLiveDataNodes();
       if (nodes.isEmpty()) {
         throw new Assign.AssignmentException("Impossible assign request: no live nodes for collection " + solrCollection.getName());
       }
