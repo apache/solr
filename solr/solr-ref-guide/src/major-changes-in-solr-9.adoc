@@ -204,6 +204,9 @@ If you rely upon the previous behavior, then you can change the clientPortAddres
 
 === Module Changes
 
+* **SOLR-15917: "Contrib modules" have been renamed to "Modules", and have been moved from the `contrib/` to `modules/`.**
+Use of these modules remains the same, except for the changes listed below.
+
 * SOLR-15916: `dist/` is no longer provided in the binary release.
 All module jars are now provided under `modules/<name>/lib`, including the module jar and all dependency jars.
 Please update your `<lib>` entries in your `solrconfig.xml` to use this new location.

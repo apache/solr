@@ -515,6 +515,8 @@ Other Changes
 * SOLR-15916: Remove dist/ from the binary release. The solr-core and solrj jars will be included in the server WEB-INF/lib directory,
 and each individual module's jar will be included in its directory's lib/ folder. (Houston Putman)
 
+* SOLR-15917: "Contrib Modules" have been renamed to "Modules" and have been moved from "contrib/" to "modules/". (Houston Putman)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
