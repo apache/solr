@@ -553,6 +553,8 @@ Bug Fixes
 
 * SOLR-15919: Replace File with Path for many ZK operations (Mike Drob)
 
+* SOLR-15259: hl.fragAlignRatio now defaults to 0.33 to be faster and maybe looks nicer. (David Smiley)
+
 ==================  8.11.2 ==================
 
 Bug Fixes

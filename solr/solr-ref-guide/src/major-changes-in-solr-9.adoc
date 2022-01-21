@@ -143,6 +143,8 @@ Currently this change should only effect compatibility of custom code overriding
 * SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the `numFound` value (exact vs approximation).
 Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
 
+* SOLR-15259: hl.fragAlignRatio now defaults to 0.33 to be faster and maybe looks nicer.
+
 === solr.xml maxBooleanClauses now enforced recursively
 
 Lucene 9.0 has additional safety checks over previous versions that impact how the `solr.xml` global `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` option is enforced.
