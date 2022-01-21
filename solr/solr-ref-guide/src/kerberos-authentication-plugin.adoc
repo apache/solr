@@ -272,6 +272,15 @@ These parameters can be passed at the command line with the `bin/solr` start com
 Used to map Kerberos principals to short names.
 Example of a name rule: `RULE:[1:$1@$0](.\*EXAMPLE.COM)s/@.*//`.
 
+`solr.kerberos.name.rules.mechanism`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `hadoop`
+|===
++
+The mechanism used to map Kerberos principals to short names. This can be either `hadoop` or `mit`.
+
 `solr.kerberos.cookie.domain`::
 +
 [%autowidth,frame=none]

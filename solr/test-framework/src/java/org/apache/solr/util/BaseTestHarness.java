@@ -77,7 +77,7 @@ abstract public class BaseTestHarness {
 
     if (tests==null || tests.length == 0) return null;
 
-    Document document = null;
+    Document document;
     try {
       document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
           (xml.getBytes(StandardCharsets.UTF_8)));
@@ -102,7 +102,7 @@ abstract public class BaseTestHarness {
     throws XPathExpressionException, SAXException {
     if (null == xpath) return null;
 
-    Document document = null;
+    Document document;
     try {
       document = getXmlDocumentBuilder().parse(new ByteArrayInputStream
           (xml.getBytes(StandardCharsets.UTF_8)));

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -31,6 +32,7 @@ import org.apache.solr.util.BadHdfsThreadsFilter;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 10)
 public class HdfsTlogReplayBufferedWhileIndexingTest extends AbstractTlogReplayBufferedWhileIndexingTestBase {
 
   public HdfsTlogReplayBufferedWhileIndexingTest() throws Exception {

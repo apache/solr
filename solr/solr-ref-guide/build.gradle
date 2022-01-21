@@ -78,6 +78,9 @@ dependencies {
     gems 'rubygems:tilt:2.0.10'
     gems 'rubygems:slim:4.1.0'
     gems 'rubygems:concurrent-ruby:1.1.9'
+    gems 'rubygems:http_parser.rb:0.6.0'
+
+
 }
 
 sourceSets {
@@ -172,6 +175,7 @@ ext {
             solrRootPath : project(':solr').projectDir.toString() + File.separator,
             solrDocsVersion : project.ext['solrDocsVersion'],
             solrGuideVersionPath : project.ext['solrGuideVersionPath'],
+            solrFullVersion: project.version,
             buildDate : rootProject.ext['buildDate'],
             buildYear : rootProject.ext['buildYear'],
             * : details.props,
@@ -197,7 +201,7 @@ ext {
         dependsOn "build${details.name}"
 
         classpath = sourceSets.main.runtimeClasspath
-        main = 'CheckLinksAndAnchors'
+        main = 'org.apache.solr.guide.CheckLinksAndAnchors'
         workingDir = contentDir
 
         // NOTE: even for the 'real' site, we check all relative links
@@ -210,11 +214,12 @@ ext {
 // Hook in our dependency on all top level documentation in order to check local javadoc links
 checkLocalJavadocLinksSite.dependsOn ':documentation'
 
-// Hook up custom tasks with standard tasks.
-check.dependsOn checkLocalJavadocLinksSite, checkSite
-
-// Hook site building to assemble.
-assemble.dependsOn buildSite
+// Attach building the ref guide to standard convention tasks. This
+// can be optionally turned off (see SOLR-15670).
+if (propertyOrEnvOrDefault('refguide.include', 'SOLR_REF_GUIDE_INCLUDE', "true").toBoolean()) {
+  check.dependsOn checkLocalJavadocLinksSite, checkSite
+  assemble.dependsOn buildSite
+}
 
 @CacheableTask
 abstract class PrepareSources extends DefaultTask {
@@ -281,7 +286,7 @@ abstract class PrepareSources extends DefaultTask {
                                       .getPlugin(JavaPluginConvention.class)
                                       .getSourceSets().getByName("main").getRuntimeClasspath() )
                 execSpec.setWorkingDir( intoDir )
-                execSpec.setMain( 'BuildNavDataFiles' )
+                execSpec.setMain( 'org.apache.solr.guide.BuildNavDataFiles' )
                 execSpec.args([ intoDir, p.property('mainPage') ])
             })
         }

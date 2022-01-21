@@ -412,7 +412,6 @@ If it is not already configured, you will need to configure `solrconfig.xml` to 
 [source,xml]
 ----
   <lib dir="${solr.install.dir:../../..}/contrib/extraction/lib" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../..}/dist/" regex="solr-cell-\d.*\.jar" />
 ----
 
 You can then configure the `ExtractingRequestHandler` in `solrconfig.xml`.
@@ -450,7 +449,7 @@ For example:
   <lst name="defaults">
     <str name="lowernames">true</str>
     <str name="fmap.content">_text_</str>
-    <str name="processor">uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date</processor>
+    <str name="processor">uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date</str>
   </lst>
 </requestHandler>
 ----

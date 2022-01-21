@@ -83,14 +83,15 @@ public class GCSBackupRepository implements BackupRepository {
             return storage;
 
         try {
-            if (credentialPath == null) {
-                throw new IllegalArgumentException(GCSConfigParser.missingCredentialErrorMsg());
+            if (credentialPath != null) {
+                log.info("Creating GCS client using credential at {}", credentialPath);
+                // 'GoogleCredentials.fromStream' closes the input stream, so we don't
+                GoogleCredentials credential = GoogleCredentials.fromStream(new FileInputStream(credentialPath));
+                storageOptionsBuilder.setCredentials(credential);
+            } else {
+                // nowarn compile time string concatenation
+                log.warn(GCSConfigParser.potentiallyMissingCredentialMsg()); //nowarn
             }
-
-            log.info("Creating GCS client using credential at {}", credentialPath);
-            // 'GoogleCredentials.fromStream' closes the input stream, so we don't
-            GoogleCredentials credential = GoogleCredentials.fromStream(new FileInputStream(credentialPath));
-            storageOptionsBuilder.setCredentials(credential);
             storage = storageOptionsBuilder.build().getService();
         } catch (IOException e) {
             throw new IllegalStateException(e);
@@ -175,19 +176,22 @@ public class GCSBackupRepository implements BackupRepository {
 
     @Override
     public boolean exists(URI path) throws IOException {
-        if (path.toString().equals(getConfigProperty(CoreAdminParams.BACKUP_LOCATION))) {
+        return exists(path.toString());
+    }
+
+    public boolean exists(String path) throws IOException {
+        if (path.equals(getConfigProperty(CoreAdminParams.BACKUP_LOCATION))) {
             return true;
         }
 
-        if (path.toString().endsWith("/")) {
-            return storage.get(bucketName, path.toString(), Storage.BlobGetOption.fields()) != null;
+        if (path.endsWith("/")) {
+            return storage.get(bucketName, path, Storage.BlobGetOption.fields()) != null;
         } else {
-            final String filePath = path.toString();
-            final String directoryPath = path.toString() + "/";
+            final String filePath = path;
+            final String directoryPath = path + "/";
             return storage.get(bucketName, filePath, Storage.BlobGetOption.fields()) != null ||
-                    storage.get(bucketName, directoryPath, Storage.BlobGetOption.fields()) != null;
+                storage.get(bucketName, directoryPath, Storage.BlobGetOption.fields()) != null;
         }
-
     }
 
     @Override
@@ -293,7 +297,9 @@ public class GCSBackupRepository implements BackupRepository {
     @Override
     public void createDirectory(URI path) throws IOException {
         final String name = appendTrailingSeparatorIfNecessary(path.toString());
-        storage.create(BlobInfo.newBuilder(bucketName, name).build()) ;
+        if (!exists(name)) {
+            storage.create(BlobInfo.newBuilder(bucketName, name).build());
+        }
     }
 
     @Override

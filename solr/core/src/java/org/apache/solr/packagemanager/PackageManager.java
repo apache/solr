@@ -58,6 +58,7 @@ import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.util.SolrCLI;
+import org.apache.solr.util.SolrVersion;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -655,12 +656,16 @@ public class PackageManager implements Closeable {
       PackageUtils.printRed("Package instance doesn't exist: " + packageName + ":" + version + ". Use install command to install this version first.");
       System.exit(1);
     }
-    if (version == null) version = packageInstance.version;
 
     Manifest manifest = packageInstance.manifest;
-    if (PackageUtils.checkVersionConstraint(RepositoryManager.systemVersion, manifest.versionConstraint) == false) {
-      PackageUtils.printRed("Version incompatible! Solr version: "
-          + RepositoryManager.systemVersion + ", package version constraint: " + manifest.versionConstraint);
+    try {
+      if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
+        PackageUtils.printRed("Version incompatible! Solr version: "
+            + SolrVersion.LATEST + ", package version constraint: " + manifest.versionConstraint);
+        System.exit(1);
+      }
+    } catch (SolrVersion.InvalidSemVerExpressionException ex) {
+      PackageUtils.printRed("Error in version constraint given in package manifest: " +  manifest.versionConstraint + ". It does not a valid SemVer expression.");
       System.exit(1);
     }
 

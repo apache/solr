@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -37,10 +38,11 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 10)
 public class HdfsChaosMonkeyNothingIsSafeTest extends AbstractChaosMonkeyNothingIsSafeTestBase {
   private static MiniDFSCluster dfsCluster;
   private static final String DIRECTORY_FACTORY = "org.apache.solr.core.HdfsDirectoryFactory";
-  
+
   @BeforeClass
   public static void setupClass() throws Exception {
     System.setProperty("solr.hdfs.blockcache.global", "true"); // always use global cache, this test can create a lot of directories

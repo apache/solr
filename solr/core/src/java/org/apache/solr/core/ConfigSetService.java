@@ -33,6 +33,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.NamedList;
@@ -53,14 +54,10 @@ public abstract class ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {
-    final ConfigSetService configSetService = instantiate(coreContainer);
-    try {
-      bootstrapDefaultConfigSet(configSetService);
-    } catch (UnsupportedOperationException e) {
-      log.info("_default config couldn't be uploaded");
-    } catch (IOException e) {
-      throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR, "_default config couldn't be uploaded ", e);
+    ConfigSetService configSetService = instantiate(coreContainer);
+    // bootstrap conf in SolrCloud mode
+    if (coreContainer.getZkController() != null) {
+      configSetService.bootstrapConfigSet(coreContainer);
     }
     return configSetService;
   }
@@ -87,18 +84,51 @@ public abstract class ConfigSetService {
     }
   }
 
-  private static void bootstrapDefaultConfigSet(ConfigSetService configSetService) throws IOException {
-    if (configSetService.checkConfigExists("_default") == false) {
+  private void bootstrapConfigSet(CoreContainer coreContainer) {
+    // bootstrap _default conf, bootstrap_confdir and bootstrap_conf if provided via system property
+    try {
+      // _default conf
+      bootstrapDefaultConf();
+
+      // bootstrap_confdir
+      String confDir = System.getProperty("bootstrap_confdir");
+      if (confDir != null) {
+        bootstrapConfDir(confDir);
+      }
+
+      // bootstrap_conf
+      boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
+      if (boostrapConf == true) {
+        bootstrapConf(coreContainer);
+      }
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Config couldn't be uploaded ", e);
+    }
+  }
+
+  private void bootstrapDefaultConf() throws IOException {
+    if (this.checkConfigExists("_default") == false) {
       String configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {
         log.warn(
-                "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
-                "intended to be the default. Current 'solr.default.confdir' value:",
-                System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
+            "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
+            "intended to be the default. Current 'solr.default.confdir' value:",
+            System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
-        configSetService.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, Paths.get(configDirPath));
+        this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, Paths.get(configDirPath));
       }
     }
+  }
+
+  private void bootstrapConfDir(String confDir) throws IOException {
+    Path configPath = Paths.get(confDir);
+    if (!Files.isDirectory(configPath)) {
+      throw new IllegalArgumentException ("bootstrap_confdir must be a directory of configuration files, configPath: " + configPath);
+    }
+    String confName = System.getProperty(
+            ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP, "configuration1");
+    this.uploadConfig(confName, configPath);
   }
 
   /**
@@ -214,7 +244,13 @@ public abstract class ConfigSetService {
               ) ? false: true;
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
-      return new ConfigSet(configSetName(dcore), solrConfig, force -> createIndexSchema(dcore, solrConfig, force), properties, trusted);
+      return new ConfigSet(configSetName(dcore), solrConfig, force -> {
+        try {
+          return createIndexSchema(dcore, solrConfig, force);
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+        }
+      }, properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load conf for core " + dcore.getName() +
@@ -258,7 +294,7 @@ public abstract class ConfigSetService {
    * @param solrConfig the core's SolrConfig
    * @return an IndexSchema
    */
-  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig, boolean forceFetch) {
+  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig, boolean forceFetch) throws IOException {
     // This is the schema name from the core descriptor.  Sometimes users specify a custom schema file.
     //   Important:  indexSchemaFactory.create wants this!
     String cdSchemaName = cd.getSchemaName();
@@ -290,7 +326,7 @@ public abstract class ConfigSetService {
    * Returns a modification version for the schema file.
    * Null may be returned if not known, and if so it defeats schema caching.
    */
-  protected abstract Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFile);
+  protected abstract Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFile) throws IOException;
 
   /**
    * Return the ConfigSet properties or null if none.
@@ -299,7 +335,7 @@ public abstract class ConfigSetService {
    * @param loader the core's resource loader
    * @return the ConfigSet properties
    */
-  protected NamedList<Object> loadConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) {
+  protected NamedList<Object> loadConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) throws IOException {
     return ConfigSetProperties.readFromResourceLoader(loader, cd.getConfigSetPropertiesName());
   }
 
@@ -307,7 +343,7 @@ public abstract class ConfigSetService {
    * Return the ConfigSet flags or null if none.
    */
   // TODO should fold into configSetProps -- SOLR-14059
-  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
+  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) throws IOException {
     return null;
   }
 
@@ -431,4 +467,9 @@ public abstract class ConfigSetService {
    */
   public abstract List<String> getAllConfigFiles(String configName) throws IOException;
 
+  public interface ConfigResource {
+
+    ConfigNode get() throws Exception;
+
+  }
 }

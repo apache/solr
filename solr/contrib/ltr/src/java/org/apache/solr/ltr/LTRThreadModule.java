@@ -56,7 +56,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * <code>totalPoolThreads</code> imposes a contention between the queries if
  * <code>(totalPoolThreads &lt; numThreadsPerRequest * total parallel queries)</code>.
  */
-final public class LTRThreadModule extends CloseHook implements NamedListInitializedPlugin  {
+public final class LTRThreadModule implements CloseHook, NamedListInitializedPlugin  {
 
   public static LTRThreadModule getInstance(NamedList<?> args) {
 
@@ -165,12 +165,9 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
 
   @Override
   public void preClose(SolrCore core) {
+    // TODO: Investigate...
+    //   All uses of setExecutor use the core container's update executor, which could impact other cores?
     ExecutorUtil.shutdownAndAwaitTermination(createWeightScoreExecutor);
-  }
-
-  @Override
-  public void postClose(SolrCore core) {
-  
   }
 
   public void setExecutor(ExecutorService sharedExecutor) {

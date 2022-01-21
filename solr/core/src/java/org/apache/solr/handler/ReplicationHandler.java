@@ -96,6 +96,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -132,6 +133,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   SolrCore core;
   
   private volatile boolean closed = false;
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.READ_PERM;
+  }
 
   private static final class CommitVersionInfo {
     public final long version;
@@ -886,7 +892,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
-    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getCachedIndexSize()) : parentContext.nullString()),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : parentContext.nullString()),
         true, "indexSize", getCategory().toString(), scope);
     solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().toString() : parentContext.nullString()),
          true, "indexVersion", getCategory().toString(), scope);
@@ -1396,10 +1402,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       if (restoreFuture != null) {
         restoreFuture.cancel(false);
       }
-    }
-
-    @Override
-    public void postClose(SolrCore core) {
     }
   };
 

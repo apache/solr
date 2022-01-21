@@ -117,6 +117,7 @@ import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
@@ -470,9 +471,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return indexReaderFactory;
   }
 
-  private ThreadLocal<Long> indexSize = new ThreadLocal<>();
-
-  public long getIndexSize() {
+  /**
+   * Recalculates the index size.
+   *
+   * Should only be called from {@code getIndexSize}.
+   *
+   * @return The index size in bytes.
+   */
+  private long calculateIndexSize() {
     Directory dir;
     long size = 0;
     try {
@@ -490,23 +496,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return size;
   }
 
-  public long getCachedIndexSize() {
-    if (indexSize.get() == null) {
-      if (log.isDebugEnabled()) {
-        log.debug("Recalculating index size for {}", getName());
-      }
-      indexSize.set(getIndexSize());
-    } else if (log.isDebugEnabled()) {
-      log.debug("reusing previous index size for {}", getName());
+  public long getIndexSize() {
+    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+    if (requestInfo != null) {
+      return (Long)requestInfo.getReq().getContext().computeIfAbsent(cachedIndexSizeKeyName(), key -> calculateIndexSize());
+    } else {
+      return calculateIndexSize();
     }
-    return indexSize.get();
   }
 
-  public void clearIndexSizeCache() {
-    if (log.isDebugEnabled()) {
-      log.debug("Clearing index size cache for {}", getName());
-    }
-    indexSize.remove();
+  private String cachedIndexSizeKeyName() {
+    // avoid collision when we put index sizes for multiple cores in the same metrics request
+    return "indexSize_"+getName();
   }
 
   public int getSegmentCount() {
@@ -1230,9 +1231,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
     parentContext.gauge(() -> getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
     parentContext.gauge(() -> isClosed() ? parentContext.nullString() : getIndexDir(), true, "indexDir", Category.CORE.toString());
-    parentContext.gauge(() -> isClosed() ? parentContext.nullNumber() : getCachedIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
+    parentContext.gauge(() -> isClosed() ? parentContext.nullNumber() : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     parentContext.gauge(() -> isClosed() ? parentContext.nullNumber() : getSegmentCount(), true, "segments", Category.INDEX.toString());
-    parentContext.gauge(() -> isClosed() ? parentContext.nullString() : NumberUtils.readableSize(getCachedIndexSize()), true, "size", Category.INDEX.toString());
+    parentContext.gauge(() -> isClosed() ? parentContext.nullString() : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
 
     final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
     if (cd != null) {
@@ -1583,7 +1584,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     int count = refCount.decrementAndGet();
     if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
-      log.error("Too many close [count:{}] on {}. Please report this exception to solr-user@lucene.apache.org", count, this);
+      log.error("Too many close [count:{}] on {}. Please report this exception to users@solr.apache.org", count, this);
       assert false : "Too many closes on SolrCore";
       return;
     }
@@ -2286,7 +2287,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             searcherLock.wait();
           } catch (InterruptedException e) {
             if (log.isInfoEnabled()) {
-              log.info(SolrException.toStr(e));
+              log.info("Interupted waiting for searcherLock", e);
             }
           }
         }
@@ -2317,7 +2318,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             searcherLock.wait();
           } catch (InterruptedException e) {
             if (log.isInfoEnabled()) {
-              log.info(SolrException.toStr(e));
+              log.info("Interupted waiting for searcherLock", e);
             }
           }
           continue;  // go back to the top of the loop and retry
@@ -3027,11 +3028,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     if (deleteInstanceDir) {
       addCloseHook(new CloseHook() {
         @Override
-        public void preClose(SolrCore core) {
-          // empty block
-        }
-
-        @Override
         public void postClose(SolrCore core) {
           if (desc != null) {
             try {
@@ -3261,10 +3257,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     // define the blob
     BlobRepository.BlobContentRef<T> blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
     addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-      }
-
       @Override
       public void postClose(SolrCore core) {
         coreContainer.getBlobRepository().decrementBlobRefCount(blobRef);

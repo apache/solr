@@ -99,7 +99,6 @@ allprojects {
           // test data
           [propName: 'tests.linedocsfile', value: 'europarl.lines.txt.gz', description: "Test data file path."],
           // miscellaneous; some of them very weird.
-          [propName: 'tests.LUCENE_VERSION', value: baseVersion, description: "Base Lucene version."],
           [propName: 'tests.bwcdir', value: null, description: "Data for backward-compatibility indexes."],
       ]
     }
@@ -111,7 +110,6 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
   plugins.withType(JavaPlugin) {
     ext {
       testOptions += [
-          [propName: 'tests.luceneMatchVersion', value: baseVersion, description: "Base Lucene version."],
           [propName: 'common-solr.dir',
            value: project(":solr").projectDir,
            description: "Solr base dir.",
@@ -179,7 +177,16 @@ allprojects {
         if (Boolean.parseBoolean(testOptionsResolved["tests.failfast"])) {
           failFast true
         }
-
+        
+        // The Lucene version is only available after resolving was done, so add lately using a provider:
+        jvmArgumentProviders.add({
+          def luceneMatchVersion = rootProject.luceneBaseVersionProvider.get()
+          return [
+            "-Dtests.LUCENE_VERSION=${luceneMatchVersion}",
+            "-Dtests.luceneMatchVersion=${luceneMatchVersion}",
+          ]
+        } as CommandLineArgumentProvider)
+        
         // Enable security manager, if requested. We could move the selection of security manager and security policy
         // to each project's build/ configuration but it seems compact enough to keep it here for now.
         if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {

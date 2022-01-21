@@ -125,13 +125,8 @@
 # Location where Solr should write logs to. Absolute or relative to solr start dir
 #SOLR_LOGS_DIR=logs
 
-# Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
-# start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
-# framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
-#SOLR_LOG_PRESTART_ROTATION=false
-
 # Enables jetty request log for all requests
-#SOLR_REQUESTLOG_ENABLED=false
+#SOLR_REQUESTLOG_ENABLED=true
 
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT=8983
@@ -139,12 +134,12 @@
 # Restrict access to solr by IP address.
 # Specify a comma-separated list of addresses or networks, for example:
 #   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
-#SOLR_IP_WHITELIST=
+#SOLR_IP_ALLOWLIST=
 
 # Block access to solr from specific IP addresses.
 # Specify a comma-separated list of addresses or networks, for example:
 #   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
-#SOLR_IP_BLACKLIST=
+#SOLR_IP_DENYLIST=
 
 # Sets the network interface the Solr binds to. To prevent administrators from
 # accidentally exposing Solr more widely than intended, this defaults to 127.0.0.1.
@@ -263,3 +258,7 @@
 # You can test this behaviour by setting SOLR_HEAP=25m
 #SOLR_HEAP_DUMP=true
 #SOLR_HEAP_DUMP_DIR=/var/log/dumps
+
+# Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
+# then enable the following setting to address CVE-2021-44228
+# SOLR_OPTS="$SOLR_OPTS -Dlog4j2.formatMsgNoLookups=true"

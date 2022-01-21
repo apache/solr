@@ -16,11 +16,12 @@
 */
 
 solrAdminApp.controller('QueryController',
-  function($scope, $routeParams, $location, Query, Constants){
+  function($scope, $route, $routeParams, $location, Query, Constants){
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     $scope._models = [];
     $scope.filters = [{fq:""}];
+    $scope.rawParams = [{rawParam:""}];
     $scope.val = {};
     $scope.val['q'] = "*:*";
     $scope.val['q.op'] = "OR";
@@ -43,8 +44,8 @@ solrAdminApp.controller('QueryController',
         if( !urlParams.hasOwnProperty(p) ){
           continue;
         }
+        // filters and rawParams are handled specially because of possible multiple values
         if( p === "fq" ) {
-            // filters are handled specially because of possible multiple values
             addFilters(urlParams[p]);
         } else {
             setParam(p, urlParams[p]);
@@ -74,12 +75,16 @@ solrAdminApp.controller('QueryController',
     }
     // store not processed values to be displayed in a field
     function insertToRawParams(argKey, argValue){
-      if( $scope.rawParams == null ){
-        $scope.rawParams = "";
-      } else {
-        $scope.rawParams += "&";
+      if( ($scope.rawParams.length === 0) || ($scope.rawParams.length === 1 && $scope.rawParams[0].rawParam === "") ){
+        $scope.rawParams = [];
       }
-      $scope.rawParams += argKey + "=" + argValue;
+      if (argValue instanceof Array) {
+        for (var index in argValue) {
+          $scope.rawParams.push({rawParam: argKey + "=" + argValue[index]});
+        }
+      } else {
+        $scope.rawParams.push({rawParam: argKey + "=" + argValue});
+      }
     }
     function addFilters(argObject){
       if( argObject ){
@@ -94,7 +99,7 @@ solrAdminApp.controller('QueryController',
       }
     }
 
-    $scope.doQuery = function() {
+    $scope.doQuery = function(isPageReload) {
       var params = {};
 
       var set = function(key, value) {
@@ -140,27 +145,29 @@ solrAdminApp.controller('QueryController',
       purgeParams(params, getDependentFields("spatial"), $scope.val.spatial !== true);
       purgeParams(params, getDependentFields("spellcheck"), $scope.val.spellcheck !== true);
 
-      if ($scope.rawParams) {
-        var rawParams = $scope.rawParams.split(/[&\n]/);
-        for (var i in rawParams) {
-          var param = rawParams[i];
-          var equalPos = param.indexOf("=");
-          if (equalPos > -1) {
-            set(param.substring(0, equalPos), param.substring(equalPos+1));
-          } else {
-            set(param, ""); // Use empty value for params without "="
-          }
-        }
-      }
-
       var qt = $scope.qt ? $scope.qt : "/select";
 
       for (var filter in $scope.filters) {
         copy(params, $scope.filters[filter]);
       }
 
+      for (var rawIndex in $scope.rawParams) {
+        if ($scope.rawParams[rawIndex].rawParam) {
+          var rawParam = $scope.rawParams[rawIndex].rawParam.split(/[&\n]/);
+          for (var i in rawParam) {
+            var param = rawParam[i];
+            var equalPos = param.indexOf("=");
+            if (equalPos > -1) {
+              set(param.substring(0, equalPos), param.substring(equalPos+1));
+            } else {
+              set(param, ""); // Use empty value for params without "="
+            }
+          }
+        }
+      }
+
       params.core = $routeParams.core;
-      if (qt[0] == '/') {
+      if (qt[0] === '/') {
         params.handler = qt.substring(1);
       } else { // Support legacy style handleSelect=true configs
         params.handler = "select";
@@ -176,18 +183,21 @@ solrAdminApp.controller('QueryController',
       if( $scope.qt != null ) {
         adminParams.qt = [$scope.qt];
       }
-
-      Query.query(params, function(data) {
-        $scope.lang = $scope.val['wt'];
-        if ($scope.lang == undefined || $scope.lang == '') {
-          $scope.lang = "json";
-        }
-        $scope.response = data;
-        // Use relative URL to make it also work through proxies that may have a different host/port/context
-        $scope.url = url;
-        $scope.hostPortContext = $location.absUrl().substr(0,$location.absUrl().indexOf("#")); // For display only
+      if (isPageReload) {
+        Query.query(params, function (data) {
+          $scope.lang = $scope.val['wt'];
+          if (!$scope.lang || $scope.lang === '') {
+            $scope.lang = "json";
+          }
+          $scope.response = data;
+          // Use relative URL to make it also work through proxies that may have a different host/port/context
+          $scope.url = url;
+          $scope.hostPortContext = $location.absUrl().substr(0, $location.absUrl().indexOf("#")); // For display only
+        });
+      } else {
+        var previousUrl = $location.$$url;
         for( key in $location.search() ){
-            $location.search(key, null);
+          $location.search(key, null);
         }
         for( var key in adminParams ){
           if( Array.isArray(adminParams[key]) && adminParams[key].length === 1 ){
@@ -198,7 +208,11 @@ solrAdminApp.controller('QueryController',
           }
           $location.search(key, adminParams[key]);
         }
-      });
+        var currentUrl = $location.$$url;
+        if (previousUrl === currentUrl) { //if the query send with same parameters the query should be executed
+          $route.reload();
+        }
+      }
     };
     setModels("input");
     setModels("textarea");
@@ -206,7 +220,7 @@ solrAdminApp.controller('QueryController',
     setUrlParams();
 
     if ($location.search().q) {
-      $scope.doQuery();
+      $scope.doQuery(true);
     }
     $scope.removeFilter = function(index) {
       if ($scope.filters.length === 1) {
@@ -217,6 +231,16 @@ solrAdminApp.controller('QueryController',
     };
     $scope.addFilter = function(index) {
       $scope.filters.splice(index+1, 0, {fq:""});
+    };
+    $scope.removeRawParam = function (index) {
+      if ($scope.rawParams.length === 1) {
+        $scope.rawParams = [{rawParam: ""}];
+      } else {
+        $scope.rawParams.splice(index, 1);
+      }
+    };
+    $scope.addRawParam = function (index) {
+      $scope.rawParams.splice(index+1, 0, {rawParam:""});
     };
   }
 );

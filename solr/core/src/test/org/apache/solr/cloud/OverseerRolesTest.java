@@ -54,7 +54,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     shutdownCluster();
   }
   
-  private void waitForNewOverseer(int seconds, Predicate<String> state, boolean failOnIntermediateTransition) throws Exception {
+  public static void waitForNewOverseer(int seconds, Predicate<String> state, boolean failOnIntermediateTransition) throws Exception {
     TimeOut timeout = new TimeOut(seconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     String current = null;
     while (timeout.hasTimedOut() == false) {
@@ -72,7 +72,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     fail("Timed out waiting for overseer state change. The current overseer is: "+current);
   }
 
-  private void waitForNewOverseer(int seconds, String expected, boolean failOnIntermediateTransition) throws Exception {
+  public static void waitForNewOverseer(int seconds, String expected, boolean failOnIntermediateTransition) throws Exception {
     log.info("Expecting node: {}", expected);
     waitForNewOverseer(seconds, s -> Objects.equals(s, expected), failOnIntermediateTransition);
   }

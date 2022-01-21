@@ -64,7 +64,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.IteratorWriter;
@@ -975,14 +974,25 @@ public abstract class FieldType extends FieldProperties {
    * @return The {@link org.apache.lucene.search.Query} instance.  This implementation returns a {@link org.apache.lucene.search.TermQuery} but overriding queries may not
    */
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    BytesRefBuilder br = new BytesRefBuilder();
-    readableToIndexed(externalVal, br);
     if (field.hasDocValues() && !field.indexed()) {
       // match-only
       return getRangeQuery(parser, field, externalVal, externalVal, true, true);
     } else {
+      BytesRefBuilder br = new BytesRefBuilder();
+      readableToIndexed(externalVal, br);
       return new TermQuery(new Term(field.getName(), br));
     }
+  }
+  
+  /**
+   * Returns a Query instance for doing a single term search against a field. This term will not be analyzed before searching.
+   * @param parser The {@link org.apache.solr.search.QParser} calling the method
+   * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
+   * @param externalVal The String representation of the term value to search
+   * @return The {@link org.apache.lucene.search.Query} instance.
+   */
+  public Query getFieldTermQuery(QParser parser, SchemaField field, String externalVal) {
+    return getFieldQuery(parser, field, externalVal);
   }
 
   /** @lucene.experimental  */
@@ -1264,9 +1274,6 @@ public abstract class FieldType extends FieldProperties {
       }
     } else { // analyzer is not instanceof TokenizerChain
       analyzerProps.add(CLASS_NAME, analyzer.getClass().getName());
-      if (analyzer.getVersion() != Version.LATEST) {
-        analyzerProps.add(LUCENE_MATCH_VERSION_PARAM, analyzer.getVersion().toString());
-      }
     }
     return analyzerProps;
   }

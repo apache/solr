@@ -1189,7 +1189,7 @@ public class FacetComponent extends SearchComponent {
   /**
    * @param val a primitive long value
    * @return an {@link Integer} if the value of the argument is less than {@link Integer#MAX_VALUE}
-   * else a @{link java.lang.Long}
+   * else a {@link java.lang.Long}
    */
   static Number num(long val) {
    if (val < Integer.MAX_VALUE) return (int)val;
@@ -1199,7 +1199,7 @@ public class FacetComponent extends SearchComponent {
   /**
    * @param val a {@link java.lang.Long} value
    * @return an {@link Integer} if the value of the argument is less than {@link Integer#MAX_VALUE}
-   * else a @{link java.lang.Long}
+   * else a {@link java.lang.Long}
    */
   static Number num(Long val) {
     if (val.longValue() < Integer.MAX_VALUE) return val.intValue();

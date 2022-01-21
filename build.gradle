@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 plugins {
   id "base"
   id "com.palantir.consistent-versions" version "2.0.0"
-  id "org.owasp.dependencycheck" version "5.3.0"
+  id "org.owasp.dependencycheck" version "6.4.1.1"
   id 'de.thetaphi.forbiddenapis' version '3.2' apply false
   id "de.undercouch.download" version "4.0.2" apply false
   id "net.ltgt.errorprone" version "2.0.2" apply false
@@ -35,7 +35,7 @@ apply from: file('gradle/globals.gradle')
 // Calculate project version:
 version = {
   // Release manager: update base version here after release:
-  String baseVersion = '9.0.0'
+  String baseVersion = '10.0.0'
 
   // On a release explicitly set release version in one go:
   //  -Dversion.release=x.y.z
@@ -46,7 +46,7 @@ version = {
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
   return propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
 }()
-description = 'Grandparent project for Apache Lucene Core and Apache Solr'
+description = 'Grandparent project for Apache Solr'
 
 // Propagate version and derived properties across projects.
 allprojects {
@@ -99,6 +99,17 @@ ext {
     logger.info("External tool '${name}' resolved to: ${resolved}")
     return resolved
   }
+  
+  luceneBaseVersionProvider = project.provider { 
+    def luceneVersion = getVersion('org.apache.lucene:lucene-core')
+    def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
+    if (!m) {
+      throw GradleException("Can't strip base version from " + luceneVersion)
+    }
+    def luceneBaseVersion = m[0]
+    logger.debug('Lucene base version (without suffix): {}', luceneBaseVersion)
+    return luceneBaseVersion
+  }
 }
 
 // Include smaller chunks configuring dedicated build areas.
@@ -125,7 +136,6 @@ apply from: file('gradle/java/jar-manifest.gradle')
 
 // Publishing and releasing
 apply from: file('gradle/maven/defaults-maven.gradle')
-apply from: file('gradle/releasing.gradle')
 
 // IDE support, settings and specials.
 apply from: file('gradle/ide/intellij-idea.gradle')
@@ -164,6 +174,9 @@ apply from: file('gradle/testing/profiling.gradle')
 apply from: file('gradle/testing/beasting.gradle')
 apply from: file('gradle/help.gradle')
 
+// Configures development for joint Lucene/ Solr composite build.
+apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
+
 // Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
 // here so that we can coexist with current ant build but they are indicative
 // of potential problems with the build conventions, dependencies, etc.
@@ -190,3 +203,5 @@ apply from: file('gradle/solr/packaging.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/ant-compat/solr.post-jar.gradle')
+
+

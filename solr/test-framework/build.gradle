@@ -26,11 +26,19 @@ dependencies {
   api "org.apache.lucene:lucene-test-framework"
   api "org.apache.lucene:lucene-analysis-common"
 
-  api 'org.apache.logging.log4j:log4j-core'
-  api 'io.opentracing:opentracing-mock'
+  implementation('org.apache.zookeeper:zookeeper', {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+    exclude group: "log4j", module: "log4j"
+    exclude group: "org.slf4j", module: "slf4j-log4j12"
+  })
 
+  implementation 'commons-io:commons-io'
+  implementation 'org.apache.logging.log4j:log4j-core'
+  implementation 'io.opentracing:opentracing-noop'
+  implementation 'io.opentracing:opentracing-util'
+  implementation ('com.google.guava:guava') { transitive = false }
   implementation 'io.dropwizard.metrics:metrics-jetty9'
-  implementation 'com.lmax:disruptor'
+  implementation 'commons-cli:commons-cli'
 
   // used by the hadoop-specific test framework classes
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
@@ -40,7 +48,6 @@ dependencies {
   implementation ('org.apache.commons:commons-compress') { transitive = false }
   implementation ('com.sun.jersey:jersey-servlet') { transitive = false }
   implementation ('commons-logging:commons-logging') { transitive = false }
-
 
 }
 

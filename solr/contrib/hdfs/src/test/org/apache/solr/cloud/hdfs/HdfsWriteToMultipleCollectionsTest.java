@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,6 +62,7 @@ import org.junit.Test;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 10)
 public class HdfsWriteToMultipleCollectionsTest extends AbstractBasicDistributedZkTestBase {
   private static final String ACOLLECTION = "acollection";
   private static MiniDFSCluster dfsCluster;
