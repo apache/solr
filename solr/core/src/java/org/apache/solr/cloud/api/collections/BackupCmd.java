@@ -47,8 +47,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -269,15 +271,40 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     aggRsp.add("indexVersion", backupProps.getIndexVersion());
     aggRsp.add("startTime", backupProps.getStartTime());
 
+    // Optional options for incremental backups
+    Optional<Integer> indexFileCount = Optional.empty();
+    Optional<Integer> uploadedIndexFileCount = Optional.empty();
     double indexSizeMB = 0;
+    Optional<Double> uploadedIndexFileMB = Optional.empty();
     NamedList<?> shards = (NamedList<?>) results.get("success");
+    List<String> shardBackupIds = new ArrayList<>(shards.size());
     for (int i = 0; i < shards.size(); i++) {
       NamedList<?> shardResp = (NamedList<?>)((NamedList<?>)shards.getVal(i)).get("response");
       if (shardResp == null)
         continue;
-      indexSizeMB += (double) shardResp.get("indexSizeMB");
+      Integer shardIndexFileCount = (Integer) shardResp.get("indexFileCount");
+      if (shardIndexFileCount != null) {
+        indexFileCount = Optional.of(indexFileCount.orElse(0) + shardIndexFileCount);
+      }
+      Integer shardUploadedIndexFileCount = (Integer) shardResp.get("uploadedIndexFileCount");
+      if (shardUploadedIndexFileCount != null) {
+        uploadedIndexFileCount = Optional.of(uploadedIndexFileCount.orElse(0) + shardUploadedIndexFileCount);
+      }
+      indexSizeMB += Optional.ofNullable((Double) shardResp.get("indexSizeMB")).orElse(0.0);
+      Double shardUploadedIndexFileMB = (Double) shardResp.get("uploadedIndexFileMB");
+      if (shardUploadedIndexFileMB != null) {
+        uploadedIndexFileMB = Optional.of(uploadedIndexFileMB.orElse(0.0) + shardUploadedIndexFileMB);
+      }
+      Optional.ofNullable((String) shardResp.get("shardBackupId")).ifPresent(shardBackupIds::add);
     }
+    indexFileCount.ifPresent(val -> aggRsp.add("indexFileCount", val));
+    uploadedIndexFileCount.ifPresent(val -> aggRsp.add("uploadedIndexFileCount", val));
     aggRsp.add("indexSizeMB", indexSizeMB);
+    uploadedIndexFileMB.ifPresent(val -> aggRsp.add("uploadedIndexFileMB", val));
+    if (!shardBackupIds.isEmpty()) {
+      aggRsp.add("shardBackupIds", shardBackupIds);
+    }
+
     return aggRsp;
   }
 
