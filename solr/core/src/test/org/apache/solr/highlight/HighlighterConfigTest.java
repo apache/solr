@@ -19,6 +19,8 @@ package org.apache.solr.highlight;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 
+import java.util.Map;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.TestHarness;
@@ -49,9 +51,8 @@ public class HighlighterConfigTest extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  public void testConfig()
-  {
-          SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
+  public void testConfig() {
+    SolrHighlighter highlighter = getHighlighter();
     log.info( "highlighter" );
 
     assertTrue( highlighter instanceof DummyHighlighter );
@@ -71,7 +72,12 @@ public class HighlighterConfigTest extends SolrTestCaseJ4 {
             sumLRF.makeRequest("long"),
             "//lst[@name='highlighting']/str[@name='dummy']"
             );
-    }
+  }
+
+  private static SolrHighlighter getHighlighter() {
+    var hl = (HighlightComponent) h.getCore().getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
+    return hl.getHighlighter(new MapSolrParams(Map.of()));
+  }
 }
 
 
