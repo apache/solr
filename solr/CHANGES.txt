@@ -515,6 +515,9 @@ Other Changes
 
 * SOLR-15934: CloseHook is now an interface with default method implementations instead of an abstract class. (Mike Drob)
 
+* SOLR-15916: Remove dist/ from the binary release. The solr-core and solrj jars will be included in the server WEB-INF/lib directory,
+and each individual module's jar will be included in its directory's lib/ folder. (Houston Putman)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
@@ -598,6 +601,8 @@ Bug Fixes
 * SOLR-15843: Update Log4J to 2.16 (Mike Drob, janhoy)
 
 * SOLR-15324: Upgrade jaegertracing to 1.6.0 and libthrift to 0.14.1 (wcmrnd1, janhoy)
+
+* SOLR-15405: Make HDFS handle little endian LUCENE-9047 (Kevin Risden)
 
 ==================  8.11.0 ==================
 
