@@ -40,4 +40,5 @@
       <Arg><Get class="org.eclipse.jetty.server.CustomRequestLog" name="NCSA_FORMAT"/></Arg>
     </New>
   </Set>
+  <Call class="java.lang.System" name="setProperty"><Arg>solr.requestlog.enabled</Arg><Arg>true</Arg></Call>
 </Configure>
