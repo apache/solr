@@ -83,13 +83,12 @@ public abstract class TextResponseWriter implements TextWriter {
     returnFields = rsp.getReturnFields();
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) rsp.removeResponseHeader();
     DocTransformer rootDocTransformer = returnFields.getTransformer();
-    Collection<String> rawFields = rootDocTransformer == null ? null : rootDocTransformer.getRawFields();
-    if (rawFields == null) {
+    Collection<String> rawFields;
+    if (rootDocTransformer == null || (rawFields = rootDocTransformer.getRawFields()).isEmpty()) {
       this.rawFields = null;
       this.rawShim = null;
       this.rawReturnFields = NO_RAW_FIELDS;
     } else {
-      assert !rawFields.isEmpty();
       this.rawFields = rawFields.size() == 1 ? Collections.singleton(rawFields.iterator().next()) : new HashSet<>(rawFields);
       this.rawShim = new RawShimTextResponseWriter(this);
       this.rawReturnFields = returnFields;
