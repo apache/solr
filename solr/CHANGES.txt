@@ -258,6 +258,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-14916: Add split parameter to timeseries Streaming Expression (Joel Bernstein)
 
+* SOLR-14686: Logs: Removed the "[corename]" prefix of some SolrCore logs that has become redundant
+  with MDC.  (David Smiley)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
