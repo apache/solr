@@ -322,10 +322,10 @@ The response should be this (the QTime may vary):
     "status":0,
     "QTime":1},
   "tagsCount":1,
-  "tags":[[
-      "startOffset",6,
-      "endOffset",19,
-      "ids",["5128581"]]],
+  "tags":[{
+      "startOffset":6,
+      "endOffset":19,
+      "ids":["5128581"]}],
   "response":{"numFound":1,"start":0,"docs":[
       {
         "id":"5128581",
