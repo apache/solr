@@ -144,6 +144,7 @@ Currently this change should only effect compatibility of custom code overriding
 Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
 
 * SOLR-15884: In Backup request responses, the `response` key now uses a map to return information instead of a list.
+This is only applicable for users returning information in JSON format, which is the default behavior.
 
 === solr.xml maxBooleanClauses now enforced recursively
 
