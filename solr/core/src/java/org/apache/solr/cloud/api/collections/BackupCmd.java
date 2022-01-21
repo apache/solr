@@ -44,6 +44,7 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -256,25 +257,30 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     //Aggregating result from different shards
-    NamedList<Object> aggRsp = aggregateResults(results, collectionName, backupManager, backupProperties, slices);
+    NamedList<Object> aggRsp = aggregateResults(results, collectionName, slices, backupManager, backupProperties);
     results.add("response", aggRsp);
   }
 
-  private NamedList<Object> aggregateResults(NamedList<Object> results, String collectionName,
-                                     BackupManager backupManager,
-                                     BackupProperties backupProps,
-                                     Collection<Slice> slices) {
+  private NamedList<Object> aggregateResults(NamedList<Object> results,
+                                             String collectionName,
+                                             Collection<Slice> slices,
+                                             @Nullable BackupManager backupManager,
+                                             @Nullable BackupProperties backupProps) {
     NamedList<Object> aggRsp = new NamedList<>();
     aggRsp.add("collection", collectionName);
     aggRsp.add("numShards", slices.size());
-    aggRsp.add("backupId", backupManager.getBackupId().id);
-    aggRsp.add("indexVersion", backupProps.getIndexVersion());
-    aggRsp.add("startTime", backupProps.getStartTime());
+    if (backupManager != null) {
+      aggRsp.add("backupId", backupManager.getBackupId().id);
+    }
+    if (backupProps != null) {
+      aggRsp.add("indexVersion", backupProps.getIndexVersion());
+      aggRsp.add("startTime", backupProps.getStartTime());
+    }
 
     // Optional options for incremental backups
     Optional<Integer> indexFileCount = Optional.empty();
     Optional<Integer> uploadedIndexFileCount = Optional.empty();
-    double indexSizeMB = 0;
+    Optional<Double> indexSizeMB = Optional.empty();
     Optional<Double> uploadedIndexFileMB = Optional.empty();
     NamedList<?> shards = (NamedList<?>) results.get("success");
     List<String> shardBackupIds = new ArrayList<>(shards.size());
@@ -290,7 +296,10 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       if (shardUploadedIndexFileCount != null) {
         uploadedIndexFileCount = Optional.of(uploadedIndexFileCount.orElse(0) + shardUploadedIndexFileCount);
       }
-      indexSizeMB += Optional.ofNullable((Double) shardResp.get("indexSizeMB")).orElse(0.0);
+      Double shardIndexSizeMB = (Double) shardResp.get("indexSizeMB");
+      if (shardUploadedIndexFileCount != null) {
+        indexSizeMB = Optional.of(indexSizeMB.orElse(0.0) + shardIndexSizeMB);
+      }
       Double shardUploadedIndexFileMB = (Double) shardResp.get("uploadedIndexFileMB");
       if (shardUploadedIndexFileMB != null) {
         uploadedIndexFileMB = Optional.of(uploadedIndexFileMB.orElse(0.0) + shardUploadedIndexFileMB);
@@ -299,7 +308,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     }
     indexFileCount.ifPresent(val -> aggRsp.add("indexFileCount", val));
     uploadedIndexFileCount.ifPresent(val -> aggRsp.add("uploadedIndexFileCount", val));
-    aggRsp.add("indexSizeMB", indexSizeMB);
+    indexSizeMB.ifPresent(val -> aggRsp.add("indexSizeMB", val));
     uploadedIndexFileMB.ifPresent(val -> aggRsp.add("uploadedIndexFileMB", val));
     if (!shardBackupIds.isEmpty()) {
       aggRsp.add("shardBackupIds", shardBackupIds);
@@ -349,7 +358,8 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     final ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
-    for (Slice slice : ccc.getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices()) {
+    Collection<Slice> slices = ccc.getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices();
+    for (Slice slice : slices) {
       Replica replica = null;
 
       if (snapshotMeta.isPresent()) {
@@ -380,5 +390,9 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     log.debug("Sent backup requests to all shard leaders for backupName={}", backupName);
 
     shardRequestTracker.processResponses(results, shardHandler, true, "Could not backup all shards");
+
+    //Aggregating result from different shards
+    NamedList<Object> aggRsp = aggregateResults(results, collectionName, slices, null, null);
+    results.add("response", aggRsp);
   }
 }
