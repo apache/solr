@@ -56,7 +56,7 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 public class PackageLoader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String LATEST = "$LATEST";
-  public static final String PKGS_DIR = "localpkgs";
+  public static final String PKGS_DIR = "../../contrib";
   public static final String LOCAL_PKGS_PROP = "local.packages";
   public static final String PKGS_JSON = "local_packages.json";
   public final boolean enablePackages = Boolean.parseBoolean(System.getProperty("enable.packages", "false"));

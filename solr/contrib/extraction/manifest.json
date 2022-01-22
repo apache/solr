@@ -1,0 +1,21 @@
+{
+    "version-constraint": "9",
+    "plugins": [
+      {
+        "name": "update-extraction",
+        "setup-command": {
+          "path": "/api/collections/${collection}/config",
+          "payload": {"add-requesthandler": {"name": "${NAME}", "class": "solr-extraction:org.apache.solr.handler.extraction.ExtractingRequestHandler"}},
+          "method": "POST"
+        },
+        "uninstall-command": {
+          "path": "/api/collections/${collection}/config",
+          "payload": {"delete-requesthandler": "${NAME}"},
+          "method": "POST"
+        }
+      }
+    ],
+    "parameter-defaults": {
+      "NAME": "/update/extract"
+    }
+  }

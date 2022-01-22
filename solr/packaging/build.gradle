@@ -86,12 +86,20 @@ distributions {
         include "NOTICE.txt"
       })
 
+      from(project(":solr:contrib").projectDir, {
+        include "local_packages.json"
+        into "contrib"
+      })
+
+
       from(project(":solr").projectDir, {
         include "bin/**"
         include "licenses/**"
         exclude "licenses/README.committers.txt"
         include "CHANGES.txt"
         include "README.md"
+        include "local_packages.json"
+        include "manifest.json"
       })
 
       from(configurations.contrib, {
