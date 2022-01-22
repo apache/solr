@@ -294,7 +294,12 @@ abstract class PrepareSources extends DefaultTask {
     }
 }
 
+// TODO Pull playbook file from command-line param
+// Documentation for Antora-Gradle plugin at
+// https://gitlab.com/antora/antora-gradle-plugin
+// Can possibly add some attributes to arguments?
 antora {
   playbookFile = file("playbook.yml")
   antoraVersion = "3.0.1"
+  arguments = ["--fetch"]
 }
