@@ -22,19 +22,23 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.logging.LogWatcherConfig;
-
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.ModuleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -60,6 +64,8 @@ public class NodeConfig {
   private final List<String> allowUrls;
 
   private final String sharedLibDirectory;
+
+  private final String modules;
 
   private final PluginInfo shardHandlerFactoryConfig;
 
@@ -118,7 +124,7 @@ public class NodeConfig {
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
                      MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig,
                      boolean fromZookeeper, String defaultZkHost, Set<Path> allowPaths, List<String> allowUrls,
-                     String configSetServiceClass) {
+                     String configSetServiceClass, String modules) {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
@@ -152,6 +158,7 @@ public class NodeConfig {
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
     this.configSetServiceClass = configSetServiceClass;
+    this.modules = modules;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -462,6 +469,7 @@ public class NodeConfig {
     private Integer booleanQueryMaxClauseCount;
     private Path configSetBaseDirectory;
     private String sharedLibDirectory;
+    private String modules;
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
     private String configSetServiceClass;
@@ -675,6 +683,15 @@ public class NodeConfig {
       return this;
     }
 
+    /**
+     * Set list of modules to add to class path
+     * @param moduleNames comma separated list of module names to add to class loader, e.g. "extracting,ltr,langid"
+     */
+    public NodeConfigBuilder setModules(String moduleNames) {
+      this.modules = moduleNames;
+      return this;
+    }
+
     public NodeConfig build() {
       // if some things weren't set then set them now.  Simple primitives are set on the field declaration
       if (loader == null) {
@@ -689,7 +706,8 @@ public class NodeConfig {
               transientCacheSize, useSchemaCache, managementPath,
               solrHome, loader, solrProperties,
               backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig,
-              fromZookeeper, defaultZkHost, allowPaths, allowUrls, configSetServiceClass);
+              fromZookeeper, defaultZkHost, allowPaths, allowUrls, configSetServiceClass,
+              modules);
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {

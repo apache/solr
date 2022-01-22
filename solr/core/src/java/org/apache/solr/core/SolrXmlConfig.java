@@ -327,6 +327,9 @@ public class SolrXmlConfig {
         case "sharedLib":
           builder.setSharedLibDirectory(value);
           break;
+        case "modules":
+          builder.setModules(value);
+          break;
         case "allowPaths":
           builder.setAllowPaths(separatePaths(value));
           break;
