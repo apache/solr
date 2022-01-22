@@ -36,9 +36,7 @@ LABEL url="https://solr.apache.org"
 LABEL repository="https://github.com/apache/solr"
 
 RUN set -ex; \
-    apt-get update; \
-    apt-get -y install acl dirmngr lsof procps wget netcat gosu tini jattach; \
-    rm -rf /var/lib/apt/lists/*;
+    apk --no-cache add acl lsof procps su-exec tini bash jattach;
 
 ENV SOLR_USER="solr" \
     SOLR_UID="8983" \
@@ -53,11 +51,11 @@ ENV SOLR_USER="solr" \
     SOLR_JETTY_HOST="0.0.0.0"
 
 RUN set -ex; \
-  groupadd -r --gid "$SOLR_GID" "$SOLR_GROUP"; \
-  useradd -r --uid "$SOLR_UID" --gid "$SOLR_GID" "$SOLR_USER"
+  addgroup --gid "$SOLR_GID" "$SOLR_GROUP"; \
+  adduser --disabled-password --uid "$SOLR_UID" --ingroup "$SOLR_GROUP" "$SOLR_USER";
 
 RUN set -ex; \
-  mkdir -p /opt/solr/server/solr/lib /docker-entrypoint-initdb.d; \
+  mkdir -p /opt/solr/server/solr/lib /docker-entrypoint-initdb.d /etc/default; \
   cp /opt/solr/bin/solr.in.sh /etc/default/solr.in.sh; \
   mv /opt/solr/bin/solr.in.sh /opt/solr/bin/solr.in.sh.orig; \
   mv /opt/solr/bin/solr.in.cmd /opt/solr/bin/solr.in.cmd.orig; \
