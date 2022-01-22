@@ -1,5 +1,14 @@
 {
     "packages": {
+        "solr-scripting": [
+            {
+                "version": "10.0.0",
+                "files": [
+                    "/scripting/lib/solr-scripting-10.0.0-SNAPSHOT.jar"
+                ],
+                "manifest": "/scripting/manifest.json"
+            }
+        ],
         "solr-extraction": [
             {
                 "version": "10.0.0",
