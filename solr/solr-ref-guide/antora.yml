@@ -3,10 +3,11 @@ name: solr
 # 'branch_(*)_(*)': $1.$2' (or $1_$2)
 # But this doesn't really work on Jenkins since it calls all checkouts HEAD
 # So declaring the version explicitly here
-version: '9.0.0'
-prerelease: true
+version: '9_0'
+# Marking a version as 'prerelease: true' is only needed for unpublished branches
+#prerelease: true
 display_version: '9.0'
-title: Solr Reference Guide DRAFT
+title: Solr Reference Guide
 nav:
 - modules/getting-started/getting-started-nav.adoc
 - modules/deployment-guide/deployment-nav.adoc
@@ -18,11 +19,15 @@ asciidoc:
   attributes:
     idseparator: '-'
     idprefix: ''
-    solr-javadocs: https://solr.apache.org/docs/9_0_0/
-    lucene-javadocs: https://lucene.apache.org/core/9_0_0/
+    # 'patch_version' is the 'z' part of x.y.z semantic version
+    patch_version: '0'
+    solr-javadocs: https://solr.apache.org/docs/{page-component-version}_{patch_version}
+    # TODO the following works for now but might not be right if
+    # we don't have version-to-version match between Lucene and Solr
+    lucene-javadocs: https://lucene.apache.org/core/{page-component-version}_{patch_version}
     java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
-    # Hardcode some version attributes for now TODO
-    # This will make some constructed links be 404 since they aren't parsed
+    # TODO the following are hardcoded for now
+    # Some constructed  links may be 404 TODO to check
     solr-docs-version: '9.0'
     solr-full-version: '9.0.0'
     ivy-tika-version: '1.27'
