@@ -2,18 +2,27 @@ site:
   title: Apache Solr Reference Guide
   url: https://solr.apache.org/guide
   start_page: solr::index.adoc
+urls:
+  latest_version_segment: latest
+# This does not work unless the redirect_facility below is set to
+# something other than the default 'static'
+  latest_version_segment_strategy: redirect:from
+# This will create a .htaccess file with all redirects, including 'latest'
+# Default is 'static' which produces index.html at the root
+# See https://docs.antora.org/antora/latest/playbook/urls-redirect-facility/
+#  redirect_facility: httpd
 content:
+# The URL for "Edit this page" links will always go to 'main' in Github
+  edit_url: '{web_url}/tree/main/{path}'
   sources:
 #  TODO: this section needs to be edited before merging
   - url: https://github.com/apache/solr.git
     branches: jira/solr-15556-antora
     start_path: solr/solr-ref-guide
-    edit_url: '{web_url}/tree/{refname}/{path}'
 # Uncomment these sections for local development but DO NOT COMMIT IT
 #  - url: ../..
 #    branches: HEAD
 #    start_path: solr/solr-ref-guide
-#    edit_url: '{web_url}/tree/{refname}/{path}'
 
 ui:
   bundle:
