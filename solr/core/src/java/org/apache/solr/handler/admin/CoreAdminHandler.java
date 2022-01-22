@@ -39,9 +39,15 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.InvokeClassAPI;
+import org.apache.solr.handler.admin.api.MergeIndexesAPI;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
 import org.apache.solr.handler.admin.api.RejoinLeaderElectionAPI;
+import org.apache.solr.handler.admin.api.ReloadCoreAPI;
+import org.apache.solr.handler.admin.api.RenameCoreAPI;
 import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
+import org.apache.solr.handler.admin.api.SplitCoreAPI;
+import org.apache.solr.handler.admin.api.SwapCoresAPI;
+import org.apache.solr.handler.admin.api.UnloadCoreAPI;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -419,6 +425,12 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     apis.addAll(AnnotatedApi.getApis(new InvokeClassAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new ReloadCoreAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SwapCoresAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new RenameCoreAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new UnloadCoreAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new MergeIndexesAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SplitCoreAPI(this)));
     return apis;
   }
 
