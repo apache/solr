@@ -222,6 +222,8 @@ of shipping as part of Solr, due to security concerns.
 * SOLR-15924: Extra lucene libraries used in modules are no longer packaged in `lucene-libs/` under the contrib module directory in the binary release.
   Instead, these libraries will be included with all other module dependencies in `lib/`.
 
+* SOLR-15914: Solr modules (formerly known as contribs) can now easily be enabled by an environment variable (e.g. in `solr.in.sh` or `solr.in.cmd`) or as a system property (e.g. in `SOLR_OPTS`). Example: `SOLR_MODULES=extraction,ltr`.
+
 == Deprecations & Removed Features
 
 The following list of features have been permanently removed from Solr:
