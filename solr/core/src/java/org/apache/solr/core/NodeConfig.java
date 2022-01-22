@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.logging.LogWatcherConfig;
 
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -157,6 +159,8 @@ public class NodeConfig {
     }
     if (null == this.solrHome) throw new NullPointerException("solrHome");
     if (null == this.loader) throw new NullPointerException("loader");
+
+    setupSharedLib();
   }
 
   /**
@@ -206,7 +210,16 @@ public class NodeConfig {
     return solrDataHome;
   }
 
-  /** 
+  /**
+   * Obtain the path of solr's binary installation directory, e.g. <code>/opt/solr</code>
+   * @return path to install dir, or null if property 'solr.install.dir' has not been initialized
+   */
+  public Path getSolrInstallDir() {
+    String prop = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    return prop != null ? Paths.get(prop) : null;
+  }
+
+  /**
    * If null, the lucene default will not be overridden
    *
    * @see IndexSearcher#setMaxClauseCount
@@ -358,6 +371,87 @@ public class NodeConfig {
    */
   public List<String> getAllowUrls() {
     return allowUrls;
+  }
+
+  // Configures SOLR_HOME/lib to the shared class loader
+  private void setupSharedLib() {
+    // Always add $SOLR_HOME/lib to the shared resource loader
+    Set<String> libDirs = new LinkedHashSet<>();
+    libDirs.add("lib");
+
+    // Always add $SOLR_TIP/lib to the shared resource loader, to allow loading of i.e. /opt/solr/lib/foo.jar
+    if (getSolrInstallDir() != null) {
+      libDirs.add(getSolrInstallDir().resolve("lib").toAbsolutePath().normalize().toString());
+    }
+
+    if (!StringUtils.isBlank(getSharedLibDirectory())) {
+      List<String> sharedLibs = Arrays.asList(getSharedLibDirectory().split("\\s*,\\s*"));
+      libDirs.addAll(sharedLibs);
+    }
+
+    addFoldersToSharedLib(libDirs);
+    initModules();
+  }
+
+  /**
+   * Returns the modules as configured in solr.xml. Comma separated list. May be null if not defined
+   */
+  public String getModules() {
+    return modules;
+  }
+
+  // Finds every jar in each folder and adds it to shardLib, then reloads Lucene SPI
+  private void addFoldersToSharedLib(Set<String> libDirs) {
+    boolean modified = false;
+    // add the sharedLib to the shared resource loader before initializing cfg based plugins
+    for (String libDir : libDirs) {
+      Path libPath = getSolrHome().resolve(libDir);
+      if (Files.exists(libPath)) {
+        try {
+          loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
+          modified = true;
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't load libs: " + e, e);
+        }
+      }
+    }
+    if (modified) {
+      loader.reloadLuceneSPI();
+    }
+  }
+
+  // Adds modules to shared classpath
+  private void initModules() {
+    Set<String> moduleNames = ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(getModules());
+    boolean modified = false;
+    for (String m : moduleNames) {
+      if (!ModuleUtils.moduleExists(getSolrInstallDir(), m)) {
+        log.error("No module with name {}, available modules are {}", m, ModuleUtils.listAvailableModules(getSolrInstallDir()));
+        // Fail-fast if user requests a non-existing module
+        throw new SolrException(ErrorCode.SERVER_ERROR, "No module with name " + m);
+      }
+      Path moduleLibPath = ModuleUtils.getModuleLibPath(getSolrInstallDir(), m);
+      if (Files.exists(moduleLibPath)) {
+        try {
+          List<URL> urls = SolrResourceLoader.getURLs(moduleLibPath);
+          loader.addToClassLoader(urls);
+          if (log.isInfoEnabled()) {
+            log.info("Added module {}. libPath={} with {} libs", m, moduleLibPath, urls.size());
+          }
+          if (log.isDebugEnabled()) {
+            log.debug("Libs loaded from {}: {}", moduleLibPath, urls);
+          }
+          modified = true;
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't load libs for module " + m + ": " + e, e);
+        }
+      } else {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Module lib folder " + moduleLibPath + " not found.");
+      }
+    }
+    if (modified) {
+      loader.reloadLuceneSPI();
+    }
   }
 
   public static class NodeConfigBuilder {
