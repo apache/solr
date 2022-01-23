@@ -1553,7 +1553,7 @@ public class CoreContainer {
         df.release(dir);
         df.doneWithDirectory(dir);
       } catch (IOException e) {
-        log.error("Failed releasing directory", e);
+        SolrException.log(log, e);
       }
     }
   }
