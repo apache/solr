@@ -168,6 +168,7 @@ public class NodeConfig {
     if (null == this.loader) throw new NullPointerException("loader");
 
     setupSharedLib();
+    initModules();
   }
 
   /**
@@ -397,7 +398,6 @@ public class NodeConfig {
     }
 
     addFoldersToSharedLib(libDirs);
-    initModules();
   }
 
   /**
