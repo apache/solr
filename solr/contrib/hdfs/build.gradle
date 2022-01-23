@@ -23,22 +23,26 @@ dependencies {
   
   implementation project(':solr:core')
 
-
-  //implementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
+  // Hadoop dependencies
   implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
 
+  // Guava implements the VisibleForTesting annotations
+  implementation ('com.google.guava:guava') { transitive = false }
 
-  
+  // Caffeine cache to implement HDFS block caching  
   api('com.github.ben-manes.caffeine:caffeine', {
     exclude group: "org.checkerframework", module: "checker-qual"
   })
 
   // Many HDFS tests are using/subclassing test framework classes
   testImplementation project(':solr:test-framework')
+
+  // HdfsCheckindexTool tests reference LuceneTestCase
+  testImplementation ('org.apache.lucene:lucene-test-framework')
 
   // hadoop dependencies for tests
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
@@ -53,4 +57,15 @@ dependencies {
 
   // required for instantiating a Zookeeper server in tests or embedded
   runtimeOnly ('org.xerial.snappy:snappy-java')
+
+  // commons packages needed by test classes
+  testImplementation('commons-io:commons-io') { transitive = false }
+
+  // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
+  implementation ('org.apache.zookeeper:zookeeper')
+
+
+
+
+
 }

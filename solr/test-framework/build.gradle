@@ -46,6 +46,8 @@ dependencies {
   implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
   implementation ('org.apache.commons:commons-compress') { transitive = false }
+  implementation ('org.apache.commons:commons-collections4') { transitive = false }
+  implementation ('org.apache.commons:commons-lang3') { transitive = false }
   implementation ('com.sun.jersey:jersey-servlet') { transitive = false }
   implementation ('commons-logging:commons-logging') { transitive = false }
 

@@ -19,8 +19,6 @@
 
 <config>
 
-  <jmx />
-
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <!-- Used to specify an alternate directory to hold all index data.
@@ -38,7 +36,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <updateHandler class="solr.DirectUpdateHandler2"></updateHandler>
-  
+
   <queryResponseWriter name="xml" default="true"
                        class="solr.XMLResponseWriter" />
 
@@ -59,11 +57,6 @@
     </httpCaching>
   </requestDispatcher>
 
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
-  </admin>
-  
  <searchComponent name="component1" class="org.apache.solr.search.MockSearchComponent">
      <str name="testParam">foo</str>
  </searchComponent>
