@@ -258,6 +258,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-14916: Add split parameter to timeseries Streaming Expression (Joel Bernstein)
 
+* SOLR-9575: Solr no longer requires a solr.xml to be present in $SOLR_HOME. If one is not found, Solr will load
+  the one in $SOLR_TIP/server/solr/solr.xml (janhoy)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)

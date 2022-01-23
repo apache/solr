@@ -1167,8 +1167,10 @@ IF "%SOLR_MODE%"=="solrcloud" (
 ) ELSE (
   set CLOUD_MODE_OPTS=
   IF NOT EXIST "%SOLR_HOME%\solr.xml" (
-    set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!"
-    goto err
+    IF "%SOLR_SOLRXML_REQUIRED%"=="true" (
+      set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!"
+      goto err
+    )
   )
 )
 

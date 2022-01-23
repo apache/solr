@@ -2070,7 +2070,7 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
   fi
 
 else
-  if [ ! -e "$SOLR_HOME/solr.xml" ]; then
+  if [ ! -e "$SOLR_HOME/solr.xml" ] && [ -n "$SOLR_SOLRXML_REQUIRED" ]; then
     echo -e "\nSolr home directory $SOLR_HOME must contain a solr.xml file!\n"
     exit 1
   fi
