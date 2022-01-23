@@ -115,6 +115,7 @@ public class HdfsTestUtil extends HadoopTestUtil {
     System.setProperty("test.build.data", dir + File.separator + "hdfs" + File.separator + "build");
     System.setProperty("test.cache.data", dir + File.separator + "hdfs" + File.separator + "cache");
     System.setProperty("solr.lock.type", DirectoryFactory.LOCK_TYPE_HDFS);
+    System.setProperty(SolrTestCaseJ4.UPDATELOG_SYSPROP, "solr.HdfsUpdateLog");
 
     // test-files/solr/solr.xml sets this to be 15000. This isn't long enough for HDFS in some cases.
     System.setProperty("socketTimeout", "90000");
@@ -269,6 +270,8 @@ public class HdfsTestUtil extends HadoopTestUtil {
       System.clearProperty("tests.hdfs.numdatanodes");
 
       System.clearProperty("solr.lock.type");
+
+      System.clearProperty(SolrTestCaseJ4.UPDATELOG_SYSPROP);
 
       // Clear "solr.hdfs." system properties
       Enumeration<?> propertyNames = System.getProperties().propertyNames();
