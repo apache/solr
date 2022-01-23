@@ -17,10 +17,20 @@
 
 apply plugin: 'java-library'
 
-description = 'HDFS Package'
+description = 'HDFS Contrib Module'
 
 dependencies {
   
+  configurations.all {
+    exclude group: 'log4j', module: 'log4j'
+    exclude group: 'commons-logging', module: 'commons-logging'
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    exclude group: 'org.apache.yetus', module: 'audience-annotations'
+    exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
+   // be conservative on what's added here.  Affects *all* configs, including internal ones.
+  }
+
+
   implementation project(':solr:core')
 
   // Hadoop dependencies
