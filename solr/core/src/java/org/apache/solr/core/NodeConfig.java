@@ -220,11 +220,15 @@ public class NodeConfig {
 
   /**
    * Obtain the path of solr's binary installation directory, e.g. <code>/opt/solr</code>
-   * @return path to install dir, or null if property 'solr.install.dir' has not been initialized
+   * @return path to install dir
+   * @throws SolrException if property 'solr.install.dir' has not been initialized
    */
   public Path getSolrInstallDir() {
     String prop = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
-    return prop != null ? Paths.get(prop) : null;
+    if (prop == null || prop.isBlank()) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "solr.install.dir property not initialized");
+    }
+    return Paths.get(prop);
   }
 
   /**
@@ -386,11 +390,6 @@ public class NodeConfig {
     // Always add $SOLR_HOME/lib to the shared resource loader
     Set<String> libDirs = new LinkedHashSet<>();
     libDirs.add("lib");
-
-    // Always add $SOLR_TIP/lib to the shared resource loader, to allow loading of i.e. /opt/solr/lib/foo.jar
-    if (getSolrInstallDir() != null) {
-      libDirs.add(getSolrInstallDir().resolve("lib").toAbsolutePath().normalize().toString());
-    }
 
     if (!StringUtils.isBlank(getSharedLibDirectory())) {
       List<String> sharedLibs = Arrays.asList(getSharedLibDirectory().split("\\s*,\\s*"));
