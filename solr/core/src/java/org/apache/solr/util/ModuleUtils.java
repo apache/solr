@@ -80,8 +80,8 @@ public class ModuleUtils {
    * Returns nam of all existing modules
    */
   public static Set<String> listAvailableModules(Path solrInstallDirPath) {
-    try {
-      return Files.list(getModulesPath(solrInstallDirPath)).filter(Files::isDirectory)
+    try (var moduleFilesStream = Files.list(getModulesPath(solrInstallDirPath))) {
+      return moduleFilesStream.filter(Files::isDirectory)
           .map(p -> p.getFileName().toString()).collect(Collectors.toSet());
     } catch (IOException e) {
       log.warn("Found no modules in {}", getModulesPath(solrInstallDirPath), e);
