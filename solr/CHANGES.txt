@@ -259,7 +259,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-14916: Add split parameter to timeseries Streaming Expression (Joel Bernstein)
 
 * SOLR-9575: Solr no longer requires a solr.xml to be present in $SOLR_HOME. If one is not found, Solr will load
-  the one in $SOLR_TIP/server/solr/solr.xml (janhoy)
+  the one in $SOLR_TIP/server/solr/solr.xml. Solr also does not require a zoo.cfg in $SOLR_HOME if started with
+  embedded zookeeper. (janhoy)
 
 Build
 ---------------------

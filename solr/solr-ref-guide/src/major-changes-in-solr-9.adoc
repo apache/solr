@@ -143,7 +143,7 @@ Currently this change should only effect compatibility of custom code overriding
 * SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the `numFound` value (exact vs approximation).
 Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
 
-* SOLR-9575: Solr no longer requires a `solr.xml` in `$SOLR_HOME`. If one is not found, Solr will instead use the default one from `$SOLR_TIP/server/solr/solr.xml`. You can revert to the pre-9.0 behaviour by setting environment variable `SOLR_SOLRXML_REQUIRED=true` or system property `-Dsolr.solrxml.required=true`.
+* SOLR-9575: Solr no longer requires a `solr.xml` in `$SOLR_HOME`. If one is not found, Solr will instead use the default one from `$SOLR_TIP/server/solr/solr.xml`. You can revert to the pre-9.0 behaviour by setting environment variable `SOLR_SOLRXML_REQUIRED=true` or system property `-Dsolr.solrxml.required=true`. Solr also does not require a `zoo.cfg` in `$SOLR_HOME` if started with embedded zookeeper.
 
 === solr.xml maxBooleanClauses now enforced recursively
 
