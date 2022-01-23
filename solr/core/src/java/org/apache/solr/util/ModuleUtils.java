@@ -73,11 +73,7 @@ public class ModuleUtils {
   public static boolean moduleExists(Path solrInstallDirPath, String moduleName) {
     if (!isValidName(moduleName)) return false;
     Path modPath = getModulesPath(solrInstallDirPath).resolve(moduleName);
-    if (!Files.exists(modPath) || !Files.isDirectory(modPath)) {
-      log.warn("Module {} not found in system, ignoring", moduleName);
-      return false;
-    }
-    return true;
+    return Files.isDirectory(modPath);
   }
 
   /**
@@ -88,7 +84,7 @@ public class ModuleUtils {
       return Files.list(getModulesPath(solrInstallDirPath)).filter(Files::isDirectory)
           .map(p -> p.getFileName().toString()).collect(Collectors.toSet());
     } catch (IOException e) {
-      log.error("Found no modules in {}", getModulesPath(solrInstallDirPath), e);
+      log.warn("Found no modules in {}", getModulesPath(solrInstallDirPath), e);
       return Collections.emptySet();
     }
   }

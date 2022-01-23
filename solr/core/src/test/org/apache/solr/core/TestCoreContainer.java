@@ -451,7 +451,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cc2.shutdown();
     }
 
-    // custom lib folder, added to path in addition to default 'lib' folder
     SolrException ex = Assert.assertThrows(SolrException.class, () ->
         init(tmpRoot, "<solr><str name=\"modules\">nope</str></solr>"));
     assertEquals("No module with name nope", ex.getMessage());
