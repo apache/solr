@@ -157,12 +157,12 @@ and prints a regular expression that will match all of them
 
 ### scaffoldNewModule.py
 
-Scaffold a new contrib module and include it into the build. It will set up the folders
+Scaffold a new module and include it into the build. It will set up the folders
 and all for you, so the only thing you need to do is add classes, tests and test-data.
 
     usage: scaffoldNewModule.py [-h] name full_name description
     
-    Scaffold new contrib module into solr/contrib/<name>
+    Scaffold new module into solr/modules/<name>
     
     positional arguments:
         name         code-name/id, e.g. my-module
@@ -172,7 +172,7 @@ and all for you, so the only thing you need to do is add classes, tests and test
     optional arguments:
      -h, --help   show this help message and exit
 
-    Example: ./addContrib.py foo "My Contrib" "Very Useful Contrib module here"
+    Example: ./scaffoldNewModule.py foo "My Module" "Very Useful module here"
 
 ### gitignore-gen.sh
 

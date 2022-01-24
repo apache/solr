@@ -352,7 +352,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       ZkStateReader zkStateReader = client.getZkStateReader();
       zkStateReader.waitForState(COLLECTION_NAME, 30, TimeUnit.SECONDS, (liveNodes, docCollection) ->
           docCollection != null &&
-              docCollection.getSlice("shard1").getReplicas().stream()
+              docCollection.getReplicas().stream()
                   .anyMatch(r -> r.getState().equals(Replica.State.DOWN)));
 
       rsp = request.process(client).getResponse();
