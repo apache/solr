@@ -146,14 +146,13 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
     bucketsToSkip = freq.offset;
 
     effectiveLimit = freq.limit;
-    if (null != resort) {
-      if (freq.overrequest == -1) {
-        // NOTE: we don't care whether fcontext.isShard(), because overrequest only matters for
-        // the `resort` case, and matters equally for distrib and non-distrib case.
-        effectiveLimit = applyDefaultOverrequest(freq.offset, effectiveLimit);
-      } else if (0 < freq.overrequest) {
-        effectiveLimit += freq.overrequest;
-      }
+    if (freq.overrequest > 0 && (fcontext.isShard() || null != resort)) {
+      // NOTE: "index sort" _never_ applies a default overrequest. In both the shard case and the resort case, the
+      // default overrequest is `0`. However, if `overrequest` is explicitly specified, we respect it except for
+      // non-distrib, no-resort request. Overrequest is relevant for the `resort` case; but it can also be relevant
+      // in some edge cases of the "shard" case, where it can affect the behavior of `isBucketComplete()`
+      // (see SOLR-14595).
+      effectiveLimit += freq.overrequest;
     }
 
     createAccs(-1, 1);
