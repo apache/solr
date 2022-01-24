@@ -10,6 +10,7 @@
     block-join-query-parser, \
     join-query-parser, \
     spatial-search, \
+    dense-vector-search, \
     other-parsers, \
     sql-query, \
     query-screen, \
@@ -59,6 +60,7 @@ If you have custom parsing needs, you may want to extend that class to create yo
 | <<searching-nested-documents.adoc#,Searching Nested Documents>>: Constructing nested and hierarchical queries.
 | <<block-join-query-parser.adoc#,Block Join Query Parser>>: Query parser dedicated to searching nested documents.
 | <<join-query-parser.adoc#,Join Query Parser>>: Query parser to facilitate joins.
+| <<dense-vector-search.adoc#,Dense Vector Search>>: Solr's dense retrieval capabilities.
 | <<spatial-search.adoc#,Spatial Search>>: Solr's spatial search capabilities.
 | <<other-parsers.adoc#,Other Parsers>>: More parsers designed for use in specific situations.
 | <<sql-query.adoc#,SQL Query>>: SQL language support for Solr.
