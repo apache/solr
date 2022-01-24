@@ -56,9 +56,9 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 public class PackageLoader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String LATEST = "$LATEST";
-  public static final String PKGS_DIR = "../../contrib";
-  public static final String LOCAL_PKGS_PROP = "local.packages";
-  public static final String PKGS_JSON = "local_packages.json";
+  public static final String LOCAL_PACKAGES_DIR = System.getProperty("solr.packages.local.dir");
+  public static final String LOCAL_PACKAGES_WHITELIST = System.getProperty("solr.packages.local.whitelist", "");
+  public static final String LOCAL_PACKAGES_JSON = "local_packages.json";
   public final boolean enablePackages = Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
 
   private final CoreContainer coreContainer;
@@ -80,28 +80,28 @@ public class PackageLoader implements Closeable {
   public PackageLoader(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
 
-    List<String> enabledPackages = StrUtils.splitSmart(System.getProperty(LOCAL_PKGS_PROP,""), ',');
+    List<String> enabledPackages = StrUtils.splitSmart(LOCAL_PACKAGES_WHITELIST, ',');
     packageAPI = new PackageAPI(coreContainer, this);
 
-    if(!enabledPackages .isEmpty()) {
+    if (LOCAL_PACKAGES_DIR != null && !enabledPackages.isEmpty()) {
       loadLocalPackages(enabledPackages);
     }
-    if(enablePackages) refreshPackageConf();
+    if (enablePackages) refreshPackageConf();
   }
 
   private void loadLocalPackages(List<String> enabledPackages) {
-    final Path packagesPath = new File(coreContainer.getSolrHome() + File.separator + PKGS_DIR).toPath();
-    log.info("packages to be loaded from local FS : {}", packagesPath);
+    final Path packagesPath = new File(LOCAL_PACKAGES_DIR).toPath();
+    log.info("Packages to be loaded from directory: {}", packagesPath);
 
     if (!packagesPath.toFile().exists()) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "no such directory :" + packagesPath);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No such directory: " + packagesPath);
     }
-    if (!packagesPath.resolve(PKGS_JSON).toFile().exists()) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "no file packages.json exists in :" + packagesPath);
+    if (!packagesPath.resolve(LOCAL_PACKAGES_JSON).toFile().exists()) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No file local_packages.json exists in: " + packagesPath);
     }
 
     try {
-      try (InputStream in = new FileInputStream(new File(packagesPath.toFile() , PKGS_JSON))) {
+      try (InputStream in = new FileInputStream(new File(packagesPath.toFile() , LOCAL_PACKAGES_JSON))) {
         localPackages = PackageAPI.mapper.readValue(in, PackageAPI.Packages.class);
       }
     } catch (IOException e) {

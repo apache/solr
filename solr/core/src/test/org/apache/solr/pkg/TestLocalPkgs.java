@@ -31,13 +31,13 @@ public class TestLocalPkgs extends SolrCloudTestCase {
     pkgVersion.pkg = PKG_NAME;
     p.packages.put(PKG_NAME, Collections.singletonList(pkgVersion));
     log.info("local_packages.json : "+ Utils.toJSONString(p));
-    System.setProperty(PackageLoader.LOCAL_PKGS_PROP, PKG_NAME);
+    System.setProperty(PackageLoader.LOCAL_PACKAGES_WHITELIST, PKG_NAME);
     MiniSolrCloudCluster cluster =
             configureCluster(4)
                     .withJettyConfig(builder -> builder.enableV2(true))
                     .withJettyConfig(it -> it.withPreStartupHook(jsr -> {
                       try {
-                        File pkgDir = new File(jsr.getSolrHome() + File.separator + PackageLoader.PKGS_DIR);
+                        File pkgDir = new File(jsr.getSolrHome() + File.separator + PackageLoader.LOCAL_PACKAGES_DIR);
                         if(!pkgDir.exists()) {
                           pkgDir.mkdir();
                         }
@@ -51,7 +51,7 @@ public class TestLocalPkgs extends SolrCloudTestCase {
 
                         }
 
-                        try( FileOutputStream fos = new FileOutputStream( new File(pkgDir, PackageLoader.PKGS_JSON) )) {
+                        try( FileOutputStream fos = new FileOutputStream( new File(pkgDir, PackageLoader.LOCAL_PACKAGES_JSON) )) {
                           fos.write(Utils.toJSON(p));
                         }
                       } catch (Exception e) {
@@ -61,11 +61,11 @@ public class TestLocalPkgs extends SolrCloudTestCase {
                     }))
                     .addConfig("conf", configset("conf2"))
                     .configure();
-    System.clearProperty(PackageLoader.LOCAL_PKGS_PROP);
+    System.clearProperty(PackageLoader.LOCAL_PACKAGES_WHITELIST);
     try {
       for (JettySolrRunner jsr : cluster.getJettySolrRunners()) {
-        List<String> packageFiles = Arrays.asList(new File(jsr.getSolrHome() + File.separator + PackageLoader.PKGS_DIR).list());
-       assertTrue(packageFiles.contains(PackageLoader.PKGS_JSON));
+        List<String> packageFiles = Arrays.asList(new File(jsr.getSolrHome() + File.separator + PackageLoader.LOCAL_PACKAGES_DIR).list());
+       assertTrue(packageFiles.contains(PackageLoader.LOCAL_PACKAGES_JSON));
        assertTrue(packageFiles.contains(jarName));
       }
       CollectionAdminRequest

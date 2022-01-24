@@ -49,11 +49,7 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.ProtectionDomain;
-import java.util.Set;
-import java.util.LinkedHashSet;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Collection;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -224,6 +220,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void inform(SolrCore core) {
     if (!core.getCoreDescriptor().isConfigSetTrusted()) {
       throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"
@@ -232,8 +229,12 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     }
     resourceLoader = core.getResourceLoader();
 
-    // test that our engines & scripts are valid
+    // Hack needed to preload some Lucene classes that otherwise don't load via Nashorn
+    // when this scripting module is loaded as a package.
+    // TODO: Preload all Lucene classes from lucene-core*jar and Solr classes from solr-core*jar
+    core.getResourceLoader().findClass("org.apache.lucene.index.Term", Object.class);
 
+    // test that our engines & scripts are valid
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
     try {
