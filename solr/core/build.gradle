@@ -124,6 +124,7 @@ dependencies {
   // SQL Parser via Calcite
   implementation ('org.apache.calcite:calcite-core', {
     exclude group: 'org.apache.calcite.avatica', module: 'avatica-metrics'
+    exclude group: 'com.google.guava', module: 'guava' // TODO remove this to keep versions in sync
     exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-yaml'
     exclude group: 'com.google.uzaygezen', module: 'uzaygezen-core'
     exclude group: 'com.yahoo.datasketches', module: 'sketches-core'
@@ -165,7 +166,7 @@ dependencies {
 
   testImplementation "org.apache.lucene:lucene-analysis-icu"
 
-  testImplementation project(':solr:contrib:analysis-extras')
+  testImplementation project(':solr:modules:analysis-extras')
 
   testImplementation project(':solr:test-framework')
 

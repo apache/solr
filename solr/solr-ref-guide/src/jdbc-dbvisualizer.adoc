@@ -19,11 +19,8 @@
 Solr's JDBC driver supports https://www.dbvis.com/[DbVisualizer] for querying Solr.
 
 For DbVisualizer, you will need to create a new driver for Solr using the DbVisualizer Driver Manager.
-This will add several SolrJ client .jars to the DbVisualizer classpath.
-The files required are:
-
-* all .jars found in `$SOLR_HOME/dist/solrj-lib`
-* the SolrJ .jar found at `$SOLR_HOME/dist/solr-solrj-<version>.jar`
+This will add several SolrJ client (and dependency) `.jar` s to the DbVisualizer classpath.
+<<#add-driver-files-to-classpath,See below>> for the required files.
 
 Once the driver has been created, you can create a connection to Solr with the connection string format outlined in the generic section and use the SQL Commander to issue queries.
 
@@ -45,7 +42,7 @@ image::images/jdbc-dbvisualizer/dbvisualizer_solrjdbc_2.png[image,width=532,heig
 
 Provide a name for the driver, and provide the URL format: `jdbc:solr://<zk_connection_string>/?collection=<collection>`.
 Do not fill in values for the variables "```zk_connection_string```" and "```collection```", those will be provided later when the connection to Solr is configured.
-The Driver Class will also be automatically added when the driver .jars are added.
+The Driver Class will also be automatically added when the driver `.jar` s are added.
 
 image::images/jdbc-dbvisualizer/dbvisualizer_solrjdbc_3.png[image,width=532,height=400]
 
@@ -54,8 +51,10 @@ image::images/jdbc-dbvisualizer/dbvisualizer_solrjdbc_3.png[image,width=532,heig
 
 The driver files to be added are:
 
-* all .jars in `$SOLR_HOME/dist/solrj-lib`
-* the SolrJ .jar found in `$SOLR_HOME/dist/solr-solrj-<version>.jar`
+* SolrJ dependency `.jar` s found in `$SOLR_TIP/server/solr-webapp/webapp/WEB-INF/lib/\*` and `$SOLR_TIP/server/lib/ext/*`.
+In the Solr distribution these dependencies are not separated from Solr's dependencies, so you must include all or manually choose the exact set that is needed.
+Please refer to the https://search.maven.org/artifact/org.apache.solr/solr-solrj/{solr-full-version}/jar[maven release] for the exact dependencies needed for your version.
+* The SolrJ `.jar` found at `$SOLR_TIP/server/solr-webapp/webapp/WEB-INF/lib/solr-solrj-<version>.jar`
 
 image::images/jdbc-dbvisualizer/dbvisualizer_solrjdbc_4.png[image,width=535,height=400]
 

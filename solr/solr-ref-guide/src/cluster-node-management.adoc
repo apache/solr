@@ -229,7 +229,7 @@ curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/jso
 +
 The name of the property.
 Supported properties names are `location`, `maxCoresPerNode`, `urlScheme`, and `defaultShardPreferences`.
-If the <<distributed-tracing.adoc#,Jaeger tracing contrib>> has been enabled, the property `samplePercentage` is also available.
+If the <<distributed-tracing.adoc#,Jaeger tracing module>> has been enabled, the property `samplePercentage` is also available.
 +
 Other properties can be set (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`.
 Unknown properties that don't begin with `ext.` will be rejected.
