@@ -314,14 +314,21 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     if (freq.limit >= 0) {
       effectiveLimit = freq.limit;
       if (fcontext.isShard()) {
-        if (freq.overrequest > 0) {
+        if (freq.overrequest != -1) {
+          // NOTE: explicit negative (!=-1) values _are_ respected in the distrib case. This may simply be an
+          // oversight, but it could in theory be used to practical effect (e.g., in the event of large offsets
+          // or limits and shards with relatively little value overlap, to forcibly dial back the initial
+          // request limit.
+          // TODO: document this "negative overrequest" functionality or remove it (here and
+          //  `FacetFieldProcessorByEnumTermsStream`)
+
           // NOTE: although _default_ distrib overrequest is disabled for the "index sort" case (see
           // below), we _do_ want to respect an _explicit_ `overrequest` value, if present. Overrequest
           // is always relevant (regardless of prelim sort) for the `resort` case; but even in the case of
           // "index sort, no resort", overrequest can be relevant in some edge cases of the "shard" case,
           // where it can affect the behavior of `isBucketComplete()` (see SOLR-14595).
           effectiveLimit += freq.overrequest;
-        } else if (freq.overrequest == -1 && !"index".equals(this.sort.sortVariable)) {
+        } else if (!"index".equals(this.sort.sortVariable)) {
           // NOTE: even for distrib requests, `overrequest` is not directly relevant for "index" sort, hence
           // there is no default/implicit overrequest for "index sort" (even if `resort` is also specified --
           // overrequest that is exclusively for `resort` must be explicit)
