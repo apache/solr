@@ -63,7 +63,6 @@ public class PackageLoader implements Closeable {
 
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
-  private final Map<String, Package> localPackageClassLoaders = new HashMap<>();
   public  PackageAPI.Packages localPackages;
 
   private PackageAPI.Packages myCopy =  new PackageAPI.Packages();
@@ -112,7 +111,7 @@ public class PackageLoader implements Closeable {
       if(!enabledPackages.contains(e.getKey())) continue;
       Package p = new Package(e.getKey());
       p.updateVersions(e.getValue(), packagesPath);
-      localPackageClassLoaders.put(e.getKey(), p);
+      packageClassLoaders.put(e.getKey(), p);
     }
   }
 
@@ -121,8 +120,7 @@ public class PackageLoader implements Closeable {
   }
 
   public Package getPackage(String key) {
-    Package result = packageClassLoaders.get(key);
-    return result == null ? localPackageClassLoaders.get(key) : result;
+   return packageClassLoaders.get(key);
   }
 
   public Map<String, Package> getPackages() {
