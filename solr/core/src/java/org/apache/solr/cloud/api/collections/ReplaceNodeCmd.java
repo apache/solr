@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -102,29 +103,40 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
 
     SolrCloseableLatch replicasToRecover = new SolrCloseableLatch(numLeaders, ccc.getCloseableToLatchOn());
 
-    for (ZkNodeProps sourceReplica : sourceReplicas) {
-      String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
-      if (log.isInfoEnabled()) {
-        log.info("Going to create replica for collection={} shard={} on node={}", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
-      }
-      String targetNode = target;
-      if (targetNode == null) {
+    List<ReplicaPosition> replicaPositions = null;
+    if (target == null || target.isEmpty()) {
+      List<Assign.AssignRequest> assignRequests = new ArrayList<>(sourceReplicas.size());
+      for (ZkNodeProps sourceReplica : sourceReplicas) {
         Replica.Type replicaType = Replica.Type.get(sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
         int numNrtReplicas = replicaType == Replica.Type.NRT ? 1 : 0;
         int numTlogReplicas = replicaType == Replica.Type.TLOG ? 1 : 0;
         int numPullReplicas = replicaType == Replica.Type.PULL ? 1 : 0;
         Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
-            .forCollection(sourceCollection)
+            .forCollection(sourceReplica.getStr(COLLECTION_PROP))
             .forShard(Collections.singletonList(sourceReplica.getStr(SHARD_ID_PROP)))
             .assignNrtReplicas(numNrtReplicas)
             .assignTlogReplicas(numTlogReplicas)
             .assignPullReplicas(numPullReplicas)
             .onNodes(ccc.getSolrCloudManager().getClusterStateProvider().getLiveNodes().stream().filter(node -> !node.equals(source)).collect(Collectors.toList()))
             .build();
-        Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
-            ccc.getCoreContainer(),
-            clusterState, clusterState.getCollection(sourceCollection));
-        targetNode = assignStrategy.assign(ccc.getSolrCloudManager(), assignRequest).get(0).node;
+        assignRequests.add(assignRequest);
+      }
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
+      replicaPositions = assignStrategy.assign(ccc.getSolrCloudManager(), assignRequests);
+    }
+    int replicaPositionIdx = 0;
+    for (ZkNodeProps sourceReplica : sourceReplicas) {
+      String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
+      if (log.isInfoEnabled()) {
+        log.info("Going to create replica for collection={} shard={} on node={}", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
+      }
+      String targetNode;
+      // Use the assigned replica positions, if target is null or empty (checked above)
+      if (replicaPositions != null) {
+        targetNode = replicaPositions.get(replicaPositionIdx).node;
+        replicaPositionIdx++;
+      } else {
+        targetNode = target;
       }
       ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
       if (async != null) msg.getProperties().put(ASYNC, async);

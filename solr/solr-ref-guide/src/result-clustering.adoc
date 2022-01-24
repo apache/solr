@@ -213,14 +213,13 @@ The score of the other topics group is zero.
 
 == Installation
 
-The clustering contrib extension requires `dist/solr-clustering-*.jar` and all JARs under `contrib/clustering/lib`.
+The clustering module extension requires all JARs under `modules/clustering/lib`.
 
-You can include the required contrib JARs in `solrconfig.xml` as shown below (by default paths are relative to the Solr core so they may need adjustments to your configuration, or an explicit specification of the `$solr.install.dir`):
+You can include the required modules JARs in `solrconfig.xml` as shown below (by default paths are relative to the Solr core so they may need adjustments to your configuration, or an explicit specification of the `$solr.install.dir`):
 
 [source,xml]
 ----
-<lib dir="${solr.install.dir:../../..}/contrib/clustering/lib/" regex=".*\.jar" />
-<lib dir="${solr.install.dir:../../..}/dist/" regex="solr-clustering-\d.*\.jar" />
+<lib dir="${solr.install.dir:../../..}/modules/clustering/lib/" regex=".*\.jar" />
 ----
 
 == Configuration

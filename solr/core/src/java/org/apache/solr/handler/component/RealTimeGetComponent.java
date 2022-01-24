@@ -79,6 +79,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -208,7 +209,7 @@ public class RealTimeGetComponent extends SearchComponent
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
             QParser fqp = QParser.getParser(fq, req);
-            filters.add(fqp.getQuery());
+            filters.add(QueryUtils.makeQueryable(fqp.getQuery()));
           }
         }
         if (!filters.isEmpty()) {

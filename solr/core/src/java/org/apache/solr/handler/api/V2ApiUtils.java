@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.api;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,4 +34,10 @@ public class V2ApiUtils {
 
     toFlatten.forEach((k, v) -> destination.put(additionalPrefix + k, v));
   }
+
+  public static void flattenToCommaDelimitedString(Map<String, Object> destination, List<String> toFlatten, String newKey) {
+    final String flattenedStr = String.join(",", toFlatten);
+    destination.put(newKey, flattenedStr);
+  }
+
 }

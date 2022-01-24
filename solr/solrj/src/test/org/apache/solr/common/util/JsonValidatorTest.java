@@ -28,7 +28,6 @@ import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   public void testSchema() {
-    checkSchema("cores.Commands");
     checkSchema("cores.core.Commands");
     checkSchema("cluster.security.BasicAuth.Commands");
     checkSchema("cluster.security.RuleBasedAuthorization");

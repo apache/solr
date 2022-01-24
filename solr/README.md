@@ -23,7 +23,7 @@ from the Apache Lucene project.
 
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr web site at
-https://lucene.apache.org/solr
+https://solr.apache.org/solr
 
 
 Getting Started
@@ -117,11 +117,11 @@ For more information about Solr examples please read...
    
 For more information about the "Solr Home" and Solr specific configuration
  
- * https://lucene.apache.org/solr/guide/solr-tutorial.html
+ * https://solr.apache.org/guide/solr-tutorial.html
    
 For a Solr tutorial
  
- * https://lucene.apache.org/solr/resources.html
+ * https://solr.apache.org/resources.html
 
 For a list of other tutorials and introductory articles.
 
@@ -141,18 +141,26 @@ server/
   configuration and documents to index. Please see: bin/solr start -help
   for more information about starting a Solr server.
 
+bin/
+   Scripts to startup, manage and interact with Solr instances.
+
 example/
   Contains example documents and an alternative Solr home
   directory containing various examples.
 
-dist/solr-<component>-XX.jar
-  The Apache Solr libraries.  To compile Apache Solr Plugins,
-  one or more of these will be required.  The core library is
-  required at a minimum. (see https://solr.apache.org/guide/solr-plugins.html
-  for more information).
+modules/
+  Contains modules to extend the functionality of Solr.
+  Libraries for these modules can be found under modules/*/lib
+
+docker/
+  Contains a docker file to build a Docker image using the source binary distribution.
+  docker/scripts contains scripts that the docker image uses to manage Solr.
 
 docs/index.html
   A link to the online version of Apache Solr Javadoc API documentation and Tutorial
+
+licenses/
+  Licenses, notice files and signatures for Solr dependencies.
 ```
 
 Instructions for Building Apache Solr from Source
@@ -168,7 +176,7 @@ Instructions for Building Apache Solr from Source
    Alternately, you can obtain a copy of the latest Apache Solr source code
    directly from the GIT repository:
 
-     https://lucene.apache.org/solr/community.html#version-control
+     https://solr.apache.org/community.html#version-control
 
 3. Navigate to the root of your source tree folder and issue the `./gradlew tasks` 
    command to see the available options for building, testing, and packaging Solr.

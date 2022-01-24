@@ -20,6 +20,7 @@ package org.apache.solr.response;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -527,7 +528,9 @@ class RetrieveField {
   }
 
   private String randDate() {
-    return new Date(Math.abs(random().nextLong()) % 3_000_000_000_000L).toInstant().toString();
+    long lng = random().nextLong();
+    lng = (lng == Long.MIN_VALUE) ? 0 : Math.abs(lng) % 3_000_000_000_000L;
+    return Instant.ofEpochMilli(lng).toString();
   }
 
   List<String> getValsForField() {
