@@ -111,11 +111,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     testModifyCollection(); // deletes replicationFactor property from collections, be careful adding new tests after this one!
   }
 
-  private void assertMissingCollection(CloudSolrClient client, String collectionName) throws Exception {
-    ClusterState clusterState = client.getZkStateReader().getClusterState();
-    assertNull(clusterState.getCollectionOrNull(collectionName));
-  }
-
   private void testModifyCollection() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -355,11 +350,14 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       String nodeName = jetty.getNodeName();
       jetty.stop();
       ZkStateReader zkStateReader = client.getZkStateReader();
-      zkStateReader.waitForLiveNodes(30, TimeUnit.SECONDS, (o, n) -> n != null && !n.contains(nodeName));
+      zkStateReader.waitForState(COLLECTION_NAME, 30, TimeUnit.SECONDS, (liveNodes, docCollection) ->
+          docCollection != null &&
+              docCollection.getReplicas().stream()
+                  .anyMatch(r -> r.getState().equals(Replica.State.DOWN)));
 
       rsp = request.process(client).getResponse();
       collection = (Map<String, Object>) Utils.getObjectByPath(rsp, false, "cluster/collections/" + COLLECTION_NAME);
-      assertFalse("collection health should not be GREEN", "GREEN".equals(collection.get("health")));
+      assertNotEquals("collection health should not be GREEN", "GREEN", collection.get("health"));
       shardStatus = (Map<String, Object>) collection.get("shards");
       assertEquals(2, shardStatus.size());
       String health1 = (String) Utils.getObjectByPath(shardStatus, false, "shard1/health");
@@ -370,14 +368,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       jetty.start();
       SolrCloudManager cloudManager = new SolrClientCloudManager(null, client);
       zkStateReader.waitForLiveNodes(30, TimeUnit.SECONDS, (o, n) -> n != null && n.contains(nodeName));
-      CloudUtil.waitForState(cloudManager, COLLECTION_NAME, 30, TimeUnit.SECONDS, (liveNodes, coll) -> {
-        for (Replica r : coll.getReplicas()) {
-          if (!r.isActive(liveNodes)) {
-            return false;
-          }
-        }
-        return true;
-      });
+      CloudUtil.waitForState(cloudManager, COLLECTION_NAME, 30, TimeUnit.SECONDS, (liveNodes, coll) ->
+        coll != null &&
+            coll.getReplicas().stream()
+                .allMatch(r -> r.getState().equals(Replica.State.ACTIVE)));
       rsp = request.process(client).getResponse();
       collection = (Map<String, Object>) Utils.getObjectByPath(rsp, false, "cluster/collections/" + COLLECTION_NAME);
       assertEquals("collection health", "GREEN", collection.get("health"));
@@ -387,7 +381,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertEquals("shard1 health", "GREEN", health);
       health = (String) Utils.getObjectByPath(shardStatus, false, "shard2/health");
       assertEquals("shard2 health", "GREEN", health);
-
     }
   }
 
@@ -679,8 +672,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       String c1_s2 = sliceList.get(1);
       replicasList = new ArrayList<>(slices.get(c1_s2).getReplicasMap().keySet());
       String c1_s2_r1 = replicasList.get(0);
-      String c1_s2_r2 = replicasList.get(1);
-
 
       slices = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME1).getSlicesMap();
       sliceList = new ArrayList<>(slices.keySet());
@@ -1092,7 +1083,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       // first, try creating a collection with badconf
       BaseHttpSolrClient.RemoteSolrException rse = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
-          CollectionAdminResponse rsp = CollectionAdminRequest.createCollection
+          CollectionAdminRequest.createCollection
               ("testcollection", "badconf", 1, 2).process(client);
       });
       assertNotNull(rse.getMessage());

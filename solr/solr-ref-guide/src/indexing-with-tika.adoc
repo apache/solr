@@ -49,7 +49,7 @@ By default it maps to the same name but several parameters control how this is d
 * When Solr Cell finishes creating the internal `SolrInputDocument`, the rest of the Lucene/Solr indexing stack takes over.
 The next step after any update handler is the <<update-request-processors.adoc#,Update Request Processor>> chain.
 
-Solr Cell is a contrib, which means it's not automatically included with Solr but must be configured.
+Solr Cell is a module, which means it's not automatically included with Solr but must be configured.
 The example configsets have Solr Cell configured, but if you are not using those, you will want to pay attention to the section <<solrconfig.xml Configuration>> below.
 
 === Solr Cell Performance Implications
@@ -411,8 +411,7 @@ If it is not already configured, you will need to configure `solrconfig.xml` to 
 
 [source,xml]
 ----
-  <lib dir="${solr.install.dir:../../..}/contrib/extraction/lib" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../..}/dist/" regex="solr-cell-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../..}/modules/extraction/lib" regex=".*\.jar" />
 ----
 
 You can then configure the `ExtractingRequestHandler` in `solrconfig.xml`.

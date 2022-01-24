@@ -915,6 +915,14 @@ These parameters would be defined in `solrconfig.xml`, in the `defaults` section
 
 For more information about the possibilities of nested queries, see Yonik Seeley's blog post https://lucidworks.com/2009/03/31/nested-queries-in-solr/[Nested Queries in Solr].
 
+== Neural Query Parsers
+
+There is currently one Query Parser in Solr to provide Neural Search: `knn`.
+
+KNN stands for k-nearest neighbors.
+
+Details are documented further in the section <<dense-vector-search.adoc#,Dense Vector Search>>.
+
 
 == Payload Query Parsers
 
