@@ -510,6 +510,8 @@ Bug Fixes
 
 * SOLR-15919: Replace File with Path for many ZK operations (Mike Drob)
 
+* SOLR-15842: Async response for backups now correctly aggregates and returns information (Houston Putman, Artem Abeleshev, Christine Poerschke)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
