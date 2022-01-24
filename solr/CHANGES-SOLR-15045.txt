@@ -1,7 +1,0 @@
-DRAFT TO BE ADDED TO CHANGES.txt FOR WHICHEVER VERSION IN WHICH THIS LANDS
-
-Bug Fixes
----------------------
-* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
-  halving the latency of synchronous commits (Michael Gibney)
-
