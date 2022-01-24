@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
  */
 public class ModuleUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String MODULES_FOLDER_NAME = "contrib"; // TODO Change to "modules"
+  private static final String MODULES_FOLDER_NAME = "modules";
   private static final Pattern validModNamesPattern = Pattern.compile("[\\w\\d-_]+");
 
   /**

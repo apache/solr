@@ -46,7 +46,7 @@ public class ModuleUtilsTest extends TestCase {
   }
 
   public void testGetModuleLibPath() {
-    assertEquals(mockRootDir.resolve(ModuleUtils.MODULES_FOLDER_NAME)
+    assertEquals(mockRootDir.resolve("modules")
         .resolve("mod1").resolve("lib"), ModuleUtils.getModuleLibPath(mockRootDir, "mod1"));
   }
 
@@ -71,7 +71,7 @@ public class ModuleUtilsTest extends TestCase {
 
   private Path setupMockInstallDir(Set<String> modules) throws IOException {
     Path root = Files.createTempDirectory("moduleUtilsTest");
-    Path modPath = root.resolve(ModuleUtils.MODULES_FOLDER_NAME);
+    Path modPath = root.resolve("modules");
     Files.createDirectories(modPath);
     for (var m : modules) {
       Path libPath = modPath.resolve(m).resolve("lib");
