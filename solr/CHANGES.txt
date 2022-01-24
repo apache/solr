@@ -258,6 +258,11 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-14916: Add split parameter to timeseries Streaming Expression (Joel Bernstein)
 
+* SOLR-14686: Logs: Removed the "[corename]" prefix of some SolrCore logs that has become redundant
+  with MDC.  (David Smiley)
+
+* SOLR-15884: Backup responses now use a map to return information instead of a list (Houston Putman, Christine Poerschke)
+
 * SOLR-9575: Solr no longer requires a solr.xml to be present in $SOLR_HOME. If one is not found, Solr will load
   the one in $SOLR_TIP/server/solr/solr.xml. Solr also does not require a zoo.cfg in $SOLR_HOME if started with
   embedded zookeeper. (janhoy)
@@ -553,6 +558,9 @@ Bug Fixes
               via Jason Gerlowski)
 
 * SOLR-15919: Replace File with Path for many ZK operations (Mike Drob)
+
+* SOLR-15944: The Tagger's JSON response format now always uses an object/map to represent each tag instead of an
+  array, which didn't make sense. (David Smiley)
 
 ==================  8.11.2 ==================
 
