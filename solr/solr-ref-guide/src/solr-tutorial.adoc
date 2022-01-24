@@ -53,11 +53,11 @@ For example, with a shell in UNIX, Cygwin, or MacOS:
 [source,bash,subs="verbatim,attributes+"]
 ----
 ~$ ls solr*
-solr-{solr-docs-version}.0.zip
+solr-{solr-full-version}.tgz
 
-~$ unzip -q solr-{solr-docs-version}.0.zip
+~$ tar -xzf solr-{solr-full-version}.tgz
 
-~$ cd solr-{solr-docs-version}.0/
+~$ cd solr-{solr-full-version}/
 ----
 
 If you'd like to know more about Solr's directory layout before moving to the first exercise, see the section <<installing-solr.adoc#directory-layout,Directory Layout>> for details.

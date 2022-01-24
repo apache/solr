@@ -26,11 +26,10 @@ Please be sure to review the <<system-requirements.adoc#,System Requirements>> b
 Solr is available from the Solr website.
 Download the latest release https://solr.apache.org/downloads.html.
 
-There are three separate packages:
+There are two separate packages:
 
-* `solr-{solr-docs-version}.0.tgz` for Linux/Unix/OSX systems
-* `solr-{solr-docs-version}.0.zip` for Microsoft Windows systems
-* `solr-{solr-docs-version}.0-src.tgz` the package Solr source code.
+* `solr-{solr-full-version}.tgz` the binary package, for all operating systems.
+* `solr-{solr-full-version}-src.tgz` the package Solr source code.
 This is useful if you want to develop on Solr without using the official Git repository.
 
 == Preparing for Installation
@@ -58,7 +57,7 @@ If you know you will exceed this number of documents in total before you've even
 
 == Package Installation
 
-To keep things simple for now, extract the Solr distribution archive to your local home directory, for instance on Linux, do:
+To keep things simple for now, extract the Solr distribution archive to your local home directory:
 
 [source,bash,subs="attributes"]
 ----
@@ -67,6 +66,8 @@ tar zxf solr-{solr-docs-version}.0.tgz
 ----
 
 Once extracted, you are now ready to run Solr using the instructions provided in the <<Starting Solr>> section below.
+
+TIP: Windows includes the `tar` tool since Windows 10. Open a command line window and execute the above comamnd. There are also several 3rd party un-archiving tools that support `.tar` archives.
 
 == Directory Layout
 
