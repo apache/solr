@@ -308,7 +308,7 @@ public class BitDocSet extends DocSet {
   }
 
   public DocSetQuery makeQuery() {
-    return null;
+    return new DocSetQuery(this);
   }
 
   @Override

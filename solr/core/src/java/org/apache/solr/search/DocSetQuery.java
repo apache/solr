@@ -30,8 +30,13 @@ import org.apache.lucene.search.Weight;
 import java.io.IOException;
 import java.util.Objects;
 
+/**
+ * A class that accesses Queries based on a DocSet
+ *
+ * Refer SOLR-15257
+ */
 public class DocSetQuery extends Query implements DocSetProducer{
-    DocSet docSet;
+    private final DocSet docSet;
 
     public DocSetQuery(DocSet docSet) {
         super();
@@ -39,6 +44,7 @@ public class DocSetQuery extends Query implements DocSetProducer{
     }
 
     public DocSetQuery() {
+        docSet = null;
     }
 
     @Override
@@ -53,7 +59,7 @@ public class DocSetQuery extends Query implements DocSetProducer{
 
     @Override
     public boolean equals(Object obj) {
-        return sameClassAs(obj) && Objects.equals(docSet, getClass().cast(obj).docSet);
+        return sameClassAs(obj) && Objects.equals(docSet, getClass().cast(obj));
     }
 
     @Override
@@ -63,7 +69,7 @@ public class DocSetQuery extends Query implements DocSetProducer{
 
     @Override
     public DocSet createDocSet(SolrIndexSearcher searcher) throws IOException {
-        return null;
+        return docSet;
     }
 
     @Override
