@@ -140,7 +140,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
           Object buildOnStartupObj = suggesterParams.get(BUILD_ON_STARTUP_LABEL);
           if (buildOnStartupObj == null) {
             Path storeFile = suggester.getStoreFile();
-            buildOnStartup = storeFile == null || Files.notExists(storeFile);
+            buildOnStartup = storeFile == null || !Files.exists(storeFile);
           } else {
             buildOnStartup = Boolean.parseBoolean((String) buildOnStartupObj);
           }
