@@ -848,9 +848,6 @@ public class CoreContainer {
       metricManager.loadClusterReporters(metricReporters, this);
     }
 
-    // Do this before cores get created
-    createUserFilesDirectory();
-
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
         ExecutorUtil.newMDCAwareFixedThreadPool(
@@ -965,17 +962,6 @@ public class CoreContainer {
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
-  }
-
-  private void createUserFilesDirectory() {
-    if (isZooKeeperAware()) {
-      Path userFilesPath = getUserFilesPath(); // TODO make configurable on cfg?
-      try {
-        Files.createDirectories(userFilesPath); // does nothing if already exists
-      } catch (Exception e) {
-        log.warn("Unable to create [{}].  Features requiring this directory may fail.", userFilesPath, e);
-      }
-    }
   }
 
   public void securityNodeChanged() {
@@ -2113,8 +2099,7 @@ public class CoreContainer {
   /**
    * A path where Solr users can retrieve arbitrary files from.  Absolute.
    * <p>
-   * This directory is generally created by each node on startup.  Files located in this directory can then be
-   * manipulated using select Solr features (e.g. streaming expressions).
+   * Files located in this directory can be manipulated using select Solr features (e.g. streaming expressions).
    */
   public Path getUserFilesPath() {
     return solrHome.resolve("userfiles");

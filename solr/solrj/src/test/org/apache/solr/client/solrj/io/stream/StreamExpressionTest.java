@@ -3917,7 +3917,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   private static Path findUserFilesDataDir() {
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      final String baseDir = cluster.getBaseDir().toAbsolutePath().toString();
       for (CoreDescriptor coreDescriptor : jetty.getCoreContainer().getCoreDescriptors()) {
         if (coreDescriptor.getCollectionName().equals(FILESTREAM_COLLECTION)) {
           return jetty.getCoreContainer().getUserFilesPath();

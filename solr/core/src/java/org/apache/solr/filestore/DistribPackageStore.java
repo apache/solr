@@ -94,8 +94,18 @@ public class DistribPackageStore implements PackageStore {
     if (!path.isEmpty() && path.charAt(0) != File.separatorChar) {
       path = File.separator + path;
     }
-    // Use concat because path might start with a slash and be incorrectly interpreted as absolute
-    return solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY + path);
+    if (path.startsWith("\\\\")) { // Windows absolute UNC
+      throw new SolrException(BAD_REQUEST, "Illegal path " + path);
+    }
+    while (path.startsWith("/")) { // Trim all leading slashes
+      path = path.substring(1);
+    }
+    var finalPath = getPackageStoreDirPath(solrHome).resolve(path);
+    // Guard against path traversal by asserting final path is sub path of filestore
+    if (finalPath.normalize().startsWith(getPackageStoreDirPath(solrHome).normalize())) {
+      throw new SolrException(BAD_REQUEST, "Illegal path " + path);
+    }
+    return finalPath;
   }
 
   class FileInfo {
@@ -572,7 +582,16 @@ public class DistribPackageStore implements PackageStore {
   }
 
   public static Path getPackageStoreDirPath(Path solrHome) {
-    return solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
+    var path = solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
+    if (!Files.exists(path)) {
+      try {
+        Files.createDirectories(path);
+        log.info("Created filestore folder {}", path);
+      } catch (IOException e) {
+        throw new SolrException(SERVER_ERROR, "Faild creating 'filestore' folder in SOLR_HOME. Check permissions");
+      }
+    }
+    return path;
   }
 
   private static String _getMetapath(String path) {

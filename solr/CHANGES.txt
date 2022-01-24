@@ -517,6 +517,8 @@ Other Changes
 
 * SOLR-15934: CloseHook is now an interface with default method implementations instead of an abstract class. (Mike Drob)
 
+* SOLR-15950: Create SOLR_HOME/userfiles and SOLR_HOME/filestore lazily on first use (janhoy)
+
 * SOLR-15916: Remove dist/ from the binary release. The solr-core and solrj jars will be included in the server WEB-INF/lib directory,
 and each individual module's jar will be included in its directory's lib/ folder. (Houston Putman)
 
