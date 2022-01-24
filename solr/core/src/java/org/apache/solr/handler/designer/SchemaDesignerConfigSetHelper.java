@@ -1024,7 +1024,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
               return FileVisitResult.SKIP_SUBTREE;
             }
 
-            String dirName = dir.toString();
+            String dirName = tmpDirectory.relativize(dir).toString();
             if (!dirName.endsWith("/")) {
               dirName += "/";
             }
@@ -1037,7 +1037,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
             if (! Files.isHidden(file)) {
               try (InputStream fis = Files.newInputStream(file)) {
-                ZipEntry zipEntry = new ZipEntry(file.toString());
+                ZipEntry zipEntry = new ZipEntry(tmpDirectory.relativize(file).toString());
                 zipOut.putNextEntry(zipEntry);
                 fis.transferTo(zipOut);
               }
