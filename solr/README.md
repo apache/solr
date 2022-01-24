@@ -141,18 +141,26 @@ server/
   configuration and documents to index. Please see: bin/solr start -help
   for more information about starting a Solr server.
 
+bin/
+   Scripts to startup, manage and interact with Solr instances.
+
 example/
   Contains example documents and an alternative Solr home
   directory containing various examples.
 
-dist/solr-<component>-XX.jar
-  The Apache Solr libraries.  To compile Apache Solr Plugins,
-  one or more of these will be required.  The core library is
-  required at a minimum. (see https://solr.apache.org/guide/solr-plugins.html
-  for more information).
+modules/
+  Contains modules to extend the functionality of Solr.
+  Libraries for these modules can be found under modules/*/lib
+
+docker/
+  Contains a docker file to build a Docker image using the source binary distribution.
+  docker/scripts contains scripts that the docker image uses to manage Solr.
 
 docs/index.html
   A link to the online version of Apache Solr Javadoc API documentation and Tutorial
+
+licenses/
+  Licenses, notice files and signatures for Solr dependencies.
 ```
 
 Instructions for Building Apache Solr from Source
