@@ -94,6 +94,8 @@ New Features
 
 * SOLR-15197: Support temporal graph queries with DAY and WEEKDAY windows (Joel Bernstein)
 
+* SOLR-15880: Introduce support for k nearest neighbors search (Alessandro Benedetti, Elia Porciani)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -522,6 +524,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-15917: "Contrib Modules" have been renamed to "Modules" and have been moved from "contrib/" to "modules/". (Houston Putman)
 
+* SOLR-15632: Upgrade to Caffeine Cache 3.0.5 (Mike Drob)
+
 * SOLR-15954: Move the Prometheus Exporter from "solr/modules/prometheus-exporter" to "solr/prometheus-exporter". (Houston Putman)
 
 Bug Fixes
@@ -562,7 +566,7 @@ Bug Fixes
 * SOLR-15944: The Tagger's JSON response format now always uses an object/map to represent each tag instead of an
   array, which didn't make sense. (David Smiley)
 
-* SOLR-15842: Async response for backups now correctly aggregates and returns information (Houston Putman, ijioio)
+* SOLR-15842: Async response for backups now correctly aggregates and returns information (Houston Putman, Artem Abeleshev, Christine Poerschke)
 
 ==================  8.11.2 ==================
 

@@ -1009,4 +1009,13 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
   }
 
+  @Test
+  public void JSONLoader_denseVector_shouldIndexCorrectly() throws Exception {
+    updateJ(json( "[{'id':'888','vector':[1.8,2.8,3.8,4.8]}]" ),
+            params("commit", "true"));
+
+    assertJQ(req("q","id:888", "fl","vector"),
+            "/response/docs/[0]=={'vector':[1.8,2.8,3.8,4.8]}");
+  }
+
 }
