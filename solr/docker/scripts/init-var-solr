@@ -56,16 +56,6 @@ if [ ! -d "$DIR/logs" ]; then
     mkdir -m0770 "$DIR/logs"
 fi
 
-if [ ! -f "$DIR/data/solr.xml" ]; then
-    #echo "Copying solr.xml"
-    cp -a /opt/solr/server/solr/solr.xml "$DIR/data/solr.xml"
-fi
-
-if [ ! -f "$DIR/data/zoo.cfg" ]; then
-    #echo "Copying zoo.cfg"
-    cp -a /opt/solr/server/solr/zoo.cfg "$DIR/data/zoo.cfg"
-fi
-
 if [ ! -f "$DIR/log4j2.xml" ]; then
     #echo "Copying log4j2.xml"
     cp -a /opt/solr/server/resources/log4j2.xml "$DIR/log4j2.xml"
