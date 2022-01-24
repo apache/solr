@@ -67,6 +67,9 @@ public class DocSetQuery extends Query implements DocSetProducer{
         return classHash() * 31 + docSet.hashCode();
     }
 
+    /**
+     * Note: searcher is not being used here
+     */
     @Override
     public DocSet createDocSet(SolrIndexSearcher searcher) throws IOException {
         return docSet;
