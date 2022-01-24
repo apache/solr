@@ -62,7 +62,6 @@ import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
 public class PackageStoreAPI {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String PACKAGESTORE_DIRECTORY = "filestore";
-  public static final String LOCAL_PKGS = "pkgs";
   public static final String TRUSTED_DIR = "_trusted_";
   public static final String KEYS_DIR = "/_trusted_/keys";
 

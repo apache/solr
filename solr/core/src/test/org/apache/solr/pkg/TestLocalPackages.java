@@ -12,17 +12,32 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestLocalPkgs extends SolrCloudTestCase {
+public class TestLocalPackages extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static String localPackagesDir = getFile("runtimecode").getAbsolutePath();
+  public static String PKG_NAME = "mypkg";
+  public static String jarName = "mypkg1.jar";
+  public static String COLLECTION_NAME = "testLocalPkgsColl";
+
+  @BeforeClass
+  public static void setup() {
+    System.setProperty("solr.packages.local.whitelist", PKG_NAME);
+    System.setProperty("solr.packages.local.dir", localPackagesDir);
+  }
+
+  @AfterClass
+  public static void shutdown() {
+    System.clearProperty("solr.packages.local.whitelist");
+    System.clearProperty("solr.packages.local.dir");
+  }
 
   public void testLocalPackages() throws Exception {
-    String jarName = "mypkg1.jar";
-    String PKG_NAME = "mypkg";
-    String COLLECTION_NAME = "testLocalPkgsColl";
 
     PackageAPI.Packages p = new PackageAPI.Packages();
     PackageAPI.PkgVersion pkgVersion =  new PackageAPI.PkgVersion();
@@ -30,14 +45,16 @@ public class TestLocalPkgs extends SolrCloudTestCase {
     pkgVersion.version = "0.1";
     pkgVersion.pkg = PKG_NAME;
     p.packages.put(PKG_NAME, Collections.singletonList(pkgVersion));
-    log.info("local_packages.json : "+ Utils.toJSONString(p));
-    System.setProperty(PackageLoader.LOCAL_PACKAGES_WHITELIST, PKG_NAME);
+
+    log.info("local_packages.json: " + Utils.toJSONString(p));
+    log.info("Local packages dir: " + localPackagesDir);
+
     MiniSolrCloudCluster cluster =
             configureCluster(4)
                     .withJettyConfig(builder -> builder.enableV2(true))
                     .withJettyConfig(it -> it.withPreStartupHook(jsr -> {
                       try {
-                        File pkgDir = new File(jsr.getSolrHome() + File.separator + PackageLoader.LOCAL_PACKAGES_DIR);
+                        File pkgDir = new File(localPackagesDir);
                         if(!pkgDir.exists()) {
                           pkgDir.mkdir();
                         }
@@ -48,7 +65,6 @@ public class TestLocalPkgs extends SolrCloudTestCase {
                           try( FileOutputStream fos = new FileOutputStream( new File(pkgDir, jarName) )) {
                             fos.write(buf, 0,buf.length);
                           }
-
                         }
 
                         try( FileOutputStream fos = new FileOutputStream( new File(pkgDir, PackageLoader.LOCAL_PACKAGES_JSON) )) {
@@ -57,23 +73,23 @@ public class TestLocalPkgs extends SolrCloudTestCase {
                       } catch (Exception e) {
                         throw new RuntimeException("Unable to create files", e);
                       }
-
                     }))
                     .addConfig("conf", configset("conf2"))
                     .configure();
+
     System.clearProperty(PackageLoader.LOCAL_PACKAGES_WHITELIST);
     try {
       for (JettySolrRunner jsr : cluster.getJettySolrRunners()) {
-        List<String> packageFiles = Arrays.asList(new File(jsr.getSolrHome() + File.separator + PackageLoader.LOCAL_PACKAGES_DIR).list());
-       assertTrue(packageFiles.contains(PackageLoader.LOCAL_PACKAGES_JSON));
-       assertTrue(packageFiles.contains(jarName));
+        List<String> packageFiles = Arrays.asList(new File(localPackagesDir).list());
+        assertTrue(packageFiles.contains(PackageLoader.LOCAL_PACKAGES_JSON));
+        assertTrue(packageFiles.contains(jarName));
       }
       CollectionAdminRequest
           .createCollection(COLLECTION_NAME, "conf", 2, 2)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
-      log.info("collection created successfully");
+      log.info("Collection created successfully");
 
       TestPackages.verifyComponent(cluster.getSolrClient(), COLLECTION_NAME, "query", "filterCache", PKG_NAME ,pkgVersion.version );
 
