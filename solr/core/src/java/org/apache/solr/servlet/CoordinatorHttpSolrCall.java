@@ -155,6 +155,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     Properties p = new Properties();
     p.put(CoreDescriptor.CORE_COLLECTION, collectionName);
     p.put(CloudDescriptor.REPLICA_TYPE, Replica.Type.PULL.toString());
+    p.put(CoreDescriptor.CORE_SHARD, "_");
 
     CloudDescriptor cloudDescriptor =  new CloudDescriptor(delegate.getCore().getCoreDescriptor(),
             delegate.getCore().getName(), p);
