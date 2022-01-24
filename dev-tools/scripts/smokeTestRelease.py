@@ -38,7 +38,7 @@ from collections import namedtuple
 import scriptutil
 
 # This tool expects to find /solr off the base URL.  You
-# must have a working gpg, tar, unzip in your path.  This has been
+# must have a working gpg, tar in your path.  This has been
 # tested on Linux and on Cygwin under Windows 7.
 
 cygwin = platform.system().lower().startswith('cygwin')
@@ -255,8 +255,7 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
       raise RuntimeError('solr: artifact %s has wrong sigs: expected %s but got %s' % (artifact, expectedSigs, sigs))
 
   expected = ['solr-%s-src.tgz' % version,
-              'solr-%s.tgz' % version,
-              'solr-%s.zip' % version]
+              'solr-%s.tgz' % version]
 
   actual = [x[0] for x in artifacts]
   if expected != actual:
@@ -516,8 +515,6 @@ def unpackAndVerify(java, tmpDir, artifact, gitRevision, version, testArgs):
   unpackLogFile = '%s/solr-unpack-%s.log' % (tmpDir, artifact)
   if artifact.endswith('.tar.gz') or artifact.endswith('.tgz'):
     run('tar xzf %s/%s' % (tmpDir, artifact), unpackLogFile)
-  elif artifact.endswith('.zip'):
-    run('unzip %s/%s' % (tmpDir, artifact), unpackLogFile)
 
   # make sure it unpacks to proper subdir
   l = os.listdir(destDir)
@@ -808,16 +805,6 @@ def checkJavadocAndSourceArtifacts(artifacts, version):
       sourcesJar = artifact[:-4] + '-sources.jar'
       if sourcesJar not in artifacts:
         raise RuntimeError('missing: %s' % sourcesJar)
-
-
-def getZipFileEntries(fileName):
-  entries = []
-  with zipfile.ZipFile(fileName) as zf:
-    for zi in zf.infolist():
-      entries.append(zi.filename)
-  # Sort by name:
-  entries.sort()
-  return entries
 
 
 def checkIdenticalMavenArtifacts(distFiles, artifacts, version):
@@ -1129,7 +1116,6 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   checkSigs(solrPath, version, tmpDir, isSigned, keysFile)
   if not downloadOnly:
     unpackAndVerify(java, tmpDir, 'solr-%s.tgz' % version, gitRevision, version, testArgs)
-    unpackAndVerify(java, tmpDir, 'solr-%s.zip' % version, gitRevision, version, testArgs)
     unpackAndVerify(java, tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs)
     print()
     print('Test Maven artifacts...')
