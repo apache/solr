@@ -19,6 +19,7 @@ package org.apache.solr.gcs;
 
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageException;
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
 import com.google.common.collect.Lists;
 
@@ -28,6 +29,8 @@ import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.apache.lucene.util.LuceneTestCase.assumeFalse;
 
 public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
 
@@ -98,7 +101,13 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
       final URI baseLocationUri = createDirectoryURI(baseLocation);
       createDirectory(baseLocationUri);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      final Throwable cause = e.getCause();
+      if (cause != null) {
+        assumeFalse("This test uses a GCS mock library that is incompatible with the current default locale",
+                e instanceof StorageException &&
+                        cause.getMessage().contains("Invalid date/time format") &&
+                        cause instanceof NumberFormatException);
+      }
     }
   }
 }
