@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -37,6 +38,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 10)
 public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTest {
   private static MiniDFSCluster dfsCluster;
   

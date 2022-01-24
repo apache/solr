@@ -48,7 +48,6 @@ public class NodeRolesTest extends SolrCloudTestCase {
     shutdownCluster();
   }
 
-  @SuppressWarnings("rawtypes")
   public void testRoleIntegration() throws Exception {
     JettySolrRunner j0 = cluster.getJettySolrRunner(0);
     testSupportedRolesAPI();

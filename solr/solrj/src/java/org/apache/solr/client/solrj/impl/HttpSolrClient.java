@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpMessage;
@@ -63,6 +62,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -611,14 +611,15 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           }
 
           // unexpected mime type
-          String msg = "Expected mime type " + procMimeType + " but got " + mimeType + ".";
+          String prefix = "Expected mime type " + procMimeType + " but got " + mimeType + ". ";
           Charset exceptionCharset = charset != null? charset : FALLBACK_CHARSET;
           try {
-            msg = msg + " " + IOUtils.toString(respBody, exceptionCharset);
+            ByteArrayOutputStream body = new ByteArrayOutputStream();
+            respBody.transferTo(body);
+            throw new RemoteSolrException(baseUrl, httpStatus, prefix + body.toString(exceptionCharset), null);
           } catch (IOException e) {
             throw new RemoteSolrException(baseUrl, httpStatus, "Could not parse response with encoding " + exceptionCharset, e);
           }
-          throw new RemoteSolrException(baseUrl, httpStatus, msg, null);
         }
       }
       

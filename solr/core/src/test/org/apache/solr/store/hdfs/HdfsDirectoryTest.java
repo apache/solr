@@ -16,6 +16,7 @@
  */
 package org.apache.solr.store.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.HashSet;
@@ -48,6 +49,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 20)
 public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   
   private static final int MAX_NUMBER_OF_WRITES = 10000;
@@ -236,7 +238,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   }
 
   private String getName() {
-    return Long.toString(Math.abs(random.nextLong()));
+    return Long.toUnsignedString(random.nextLong());
   }
 
   public void testCantOverrideFiles() throws IOException {

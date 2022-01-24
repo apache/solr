@@ -246,7 +246,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       List<String> sliceNames = new ArrayList<>();
       restoreCollection.getSlices().forEach(x -> sliceNames.add(x.getName()));
 
-      List<ReplicaPosition> replicaPositions = getReplicaPositions(restoreCollection, rc.nodeList, clusterState, sliceNames);
+      List<ReplicaPosition> replicaPositions = getReplicaPositions(rc.restoreCollectionName, rc.nodeList, sliceNames);
 
       createSingleReplicaPerShard(results, restoreCollection, rc.asyncId, clusterState, replicaPositions);
       Object failures = results.get("failure");
@@ -353,18 +353,16 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
 
-    private List<ReplicaPosition> getReplicaPositions(DocCollection restoreCollection, List<String> nodeList, ClusterState clusterState, List<String> sliceNames) throws IOException, InterruptedException {
+    private List<ReplicaPosition> getReplicaPositions(String restoreCollection, List<String> nodeList, List<String> sliceNames) throws IOException, InterruptedException {
       Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
-              .forCollection(restoreCollection.getName())
+              .forCollection(restoreCollection)
               .forShard(sliceNames)
               .assignNrtReplicas(numNrtReplicas)
               .assignTlogReplicas(numTlogReplicas)
               .assignPullReplicas(numPullReplicas)
               .onNodes(nodeList)
               .build();
-      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
-              ccc.getCoreContainer(),
-              clusterState, restoreCollection);
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
       return assignStrategy.assign(ccc.getSolrCloudManager(), assignRequest);
     }
 

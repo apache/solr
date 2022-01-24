@@ -64,7 +64,7 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
     SolrZkClient zkClient = zkStateReader.getZkClient();
     Map<String, List<String>> roles = null;
     String node = message.getStr("node");
-    if ("false".equals(message.getStr("persist"))) {// no need to persist to roles.json
+    if ("false".equals(message.getStr("persist"))) { // no need to persist to roles.json
       runPrioritizer();
       return;
     }

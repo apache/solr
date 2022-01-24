@@ -19,6 +19,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   $scope.resetMenu("security", Constants.IS_ROOT_PAGE);
 
   $scope.params = [];
+  $scope.filteredPredefinedPermissions = [];
 
   var strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*\-_()[\]])[a-zA-Z0-9!@#$%^&*\-_()[\]]{8,30}$/;
 
@@ -141,9 +142,10 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     return (!obj || (Array.isArray(obj) && obj.length === 0)) ? "null" : $scope.displayList(obj);
   };
 
+  // TODO: Use new permissions.js
   $scope.predefinedPermissions = ["collection-admin-edit", "collection-admin-read", "core-admin-read", "core-admin-edit", "zk-read",
     "read", "update", "all", "config-edit", "config-read", "schema-read", "schema-edit", "security-edit", "security-read",
-    "metrics-read", "filestore-read", "filestore-write", "package-edit", "package-read"].sort();
+    "metrics-read", "health", "filestore-read", "filestore-write", "package-edit", "package-read"].sort();
 
   $scope.predefinedPermissionCollection = {"read":"*", "update":"*", "config-edit":"*", "config-read":"*", "schema-edit":"*", "schema-read":"*"};
 
@@ -281,8 +283,12 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
   };
 
   $scope.hasPermission = function(permissionName) {
-    var rolesForPermission = $scope.permissionsTable.filter(p => permissionName === p.name).flatMap(p => p.roles);
-    return (rolesForPermission.length > 0 && roleMatch(rolesForPermission, $scope.getCurrentUserRoles()));
+    var matched = $scope.permissionsTable.filter(p => permissionName === p.name);
+    if (matched.length === 0 && permissionName !== "all") {
+      // this permission is not explicitly defined, but "all" will apply if it is defined
+      matched = $scope.permissionsTable.filter(p => "all" === p.name);
+    }
+    return matched.length > 0 && roleMatch(matched.flatMap(p => p.roles), $scope.getCurrentUserRoles());
   };
 
   $scope.refreshSecurityPanel = function() {
@@ -769,6 +775,12 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
       var action = isAdd ? "set-permission" : "update-permission";
       var postBody = {};
       postBody[action] = setPermJson;
+
+      // if they have the "all" permission in the last position, then keep it there when adding a new permission
+      if (!setPermJson["before"] && !setPermJson["index"] && $scope.permissionsTable && $scope.permissionsTable.length > 0 && $scope.permissionsTable[$scope.permissionsTable.length-1].name === "all") {
+        setPermJson["before"] = $scope.permissionsTable.length;
+      }
+
       Security.post({path: "authorization"}, postBody, function (data) {
         var errorCause = checkError(data);
         if (errorCause != null) {

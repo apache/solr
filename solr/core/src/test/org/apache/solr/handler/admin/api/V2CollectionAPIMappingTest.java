@@ -53,7 +53,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 /**
- * Unit tests for the V2 APIs found in {@link org.apache.solr.handler.admin.api}.
+ * Unit tests for the V2 APIs found in {@link org.apache.solr.handler.admin.api} that use the /c/{collection} path.
  *
  * This test bears many similarities to {@link TestCollectionAPIs} which appears to test the mappings indirectly by
  * checking message sent to the ZK overseer (which is similar, but not identical to the v1 param list).  If there's no

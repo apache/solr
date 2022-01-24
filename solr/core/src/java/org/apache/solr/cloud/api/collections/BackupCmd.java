@@ -30,6 +30,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.core.backup.BackupManager;
@@ -262,7 +263,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
                                      BackupManager backupManager,
                                      BackupProperties backupProps,
                                      Collection<Slice> slices) {
-    NamedList<Object> aggRsp = new NamedList<>();
+    NamedList<Object> aggRsp = new SimpleOrderedMap<>();
     aggRsp.add("collection", collectionName);
     aggRsp.add("numShards", slices.size());
     aggRsp.add("backupId", backupManager.getBackupId().id);

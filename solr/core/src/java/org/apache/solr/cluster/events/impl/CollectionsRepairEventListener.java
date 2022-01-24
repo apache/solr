@@ -167,7 +167,7 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
                 .incrementAndGet();
           }
         });
-        Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(cc, clusterState, coll);
+        Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(cc);
         lostReplicas.forEach((shard, types) -> {
           Assign.AssignRequestBuilder assignRequestBuilder = new Assign.AssignRequestBuilder()
               .forCollection(coll.getName())

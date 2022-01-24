@@ -31,8 +31,6 @@
     <lockType>${solr.lock.type:native}</lockType>
   </indexConfig>
 
-  <jmx />
-
   <updateHandler class="solr.DirectUpdateHandler2">
 
     <updateLog>

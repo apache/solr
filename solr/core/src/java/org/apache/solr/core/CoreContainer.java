@@ -110,6 +110,7 @@ import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -730,6 +731,8 @@ public class CoreContainer {
 
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
+    StartupLoggingUtils.checkRequestLogging();
+
     hostName = cfg.getNodeName();
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
@@ -771,6 +774,7 @@ public class CoreContainer {
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
     final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
     ApiRegistrar.registerCollectionApis(containerHandlers.getApiBag(), collectionsHandler);
+    ApiRegistrar.registerShardApis(containerHandlers.getApiBag(), collectionsHandler);
     containerHandlers.getApiBag().registerObject(collectionsAPI);
     containerHandlers.getApiBag().registerObject(collectionsAPI.collectionsCommands);
     final CollectionBackupsAPI collectionBackupsAPI = new CollectionBackupsAPI(collectionsHandler);
@@ -946,7 +950,7 @@ public class CoreContainer {
       });
 
       clusterSingletons.setReady();
-      if (NodeRoles.Mode.PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
+      if (NodeRoles.MODE_PREFERRED.equals(nodeRoles.getRoleMode(NodeRoles.Role.OVERSEER))) {
         try {
           log.info("This node has been started as a preferred overseer");
           zkSys.getZkController().setPreferredOverseer();

@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -28,6 +29,8 @@ import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.BadHdfsThreadsFilter;
@@ -36,8 +39,11 @@ import org.junit.BeforeClass;
 
 @LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 @ThreadLeakFilters(defaultFilters = true, filters = {
-        BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
+    BadHdfsThreadsFilter.class
 })
+@ThreadLeakLingering(linger = 10)
 public class HdfsCloudIncrementalBackupTest extends AbstractIncrementalBackupTest{
     public static final String SOLR_XML = "<solr>\n" +
             "\n" +

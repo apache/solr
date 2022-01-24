@@ -71,6 +71,7 @@ limitations under the License.
   <script src="libs/angular-utf8-base64.min.js?_=${version}"></script>
   <script src="js/angular/app.js?_=${version}"></script>
   <script src="js/angular/services.js?_=${version}"></script>
+  <script src="js/angular/permissions.js?_=${version}"></script>
   <script src="js/angular/controllers/index.js?_=${version}"></script>
   <script src="js/angular/controllers/login.js?_=${version}"></script>
   <script src="js/angular/controllers/logging.js?_=${version}"></script>
@@ -117,6 +118,13 @@ limitations under the License.
               <li ng-repeat="(core,error) in initFailures"><strong>{{core}}:</strong> {{error}}</li>
           </ul>
           <p>Please check your logs for more information</p>
+
+      </div>
+
+      <div class="header-message" id="authz-failures" ng-show="showAuthzFailures" ng-cloak>
+
+        <h2>Permission failure</h2>
+        <p>Your user does not have the necessary role(s) to perform this action.</p>
 
       </div>
 

@@ -860,7 +860,7 @@ public class ZkController implements Closeable {
     cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES, zkClient);
     for (NodeRoles.Role role: NodeRoles.Role.values()) {
       cmdExecutor.ensureExists(NodeRoles.getZNodeForRole(role), zkClient);
-      for (NodeRoles.Mode mode: role.supportedModes()) {
+      for (String mode: role.supportedModes()) {
         cmdExecutor.ensureExists(NodeRoles.getZNodeForRoleMode(role, mode), zkClient);
       }
     }
@@ -921,8 +921,7 @@ public class ZkController implements Closeable {
         overseerElector = new LeaderElector(zkClient);
         this.overseer = new Overseer((HttpShardHandler) cc.getShardHandlerFactory().getShardHandler(), cc.getUpdateShardHandler(),
             CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
-        ElectionContext context = new OverseerElectionContext(zkClient,
-            overseer, getNodeName());
+        ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
         overseerElector.setup(context);
         if (cc.nodeRoles.isOverseerAllowedOrPreferred()) {
           overseerElector.joinElection(context, false);
@@ -2230,7 +2229,7 @@ public class ZkController implements Closeable {
         "node", getNodeName(),
         "role", "overseer",
         "persist", "false");
-    log.info("Going to add role {} ", props);
+    log.warn("Going to add role {}. It is deprecated to use ADDROLE and consider using Node Roles instead.", props);
     getOverseerCollectionQueue().offer(Utils.toJSON(props));
   }
 
@@ -2414,10 +2413,6 @@ public class ZkController implements Closeable {
         @Override
         public void preClose(SolrCore core) {
           unregisterConfListener(confDir, listener);
-        }
-
-        @Override
-        public void postClose(SolrCore core) {
         }
       });
     }

@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/task-management.html",
+  "documentation": "https://solr.apache.org/guide/task-management.html",
   "description": "List currently running tasks",
   "methods": [
     "GET"

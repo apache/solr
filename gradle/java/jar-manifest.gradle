@@ -22,7 +22,7 @@ subprojects {
     // per-project.
     def title = "Apache Solr Search Server: ${project.name}"
     def implementationTitle = "org.apache.solr"
-    def legaleseDir = project(":solr").projectDir
+    def legaleseDir = rootDir
 
     // Apply the manifest to any JAR or WAR file created by any project,
     // excluding those explicitly listed.

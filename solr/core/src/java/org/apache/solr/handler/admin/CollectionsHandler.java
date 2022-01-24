@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
@@ -109,15 +108,8 @@ import java.util.stream.Collectors;
 
 import static org.apache.solr.client.solrj.response.RequestStatusState.*;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_EMPTY;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_SLICES;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_ACTIVE_NODES;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_IF_DOWN;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARDS_PROP;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.*;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
@@ -139,7 +131,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final CoreContainer coreContainer;
-  private final CollectionHandlerApi v2Handler;
   private final Optional<DistributedCollectionConfigSetCommandRunner> distributedCollectionConfigSetCommandRunner;
 
   public CollectionsHandler() {
@@ -156,7 +147,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
    */
   public CollectionsHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    v2Handler = new CollectionHandlerApi(this);
     distributedCollectionConfigSetCommandRunner = coreContainer != null ? coreContainer.getDistributedCollectionCommandRunner() : Optional.empty();
   }
 
@@ -1562,11 +1552,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   interface CollectionOp {
     Map<String, Object> execute(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception;
 
-  }
-
-  @Override
-  public Collection<Api> getApis() {
-    return v2Handler.getApis();
   }
 
   @Override

@@ -438,9 +438,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
           .assignPullReplicas(numPull.get())
           .onNodes(new ArrayList<>(clusterState.getLiveNodes()))
           .build();
-      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
-          ccc.getCoreContainer(),
-          clusterState, collection);
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
       List<ReplicaPosition> replicaPositions = assignStrategy.assign(ccc.getSolrCloudManager(), assignRequest);
       t.stop();
 

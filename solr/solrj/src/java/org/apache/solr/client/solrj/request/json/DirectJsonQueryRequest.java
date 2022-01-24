@@ -24,10 +24,10 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * Represents a query using the <a href="https://lucene.apache.org/solr/guide/json-request-api.html">JSON Query DSL</a>
+ * Represents a query using the <a href="https://solr.apache.org/guide/json-request-api.html">JSON Query DSL</a>
  *
  * This class doesn't construct the request body itself.  It uses a provided String without any modification.  Often
- * used in combination with the JSON DSL's <a href="https://lucene.apache.org/solr/guide/json-request-api.html#parameter-substitution-macro-expansion">macro expansion capabilities</a>.
+ * used in combination with the JSON DSL's <a href="https://solr.apache.org/guide/json-request-api.html#parameter-substitution-macro-expansion">macro expansion capabilities</a>.
  * The JSON body can contain template parameters which are replaced with values fetched from the {@link SolrParams}
  * used by this request.  For a more flexible, guided approach to constructing JSON DSL requests, see
  * {@link JsonQueryRequest}.

@@ -72,10 +72,8 @@ class SimpleClusterAbstractionsImpl {
       return liveNodes;
     }
 
-    public Set<Node> getLiveNodes(boolean filterNonDataNodes) {
-      return filterNonDataNodes ?
-              liveNodesWithData :
-              liveNodes;
+    public Set<Node> getLiveDataNodes() {
+      return liveNodesWithData;
     }
 
     @Override

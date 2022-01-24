@@ -16,13 +16,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-A node in Solr is usually capable of performing various types of operations, e.g. hosting replicas, performing indexing and querying on them, collection management tasks etc. However, if someone wants to setup a cluster where these functionalities are isolated to certain dedicated nodes, then this can be achieved leveraging the concept of node roles.
+A node in Solr is usually capable of performing various types of operations, e.g. hosting replicas, performing indexing and querying, collection management tasks, etc. To set up a cluster where these functions are isolated to certain dedicated nodes, we can use the concept of node roles.
 
 == Definitions
 
 === Node role
 
-A role is a designation of a node that indicates that the node may perform a certain functionality that is governed by the role.
+A role is a designation for a node that indicates that the node may perform a certain function.
 
 === Mode
 Every role has a list of modes under which a node can be. It can be simple (e.g. `["on", "off"]`) or more granular (e.g. `["allowed", "preferred", "disallowed"]`).
@@ -133,7 +133,7 @@ curl http://localhost:8983/api/cluster/node-roles
 }
 ----
 
-=== GET /api/cluster/node-roles/role/{role}
+=== GET /api/cluster/node-roles/role/\{role}
 
 Fetches the current node roles assignment for a specified role.
 
@@ -176,7 +176,7 @@ http://localhost:8983/api/node-roles/role/data/off
 
 
 
-=== GET /api/cluster/node-roles/node/{node}
+=== GET /api/cluster/node-roles/node/\{node}
 
 Fetches the current node roles assignment for the specified node.
 

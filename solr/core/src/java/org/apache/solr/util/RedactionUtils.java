@@ -18,10 +18,7 @@
 package org.apache.solr.util;
 
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
@@ -53,58 +50,6 @@ public class RedactionUtils {
 
   public static void setRedactSystemProperty(boolean redactSystemProperty) {
     RedactionUtils.redactSystemProperty = redactSystemProperty;
-  }
-
-  /**
-   * A helper class to build unique mappings from original to redacted names.
-   */
-  public static final class RedactionContext {
-    private Map<String, String> redactions = new HashMap<>();
-    Map<String, Set<Integer>> uniqueCodes = new HashMap<>();
-    // minimal(ish) hash per prefix
-    Map<String, Integer> codeSpaces = new HashMap<>();
-
-    /**
-     * Add a name to be redacted.
-     * @param name original name
-     * @param redactionPrefix prefix for the redacted name
-     */
-    public void addName(String name, String redactionPrefix) {
-      if (redactions.containsKey(name)) {
-        return;
-      }
-      int codeSpace = codeSpaces.computeIfAbsent(redactionPrefix, p -> 4);
-      int code = Math.abs(name.hashCode() % codeSpace);
-      Set<Integer> uniqueCode = uniqueCodes.computeIfAbsent(redactionPrefix, p -> new HashSet<>());
-      while (uniqueCode.contains(code)) {
-        codeSpace = codeSpace << 1;
-        codeSpaces.put(redactionPrefix, codeSpace);
-        code = Math.abs(name.hashCode() % codeSpace);
-      }
-      uniqueCode.add(code);
-      redactions.put(name, redactionPrefix + Integer.toString(code, Character.MAX_RADIX));
-    }
-
-    /**
-     * Add a name that needs to be mapped to the same redacted format as another one.
-     * @param original original name already mapped (will be added automatically if missing)
-     * @param equivalent another name that needs to be mapped to the same redacted name
-     * @param redactionPrefix prefix for the redacted name
-     */
-    public void addEquivalentName(String original, String equivalent, String redactionPrefix) {
-      if (!redactions.containsKey(original)) {
-        addName(original, redactionPrefix);
-      }
-      String redaction = redactions.get(original);
-      redactions.put(equivalent, redaction);
-    }
-
-    /**
-     * Get a map of original to redacted names.
-     */
-    public Map<String, String> getRedactions() {
-      return redactions;
-    }
   }
 
   /**

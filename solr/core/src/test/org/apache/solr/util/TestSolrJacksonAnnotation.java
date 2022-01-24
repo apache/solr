@@ -37,6 +37,7 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
     o.field = "v1";
     o.f2 = "v2";
     o.ifld = 1234;
+    o.lfld = 5678L;
     String json = mapper.writeValueAsString(o);
 
     @SuppressWarnings("unchecked")
@@ -44,15 +45,18 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
     assertEquals("v1",  m.get("field"));
     assertEquals("v2",  m.get("friendlyName"));
     assertEquals("1234",  String.valueOf(m.get("friendlyIntFld")));
+    assertEquals("5678",  String.valueOf(m.get("friendlyLongFld")));
     TestObj o1 = mapper.readValue(json, TestObj.class);
 
     assertEquals("v1", o1.field);
     assertEquals("v2", o1.f2);
     assertEquals(1234, o1.ifld);
+    assertEquals(5678L, o1.lfld);
 
     Map<String, Object> schema = JsonSchemaCreator.getSchema(TestObj.class);
     assertEquals("string", Utils.getObjectByPath(schema,true,"/properties/friendlyName/type"));
     assertEquals("integer", Utils.getObjectByPath(schema,true,"/properties/friendlyIntFld/type"));
+    assertEquals("long", Utils.getObjectByPath(schema,true,"/properties/friendlyLongFld/type"));
     assertEquals("friendlyName", Utils.getObjectByPath(schema,true,"/required[0]"));
 
 
@@ -81,5 +85,7 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
     public String f2;
     @JsonProperty("friendlyIntFld")
     public int ifld;
+    @JsonProperty("friendlyLongFld")
+    public long lfld;
   }
 }
