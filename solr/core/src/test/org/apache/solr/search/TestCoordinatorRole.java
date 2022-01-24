@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.servlet.CoordinatorHttpSolrCall;
@@ -46,7 +47,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
   public void testSimple() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     String COLLECTION_NAME = "test_coll";
-    String COLLECTION_NAME_2 = CoordinatorHttpSolrCall.SYNTHETIC_COLL_PREFIX +"conf";
+    String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.SYNTHETIC_COLL_PREFIX +"conf";
     CollectionAdminRequest
             .createCollection(COLLECTION_NAME, "conf", 2, 2)
             .process(cluster.getSolrClient());
@@ -68,16 +69,18 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     assertEquals(10, rsp.getResults().getNumFound());
 
     System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
-    JettySolrRunner jetty = null;
+    JettySolrRunner coordinatorJetty = null;
     try {
-      jetty = cluster.startJettySolrRunner();
+      coordinatorJetty = cluster.startJettySolrRunner();
     } finally {
       System.clearProperty(NodeRoles.NODE_ROLES_PROP);
     }
     NavigableObject result = (NavigableObject) Utils.executeGET(cluster.getSolrClient().getHttpClient(),
-            jetty.getBaseUrl().toString()+"/"+COLLECTION_NAME +"/select?q=*:*&wt=javabin", Utils.JAVABINCONSUMER);
+            coordinatorJetty.getBaseUrl().toString()+"/"+COLLECTION_NAME +"/select?q=*:*&wt=javabin", Utils.JAVABINCONSUMER);
 
     assertEquals(10, ((Collection)result._get("response", Collections.emptyList())).size());
+
+    assertNotNull(cluster.getSolrClient().getClusterStateProvider().getCollection(SYNTHETIC_COLLECTION));
 
   }
 
