@@ -94,7 +94,9 @@ New Features
 
 * SOLR-15197: Support temporal graph queries with DAY and WEEKDAY windows (Joel Bernstein)
 
-* SOLR-15914: Env.variable SOLR_MODULES=mod1,mod2 or sys roperty -Dsolr.modules=mod1,mod2 now adds contrib modules to classpath (janhoy)
+* SOLR-15914: Env.variable SOLR_MODULES=mod1,mod2 or sys property -Dsolr.modules=mod1,mod2 now adds solr modules to classpath (janhoy)
+
+* SOLR-15880: Introduce support for k nearest neighbors search (Alessandro Benedetti, Elia Porciani)
 
 Improvements
 ----------------------
