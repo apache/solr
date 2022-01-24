@@ -90,8 +90,8 @@ install_solr_services.sh:::
 This script is used on *nix systems to install Solr as a service.
 It is described in more detail in the section <<taking-solr-to-production.adoc#,Taking Solr to Production>>.
 
-contrib/::
-Solr's `contrib` directory includes add-on plugins for specialized features of Solr.
+modules/::
+Solr's `modules` directory includes 1st-party add-on plugins for specialized features of Solr.
 
 docs/::
 The `docs` directory includes a link to online Javadocs for Solr.

@@ -166,7 +166,7 @@ dependencies {
 
   testImplementation "org.apache.lucene:lucene-analysis-icu"
 
-  testImplementation project(':solr:contrib:analysis-extras')
+  testImplementation project(':solr:modules:analysis-extras')
 
   testImplementation project(':solr:test-framework')
 
