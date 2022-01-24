@@ -197,7 +197,28 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
       p.assertNoCommandsPending();
     }
 
-    private static class MockUpdateRequestProcessor extends UpdateRequestProcessor {
+  @Test
+  public void XMLLoader_denseVector_shouldIndexCorrectly() throws Exception {
+    assertU("<?xml version=\"1.0\" ?>\n" +
+            "<add><doc>" +
+            "<field name=\"id\">777</field>" +
+            "<field name=\"vector\">1.5</field>" +
+            "<field name=\"vector\">2.5</field>" +
+            "<field name=\"vector\">3.5</field>" +
+            "<field name=\"vector\">4.5</field>" +
+            "</doc></add>");
+
+    assertU("<commit/>");
+    
+    assertQ(req("q", "id:777", "fl", "vector"), "*[count(//doc)=1]",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[1][.='" + 1.5 + "']",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[2][.='" + 2.5 + "']",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[3][.='" + 3.5 + "']",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[4][.='" + 4.5 + "']"
+    );
+  }
+
+  private static class MockUpdateRequestProcessor extends UpdateRequestProcessor {
 
       private Queue<DeleteUpdateCommand> deleteCommands = new LinkedList<>();
 
