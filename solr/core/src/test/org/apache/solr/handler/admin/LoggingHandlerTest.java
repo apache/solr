@@ -17,6 +17,8 @@
 package org.apache.solr.handler.admin;
 
 
+import java.util.ArrayList;
+
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -27,6 +29,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
@@ -72,20 +75,52 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
 
     SolrClient client = new EmbeddedSolrServer(h.getCore());
     ModifiableSolrParams mparams = new ModifiableSolrParams();
+
+    NamedList<Object> rsp = client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
+
+    @SuppressWarnings({"unchecked"})
+    ArrayList<NamedList<Object>> loggers = (ArrayList<NamedList<Object>>) rsp._get("loggers", null);
+
+    // check log levels
+    assertTrue(checkLoggerLevel(loggers, PARENT_LOGGER_NAME, ""));
+    assertTrue(checkLoggerLevel(loggers, CLASS_LOGGER_NAME, "DEBUG"));
+
+    // update parent logger level
     mparams.set("set", PARENT_LOGGER_NAME + ":TRACE");
-    client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
+    rsp = client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
+
+    @SuppressWarnings({"unchecked"})
+    ArrayList<NamedList<Object>> updatedLoggerLevel = (ArrayList<NamedList<Object>>) rsp._get("loggers", null);
+
+    // check new parent logger level
+    assertTrue(checkLoggerLevel(updatedLoggerLevel, PARENT_LOGGER_NAME, "TRACE"));
 
     assertEquals(Level.TRACE, config.getLoggerConfig(PARENT_LOGGER_NAME).getLevel());
     assertEquals(Level.DEBUG, config.getLoggerConfig(CLASS_LOGGER_NAME).getLevel());
     
-    // NOTE: LoggeringHandler doesn't actually "remove" the LoggerConfig, ...
+    // NOTE: LoggingHandler doesn't actually "remove" the LoggerConfig, ...
     // evidently so people using they UI can see that it was explicitly turned "OFF" ?
     mparams.set("set", PARENT_LOGGER_NAME + ":null");
-    client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
+    rsp = client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/logging", mparams));
+
+    @SuppressWarnings({"unchecked"})
+    ArrayList<NamedList<Object>> removedLoggerLevel = (ArrayList<NamedList<Object>>) rsp._get("loggers", null);
+
+    assertTrue(checkLoggerLevel(removedLoggerLevel, PARENT_LOGGER_NAME, "OFF"));
 
     assertEquals(Level.OFF, config.getLoggerConfig(PARENT_LOGGER_NAME).getLevel());
     assertEquals(Level.DEBUG, config.getLoggerConfig(CLASS_LOGGER_NAME).getLevel());
 
-    
+  }
+
+  private boolean checkLoggerLevel(ArrayList<NamedList<Object>> properties, String logger, String level) {
+    for (NamedList<Object> property : properties) {
+      String loggerProperty = property._get("name", "").toString();
+      String levelProperty  = property._get("level", "").toString();
+      if (loggerProperty.equals(logger) && levelProperty.equals(level)) {
+        return true;
+      }
+    }
+    return false;
   }
 }
