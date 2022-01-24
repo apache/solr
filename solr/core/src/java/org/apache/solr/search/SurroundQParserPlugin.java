@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Plugin for lucene/contrib Surround query parser, bringing SpanQuery support
+ * Plugin for lucene Surround query parser, bringing SpanQuery support
  * to Solr.
  * <p>
  * &lt;queryParser name="surround"

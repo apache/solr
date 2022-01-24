@@ -274,10 +274,10 @@ The status field will be non-zero in case of failure.
 
 === Using XSLT to Transform XML Index Updates
 
-The Scripting contrib module provides a separate XSLT Update Request Handler that allows you to index any arbitrary XML by using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation].
+The Scripting module provides a separate XSLT Update Request Handler that allows you to index any arbitrary XML by using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation].
 You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#,configset>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
 
-Learn more about adding the `dist/solr-scripting-*.jar` file into Solr's <<libs.adoc#lib-directories,Lib Directories>>.
+Learn more about adding the `modules/scripting/lib/*` files into Solr's <<libs.adoc#lib-directories,Lib Directories>>.
 
 === tr Parameter
 
