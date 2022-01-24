@@ -522,6 +522,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-15917: "Contrib Modules" have been renamed to "Modules" and have been moved from "contrib/" to "modules/". (Houston Putman)
 
+* SOLR-15954: Move the Prometheus Exporter from "solr/modules/prometheus-exporter" to "solr/prometheus-exporter". (Houston Putman)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
