@@ -98,6 +98,13 @@ All the usages are replaced by BaseHttpSolrClient.RemoteSolrException and BaseHt
 * SOLR-14142: Jetty low level request-logging in NCSA format is now enabled by default, with a retention of 3 days worth of logs.
   This may require some more disk space for logs than was the case in 8.x. See Reference Guide chapter "Configuring Logging" for how to change this.
 
+* SOLR-15842: Async responses for backups now correctly aggregate and return information.
+In previous versions there was a field returned in async backup status responses, `Response`. This has now been renamed to `msg`, to better fit other collections API responses.
+The `response` field is now a map, containing information about the backup (`startTime`, `indexSizeMB`, `indexFileCount`, etc.).
+
+* SOLR-15884: In Backup request responses, the `response` key now uses a map to return information instead of a list.
+This is only applicable for users returning information in JSON format, which is the default behavior.
+
 == New Features & Enhancements
 
 * Replica placement plugins
@@ -142,9 +149,6 @@ Currently this change should only effect compatibility of custom code overriding
 
 * SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the `numFound` value (exact vs approximation).
 Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
-
-* SOLR-15884: In Backup request responses, the `response` key now uses a map to return information instead of a list.
-This is only applicable for users returning information in JSON format, which is the default behavior.
 
 === solr.xml maxBooleanClauses now enforced recursively
 
