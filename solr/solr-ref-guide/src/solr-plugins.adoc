@@ -46,7 +46,7 @@ Examples of these are <<authentication-and-authorization-plugins.adoc#,authentic
 == Installing Plugins ==
 
 Most plugins are built-in to Solr and there is nothing to install.
-The subject here is how to make other plugins available to Solr, including those in contrib modules.
+The subject here is how to make other plugins available to Solr, including those in modules.
 Plugins are packaged into a Java jar file and may have other dependent jar files to function.
 
 The next sections describe some options:

@@ -66,7 +66,7 @@ If re-indexing is too onerous, use this mechanism in Solr 8.
 The `dist/` directory in the Solr binary release has been removed as of Solr 9.0.
 
 * The `solr-core` and `solr-solrj` jars can be found under `server/solr-webapp/webapp/WEB-INF/lib/`.
-* The Solr module jars can be found in `contrib/<module-name>/lib`, packaged individually for each module.
+* The Solr module jars can be found in `modules/<module-name>/lib`, packaged individually for each module.
 * The `solrj-deps` (SolrJ Dependencies) are no longer separated out from the other Server jars.
 Please refer to the SolrJ Maven artifact to see the exact dependencies you need to include from `server/solr-webapp/webapp/WEB-INF/lib/` and `server/lib/ext/` if you are loading in SolrJ manually.
 If you plan on using SolrJ as a JDBC driver, please refer to the <<sql-query.adoc#generic-clients,JDBC documentation>>.
@@ -205,24 +205,27 @@ Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOS
 This embedded zookeeper should not be used in production.
 If you rely upon the previous behavior, then you can change the clientPortAddress in solr/server/solr/zoo.cfg
 
-=== Contrib Module Changes
+=== Module Changes
+
+* **SOLR-15917: "Contrib modules" have been renamed to "Modules", and have been moved from the `contrib/` to `modules/`.**
+Use of these modules remains the same, except for the changes listed below.
 
 * SOLR-15916: `dist/` is no longer provided in the binary release.
-All module jars are now provided under `contrib/<name>/lib`, including the module jar and all dependency jars.
+All module jars are now provided under `modules/<name>/lib`, including the module jar and all dependency jars.
 Please update your `<lib>` entries in your `solrconfig.xml` to use this new location.
 More information can be found in the <<libs.adoc#lib-directives-in-solrconfig,Libs documentation>>.
 
-* SOLR-14067: `StatelessScriptUpdateProcessorFactory` moved to `contrib/scripting` package instead of shipping as part of Solr, due to security concerns.
+* SOLR-14067: `StatelessScriptUpdateProcessorFactory` moved to `modules/scripting` package instead of shipping as part of Solr, due to security concerns.
 Renamed to ScriptUpdateProcessorFactory for simpler name.
 
-* SOLR-15121: `XSLTResponseWriter` moved to `contrib/scripting` package instead
+* SOLR-15121: `XSLTResponseWriter` moved to `modules/scripting` package instead
 of shipping as part of Solr, due to security concerns.
 
-* SOLR-14926: `contrib/clustering` back and rewritten
+* SOLR-14926: `modules/clustering` back and rewritten
 
-* SOLR-14912: Cleaned up solr-extraction contrib to produce solr-extraction-* jar (instead of solr-cell-*). (Dawid Weiss)
+* SOLR-14912: Cleaned up solr-extraction module to produce solr-extraction-* jar (instead of solr-cell-*). (Dawid Weiss)
 
-* SOLR-15924: Extra lucene libraries used in modules are no longer packaged in `lucene-libs/` under the contrib module directory in the binary release.
+* SOLR-15924: Extra lucene libraries used in modules are no longer packaged in `lucene-libs/` under module directories in the binary release.
   Instead, these libraries will be included with all other module dependencies in `lib/`.
 
 == Deprecations & Removed Features

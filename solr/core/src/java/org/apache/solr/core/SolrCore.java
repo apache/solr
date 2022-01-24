@@ -2776,7 +2776,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       m.put("xlsx",
           (QueryResponseWriter) Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter").getConstructor().newInstance());
     } catch (Exception e) {
-      //don't worry; solrcell contrib not in class path
+      //don't worry; extraction module not in class path
     }
   }
 

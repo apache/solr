@@ -337,7 +337,7 @@ It can help to prevent unexpected problems on indexing as well as on recovering 
 {solr-javadocs}/core/org/apache/solr/update/processor/SignatureUpdateProcessorFactory.html[SignatureUpdateProcessorFactory]:: Uses a defined set of fields to generate a hash "signature" for the document.
 Useful for only indexing one copy of "similar" documents.
 
-{solr-javadocs}/contrib/scripting/org/apache/solr/scripting/update/ScriptUpdateProcessorFactory.html[ScriptUpdateProcessorFactory]:: An processor that enables the use of update processors implemented as scripts.
+{solr-javadocs}/modules/scripting/org/apache/solr/scripting/update/ScriptUpdateProcessorFactory.html[ScriptUpdateProcessorFactory]:: An processor that enables the use of update processors implemented as scripts.
 Learn more at the <<script-update-processor.adoc#,script update processor>> page.
 
 {solr-javadocs}/core/org/apache/solr/update/processor/TemplateUpdateProcessorFactory.html[TemplateUpdateProcessorFactory]:: Allows adding new fields to documents based on a template pattern.
@@ -401,18 +401,18 @@ When using any of these factories, please consult the {solr-javadocs}/core/org/a
 
 === Update Processor Factories That Can Be Loaded as Plugins
 
-These processors are included in Solr releases as "contribs", and require additional jars loaded at runtime.
-See the README files associated with each contrib for details:
+These processors are included in Solr releases as "module", and require additional jars loaded at runtime.
+See the README files associated with each module for details:
 
-The {solr-javadocs}/contrib/langid/index.html[`langid`] contrib provides::
+The {solr-javadocs}/modules/langid/index.html[`langid`] module provides::
 
-{solr-javadocs}/contrib/langid/org/apache/solr/update/processor/LangDetectLanguageIdentifierUpdateProcessorFactory.html[LangDetectLanguageIdentifierUpdateProcessorFactory]::: Identifies the language of a set of input fields using http://code.google.com/p/language-detection.
+{solr-javadocs}/modules/langid/org/apache/solr/update/processor/LangDetectLanguageIdentifierUpdateProcessorFactory.html[LangDetectLanguageIdentifierUpdateProcessorFactory]::: Identifies the language of a set of input fields using http://code.google.com/p/language-detection.
 
-{solr-javadocs}/contrib/langid/org/apache/solr/update/processor/TikaLanguageIdentifierUpdateProcessorFactory.html[TikaLanguageIdentifierUpdateProcessorFactory]::: Identifies the language of a set of input fields using Tika's LanguageIdentifier.
+{solr-javadocs}/modules/langid/org/apache/solr/update/processor/TikaLanguageIdentifierUpdateProcessorFactory.html[TikaLanguageIdentifierUpdateProcessorFactory]::: Identifies the language of a set of input fields using Tika's LanguageIdentifier.
 
-The {solr-javadocs}/contrib/analysis-extras/index.html[`analysis-extras`] contrib provides::
+The {solr-javadocs}/modules/analysis-extras/index.html[`analysis-extras`] module provides::
 
-{solr-javadocs}/contrib/analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.
+{solr-javadocs}/modules/analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.
 Note that in order to use model files larger than 1MB on SolrCloud, you must either <<zookeeper-ensemble#increasing-the-file-size-limit,configure both ZooKeeper server and clients>> or <<libs.adoc#lib-directives-in-solrconfig,store the model files on the filesystem>> on each node hosting a collection replica.
 
 === Update Processor Factories You Should _Not_ Modify or Remove
