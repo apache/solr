@@ -94,6 +94,8 @@ New Features
 
 * SOLR-15197: Support temporal graph queries with DAY and WEEKDAY windows (Joel Bernstein)
 
+* SOLR-15880: Introduce support for k nearest neighbors search (Alessandro Benedetti, Elia Porciani)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
