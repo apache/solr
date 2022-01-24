@@ -310,5 +310,5 @@ Details about using the ReRank Query Parser can be found in the <<query-re-ranki
 
 == Additional Resources
 
-* Blog: https://sease.io/2021/12/apache-solr-neural-search.html
-* Blog: https://sease.io/2021/12/apache-solr-neural-search-knn-benchmark.html
+* Blog: https://sease.io/2022/01/apache-solr-neural-search.html
+* Blog: https://sease.io/2022/01/apache-solr-neural-search-knn-benchmark.html
