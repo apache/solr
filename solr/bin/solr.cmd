@@ -1163,6 +1163,10 @@ IF "%SOLR_MODE%"=="solrcloud" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DcreateZkChroot=%ZK_CREATE_CHROOT%"
   )
 
+  IF "%SOLR_SOLRXML_REQUIRED%"=="true" (
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dsolr.solrxml.required=true"
+  )
+
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
   set CLOUD_MODE_OPTS=

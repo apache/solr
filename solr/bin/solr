@@ -2069,6 +2069,9 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
     CLOUD_MODE_OPTS+=('-Dbootstrap_confdir=./solr/collection1/conf' '-Dcollection.configName=myconf' '-DnumShards=1')
   fi
 
+  if [ -n "$SOLR_SOLRXML_REQUIRED" ]; then
+    CLOUD_MODE_OPTS+=("-Dsolr.solrxml.required=true")
+  fi
 else
   if [ ! -e "$SOLR_HOME/solr.xml" ] && [ -n "$SOLR_SOLRXML_REQUIRED" ]; then
     echo -e "\nSolr home directory $SOLR_HOME must contain a solr.xml file!\n"
