@@ -1924,9 +1924,7 @@ public class SolrCLI implements CLIO {
         if (configSetPath.endsWith("/conf") == false) {
           configSetPath = Paths.get(configSetPath.toString(), "conf");
         }
-        if (Files.exists(configSetPath) == false) {
-          Files.createDirectories(configSetPath);
-        }
+        Files.createDirectories(configSetPath);
         echo("Downloading configset " + confName + " from ZooKeeper at " + zkHost +
             " to directory " + configSetPath.toAbsolutePath());
 
