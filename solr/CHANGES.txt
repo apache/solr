@@ -243,6 +243,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15884: Backup responses now use a map to return information instead of a list (Houston Putman, Christine Poerschke)
 
+* SOLR-9376: Raw value DocTransformers (`[xml]`, `[json]`, `[geo w=GeoJSON]`) now work
+  in a distributed/SolrCloud context (Michael Gibney)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
