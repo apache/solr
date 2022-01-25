@@ -37,6 +37,8 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 
 |DateRangeField |Supports indexing date ranges, to include point in time date instances as well (single-millisecond durations). See the section <<date-formatting-math.adoc#,Date Formatting and Date Math>> for more detail on using this field type. Consider using this field type even if it's just for date instances, particularly when the queries typically fall on UTC year/month/day/hour, etc., boundaries.
 
+|DenseVectorField |Supports indexing dense vectors of float values. See the section <<dense-vector-search.adoc#,Dense Vector Search>> for more information.
+
 |DatePointField |Date field. Represents a point in time with millisecond precision, encoded using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. See the section <<date-formatting-math.adoc#,Working with Dates>> for more details on the supported syntax. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |DoublePointField |Double field (64-bit IEEE floating point). This class encodes double values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.

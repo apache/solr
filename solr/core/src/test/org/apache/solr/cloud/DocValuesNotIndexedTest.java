@@ -494,15 +494,17 @@ class FieldProps {
   // There's a vague chance that counts will roll over, so let's insure we have some room to grow in a positive direction
   void resetBase() {
     if (name.startsWith("int")) {
-      base = Math.abs(random().nextInt()) / 2;
+      base = (random().nextInt(Integer.MAX_VALUE)) / 2;
     } else if (name.startsWith("long")) {
-      base = Math.abs(random().nextLong()) / 2;
+      long lng = random().nextLong();
+      base = lng == Long.MIN_VALUE ? 0 : Math.abs(lng) / 2;
     } else if (name.startsWith("float")) {
       base = Math.abs(random().nextFloat()) / 2;
     } else if (name.startsWith("double")) {
       base = Math.abs(random().nextDouble()) / 2;
     } else if (name.startsWith("date")) {
-      base = Math.abs(random().nextLong()) / 2;
+      long lng = random().nextLong();
+      base = lng == Long.MIN_VALUE ? 0 : Math.abs(lng) / 2;
     } else if (name.startsWith("bool")) {
       base = true; // Must start with a known value since bools only have a two values....
     } else if (name.startsWith("string") || name.startsWith("sortable")) {

@@ -75,7 +75,7 @@ def onerror(x):
   raise x
 
 def update_example_solrconfigs(new_version):
-  print('  updating example solrconfig.xml files with version %s' % new_version)
+  print('  updating example solrconfig.xml files with lucene version %s' % new_version)
   matcher = re.compile('<luceneMatchVersion>(.*?)</luceneMatchVersion>')
 
   paths = ['solr/server/solr/configsets', 'solr/example']
@@ -91,12 +91,12 @@ def update_example_solrconfigs(new_version):
 def update_solrconfig(filename, matcher, new_version):
   print('    %s...' % filename, end='', flush=True)
   def edit(buffer, match, line):
-    if new_version.dot in line:
+    if new_version in line:
       return None
     match = matcher.search(line)
     if match is None:
       return False
-    buffer.append(line.replace(match.group(1), new_version.dot))
+    buffer.append(line.replace(match.group(1), new_version))
     return True
 
   changed = update_file(filename, matcher, edit)
@@ -137,8 +137,7 @@ def parse_properties_file(filename):
 
 def get_solr_init_changes():
   return dedent('''
-    Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
-    Docker and contrib modules have separate CHANGES.md files.
+    Docker and modules have separate CHANGES.md files.
 
     ''')
   
@@ -151,27 +150,22 @@ def main():
   is_bugfix = newconf.version.is_bugfix_release()
 
   print('\nAdding new version %s' % newconf.version)
-  # See LUCENE-8883 for some thoughts on which categories to use
   update_changes('solr/CHANGES.txt', newconf.version, get_solr_init_changes(),
                  ['Bug Fixes'] if is_bugfix else ['New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other Changes'])
 
-  latest_or_backcompat = newconf.is_latest_version or current_version.is_back_compat_with(newconf.version)
-  if latest_or_backcompat:
-    update_solrversion_class(newconf.version)
-  else:
-    print('\nNot adding constant for version %s because it is no longer supported' % newconf.version)
-
   if newconf.is_latest_version:
-    print('\nUpdating latest version')
+    print('\nAdded version is latest version, updating...')
     update_build_version(newconf.version)
-    update_example_solrconfigs(newconf.lucene_version)
+    update_solrversion_class(newconf.version)
+    if newconf.version.is_major_release or newconf.version.is_minor_release():
+      # Update solrconfig.xml with new <luceneMatchVersion>major.minor</luceneMatchVersion> for major/minor releases
+      update_example_solrconfigs("%d.%d" % (newconf.lucene_version.major, newconf.lucene_version.minor))
 
-  if newconf.version.is_major_release():
-    print('\nNo tests to run for major release')
-  elif latest_or_backcompat:
     print('\nTesting changes')
     check_solr_version_class_tests()
     check_lucene_match_version_tests()
+  else:
+    print('\nNot updating build.gradle, SolrVersion or solrconfig.xml since version added (%s) is not latest version' % newconf.version)
 
   print()
 

@@ -550,7 +550,7 @@ The default configuration for `solr.ICUTokenizerFactory` provides UAX#29 word br
 ====
 
 To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>).
-See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
+See the `solr/modules/analysis-extras/README.md` for information on which jars you need to add.
 
 ====
 

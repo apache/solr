@@ -66,6 +66,7 @@ import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -274,7 +275,12 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         SolrQueryTimeoutImpl.reset();
       }
   }
-  
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.READ_PERM;
+  }
+
   public static class InterestingTerm
   {
     public Term term;

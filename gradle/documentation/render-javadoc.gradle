@@ -108,7 +108,7 @@ configure(project(":solr").allprojects) {
   }
 }
 
-configure(project(":solr:contrib:analysis-extras")) {
+configure(project(":solr:modules:analysis-extras")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages
     javadocMissingIgnore = [
@@ -118,7 +118,7 @@ configure(project(":solr:contrib:analysis-extras")) {
   }
 }
 
-configure(project(":solr:contrib:analytics")) {
+configure(project(":solr:modules:analytics")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages
     javadocMissingIgnore = [
@@ -129,7 +129,7 @@ configure(project(":solr:contrib:analytics")) {
   }
 }
 
-configure(project(":solr:contrib:langid")) {
+configure(project(":solr:modules:langid")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages
     javadocMissingIgnore = ["org.apache.solr.update.processor"]
