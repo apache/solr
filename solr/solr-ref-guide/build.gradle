@@ -294,6 +294,18 @@ abstract class PrepareSources extends DefaultTask {
     }
 }
 
+// Even though we don't use node.js, Antora does so we need to configure it for our build
+node {
+  // This is where we will save node, npm, and npx if not already present on the system
+  workDir = file("${project.buildDir}/nodejs")
+
+  // TODO figure out how to configure which directory npm will install into and then read from
+  // This currently calls "npm install @antora/site-generator-default@`antoraVersion`"
+  // https://gitlab.com/antora/antora-gradle-plugin/-/blob/main/src/main/java/io/github/rwinch/antora/AntoraPlugin.java#L61
+  npmWorkDir = file("${project.buildDir}/npm") // this doesn't seem to do it
+}
+
+
 // TODO Pull playbook file from command-line param
 // Documentation for Antora-Gradle plugin at
 // https://gitlab.com/antora/antora-gradle-plugin
