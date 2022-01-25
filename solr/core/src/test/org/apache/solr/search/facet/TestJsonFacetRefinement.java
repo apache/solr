@@ -20,6 +20,7 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.lucene.util.TestUtil;
 
@@ -1494,7 +1495,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     
     client.commit();
 
-    for (String m : Arrays.asList("dv", "dvhash", "stream", "uif", "enum", "stream", "smart")) {
+    for (FacetField.FacetMethod m : FacetField.FacetMethod.values()) {
       client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
                            + " cat : { type:terms, field:cat_s, limit:1, refine:true,"
                            + "         overrequest:0, " // to trigger parent refinement given small data set
@@ -1502,7 +1503,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                            + "         facet: { sum : 'sum(price_i)', "
                            + "                  child_"+m+" : { "
                            + "                     type:terms, field:child_s, limit:1, refine:true,"
-                           + "                     sort:'index asc', method:" + m + " } "
+                           + "                     sort:'index asc', method:" + m.toString().toLowerCase(Locale.ROOT) + " } "
                            + "       }} }"
                            )
                     , "facets=={ count:5"
