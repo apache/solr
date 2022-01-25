@@ -332,8 +332,8 @@ public class SolrReturnFields extends ReturnFields {
             // subtly modify the representation of the associated value (i.e., it's not just a straight rename). This
             // subverts the "update source field" phase of `FieldRenamer.create(...)`. We _know_ however that "simple"
             // field renames don't do any value modification whatsoever, so those are added to the beginning of
-            // the `deferred` Deque so that they will be processed first, and all other `FieldRenamers` are added
-            // to the end (here).
+            // the `deferred` Deque so that they will be processed first, and all other `FieldRenamers` are
+            // added (here) to the front or back of the Deque, depending on the return value of `mayModifyValue()`.
             final DeferredRenameEntry deferredEntry = new DeferredRenameEntry(disp, augmenterParams, req, (TransformerFactory.FieldRenamer) factory);
             if (((TransformerFactory.FieldRenamer) factory).mayModifyValue()) {
               deferred.addLast(deferredEntry);
