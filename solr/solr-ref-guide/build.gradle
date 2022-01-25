@@ -302,16 +302,17 @@ node {
   // TODO figure out how to configure which directory npm will install into and then read from
   // This currently calls "npm install @antora/site-generator-default@`antoraVersion`"
   // https://gitlab.com/antora/antora-gradle-plugin/-/blob/main/src/main/java/io/github/rwinch/antora/AntoraPlugin.java#L61
+  // If we were launching commands directly I think we could do `npm install --prefix $dir` and `npx -w $dir`
   npmWorkDir = file("${project.buildDir}/npm") // this doesn't seem to do it
 }
 
 
-// TODO Pull playbook file from command-line param
 // Documentation for Antora-Gradle plugin at
 // https://gitlab.com/antora/antora-gradle-plugin
 // Can possibly add some attributes to arguments?
 antora {
-  playbookFile = file("playbook.yml")
+    // TODO document these properties in help
+  playbookFile = file(propertyOrEnvOrDefault("refguide.playbook", "REFGUIDE_PLAYBOOK", "playbook.yml"));
   antoraVersion = "3.0.1"
   arguments = ["--fetch"]
 }
