@@ -146,13 +146,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
     bucketsToSkip = freq.offset;
 
     effectiveLimit = freq.limit;
-    if ((fcontext.isShard() && -1 != freq.overrequest) || (null != resort && 0 < freq.overrequest)) {
-      // NOTE: explicit negative (!=-1) values _are_ respected (only in the distrib case). This may simply be an
-      // oversight, but it could in theory be used to practical effect (e.g., in the event of large offsets
-      // or limits and shards with relatively little value overlap, to forcibly dial back the initial
-      // request limit.
-      // TODO: document this "negative overrequest" functionality or remove it (here and in `FacetFieldProcessor`)
-
+    if (freq.overrequest > 0 && (fcontext.isShard() || null != resort)) {
       // NOTE: "index sort" _never_ applies a default overrequest. In both the shard case and the resort case, the
       // default overrequest is `0`. However, if `overrequest` is explicitly specified, we respect it except for
       // non-distrib, no-resort request. Overrequest is relevant for the `resort` case; but it can also be relevant
