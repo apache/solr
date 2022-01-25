@@ -321,11 +321,24 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
           // "index sort, no resort", overrequest can be relevant in some edge cases of the "shard" case,
           // where it can affect the behavior of `isBucketComplete()` (see SOLR-14595).
           effectiveLimit += freq.overrequest;
-        } else if (freq.overrequest == -1 && !"index".equals(this.sort.sortVariable)) {
-          // NOTE: even for distrib requests, `overrequest` is not directly relevant for "index" sort, hence
-          // there is no default/implicit overrequest for "index sort" (even if `resort` is also specified --
-          // overrequest that is exclusively for `resort` must be explicit)
-          effectiveLimit = applyDefaultOverrequest(freq.offset, effectiveLimit);
+        } else {
+          switch (freq.overrequest) {
+            case 0:
+              // no-op (overrequest explicitly disabled)
+              break;
+            case -1:
+              // default
+              if (!"index".equals(this.sort.sortVariable)) {
+                // NOTE: even for distrib requests, `overrequest` is not directly relevant for "index" sort, hence
+                // there is no default/implicit overrequest for "index sort" (even if `resort` is also specified --
+                // overrequest that is exclusively for `resort` must be explicit, even in a distrib context)
+                effectiveLimit = applyDefaultOverrequest(freq.offset, effectiveLimit);
+              }
+              break;
+            default:
+              // other negative values are not supported
+              throw new IllegalArgumentException("Illegal `overrequest` specified: " + freq.overrequest);
+          }
         }
       } else if (null != resort && 0 < freq.overrequest) {
         // in non-shard situations, if we have a 'resort' we check for explicit overrequest > 0
