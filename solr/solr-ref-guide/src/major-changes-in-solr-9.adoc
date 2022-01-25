@@ -152,6 +152,13 @@ Currently this change should only effect compatibility of custom code overriding
 * SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the `numFound` value (exact vs approximation).
 Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
 
+* SOLR-9376: The response format for field values serialized as raw XML (via the `[xml]` raw value DocTransformer
+and `wt=xml`) has changed. Previously, values were dropped in directly as top-level child elements of each `<doc>`,
+obscuring associated field names and yielding inconsistent `<doc>` structure. As of version 9.0, raw values are
+wrapped in a `<raw name="field_name">[...]</raw>` element at the top level of each `<doc>` (or within an enclosing
+`<arr name="field_name"><raw>[...]</raw></arr>` element for multi-valued fields). Existing clients that parse field
+values serialized in this way will need to be updated accordingly.
+
 === solr.xml maxBooleanClauses now enforced recursively
 
 Lucene 9.0 has additional safety checks over previous versions that impact how the `solr.xml` global `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` option is enforced.

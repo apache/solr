@@ -258,7 +258,7 @@ class XLSXWriter extends TabularResponseWriter {
           values = tmpList;
         }
 
-        writeArray(xlField.name, values.iterator());
+        writeArray(xlField.name, values.iterator(), false);
 
       } else {
         // normalize to first value
@@ -278,7 +278,8 @@ class XLSXWriter extends TabularResponseWriter {
   }
 
   @Override
-  public void writeArray(String name, Iterator<?> val) throws IOException {
+  public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
+    assert !raw;
     StringBuffer output = new StringBuffer();
     while (val.hasNext()) {
       Object v = val.next();
