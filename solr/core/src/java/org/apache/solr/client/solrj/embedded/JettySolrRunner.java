@@ -718,9 +718,7 @@ public class JettySolrRunner {
 
       if (outputDirectory != null) {
         Path outDir = outputDirectory.toPath();
-        if (!Files.exists(outDir)) {
-          Files.createDirectories(outDir);
-        }
+        Files.createDirectories(outDir);
       }
 
       SolrMetricManager metricsManager = getCoreContainer().getMetricManager();
