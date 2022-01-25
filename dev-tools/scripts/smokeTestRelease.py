@@ -200,7 +200,7 @@ def checkAllJARs(topDir, gitRevision, version):
     for file in files:
       if file.lower().endswith('.jar'):
         if ((normRoot.endswith('/test-framework/lib') and file.startswith('jersey-'))
-            or (normRoot.endswith('/contrib/extraction/lib') and file.startswith('xml-apis-'))):
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('xml-apis-'))):
           print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
           continue
         fullPath = '%s/%s' % (root, file)
@@ -581,7 +581,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin',  'bin-test',  'build',  'contrib',  'core',  'docker',  'documentation',  'example',  'licenses',  'packaging',  'server',  'solr-ref-guide',  'solrj',  'test-framework',  'webapp']
+    expected_src_solr_folders = ['benchmark',  'bin',  'bin-test',  'build',  'modules',  'core',  'docker',  'documentation',  'example',  'licenses',  'packaging',  'server',  'solr-ref-guide',  'solrj',  'test-framework',  'webapp']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
@@ -589,7 +589,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     if len(in_solr_folder) > 0:
       raise RuntimeError('solr: unexpected files/dirs in artifact %s solr/ folder: %s' % (artifact, in_solr_folder))
   else:
-    is_in_list(in_root_folder, ['bin', 'contrib', 'dist', 'docs', 'example', 'licenses', 'server'])
+    is_in_list(in_root_folder, ['bin', 'modules', 'dist', 'docs', 'example', 'licenses', 'server'])
 
   if len(in_root_folder) > 0:
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))

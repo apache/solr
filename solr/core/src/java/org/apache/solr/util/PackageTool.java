@@ -16,14 +16,13 @@
  */
 package org.apache.solr.util;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.commons.io.FileUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -95,7 +94,8 @@ public class PackageTool extends SolrCLI.ToolBase {
                 break;
               case "add-key":
                 String keyFilename = cli.getArgs()[1];
-                repositoryManager.addKey(FileUtils.readFileToByteArray(new File(keyFilename)), Paths.get(keyFilename).getFileName().toString());
+                Path path = Path.of(keyFilename);
+                repositoryManager.addKey(Files.readAllBytes(path), path.getFileName().toString());
                 break;
               case "list-installed":
                 PackageUtils.printGreen("Installed packages:\n-----");

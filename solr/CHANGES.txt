@@ -6,7 +6,7 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/src/solr-upgrade-no
 
 ==================  10.0.0 ==================
 
-Docker and contrib modules have separate CHANGES.md files.
+Docker and modules have separate CHANGES.md files.
 
 New Features
 ---------------------
@@ -30,7 +30,7 @@ Other Changes
 
 ==================  9.1.0 ==================
 
-Docker and contrib modules have separate CHANGES.md files.
+Docker and modules have separate CHANGES.md files.
 
 New Features
 ---------------------
@@ -54,7 +54,7 @@ Other Changes
 
 ==================  9.0.0 ==================
 
-Docker and contrib modules have separate CHANGES.md files.
+Docker and modules have separate CHANGES.md files.
 
 New Features
 ---------------------
@@ -94,6 +94,8 @@ New Features
 
 * SOLR-15197: Support temporal graph queries with DAY and WEEKDAY windows (Joel Bernstein)
 
+* SOLR-15880: Introduce support for k nearest neighbors search (Alessandro Benedetti, Elia Porciani)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -119,9 +121,9 @@ Improvements
 
 * SOLR-14880: Support coreRootDirectory setting when create new cores from command line, in standalone mode (Alexandre Rafalovitch)
 
-* SOLR-14926, SOLR-14926, SOLR-13506: Modernize and clean up search results clustering contrib. This issue upgrades
-  the clustering contrib to the new Carrot2 4.x line, dropping several CVE-prone dependencies along the way.
-  The parameters and configuration of the contrib extensions have changed. The documentation in Solr ref guide
+* SOLR-14926, SOLR-14926, SOLR-13506: Modernize and clean up search results clustering module. This issue upgrades
+  the clustering module to the new Carrot2 4.x line, dropping several CVE-prone dependencies along the way.
+  The parameters and configuration of the module extensions have changed. The documentation in Solr ref guide
   has been rewritten from scratch to be up to date. Clustering code has been rewritten from scratch to work
   properly regardless of the mode (standalone, distributed). The API has been stripped of ancient, unused, interfaces
   and simplified. (Dawid Weiss)
@@ -258,6 +260,11 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-14916: Add split parameter to timeseries Streaming Expression (Joel Bernstein)
 
+* SOLR-14686: Logs: Removed the "[corename]" prefix of some SolrCore logs that has become redundant
+  with MDC.  (David Smiley)
+
+* SOLR-15884: Backup responses now use a map to return information instead of a list (Houston Putman, Christine Poerschke)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
@@ -372,7 +379,7 @@ Other Changes
 * SOLR-14944: Remove the "spins" metrics - support for detection of spinning disks has been
   removed in LUCENE-9576. (ab)
 
-* SOLR-14912: Clean up solr-extraction contrib to produce solr-extraction-* jar
+* SOLR-14912: Clean up solr-extraction module to produce solr-extraction-* jar
   (instead of solr-cell-*). (Dawid Weiss)
 
 * SOLR-14035: Remove deprecated preferLocalShards=true support in favour of the shards.preference=replica.location:local alternative.
@@ -397,7 +404,7 @@ Other Changes
 
 * SOLR-15113: Do not attempt to start Solr server when embedded ZK fails (Mike Drob)
 
-* SOLR-14067: StatelessScriptUpdateProcessorFactory moved to it's own /contrib/scripting/ package instead
+* SOLR-14067: StatelessScriptUpdateProcessorFactory moved to it's own /module/scripting/ package instead
  of shipping as part of Solr due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name. (Eric Pugh)
 
 * SOLR-15118: Switch /v2/collections APIs over to the now-preferred annotated-POJO implementation approach (Jason Gerlowski)
@@ -406,7 +413,7 @@ Other Changes
 
 * SOLR-15002: Upgrade httpclient to 4.5.13 and httpcore to 4.4.13 (Andras Salamon via janhoy)
 
-* SOLR-15121: Move XSLT (tr param) response writer and update request handler to scripting contrib.  (Eric Pugh, David Smiley)
+* SOLR-15121: Move XSLT (tr param) response writer and update request handler to scripting module.  (Eric Pugh, David Smiley)
 
 * SOLR-15169: SolrPaths.assertPathAllowed normalization problem (Andras Salamon via janhoy)
 
@@ -505,15 +512,22 @@ Other Changes
 * SOLR-14858: Add the server WEB-INF/lib directory to the classpath for the solr-exporter script. Will allow the script
   to work when the dist/solrj-lib jars are missing in the Docker image. (Houston Putman)
 
+* SOLR-15124: Removed three core level admin API endpoints because they are already registered at the node level where they
+  really belong: /admin/threads, /admin/properties, /admin/logging (Nazerke Seidan, David Smiley)
+
 * SOLR-14142: Jetty's RequestLog is enabled by default. If you don't want these logs, you can disable
   via SOLR_REQUESTLOG_ENABLED=false.  (rmuir, janhoy)
 
-* SOLR-15924: Remove lucene-libs from contrib module packaging. The lucene libraries will be included in lib/ with all other dependencies. (Houston Putman)
+* SOLR-15924: Remove lucene-libs from module packaging. The lucene libraries will be included in lib/ with all other dependencies. (Houston Putman)
 
 * SOLR-15934: CloseHook is now an interface with default method implementations instead of an abstract class. (Mike Drob)
 
 * SOLR-15916: Remove dist/ from the binary release. The solr-core and solrj jars will be included in the server WEB-INF/lib directory,
 and each individual module's jar will be included in its directory's lib/ folder. (Houston Putman)
+
+* SOLR-15917: "Contrib Modules" have been renamed to "Modules" and have been moved from "contrib/" to "modules/". (Houston Putman)
+
+* SOLR-15632: Upgrade to Caffeine Cache 3.0.5 (Mike Drob)
 
 Bug Fixes
 ---------------------
@@ -549,6 +563,11 @@ Bug Fixes
               via Jason Gerlowski)
 
 * SOLR-15919: Replace File with Path for many ZK operations (Mike Drob)
+
+* SOLR-15944: The Tagger's JSON response format now always uses an object/map to represent each tag instead of an
+  array, which didn't make sense. (David Smiley)
+
+* SOLR-15842: Async response for backups now correctly aggregates and returns information (Houston Putman, Artem Abeleshev, Christine Poerschke)
 
 ==================  8.11.2 ==================
 

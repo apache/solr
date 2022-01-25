@@ -125,6 +125,7 @@ public class BackupProperties {
     public void store(Writer propsWriter) throws IOException {
         properties.put("indexSizeMB", String.valueOf(indexSizeMB));
         properties.put("indexFileCount", String.valueOf(indexFileCount));
+        properties.put(BackupManager.END_TIME_PROP, Instant.now().toString());
         properties.store(propsWriter, "Backup properties file");
     }
 
@@ -143,6 +144,10 @@ public class BackupProperties {
 
     public String getStartTime() {
         return properties.getProperty(BackupManager.START_TIME_PROP);
+    }
+
+    public String getEndTime() {
+        return properties.getProperty(BackupManager.END_TIME_PROP);
     }
 
     public String getIndexVersion() {
