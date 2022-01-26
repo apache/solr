@@ -273,6 +273,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-9376: Raw value DocTransformers (`[xml]`, `[json]`, `[geo w=GeoJSON]`) now work
   in a distributed/SolrCloud context (Michael Gibney)
 
+* SOLR-15755: Parse collection, shard, core, replica info from newSearcher events in postlogs tool (Joel Bernstein)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
