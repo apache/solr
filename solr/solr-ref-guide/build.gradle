@@ -298,7 +298,7 @@ abstract class PrepareSources extends DefaultTask {
 node {
   // Antora plugin depends on an old version of node, force a newer one
   download = true
-  version = "17.3.1"
+  version = "16.13.2" // LTS
 
   // This is where we will save node, npm, and npx if not already present on the system
   workDir = file("${project.buildDir}/nodejs")
