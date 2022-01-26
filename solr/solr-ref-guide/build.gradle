@@ -313,8 +313,17 @@ antora {
     // TODO document these properties in help
   playbookFile = file(propertyOrEnvOrDefault("refguide.playbook", "REFGUIDE_PLAYBOOK", "playbook.yml"));
   antoraVersion = "3.0.1"
-    // TODO this isn't getting the result of the prepare sources tasks, so missing dynamic dependency versions
-  arguments = htmlSiteDetails.props.collect { k,v -> ['--attribute', "$k=$v"]}.flatten() + '--fetch'
-
-  // dependsOn tasks.prepareHtmlSiteDetailsSources
+    // TODO this is duplicated but I think the other instance of this is going away because it's specific to jekyll?
+    // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
+    arguments = [
+            ["ivyCommonsCodec", "commons-codec", "commons-codec"],
+            ["ivyDropwizardMetrics", "io.dropwizard.metrics", "metrics-core"],
+            ["ivyHadoop", "org.apache.hadoop", "hadoop-auth"],
+            ["ivyLog4j", "org.apache.logging.log4j", "log4j-core"],
+            ["ivyOpennlpTools", "org.apache.opennlp", "opennlp-tools"],
+            ["ivyTika", "org.apache.tika", "tika-core"],
+            ["ivyZookeeper", "org.apache.zookeeper", "zookeeper"],
+    ].collectEntries {
+        propKey, depGroup, depId -> [propKey, "${ -> project.getVersion(depGroup, depId) }"]
+    }.collect { k,v -> ['--attribute', "$k=$v"]}.flatten() + '--fetch'
 }
