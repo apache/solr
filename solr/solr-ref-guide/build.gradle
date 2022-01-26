@@ -311,13 +311,14 @@ antora {
     // TODO this is duplicated but I think the other instance of this is going away because it's specific to jekyll?
     // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
     arguments = [
-            ["ivyCommonsCodec", "commons-codec", "commons-codec"],
-            ["ivyDropwizardMetrics", "io.dropwizard.metrics", "metrics-core"],
-            ["ivyHadoop", "org.apache.hadoop", "hadoop-auth"],
-            ["ivyLog4j", "org.apache.logging.log4j", "log4j-core"],
-            ["ivyOpennlpTools", "org.apache.opennlp", "opennlp-tools"],
-            ["ivyTika", "org.apache.tika", "tika-core"],
-            ["ivyZookeeper", "org.apache.zookeeper", "zookeeper"],
+        // [ asciidoctor-attribute-key, "maven.groupId", "maven.artifactId" ]
+            ["ivy-commons-codec-version", "commons-codec", "commons-codec"],
+            ["ivy-dropwizard-version", "io.dropwizard.metrics", "metrics-core"],
+            ["ivy-hadoop-version", "org.apache.hadoop", "hadoop-auth"],
+            ["ivy-log4j-version", "org.apache.logging.log4j", "log4j-core"],
+            ["ivy-opennlp-version", "org.apache.opennlp", "opennlp-tools"],
+            ["ivy-tika-version", "org.apache.tika", "tika-core"],
+            ["ivy-zookeeper-version", "org.apache.zookeeper", "zookeeper"],
     ].collectEntries {
         propKey, depGroup, depId -> [propKey, "${ -> project.getVersion(depGroup, depId) }"]
     }.collect { k,v -> ['--attribute', "$k=$v"]}.flatten() + '--fetch'
