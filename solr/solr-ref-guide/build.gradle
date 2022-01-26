@@ -309,10 +309,12 @@ node {
 
 // Documentation for Antora-Gradle plugin at
 // https://gitlab.com/antora/antora-gradle-plugin
-// Can possibly add some attributes to arguments?
 antora {
     // TODO document these properties in help
   playbookFile = file(propertyOrEnvOrDefault("refguide.playbook", "REFGUIDE_PLAYBOOK", "playbook.yml"));
   antoraVersion = "3.0.1"
-  arguments = ["--fetch"]
+    // TODO this isn't getting the result of the prepare sources tasks, so missing dynamic dependency versions
+  arguments = htmlSiteDetails.props.collect { k,v -> ['--attribute', "$k=$v"]}.flatten() + '--fetch'
+
+  // dependsOn tasks.prepareHtmlSiteDetailsSources
 }
