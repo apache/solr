@@ -116,7 +116,10 @@ public abstract class UpdateHandler implements SolrInfoBean {
     if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled() && !skipUpdateLog) {
       DirectoryFactory dirFactory = core.getDirectoryFactory();
 
-      ulog = ulogPluginInfo.className == null ? new UpdateLog():
+      // if the update log class is not defined in the plugin info / solrconfig.xml
+      // (like <updateLog class="${solr.ulog:solr.UpdateLog}"> )
+      // we fall back use the one which is the default for the given directory factory
+      ulog = ulogPluginInfo.className == null ? dirFactory.newDefaultUpdateLog() :
           core.getResourceLoader().newInstance(ulogPluginInfo, UpdateLog.class, true);
 
       if (!core.isReloaded() && !dirFactory.isPersistent()) {

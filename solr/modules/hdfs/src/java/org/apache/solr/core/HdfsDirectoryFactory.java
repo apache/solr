@@ -64,6 +64,8 @@ import org.apache.solr.store.blockcache.Metrics;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.apache.solr.store.hdfs.HdfsLocalityReporter;
 import org.apache.solr.store.hdfs.HdfsLockFactory;
+import org.apache.solr.update.HdfsUpdateLog;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.HdfsUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -98,6 +100,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   
   public static final String CACHE_MERGES = "solr.hdfs.blockcache.cachemerges";
   public static final String CACHE_READONCE = "solr.hdfs.blockcache.cachereadonce";
+
+  public static final String HDFS_UPDATE_LOG_CLASS_NAME = "solr.HdfsUpdateLog";
   
   private SolrParams params;
   
@@ -629,4 +633,10 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
 
     super.move(fromDir, toDir, fileName, ioContext);
   }
+
+  @Override
+  public UpdateLog newDefaultUpdateLog() {
+    return new HdfsUpdateLog();
+  }
+
 }
