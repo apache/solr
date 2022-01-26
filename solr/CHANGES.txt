@@ -22,7 +22,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
+  halving the latency of synchronous commits (Michael Gibney)
 
 Other Changes
 ---------------------
@@ -46,7 +47,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
 Other Changes
 ---------------------
@@ -262,8 +263,11 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-14686: Logs: Removed the "[corename]" prefix of some SolrCore logs that has become redundant
   with MDC.  (David Smiley)
-  
+
 * SOLR-15884: Backup responses now use a map to return information instead of a list (Houston Putman, Christine Poerschke)
+
+* SOLR-9376: Raw value DocTransformers (`[xml]`, `[json]`, `[geo w=GeoJSON]`) now work
+  in a distributed/SolrCloud context (Michael Gibney)
 
 Build
 ---------------------
@@ -512,12 +516,17 @@ Other Changes
 * SOLR-14858: Add the server WEB-INF/lib directory to the classpath for the solr-exporter script. Will allow the script
   to work when the dist/solrj-lib jars are missing in the Docker image. (Houston Putman)
 
+* SOLR-15124: Removed three core level admin API endpoints because they are already registered at the node level where they
+  really belong: /admin/threads, /admin/properties, /admin/logging (Nazerke Seidan, David Smiley)
+
 * SOLR-14142: Jetty's RequestLog is enabled by default. If you don't want these logs, you can disable
   via SOLR_REQUESTLOG_ENABLED=false.  (rmuir, janhoy)
 
 * SOLR-15924: Remove lucene-libs from module packaging. The lucene libraries will be included in lib/ with all other dependencies. (Houston Putman)
 
 * SOLR-15934: CloseHook is now an interface with default method implementations instead of an abstract class. (Mike Drob)
+
+* SOLR-15953: Remove unused LTRThreadModule.preClose CloseHook logic. (Christine Poerschke)
 
 * SOLR-15916: Remove dist/ from the binary release. The solr-core and solrj jars will be included in the server WEB-INF/lib directory,
 and each individual module's jar will be included in its directory's lib/ folder. (Houston Putman)

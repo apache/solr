@@ -204,6 +204,16 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   }
 
   @Override
+  public void writeStrRaw(String name, String val) throws IOException {
+    if (writeTypeAndValueKey) {
+      throw new IllegalStateException("NamedList should never be a field value");
+      // and thus `writeTypeAndValueKey` should always have been cleared (set to false) by the
+      // time `writeStrRaw(...)` is called (at the level of individual SolrDocument fields).
+    }
+    super.writeStrRaw(name, val);
+  }
+
+  @Override
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     ifNeededWriteTypeAndValueKey("str");
     super.writeStr(name, val, needsEscaping);
@@ -230,9 +240,9 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   }
 
   @Override
-  public void writeArray(String name, Iterator<?> val) throws IOException {
+  public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
     ifNeededWriteTypeAndValueKey("array");
-    super.writeArray(name, val);
+    super.writeArray(name, val, raw);
   }
 
   @Override

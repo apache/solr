@@ -914,7 +914,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     NamedList<Object> result = clients.get(0).request(
         new StreamingUpdateRequest("/update",
-            getFile("books_numeric_ids.csv"), "application/csv")
+            getFile("books_numeric_ids.csv").toPath(), "application/csv")
             .setCommitWithin(900000)
             .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
     
