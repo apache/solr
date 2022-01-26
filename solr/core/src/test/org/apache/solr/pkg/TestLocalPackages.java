@@ -12,33 +12,75 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.pkg.PackageLoader.LPD;
+import static org.apache.solr.pkg.PackageLoader.SOLR_PACKAGES_LOCAL_ENABLED;
+
 public class TestLocalPackages extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public void testLocalPackagesAsDir() throws Exception {
+    String PKG_NAME = "mypkg";
+    String jarName = "mypkg1.jar";
+    String COLLECTION_NAME = "testLocalPkgsColl";
+    String localPackagesDir = "testpkgdir";
+    System.setProperty(SOLR_PACKAGES_LOCAL_ENABLED, PKG_NAME);
+    System.setProperty(LPD, localPackagesDir);
+    MiniSolrCloudCluster cluster =
+            configureCluster(4)
+                    .withJettyConfig(builder -> builder.enableV2(true))
+                    .withJettyConfig(it -> it.withPreStartupHook(jsr -> {
+                      try {
+                        File pkgDir = new File(jsr.getSolrHome() + File.separator+ localPackagesDir);
+                        if(!pkgDir.exists()) {
+                          pkgDir.mkdir();
+                        }
+                        File subDir = new File(pkgDir, PKG_NAME);
+                        if(!subDir.exists()) {
+                          subDir.mkdir();
+                        }
+                        try (FileInputStream fis = new FileInputStream(getFile("runtimecode/runtimelibs.jar.bin"))) {
+                          byte[] buf = new byte[fis.available()];
 
-  public static String localPackagesDir = getFile("runtimecode").getAbsolutePath();
-  public static String PKG_NAME = "mypkg";
-  public static String jarName = "mypkg1.jar";
-  public static String COLLECTION_NAME = "testLocalPkgsColl";
+                          fis.read(buf);
+                          try( FileOutputStream fos = new FileOutputStream( new File(subDir, jarName) )) {
+                            fos.write(buf, 0,buf.length);
+                          }
+                        }
 
-  @BeforeClass
-  public static void setup() {
-    System.setProperty("solr.packages.local.whitelist", PKG_NAME);
-    System.setProperty("solr.packages.local.dir", localPackagesDir);
-  }
+                      } catch (Exception e) {
+                        throw new RuntimeException("Unable to create files", e);
+                      }
+                    }))
+                    .addConfig("conf", configset("conf2"))
+                    .configure();
 
-  @AfterClass
-  public static void shutdown() {
-    System.clearProperty("solr.packages.local.whitelist");
-    System.clearProperty("solr.packages.local.dir");
+    System.clearProperty(SOLR_PACKAGES_LOCAL_ENABLED);
+    System.clearProperty(LPD);
+    try {
+      for (JettySolrRunner jsr : cluster.getJettySolrRunners()) {
+        List<String> packageFiles = Arrays.asList(new File(jsr.getSolrHome()+File.separator+localPackagesDir + File.separator+PKG_NAME).list());
+        assertTrue(packageFiles.contains(jarName));
+      }
+      CollectionAdminRequest
+              .createCollection(COLLECTION_NAME, "conf", 2, 2)
+              .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
+
+      log.info("Collection created successfully");
+
+      TestPackages.verifyComponent(cluster.getSolrClient(), COLLECTION_NAME, "query", "filterCache", PKG_NAME ,"0" );
+    } finally {
+      cluster.shutdown();
+    }
   }
 
   public void testLocalPackages() throws Exception {
-
+    String PKG_NAME = "mypkg";
+    String jarName = "mypkg1.jar";
+    String COLLECTION_NAME = "testLocalPkgsColl";
+    String localPackagesDir = "local_packages";
     PackageAPI.Packages p = new PackageAPI.Packages();
     PackageAPI.PkgVersion pkgVersion =  new PackageAPI.PkgVersion();
     pkgVersion.files = Collections.singletonList(jarName);
@@ -48,13 +90,14 @@ public class TestLocalPackages extends SolrCloudTestCase {
 
     log.info("local_packages.json: " + Utils.toJSONString(p));
     log.info("Local packages dir: " + localPackagesDir);
-
+    System.setProperty(SOLR_PACKAGES_LOCAL_ENABLED, PKG_NAME);
+    System.setProperty(LPD, localPackagesDir);
     MiniSolrCloudCluster cluster =
             configureCluster(4)
                     .withJettyConfig(builder -> builder.enableV2(true))
                     .withJettyConfig(it -> it.withPreStartupHook(jsr -> {
                       try {
-                        File pkgDir = new File(localPackagesDir);
+                        File pkgDir = new File(jsr.getSolrHome()+File.separator+ localPackagesDir);
                         if(!pkgDir.exists()) {
                           pkgDir.mkdir();
                         }
@@ -77,10 +120,11 @@ public class TestLocalPackages extends SolrCloudTestCase {
                     .addConfig("conf", configset("conf2"))
                     .configure();
 
-    System.clearProperty(PackageLoader.LOCAL_PACKAGES_WHITELIST);
+    System.clearProperty(SOLR_PACKAGES_LOCAL_ENABLED);
+    System.clearProperty(LPD);
     try {
       for (JettySolrRunner jsr : cluster.getJettySolrRunners()) {
-        List<String> packageFiles = Arrays.asList(new File(localPackagesDir).list());
+        List<String> packageFiles = Arrays.asList(new File(jsr.getSolrHome()+File.separator+ localPackagesDir).list());
         assertTrue(packageFiles.contains(PackageLoader.LOCAL_PACKAGES_JSON));
         assertTrue(packageFiles.contains(jarName));
       }

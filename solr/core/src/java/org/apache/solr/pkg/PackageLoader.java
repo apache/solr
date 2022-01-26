@@ -17,11 +17,7 @@
 
 package org.apache.solr.pkg;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -56,9 +52,12 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 public class PackageLoader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String LATEST = "$LATEST";
-  public static final String LOCAL_PACKAGES_DIR = System.getProperty("solr.packages.local.dir");
-  public static final String LOCAL_PACKAGES_WHITELIST = System.getProperty("solr.packages.local.whitelist", "");
+  public static final String LPD = "solr.packages.local.dir";
+  public static final String SOLR_PACKAGES_LOCAL_ENABLED = "solr.packages.local.enabled";
   public static final String LOCAL_PACKAGES_JSON = "local_packages.json";
+
+  public final String localPkgsDir = System.getProperty(LPD);
+  public final String localPkgsWhiteList = System.getProperty(SOLR_PACKAGES_LOCAL_ENABLED, "");
   public final boolean enablePackages = Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
 
   private final CoreContainer coreContainer;
@@ -79,32 +78,38 @@ public class PackageLoader implements Closeable {
   public PackageLoader(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
 
-    List<String> enabledPackages = StrUtils.splitSmart(LOCAL_PACKAGES_WHITELIST, ',');
+    List<String> enabledPackages = StrUtils.splitSmart(localPkgsWhiteList, ',');
     packageAPI = new PackageAPI(coreContainer, this);
 
-    if (LOCAL_PACKAGES_DIR != null && !enabledPackages.isEmpty()) {
+    if (localPkgsDir != null && !enabledPackages.isEmpty()) {
       loadLocalPackages(enabledPackages);
     }
     if (enablePackages) refreshPackageConf();
   }
 
   private void loadLocalPackages(List<String> enabledPackages) {
-    final Path packagesPath = new File(LOCAL_PACKAGES_DIR).toPath();
+    final Path packagesPath = new File(localPkgsDir.charAt(0)== File.separatorChar?
+            localPkgsDir :
+            coreContainer.getSolrHome()+ File.separator+ localPkgsDir).toPath();
     log.info("Packages to be loaded from directory: {}", packagesPath);
 
     if (!packagesPath.toFile().exists()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No such directory: " + packagesPath);
     }
-    if (!packagesPath.resolve(LOCAL_PACKAGES_JSON).toFile().exists()) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No file local_packages.json exists in: " + packagesPath);
-    }
+    File file = new File(packagesPath.toFile(), LOCAL_PACKAGES_JSON);
+    if(file.exists()) {
+      try {
 
-    try {
-      try (InputStream in = new FileInputStream(new File(packagesPath.toFile() , LOCAL_PACKAGES_JSON))) {
-        localPackages = PackageAPI.mapper.readValue(in, PackageAPI.Packages.class);
+        try (InputStream in = new FileInputStream(file)) {
+          localPackages = PackageAPI.mapper.readValue(in, PackageAPI.Packages.class);
+        }
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading local_packages.json", e);
       }
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading local_packages.json", e);
+    } else {
+      //the no local_packages.json
+      //we will look for each subdirectory and consider them as a package
+      localPackages =  readDirAsPackages(packagesPath);
     }
 
     for (Map.Entry<String, List<PackageAPI.PkgVersion>> e : localPackages.packages.entrySet()) {
@@ -113,6 +118,36 @@ public class PackageLoader implements Closeable {
       p.updateVersions(e.getValue(), packagesPath);
       packageClassLoaders.put(e.getKey(), p);
     }
+  }
+
+  /**If a directory with no local_packages.json is provided,
+   * each sub directory that contains one or more jar files
+   * will be treated as a package and each jar file in that
+   * directory is added to the package classpath
+   */
+  private PackageAPI.Packages readDirAsPackages(Path packagesPath) {
+    PackageAPI.Packages localDirAsPackages = new PackageAPI.Packages();
+    packagesPath.toFile().list((dir, pkgName) -> {
+      File subDir = new File(dir, pkgName);
+      if(subDir.isDirectory()) {
+        PackageAPI.PkgVersion version = new PackageAPI.PkgVersion();
+        version.pkg = pkgName;
+        version.version = "0";
+        version.files = new ArrayList<>();
+        subDir.list((dir1, jarName) -> {
+          if(jarName.endsWith(".jar")){
+            version.files.add(pkgName+File.separator+jarName);
+          }
+          return false;
+        });
+        if(!version.files.isEmpty()) {
+          //there are jar files in the dir. So, this is a package
+          localDirAsPackages.packages.put(pkgName, Collections.singletonList(version));
+        }
+      }
+      return false;
+    });
+    return localDirAsPackages;
   }
 
   public PackageAPI getPackageAPI() {
