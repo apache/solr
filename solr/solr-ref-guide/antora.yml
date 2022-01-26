@@ -30,10 +30,3 @@ asciidoc:
     # Some constructed  links may be 404 TODO to check
     solr-docs-version: '9.0'
     solr-full-version: '9.0.0'
-    ivy-tika-version: '1.27'
-    ivy-opennlp-version: '1.9.1'
-    ivy-commons-codec-version: '1.13'
-    ivy-zookeeper-version: '3.7.0'
-    ivy-log4j-version: '2.17.1'
-    ivy-hadoop-version: '3.2.0'
-    ivy-dropwizard-version: '4.1.5'
