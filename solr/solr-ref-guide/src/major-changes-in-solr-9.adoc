@@ -239,7 +239,9 @@ of shipping as part of Solr, due to security concerns.
 * SOLR-14912: Cleaned up solr-extraction module to produce solr-extraction-* jar (instead of solr-cell-*). (Dawid Weiss)
 
 * SOLR-15924: Extra lucene libraries used in modules are no longer packaged in `lucene-libs/` under module directories in the binary release.
-  Instead, these libraries will be included with all other module dependencies in `lib/`.
+Instead, these libraries will be included with all other module dependencies in `lib/`.
+
+* SOLR-15954: The prometheus-exporter is no longer packaged as a Solr module. It can be found under `solr/prometheus-exporter/`.
 
 == Deprecations & Removed Features
 

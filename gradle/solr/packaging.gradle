@@ -36,11 +36,15 @@
 // I don't know how to untie these two cleanly.
 //
 
-configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules") }) {
+configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules") || project.path.startsWith(":solr:prometheus-exporter") }) {
   plugins.withType(JavaPlugin) {
     ext {
       packagingDir = file("${buildDir}/packaging")
-      deps = file("${packagingDir}/${project.name}")
+      if (project.path.startsWith(":solr:prometheus-exporter")) {
+        deps = packagingDir
+      } else {
+        deps = file("${packagingDir}/${project.name}")
+      }
     }
 
     configurations {
@@ -60,7 +64,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
     // An aggregate that configures lib and test-lib in a temporary location.
     task assemblePackaging(type: Sync) {
       from "README.md"
-      
+
       from (tasks.jar, {
         into "lib"
       })
