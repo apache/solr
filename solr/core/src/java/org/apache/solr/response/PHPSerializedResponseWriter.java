@@ -168,7 +168,8 @@ class PHPSerializedWriter extends JSONWriter {
 
   
   @Override
-  public void writeArray(String name, Object[] val) throws IOException {
+  public void writeArray(String name, Object[] val, boolean raw) throws IOException {
+    assert !raw;
     writeMapOpener(val.length);
     for(int i=0; i < val.length; i++) {
       writeKey(i, false);
@@ -178,12 +179,13 @@ class PHPSerializedWriter extends JSONWriter {
   }
 
   @Override
-  public void writeArray(String name, Iterator<?> val) throws IOException {
+  public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
+    assert !raw;
     ArrayList<Object> vals = new ArrayList<>();
     while( val.hasNext() ) {
       vals.add(val.next());
     }
-    writeArray(name, vals.toArray());
+    writeArray(name, vals.toArray(), false);
   }
   
   @Override

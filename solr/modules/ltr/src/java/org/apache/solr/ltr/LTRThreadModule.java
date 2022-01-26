@@ -20,10 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.CloseHook;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
@@ -56,7 +53,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * <code>totalPoolThreads</code> imposes a contention between the queries if
  * <code>(totalPoolThreads &lt; numThreadsPerRequest * total parallel queries)</code>.
  */
-public final class LTRThreadModule implements CloseHook, NamedListInitializedPlugin  {
+public final class LTRThreadModule implements NamedListInitializedPlugin  {
 
   public static LTRThreadModule getInstance(NamedList<?> args) {
 
@@ -161,13 +158,6 @@ public final class LTRThreadModule implements CloseHook, NamedListInitializedPlu
 
   public void execute(Runnable command) {
     createWeightScoreExecutor.execute(command);
-  }
-
-  @Override
-  public void preClose(SolrCore core) {
-    // TODO: Investigate...
-    //   All uses of setExecutor use the core container's update executor, which could impact other cores?
-    ExecutorUtil.shutdownAndAwaitTermination(createWeightScoreExecutor);
   }
 
   public void setExecutor(ExecutorService sharedExecutor) {

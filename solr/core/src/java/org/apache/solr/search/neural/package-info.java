@@ -14,12 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.util;
+ 
+/** 
+ * APIs and classes for implementing Neural (Dense Retrieval) QueryParsers.
+ */
+package org.apache.solr.search.neural;
 
-import java.io.IOException;
 
-import org.apache.solr.common.util.JavaBinCodec.ObjectResolver;
-
-public abstract class WriteableValue implements ObjectResolver {
-  public abstract void write(String name, TextWriter writer) throws IOException;
-}

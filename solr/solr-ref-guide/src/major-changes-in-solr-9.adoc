@@ -152,6 +152,13 @@ Currently this change should only effect compatibility of custom code overriding
 * SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the `numFound` value (exact vs approximation).
 Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
 
+* SOLR-9376: The response format for field values serialized as raw XML (via the `[xml]` raw value DocTransformer
+and `wt=xml`) has changed. Previously, values were dropped in directly as top-level child elements of each `<doc>`,
+obscuring associated field names and yielding inconsistent `<doc>` structure. As of version 9.0, raw values are
+wrapped in a `<raw name="field_name">[...]</raw>` element at the top level of each `<doc>` (or within an enclosing
+`<arr name="field_name"><raw>[...]</raw></arr>` element for multi-valued fields). Existing clients that parse field
+values serialized in this way will need to be updated accordingly.
+
 === solr.xml maxBooleanClauses now enforced recursively
 
 Lucene 9.0 has additional safety checks over previous versions that impact how the `solr.xml` global `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` option is enforced.
@@ -232,7 +239,9 @@ of shipping as part of Solr, due to security concerns.
 * SOLR-14912: Cleaned up solr-extraction module to produce solr-extraction-* jar (instead of solr-cell-*). (Dawid Weiss)
 
 * SOLR-15924: Extra lucene libraries used in modules are no longer packaged in `lucene-libs/` under module directories in the binary release.
-  Instead, these libraries will be included with all other module dependencies in `lib/`.
+Instead, these libraries will be included with all other module dependencies in `lib/`.
+
+* SOLR-15954: The prometheus-exporter is no longer packaged as a Solr module. It can be found under `solr/prometheus-exporter/`.
 
 == Deprecations & Removed Features
 
@@ -283,3 +292,6 @@ Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Kh
 Example has been provided in `sample_techproducts_configs` to override content-type.
 
 * `min_rf` deprecated in 7.x
+
+* SOLR-15124: Removed three core level admin API endpoints because they are already registered at the node level
+where they really belong: /admin/threads, /admin/properties, /admin/logging

@@ -139,7 +139,7 @@ public abstract class TabularResponseWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeArray(String name, Iterator<?> val) throws IOException {
+  public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
   }
 
   @Override

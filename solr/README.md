@@ -152,6 +152,9 @@ modules/
   Contains modules to extend the functionality of Solr.
   Libraries for these modules can be found under modules/*/lib
 
+prometheus-exporter/
+  Contains a separate application to monitor Solr instances and export Prometheus metrics
+
 docker/
   Contains a docker file to build a Docker image using the source binary distribution.
   docker/scripts contains scripts that the docker image uses to manage Solr.

@@ -1,3 +1,4 @@
+<?xml version="1.0" ?>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -14,13 +15,17 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<html>
-<body>
-Apache Solr Search Server: Solr Prometheus Exporter module
 
-<p>
-This package provides tools for monitoring Solr with Prometheus.
-</p>
+<!-- Test schema file for DenseVectorField -->
 
-</body>
-</html>
+<schema name="schema-densevector-similarity-null" version="1.0">
+  <fieldType name="string" class="solr.StrField" multiValued="true"/>  
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4"/>
+
+
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="vector" type="knn_vector" indexed="true" stored="true"/>
+
+  <uniqueKey>id</uniqueKey>
+</schema>
+

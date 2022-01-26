@@ -78,8 +78,8 @@ class PHPWriter extends JSONWriter {
   }
 
   @Override
-  public void writeArray(String name, List<?> l) throws IOException {
-    writeArray(name,l.iterator());
+  public void writeArray(String name, List<?> l, boolean raw) throws IOException {
+    writeArray(name,l.iterator(), raw);
   }
 
   @Override
