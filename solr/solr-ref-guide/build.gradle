@@ -308,6 +308,9 @@ node {
   // https://gitlab.com/antora/antora-gradle-plugin/-/blob/main/src/main/java/io/github/rwinch/antora/AntoraPlugin.java#L61
   // If we were launching commands directly I think we could do `npm install --prefix $dir` and `npx -w $dir`
   npmWorkDir = file("${project.buildDir}/npm") // this doesn't seem to do it
+
+  // This would move package.json and node_modules to a different location, but antora also expects playbook file to be in the same location
+  // nodeProjectDir = file("${project.buildDir}/node-project")
 }
 
 
@@ -315,7 +318,7 @@ node {
 // https://gitlab.com/antora/antora-gradle-plugin
 antora {
     // TODO document these properties in help
-  playbookFile = file(propertyOrEnvOrDefault("refguide.playbook", "REFGUIDE_PLAYBOOK", "playbook.yml"));
+  playbookFile = file(propertyOrEnvOrDefault("refguide.playbook", "REFGUIDE_PLAYBOOK", "playbook.yml"))
   antoraVersion = "3.0.1"
     // TODO this is duplicated but I think the other instance of this is going away because it's specific to jekyll?
     // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
