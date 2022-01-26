@@ -3,6 +3,7 @@
 /gradle.properties
 .gradle/
 build/
+solr/contrib/local_packages.json
 
 # IntelliJ IDEA
 /.idea/

@@ -18,6 +18,9 @@
 // This project puts together a "distribution", assembling dependencies from
 // various other projects.
 
+import groovy.json.JsonOutput;
+import groovy.json.JsonSlurper;
+
 plugins {
   id 'base'
   id 'distribution'
@@ -86,24 +89,42 @@ distributions {
         include "NOTICE.txt"
       })
 
-      from(project(":solr:contrib").projectDir, {
-        include "local_packages.json"
-        into "contrib"
-      })
-
-
       from(project(":solr").projectDir, {
         include "bin/**"
         include "licenses/**"
         exclude "licenses/README.committers.txt"
         include "CHANGES.txt"
         include "README.md"
-        include "local_packages.json"
         include "manifest.json"
       })
 
       from(configurations.contrib, {
         into "contrib"
+
+        // Generate a local_packages.json for first party packages
+        eachFile({ fcd ->
+          def entry = fcd.getPath().startsWith('contrib/') ? "/" + fcd.getPath().minus('contrib/'): fcd.getPath();
+          def firstPartyPackages = ["scripting", "extraction"];
+          firstPartyPackages.each { module ->
+            if (fcd.getPath().startsWith("contrib/" + module + "/")) {
+              def localPackagesFile = new File(project(":solr:contrib").projectDir, "local_packages.json");
+              def parsedJson = new groovy.json.JsonSlurper().parseText("{\"packages\": {}}");
+              if (localPackagesFile.exists()) {
+                parsedJson = new groovy.json.JsonSlurper().parseText(localPackagesFile.text);
+              }
+              def pkgs = parsedJson["packages"];
+              if (!pkgs.containsKey("solr-" + module)) {
+                pkgs["solr-" + module] = [["version": baseVersion, "files": []]];
+              }
+              if (entry.endsWith("manifest.json")) {
+                pkgs["solr-" + module][0]["manifest"] = entry;  
+              } else if (entry.endsWith(".jar")) {
+                pkgs["solr-" + module][0]["files"].add(entry);
+              }
+              localPackagesFile.write(JsonOutput.toJson(parsedJson));              
+            }           
+          }
+        })
       })
 
       from(configurations.example, {
@@ -153,6 +174,10 @@ task dev(type: Copy) {
 
   from installDist.outputs
   into devDir
+
+  // Copy over the generated local_packages.json into the contrib/ directory.
+  from(new File(project(":solr:contrib").projectDir, "local_packages.json"));
+  rename("local_packages.json", "contrib/local_packages.json");
 }
 
 distTar {
