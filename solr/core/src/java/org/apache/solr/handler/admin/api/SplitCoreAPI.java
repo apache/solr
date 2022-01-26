@@ -21,11 +21,13 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.SplitCorePayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -41,8 +43,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PER
  *
  * The new API (POST /v2/cores/coreName {'split': {...}}) is equivalent to the v1
  * /admin/cores?action=split command.
- *
- * @see org.apache.solr.client.solrj.request.beans.MergeIndexesPayload
  */
 @EndPoint(
         path = {"/cores/{core}"},
@@ -76,5 +76,28 @@ public class SplitCoreAPI {
         }
 
         coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+    }
+
+    public static class SplitCorePayload implements ReflectMapWriter {
+        @JsonProperty
+        public List<String> path;
+
+        @JsonProperty
+        public List<String> targetCore;
+
+        @JsonProperty
+        public String splitKey;
+
+        @JsonProperty
+        public String splitMethod;
+
+        @JsonProperty
+        public Boolean getRanges;
+
+        @JsonProperty
+        public String ranges;
+
+        @JsonProperty
+        public String async;
     }
 }

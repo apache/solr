@@ -20,8 +20,9 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.UnloadCorePayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 import java.util.HashMap;
@@ -37,8 +38,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PER
  *
  * The new API (POST /v2/cores/coreName {'unload': {...}}) is equivalent to the v1
  * /admin/cores?action=unload command.
- *
- * @see org.apache.solr.client.solrj.request.beans.UnloadCorePayload
  */
 @EndPoint(
         path = {"/cores/{core}"},
@@ -61,5 +60,19 @@ public class UnloadCoreAPI {
         v1Params.put(CoreAdminParams.CORE, obj.getRequest().getPathTemplateValues().get(CoreAdminParams.CORE));
 
         coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+    }
+
+    public static class UnloadCorePayload implements ReflectMapWriter {
+        @JsonProperty
+        public Boolean deleteIndex;
+
+        @JsonProperty
+        public Boolean deleteDataDir;
+
+        @JsonProperty
+        public Boolean deleteInstanceDir;
+
+        @JsonProperty
+        public String async;
     }
 }

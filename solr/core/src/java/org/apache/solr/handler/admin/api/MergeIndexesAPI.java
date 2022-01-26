@@ -21,12 +21,14 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.MergeIndexesPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -39,8 +41,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PER
  *
  * The new API (POST /v2/cores/coreName {'merge-indexes': {...}}) is equivalent to the v1
  * /admin/cores?action=mergeindexes command.
- *
- * @see org.apache.solr.client.solrj.request.beans.MergeIndexesPayload
  */
 @EndPoint(
         path = {"/cores/{core}"},
@@ -73,5 +73,19 @@ public class MergeIndexesAPI {
         }
 
         coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+    }
+
+    public static class MergeIndexesPayload implements ReflectMapWriter {
+        @JsonProperty
+        public List<String> indexDir;
+
+        @JsonProperty
+        public List<String> srcCore;
+
+        @JsonProperty
+        public String updateChain;
+
+        @JsonProperty
+        public String async;
     }
 }

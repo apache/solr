@@ -20,8 +20,9 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.SwapCoresPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 import java.util.HashMap;
@@ -39,8 +40,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PER
  *
  * The new API (POST /v2/cores/coreName {'swap': {...}}) is equivalent to the v1
  * /admin/cores?action=swap command.
- *
- * @see org.apache.solr.client.solrj.request.beans.SwapCoresPayload
  */
 @EndPoint(
         path = {"/cores/{core}"},
@@ -66,5 +65,13 @@ public class SwapCoresAPI {
         v1Params.put(CoreAdminParams.OTHER, v1Params.remove("with"));
 
         coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+    }
+
+    public static class SwapCoresPayload implements ReflectMapWriter {
+        @JsonProperty(required = true)
+        public String with;
+
+        @JsonProperty
+        public String async;
     }
 }

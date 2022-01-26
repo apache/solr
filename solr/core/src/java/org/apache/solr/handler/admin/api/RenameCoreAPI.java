@@ -20,8 +20,9 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.RenameCorePayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 import java.util.HashMap;
@@ -37,8 +38,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PER
  *
  * The new API (POST /v2/cores/coreName {'rename': {...}}) is equivalent to the v1
  * /admin/cores?action=rename command.
- *
- * @see org.apache.solr.client.solrj.request.beans.RenameCorePayload
  */
 @EndPoint(
         path = {"/cores/{core}"},
@@ -64,5 +63,10 @@ public class RenameCoreAPI {
         v1Params.put(CoreAdminParams.OTHER, v1Params.remove("to"));
 
         coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+    }
+
+    public static class RenameCorePayload implements ReflectMapWriter {
+        @JsonProperty(required = true)
+        public String to;
     }
 }

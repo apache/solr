@@ -20,8 +20,8 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.ReloadCorePayload;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 import java.util.HashMap;
@@ -64,4 +64,6 @@ public class ReloadCoreAPI {
 
         coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
     }
+
+    public static class ReloadCorePayload implements ReflectMapWriter {}
 }
