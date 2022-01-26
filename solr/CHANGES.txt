@@ -256,9 +256,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15209: The old LegacyAssignStrategy has been refactored into the SimplePlacementPlugin. This is still the default
   placement policy for Solr. (Houston Putman, Ilan Ginzburg)
 
-* SOLR-15257: Add DocSetQuery in lieu of DocSet.getTopFilter. This issue led to removing
-  Filter.java and eliminating all dependencies on its main method getDocIdSet. With Filter deleted ,
-  and replaced with Lucene's Query.java, the changes might spark some performance optimizations (Collins Abanda, Mike Drob, Tim Potter)
+* SOLR-12336: * SOLR-15257: Remove Filter and SolrFilter, replaced by DocSetQuery which is a Query
+  and DocSetProducer. (Collins Abanda, Mike Drob, Tim Potter)
 
 * SOLR-14916: Add split parameter to timeseries Streaming Expression (Joel Bernstein)
 
