@@ -296,6 +296,10 @@ abstract class PrepareSources extends DefaultTask {
 
 // Even though we don't use node.js, Antora does so we need to configure it for our build
 node {
+  // Antora plugin depends on an old version of node, force a newer one
+  download = true
+  version = "17.3.1"
+
   // This is where we will save node, npm, and npx if not already present on the system
   workDir = file("${project.buildDir}/nodejs")
 
