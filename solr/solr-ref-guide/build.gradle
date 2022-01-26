@@ -322,4 +322,7 @@ antora {
     ].collectEntries {
         propKey, depGroup, depId -> [propKey, "${ -> project.getVersion(depGroup, depId) }"]
     }.collect { k,v -> ['--attribute', "$k=$v"]}.flatten() + '--fetch'
+
+  // TODO figure out if we can fail the build when this task outputs errors about broken links
+  // TODO declare inputs and outputs so that we can cache the results
 }

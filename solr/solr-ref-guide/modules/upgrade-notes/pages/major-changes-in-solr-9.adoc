@@ -69,7 +69,7 @@ The `dist/` directory in the Solr binary release has been removed as of Solr 9.0
 * The Solr module jars can be found in `contrib/<module-name>/lib`, packaged individually for each module.
 * The `solrj-deps` (SolrJ Dependencies) are no longer separated out from the other Server jars.
 Please refer to the SolrJ Maven artifact to see the exact dependencies you need to include from `server/solr-webapp/webapp/WEB-INF/lib/` and `server/lib/ext/` if you are loading in SolrJ manually.
-If you plan on using SolrJ as a JDBC driver, please refer to the <<sql-query.adoc#generic-clients,JDBC documentation>>.
+If you plan on using SolrJ as a JDBC driver, please refer to the xref:query-guide:sql-query.adoc#generic-clients[JDBC documentation]
 
 == Solr 9.0 Raw Notes
 
@@ -207,7 +207,7 @@ If you rely upon the previous behavior, then you can change the clientPortAddres
 * SOLR-15916: `dist/` is no longer provided in the binary release.
 All module jars are now provided under `contrib/<name>/lib`, including the module jar and all dependency jars.
 Please update your `<lib>` entries in your `solrconfig.xml` to use this new location.
-More information can be found in the <<libs.adoc#lib-directives-in-solrconfig,Libs documentation>>.
+More information can be found in the xref:configuration-guide:libs.adoc#lib-directives-in-solrconfig[Libs documentation].
 
 * SOLR-14067: `StatelessScriptUpdateProcessorFactory` moved to `contrib/scripting` package instead of shipping as part of Solr, due to security concerns.
 Renamed to ScriptUpdateProcessorFactory for simpler name.
