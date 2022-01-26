@@ -73,7 +73,7 @@ then
   REPO="$BASEDIR"/lib
 fi
 
-CLASSPATH=$CLASSPATH_PREFIX:"$BASEDIR/conf":"$REPO/*":"$BASEDIR/../../server/solr-webapp/webapp/WEB-INF/lib/*":"$BASEDIR/../../server/lib/ext/*"
+CLASSPATH=$CLASSPATH_PREFIX:"$BASEDIR/conf":"$REPO/*":"$BASEDIR/../server/solr-webapp/webapp/WEB-INF/lib/*":"$BASEDIR/../server/lib/ext/*"
 
 # Memory settings
 JAVA_MEM_OPTS=

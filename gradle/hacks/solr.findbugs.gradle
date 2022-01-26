@@ -27,7 +27,7 @@ configure([project(":solr:core"),
            project(":solr:modules:ltr"),
            project(":solr:modules:s3-repository"),
            project(":solr:modules:scripting"),
-           project(":solr:modules:prometheus-exporter")]) {
+           project(":solr:prometheus-exporter")]) {
   plugins.withType(JavaPlugin) {
     dependencies {
       // Use versionless variants because these libraries are in versions.lock.
