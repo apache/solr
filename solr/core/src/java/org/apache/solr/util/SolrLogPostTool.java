@@ -189,8 +189,6 @@ public class SolrLogPostTool {
           } else if (line.contains(" ERROR ")) {
             this.cause = null;
             parseError(lineDoc, line, readTrace());
-          } else if (line.contains("start commit")) {
-            parseCommit(lineDoc, line);
           } else if(line.contains("QTime=")) {
             parseQueryRecord(lineDoc, line);
           }
@@ -286,18 +284,6 @@ public class SolrLogPostTool {
       lineRecord.setField("replica_s", parseReplica(line));
     }
 
-    private void parseCommit(SolrInputDocument lineRecord, String line) throws IOException {
-      lineRecord.setField("type_s", "commit");
-      lineRecord.setField("soft_commit_s", Boolean.toString(line.contains("softCommit=true")));
-
-      lineRecord.setField("open_searcher_s", Boolean.toString(line.contains("openSearcher=true")));
-
-      lineRecord.setField("collection_s", parseCollection(line));
-      lineRecord.setField("core_s", parseCore(line));
-      lineRecord.setField("shard_s", parseShard(line));
-      lineRecord.setField("replica_s", parseReplica(line));
-    }
-
     private void parseQueryRecord(SolrInputDocument lineRecord, String line) {
       lineRecord.setField("qtime_i", parseQTime(line));
       lineRecord.setField("status_s", parseStatus(line));
@@ -331,10 +317,12 @@ public class SolrLogPostTool {
       }
     }
 
-
     private void parseNewSearch(SolrInputDocument lineRecord, String line) {
-      lineRecord.setField("core_s", parseNewSearcherCore(line));
+      lineRecord.setField("core_s", parseCore(line));
       lineRecord.setField("type_s", "newSearcher");
+      lineRecord.setField("collection_s", parseCollection(line));
+      lineRecord.setField("shard_s", parseShard(line));
+      lineRecord.setField("replica_s", parseReplica(line));
     }
 
     private String parseCollection(String line) {
@@ -352,6 +340,8 @@ public class SolrLogPostTool {
         lineRecord.setField("type_s", "deleteByQuery");
       } else if(line.contains("delete=")) {
         lineRecord.setField("type_s", "delete");
+      } else if(line.contains("commit=true")) {
+        lineRecord.setField("type_s", "commit");
       } else {
         lineRecord.setField("type_s", "update");
       }
@@ -362,20 +352,6 @@ public class SolrLogPostTool {
       lineRecord.setField("replica_s", parseReplica(line));
     }
 
-    private String parseNewSearcherCore(String line) {
-      String xCore = parseCore(line);
-      if (xCore != null) {
-        return xCore;
-      }
-      // pre Solr 9
-      char[] ca = {']'};
-      String parts[] = line.split("\\[");
-      if(parts.length > 3) {
-        return readUntil(parts[2], ca);
-      } else {
-        return null;
-      }
-    }
 
     private String parseCore(String line) {
       char[] ca = {' ', ']', '}', ','};
