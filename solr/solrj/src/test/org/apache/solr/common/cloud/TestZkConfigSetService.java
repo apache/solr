@@ -24,6 +24,7 @@ import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
@@ -44,6 +45,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
+@LogLevel("org.apache.solr.common.cloud=DEBUG")
 public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
   private static ZkTestServer zkServer;
