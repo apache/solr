@@ -20,7 +20,6 @@ apply plugin: 'java-library'
 description = 'HDFS Contrib Module'
 
 dependencies {
-  
   configurations.all {
     exclude group: 'log4j', module: 'log4j'
     exclude group: 'commons-logging', module: 'commons-logging'
@@ -29,7 +28,6 @@ dependencies {
     exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
    // be conservative on what's added here.  Affects *all* configs, including internal ones.
   }
-
 
   implementation project(':solr:core')
 
@@ -44,9 +42,7 @@ dependencies {
   implementation ('com.google.guava:guava') { transitive = false }
 
   // Caffeine cache to implement HDFS block caching  
-  api('com.github.ben-manes.caffeine:caffeine', {
-    exclude group: "org.checkerframework", module: "checker-qual"
-  })
+  implementation ('com.github.ben-manes.caffeine:caffeine')
 
   // Many HDFS tests are using/subclassing test framework classes
   testImplementation project(':solr:test-framework')
@@ -73,9 +69,4 @@ dependencies {
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
   implementation ('org.apache.zookeeper:zookeeper')
-
-
-
-
-
 }
