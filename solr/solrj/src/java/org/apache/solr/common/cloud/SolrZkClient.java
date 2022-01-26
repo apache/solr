@@ -543,6 +543,9 @@ public class SolrZkClient implements Closeable {
           throw e;
         }
       } catch (NodeExistsException e) {
+        if (log.isDebugEnabled()) {
+          log.debug("Node exists: {}", e.getPath());
+        }
 
         if (!failOnExists && i == paths.length - 1) {
           // TODO: version ? for now, don't worry about race

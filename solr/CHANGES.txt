@@ -22,7 +22,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
 Other Changes
 ---------------------
