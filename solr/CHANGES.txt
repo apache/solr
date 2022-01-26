@@ -583,6 +583,8 @@ Bug Fixes
 
 * SOLR-15842: Async response for backups now correctly aggregates and returns information (Houston Putman, Artem Abeleshev, Christine Poerschke)
 
+* SOLR-14595: Consistent overrequest across different facet methods for `sort:index` JSON Facet field (Michael Gibney, hossman)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
