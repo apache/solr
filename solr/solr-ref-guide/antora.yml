@@ -19,12 +19,12 @@ asciidoc:
   attributes:
     idseparator: '-'
     idprefix: ''
-    # 'patch_version' is the 'z' part of x.y.z semantic version
-    patch_version: '0'
-    solr-javadocs: https://solr.apache.org/docs/{page-component-version}_{patch_version}
+    # 'patch-version' is the 'z' part of x.y.z semantic version
+    page-patch-version: '0'
+    solr-javadocs: https://solr.apache.org/docs/{page-component-version}_{page-patch-version}
     # TODO the following works for now but might not be right if
     # we don't have version-to-version match between Lucene and Solr
-    lucene-javadocs: https://lucene.apache.org/core/{page-component-version}_{patch_version}
+    lucene-javadocs: https://lucene.apache.org/core/{page-component-version}_{page-patch-version}
     java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
     # TODO the following are hardcoded for now
     # Some constructed  links may be 404 TODO to check
