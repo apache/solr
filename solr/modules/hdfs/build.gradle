@@ -63,7 +63,7 @@ dependencies {
   testImplementation 'org.apache.logging.log4j:log4j-1.2-api'
 
   // classes like solr.ICUCollationField, used by NNFailoverTest for example.
-  testImplementation project(':solr:contrib:analysis-extras')
+  testImplementation project(':solr:modules:analysis-extras')
 
   // required for instantiating a Zookeeper server in tests or embedded
   runtimeOnly ('org.xerial.snappy:snappy-java')

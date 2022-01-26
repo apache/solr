@@ -163,7 +163,7 @@ configure(project(":solr:test-framework")) {
   }
 }
 
-configure(project(":solr:contrib:hdfs")) {
+configure(project(":solr:modules:hdfs")) {
   project.tasks.withType(RenderJavadocTask) {    
     javadocMissingIgnore = [
         "org.apache.solr",

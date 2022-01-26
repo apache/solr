@@ -131,7 +131,7 @@ allprojects { prj ->
     }
 
     // Disable checks on code copied from Hadoop
-    if (prj.path == ":solr:contrib:hdfs") {
+    if (prj.path == ":solr:modules:hdfs") {
       forbiddenApisTest.exclude("**/org/apache/hadoop/**")
     }
     if (prj.path == ":solr:test-framework") {

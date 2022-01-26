@@ -1,28 +1,28 @@
-Apache Solr HDFS Contrib module
+Apache Solr HDFS Module
 ===============================
 
 Introduction
 ------------
-This contrib module implements the support for Hadoop Distributed File System in Apache Solr. 
-
+This module implements the support for Hadoop Distributed File System in Apache Solr. 
 
 Building
 --------
-The HDFS contrib module uses the same Gradle build as the core Solr components. 
+The HDFS module uses the same Gradle build as the core Solr components. 
 
 To build the module, you can use
 
-./gradlew :solr:contrib:hdfs:assemble
+```
+./gradlew :solr:modules:hdfs:assemble
+```
 
 The resulting module will be placed to the libs directory, for example:
-solr/contrib/hdfs/build/libs/solr-hdfs-9.0.0-SNAPSHOT.jar
-
+`solr/modules/hdfs/build/libs/solr-hdfs-9.0.0-SNAPSHOT.jar`
 
 To execute the module tests:
 
-./gradlew :solr:contrib:hdfs:test
-
-
+```
+./gradlew :solr:modules:hdfs:test
+```
 
 Usage
 -----
