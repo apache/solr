@@ -80,14 +80,11 @@ allprojects {
       // default excludes.
       exclude '**/build/**'
       exclude '**/.idea/**'
+      exclude '**/.gradle/**'
 
       if (project == rootProject) {
         // ourselves :-)
         exclude 'gradle/validation/validate-source-patterns.gradle'
-
-        // gradle and idea folders.
-        exclude '.gradle/**'
-        exclude '.idea/**'
       } else {
         // ignore txt files in source resources and tests.
         exclude 'src/**/*.txt'
@@ -121,6 +118,7 @@ configure(project(':solr:server')) {
 configure(project(':solr:solr-ref-guide')) {
   project.tasks.withType(ValidateSourcePatternsTask) {
     sourceFiles.exclude 'modules/indexing-guide/examples/stemdict.txt' // requires tabs
+    sourceFiles.exclude 'node_modules/**' // slightly hackish, this downloads all of the node deps
   }
 }
 

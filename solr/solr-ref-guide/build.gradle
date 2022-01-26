@@ -299,18 +299,6 @@ node {
   // Antora plugin depends on an old version of node, force a newer one
   download = true
   version = "16.13.2" // LTS
-
-  // This is where we will save node, npm, and npx if not already present on the system
-  workDir = file("${project.buildDir}/nodejs")
-
-  // TODO figure out how to configure which directory npm will install into and then read from
-  // This currently calls "npm install @antora/site-generator-default@`antoraVersion`"
-  // https://gitlab.com/antora/antora-gradle-plugin/-/blob/main/src/main/java/io/github/rwinch/antora/AntoraPlugin.java#L61
-  // If we were launching commands directly I think we could do `npm install --prefix $dir` and `npx -w $dir`
-  npmWorkDir = file("${project.buildDir}/npm") // this doesn't seem to do it
-
-  // This would move package.json and node_modules to a different location, but antora also expects playbook file to be in the same location
-  // nodeProjectDir = file("${project.buildDir}/node-project")
 }
 
 
