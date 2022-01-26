@@ -111,12 +111,12 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   private String oneInstanceCollection = "oneInstanceCollection";
   private String oneInstanceCollection2 = "oneInstanceCollection2";
-  
+
   private AtomicInteger nodeCounter = new AtomicInteger();
-  
+
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
-  
+
   private static Hook newSearcherHook = new Hook() {
     volatile CountDownLatch latch;
     AtomicReference<String> collection = new AtomicReference<>();
@@ -133,7 +133,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
         }
       }
     }
-  
+
     public void waitForSearcher(String collection, int cnt, int timeoutms, boolean failOnTimeout) throws InterruptedException {
       latch = new CountDownLatch(cnt);
       this.collection.set(collection);
@@ -142,19 +142,19 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
         fail("timed out waiting for new searcher event " + latch.getCount());
       }
     }
-  
+
   };
 
   public AbstractBasicDistributedZkTestBase() {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
-    
+
     sliceCount = 2;
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
-    
+
   }
-  
+
   @BeforeClass
   public static void beforeBDZKTClass() {
     TestInjection.newSearcherHook(newSearcherHook);
@@ -193,9 +193,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     for (int j = 1; j < sliceCount; j++) {
       zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
     }      // make sure we again have leaders for each shard
-    
+
     waitForRecoveriesToFinish(false);
-    
+
     handle.clear();
     handle.put("timestamp", SKIPVAL);
 
@@ -210,9 +210,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       indexDoc(client, params("commit", "true"), // SOLR-4923
                sdoc(id,1, i1,100, tlong,100, "foo_i", foo_i_counter));
       // after every update+commit, check all the shards consistency
-      queryAndCompareShards(params("q", "id:1", "distrib", "false", 
+      queryAndCompareShards(params("q", "id:1", "distrib", "false",
                                    "sanity_check", "non_distrib_id_1_lookup"));
-      queryAndCompareShards(params("q", "id:1", 
+      queryAndCompareShards(params("q", "id:1",
                                    "sanity_check", "distrib_id_1_lookup"));
     }
 
@@ -247,7 +247,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     indexr(id, 17, "SubjectTerms_mfacet", vals);
 
     for (int i=100; i<150; i++) {
-      indexr(id, i);      
+      indexr(id, i);
     }
 
     commit();
@@ -257,9 +257,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     testSortableTextSorting();
     testSortableTextGrouping();
 
-    queryAndCompareShards(params("q", "*:*", 
+    queryAndCompareShards(params("q", "*:*",
                                  "sort", "id desc",
-                                 "distrib", "false", 
+                                 "distrib", "false",
                                  "sanity_check", "is_empty"));
 
     // random value sort
@@ -272,7 +272,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     query(false, new String[] {"q","*:*", "sort",i1+" desc"});
     query(false, new String[] {"q","*:*", "sort",i1+" asc"});
     query(false, new String[] {"q","*:*", "sort",i1+" desc", "fl","*,score"});
-    query(false, new String[] {"q","*:*", "sort","n_tl1 asc", "fl","*,score"}); 
+    query(false, new String[] {"q","*:*", "sort","n_tl1 asc", "fl","*,score"});
     query(false, new String[] {"q","*:*", "sort","n_tl1 desc"});
     handle.put("maxScore", SKIPVAL);
     query(false, new String[] {"q","{!func}"+i1});// does not expect maxScore. So if it comes ,ignore it. JavaBinCodec.writeSolrDocumentList()
@@ -300,7 +300,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     query(false, new String[] {"q","now their fox sat had put","fl","foofoofoo",
             "hl","true","hl.fl",t1});
 
-    query(false, new String[] {"q","matchesnothing","fl","*,score"});  
+    query(false, new String[] {"q","matchesnothing","fl","*,score"});
 
     query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.field",t1});
     query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count"});
@@ -346,7 +346,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     // Try to get better coverage for refinement queries by turning off over requesting.
     // This makes it much more likely that we may not get the top facet values and hence
     // we turn of that checking.
-    handle.put("facet_fields", SKIPVAL);    
+    handle.put("facet_fields", SKIPVAL);
     query(false, new Object[] {"q","*:*", "rows",0, "facet","true", "facet.field",t1,"facet.limit",5, "facet.shard.limit",5});
     // check a complex key name
     query(false, new Object[] {"q","*:*", "rows",0, "facet","true", "facet.field","{!key='a b/c \\' \\} foo'}"+t1,"facet.limit",5, "facet.shard.limit",5});
@@ -388,7 +388,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     add(cloudClient, params , getDoc("id", 300), getDoc("id", 301));
 
     newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
-    
+
     ClusterState clusterState = getCommonCloudSolrClient().getZkStateReader().getClusterState();
     DocCollection dColl = clusterState.getCollection(DEFAULT_COLLECTION);
 
@@ -399,11 +399,11 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     deleteByIdReq.deleteById("300");
     deleteByIdReq.setCommitWithin(10);
     deleteByIdReq.process(cloudClient);
-    
+
     newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
 
     assertSliceCounts("deleteById commitWithin did not work", before + 1, dColl);
-    
+
     // try deleteByQuery commitWithin
     UpdateRequest deleteByQueryReq = new UpdateRequest();
     deleteByQueryReq.deleteByQuery("id:301");
@@ -411,9 +411,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     deleteByQueryReq.process(cloudClient);
 
     newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
-    
+
     assertSliceCounts("deleteByQuery commitWithin did not work", before, dColl);
-    
+
 
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.
@@ -528,13 +528,13 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   private void assertSliceCounts(String msg, long expected, DocCollection dColl) throws Exception {
     long found = checkSlicesSameCounts(dColl);
-    
+
     if (found != expected) {
       // we get one do over in a bad race
       Thread.sleep(1000);
       found = checkSlicesSameCounts(dColl);
     }
-    
+
     assertEquals(msg, expected, checkSlicesSameCounts(dColl));
   }
 
@@ -557,7 +557,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
         return false;
       });
     } catch (TimeoutException | InterruptedException e) {
-     
+
     }
     // We could fail here if we broke out of the above because we exceeded the time allowed.
     assertEquals(failureMessage, expectedNumFound, total.get());
@@ -613,8 +613,8 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
         }
         assertEquals("inconsitent numDocs for shard "+shard+" via "+client,
                      shardCounts.get(shard).longValue(), numDocs);
-        
-        List<CloudJettyRunner> replicaJetties 
+
+        List<CloudJettyRunner> replicaJetties
           = new ArrayList<>(shardToJetty.get(shard));
         Collections.shuffle(replicaJetties, random());
 
@@ -649,7 +649,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       }
     }
 
-    // sums of multiple shards should add up regardless of how we 
+    // sums of multiple shards should add up regardless of how we
     // query those shards or which client we use
     long randomShardCountsExpected = 0;
     ArrayList<String> randomShards = new ArrayList<>(shardCounts.size());
@@ -677,7 +677,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     query.set("shards", randShards);
     for (SolrClient client : this.clients) {
       assertEquals("numDocs for "+randShards+" via "+client,
-                   randomShardCountsExpected, 
+                   randomShardCountsExpected,
                    client.query(query).getResults().getNumFound());
     }
 
@@ -688,7 +688,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       totalShardNumDocs += c;
     }
     for (SolrClient client : clients) {
-      assertEquals("sum of shard numDocs on client: " + client, 
+      assertEquals("sum of shard numDocs on client: " + client,
                    totalShardNumDocs,
                    client.query(query).getResults().getNumFound());
     }
@@ -715,7 +715,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
         }
       }
     }
-    
+
     cloudJettys.get(0).jetty.stop();
     printLayout();
 
@@ -727,7 +727,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       printLayout();
       throw e;
     }
-    
+
     printLayout();
 
   }
@@ -910,7 +910,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     NamedList<Object> result = clients.get(0).request(
         new StreamingUpdateRequest("/update",
-            getFile("books_numeric_ids.csv"), "application/csv")
+            getFile("books_numeric_ids.csv").toPath(), "application/csv")
             .setCommitWithin(900000)
             .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
 
@@ -1142,7 +1142,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
                                 List<SolrClient> collectionClients, String baseUrl, int num) {
     createSolrCore(collection, collectionClients, baseUrl, num, null);
   }
-  
+
   private void createSolrCore(final String collection,
       List<SolrClient> collectionClients, final String baseUrl, final int num,
       final String shardId) {
