@@ -55,6 +55,8 @@ Other Changes
 
 * SOLR-15923: Cue users in 404 message that Solr is running and the url is incorrect. (Eric Pugh, Mike Drob, Shawn Heisey)
 
+* SOLR-9529: Consistency in how dynamic fields are defined in sample schema.xml files (Eric Pugh, Trey Grainger)
+
 ==================  9.0.0 ==================
 
 Docker and modules have separate CHANGES.md files.
