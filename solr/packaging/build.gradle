@@ -39,12 +39,10 @@ configurations {
   docker
   solrTgz
   solrTgzSignature
-  solrZip
 }
 
 artifacts {
   solrTgz(distTar)
-  solrZip(distZip)
 }
 
 dependencies {
@@ -156,5 +154,7 @@ task dev(type: Copy) {
 distTar {
   compression = Compression.GZIP
 }
+
+distZip.enabled = false
 
 assemble.dependsOn installDist
