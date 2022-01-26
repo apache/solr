@@ -385,9 +385,7 @@ public class MiniSolrCloudCluster {
 
   private Path createInstancePath(String name) throws IOException {
     Path instancePath = baseDir.resolve(name);
-    if (!Files.exists(instancePath)) {
-      Files.createDirectory(instancePath);
-    }
+    Files.createDirectory(instancePath);
     return instancePath;
   }
 

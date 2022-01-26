@@ -31,8 +31,9 @@ ext {
 }
 
 configurations {
-  contrib
+  modules
   example
+  prometheusExporter
   server
   docs
   docker
@@ -47,20 +48,21 @@ artifacts {
 }
 
 dependencies {
-  [":solr:contrib:analysis-extras",
-   ":solr:contrib:analytics",
-   ":solr:contrib:extraction",
-   ":solr:contrib:clustering",
-   ":solr:contrib:gcs-repository",
-   ":solr:contrib:jaegertracer-configurator",
-   ":solr:contrib:langid",
-   ":solr:contrib:ltr",
-   ":solr:contrib:prometheus-exporter",
-   ":solr:contrib:s3-repository",
-   ":solr:contrib:scripting"
-  ].each { contribName ->
-    contrib  project(path: contribName, configuration: "packaging")
+  [":solr:modules:analysis-extras",
+   ":solr:modules:analytics",
+   ":solr:modules:extraction",
+   ":solr:modules:clustering",
+   ":solr:modules:gcs-repository",
+   ":solr:modules:jaegertracer-configurator",
+   ":solr:modules:langid",
+   ":solr:modules:ltr",
+   ":solr:modules:s3-repository",
+   ":solr:modules:scripting"
+  ].each { moduleName ->
+    modules project(path: moduleName, configuration: "packaging")
   }
+
+  prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
@@ -94,12 +96,16 @@ distributions {
         include "README.md"
       })
 
-      from(configurations.contrib, {
-        into "contrib"
+      from(configurations.modules, {
+        into "modules"
       })
 
       from(configurations.example, {
         into "example"
+      })
+
+      from(configurations.prometheusExporter, {
+        into "prometheus-exporter"
       })
 
       from(configurations.server, {
