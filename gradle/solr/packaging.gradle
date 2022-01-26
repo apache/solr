@@ -63,8 +63,6 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
 
       from "manifest.json"
 
-      from "src/resources/solr-default-tika-config.xml"
-
       from (tasks.jar, {
         into "lib"
       })

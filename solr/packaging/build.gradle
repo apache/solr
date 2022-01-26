@@ -50,7 +50,8 @@ artifacts {
 }
 
 dependencies {
-  [":solr:contrib:analysis-extras",
+  [":solr:contrib",
+   ":solr:contrib:analysis-extras",
    ":solr:contrib:analytics",
    ":solr:contrib:extraction",
    ":solr:contrib:clustering",
@@ -100,31 +101,6 @@ distributions {
 
       from(configurations.contrib, {
         into "contrib"
-
-        // Generate a local_packages.json for first party packages
-        eachFile({ fcd ->
-          def entry = fcd.getPath().startsWith('contrib/') ? "/" + fcd.getPath().minus('contrib/'): fcd.getPath();
-          def firstPartyPackages = ["scripting", "extraction"];
-          firstPartyPackages.each { module ->
-            if (fcd.getPath().startsWith("contrib/" + module + "/")) {
-              def localPackagesFile = new File(project(":solr:contrib").projectDir, "local_packages.json");
-              def parsedJson = new groovy.json.JsonSlurper().parseText("{\"packages\": {}}");
-              if (localPackagesFile.exists()) {
-                parsedJson = new groovy.json.JsonSlurper().parseText(localPackagesFile.text);
-              }
-              def pkgs = parsedJson["packages"];
-              if (!pkgs.containsKey("solr-" + module)) {
-                pkgs["solr-" + module] = [["version": baseVersion, "files": []]];
-              }
-              if (entry.endsWith("manifest.json")) {
-                pkgs["solr-" + module][0]["manifest"] = entry;  
-              } else if (entry.endsWith(".jar")) {
-                pkgs["solr-" + module][0]["files"].add(entry);
-              }
-              localPackagesFile.write(JsonOutput.toJson(parsedJson));              
-            }           
-          }
-        })
       })
 
       from(configurations.example, {

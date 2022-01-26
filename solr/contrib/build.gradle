@@ -1,0 +1,77 @@
+import groovy.json.JsonOutput
+import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+description = 'Solr Modules'
+
+ext {
+  packagingDir = file("$buildDir/packaging")
+  localPackagesFile = "$packagingDir/local_packages.json"
+}
+
+configurations {
+  modulePackages
+  packaging
+}
+
+dependencies {
+  [":solr:contrib:extraction",
+   ":solr:contrib:scripting"
+  ].each { moduleName ->
+    modulePackages project(path: moduleName, configuration: "packaging")
+  }
+
+  packaging files(packagingDir) {
+    builtBy 'createLocalPackagesJson'
+  }
+}
+
+task createLocalPackagesJson {
+  dependsOn configurations.modulePackages
+
+  doLast {
+    def packagesJson = [
+        packages: [:]
+    ]
+    project(":solr:contrib:scripting").configurations.packaging.resolve().each {
+      logger.error("It: $it")
+    }
+    configurations.modulePackages.each { depPath ->
+      def moduleName = depPath.parentFile.parentFile.name
+      logger.error("Module: $moduleName")
+      def module = [
+          version: version,
+          moduleFiles: [],
+          manifest: "",
+      ]
+      fileTree(depPath).filter { it.isFile() }.files.each {pkgFile ->
+        def filePath = depPath.toPath().relativize(pkgFile.toPath()).toString()
+        logger.error("File: $filePath")
+        if (filePath.endsWith("manifest.json")) {
+          module.manifest = filePath
+        } else if (filePath.contains("/lib/")) {
+          module.moduleFiles.add(filePath)
+        }
+      }
+      packagesJson.packages[moduleName] = module
+    }
+    mkdir packagingDir
+    new File(localPackagesFile).text = JsonOutput.prettyPrint(JsonOutput.toJson(packagesJson))
+  }
+}
