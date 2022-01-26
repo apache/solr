@@ -1,5 +1,4 @@
 import groovy.json.JsonOutput
-import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -49,12 +48,8 @@ task createLocalPackagesJson {
     def packagesJson = [
         packages: [:]
     ]
-    project(":solr:contrib:scripting").configurations.packaging.resolve().each {
-      logger.error("It: $it")
-    }
     configurations.modulePackages.each { depPath ->
       def moduleName = depPath.parentFile.parentFile.name
-      logger.error("Module: $moduleName")
       def module = [
           version: version,
           moduleFiles: [],
@@ -62,7 +57,6 @@ task createLocalPackagesJson {
       ]
       fileTree(depPath).filter { it.isFile() }.files.each {pkgFile ->
         def filePath = depPath.toPath().relativize(pkgFile.toPath()).toString()
-        logger.error("File: $filePath")
         if (filePath.endsWith("manifest.json")) {
           module.manifest = filePath
         } else if (filePath.contains("/lib/")) {
