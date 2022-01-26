@@ -53,6 +53,8 @@ Other Changes
 ---------------------
 * SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
 
+* SOLR-15923: Cue users in 404 message that Solr is running and the url is incorrect. (Eric Pugh, Mike Drob, Shawn Heisey)
+
 ==================  9.0.0 ==================
 
 Docker and modules have separate CHANGES.md files.
