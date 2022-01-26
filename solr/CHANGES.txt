@@ -46,7 +46,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
 Other Changes
 ---------------------
@@ -568,8 +568,6 @@ Bug Fixes
   array, which didn't make sense. (David Smiley)
 
 * SOLR-15842: Async response for backups now correctly aggregates and returns information (Houston Putman, Artem Abeleshev, Christine Poerschke)
-
-* SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
 ==================  8.11.2 ==================
 
