@@ -69,4 +69,21 @@ dependencies {
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
   implementation ('org.apache.zookeeper:zookeeper')
+
+}
+
+
+// Copy all the test resource files from core to the build/resources/test directory
+// of the HDFS module so we can avoid duplication of the test resource files like
+// schemas and SolrConfigs. This can be improved later by making the test classes
+// load the resources from core directories directly.
+task copySolrCoreTestResources(type: Copy) {
+  from('../../core/src/test-files') {
+    exclude '**/*.java'
+  }
+  into sourceSets.test.output.resourcesDir
+}
+
+tasks.processTestResources.configure {
+  dependsOn copySolrCoreTestResources
 }
