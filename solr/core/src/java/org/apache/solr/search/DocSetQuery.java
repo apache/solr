@@ -68,9 +68,8 @@ public class DocSetQuery extends Query implements DocSetProducer{
     }
 
     /**
-     * @param searcher: this is not used because we already have a DocSet created
+     * @param searcher is not used because we already have a DocSet created in DocSetQuery
      * @return docSet
-     * @throws IOException
      */
     @Override
     public DocSet createDocSet(SolrIndexSearcher searcher) throws IOException {
