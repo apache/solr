@@ -37,6 +37,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
@@ -46,6 +47,8 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.RuleBasedCollator;
 import com.ibm.icu.util.ULocale;
+
+import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 
 /**
  * Field for collated sort keys. 
@@ -87,10 +90,21 @@ import com.ibm.icu.util.ULocale;
 public class ICUCollationField extends FieldType {
   private Analyzer analyzer;
 
+  private static final Version UDVAS_FORBIDDEN_AS_OF = Version.LUCENE_9_0_0;
+
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     if (on(trueProperties, USE_DOCVALUES_AS_STORED)) {
-      throw new IllegalArgumentException("useDocValuesAsStored is not supported for " + ICUCollationField.class);
+      // ICUCollation keys are not even necessarily valid UTF-8, so udvas is pathological. See SOLR-15777
+      final boolean fail = schema.luceneVersion.onOrAfter(UDVAS_FORBIDDEN_AS_OF);
+      // NOTE: it may seem odd that we're checking these conditions ourselves rather than relying on the internal
+      // checking of `assertWarnOrFail(...)`. But the main reason we're logging this error via
+      // `XMLConfigFile.assertWarnOrFail(...)` is because this is at its root an xml config file
+      // error, so we log in a way that's consistent with that.
+      assertWarnOrFail("useDocValuesAsStored " + (fail ? "is" : "will be") + " forbidden for "
+                      + ICUCollationField.class + " as of " + IndexSchema.LUCENE_MATCH_VERSION_PARAM
+                      + " " + UDVAS_FORBIDDEN_AS_OF,
+              false, fail);
     }
     properties &= ~USE_DOCVALUES_AS_STORED;
     properties |= TOKENIZED; // this ensures our analyzer gets hit
