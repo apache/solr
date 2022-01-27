@@ -56,4 +56,15 @@ public class SolrScrapeConfiguration {
     return new SolrScrapeConfiguration(ConnectionType.STANDALONE, null, solrHost);
   }
 
+  @Override
+  public String toString() {
+    if (type == ConnectionType.CLOUD) {
+      return "Solr Cloud ZK: " + zookeeperConnectionString;
+    } else if (type == ConnectionType.STANDALONE) {
+      return "Solr Node: " + solrHost;
+    } else {
+      return "None";
+    }
+  }
+
 }
