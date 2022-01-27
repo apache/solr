@@ -22,11 +22,13 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.AddReplicaPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
@@ -41,8 +43,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
  *
  * This API (POST /v2/collections/collectionName/shards {'add-replica': {...}}) is analogous to the v1
  * /admin/collections?action=ADDREPLICA command.
- *
- * @see AddReplicaPayload
  */
 @EndPoint(
         path = {"/c/{collection}/shards", "/collections/{collection}/shards"},
@@ -71,5 +71,52 @@ public class AddReplicaAPI {
       v1Params.replace(CREATE_NODE_SET_PARAM, String.join(",", v2Body.createNodeSet));
     }
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
+
+  public static class AddReplicaPayload implements ReflectMapWriter {
+    @JsonProperty
+    public String shard;
+
+    @JsonProperty
+    public String _route_;
+
+    // TODO Remove in favor of a createNodeSet/nodeSet param with size=1 (see SOLR-15542)
+    @JsonProperty
+    public String node;
+
+    // TODO Rename to 'nodeSet' to match the name used by create-shard and other APIs (see SOLR-15542)
+    @JsonProperty
+    public List<String> createNodeSet;
+
+    @JsonProperty
+    public String name;
+
+    @JsonProperty
+    public String instanceDir;
+
+    @JsonProperty
+    public String dataDir;
+
+    @JsonProperty
+    public String ulogDir;
+
+    @JsonProperty
+    public Map<String, Object> coreProperties;
+
+    @JsonProperty
+    public String async;
+
+    @JsonProperty
+    public Boolean waitForFinalState;
+
+    @JsonProperty
+    public Boolean followAliases;
+
+    @JsonProperty
+    public Boolean skipNodeAssignment;
+
+    // TODO Make this an enum - see SOLR-15796
+    @JsonProperty
+    public String type;
   }
 }

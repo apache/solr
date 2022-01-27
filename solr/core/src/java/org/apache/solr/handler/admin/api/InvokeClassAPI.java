@@ -20,10 +20,12 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.InvokeClassPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
+import java.util.List;
 import java.util.Locale;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
@@ -60,5 +62,11 @@ public class InvokeClassAPI {
 
         payload.getRequest().setParams(v1Params);
         coreAdminHandler.handleRequestBody(payload.getRequest(), payload.getResponse());
+    }
+
+    public static class InvokeClassPayload implements ReflectMapWriter {
+
+        @JsonProperty(required = true)
+        public List<String> classes;
     }
 }

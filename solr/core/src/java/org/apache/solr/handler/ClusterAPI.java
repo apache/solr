@@ -22,9 +22,6 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.request.beans.ClusterPropPayload;
-import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
-import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -51,6 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
@@ -385,5 +383,103 @@ public class ClusterAPI {
 
   }
 
+  public static class ClusterPropPayload implements ReflectMapWriter {
 
+    @JsonProperty
+    public String urlScheme;
+
+    @JsonProperty
+    public Integer maxCoresPerNode;
+    @JsonProperty
+    public String location;
+
+    @JsonProperty
+    public ClusterPropPayload.Defaults defaults;
+
+    @JsonProperty
+    public ClusterPropPayload.CollectionDefaults collectionDefaults;
+
+    public static class CollectionDefaults implements ReflectMapWriter {
+      @JsonProperty
+      public Integer numShards;
+      @JsonProperty
+      public Integer tlogReplicas;
+      @JsonProperty
+      public Integer pullReplicas;
+      @JsonProperty
+      public Integer nrtReplicas;
+    }
+
+    public static class Defaults implements ReflectMapWriter {
+      @JsonProperty
+      public ClusterPropPayload.CollectionDefaults collection;
+
+      @JsonProperty
+      public ClusterPropPayload.Cluster cluster;
+    }
+
+    public static class Cluster implements ReflectMapWriter {
+      @JsonProperty
+      public Boolean useLegacyReplicaAssignment;
+
+      @JsonProperty
+      public ClusterPropPayload.CollectionDefaults collection;
+    }
+  }
+
+  public static class CreateConfigPayload implements ReflectMapWriter {
+    @JsonProperty(required = true)
+    public String name;
+    @JsonProperty
+    public String baseConfigSet;
+    @JsonProperty
+    public Map<String,Object> properties;
+  }
+
+  public static class RateLimiterPayload implements ReflectMapWriter {
+    @JsonProperty
+    public Boolean enabled;
+
+    @JsonProperty
+    public Integer guaranteedSlots;
+
+    @JsonProperty
+    public Integer allowedRequests;
+
+    @JsonProperty
+    public Boolean slotBorrowingEnabled;
+
+    @JsonProperty
+    public Integer slotAcquisitionTimeoutInMS;
+
+    public RateLimiterPayload copy() {
+      RateLimiterPayload result = new RateLimiterPayload();
+
+      result.enabled = enabled;
+      result.guaranteedSlots = guaranteedSlots;
+      result.allowedRequests = allowedRequests;
+      result.slotBorrowingEnabled = slotBorrowingEnabled;
+      result.slotAcquisitionTimeoutInMS = slotAcquisitionTimeoutInMS;
+
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof RateLimiterPayload) {
+        RateLimiterPayload that = (RateLimiterPayload) obj;
+        return Objects.equals(this.enabled, that.enabled) &&
+                Objects.equals(this.guaranteedSlots, that.guaranteedSlots) &&
+                Objects.equals(this.allowedRequests, that.allowedRequests) &&
+                Objects.equals(this.slotBorrowingEnabled, that.slotBorrowingEnabled) &&
+                Objects.equals(this.slotAcquisitionTimeoutInMS, that.slotAcquisitionTimeoutInMS);
+      }
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(enabled, guaranteedSlots, allowedRequests, slotBorrowingEnabled, slotAcquisitionTimeoutInMS);
+    }
+  }
 }

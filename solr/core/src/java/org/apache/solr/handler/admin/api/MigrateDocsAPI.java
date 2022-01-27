@@ -19,8 +19,9 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.MigrateDocsPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 import java.util.HashMap;
@@ -37,8 +38,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
  *
  * The new API (POST /v2/collections/collectionName {'migrate-docs': {...}}) is analogous to the v1
  * /admin/collections?action=MIGRATE command.
- *
- * @see MigrateDocsPayload
  */
 @EndPoint(
         path = {"/c/{collection}", "/collections/{collection}"},
@@ -74,5 +73,22 @@ public class MigrateDocsAPI {
     }
 
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
+
+  public static class MigrateDocsPayload implements ReflectMapWriter {
+    @JsonProperty(required = true)
+    public String target;
+
+    @JsonProperty(required = true)
+    public String splitKey;
+
+    @JsonProperty
+    public Integer forwardTimeout = 60;
+
+    @JsonProperty
+    public Boolean followAliases;
+
+    @JsonProperty
+    public String async;
   }
 }

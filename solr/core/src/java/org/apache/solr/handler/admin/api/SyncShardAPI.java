@@ -21,8 +21,8 @@ import com.google.common.collect.Maps;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.SyncShardPayload;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 import java.util.Map;
@@ -65,4 +65,6 @@ public class SyncShardAPI {
 
         collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), addedV1Params), obj.getResponse());
     }
+
+    public static class SyncShardPayload implements ReflectMapWriter { }
 }

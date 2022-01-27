@@ -21,8 +21,9 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.CreateShardPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 import java.util.HashMap;
@@ -79,5 +80,37 @@ public class CreateShardAPI {
       return String.join(",", nodeSet);
     }
     return "EMPTY";
+  }
+
+  public static class CreateShardPayload implements ReflectMapWriter {
+    @JsonProperty(required = true)
+    public String shard;
+
+    @JsonProperty
+    public List<String> nodeSet;
+
+    @JsonProperty
+    public Map<String, Object> coreProperties;
+
+    @JsonProperty
+    public Boolean followAliases;
+
+    @JsonProperty
+    public String async;
+
+    @JsonProperty
+    public Boolean waitForFinalState;
+
+    @JsonProperty
+    public Integer replicationFactor;
+
+    @JsonProperty
+    public Integer nrtReplicas;
+
+    @JsonProperty
+    public Integer tlogReplicas;
+
+    @JsonProperty
+    public Integer pullReplicas;
   }
 }

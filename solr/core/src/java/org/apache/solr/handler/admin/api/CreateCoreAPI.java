@@ -20,10 +20,12 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.CreateCorePayload;
+import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -74,5 +76,64 @@ public class CreateCoreAPI {
         }
 
         coreAdminHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+    }
+
+    public static class CreateCorePayload implements ReflectMapWriter {
+        @JsonProperty(required = true)
+        public String name;
+
+        @JsonProperty
+        public String instanceDir;
+
+        @JsonProperty
+        public String dataDir;
+
+        @JsonProperty
+        public String ulogDir;
+
+        @JsonProperty
+        public String schema;
+
+        @JsonProperty
+        public String config;
+
+        @JsonProperty
+        public String configSet;
+
+        @JsonProperty
+        public Boolean loadOnStartup;
+
+        // If our JsonProperty clone was more feature-rich here we could specify the property be called 'transient', but
+        // without that support it needs to be named something else to avoid conflicting with the 'transient' keyword in Java
+        @JsonProperty
+        public Boolean isTransient;
+
+        @JsonProperty
+        public String shard;
+
+        @JsonProperty
+        public String collection;
+
+        // TODO - what type is 'roles' expected to be?
+        @JsonProperty
+        public List<String> roles;
+
+        @JsonProperty
+        public String replicaType;
+
+        @JsonProperty
+        public Map<String, Object> properties;
+
+        @JsonProperty
+        public String coreNodeName;
+
+        @JsonProperty
+        public Integer numShards;
+
+        @JsonProperty
+        public Boolean newCollection;
+
+        @JsonProperty
+        public String async;
     }
 }

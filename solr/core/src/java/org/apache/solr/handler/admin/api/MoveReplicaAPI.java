@@ -19,8 +19,9 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.MoveReplicaPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 import java.util.HashMap;
@@ -37,8 +38,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
  *
  * The new API (POST /v2/collections/collectionName {'move-replica': {...}}) is analogous to the v1
  * /admin/collections?action=MOVEREPLICA command.
- *
- * @see MoveReplicaPayload
  */
 @EndPoint(
         path = {"/c/{collection}", "/collections/{collection}"},
@@ -61,5 +60,33 @@ public class MoveReplicaAPI {
     v1Params.put(COLLECTION, obj.getRequest().getPathTemplateValues().get(COLLECTION));
 
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
+
+  public static class MoveReplicaPayload implements ReflectMapWriter {
+    @JsonProperty(required = true)
+    public String targetNode;
+
+    @JsonProperty
+    public String replica;
+
+    @JsonProperty
+    public String shard;
+
+    @JsonProperty
+    public String sourceNode;
+
+    @JsonProperty
+    public Boolean waitForFinalState = false;
+
+    @JsonProperty
+    public Integer timeout = 600;
+
+    @JsonProperty
+    public Boolean inPlaceMove = true;
+
+    @JsonProperty
+    public Boolean followAliases;
+
+    // TODO Should this support 'async'? Does 'waitForFinalState' replace 'async' here?
   }
 }

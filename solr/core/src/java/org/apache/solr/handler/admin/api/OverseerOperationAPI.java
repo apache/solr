@@ -20,8 +20,9 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.OverseerOperationPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 import java.util.HashMap;
@@ -37,8 +38,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PER
  * V2 API for triggering a node to rejoin leader election for the 'overseer' role.
  *
  * This API (POST /v2/node {'overseer-op': {...}}) is analogous to the v1 /admin/cores?action=overseerop command.
- *
- * @see OverseerOperationPayload
  */
 @EndPoint(
         path = {"/node"},
@@ -60,5 +59,13 @@ public class OverseerOperationAPI {
         final Map<String, Object> v1Params = payload.get().toMap(new HashMap<>());
         v1Params.put(ACTION, CoreAdminParams.CoreAdminAction.OVERSEEROP.name().toLowerCase(Locale.ROOT));
         coreAdminHandler.handleRequestBody(wrapParams(payload.getRequest(), v1Params), payload.getResponse());
+    }
+
+    public static class OverseerOperationPayload implements ReflectMapWriter {
+        @JsonProperty
+        public String op;
+
+        @JsonProperty
+        public String electionNode;
     }
 }

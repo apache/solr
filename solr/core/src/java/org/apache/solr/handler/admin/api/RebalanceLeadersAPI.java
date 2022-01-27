@@ -19,8 +19,9 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.RebalanceLeadersPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 import java.util.HashMap;
@@ -37,8 +38,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
  *
  * This API (POST /v2/collections/collectionName {'rebalance-leaders': {...}}) is analogous to the v1
  * /admin/collections?action=REBALANCELEADERS command.
- *
- * @see RebalanceLeadersPayload
  */
 @EndPoint(
         path = {"/c/{collection}", "/collections/{collection}"},
@@ -61,5 +60,13 @@ public class RebalanceLeadersAPI {
     v1Params.put(COLLECTION, obj.getRequest().getPathTemplateValues().get(COLLECTION));
 
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
+
+  public static class RebalanceLeadersPayload implements ReflectMapWriter {
+    @JsonProperty
+    public Integer maxAtOnce;
+
+    @JsonProperty
+    public Integer maxWaitSeconds = 60;
   }
 }

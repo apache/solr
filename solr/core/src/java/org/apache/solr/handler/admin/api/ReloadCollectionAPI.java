@@ -19,8 +19,9 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.ReloadCollectionPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 import java.util.HashMap;
@@ -38,8 +39,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
  *
  * The new API (POST /v2/collections/collectionName {'reload': {...}}) is analogous to the v1
  * /admin/collections?action=RELOAD command.
- *
- * @see ReloadCollectionPayload
  */
 @EndPoint(
         path = {"/c/{collection}", "/collections/{collection}"},
@@ -62,5 +61,10 @@ public class ReloadCollectionAPI {
     v1Params.put(NAME, obj.getRequest().getPathTemplateValues().get(COLLECTION));
 
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
+
+  public class ReloadCollectionPayload implements ReflectMapWriter {
+    @JsonProperty
+    public String async;
   }
 }

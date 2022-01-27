@@ -22,9 +22,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.SplitShardPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 import java.util.HashMap;
@@ -73,5 +74,44 @@ public class SplitShardAPI {
       flattenMapWithPrefix(v2Body.coreProperties, v1Params, PROPERTY_PREFIX);
     }
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
+
+  public static class SplitShardPayload implements ReflectMapWriter {
+    @JsonProperty
+    public String shard;
+
+    @JsonProperty
+    public String ranges;
+
+    @JsonProperty
+    public String splitKey;
+
+    @JsonProperty
+    public Integer numSubShards;
+
+    @JsonProperty
+    public String splitFuzz;
+
+    @JsonProperty
+    public Boolean timing;
+
+    @JsonProperty
+    public Boolean splitByPrefix;
+
+    @JsonProperty
+    public Boolean followAliases;
+
+    // TODO Should/can this be an enum?  Does the annotation framework have support for enums like apispec files did?
+    @JsonProperty
+    public String splitMethod;
+
+    @JsonProperty
+    public Map<String, Object> coreProperties;
+
+    @JsonProperty
+    public String async;
+
+    @JsonProperty
+    public Boolean waitForFinalState;
   }
 }

@@ -20,7 +20,8 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.RejoinLeaderElectionPayload;
+import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 import java.util.HashMap;
@@ -69,5 +70,28 @@ public class RejoinLeaderElectionAPI {
         }
 
             coreAdminHandler.handleRequestBody(wrapParams(payload.getRequest(), v1Params), payload.getResponse());
+    }
+
+    public static class RejoinLeaderElectionPayload implements ReflectMapWriter {
+
+        // TODO It seems like most of these properties should be required, but it's hard to tell which ones are meant to be
+        //  required without that being specified on the v1 API or elsewhere
+        @JsonProperty
+        public String collection;
+
+        @JsonProperty
+        public String shard;
+
+        @JsonProperty
+        public String coreNodeName;
+
+        @JsonProperty
+        public String core;
+
+        @JsonProperty
+        public String electionNode;
+
+        @JsonProperty
+        public Boolean rejoinAtHead;
     }
 }

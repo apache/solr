@@ -17,19 +17,19 @@
 
 package org.apache.solr.servlet;
 
-import java.io.IOException;
-import java.util.Map;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.RateLimiterConfig;
+import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+
+import java.io.IOException;
+import java.util.Map;
 
 import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 
@@ -51,7 +51,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
       return;
     }
 
-    RateLimiterPayload rateLimiterMeta = mapper.readValue(configInput, RateLimiterPayload.class);
+    ClusterAPI.RateLimiterPayload rateLimiterMeta = mapper.readValue(configInput, ClusterAPI.RateLimiterPayload.class);
 
     constructQueryRateLimiterConfigInternal(rateLimiterMeta, rateLimiterConfig);
   }
@@ -74,7 +74,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
         return rateLimiterConfig;
       }
 
-      RateLimiterPayload rateLimiterMeta = mapper.readValue(configInput, RateLimiterPayload.class);
+      ClusterAPI.RateLimiterPayload rateLimiterMeta = mapper.readValue(configInput, ClusterAPI.RateLimiterPayload.class);
 
       constructQueryRateLimiterConfigInternal(rateLimiterMeta, rateLimiterConfig);
 
@@ -88,7 +88,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
     }
   }
 
-  private static void constructQueryRateLimiterConfigInternal(RateLimiterPayload rateLimiterMeta, RateLimiterConfig rateLimiterConfig) {
+  private static void constructQueryRateLimiterConfigInternal(ClusterAPI.RateLimiterPayload rateLimiterMeta, RateLimiterConfig rateLimiterConfig) {
 
     if (rateLimiterMeta == null) {
       // No Rate limiter configuration defined in clusterprops.json

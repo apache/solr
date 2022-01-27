@@ -19,8 +19,9 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.AddReplicaPropertyPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 import java.util.HashMap;
@@ -37,8 +38,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
  *
  * This API (POST /v2/collections/collectionName {'add-replica-property': {...}}) is analogous to the v1
  * /admin/collections?action=ADDREPLICAPROP command.
- *
- * @see AddReplicaPropertyPayload
  */
 @EndPoint(
         path = {"/c/{collection}", "/collections/{collection}"},
@@ -63,5 +62,22 @@ public class AddReplicaPropertyAPI {
     v1Params.put("property.value", v1Params.remove("value"));
 
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
+
+  public static class AddReplicaPropertyPayload implements ReflectMapWriter {
+    @JsonProperty(required =  true)
+    public String shard;
+
+    @JsonProperty(required = true)
+    public String replica;
+
+    @JsonProperty(required = true)
+    public String name;
+
+    @JsonProperty(required = true)
+    public String value;
+
+    @JsonProperty
+    public Boolean shardUnique = null;
   }
 }

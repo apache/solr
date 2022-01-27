@@ -19,8 +19,9 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.BalanceShardUniquePayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 import java.util.HashMap;
@@ -61,5 +62,16 @@ public class BalanceShardUniqueAPI {
     v1Params.put(COLLECTION, obj.getRequest().getPathTemplateValues().get(COLLECTION));
 
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
+
+  public static class BalanceShardUniquePayload implements ReflectMapWriter {
+    @JsonProperty(required = true)
+    public String property;
+
+    @JsonProperty
+    public Boolean onlyactivenodes = null;
+
+    @JsonProperty
+    public Boolean shardUnique;
   }
 }

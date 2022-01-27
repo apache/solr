@@ -22,15 +22,11 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
-import org.apache.solr.client.solrj.request.beans.CreateAliasPayload;
-import org.apache.solr.client.solrj.request.beans.CreatePayload;
-import org.apache.solr.client.solrj.request.beans.DeleteAliasPayload;
-import org.apache.solr.client.solrj.request.beans.RestoreCollectionPayload;
-import org.apache.solr.client.solrj.request.beans.SetAliasPropertyPayload;
 import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -43,6 +39,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.CREATE_COLLECTION_KEY;
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.ROUTER_KEY;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
@@ -208,4 +205,175 @@ public class CollectionsAPI {
             }
         }
   }
+
+    public static class BackupCollectionPayload implements ReflectMapWriter {
+        @JsonProperty(required = true)
+        public String collection;
+
+        @JsonProperty(required = true)
+        public String name;
+
+        @JsonProperty
+        public String location;
+
+        @JsonProperty
+        public String repository;
+
+        @JsonProperty
+        public Boolean followAliases;
+
+        @JsonProperty
+        public String indexBackup;
+
+        @JsonProperty
+        public String commitName;
+
+        @JsonProperty
+        public Boolean incremental;
+
+        @JsonProperty
+        public String async;
+    }
+
+    public static class CreateAliasPayload implements ReflectMapWriter {
+        @JsonProperty(required = true)
+        public String name;
+
+        @JsonProperty
+        public List<String> collections;
+
+        @JsonProperty
+        public CreateAliasPayload.AliasRouter router;
+
+        @JsonProperty
+        public String tz;
+
+        @JsonProperty(CREATE_COLLECTION_KEY)
+        public Map<String, Object> createCollectionParams;
+
+        @JsonProperty
+        public String async;
+
+        public static class AliasRouter implements ReflectMapWriter {
+            @JsonProperty(required = true)
+            public String name;
+
+            @JsonProperty
+            public String field;
+
+            @JsonProperty
+            public String start;
+
+            @JsonProperty
+            public String interval;
+
+            @JsonProperty
+            public Long maxFutureMs;
+
+            @JsonProperty
+            public String preemptiveCreateMath;
+
+            @JsonProperty
+            public String autoDeleteAge;
+
+            @JsonProperty
+            public Integer maxCardinality;
+
+            @JsonProperty
+            public String mustMatch;
+
+            @JsonProperty
+            public List<Map<String, Object>> routerList;
+        }
+    }
+
+    public static class CreatePayload implements ReflectMapWriter {
+        @JsonProperty(required = true)
+        public String name;
+
+        @JsonProperty
+        public String config;
+
+        @JsonProperty
+        public Map<String, Object> router;
+
+        @JsonProperty
+        public Integer numShards;
+
+        @JsonProperty
+        public String shards;
+
+        @JsonProperty
+        public Integer replicationFactor;
+
+        @JsonProperty
+        public Integer nrtReplicas;
+
+        @JsonProperty
+        public Integer tlogReplicas;
+
+        @JsonProperty
+        public Integer pullReplicas;
+
+        @JsonProperty
+        public List<String> nodeSet;
+
+        @JsonProperty
+        public Boolean shuffleNodes;
+
+        @JsonProperty
+        public Map<String, Object> properties;
+
+        @JsonProperty
+        public String async;
+
+        @JsonProperty
+        public Boolean waitForFinalState;
+
+        @JsonProperty
+        public Boolean perReplicaState;
+    }
+
+    public static class DeleteAliasPayload implements ReflectMapWriter {
+        @JsonProperty(required = true)
+        public String name;
+
+        @JsonProperty
+        public String async;
+    }
+
+    public static class RestoreCollectionPayload implements ReflectMapWriter {
+
+        @JsonProperty(required = true)
+        public String collection;
+
+        @JsonProperty(required = true)
+        public String name;
+
+        @JsonProperty
+        public String location;
+
+        @JsonProperty
+        public String repository;
+
+        @JsonProperty
+        public Integer backupId;
+
+        @JsonProperty(CREATE_COLLECTION_KEY)
+        public Map<String, Object> createCollectionParams;
+
+        @JsonProperty
+        public String async;
+    }
+
+    public static class SetAliasPropertyPayload implements ReflectMapWriter {
+        @JsonProperty(required = true)
+        public String name;
+
+        @JsonProperty
+        public String async;
+
+        @JsonProperty
+        public Map<String, Object> properties;
+    }
 }

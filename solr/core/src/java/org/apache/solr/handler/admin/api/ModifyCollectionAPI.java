@@ -19,8 +19,9 @@ package org.apache.solr.handler.admin.api;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.ModifyCollectionPayload;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 import java.util.HashMap;
@@ -39,8 +40,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
  *
  * The new API (POST /v2/collections/collectionName {'modify-collection': {...}}) is equivalent to the v1
  * /admin/collections?action=MODIFYCOLLECTION command.
- *
- * @see ModifyCollectionPayload
  */
 @EndPoint(
         path = {"/c/{collection}", "/collections/{collection}"},
@@ -72,5 +71,22 @@ public class ModifyCollectionAPI {
     }
 
     collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
+
+  public static class ModifyCollectionPayload implements ReflectMapWriter {
+    @JsonProperty
+    public Integer replicationFactor;
+
+    @JsonProperty
+    public Boolean readOnly;
+
+    @JsonProperty
+    public String config;
+
+    @JsonProperty
+    public Map<String, Object> properties;
+
+    @JsonProperty
+    public String async;
   }
 }
