@@ -101,6 +101,8 @@ See the <<monitoring-with-prometheus-and-grafana.adoc#,documentation>> for more 
 docker/::
 This contains a Dockerfile to build a Docker image from the binary distribution, that is compatible with the official image.
 This directory also contains the scripts needed when using Solr inside the Docker image, under the `scripts/` directory.
+The `README.md` in this directory describes how custom Solr Docker images can be built using this binary distribution.
+Refer to the <<solr-in-docker.adoc#,Running Solr in Docker>> page for information on using a Solr docker image.
 
 docs/::
 The `docs` directory includes a link to online Javadocs for Solr.
