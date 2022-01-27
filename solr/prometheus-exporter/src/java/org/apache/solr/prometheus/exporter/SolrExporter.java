@@ -193,16 +193,17 @@ public class SolrExporter {
         log.error("Must provide either {} or {}", ARG_BASE_URL_FLAGS, ARG_ZK_HOST_FLAGS);
       }
 
+      int port = res.getInt(ARG_PORT_DEST);
       SolrExporter solrExporter = new SolrExporter(
-          res.getInt(ARG_PORT_DEST),
+          port,
           res.getInt(ARG_NUM_THREADS_DEST),
           res.getInt(ARG_SCRAPE_INTERVAL_DEST),
           scrapeConfiguration,
           loadMetricsConfiguration(res.getString(ARG_CONFIG_DEST)));
 
-      log.info("Starting Solr Prometheus Exporting");
+      log.info("Starting Solr Prometheus Exporting on port {}", port);
       solrExporter.start();
-      log.info("Solr Prometheus Exporter is running");
+      log.info("Solr Prometheus Exporter is running. Collecting metrics for {}", scrapeConfiguration);
     } catch (IOException e) {
       log.error("Failed to start Solr Prometheus Exporter: ", e);
     } catch (ArgumentParserException e) {
