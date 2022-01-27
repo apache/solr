@@ -43,10 +43,6 @@ public class DocSetQuery extends Query implements DocSetProducer{
         this.docSet = docSet;
     }
 
-    public DocSetQuery() {
-        docSet = null;
-    }
-
     @Override
     public String toString(String field) {
         return "DocSetQuery(" + field + ")";
@@ -73,7 +69,7 @@ public class DocSetQuery extends Query implements DocSetProducer{
 
     /**
      * @param searcher is not used because we already have a DocSet created in DocSetQuery
-     * @return docSet
+     * @return the DocSet created in DocSetQuery
      */
     @Override
     public DocSet createDocSet(SolrIndexSearcher searcher) throws IOException {

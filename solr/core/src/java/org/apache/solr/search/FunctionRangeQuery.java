@@ -18,26 +18,32 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 
 // This class works as either a normal constant score query, or as a PostFilter using a collector
-public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFilter {
+public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter {
 
   final ValueSourceRangeFilter rangeFilt;
 
   public FunctionRangeQuery(ValueSourceRangeFilter filter) {
-    super(filter);
+    super();
     this.rangeFilt = filter;
-    this.cost = 100; // default behavior should be PostFiltering
+  }
+
+  @Override
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return rangeFilt.createWeight(searcher, scoreMode, boost);
   }
 
   @Override
@@ -78,5 +84,26 @@ public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFi
       FunctionValues dv = rangeFilt.getValueSource().getValues(fcontext, context);
       scorer = dv.getRangeScorer(weight, context, rangeFilt.getLowerVal(), rangeFilt.getUpperVal(), rangeFilt.isIncludeLower(), rangeFilt.isIncludeUpper());
     }
+  }
+
+  @Override
+  public String toString(String field) {
+    return "FunctionRangeQuery(" + field + ")";
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    return sameClassAs(obj) &&
+            Objects.equals(rangeFilt, ((FunctionRangeQuery) obj).rangeFilt);
+  }
+
+  @Override
+  public int hashCode() {
+    return 31 * classHash() + rangeFilt.hashCode();
   }
 }

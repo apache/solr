@@ -131,7 +131,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
     
     // Now search w/ a Query which returns a null Scorer
-    DocSetQuery f = new DocSetQuery() {
+    DocSetQuery f = new DocSetQuery(null) {
       @Override
       public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
         return new Weight(this) {

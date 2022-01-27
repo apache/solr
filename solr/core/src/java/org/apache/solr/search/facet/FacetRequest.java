@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -32,8 +33,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.JoinQParserPlugin;
 import org.apache.solr.search.QueryContext;
-import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.WrappedQuery;
 import org.apache.solr.search.join.GraphQuery;
 import org.apache.solr.search.join.GraphQueryParser;
 import org.apache.solr.util.RTimer;
@@ -229,19 +230,19 @@ public abstract class FacetRequest {
        * Creates a Query that can be used to recompute the new "base" for this domain, relative to the
        * current base of the FacetContext.
        */
-      public Query createDomainQuery(FacetContext fcontext) throws IOException {
+      public Query createDomainQuery(FacetContext fcontext) {
         // NOTE: this code lives here, instead of in FacetProcessor.handleJoin, in order to minimize
         // the number of classes that have to know about the number of possible settings on the join
         // (ie: if we add a score mode, or some other modifier to how the joins are done)
 
-        final SolrConstantScoreQuery fromQuery = new SolrConstantScoreQuery(fcontext.base.makeQuery());
+        final ConstantScoreQuery fromQuery = new ConstantScoreQuery(fcontext.base.makeQuery());
+        WrappedQuery wrappedFromQuery = new WrappedQuery(fromQuery);
+
         // this shouldn't matter once we're wrapped in a join query, but just in case it ever does...
-        fromQuery.setCache(false);
+        wrappedFromQuery.setCache(false);
 
-        return JoinQParserPlugin.createJoinQuery(fromQuery, this.from, this.to, this.method);
+        return JoinQParserPlugin.createJoinQuery(wrappedFromQuery, this.from, this.to, this.method);
       }
-
-
     }
 
     /** Are we doing a query time graph across other documents */
@@ -287,24 +288,23 @@ public abstract class FacetRequest {
        * Creates a Query that can be used to recompute the new "base" for this domain, relative to the
        * current base of the FacetContext.
        */
-      public Query createDomainQuery(FacetContext fcontext) throws IOException {
-        final SolrConstantScoreQuery fromQuery = new SolrConstantScoreQuery(fcontext.base.makeQuery());
+      public Query createDomainQuery(FacetContext fcontext) {
+        final ConstantScoreQuery fromQuery = new ConstantScoreQuery(fcontext.base.makeQuery());
+        WrappedQuery wrappedFromQuery = new WrappedQuery(fromQuery);
+
         // this shouldn't matter once we're wrapped in a join query, but just in case it ever does...
-        fromQuery.setCache(false);
+        wrappedFromQuery.setCache(false);
 
         GraphQueryParser graphParser = new GraphQueryParser(null, localParams, null, fcontext.req);
         try {
           GraphQuery graphQuery = (GraphQuery)graphParser.parse();
-          graphQuery.setQ(fromQuery);
+          graphQuery.setQ(wrappedFromQuery);
           return graphQuery;
         } catch (SyntaxError syntaxError) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
         }
       }
-
-
     }
-    
   }
 
   /**
@@ -446,9 +446,5 @@ public abstract class FacetRequest {
   public abstract FacetMerger createFacetMerger(Object prototype);
   
   public abstract Map<String, Object> getFacetDescription();
-
-
 }
-
-
 
