@@ -19,6 +19,7 @@ package org.apache.solr.pkg;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -55,13 +56,13 @@ public class PackageLoader implements Closeable {
   public static final String LOCAL_PKGS_DIR_PROP = "solr.packages.local.dir";
   public static final String ENABLED_LOCAL_PKGS_PROP = "solr.enabled.local.pkgs";
   public static final String LOCAL_PACKAGES_JSON = "local_packages.json";
-  public static final String ENABLE_PACKAGES_REPO_PROP_LEGACY = "enable.packages";
-  public static final String ENABLE_PACKAGES_REPO_PROP = "solr.enable.pkgs.repo";
+  public static final String ENABLE_PACKAGES_REPO_PROP = "enable.packages";
+  public static final String ENABLE_PACKAGES_REPO_PROP_NEW = "solr.enable.pkgs.repo";
 
   public final String localPkgsDir = System.getProperty(LOCAL_PKGS_DIR_PROP);
-  public final String localPkgsWhiteList = System.getProperty(ENABLED_LOCAL_PKGS_PROP, "");
-  public final boolean enablePackages = Boolean.parseBoolean(System.getProperty(ENABLE_PACKAGES_REPO_PROP_LEGACY,
-          System.getProperty(ENABLE_PACKAGES_REPO_PROP, "false")));
+  public final String enabledLocalPkgsList = System.getProperty(ENABLED_LOCAL_PKGS_PROP, "");
+  public final boolean repoPackagesEnabled = Boolean.parseBoolean(System.getProperty(ENABLE_PACKAGES_REPO_PROP,
+          System.getProperty(ENABLE_PACKAGES_REPO_PROP_NEW, "false")));
 
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
@@ -81,29 +82,31 @@ public class PackageLoader implements Closeable {
   public PackageLoader(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
 
-    List<String> enabledPackages = StrUtils.splitSmart(localPkgsWhiteList, ',');
+    List<String> enabledPackages = StrUtils.splitSmart(enabledLocalPkgsList, ',');
     packageAPI = new PackageAPI(coreContainer, this);
 
     if (localPkgsDir != null && !enabledPackages.isEmpty()) {
-      loadLocalPackages(enabledPackages);
+      loadLocalPackages(localPkgsDir, enabledPackages);
     }
-    if (enablePackages) refreshPackageConf();
+    if (repoPackagesEnabled) {
+      refreshPackageConf();
+    }
   }
 
-  private void loadLocalPackages(List<String> enabledPackages) {
-    final Path packagesPath = new File(localPkgsDir.charAt(0)== File.separatorChar?
-            localPkgsDir :
-            coreContainer.getSolrHome()+ File.separator+ localPkgsDir).toPath();
+  private void loadLocalPackages(String localPkgsDir,  List<String> enabledPackages) {
+    final Path packagesPath = localPkgsDir.charAt(0) == File.separatorChar ?
+            Paths.get(localPkgsDir) :
+            Paths.get(coreContainer.getSolrHome()).resolve(localPkgsDir);
     log.info("Packages to be loaded from directory: {}", packagesPath);
 
-    if (!packagesPath.toFile().exists()) {
+    if (!Files.exists(packagesPath)) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No such directory: " + packagesPath);
     }
-    File file = new File(packagesPath.toFile(), LOCAL_PACKAGES_JSON);
-    if(file.exists()) {
+    Path packagesJsonPath = packagesPath.resolve(LOCAL_PACKAGES_JSON);
+    if(Files.exists(packagesJsonPath)) {
       try {
 
-        try (InputStream in = new FileInputStream(file)) {
+        try (InputStream in = Files.newInputStream(packagesJsonPath)) {
           localPackages = PackageAPI.mapper.readValue(in, PackageAPI.Packages.class);
         }
       } catch (IOException e) {
@@ -123,7 +126,8 @@ public class PackageLoader implements Closeable {
     }
   }
 
-  /**If a directory with no local_packages.json is provided,
+  /**
+   * If a directory with no local_packages.json is provided,
    * each sub directory that contains one or more jar files
    * will be treated as a package and each jar file in that
    * directory is added to the package classpath
@@ -158,7 +162,7 @@ public class PackageLoader implements Closeable {
   }
 
   public Package getPackage(String key) {
-   return packageClassLoaders.get(key);
+    return packageClassLoaders.get(key);
   }
 
   public Map<String, Package> getPackages() {

@@ -80,7 +80,7 @@ public class PackageAPI {
     this.coreContainer = coreContainer;
     this.packageLoader = loader;
     pkgs = new Packages();
-    if(!loader.enablePackages) return;
+    if(!loader.repoPackagesEnabled) return;
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
     try {
       pkgs = readPkgsFromZk(null, null);
@@ -360,11 +360,11 @@ public class PackageAPI {
   }
 
   public boolean isEnabled() {
-    return packageLoader.enablePackages;
+    return packageLoader.repoPackagesEnabled;
   }
 
   private boolean checkEnabled(CommandOperation payload) {
-    if (!packageLoader.enablePackages) {
+    if (!packageLoader.repoPackagesEnabled) {
       payload.addError(ERR_MSG);
       return false;
     }

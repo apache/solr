@@ -22,6 +22,7 @@ import java.util.Arrays;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.TestSolrConfigHandler;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.PackageTool;
 import org.apache.solr.util.SolrCLI;
@@ -51,7 +52,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("enable.packages", "true");
+    System.setProperty(PackageLoader.ENABLE_PACKAGES_REPO_PROP, "true");
 
     configureCluster(1)
     .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
@@ -65,7 +66,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   @AfterClass
   public static void teardown() throws Exception {
     repositoryServer.stop();
-    System.clearProperty("enable.packages");
+    System.clearProperty(PackageLoader.ENABLE_PACKAGES_REPO_PROP);
   }
 
   @Test
