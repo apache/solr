@@ -158,6 +158,7 @@ prometheus-exporter/
 docker/
   Contains a docker file to build a Docker image using the source binary distribution.
   docker/scripts contains scripts that the docker image uses to manage Solr.
+  Refer to the README for instructions on how to build an image.
 
 docs/index.html
   A link to the online version of Apache Solr Javadoc API documentation and Tutorial
