@@ -34,7 +34,8 @@ import java.io.StringWriter;
 import java.util.function.BooleanSupplier;
 
 /**
- * Tests {@link ICUCollationField} with docValues.
+ * Tests warn/failure of {@link ICUCollationField} when schema explicitly sets
+ * <code>useDocValuesAsStored="true"</code>
  */
 @SuppressForbidden(reason = "test is specific to log4j2")
 public class TestICUCollationFieldUDVAS extends SolrTestCaseJ4 {
