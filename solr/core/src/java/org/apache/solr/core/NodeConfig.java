@@ -428,7 +428,7 @@ public class NodeConfig {
 
   // Adds modules to shared classpath
   private void initModules() {
-    Set<String> moduleNames = ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(getModules());
+    var moduleNames = ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(getModules());
     boolean modified = false;
     for (String m : moduleNames) {
       if (!ModuleUtils.moduleExists(getSolrInstallDir(), m)) {

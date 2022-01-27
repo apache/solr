@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -97,7 +98,7 @@ public class ModuleUtils {
    * @param modulesFromString raw string of comma-separated module names
    * @return a set of module
    */
-  public static Set<String> resolveModulesFromStringOrSyspropOrEnv(String modulesFromString) {
+  public static Collection<String> resolveModulesFromStringOrSyspropOrEnv(String modulesFromString) {
     Set<String> moduleNames;
     if (modulesFromString != null && !modulesFromString.isBlank()) {
       moduleNames = new HashSet<>(StrUtils.splitSmart(modulesFromString, ',', true));
