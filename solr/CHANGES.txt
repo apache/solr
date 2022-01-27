@@ -543,7 +543,7 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-15954: Move the Prometheus Exporter from "solr/modules/prometheus-exporter" to "solr/prometheus-exporter". (Houston Putman)
 
-* SOLR-15957: Add port and scrapping information to Solr Prometheus startup logging. (Houston Putman)
+* SOLR-15957: Add port and scraping information to Solr Prometheus startup logging. (Houston Putman)
 
 Bug Fixes
 ---------------------
