@@ -75,7 +75,9 @@ import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY
 
 public class HdfsDirectoryFactory extends CachingDirectoryFactory implements SolrCoreAware, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
+  public final static String LOCK_TYPE_HDFS   = "hdfs";
+
   public static final String BLOCKCACHE_SLAB_COUNT = "solr.hdfs.blockcache.slab.count";
   public static final String BLOCKCACHE_DIRECT_MEMORY_ALLOCATION = "solr.hdfs.blockcache.direct.memory.allocation";
   public static final String BLOCKCACHE_ENABLED = "solr.hdfs.blockcache.enabled";
@@ -182,12 +184,12 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   @Override
   protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (null == rawLockType) {
-      rawLockType = DirectoryFactory.LOCK_TYPE_HDFS;
+      rawLockType = LOCK_TYPE_HDFS;
       log.warn("No lockType configured, assuming '{}'.", rawLockType);
     }
     final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
     switch (lockType) {
-      case DirectoryFactory.LOCK_TYPE_HDFS:
+      case LOCK_TYPE_HDFS:
         return HdfsLockFactory.INSTANCE;
       case DirectoryFactory.LOCK_TYPE_SINGLE:
         return new SingleInstanceLockFactory();

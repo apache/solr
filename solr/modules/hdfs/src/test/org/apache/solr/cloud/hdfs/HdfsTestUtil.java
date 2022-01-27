@@ -55,7 +55,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.util.HdfsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -183,7 +183,7 @@ public class HdfsTestUtil {
 
     System.setProperty("test.build.data", dir + File.separator + "hdfs" + File.separator + "build");
     System.setProperty("test.cache.data", dir + File.separator + "hdfs" + File.separator + "cache");
-    System.setProperty("solr.lock.type", DirectoryFactory.LOCK_TYPE_HDFS);
+    System.setProperty("solr.lock.type", HdfsDirectoryFactory.LOCK_TYPE_HDFS);
     System.setProperty(SolrTestCaseJ4.UPDATELOG_SYSPROP, HdfsDirectoryFactory.HDFS_UPDATE_LOG_CLASS_NAME);
 
     // test-files/solr/solr.xml sets this to be 15000. This isn't long enough for HDFS in some cases.
