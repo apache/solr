@@ -17,6 +17,7 @@
 package org.apache.solr.ltr.feature;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -366,6 +367,19 @@ public abstract class Feature extends Query implements Accountable {
       // Currently (Q1 2021) we intentionally don't delegate twoPhaseIterator()
       // because it doesn't always work and we don't yet know why, please see
       // SOLR-15071 for more details.
+
+      @Override
+      public float smoothingScore(int docId) throws IOException {
+        return in.smoothingScore(docId);
+      }
+
+      public void setMinCompetitiveScore(float minScore) throws IOException {
+        in.setMinCompetitiveScore(minScore);
+      }
+
+      public Collection<ChildScorable> getChildren() throws IOException {
+        return in.getChildren();
+      }
 
       @Override
       public int advanceShallow(int target) throws IOException {

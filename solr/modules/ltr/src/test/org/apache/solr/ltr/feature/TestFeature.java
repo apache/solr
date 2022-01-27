@@ -18,6 +18,7 @@ package org.apache.solr.ltr.feature;
 
 import java.lang.reflect.Method;
 
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Scorer;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
@@ -26,16 +27,24 @@ public class TestFeature extends SolrTestCase {
 
   @Test
   public void testFilterFeatureScorerOverridesScorerMethods() {
+    implTestFilterFeatureScorerOverridesMethods(Scorer.class.getDeclaredMethods());
+  }
+
+  @Test
+  public void testFilterFeatureScorerOverridesScorableMethods() {
+    implTestFilterFeatureScorerOverridesMethods(Scorable.class.getDeclaredMethods());
+  }
+
+  public void implTestFilterFeatureScorerOverridesMethods(Method[] scorerClassMethods) {
     final Class<?> ffsClass = Feature.FeatureWeight.FilterFeatureScorer.class;
-    for (final Method scorerClassMethod : Scorer.class.getDeclaredMethods()) {
+    for (final Method scorerClassMethod : scorerClassMethods) {
       try {
+        // classes deriving from FilterFeatureScorer implement the score method
+        if (scorerClassMethod.getName().equals("score")) continue;
 
         // the FilterFeatureScorer may simply inherit Scorer's default implementation
         if (scorerClassMethod.getName().equals("twoPhaseIterator")) continue;
 
-        // the FilterFeatureScorer may simply inherit Scorer's default implementation
-        if (scorerClassMethod.getName().equals("smoothingScore")) continue;
-        
         // the FilterFeatureScorer's implementation does not influence its parent Weight
         if (scorerClassMethod.getName().equals("getWeight")) continue;
 
