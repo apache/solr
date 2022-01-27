@@ -33,17 +33,16 @@ ext {
 configurations {
   modules
   example
+  prometheusExporter
   server
   docs
   docker
   solrTgz
   solrTgzSignature
-  solrZip
 }
 
 artifacts {
   solrTgz(distTar)
-  solrZip(distZip)
 }
 
 dependencies {
@@ -55,12 +54,13 @@ dependencies {
    ":solr:modules:jaegertracer-configurator",
    ":solr:modules:langid",
    ":solr:modules:ltr",
-   ":solr:modules:prometheus-exporter",
    ":solr:modules:s3-repository",
    ":solr:modules:scripting"
   ].each { moduleName ->
     modules project(path: moduleName, configuration: "packaging")
   }
+
+  prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
@@ -100,6 +100,10 @@ distributions {
 
       from(configurations.example, {
         into "example"
+      })
+
+      from(configurations.prometheusExporter, {
+        into "prometheus-exporter"
       })
 
       from(configurations.server, {
@@ -150,5 +154,7 @@ task dev(type: Copy) {
 distTar {
   compression = Compression.GZIP
 }
+
+distZip.enabled = false
 
 assemble.dependsOn installDist
