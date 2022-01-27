@@ -52,13 +52,16 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 public class PackageLoader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String LATEST = "$LATEST";
-  public static final String LPD = "solr.packages.local.dir";
-  public static final String SOLR_PACKAGES_LOCAL_ENABLED = "solr.packages.local.enabled";
+  public static final String LOCAL_PKGS_DIR_PROP = "solr.packages.local.dir";
+  public static final String ENABLED_LOCAL_PKGS_PROP = "solr.enabled.local.pkgs";
   public static final String LOCAL_PACKAGES_JSON = "local_packages.json";
+  public static final String ENABLE_PACKAGES_REPO_PROP_LEGACY = "enable.packages";
+  public static final String ENABLE_PACKAGES_REPO_PROP = "solr.enable.pkgs.repo";
 
-  public final String localPkgsDir = System.getProperty(LPD);
-  public final String localPkgsWhiteList = System.getProperty(SOLR_PACKAGES_LOCAL_ENABLED, "");
-  public final boolean enablePackages = Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
+  public final String localPkgsDir = System.getProperty(LOCAL_PKGS_DIR_PROP);
+  public final String localPkgsWhiteList = System.getProperty(ENABLED_LOCAL_PKGS_PROP, "");
+  public final boolean enablePackages = Boolean.parseBoolean(System.getProperty(ENABLE_PACKAGES_REPO_PROP_LEGACY,
+          System.getProperty(ENABLE_PACKAGES_REPO_PROP, "false")));
 
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
@@ -66,7 +69,7 @@ public class PackageLoader implements Closeable {
 
   private PackageAPI.Packages myCopy =  new PackageAPI.Packages();
 
-  private PackageAPI packageAPI;
+  private final PackageAPI packageAPI;
 
 
   public Optional<Package.Version> getPackageVersion(String pkg, String version) {
