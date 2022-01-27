@@ -99,9 +99,9 @@ public class ModuleUtils {
    * @return a set of module
    */
   public static Collection<String> resolveModulesFromStringOrSyspropOrEnv(String modulesFromString) {
-    Set<String> moduleNames;
+    Collection<String> moduleNames;
     if (modulesFromString != null && !modulesFromString.isBlank()) {
-      moduleNames = new HashSet<>(StrUtils.splitSmart(modulesFromString, ',', true));
+      moduleNames = StrUtils.splitSmart(modulesFromString, ',', true);
     } else {
       // If nothing configured in solr.xml, check sysprop and environment
       moduleNames = resolveFromSyspropOrEnv();
