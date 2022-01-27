@@ -59,7 +59,11 @@ public class DocSetQuery extends Query implements DocSetProducer{
 
     @Override
     public boolean equals(Object obj) {
-        return sameClassAs(obj) && Objects.equals(docSet, getClass().cast(obj));
+        return sameClassAs(obj) && equalsTo(getClass().cast(obj));
+    }
+
+    private boolean equalsTo(DocSetQuery other) {
+        return Objects.equals(docSet, other.docSet);
     }
 
     @Override
