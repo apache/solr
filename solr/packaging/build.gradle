@@ -53,6 +53,7 @@ dependencies {
    ":solr:modules:extraction",
    ":solr:modules:clustering",
    ":solr:modules:gcs-repository",
+   ":solr:modules:hdfs",
    ":solr:modules:jaegertracer-configurator",
    ":solr:modules:langid",
    ":solr:modules:ltr",
