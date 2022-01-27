@@ -89,22 +89,36 @@ import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
  */
 public class ICUCollationField extends FieldType {
   private Analyzer analyzer;
+  private boolean failHardOnUdvas;
 
-  private static final Version UDVAS_FORBIDDEN_AS_OF = Version.LUCENE_9_0_0;
+  // ICUCollation keys are not even necessarily valid UTF-8, so udvas is pathological. See SOLR-15777
+  static final Version UDVAS_FORBIDDEN_AS_OF = Version.LUCENE_9_0_0;
+  static final String UDVAS_MESSAGE = "useDocValuesAsStored is forbidden for " + ICUCollationField.class + " as of "
+          + IndexSchema.LUCENE_MATCH_VERSION_PARAM + " " + UDVAS_FORBIDDEN_AS_OF;
+
+  private static void warnOrFailUdvas(boolean failHardOnUdvas) {
+    // NOTE: it may seem odd that we're checking these conditions ourselves rather than relying on the internal
+    // checking of `assertWarnOrFail(...)`. But the main reason we're logging this error via
+    // `XMLConfigFile.assertWarnOrFail(...)` is because this is at its root an xml config file
+    // error, so we log in a way that's consistent with that.
+    assertWarnOrFail(UDVAS_MESSAGE, false, failHardOnUdvas);
+  }
+
+  @Override
+  public void checkSchemaField(final SchemaField field) {
+    if (field.useDocValuesAsStored()) {
+      // user must have been specified udvas at the level of field, not fieldType
+      warnOrFailUdvas(failHardOnUdvas);
+    }
+    super.checkSchemaField(field);
+  }
 
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
+    failHardOnUdvas = schema.luceneVersion.onOrAfter(UDVAS_FORBIDDEN_AS_OF);
     if (on(trueProperties, USE_DOCVALUES_AS_STORED)) {
-      // ICUCollation keys are not even necessarily valid UTF-8, so udvas is pathological. See SOLR-15777
-      final boolean fail = schema.luceneVersion.onOrAfter(UDVAS_FORBIDDEN_AS_OF);
-      // NOTE: it may seem odd that we're checking these conditions ourselves rather than relying on the internal
-      // checking of `assertWarnOrFail(...)`. But the main reason we're logging this error via
-      // `XMLConfigFile.assertWarnOrFail(...)` is because this is at its root an xml config file
-      // error, so we log in a way that's consistent with that.
-      assertWarnOrFail("useDocValuesAsStored " + (fail ? "is" : "will be") + " forbidden for "
-                      + ICUCollationField.class + " as of " + IndexSchema.LUCENE_MATCH_VERSION_PARAM
-                      + " " + UDVAS_FORBIDDEN_AS_OF,
-              false, fail);
+      // fail fast at fieldType init
+      warnOrFailUdvas(failHardOnUdvas);
     }
     properties &= ~USE_DOCVALUES_AS_STORED;
     properties |= TOKENIZED; // this ensures our analyzer gets hit
