@@ -38,7 +38,7 @@ from collections import namedtuple
 import scriptutil
 
 # This tool expects to find /solr off the base URL.  You
-# must have a working gpg, tar, unzip in your path.  This has been
+# must have a working gpg, tar in your path.  This has been
 # tested on Linux and on Cygwin under Windows 7.
 
 cygwin = platform.system().lower().startswith('cygwin')
@@ -200,7 +200,7 @@ def checkAllJARs(topDir, gitRevision, version):
     for file in files:
       if file.lower().endswith('.jar'):
         if ((normRoot.endswith('/test-framework/lib') and file.startswith('jersey-'))
-            or (normRoot.endswith('/contrib/extraction/lib') and file.startswith('xml-apis-'))):
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('xml-apis-'))):
           print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
           continue
         fullPath = '%s/%s' % (root, file)
@@ -255,8 +255,7 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
       raise RuntimeError('solr: artifact %s has wrong sigs: expected %s but got %s' % (artifact, expectedSigs, sigs))
 
   expected = ['solr-%s-src.tgz' % version,
-              'solr-%s.tgz' % version,
-              'solr-%s.zip' % version]
+              'solr-%s.tgz' % version]
 
   actual = [x[0] for x in artifacts]
   if expected != actual:
@@ -516,8 +515,6 @@ def unpackAndVerify(java, tmpDir, artifact, gitRevision, version, testArgs):
   unpackLogFile = '%s/solr-unpack-%s.log' % (tmpDir, artifact)
   if artifact.endswith('.tar.gz') or artifact.endswith('.tgz'):
     run('tar xzf %s/%s' % (tmpDir, artifact), unpackLogFile)
-  elif artifact.endswith('.zip'):
-    run('unzip %s/%s' % (tmpDir, artifact), unpackLogFile)
 
   # make sure it unpacks to proper subdir
   l = os.listdir(destDir)
@@ -581,7 +578,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin',  'bin-test',  'build',  'contrib',  'core',  'docker',  'documentation',  'example',  'licenses',  'packaging',  'server',  'solr-ref-guide',  'solrj',  'test-framework',  'webapp']
+    expected_src_solr_folders = ['benchmark',  'bin',  'bin-test',  'build',  'modules',  'core',  'docker',  'documentation',  'example',  'licenses',  'packaging',  'server',  'solr-ref-guide',  'solrj',  'test-framework',  'webapp']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
@@ -589,7 +586,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     if len(in_solr_folder) > 0:
       raise RuntimeError('solr: unexpected files/dirs in artifact %s solr/ folder: %s' % (artifact, in_solr_folder))
   else:
-    is_in_list(in_root_folder, ['bin', 'contrib', 'dist', 'docs', 'example', 'licenses', 'server'])
+    is_in_list(in_root_folder, ['bin', 'modules', 'dist', 'docs', 'example', 'licenses', 'server'])
 
   if len(in_root_folder) > 0:
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
@@ -808,16 +805,6 @@ def checkJavadocAndSourceArtifacts(artifacts, version):
       sourcesJar = artifact[:-4] + '-sources.jar'
       if sourcesJar not in artifacts:
         raise RuntimeError('missing: %s' % sourcesJar)
-
-
-def getZipFileEntries(fileName):
-  entries = []
-  with zipfile.ZipFile(fileName) as zf:
-    for zi in zf.infolist():
-      entries.append(zi.filename)
-  # Sort by name:
-  entries.sort()
-  return entries
 
 
 def checkIdenticalMavenArtifacts(distFiles, artifacts, version):
@@ -1129,7 +1116,6 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   checkSigs(solrPath, version, tmpDir, isSigned, keysFile)
   if not downloadOnly:
     unpackAndVerify(java, tmpDir, 'solr-%s.tgz' % version, gitRevision, version, testArgs)
-    unpackAndVerify(java, tmpDir, 'solr-%s.zip' % version, gitRevision, version, testArgs)
     unpackAndVerify(java, tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs)
     print()
     print('Test Maven artifacts...')

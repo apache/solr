@@ -1,0 +1,314 @@
+= Dense Vector Search
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Apache Solr *Dense Vector Search* module adds support for indexing and searching dense numerical vectors.
+
+https://en.wikipedia.org/wiki/Deep_learning[Deep learning] can be used to produce a vector representation of both the query and the documents in a corpus of information.
+
+These neural network-based techniques are usually referred to as neural search, an industry derivation from the academic field of https://www.microsoft.com/en-us/research/uploads/prod/2017/06/fntir2018-neuralir-mitra.pdf[Neural information Retrieval].
+
+== Important Concepts
+
+=== Dense Vector Representation
+A traditional tokenized https://en.wikipedia.org/wiki/Inverted_index[inverted index] can be considered to model text as a "sparse" vector, in which each term in the corpus corresponds to one vector dimension. In such a model, the number of dimensions is generally quite high (corresponding to the term dictionary cardinality), and the vector for any given document contains mostly zeros (hence it is sparse, as only a handful of terms that exist in the overall index will be present in any given document).
+
+Dense vector representation contrasts with term-based sparse vector representation in that it distills approximate semantic meaning into a fixed (and limited) number of dimensions.
+
+The number of dimensions in this approach is generally much lower than the sparse case, and the vector for any given document is dense, as most of its dimensions are populated by non-zero values.
+
+In contrast to the sparse approach (for which tokenizers are used to generate sparse vectors directly from text input) the task of generating vectors must be handled in application logic external to Apache Solr.
+
+There may be cases where it makes sense to directly search data that natively exists as a vector (e.g., scientific data); but in a text search context, it is likely that users will leverage deep learning models such as https://en.wikipedia.org/wiki/BERT_(language_model)[BERT] to encode textual information as dense vectors, supplying the resulting vectors to Apache Solr explicitly at index and query time.
+
+For additional information you can refer to this https://sease.io/2021/12/using-bert-to-improve-search-relevance.html[blog post].
+
+=== Dense Retrieval
+Given a dense vector `v` that models the information need, the easiest approach for providing dense vector retrieval would be to calculate the distance (euclidean, dot product, etc.) between `v` and each vector `d` that represents a document in the corpus of information.
+
+This approach is quite expensive, so many approximate strategies are currently under active research.
+
+The strategy implemented in Apache Lucene and used by Apache Solr is based on Navigable Small-world graph.
+
+It provides efficient approximate nearest neighbor search for high dimensional vectors.
+
+See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs [2014]] and https://arxiv.org/abs/1603.09320[Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs [2018]] for details.
+
+
+== Index Time
+This is the Apache Solr field type designed to support dense vector search:
+
+=== DenseVectorField
+The dense vector field gives the possibility of indexing and searching dense vectors of float elements.
+
+For example:
+
+`[1.0, 2.5, 3.7, 4.1]` 
+
+Here's how `DenseVectorField` should be configured in the schema:
+
+[source,xml]
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
+<field name="vector" type="knn_vector" indexed="true" stored="true"/>
+
+`vectorDimension`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The dimension of the dense vector to pass in.
++
+Accepted values:
+Any integer < = `1024`.
+
+`similarityFunction`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `euclidean`
+|===
++
+Vector similarity function; used in search to return top K most similar vectors to a target vector.
++
+Accepted values: `euclidean`, `dot_product`  or `cosine`.
+
+* `euclidean`: https://en.wikipedia.org/wiki/Euclidean_distance[Euclidean distance]
+* `dot_product`: https://en.wikipedia.org/wiki/Dot_product[Dot product]
+
+[NOTE]
+this similarity is intended as an optimized way to perform cosine similarity. In order to use it, all vectors must be of unit length, including both document and query vectors. Using dot product with vectors that are not unit length can result in errors or poor search results.
+
+* `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]
+
+[NOTE] 
+the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
+
+To use the following advanced parameters that customise the codec format
+and the hyper-parameter of the HNSW algorithm make sure you set this configuration in `solrconfig.xml`:
+[source,xml]
+<config>
+<codecFactory class="solr.SchemaCodecFactory"/>
+...
+
+Here's how `DenseVectorField` can be configured with the advanced codec hyper-parameters:
+
+[source,xml]
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" codecFormat="Lucene90HnswVectorsFormat" hnswMaxConnections="10" hnswBeamWidth="40"/>
+<field name="vector" type="knn_vector" indexed="true" stored="true"/>
+
+`codecFormat`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `Lucene90HnswVectorsFormat`
+|===
++
+(advanced) Specifies the knn codec implementation to use
++
+
+Accepted values: `Lucene90HnswVectorsFormat`.
+
+Please note that the `codecFormat` accepted values may change in future releases.
+
+
+
+[NOTE]
+Lucene index back-compatibility is only supported for the default codec.
+If you choose to customize the `codecFormat` in your schema, upgrading to a future version of Solr may require you to either switch back to the default codec and optimize your index to rewrite it into the default codec before upgrading, or re-build your entire index from scratch after upgrading.
+
+`hnswMaxConnections`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `16`
+|===
++
+(advanced) This parameter is specific for the `Lucene90HnswVectorsFormat` codec format:
++
+Controls how many of the nearest neighbor candidates are connected to the new node.
++
+It has the same meaning as `M` from the 2018 paper.
++
+Accepted values:
+Any integer.
+
+`hnswBeamWidth`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `100`
+|===
++
+(advanced) This parameter is specific for the `Lucene90HnswVectorsFormat` codec format:
++
+It is the number of nearest neighbor candidates to track while searching the graph for each newly inserted node.
++
+It has the same meaning as `efConstruction` from the 2018 paper.
++
+Accepted values:
+Any integer.
+
+`DenseVectorField` supports the attributes: `indexed`, `stored`.
+
+[NOTE]
+currently multivalue is not supported
+
+Here's how a `DenseVectorField` should be indexed:
+
+[.dynamic-tabs]
+--
+[example.tab-pane#json]
+====
+[.tab-label]*JSON*
+[source,json]
+----
+[{ "id": "1",
+"vector": [1.0, 2.5, 3.7, 4.1]
+},
+{ "id": "2",
+"vector": [1.5, 5.5, 6.7, 65.1]
+}
+]
+----
+====
+
+[example.tab-pane#xml]
+====
+[.tab-label]*XML*
+[source,xml]
+----
+<add>
+<doc>
+<field name="id">1</field>
+<field name="vector">1.0</field>
+<field name="vector">2.5</field>
+<field name="vector">3.7</field>
+<field name="vector">4.1</field>
+</doc>
+<doc>
+<field name="id">2</field>
+<field name="vector">1.5</field>
+<field name="vector">5.5</field>
+<field name="vector">6.7</field>
+<field name="vector">65.1</field>
+</doc>
+</add>
+----
+====
+
+[example.tab-pane#solrj]
+====
+[.tab-label]*SolrJ*
+[source,java,indent=0]
+----
+final SolrClient client = getSolrClient();
+
+final SolrInputDocument d1 = new SolrInputDocument();
+d1.setField("id", "1");
+d1.setField("vector", Arrays.asList(1.0f, 2.5f, 3.7f, 4.1f));
+
+
+final SolrInputDocument d2 = new SolrInputDocument();
+d2.setField("id", "2");
+d2.setField("vector", Arrays.asList(1.5f, 5.5f, 6.7f, 65.1f));
+
+client.add(Arrays.asList(d1, d2));
+----
+====
+--
+
+== Query Time
+This is the Apache Solr query approach designed to support dense vector search:
+
+=== knn Query Parser
+The `knn` k-nearest neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.
+
+The score for a retrieved document is the approximate distance to the target vector(defined by the similarityFunction configured at indexing time).
+
+It takes the following parameters:
+
+`f`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The `DenseVectorField` to search in.
+
+`topK`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 10
+|===
++
+How many k-nearest results to return.
+
+Here's how to run a KNN search:
+
+[source,text]
+&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+
+The search results retrieved are the k-nearest to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the similarityFunction configured at indexing time.
+
+==== Usage with Filter Queries
+The `knn` query parser can be used in filter queries:
+[source,text]
+&q=id:(1 2 3)&fq={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+
+The `knn` query parser can be used with filter queries:
+[source,text]
+&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq=id:(1 2 3)
+
+[IMPORTANT]
+====
+When using `knn` in these scenarios make sure you have a clear understanding of how filter queries work in Apache Solr:
+
+The Ranked List of document IDs resulting from the main query `q` is intersected with the set of document IDs deriving from each filter query `fq`.
+
+e.g.
+
+Ranked List from `q`=`[ID1, ID4, ID2, ID10]` <intersects> Set from `fq`=`{ID3, ID2, ID9, ID4}` = `[ID4,ID2]`
+====
+
+
+==== Usage as Re-Ranking Query
+The `knn` query parser can be used to rerank first pass query results:
+[source,text]
+&q=id:(3 4 9 2)&rq={!rerank reRankQuery=$rqq reRankDocs=4 reRankWeight=1}&rqq={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+
+[IMPORTANT]
+====
+When using `knn` in re-ranking pay attention to the `topK` parameter.
+
+The second pass score(deriving from knn) is calculated only if the document `d` from the first pass is within
+the k-nearest neighbors(*in the whole index*) of the target vector to search.
+
+This means the second pass `knn` is executed on the whole index anyway, which is a current limitation.
+
+The final ranked list of results will have the first pass score(main query `q`) added to the second pass score(the approximated similarityFunction distance to the target vector to search) multiplied by a multiplicative factor(reRankWeight).
+
+Details about using the ReRank Query Parser can be found in the <<query-re-ranking.adoc#,Query Re-Ranking>> section.
+====
+
+== Additional Resources
+
+* Blog: https://sease.io/2022/01/apache-solr-neural-search.html
+* Blog: https://sease.io/2022/01/apache-solr-neural-search-knn-benchmark.html

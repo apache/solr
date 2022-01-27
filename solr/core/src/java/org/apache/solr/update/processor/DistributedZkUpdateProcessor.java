@@ -195,6 +195,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // zk
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
 
+      // TODO: revisit the need for tracking `issuedDistribCommit` -- see below, and SOLR-15045
+      boolean issuedDistribCommit = false;
       List<SolrCmdDistributor.Node> useNodes = null;
       if (req.getParams().get(COMMIT_END_POINT) == null) {
         useNodes = nodes;
@@ -204,11 +206,16 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
               zkController.getBaseUrl(), req.getCore().getName()));
           cmdDistrib.distribCommit(cmd, useNodes, params);
-          cmdDistrib.blockAndDoRetries();
+          issuedDistribCommit = true;
         }
       }
 
       if (isLeader) {
+        if (issuedDistribCommit) {
+          // defensive copy of params, which was passed into distribCommit(...) above; will unconditionally replace
+          // DISTRIB_UPDATE_PARAM, COMMIT_END_POINT, and DISTRIB_FROM if the new `params` val will actually be used
+          params = new ModifiableSolrParams(params);
+        }
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
 
         params.set(COMMIT_END_POINT, "replicas");
@@ -219,14 +226,21 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
               zkController.getBaseUrl(), req.getCore().getName()));
 
+          // NOTE: distribCommit(...) internally calls `blockAndDoRetries()`, flushing any TOLEADER distrib commits
           cmdDistrib.distribCommit(cmd, useNodes, params);
+          issuedDistribCommit = true;
         }
 
         doLocalCommit(cmd);
-
-        if (useNodes != null) {
-          cmdDistrib.blockAndDoRetries();
-        }
+      }
+      if (issuedDistribCommit) {
+        // TODO: according to discussion on SOLR-15045, this call (and all tracking of `issuedDistribCommit`) may
+        //  well be superfluous, and can probably simply be removed. It is left in place for now, intentionally
+        //  punting on the question of whether this internal `blockAndDoRetries()` is necessary. At worst, its
+        //  presence is misleading; but it should be harmless, and allows the change fixing SOLR-15045 to be as
+        //  tightly scoped as possible, leaving the behavior of the code otherwise functionally equivalent (for
+        //  better or worse!)
+        cmdDistrib.blockAndDoRetries();
       }
     }
   }
