@@ -14,8 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.security.hadoop;
+
+import java.util.Collections;
+import java.util.List;
+
+import org.apache.hadoop.security.GroupMappingServiceProvider;
 
 /**
- * Test framework classes for Hadoop-related functionality.
+ * Fake mapping for Hadoop to prevent falling back to Shell group provider
  */
-package org.apache.solr.cloud.hadoop;
+public class HadoopAuthFakeGroupMapping implements GroupMappingServiceProvider {
+  @Override
+  public List<String> getGroups(String user) {
+    return Collections.singletonList("supergroup");
+  }
+
+  @Override
+  public void cacheGroupsRefresh() {
+  }
+
+  @Override
+  public void cacheGroupsAdd(List<String> groups) {
+  }
+}

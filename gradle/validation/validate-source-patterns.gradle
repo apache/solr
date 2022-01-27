@@ -108,19 +108,12 @@ allprojects {
 configure(project(':solr:core')) {
   project.tasks.withType(ValidateSourcePatternsTask) {
     sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'
-    sourceFiles.exclude 'src/**/org/apache/hadoop/**'
-  }
-}
-
-configure(project(':solr:test-framework')) {
-  project.tasks.withType(ValidateSourcePatternsTask) {
-    sourceFiles.exclude 'src/**/org/apache/hadoop/**'
   }
 }
 
 configure(project(':solr:modules:hdfs')) {
   project.tasks.withType(ValidateSourcePatternsTask) {
-    sourceFiles.exclude 'src/**/org/apache/hadoop/**'
+    sourceFiles.exclude 'src/test/org/apache/hadoop/**'
   }
 }
 

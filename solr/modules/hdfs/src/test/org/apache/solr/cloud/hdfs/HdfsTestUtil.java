@@ -19,6 +19,8 @@ package org.apache.solr.cloud.hdfs;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -28,33 +30,40 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
+import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FileUtil;
+import org.apache.hadoop.fs.HardLink;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSNNTopology;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeResourceChecker;
 import org.apache.hadoop.hdfs.server.namenode.ha.HATestUtil;
+import org.apache.hadoop.http.HttpServer2;
+import org.apache.hadoop.io.nativeio.NativeIO;
 import org.apache.hadoop.metrics2.MetricsSystem;
 import org.apache.hadoop.metrics2.impl.MetricsSystemImpl;
 import org.apache.hadoop.metrics2.lib.DefaultMetricsSystem;
+import org.apache.hadoop.util.DiskChecker;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.hadoop.HadoopTestUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.util.HdfsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.util.LuceneTestCase.random;
-
-public class HdfsTestUtil extends HadoopTestUtil {
+public class HdfsTestUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final String SOLR_HACK_FOR_CLASS_VERIFICATION_FIELD = "SOLR_HACK_FOR_CLASS_VERIFICATION";
 
   private static final String LOGICAL_HOSTNAME = "ha-nn-uri-%d";
 
@@ -76,18 +85,47 @@ public class HdfsTestUtil extends HadoopTestUtil {
   }
 
   public static void checkAssumptions() {
-    HadoopTestUtil.ensureHadoopHomeNotSet();
-    HadoopTestUtil.checkHadoopWindows();
-    HadoopTestUtil.checkOverriddenHadoopClasses(getModifiedHadoopClasses());
-    HadoopTestUtil.checkFastDateFormat();
-    HadoopTestUtil.checkGeneratedIdMatches();
+    ensureHadoopHomeNotSet();
+    checkHadoopWindows();
+    checkOverriddenHadoopClasses();
+    checkFastDateFormat();
+    checkGeneratedIdMatches();
   }
 
-  protected static List<Class<?>> getModifiedHadoopClasses() {
-    List<Class<?>> modifiedHadoopClasses = HadoopTestUtil.getModifiedHadoopClasses();
+  /**
+   * If Hadoop home is set via environment variable HADOOP_HOME or Java system property
+   * hadoop.home.dir, the behavior of test is undefined. Ensure that these are not set
+   * before starting. It is not possible to easily unset environment variables so better
+   * to bail out early instead of trying to test.
+   */
+  private static void ensureHadoopHomeNotSet() {
+    if (System.getenv("HADOOP_HOME") != null) {
+      SolrTestCaseJ4.fail("Ensure that HADOOP_HOME environment variable is not set.");
+    }
+    if (System.getProperty("hadoop.home.dir") != null) {
+      SolrTestCaseJ4.fail("Ensure that \"hadoop.home.dir\" Java property is not set.");
+    }
+  }
 
-    modifiedHadoopClasses.add(NameNodeResourceChecker.class);
+  /**
+   * Hadoop integration tests fail on Windows without Hadoop NativeIO
+   */
+  private static void checkHadoopWindows() {
+    SolrTestCaseJ4.assumeTrue("Hadoop does not work on Windows without Hadoop NativeIO",
+        !Constants.WINDOWS || NativeIO.isAvailable());
+  }
 
+  /**
+   * Ensure that the tests are picking up the modified Hadoop classes
+   */
+  private static void checkOverriddenHadoopClasses() {
+    List<Class<?>> modifiedHadoopClasses = new ArrayList<>(Arrays.asList(
+        DiskChecker.class,
+        FileUtil.class,
+        HardLink.class,
+        HttpServer2.class,
+        NameNodeResourceChecker.class,
+        RawLocalFileSystem.class));
     // Dodge weird scope errors from the compiler (SOLR-14417)
     try {
       modifiedHadoopClasses.add(
@@ -95,9 +133,39 @@ public class HdfsTestUtil extends HadoopTestUtil {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    return modifiedHadoopClasses;
+
+    for (Class<?> clazz : modifiedHadoopClasses) {
+      try {
+        SolrTestCaseJ4.assertNotNull("Field on " + clazz.getCanonicalName() + " should not have been null",
+            clazz.getField(SOLR_HACK_FOR_CLASS_VERIFICATION_FIELD));
+      } catch (NoSuchFieldException e) {
+        SolrTestCaseJ4.fail("Expected to load Solr modified Hadoop class " + clazz.getCanonicalName() +
+            " , but it was not found.");
+      }
+    }
   }
 
+  /**
+   * Checks that commons-lang3 FastDateFormat works with configured locale
+   */
+  @SuppressForbidden(reason="Call FastDateFormat.format same way Hadoop calls it")
+  private static void checkFastDateFormat() {
+    try {
+      FastDateFormat.getInstance().format(System.currentTimeMillis());
+    } catch (ArrayIndexOutOfBoundsException e) {
+      SolrTestCaseJ4.assumeNoException("commons-lang3 FastDateFormat doesn't work with " +
+          Locale.getDefault().toLanguageTag(), e);
+    }
+  }
+
+  /**
+   * Hadoop fails to generate locale agnostic ids - Checks that generated string matches
+   */
+  private static void checkGeneratedIdMatches() {
+    // This is basically how Namenode generates fsimage ids and checks that the fsimage filename matches
+    SolrTestCaseJ4.assumeTrue("Check that generated id matches regex",
+        Pattern.matches("(\\d+)", String.format(Locale.getDefault(),"%019d", 0)));
+  }
 
   public static MiniDFSCluster setupClass(String dir, boolean safeModeTesting, boolean haTesting) throws Exception {
     checkAssumptions();
@@ -121,7 +189,7 @@ public class HdfsTestUtil extends HadoopTestUtil {
     // test-files/solr/solr.xml sets this to be 15000. This isn't long enough for HDFS in some cases.
     System.setProperty("socketTimeout", "90000");
 
-    String blockcacheGlobal = System.getProperty("solr.hdfs.blockcache.global", Boolean.toString(random().nextBoolean()));
+    String blockcacheGlobal = System.getProperty("solr.hdfs.blockcache.global", Boolean.toString(SolrTestCaseJ4.random().nextBoolean()));
     System.setProperty("solr.hdfs.blockcache.global", blockcacheGlobal);
     // Limit memory usage for HDFS tests
     if(Boolean.parseBoolean(blockcacheGlobal)) {
@@ -146,11 +214,11 @@ public class HdfsTestUtil extends HadoopTestUtil {
 
     if (haTesting) dfsCluster.transitionToActive(0);
 
-    int rndMode = random().nextInt(3);
+    int rndMode = SolrTestCaseJ4.random().nextInt(3);
     if (safeModeTesting && rndMode == 1) {
       NameNodeAdapter.enterSafeMode(dfsCluster.getNameNode(), false);
 
-      int rnd = random().nextInt(10000);
+      int rnd = SolrTestCaseJ4.random().nextInt(10000);
       Timer timer = new Timer();
       synchronized (TIMERS_LOCK) {
         if (timers == null) {
@@ -166,7 +234,7 @@ public class HdfsTestUtil extends HadoopTestUtil {
         }
       }, rnd);
     } else if (haTesting && rndMode == 2) {
-      int rnd = random().nextInt(30000);
+      int rnd = SolrTestCaseJ4.random().nextInt(30000);
       Timer timer = new Timer();
       synchronized (TIMERS_LOCK) {
         if (timers == null) {

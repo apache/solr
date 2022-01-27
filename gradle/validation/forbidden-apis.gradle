@@ -134,12 +134,6 @@ allprojects { prj ->
     if (prj.path == ":solr:modules:hdfs") {
       forbiddenApisTest.exclude("**/org/apache/hadoop/**")
     }
-    if (prj.path == ":solr:test-framework") {
-      forbiddenApisMain.exclude("**/org/apache/hadoop/**")
-    }
-
-    
-
 
     // We rely on resolved configurations to compute the relevant set of rule
     // files for forbiddenApis. Since we don't want to resolve these configurations until

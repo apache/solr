@@ -30,14 +30,12 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
   private static class MapperCache implements Cache {
@@ -110,11 +108,11 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    file = LuceneTestCase.createTempDir().toFile();
+    file = SolrTestCaseJ4.createTempDir().toFile();
     FSDirectory dir = FSDirectory.open(new File(file, "base").toPath());
     mapperCache = new MapperCache();
 
-    if (LuceneTestCase.random().nextBoolean()) {
+    if (SolrTestCaseJ4.random().nextBoolean()) {
       Metrics metrics = new Metrics();
       int blockSize = 8192;
       int slabSize = blockSize * 16384;
@@ -125,7 +123,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     } else {
       directory = new BlockDirectory("test", dir, mapperCache, null, true, true);
     }
-    random = LuceneTestCase.random();
+    random = SolrTestCaseJ4.random();
   }
   
   @After

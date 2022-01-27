@@ -14,17 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud.hadoop;
+package org.apache.solr.cloud.hdfs;
+
+import org.apache.hadoop.security.GroupMappingServiceProvider;
 
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.hadoop.security.GroupMappingServiceProvider;
-
 /**
  * Fake mapping for Hadoop to prevent falling back to Shell group provider
  */
-public class FakeGroupMapping implements GroupMappingServiceProvider {
+public class HdfsFakeGroupMapping implements GroupMappingServiceProvider {
   @Override
   public List<String> getGroups(String user) {
     return Collections.singletonList("supergroup");

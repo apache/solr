@@ -39,17 +39,5 @@ dependencies {
   implementation ('com.google.guava:guava') { transitive = false }
   implementation 'io.dropwizard.metrics:metrics-jetty9'
   implementation 'commons-cli:commons-cli'
-
-  // used by the hadoop-specific test framework classes
-  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
-  implementation ('org.apache.commons:commons-compress') { transitive = false }
-  implementation ('org.apache.commons:commons-collections4') { transitive = false }
-  implementation ('org.apache.commons:commons-lang3') { transitive = false }
-  implementation ('com.sun.jersey:jersey-servlet') { transitive = false }
-  implementation ('commons-logging:commons-logging') { transitive = false }
-
 }
 

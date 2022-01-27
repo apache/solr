@@ -47,15 +47,13 @@ dependencies {
   // Many HDFS tests are using/subclassing test framework classes
   testImplementation project(':solr:test-framework')
 
-  // HdfsCheckindexTool tests reference LuceneTestCase
-  testImplementation ('org.apache.lucene:lucene-test-framework')
-
   // hadoop dependencies for tests
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
 
+  testImplementation 'org.slf4j:jcl-over-slf4j'
   testImplementation 'org.apache.logging.log4j:log4j-1.2-api'
 
   // classes like solr.ICUCollationField, used by NNFailoverTest for example.
@@ -67,9 +65,14 @@ dependencies {
   // commons packages needed by test classes
   testImplementation('commons-io:commons-io') { transitive = false }
 
+  // used by the hadoop-specific test framework classes
+  testImplementation ('org.apache.commons:commons-compress') { transitive = false }
+  testImplementation ('org.apache.commons:commons-collections4') { transitive = false }
+  testImplementation ('org.apache.commons:commons-lang3') { transitive = false }
+  testImplementation ('com.sun.jersey:jersey-servlet') { transitive = false }
+
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
   implementation ('org.apache.zookeeper:zookeeper')
-
 }
 
 

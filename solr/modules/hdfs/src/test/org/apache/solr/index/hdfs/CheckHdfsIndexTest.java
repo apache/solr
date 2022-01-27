@@ -24,7 +24,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.BaseTestCheckIndex;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
@@ -67,7 +66,7 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(LuceneTestCase.createTempDir().toFile().getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(SolrTestCaseJ4.createTempDir().toFile().getAbsolutePath());
     path = new Path(HdfsTestUtil.getURI(dfsCluster) + "/solr/");
   }
 

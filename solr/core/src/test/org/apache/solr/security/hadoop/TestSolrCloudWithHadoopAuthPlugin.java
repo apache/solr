@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.KerberosTestServices;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
-import org.apache.solr.cloud.hadoop.HadoopTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

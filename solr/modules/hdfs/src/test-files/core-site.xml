@@ -18,6 +18,6 @@
 <configuration>
   <property>
     <name>hadoop.security.group.mapping</name>
-    <value>org.apache.solr.security.hadoop.HadoopAuthFakeGroupMapping</value>
+    <value>org.apache.solr.cloud.hdfs.HdfsFakeGroupMapping</value>
   </property>
 </configuration>

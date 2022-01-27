@@ -19,7 +19,6 @@ package org.apache.solr.store.blockcache;
 import java.math.BigDecimal;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.MetricsMap;
@@ -42,8 +41,8 @@ public class BufferStoreTest extends SolrTestCase {
   public void setup() {
     metrics = new Metrics();
     SolrMetricManager metricManager = new SolrMetricManager();
-    String registry = TestUtil.randomSimpleString(LuceneTestCase.random(), 2, 10);
-    String scope = TestUtil.randomSimpleString(LuceneTestCase.random(), 2, 10);
+    String registry = TestUtil.randomSimpleString(SolrTestCase.random(), 2, 10);
+    String scope = TestUtil.randomSimpleString(SolrTestCase.random(), 2, 10);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     metrics.initializeMetrics(solrMetricsContext, scope);
     metricsMap = (MetricsMap) ((SolrMetricManager.GaugeWrapper)metricManager.registry(registry).getMetrics().get("CACHE." + scope + ".hdfsBlockCache")).getGauge();

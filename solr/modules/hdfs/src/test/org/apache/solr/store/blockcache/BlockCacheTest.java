@@ -16,17 +16,17 @@
  */
 package org.apache.solr.store.blockcache;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
+import org.apache.solr.SolrTestCase;
+import org.junit.Assert;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
-import com.github.benmanes.caffeine.cache.*;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.SolrTestCase;
-
-import org.junit.Assert;
-import org.junit.Test;
 
 public class BlockCacheTest extends SolrTestCase {
 
@@ -40,7 +40,7 @@ public class BlockCacheTest extends SolrTestCase {
 
     BlockCache blockCache = new BlockCache(new Metrics(), true, totalMemory, slabSize, blockSize);
     byte[] buffer = new byte[1024];
-    Random random = LuceneTestCase.random();
+    Random random = SolrTestCase.random();
     byte[] newData = new byte[blockSize];
     AtomicLong hitsInCache = new AtomicLong();
     AtomicLong missesInCache = new AtomicLong();
@@ -99,7 +99,7 @@ public class BlockCacheTest extends SolrTestCase {
 
   @Test
   public void testBlockCacheConcurrent() throws Exception {
-    Random rnd = LuceneTestCase.random();
+    Random rnd = SolrTestCase.random();
 
     final int blocksInTest = 400;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
     final int blockSize = 64;
@@ -233,7 +233,7 @@ public class BlockCacheTest extends SolrTestCase {
   // Sanity test the underlying concurrent map that BlockCache is using, in the same way that we use it.
   @Test
   public void testCacheConcurrent() throws Exception {
-    Random rnd = LuceneTestCase.random();
+    Random rnd = SolrTestCase.random();
 
     // TODO: introduce more randomness in cache size, hit rate, etc
     final int blocksInTest = 400;
@@ -359,7 +359,7 @@ public class BlockCacheTest extends SolrTestCase {
     // Thread.sleep(1000); // need to wait if executor is used for listener?
     long cacheSize = cache.estimatedSize();
     System.out.println("Done! # of Elements = " + cacheSize + " inserts=" + inserts.get() + " removals=" + removals.get() + " hits=" + hits.get() + " maxObservedSize=" + maxObservedSize);
-    Assert.assertEquals("cache size different from (inserts - removal)", cacheSize,  inserts.get() - removals.get());
+    Assert.assertEquals("cache size different from (inserts - removal)", cacheSize, inserts.get() - removals.get());
     Assert.assertFalse(failed.get());
   }
 
