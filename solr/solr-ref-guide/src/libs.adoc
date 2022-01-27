@@ -39,6 +39,8 @@ Create this adjacent to the `conf/` directory; it's not present by default.
 Certain plugins or add-ons to plugins require placement here.
 They will document themselves to say so.
 
+* `<solr_install>/server/lib/ext`: The `.jar` files used for the Solr server as well as Solr Core/SolrJ.
+
 Solr incorporates Jetty for providing HTTP server functionality.
 Jetty has some directories that contain `.jar` files for itself and its own plugins / modules or JVM level plugins (e.g., loggers).
 Solr plugins won't work in these locations.
@@ -59,18 +61,15 @@ A `<lib/>` directive must have one (not both) of these two attributes:
 
 All directories are resolved as relative to the Solr core's `instanceDir`.
 
-These examples show how to load contrib modules into Solr:
+These examples show how to load modules into Solr:
 
 [source,xml]
 ----
-  <lib dir="${solr.install.dir:../../../..}/contrib/extraction/lib" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-extraction-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/extraction/lib" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/contrib/clustering/lib/" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-clustering-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/clustering/lib/" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/contrib/langid/lib/" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-langid-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/langid/lib/" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/ltr/lib/" regex=".*\.jar" />
 ----

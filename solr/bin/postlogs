@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -30,4 +31,6 @@
 #
 ############################################################################################
 
-java -classpath dist/*:dist/solrj-lib/*: org.apache.solr.util.SolrLogPostTool $1 $2
+
+SOLR_TIP="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"/..
+java -classpath "$SOLR_TIP/server/lib/ext/*:$SOLR_TIP/server/solr-webapp/webapp/WEB-INF/lib/*" org.apache.solr.util.SolrLogPostTool $1 $2

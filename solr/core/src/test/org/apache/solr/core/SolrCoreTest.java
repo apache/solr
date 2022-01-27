@@ -27,6 +27,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RefCounted;
@@ -88,15 +89,12 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     int ihCount = 0;
     {
       ++ihCount; assertEquals(pathToClassMap.get("/admin/file"), "solr.ShowFileRequestHandler");
-      ++ihCount; assertEquals(pathToClassMap.get("/admin/logging"), "solr.LoggingHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/luke"), "solr.LukeRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/mbeans"), "solr.SolrInfoMBeanHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/ping"), "solr.PingRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/plugins"), "solr.PluginInfoHandler");
-      ++ihCount; assertEquals(pathToClassMap.get("/admin/properties"), "solr.PropertiesRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/segments"), "solr.SegmentsInfoRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/system"), "solr.SystemInfoHandler");
-      ++ihCount; assertEquals(pathToClassMap.get("/admin/threads"), "solr.ThreadDumpHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/config"), "solr.SolrConfigHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/export"), "solr.ExportHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/terms"), "solr.SearchHandler");
@@ -342,9 +340,6 @@ class ClosingRequestHandler extends EmptyRequestHandler implements SolrCoreAware
       public void preClose(SolrCore core) {
         closed = true;
       }
-
-      @Override
-      public void postClose(SolrCore core) {}
     });
   }
 }
@@ -360,4 +355,9 @@ class EmptyRequestHandler extends RequestHandlerBase
   }
 
   @Override public String getDescription() { return null; }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.ALL;
+  }
 }

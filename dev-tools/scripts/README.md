@@ -155,7 +155,46 @@ and prints a regular expression that will match all of them
       --json         Output as json
       --token TOKEN  Github access token in case you query too often anonymously
 
+### scaffoldNewModule.py
+
+Scaffold a new module and include it into the build. It will set up the folders
+and all for you, so the only thing you need to do is add classes, tests and test-data.
+
+    usage: scaffoldNewModule.py [-h] name full_name description
+    
+    Scaffold new module into solr/modules/<name>
+    
+    positional arguments:
+        name         code-name/id, e.g. my-module
+        full_name    Readable name, e.g. "My Module"
+        description  Short description for docs
+    
+    optional arguments:
+     -h, --help   show this help message and exit
+
+    Example: ./scaffoldNewModule.py foo "My Module" "Very Useful module here"
+
 ### gitignore-gen.sh
 
 TBD
 
+
+### cherrypick.sh
+
+    Usage: dev-tools/scripts/cherrypick.sh [<options>] <commit-hash> [<commit-hash>...]
+     -b <branch> Sets the branch(es) to cherry-pick to, typically branch_Nx or branch_x_y
+     -s          Skips precommit test. WARNING: Always run precommit for code- and doc changes
+     -t          Run the full test suite during check, not only precommit
+     -n          Skips git pull of target branch. Useful if you are without internet access
+     -a          Enters automated mode. Aborts cherry-pick and exits on error
+     -r <remote> Specify remote to push to. Defaults to 'origin'
+     -p          Push to remote. Only done if both cherry-pick and tests succeeded
+     WARNING: Never push changes to a remote branch before a thorough local test
+    
+    Simple script for aiding in back-porting one or more (trivial) commits to other branches.
+    On merge conflict the script will run 'git mergetool'. See 'git mergetool --help'
+    for help on configuring your favourite merge tool. Check out Sublime Merge (smerge).
+    
+    Example:
+      # Backport two commits to both stable and release branches
+      dev-tools/scripts/cherrypick.sh -b branch_9x -b branch_9_0 deadbeef0000 cafebabe1111

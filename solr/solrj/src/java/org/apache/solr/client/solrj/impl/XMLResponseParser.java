@@ -22,12 +22,14 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.EmptyEntityResolver;
@@ -183,6 +185,7 @@ public class XMLResponseParser extends ResponseParser
       }
     },
 
+    RAW    (true) { @Override public Object read( String txt ) { return null; } },
     ARR    (false) { @Override public Object read( String txt ) { return null; } },
     LST    (false) { @Override public Object read( String txt ) { return null; } },
     RESULT (false) { @Override public Object read( String txt ) { return null; } },
@@ -262,6 +265,7 @@ public class XMLResponseParser extends ResponseParser
           case LONG:
           case NULL:
           case STR:
+          case RAW:
             break;
           }
           throw new XMLStreamException( "branch element not handled!", parser.getLocation() );
@@ -335,6 +339,7 @@ public class XMLResponseParser extends ResponseParser
           case LONG:
           case NULL:
           case STR:
+          case RAW:
             break;
           }
           throw new XMLStreamException( "branch element not handled!", parser.getLocation() );
@@ -454,6 +459,15 @@ public class XMLResponseParser extends ResponseParser
         } else if( type == KnownType.LST ) {
             doc.addField( name, readNamedList( parser ) );
           depth--;
+        } else if( type == KnownType.RESULT ) {
+          // e.g., from the [subquery] doc transformer
+          doc.put(name, readDocuments(parser));
+          depth--;
+        } else if( type == KnownType.RAW ) {
+          // e.g., from the raw [xml] doc transformer.
+          String raw = consumeRawContent(parser);
+          doc.addField(name, raw);
+          depth--;
         } else if( !type.isLeaf ) {
           throw new XMLStreamException( "must be value or array", parser.getLocation() );
         }
@@ -480,5 +494,29 @@ public class XMLResponseParser extends ResponseParser
     }
   }
 
+  /**
+   * This is a stub method for handling/validating "raw" xml field values in the context of tests. Before this
+   * stub method was present, "raw" content would have still thrown an exception, albeit a different, more inscrutable
+   * exception.
+   */
+  protected String consumeRawContent(XMLStreamReader parser) throws XMLStreamException {
+    throw new UnsupportedOperationException(XMLResponseParser.class + " is not capable of consuming field values serialized as raw XML");
+  }
+
+  /**
+   * Convenience method that converts raw String input (should be valid xml when wrapped in a root element) and
+   * converts it to a format compatible with how {@link XMLResponseParser} parses from raw xml fields.
+   * This method is intended for test validation.
+   *
+   * The main reason this method exists is to provide a consistent way of configuring and creating and invoking
+   * the sub-parser
+   */
+  protected static String convertRawContent(String raw, Function<XMLStreamReader, String> consumeRawContent) throws XMLStreamException {
+    XMLStreamReader subParser = factory.createXMLStreamReader(new StringReader("<raw>" + raw + "</raw>"));
+    while (subParser.next() != XMLStreamConstants.START_ELEMENT) {
+      // consume any early stuff
+    }
+    return consumeRawContent.apply(subParser);
+  }
 
 }

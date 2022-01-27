@@ -156,9 +156,6 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/system"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/mbeans"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/plugins"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/threads"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/properties"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/logging"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/file"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/ping"), null));
 

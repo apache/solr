@@ -16,17 +16,22 @@
  */
 package org.apache.solr.util;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.LineNumberReader;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import java.util.ArrayList;
 import java.net.URLDecoder;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -65,29 +70,26 @@ public class SolrLogPostTool {
     String root = args[1];
 
     HttpSolrClient.Builder builder = new HttpSolrClient.Builder();
-    SolrClient client = null;
-    try {
-      client = builder.withBaseSolrUrl(baseUrl).build();
-      File rf = new File(root);
-      List<File> files = new ArrayList<>();
-      gatherFiles(rf, files);
+    try (SolrClient client = builder.withBaseSolrUrl(baseUrl).build()) {
       int rec = 0;
       UpdateRequest request = new UpdateRequest();
 
-      for (File file : files) {
+      List<Path> files;
+      try (Stream<Path> stream = Files.walk(Path.of(root), Integer.MAX_VALUE)) {
+          files = stream.filter(Files::isRegularFile)
+              .collect(Collectors.toList());
+      }
 
-        LineNumberReader bufferedReader = null;
-
-        try {
-          bufferedReader = new LineNumberReader(new InputStreamReader(new FileInputStream(file), Charset.defaultCharset()));
-          LogRecordReader recordReader = new LogRecordReader(bufferedReader);
+      for (Path file : files) {
+        try (LineNumberReader reader = new LineNumberReader(Files.newBufferedReader(file, Charset.defaultCharset()))) {
+          LogRecordReader recordReader = new LogRecordReader(reader);
           SolrInputDocument doc = null;
-          String fileName = file.getName();
+          String fileName = file.getFileName().toString();
           while (true) {
             try {
               doc = recordReader.readRecord();
             } catch (Throwable t) {
-              CLIO.err("Error reading log record:"+ bufferedReader.getLineNumber() +" from file:"+ fileName);
+              CLIO.err("Error reading log record:"+ reader.getLineNumber() +" from file:"+ fileName);
               CLIO.err(t.getMessage());
               continue;
             }
@@ -107,16 +109,12 @@ public class SolrLogPostTool {
               rec = 0;
             }
           }
-        } finally {
-          bufferedReader.close();
         }
       }
 
       if (rec > 0) {
         sendBatch(client, request, true /* last batch */);
       }
-    } finally {
-      client.close();
     }
   }
 
@@ -138,22 +136,6 @@ public class SolrLogPostTool {
       } catch (Exception e) {
         CLIO.err("Unable to commit documents: " + e.getMessage());
         e.printStackTrace(CLIO.getErrStream());
-      }
-    }
-  }
-
-  static void gatherFiles(File rootFile, List<File> files) {
-
-    if(rootFile.isFile()) {
-      files.add(rootFile);
-    } else {
-      File[] subFiles = rootFile.listFiles();
-      for(File f : subFiles) {
-        if(f.isFile()) {
-          files.add(f);
-        } else {
-          gatherFiles(f, files);
-        }
       }
     }
   }
@@ -207,8 +189,6 @@ public class SolrLogPostTool {
           } else if (line.contains(" ERROR ")) {
             this.cause = null;
             parseError(lineDoc, line, readTrace());
-          } else if (line.contains("start commit")) {
-            parseCommit(lineDoc, line);
           } else if(line.contains("QTime=")) {
             parseQueryRecord(lineDoc, line);
           }
@@ -304,18 +284,6 @@ public class SolrLogPostTool {
       lineRecord.setField("replica_s", parseReplica(line));
     }
 
-    private void parseCommit(SolrInputDocument lineRecord, String line) throws IOException {
-      lineRecord.setField("type_s", "commit");
-      lineRecord.setField("soft_commit_s", Boolean.toString(line.contains("softCommit=true")));
-
-      lineRecord.setField("open_searcher_s", Boolean.toString(line.contains("openSearcher=true")));
-
-      lineRecord.setField("collection_s", parseCollection(line));
-      lineRecord.setField("core_s", parseCore(line));
-      lineRecord.setField("shard_s", parseShard(line));
-      lineRecord.setField("replica_s", parseReplica(line));
-    }
-
     private void parseQueryRecord(SolrInputDocument lineRecord, String line) {
       lineRecord.setField("qtime_i", parseQTime(line));
       lineRecord.setField("status_s", parseStatus(line));
@@ -349,10 +317,12 @@ public class SolrLogPostTool {
       }
     }
 
-
     private void parseNewSearch(SolrInputDocument lineRecord, String line) {
-      lineRecord.setField("core_s", parseNewSearcherCore(line));
+      lineRecord.setField("core_s", parseCore(line));
       lineRecord.setField("type_s", "newSearcher");
+      lineRecord.setField("collection_s", parseCollection(line));
+      lineRecord.setField("shard_s", parseShard(line));
+      lineRecord.setField("replica_s", parseReplica(line));
     }
 
     private String parseCollection(String line) {
@@ -370,6 +340,8 @@ public class SolrLogPostTool {
         lineRecord.setField("type_s", "deleteByQuery");
       } else if(line.contains("delete=")) {
         lineRecord.setField("type_s", "delete");
+      } else if(line.contains("commit=true")) {
+        lineRecord.setField("type_s", "commit");
       } else {
         lineRecord.setField("type_s", "update");
       }
@@ -380,15 +352,6 @@ public class SolrLogPostTool {
       lineRecord.setField("replica_s", parseReplica(line));
     }
 
-    private String parseNewSearcherCore(String line) {
-      char[] ca = {']'};
-      String parts[] = line.split("\\[");
-      if(parts.length > 3) {
-        return readUntil(parts[2], ca);
-      } else {
-        return null;
-      }
-    }
 
     private String parseCore(String line) {
       char[] ca = {' ', ']', '}', ','};

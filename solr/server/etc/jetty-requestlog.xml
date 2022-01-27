@@ -30,7 +30,7 @@
         <New class="org.eclipse.jetty.server.AsyncRequestLogWriter">
           <Arg><Property name="solr.log.dir" default="logs"/>/yyyy_mm_dd.request.log</Arg>
           <Set name="filenameDateFormat">yyyy_MM_dd</Set>
-          <Set name="retainDays">90</Set>
+          <Set name="retainDays"><Property name="solr.log.requestlog.retaindays" default="3"/></Set>
           <Set name="append">true</Set>
           <Set name="timeZone">UTC</Set>
         </New>
@@ -40,4 +40,6 @@
       <Arg><Get class="org.eclipse.jetty.server.CustomRequestLog" name="NCSA_FORMAT"/></Arg>
     </New>
   </Set>
+  <!-- System property used to detect inside of Solr whether the requestlog is enabled, for logging purposes -->
+  <Call class="java.lang.System" name="setProperty"><Arg>solr.log.requestlog.enabled</Arg><Arg>true</Arg></Call>
 </Configure>
