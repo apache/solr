@@ -42,6 +42,9 @@ public class HdfsRestartWhileUpdatingTest extends AbstractRestartWhileUpdatingTe
 
   public HdfsRestartWhileUpdatingTest() throws Exception {
     super();
+
+    // The constructor runs after setupClass so reset the DirectoryFactory
+    useFactory("org.apache.solr.core.HdfsDirectoryFactory");
   }
 
   @BeforeClass
