@@ -47,7 +47,7 @@ public abstract class AbstractTlogReplayBufferedWhileIndexingTestBase extends Ab
     System.setProperty("solr.autoSoftCommit.maxTime", "3000");
     TestInjection.updateLogReplayRandomPause = "true:10";
     TestInjection.updateRandomPause = "true:10";
-    if (System.getProperty("solr.hdfs.home") != null) useFactory("solr.StandardDirectoryFactory");
+    useFactory("solr.StandardDirectoryFactory");
   }
 
   @AfterClass

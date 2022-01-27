@@ -45,6 +45,7 @@ dependencies {
   implementation ('com.github.ben-manes.caffeine:caffeine')
 
   // Many HDFS tests are using/subclassing test framework classes
+  testImplementation project(':solr:solrj')
   testImplementation project(':solr:test-framework')
 
   // hadoop dependencies for tests
