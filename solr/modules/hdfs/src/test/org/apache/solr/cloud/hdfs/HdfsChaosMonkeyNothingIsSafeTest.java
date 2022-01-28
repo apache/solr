@@ -41,7 +41,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @ThreadLeakLingering(linger = 10)
 public class HdfsChaosMonkeyNothingIsSafeTest extends AbstractChaosMonkeyNothingIsSafeTestBase {
   private static MiniDFSCluster dfsCluster;
-  private static final String DIRECTORY_FACTORY = "org.apache.solr.core.HdfsDirectoryFactory";
 
   @BeforeClass
   public static void setupClass() throws Exception {
@@ -60,12 +59,15 @@ public class HdfsChaosMonkeyNothingIsSafeTest extends AbstractChaosMonkeyNothing
   }
 
   @Override
+  public void distribSetUp() throws Exception {
+    super.distribSetUp();
+
+    // super class may hard code directory
+    useFactory("org.apache.solr.core.HdfsDirectoryFactory");
+  }
+
+  @Override
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
-
-  protected String getDirectoryFactory() {
-    return DIRECTORY_FACTORY;
-  }
-
 }

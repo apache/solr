@@ -58,6 +58,4 @@ public class HdfsUnloadDistributedZkTest extends AbstractUnloadDistributedZkTest
   protected String getDataDir(String dataDir) {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
-
-
 }

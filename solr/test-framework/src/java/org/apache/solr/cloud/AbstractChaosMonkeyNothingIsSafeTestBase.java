@@ -39,19 +39,21 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase extends AbstractF
 
   @BeforeClass
   public static void beforeSuperClass() {
-  schemaString = "schema15.xml";      // we need a string id
+    schemaString = "schema15.xml";      // we need a string id
     System.setProperty("solr.autoCommit.maxTime", "15000");
     System.clearProperty("solr.httpclient.retries");
     System.clearProperty("solr.retries.on.forward");
     System.clearProperty("solr.retries.to.followers");
-  setErrorHook();
-}
+    setErrorHook();
+  }
 
   @AfterClass
   public static void afterSuperClass() {
     System.clearProperty("solr.autoCommit.maxTime");
     clearErrorHook();
   }
+
+
 
   @Override
   protected void destroyServers() throws Exception {
@@ -76,14 +78,12 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase extends AbstractF
     return randVals;
   }
 
-  protected abstract String getDirectoryFactory();
-
   @Override
   public void distribSetUp() throws Exception {
     super.distribSetUp();
     // can help to hide this when testing and looking at logs
     //ignoreException("shard update error");
-    useFactory(getDirectoryFactory());
+    useFactory("solr.StandardDirectoryFactory");
   }
 
   @Override

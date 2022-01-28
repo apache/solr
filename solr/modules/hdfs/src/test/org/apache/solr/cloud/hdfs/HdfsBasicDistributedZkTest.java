@@ -27,10 +27,10 @@ import org.apache.solr.cloud.AbstractBasicDistributedZkTestBase;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import org.junit.Test;
 
 @Slow
 @Nightly
@@ -42,7 +42,7 @@ import org.junit.Test;
 @ThreadLeakLingering(linger = 10)
 public class HdfsBasicDistributedZkTest extends AbstractBasicDistributedZkTestBase {
   private static MiniDFSCluster dfsCluster;
-  
+
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
@@ -61,7 +61,7 @@ public class HdfsBasicDistributedZkTest extends AbstractBasicDistributedZkTestBa
       dfsCluster = null;
     }
   }
-  
+
   @Override
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
@@ -73,5 +73,4 @@ public class HdfsBasicDistributedZkTest extends AbstractBasicDistributedZkTestBa
   public void test() throws Exception {
     super.test();
   }
-
 }

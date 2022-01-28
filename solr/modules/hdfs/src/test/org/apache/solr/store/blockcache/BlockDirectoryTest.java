@@ -32,10 +32,10 @@ import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
   private static class MapperCache implements Cache {
@@ -108,11 +108,11 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    file = SolrTestCaseJ4.createTempDir().toFile();
+    file = createTempDir().toFile();
     FSDirectory dir = FSDirectory.open(new File(file, "base").toPath());
     mapperCache = new MapperCache();
 
-    if (SolrTestCaseJ4.random().nextBoolean()) {
+    if (random().nextBoolean()) {
       Metrics metrics = new Metrics();
       int blockSize = 8192;
       int slabSize = blockSize * 16384;
@@ -123,9 +123,9 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     } else {
       directory = new BlockDirectory("test", dir, mapperCache, null, true, true);
     }
-    random = SolrTestCaseJ4.random();
+    random = random();
   }
-  
+
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -142,7 +142,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     createFile(name, fsDir, directory);
     long fsLength = fsDir.fileLength(name);
     long hdfsLength = directory.fileLength(name);
-    Assert.assertEquals(fsLength, hdfsLength);
+    assertEquals(fsLength, hdfsLength);
     testEof(name, fsDir, fsLength);
     testEof(name, directory, hdfsLength);
     fsDir.close();
@@ -151,10 +151,10 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   private void testEof(String name, Directory directory, long length) throws IOException {
     IndexInput input = directory.openInput(name, new IOContext());
     try {
-    input.seek(length);
+      input.seek(length);
       try {
         input.readByte();
-        Assert.fail("should throw eof");
+        fail("should throw eof");
       } catch (IOException e) {
       }
     } finally {
@@ -176,7 +176,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
       }
     } catch (Exception e) {
       e.printStackTrace();
-      Assert.fail("Test failed on pass [" + i + "]");
+      fail("Test failed on pass [" + i + "]");
     }
     long t2 = System.nanoTime();
     System.out.println("Total time is " + ((t2 - t1)/1000000) + "ms");
@@ -195,7 +195,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     int reads = random.nextInt(MAX_NUMBER_OF_READS);
     IndexInput fsInput = fsDir.openInput(name, new IOContext());
     IndexInput hdfsInput = hdfs.openInput(name, new IOContext());
-    Assert.assertEquals(fsInput.length(), hdfsInput.length());
+    assertEquals(fsInput.length(), hdfsInput.length());
     int fileLength = (int) fsInput.length();
     for (int i = 0; i < reads; i++) {
       int rnd;
@@ -209,21 +209,21 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
       byte[] hdfsBuf = new byte[fsBuf.length];
       int offset = random.nextInt(fsBuf.length);
       int length = random.nextInt(fsBuf.length - offset);
-      
+
       int pos;
       if (fileLength == 0) {
         pos = 0;
       } else {
         pos = random.nextInt(fileLength - length);
       }
-    
+
       fsInput.seek(pos);
       fsInput.readBytes(fsBuf, offset, length);
       hdfsInput.seek(pos);
       hdfsInput.readBytes(hdfsBuf, offset, length);
       for (int f = offset; f < length; f++) {
         if (fsBuf[f] != hdfsBuf[f]) {
-          Assert.fail("read [" + i + "]");
+          fail("read [" + i + "]");
         }
       }
     }
@@ -270,26 +270,26 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     IOContext mergeContext = new IOContext(new MergeInfo(1,1,false,1));
 
     BlockDirectory d = directory;
-    Assert.assertTrue(d.useReadCache("", IOContext.DEFAULT));
+    assertTrue(d.useReadCache("", IOContext.DEFAULT));
     if (d.getCache() instanceof MapperCache) {
-      Assert.assertTrue(d.useWriteCache("", IOContext.DEFAULT));
+      assertTrue(d.useWriteCache("", IOContext.DEFAULT));
     } else {
-      Assert.assertFalse(d.useWriteCache("", IOContext.DEFAULT));
+      assertFalse(d.useWriteCache("", IOContext.DEFAULT));
     }
-    Assert.assertFalse(d.useWriteCache("", mergeContext));
+    assertFalse(d.useWriteCache("", mergeContext));
 
     d = new BlockDirectory("test", directory, mapperCache, null, true, false);
-    Assert.assertTrue(d.useReadCache("", IOContext.DEFAULT));
-    Assert.assertFalse(d.useWriteCache("", IOContext.DEFAULT));
-    Assert.assertFalse(d.useWriteCache("", mergeContext));
+    assertTrue(d.useReadCache("", IOContext.DEFAULT));
+    assertFalse(d.useWriteCache("", IOContext.DEFAULT));
+    assertFalse(d.useWriteCache("", mergeContext));
 
     d = new BlockDirectory("test", directory, mapperCache, null, false, true);
-    Assert.assertFalse(d.useReadCache("", IOContext.DEFAULT));
+    assertFalse(d.useReadCache("", IOContext.DEFAULT));
     if (d.getCache() instanceof MapperCache) {
-      Assert.assertTrue(d.useWriteCache("", IOContext.DEFAULT));
+      assertTrue(d.useWriteCache("", IOContext.DEFAULT));
     } else {
-      Assert.assertFalse(d.useWriteCache("", IOContext.DEFAULT));
+      assertFalse(d.useWriteCache("", IOContext.DEFAULT));
     }
-    Assert.assertFalse(d.useWriteCache("", mergeContext));
+    assertFalse(d.useWriteCache("", mergeContext));
   }
 }

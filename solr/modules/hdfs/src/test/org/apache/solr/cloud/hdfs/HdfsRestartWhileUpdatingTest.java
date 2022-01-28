@@ -65,6 +65,4 @@ public class HdfsRestartWhileUpdatingTest extends AbstractRestartWhileUpdatingTe
   protected String getDataDir(String dataDir) {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
-
-
 }

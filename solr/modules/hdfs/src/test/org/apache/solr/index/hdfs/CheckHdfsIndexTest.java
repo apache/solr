@@ -66,7 +66,7 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(SolrTestCaseJ4.createTempDir().toFile().getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
     path = new Path(HdfsTestUtil.getURI(dfsCluster) + "/solr/");
   }
 

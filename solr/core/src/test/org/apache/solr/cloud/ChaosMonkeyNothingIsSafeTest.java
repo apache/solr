@@ -28,10 +28,4 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class ChaosMonkeyNothingIsSafeTest extends AbstractChaosMonkeyNothingIsSafeTestBase {
-  private static final String DIRECTORY_FACTORY = "solr.StandardDirectoryFactory";
-
-  @Override
-  protected String getDirectoryFactory() {
-    return DIRECTORY_FACTORY;
-  }
 }

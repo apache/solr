@@ -16,17 +16,15 @@
  */
 package org.apache.solr.store.blockcache;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalCause;
-import com.github.benmanes.caffeine.cache.RemovalListener;
-import org.apache.solr.SolrTestCase;
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import com.github.benmanes.caffeine.cache.*;
+import org.apache.solr.SolrTestCase;
+
+import org.junit.Test;
 
 public class BlockCacheTest extends SolrTestCase {
 
@@ -40,7 +38,7 @@ public class BlockCacheTest extends SolrTestCase {
 
     BlockCache blockCache = new BlockCache(new Metrics(), true, totalMemory, slabSize, blockSize);
     byte[] buffer = new byte[1024];
-    Random random = SolrTestCase.random();
+    Random random = random();
     byte[] newData = new byte[blockSize];
     AtomicLong hitsInCache = new AtomicLong();
     AtomicLong missesInCache = new AtomicLong();
@@ -72,7 +70,7 @@ public class BlockCacheTest extends SolrTestCase {
       long t3 = System.nanoTime();
       if (blockCache.fetch(blockCacheKey, buffer)) {
         fetchTime += (System.nanoTime() - t3);
-        Assert.assertTrue("buffer content differs", Arrays.equals(testData, buffer));
+        assertTrue("buffer content differs", Arrays.equals(testData, buffer));
       }
     }
     System.out.println("Cache Hits    = " + hitsInCache.get());
@@ -99,7 +97,7 @@ public class BlockCacheTest extends SolrTestCase {
 
   @Test
   public void testBlockCacheConcurrent() throws Exception {
-    Random rnd = SolrTestCase.random();
+    Random rnd = random();
 
     final int blocksInTest = 400;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
     final int blockSize = 64;
@@ -221,7 +219,7 @@ public class BlockCacheTest extends SolrTestCase {
     System.out.println("Cache Store Fails = " + storeFails.get());
     System.out.println("Blocks with Errors = " + validateFails.get());
 
-    Assert.assertFalse("cached bytes differ from expected", failed.get());
+    assertFalse("cached bytes differ from expected", failed.get());
   }
 
 
@@ -233,7 +231,7 @@ public class BlockCacheTest extends SolrTestCase {
   // Sanity test the underlying concurrent map that BlockCache is using, in the same way that we use it.
   @Test
   public void testCacheConcurrent() throws Exception {
-    Random rnd = SolrTestCase.random();
+    Random rnd = random();
 
     // TODO: introduce more randomness in cache size, hit rate, etc
     final int blocksInTest = 400;
@@ -259,7 +257,7 @@ public class BlockCacheTest extends SolrTestCase {
           return;
         }
       }
-      Assert.assertEquals("cache key differs from value's key", k, (Long) v.key);
+      assertEquals("cache key differs from value's key", k, (Long) v.key);
       if (!v.live.compareAndSet(true, false)) {
         throw new RuntimeException("listener called more than once! k=" + k + " v=" + v + " removalCause=" + removalCause);
         // return;  // use this variant if listeners may be called more than once
@@ -329,7 +327,7 @@ public class BlockCacheTest extends SolrTestCase {
           Val v = cache.getIfPresent(k);
           if (v != null) {
             hits.incrementAndGet();
-            Assert.assertEquals("cache key differs from value's key", k, (Long) v.key);
+            assertEquals("cache key differs from value's key", k, (Long) v.key);
           }
 
           if (v == null || odds(updateAnywayOdds)) {
@@ -359,8 +357,8 @@ public class BlockCacheTest extends SolrTestCase {
     // Thread.sleep(1000); // need to wait if executor is used for listener?
     long cacheSize = cache.estimatedSize();
     System.out.println("Done! # of Elements = " + cacheSize + " inserts=" + inserts.get() + " removals=" + removals.get() + " hits=" + hits.get() + " maxObservedSize=" + maxObservedSize);
-    Assert.assertEquals("cache size different from (inserts - removal)", cacheSize, inserts.get() - removals.get());
-    Assert.assertFalse(failed.get());
+    assertEquals("cache size different from (inserts - removal)", cacheSize,  inserts.get() - removals.get());
+    assertFalse(failed.get());
   }
 
 

@@ -60,5 +60,4 @@ public class HdfsSyncSliceTest extends AbstractSyncSliceTestBase {
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
-
 }

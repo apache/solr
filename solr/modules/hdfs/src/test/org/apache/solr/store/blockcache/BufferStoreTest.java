@@ -25,7 +25,6 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,8 +40,8 @@ public class BufferStoreTest extends SolrTestCase {
   public void setup() {
     metrics = new Metrics();
     SolrMetricManager metricManager = new SolrMetricManager();
-    String registry = TestUtil.randomSimpleString(SolrTestCase.random(), 2, 10);
-    String scope = TestUtil.randomSimpleString(SolrTestCase.random(), 2, 10);
+    String registry = TestUtil.randomSimpleString(random(), 2, 10);
+    String scope = TestUtil.randomSimpleString(random(), 2, 10);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     metrics.initializeMetrics(solrMetricsContext, scope);
     metricsMap = (MetricsMap) ((SolrMetricManager.GaugeWrapper)metricManager.registry(registry).getMetrics().get("CACHE." + scope + ".hdfsBlockCache")).getGauge();
@@ -54,7 +53,7 @@ public class BufferStoreTest extends SolrTestCase {
   public void clearBufferStores() {
     BufferStore.clearBufferStores();
   }
-  
+
   @Test
   public void testBufferTakePut() {
     byte[] b1 = store.takeBuffer(blockSize);
@@ -97,9 +96,9 @@ public class BufferStoreTest extends SolrTestCase {
   private void assertGaugeMetricsChanged(boolean allocated, boolean lost) {
     Map<String,Object> stats = metricsMap.getValue();
 
-    Assert.assertEquals("Buffer allocation metric not updating correctly.",
+    assertEquals("Buffer allocation metric not updating correctly.",
         allocated, isMetricPositive(stats, "buffercache.allocations"));
-    Assert.assertEquals("Buffer lost metric not updating correctly.",
+    assertEquals("Buffer lost metric not updating correctly.",
         lost, isMetricPositive(stats, "buffercache.lost"));
   }
 

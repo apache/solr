@@ -28,7 +28,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -38,7 +38,7 @@ import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-@SolrTestCaseJ4.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 @ThreadLeakFilters(defaultFilters = true, filters = {
         BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
@@ -50,7 +50,7 @@ public class HdfsBackupRepositoryIntegrationTest extends AbstractBackupRepositor
 
     @BeforeClass
     public static void setupClass() throws Exception {
-        dfsCluster = HdfsTestUtil.setupClass(SolrTestCaseJ4.createTempDir().toFile().getAbsolutePath());
+        dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
         hdfsUri = HdfsTestUtil.getURI(dfsCluster);
         try {
             URI uri = new URI(hdfsUri);
@@ -76,7 +76,7 @@ public class HdfsBackupRepositoryIntegrationTest extends AbstractBackupRepositor
 
         System.setProperty("solr.hdfs.default.backup.path", "/backup");
         System.setProperty("solr.hdfs.home", hdfsUri + "/solr");
-        SolrTestCaseJ4.useFactory("solr.StandardDirectoryFactory");
+        useFactory("solr.StandardDirectoryFactory");
     }
 
     @AfterClass
