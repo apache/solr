@@ -17,10 +17,7 @@
 // under the License.
 
 
-Solr has support for writing and reading its index and transaction log files to the HDFS distributed filesystem.
-
-Starting from 9.0, this functionality has been moved from Solr Core to the HDFS contrib module. 
-
+The Solr HDFS module has support for writing and reading its index and transaction log files to the HDFS distributed filesystem.
 
 This does not use Hadoop MapReduce to process Solr data, rather it only uses the HDFS filesystem for index and transaction log file storage.
 
