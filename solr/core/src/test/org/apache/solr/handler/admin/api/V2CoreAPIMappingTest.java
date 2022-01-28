@@ -21,6 +21,7 @@ import com.google.common.collect.Maps;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -80,6 +81,12 @@ public class V2CoreAPIMappingTest extends SolrTestCaseJ4 {
         apiBag.registerObject(new UnloadCoreAPI(mockCoreHandler));
         apiBag.registerObject(new MergeIndexesAPI(mockCoreHandler));
         apiBag.registerObject(new SplitCoreAPI(mockCoreHandler));
+        apiBag.registerObject(new RequestCoreRecoveryAPI(mockCoreHandler));
+        apiBag.registerObject(new PrepareCoreRecoveryAPI(mockCoreHandler));
+        apiBag.registerObject(new RequestApplyCoreUpdatesAPI(mockCoreHandler));
+        apiBag.registerObject(new RequestSyncShardAPI(mockCoreHandler));
+        apiBag.registerObject(new RequestBufferUpdatesAPI(mockCoreHandler));
+
     }
 
     @Test
@@ -171,6 +178,64 @@ public class V2CoreAPIMappingTest extends SolrTestCaseJ4 {
         final List<String> targetCoreEntries = Arrays.asList(v1Params.getParams(TARGET_CORE));
         assertEquals(2, targetCoreEntries.size());
         assertTrue(targetCoreEntries.containsAll(List.of("core1", "core2")));
+    }
+
+    @Test
+    public void testRequestCoreRecoveryAllParams() throws Exception {
+        final SolrParams v1Params = captureConvertedV1Params("/cores/coreName", "POST",
+                "{\"request-recovery\": {}}");
+
+        assertEquals("requestrecovery", v1Params.get(ACTION));
+        assertEquals("coreName", v1Params.get(CORE));
+    }
+
+    @Test
+    public void testPrepareCoreRecoveryAllParams() throws Exception {
+        final SolrParams v1Params = captureConvertedV1Params("/cores/coreName", "POST",
+                "{\"prep-recovery\": {" +
+                        "\"nodeName\": \"someNodeName\", " +
+                        "\"coreNodeName\": \"someCoreNodeName\", " +
+                        "\"state\": \"someState\", " +
+                        "\"checkLive\": true, " +
+                        "\"onlyIfLeader\": true" +
+                        "\"onlyIfLeaderActive\": true " +
+                        "}}");
+
+        assertEquals("preprecovery", v1Params.get(ACTION));
+        assertEquals("coreName", v1Params.get(CORE));
+        assertEquals("someNodeName", v1Params.get("nodeName"));
+        assertEquals("someCoreNodeName", v1Params.get(CORE_NODE_NAME));
+        assertEquals("someState", v1Params.get(ZkStateReader.STATE_PROP));
+        assertEquals(true, v1Params.getPrimitiveBool("checkLive"));
+        assertEquals(true, v1Params.getPrimitiveBool("onlyIfLeader"));
+        assertEquals(true, v1Params.getPrimitiveBool("onlyIfLeaderActive"));
+    }
+
+    @Test
+    public void testApplyCoreUpdatesAllParams() throws Exception {
+        final SolrParams v1Params = captureConvertedV1Params("/cores/coreName", "POST",
+                "{\"request-apply-updates\": {}}");
+
+        assertEquals("requestapplyupdates", v1Params.get(ACTION));
+        assertEquals("coreName", v1Params.get(NAME));
+    }
+
+    @Test
+    public void testSyncShardAllParams() throws Exception {
+        final SolrParams v1Params = captureConvertedV1Params("/cores/coreName", "POST",
+                "{\"request-sync-shard\": {}}");
+
+        assertEquals("requestsyncshard", v1Params.get(ACTION));
+        assertEquals("coreName", v1Params.get(CORE));
+    }
+
+    @Test
+    public void testRequestBufferUpdatesAllParams() throws Exception {
+        final SolrParams v1Params = captureConvertedV1Params("/cores/coreName", "POST",
+                "{\"request-buffer-updates\": {}}");
+
+        assertEquals("requestbufferupdates", v1Params.get(ACTION));
+        assertEquals("coreName", v1Params.get(NAME));
     }
 
     private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody) throws Exception {

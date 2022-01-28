@@ -26,8 +26,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.*;
+import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.PER_CORE_COMMANDS;
 
 /** stores the mapping of v1 API parameters to v2 API parameters
  * for core admin API
@@ -35,11 +34,6 @@ import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.*;
  */
 public class CoreApiMapping {
   public enum Meta implements CommandMeta {
-    PREPRECOVERY(PER_CORE_COMMANDS, POST, CoreAdminAction.PREPRECOVERY, "prep-recovery", null),
-    REQUESTRECOVERY(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTRECOVERY, "request-recovery", null),
-    REQUESTSYNCSHARD(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTSYNCSHARD, "request-sync-shard", null),
-    REQUESTBUFFERUPDATES(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTBUFFERUPDATES, "request-buffer-updates", null),
-    REQUESTAPPLYUPDATES(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTAPPLYUPDATES, "request-apply-updates", null),
     REQUESTSTATUS(PER_CORE_COMMANDS, GET, CoreAdminAction.REQUESTSTATUS, "request-status", null)/*TODO*/;
 
     public final String commandName;
