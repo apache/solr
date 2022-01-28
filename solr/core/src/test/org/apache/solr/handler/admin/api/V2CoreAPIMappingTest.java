@@ -86,7 +86,7 @@ public class V2CoreAPIMappingTest extends SolrTestCaseJ4 {
         apiBag.registerObject(new RequestApplyCoreUpdatesAPI(mockCoreHandler));
         apiBag.registerObject(new RequestSyncShardAPI(mockCoreHandler));
         apiBag.registerObject(new RequestBufferUpdatesAPI(mockCoreHandler));
-
+        apiBag.registerObject(new RequestCoreCommandStatusAPI(mockCoreHandler));
     }
 
     @Test
@@ -236,6 +236,17 @@ public class V2CoreAPIMappingTest extends SolrTestCaseJ4 {
 
         assertEquals("requestbufferupdates", v1Params.get(ACTION));
         assertEquals("coreName", v1Params.get(NAME));
+    }
+
+    // Strictly speaking, this API isn't at the /cores/coreName path, but as the only API at its path
+    // (/cores/coreName/command-status/requestId) it doesn't merit its own test class.
+    @Test
+    public void testRequestCommandStatusAllParams() throws Exception {
+        final SolrParams v1Params = captureConvertedV1Params("/cores/coreName/command-status/someId", "GET",
+                null);
+
+        assertEquals("requeststatus", v1Params.get(ACTION));
+        assertEquals("someId", v1Params.get(REQUESTID));
     }
 
     private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody) throws Exception {

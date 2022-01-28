@@ -25,7 +25,6 @@ import java.util.Map;
 public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   public void testSchema() {
-    checkSchema("cores.core.Commands");
     checkSchema("cluster.security.BasicAuth.Commands");
     checkSchema("cluster.security.RuleBasedAuthorization");
     checkSchema("core.config.Commands");
