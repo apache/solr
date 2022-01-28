@@ -164,9 +164,9 @@ configure(project(":solr:test-framework")) {
 }
 
 configure(project(":solr:modules:hdfs")) {
-  project.tasks.withType(RenderJavadocTask) {    
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
     javadocMissingIgnore = [
-        "org.apache.solr",
         "org.apache.solr.core",
         "org.apache.solr.core.backup.repository",
         "org.apache.solr.update",
