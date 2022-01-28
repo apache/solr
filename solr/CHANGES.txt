@@ -559,6 +559,8 @@ Bug Fixes
 
 * SOLR-15842: Async response for backups now correctly aggregates and returns information (Houston Putman, Artem Abeleshev, Christine Poerschke)
 
+* hl.method=postings highlighter, deprecated in 7.0
+
 * SOLR-15944: The Tagger's JSON response format now always uses an object/map to represent each tag instead of an
   array, which didn't make sense. (David Smiley)
 

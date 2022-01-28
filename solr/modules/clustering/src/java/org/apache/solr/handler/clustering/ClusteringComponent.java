@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.HighlightParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -371,7 +372,9 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     SolrQueryRequest req = null;
     SolrHighlighter highlighter = null;
     if (preferQueryContext) {
-      highlighter = ((HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME)).getHighlighter();
+      highlighter =
+          ((HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME))
+              .getHighlighter(new ModifiableSolrParams());
       if (highlighter != null) {
         Map<String, Object> args = new HashMap<>();
         args.put(HighlightParams.FIELDS, fieldsToCluster);
