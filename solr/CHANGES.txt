@@ -587,6 +587,9 @@ Bug Fixes
 
 * SOLR-14595: Consistent overrequest across different facet methods for `sort:index` JSON Facet field (Michael Gibney, hossman)
 
+* SOLR-15961: Fix bug in PKIAuthenticationPlugin that can cause a request to fail with 401 Unauthorized instead
+ of re-fetching expired remote keys from other nodes. (Tomás Fernández Löbbe)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
