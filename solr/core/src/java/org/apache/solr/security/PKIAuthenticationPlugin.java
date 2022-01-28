@@ -198,7 +198,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     }
     String s = new String(bytes, UTF_8).trim();
     int splitPoint = s.lastIndexOf(' ');
-    if (splitPoint == -1 || s.length() - 1 - splitPoint < MIN_TIMESTAMP_DIGITS || s.length() - 1 - splitPoint > MAX_TIMESTAMP_DIGITS) {
+    int timestampDigits = s.length() - 1 - splitPoint;
+    if (splitPoint == -1 || timestampDigits < MIN_TIMESTAMP_DIGITS || timestampDigits > MAX_TIMESTAMP_DIGITS) {
       log.warn("Invalid cipher {} deciphered data {}", cipher, s);
       return null;
     }
