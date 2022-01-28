@@ -638,7 +638,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
 
   @Override
   public UpdateLog newDefaultUpdateLog() {
-    return new HdfsUpdateLog();
+    return new HdfsUpdateLog(getConfDir());
   }
 
 }
