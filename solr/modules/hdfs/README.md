@@ -26,6 +26,4 @@ To execute the module tests:
 
 Usage
 -----
-To use the module, it needs to be placed to the Solr web application classpath (for example by symlinking it to the WEB-INF/lib directory.)
-
 Please refer to the 'Running Solr on HDFS' section of the reference guide: https://solr.apache.org/guide/running-solr-on-hdfs.html

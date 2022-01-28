@@ -17,7 +17,7 @@
 // under the License.
 
 
-The Solr HDFS module has support for writing and reading its index and transaction log files to the HDFS distributed filesystem.
+The Solr HDFS module has support for writing and reading its index and transaction log files to the HDFS distributed filesystem. This plugin must first be <<solr-plugins.adoc#installing-plugins,installed>> before using.
 
 This does not use Hadoop MapReduce to process Solr data, rather it only uses the HDFS filesystem for index and transaction log file storage.
 
