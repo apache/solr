@@ -21,7 +21,7 @@ Solr Docker
 This Solr docker module creates both a local Docker image from the source as well as the official Solr Dockerfile.
 This allows for local images to be completely compatible with the official Solr images available on DockerHub.
 
-In order to build/test/tag your Docker images using local Solr source code, please refer to `./gradlew helpDocker`
+In order to build/test/tag your Docker images using local Solr source code, please refer to `./gradlew helpDocker` in a git checkout or a source-release download.
 
 Please refer to the [Solr Reference Guide](https://solr.apache.org/guide/solr-in-docker.html) for information on using the Solr Docker image.
 
