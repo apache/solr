@@ -119,7 +119,7 @@ public final class HttpServer2 implements FilterContainer {
   public static final Object SOLR_HACK_FOR_CLASS_VERIFICATION = new Object();
 
   // Apparently the Hadoop code expectes upper-case LOG, so...
-  public static final Logger LOG = LoggerFactory.getLogger(HttpServer2.class); //nowarn
+  public static final Logger LOG = LoggerFactory.getLogger(HttpServer2.class); // nowarn_valid_logger
 
   public static final String HTTP_SCHEME = "http";
   public static final String HTTPS_SCHEME = "https";

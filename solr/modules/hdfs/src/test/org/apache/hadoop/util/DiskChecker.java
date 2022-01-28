@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 public class DiskChecker {
   public static final Object SOLR_HACK_FOR_CLASS_VERIFICATION = new Object();
 
-  public static final Logger log = LoggerFactory.getLogger(DiskChecker.class);
+  public static final Logger log = LoggerFactory.getLogger(DiskChecker.class); // nowarn_valid_logger
 
   public static class DiskErrorException extends IOException {
     public DiskErrorException(String msg) {
