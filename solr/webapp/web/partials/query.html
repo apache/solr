@@ -269,6 +269,9 @@ limitations under the License.
             <input type="checkbox" ng-model="val['facet.missing']" name="facet.missing" id="facet_missing">
             facet.missing
           </label>
+
+          <label for="json_facet">json.facet (<a href="https://solr.apache.org/guide/json-facet-api.html" target="_blank">Json Facet DSL</a>)</label>
+          <textarea ng-model="val['json.facet']" name="json.facet" id="json_facet" rows="6"></textarea>
         </div>
       </fieldset>
 
@@ -359,6 +362,10 @@ limitations under the License.
         </div>
       </div>
 
+      <label for="json_query" title="JSON Request API">
+        <a rel="help">JSON Query (<a href="https://solr.apache.org/guide/json-request-api.html" target="_blank">DSL documentation</a>)</a>
+      </label>
+      <textarea name="json" ng-model="val['json']" id="json_query" title="JSON Query"></textarea>
 
       <button type="submit" ng-click="doQuery()">Execute Query</button>
     </form>
