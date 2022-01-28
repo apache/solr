@@ -167,7 +167,7 @@ public class SolrXmlConfig {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "solr.xml does not exist in " + configFile.getParent() + " cannot start Solr");
       }
-      log.info("Container configuration not found in SOLR_HOME, using built-in default");
+      log.info("solr.xml not found in SOLR_HOME, using built-in default");
       String solrInstallDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
       if (solrInstallDir == null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -176,7 +176,7 @@ public class SolrXmlConfig {
       configFile = Path.of(solrInstallDir).resolve("server").resolve("solr").resolve("solr.xml");
     }
 
-    log.info("Loading container configuration from {}", configFile);
+    log.info("Loading solr.xml from {}", configFile);
     try (InputStream inputStream = Files.newInputStream(configFile)) {
       return fromInputStream(solrHome, inputStream, substituteProps);
     } catch (SolrException exc) {
