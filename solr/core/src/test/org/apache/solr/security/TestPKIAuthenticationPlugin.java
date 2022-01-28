@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.PublicKey;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -30,7 +31,6 @@ import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.message.BasicHttpRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -161,10 +161,9 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     mock1.close();
   }
 
-  @SuppressForbidden(reason="PKIAuthentication uses timestamps")
   public void testParseCipher() {
     for (String validUser: new String[]{"user1", "$", "some user","some 123"}) {
-      for (long validTimestamp: new long[]{System.currentTimeMillis(), 99999999999L, 9999999999999L}) {
+      for (long validTimestamp: new long[]{Instant.now().toEpochMilli(), 99999999999L, 9999999999999L}) {
         String s = validUser + " " + validTimestamp;
         byte[] payload = s.getBytes(UTF_8);
         byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
@@ -197,18 +196,16 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey()));
   }
 
-  @SuppressForbidden(reason="PKIAuthentication uses timestamps")
   public void testParseCipherInvalidKey() {
-    String s = "user1 " + System.currentTimeMillis();
+    String s = "user1 " + Instant.now().toEpochMilli();
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, new CryptoKeys.RSAKeyPair().getPublicKey()));
   }
 
-  @SuppressForbidden(reason="PKIAuthentication uses timestamps")
   public void testParseCipherNoSpace() {
-    String s = "user1" + System.currentTimeMillis(); // missing space
+    String s = "user1" + Instant.now().toEpochMilli(); // missing space
 
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
@@ -223,6 +220,15 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey()));
+  }
+
+  public void testParseCipherInvalidKeyExample() {
+    /*
+    This test shows a case with an invalid public key for which the decrypt will return an output that triggers SOLR-15961.
+     */
+    String base64Cipher = "A8tEkMfmA5m5+wVG9xSI46Lhg8MqDFkjPVqXc6Tf6LT/EVIpW3DUrkIygIjk9tSCCAxhHwSvKfVJeujaBtxr19ajmpWjtZKgZOXkynF5aPbDuI+mnvCiTmhLuZYExvnmeYxag6A4Fu2TpA/Wo97S4cIkRgfyag/ZOYM0pZwVAtNoJgTpmODDGrH4W16BXSZ6xm+EV4vrfUqpuuO7U7YiU5fd1tv22Au0ZaY6lPbxAHjeFyD8WrkPPIkEoM14K0G5vAg4wUxpRF/eVlnzhULoPgKFErz7cKVxuvxSsYpVw5oko+ldzyfsnMrC1brqUKA7NxhpdpJzp7bmd8W8/mvZEw==";
+    String publicKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsJu1O+A/gGikFSeLGYdgNPrz3ef/tqJP1sRqzkVjnBcdyI2oXMmAWF+yDe0Zmya+HevyOI8YN2Yaq6aCLjbHnT364Rno/urhKvR5PmaH/PqXrh3Dl+vn08B74iLVZxZro/v34FGjX8fkiasZggC4AnyLjFkU7POsHhJKSXGslsWe0dq7yaaA2AES/bFwJ3r3FNxUsE+kWEtZG1RKMq8P8wlx/HLDzjYKaGnyApAltBHVx60XHiOC9Oatu5HZb/eKU3jf7sKibrzrRsqwb+iE4ZxxtXkgATuLOl/2ks5Mnkk4u7bPEAgEpEuzQBB4AahMC7r+R5AzRnB4+xx69FP1IwIDAQAB";
+    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, CryptoKeys.deserializeX509PublicKey(publicKey)));
   }
 
   private HttpServletRequest createMockRequest(final AtomicReference<Header> header) {
