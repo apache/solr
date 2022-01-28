@@ -35,8 +35,14 @@ dependencies {
   implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
+  // transitive of hadoop-common; used by HDFS
+  runtimeOnly 'commons-collections:commons-collections'
+  runtimeOnly 'com.google.re2j:re2j'
+  runtimeOnly 'org.apache.commons:commons-configuration2'
+  runtimeOnly 'org.apache.htrace:htrace-core4' // note: removed in Hadoop 3.3.2
+  runtimeOnly 'org.apache.kerby:kerb-core'
+  runtimeOnly 'org.apache.kerby:kerb-util'
   implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
 
   // Guava implements the VisibleForTesting annotations
   implementation ('com.google.guava:guava') { transitive = false }
