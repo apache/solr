@@ -553,7 +553,6 @@ If only `dividend` routing is desired, `hash` may be explicitly set to the empty
 The `<metrics>` element in `solr.xml` allows you to customize the metrics reported by Solr.
 You can define system properties that should not be returned, or define custom suppliers and reporters.
 
-In a default `solr.xml` you will not see any `<metrics>` configuration.
 If you would like to customize the metrics for your installation, see the section <<metrics-reporting.adoc#metrics-configuration,Metrics Configuration>>.
 
 == Substituting JVM System Properties in solr.xml
