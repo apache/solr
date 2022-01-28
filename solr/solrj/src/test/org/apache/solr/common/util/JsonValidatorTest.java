@@ -22,9 +22,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.solr.common.util.Utils.toJSONString;
-import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
-
 public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   public void testSchema() {
@@ -37,35 +34,13 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
 
 
   public void testSchemaValidation() {
-    // merge-indexes chosen to exercise string and array/list props.
-    ValidatingJsonMap spec = Utils.getSpec("cores.core.Commands").getSpec();
-    final Map<String, Object> mergeIndexesSchema = spec.getMap("commands", NOT_NULL).getMap("merge-indexes", NOT_NULL);
-    final JsonSchemaValidator mergeIndexesSchemaValidator = new JsonSchemaValidator(mergeIndexesSchema);
-
-    List<String> errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : x, indexDir: [ c1 , c2]}"));
-    assertNull(toJSONString(errs), errs);
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : x, indexDir: [c1] }"));
-    assertNull(toJSONString(errs), errs);
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : x, x:y, indexDir: [ c1 , c2]}"));
-    assertNotNull(toJSONString(errs), errs);
-    assertTrue(toJSONString(errs), errs.get(0).contains("Unknown"));
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : 123, indexDir: c1 }"));
-    assertNotNull(toJSONString(errs), errs);
-    assertTrue(toJSONString(errs), errs.get(0).contains("expected"));
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{x:y, indexDir: [ c1 , c2]}"));
-    assertTrue(toJSONString(errs), StrUtils.join(errs, '|').contains("Unknown"));
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : x, indexDir: [ 1 , 2]}"));
-    assertFalse(toJSONString(errs), errs.isEmpty());
-    assertTrue(toJSONString(errs), errs.get(0).contains("expected"));
-
-
     final JsonSchemaValidator personSchemaValidator = new JsonSchemaValidator("{" +
         "  type:object," +
         "  properties: {" +
         "   age : {type: number}," +
         "   adult : {type: boolean}," +
         "   name: {type: string}}}");
-    errs = personSchemaValidator.validateJson(Utils.fromJSONString("{name:x, age:21, adult:true}"));
+    List<String> errs = personSchemaValidator.validateJson(Utils.fromJSONString("{name:x, age:21, adult:true}"));
     assertNull(errs);
     errs = personSchemaValidator.validateJson(Utils.fromJSONString("{name:x, age:'21', adult:'true'}"));
     assertNotNull(errs);

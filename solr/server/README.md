@@ -95,11 +95,11 @@ container).
 
 Various example SolrHome dirs contained in this directory may use "<lib>"
 statements in the solrconfig.xml file to reference plugin jars outside of 
-this directory for loading "contrib" plugins via relative paths.  
+this directory for loading modules via relative paths.  
 
 If you make a copy of this example server and wish to use the 
 ExtractingRequestHandler (SolrCell), the clustering component,
-or any other modules in "contrib", you will need to
+or any other modules, you will need to
 copy the required jars or update the paths to those jars in your 
 solrconfig.xml.
 

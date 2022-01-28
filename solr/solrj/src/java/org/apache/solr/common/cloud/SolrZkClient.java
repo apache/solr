@@ -499,6 +499,8 @@ public class SolrZkClient implements Closeable {
    *
    * Note: retryOnConnLoss is only respected for the final node - nodes
    * before that are always retried on connection loss.
+   *
+   * Note: if failOnExists == false then we will always overwrite the existing data with the given data
    */
   public void makePath(String path, byte[] data, CreateMode createMode,
       Watcher watcher, boolean failOnExists, boolean retryOnConnLoss, int skipPathParts) throws KeeperException, InterruptedException {
@@ -543,6 +545,9 @@ public class SolrZkClient implements Closeable {
           throw e;
         }
       } catch (NodeExistsException e) {
+        if (log.isDebugEnabled()) {
+          log.debug("Node exists: {}", e.getPath());
+        }
 
         if (!failOnExists && i == paths.length - 1) {
           // TODO: version ? for now, don't worry about race
