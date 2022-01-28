@@ -30,6 +30,7 @@ import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.message.BasicHttpRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -160,6 +161,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     mock1.close();
   }
 
+  @SuppressForbidden(reason="PKIAuthentication uses timestamps")
   public void testParseCipher() {
     for (String validUser: new String[]{"user1", "$", "some user","some 123"}) {
       for (long validTimestamp: new long[]{System.currentTimeMillis(), 99999999999L, 9999999999999L}) {
@@ -195,6 +197,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey()));
   }
 
+  @SuppressForbidden(reason="PKIAuthentication uses timestamps")
   public void testParseCipherInvalidKey() {
     String s = "user1 " + System.currentTimeMillis();
     byte[] payload = s.getBytes(UTF_8);
@@ -203,6 +206,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, new CryptoKeys.RSAKeyPair().getPublicKey()));
   }
 
+  @SuppressForbidden(reason="PKIAuthentication uses timestamps")
   public void testParseCipherNoSpace() {
     String s = "user1" + System.currentTimeMillis(); // missing space
 
