@@ -298,6 +298,9 @@ public class ZkMaintenanceUtils {
           // if the path exists (and presumably we're uploading data to it) just set its data
           if (file.toFile().getName().equals(ZKNODE_DATA_FILE) && zkClient.exists(zkNode, true)) {
             zkClient.setData(zkNode, file, true);
+          } else if (file == rootPath) {
+            // We are only uploading a single file, preVisitDirectory was never called
+            zkClient.makePath(zkNode, file, false, true);
           } else {
             // Skip path parts here because they should have been created during preVisitDirectory
             int pathParts = file.getNameCount() + partsOffset;
@@ -318,12 +321,16 @@ public class ZkMaintenanceUtils {
         try {
           if (dir.equals(rootPath)) {
             // Make sure the root path exists, including potential parents
-            zkClient.makePath(zkNode, false, true);
+            zkClient.makePath(zkNode, true);
           } else {
             // Skip path parts here because they should have been created during previous visits
             int pathParts = dir.getNameCount() + partsOffset;
-            zkClient.makePath(zkNode, null, CreateMode.PERSISTENT, null, false, true, pathParts);
+            zkClient.makePath(zkNode, null, CreateMode.PERSISTENT, null, true, true, pathParts);
           }
+        } catch (KeeperException.NodeExistsException ignored) {
+          // Using fail-on-exists == false has side effect of makePath attempting to setData on the leaf of the path
+          // We prefer that if the parent directory already exists, we do not modify it
+          // Particularly relevant for marking config sets as trusted
         } catch (KeeperException | InterruptedException e) {
           throw new IOException("Error creating intermediate directory " + dir,
               SolrZkClient.checkInterrupted(e));
