@@ -19,8 +19,10 @@ package org.apache.solr.security;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
+import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.PublicKey;
+import java.util.Base64;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.http.Header;
@@ -34,6 +36,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -72,6 +75,8 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
   final FilterChain filterChain = (servletRequest, servletResponse) -> wrappedRequestByFilter.set(servletRequest);
   final String nodeName = "node_x_233";
+
+  final CryptoKeys.RSAKeyPair aKeyPair = new CryptoKeys.RSAKeyPair();
 
   final LocalSolrQueryRequest localSolrQueryRequest = new LocalSolrQueryRequest(null, new ModifiableSolrParams()) {
     @Override
@@ -153,6 +158,67 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertNotNull(wrappedRequestByFilter.get());
     assertEquals("$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
     mock1.close();
+  }
+
+  public void testParseCipher() {
+    for (String validUser: new String[]{"user1", "$", "some user","some 123"}) {
+      for (long validTimestamp: new long[]{System.currentTimeMillis(), 99999999999L, 9999999999999L}) {
+        String s = validUser + " " + validTimestamp;
+        byte[] payload = s.getBytes(UTF_8);
+        byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
+        String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
+        PKIAuthenticationPlugin.PKIHeaderData header = PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey());
+        assertNotNull("Expecting valid header for user " + validUser + " and timestamp " + validTimestamp, header);
+        assertEquals(validUser, header.userName);
+        assertEquals(validTimestamp, header.timestamp);
+      }
+    }
+  }
+
+  public void testParseCipherInvalidTimestampTooSmall() {
+    long timestamp = 999999999L;
+    String s = "user1 " + timestamp;
+
+    byte[] payload = s.getBytes(UTF_8);
+    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
+    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
+    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey()));
+  }
+
+  public void testParseCipherInvalidTimestampTooBig() {
+    long timestamp = 10000000000000L;
+    String s = "user1 " + timestamp;
+
+    byte[] payload = s.getBytes(UTF_8);
+    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
+    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
+    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey()));
+  }
+
+  public void testParseCipherInvalidKey() {
+    String s = "user1 " + System.currentTimeMillis();
+    byte[] payload = s.getBytes(UTF_8);
+    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
+    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
+    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, new CryptoKeys.RSAKeyPair().getPublicKey()));
+  }
+
+  public void testParseCipherNoSpace() {
+    String s = "user1" + System.currentTimeMillis(); // missing space
+
+    byte[] payload = s.getBytes(UTF_8);
+    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
+    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
+    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey()));
+  }
+
+  public void testParseCipherNoTimestamp() {
+    String s = "user1 aaaaaaaaaa";
+
+    byte[] payload = s.getBytes(UTF_8);
+    byte[] payloadCipher = aKeyPair.encrypt(ByteBuffer.wrap(payload));
+    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
+    assertNull(PKIAuthenticationPlugin.parseCipher(base64Cipher, aKeyPair.getPublicKey()));
   }
 
   private HttpServletRequest createMockRequest(final AtomicReference<Header> header) {
