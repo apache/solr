@@ -252,6 +252,10 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15755: Parse collection, shard, core, replica info from newSearcher events in postlogs tool (Joel Bernstein)
 
+* SOLR-9575: Solr no longer requires a solr.xml to be present in $SOLR_HOME. If one is not found, Solr will load
+  the one in $SOLR_TIP/server/solr/solr.xml. Solr also does not require a zoo.cfg in $SOLR_HOME if started with
+  embedded zookeeper. (janhoy)
+
 * SOLR-11905: New Admin UI Query screen input boxes for JSON query and facet DSL (janhoy)
 
 Build
