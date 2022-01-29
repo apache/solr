@@ -275,6 +275,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15755: Parse collection, shard, core, replica info from newSearcher events in postlogs tool (Joel Bernstein)
 
+* SOLR-11905: New Admin UI Query screen input boxes for JSON query and facet DSL (janhoy)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
