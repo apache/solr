@@ -159,11 +159,13 @@ wrapped in a `<raw name="field_name">[...]</raw>` element at the top level of ea
 `<arr name="field_name"><raw>[...]</raw></arr>` element for multi-valued fields). Existing clients that parse field
 values serialized in this way will need to be updated accordingly.
 
+* SOLR-9575: Solr no longer requires a `solr.xml` in `$SOLR_HOME`. If one is not found, Solr will instead use the default one from `$SOLR_TIP/server/solr/solr.xml`. You can revert to the pre-9.0 behaviour by setting environment variable `SOLR_SOLRXML_REQUIRED=true` or system property `-Dsolr.solrxml.required=true`. Solr also does not require a `zoo.cfg` in `$SOLR_HOME` if started with embedded zookeeper.
+
 === solr.xml maxBooleanClauses now enforced recursively
 
 Lucene 9.0 has additional safety checks over previous versions that impact how the `solr.xml` global `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` option is enforced.
 
-In previous versios of Solr, this option was a hard limit on the number of clauses in any `BooleanQuery` object - but it was only enforced for the _direct_ clauses.
+In previous versions of Solr, this option was a hard limit on the number of clauses in any `BooleanQuery` object - but it was only enforced for the _direct_ clauses.
 Starting with Solr 9, this global limit is now also enforced against the total number of clauses in a _nested_ query structure.
 
 Users who upgrade from prior versions of Solr may find that some requests involving complex internal query structures (Example: long query strings using `edismax` with many `qf` and `pf` fields that include query time synonym expansion) which worked in the past now hit this limit and fail.
@@ -294,6 +296,8 @@ Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Kh
 Example has been provided in `sample_techproducts_configs` to override content-type.
 
 * `min_rf` deprecated in 7.x
+
+* hl.method=postings highlighter, deprecated in 7.0
 
 * SOLR-15124: Removed three core level admin API endpoints because they are already registered at the node level
 where they really belong: /admin/threads, /admin/properties, /admin/logging
