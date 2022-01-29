@@ -28,7 +28,8 @@ import java.util.Locale;
 import java.util.Map;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CoreAdminParams.*;
+import static org.apache.solr.common.params.CoreAdminParams.ACTION;
+import static org.apache.solr.common.params.CoreAdminParams.CORE;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTSYNCSHARD;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
