@@ -245,6 +245,8 @@ Instead, these libraries will be included with all other module dependencies in 
 
 * SOLR-15954: The prometheus-exporter is no longer packaged as a Solr module. It can be found under `solr/prometheus-exporter/`.
 
+* SOLR-15914: Solr modules (formerly known as contribs) can now easily be enabled by an environment variable (e.g. in `solr.in.sh` or `solr.in.cmd`) or as a system property (e.g. in `SOLR_OPTS`). Example: `SOLR_MODULES=extraction,ltr`.
+
 == Deprecations & Removed Features
 
 The following list of features have been permanently removed from Solr:
