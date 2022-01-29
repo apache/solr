@@ -33,6 +33,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
 
   <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
   <str name="sharedLib">${solr.sharedLib:}</str>
+  <str name="modules">${solr.modules:}</str>
   <str name="allowPaths">${solr.allowPaths:}</str>
   <str name="allowUrls">${solr.allowUrls:}</str>
 
@@ -174,6 +175,19 @@ Any JAR files in this directory will be added to the search path for Solr plugin
 If the specified path is not absolute, it will be relative to `$SOLR_HOME`.
 Custom handlers may be placed in this directory.
 Note that specifying `sharedLib` will not remove `$SOLR_HOME/lib` from Solr's class path.
+
+`modules`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Takes a list of bundled <<solr-modules.adoc#,solr modules>> to add to Solr's class path
+on startup. This way of adding modules will add them to the shared class loader, making them
+available for every collection in Solr, unlike `<lib>` tag in `solrconfig.xml` which is only
+for that one collection. Example value: `extracting,ltr`. See chapter
+<<solr-modules.adoc#,Solr Modules>> for more details.
 
 `allowPaths`::
 +
