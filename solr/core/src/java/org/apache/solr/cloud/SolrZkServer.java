@@ -184,7 +184,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
 
   /**
    * Parse a ZooKeeper configuration file
-   * @param configPath the patch of the configuration file
+   * @param configPath the path of the configuration file
    * @throws IllegalArgumentException if a config file does not exist at the given path
    * @throws ConfigException error processing configuration
    */
