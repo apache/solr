@@ -58,6 +58,7 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Constants;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -120,14 +121,14 @@ public class Http2SolrClient extends SolrClient {
   private static final String DEFAULT_PATH = "/select";
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
-  private final HttpClient httpClient;
+  private HttpClient httpClient;
   private volatile Set<String> queryParams = Collections.emptySet();
-  private final int idleTimeout;
+  private int idleTimeout;
 
   private ResponseParser parser = new BinaryResponseParser();
   private volatile RequestWriter requestWriter = new BinaryRequestWriter();
-  private final List<HttpListenerFactory> listenerFactory = new LinkedList<>();
-  private final AsyncTracker asyncTracker = new AsyncTracker();
+  private List<HttpListenerFactory> listenerFactory = new LinkedList<>();
+  private AsyncTracker asyncTracker = new AsyncTracker();
   /**
    * The URL of the Solr server.
    */
@@ -145,7 +146,7 @@ public class Http2SolrClient extends SolrClient {
       }
 
       if (serverBaseUrl.startsWith("//")) {
-        serverBaseUrl = serverBaseUrl.substring(1);
+        serverBaseUrl = serverBaseUrl.substring(1, serverBaseUrl.length());
       }
       this.serverBaseUrl = serverBaseUrl;
     }
@@ -204,9 +205,14 @@ public class Http2SolrClient extends SolrClient {
       sslEnabled = true;
     }
 
+    boolean sslOnJava8OrLower = sslEnabled && !Constants.JRE_IS_MINIMUM_JAVA9;
     HttpClientTransport transport;
-    if (builder.useHttp1_1) {
-      log.debug("Create Http2SolrClient with HTTP/1.1 transport");
+    if (builder.useHttp1_1 || sslOnJava8OrLower) {
+      if (sslOnJava8OrLower && !builder.useHttp1_1) {
+        log.warn("Create Http2SolrClient with HTTP/1.1 transport since Java 8 or lower versions does not support SSL + HTTP/2");
+      } else {
+        log.debug("Create Http2SolrClient with HTTP/1.1 transport");
+      }
       transport = new HttpClientTransportOverHTTP(2);
       httpClient = sslEnabled ? new HttpClient(transport, sslContextFactory) : new HttpClient(transport);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
@@ -280,10 +286,13 @@ public class Http2SolrClient extends SolrClient {
 
     boolean belongToThisStream(SolrRequest<?> solrRequest, String collection) {
       ModifiableSolrParams solrParams = new ModifiableSolrParams(solrRequest.getParams());
-      return origParams.toNamedList().equals(solrParams.toNamedList()) && StringUtils.equals(origCollection, collection);
+      if (!origParams.toNamedList().equals(solrParams.toNamedList()) || !StringUtils.equals(origCollection, collection)) {
+        return false;
+      }
+      return true;
     }
 
-    public void write(byte[] b) throws IOException {
+    public void write(byte b[]) throws IOException {
       this.outProvider.getOutputStream().write(b);
     }
 
@@ -994,7 +1003,10 @@ public class Http2SolrClient extends SolrClient {
   /* package-private for testing */
   static SslContextFactory.Client getDefaultSslContextFactory() {
     String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
-    boolean sslCheckPeerName = checkPeerNameStr != null && !"false".equalsIgnoreCase(checkPeerNameStr);
+    boolean sslCheckPeerName = true;
+    if (checkPeerNameStr == null || "false".equalsIgnoreCase(checkPeerNameStr)) {
+      sslCheckPeerName = false;
+    }
 
     SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(!sslCheckPeerName);
 
