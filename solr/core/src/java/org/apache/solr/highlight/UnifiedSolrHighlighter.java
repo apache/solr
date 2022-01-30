@@ -247,6 +247,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
         timerTree = new RTimerTree(); // since null checks are annoying
       }
       loadFieldValuesTimer = timerTree.sub("loadFieldValues"); // we assume a new timer, state of STARTED
+      loadFieldValuesTimer.resume(); // ensure state is STARTED (some obscure test / use-case)
       loadFieldValuesTimer.pause(); // state of PAUSED now with about zero time. Will fail if state isn't STARTED.
     }
 

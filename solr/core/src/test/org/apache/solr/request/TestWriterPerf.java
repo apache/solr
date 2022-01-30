@@ -175,7 +175,7 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
                     ,"facet.limit","100"
                     ,"facet.sort","count"
                     ,"hl","true"
-                    ,"hl.fl","t1"
+                    ,"hl.fl", t1
             );
 
 
