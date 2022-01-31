@@ -93,6 +93,7 @@ def getHREFs(urlString):
     raise
 
   for subUrl, text in reHREF.findall(html):
+    #print("Got suburl %s and text %s" % (subUrl, text))
     fullURL = urllib.parse.urljoin(urlString, subUrl)
     links.append((text, fullURL))
   return links
@@ -100,7 +101,10 @@ def getHREFs(urlString):
 
 def load(urlString):
   try:
-    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+    raw_request = urllib.request.Request(urlString)
+    raw_request.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0')
+    raw_request.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
+    content = urllib.request.urlopen(raw_request).read().decode('utf-8')
   except Exception as e:
     print('Retrying download of url %s after exception: %s' % (urlString, e))
     content = urllib.request.urlopen(urlString).read().decode('utf-8')
@@ -215,6 +219,7 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   artifact = None
   changesURL = None
   mavenURL = None
+  dockerURL = None
   artifactURL = None
   expectedSigs = []
   if isSigned:
@@ -228,6 +233,8 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
       raise RuntimeError('solr: release dir should not contain a KEYS file - only toplevel /dist/solr/KEYS is used')
     elif text == 'maven/':
       mavenURL = subURL
+    elif text == 'docker/':
+      dockerURL = subURL
     elif text.startswith('changes'):
       if text not in ('changes/', 'changes-%s/' % version):
         raise RuntimeError('solr: found %s vs expected changes-%s/' % (text, version))
@@ -240,7 +247,7 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
         raise RuntimeError('solr: unknown artifact %s: expected prefix %s' % (text, expected))
       sigs = []
     elif text.startswith(artifact + '.'):
-      sigs.append(text[len(artifact)+1:])
+      sigs.append(subURL.rsplit(".")[-1:][0])
     else:
       if sigs != expectedSigs:
         raise RuntimeError('solr: artifact %s has wrong sigs: expected %s but got %s' % (artifact, expectedSigs, sigs))
@@ -271,6 +278,11 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
 
   if mavenURL is None:
     raise RuntimeError('solr is missing maven')
+
+  if dockerURL is None:
+    raise RuntimeError('solr is missing docker')
+  else:
+    os.exists
 
   if changesURL is None:
     raise RuntimeError('solr is missing changes-%s' % version)
