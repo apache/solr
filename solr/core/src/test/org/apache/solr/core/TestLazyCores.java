@@ -18,12 +18,10 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -31,6 +29,8 @@ import java.util.regex.Pattern;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -43,6 +43,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.ReadOnlyCoresLocator;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -96,7 +97,9 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     NodeConfig cfg = NodeConfig.loadNodeConfig(solrHomeDirectory.toPath(), null);
     return createCoreContainer(cfg, testCores);
   }
-  
+
+  @LogLevel(
+      "org.apache.solr.core.CachingDirectoryFactory=DEBUG;")
   @Test
   public void testLazyLoad() throws Exception {
     CoreContainer cc = init();
@@ -748,21 +751,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     updater.addDoc(cmd);
   }
 
-  private LocalSolrQueryRequest makeReq(SolrCore core, String... q) {
-    if (q.length == 1) {
-      return new LocalSolrQueryRequest(core,
-          q[0], null, 0, 20, new HashMap<String, String>());
-    }
-    if (q.length % 2 != 0) {
-      throw new RuntimeException("The length of the string array (query arguments) needs to be even");
-    }
-    @SuppressWarnings("unchecked")
-    NamedList.NamedListEntry<String>[] entries = (NamedList.NamedListEntry<String>[])
-            Array.newInstance(NamedList.NamedListEntry.class, q.length / 2);
-    for (int i = 0; i < q.length; i += 2) {
-      entries[i / 2] = new NamedList.NamedListEntry<>(q[i], q[i + 1]);
-    }
-    return new LocalSolrQueryRequest(core, new NamedList<>(entries));
+  private LocalSolrQueryRequest makeReq(SolrCore core, String... paramPairs) {
+    return new LocalSolrQueryRequest(core, params(paramPairs));
   }
 
   private static final String makePath(String... args) {
@@ -898,5 +888,56 @@ public class TestLazyCores extends SolrTestCaseJ4 {
         makeReq(core, "q", "*:*")
         , "//result[@numFound='10']"
     );
+  }
+
+  public void testDontEvictUsedCore() throws Exception {
+    // If a core is being used for a long time (say a long indexing batch) but nothing else for it,
+    // and if the transient cache has pressure and thus wants to unload a core, we should not
+    // unload it (yet).
+
+    CoreContainer cc = init();
+    String[] transientCoreNames = new String[]{
+        "collection2",
+        "collection3",
+        "collection6",
+        "collection7",
+        "collection8",
+        "collection9"
+    };
+    try {
+      var solr = new EmbeddedSolrServer(cc, null);
+      final var longReqTimeMs = 1000;
+
+      // First, start a long request on the first transient core
+      var thread = new Thread(() -> {
+        try {
+          solr.query(transientCoreNames[0], params("q", "{!func}sleep(" + longReqTimeMs + ",1)"));
+        } catch (SolrServerException | IOException e) {
+          fail(e.toString());
+        }
+      }, "longRequest");
+      thread.start();
+
+      // Now hammer on other transient cores to create transient cache pressure
+      for (int round = 0; round < 10; round++) {
+        // note: we skip over the first; we want the first to remain non-busy
+        for (int i = 1; i < transientCoreNames.length; i++) {
+          solr.query(transientCoreNames[i], params("q", "*:*"));
+        }
+      }
+
+      System.out.println("Done inducing pressure; now load first core");
+      assumeTrue("long request is still busy", thread.isAlive());
+      // Do another request on the first core
+      solr.query(transientCoreNames[0], params("q", "id:wakeUp"));
+
+      thread.join(longReqTimeMs);
+      assertFalse(thread.isAlive());
+
+      // Do another request on the first core
+      solr.query(transientCoreNames[0], params("q", "id:justCheckingAgain"));
+    } finally {
+      cc.shutdown();
+    }
   }
 }
