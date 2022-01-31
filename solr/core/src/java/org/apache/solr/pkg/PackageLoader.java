@@ -167,26 +167,6 @@ public class PackageLoader implements Closeable, MapWriter {
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "error reading local package directory", e);
     }
-    packagesPath.toFile().list((dir, pkgName) -> {
-      File subDir = new File(dir, pkgName);
-      if (subDir.isDirectory()) {
-        PackageAPI.PkgVersion version = new PackageAPI.PkgVersion();
-        version.pkg = pkgName;
-        version.version = "0";
-        version.files = new ArrayList<>();
-        subDir.list((dir1, jarName) -> {
-          if (jarName.endsWith(".jar")) {
-            version.files.add(pkgName + File.separator + jarName);
-          }
-          return false;
-        });
-        if (!version.files.isEmpty()) {
-          //there are jar files in the dir. So, this is a package
-          localDirAsPackages.packages.put(pkgName, Collections.singletonList(version));
-        }
-      }
-      return false;
-    });
     return localDirAsPackages;
   }
 
