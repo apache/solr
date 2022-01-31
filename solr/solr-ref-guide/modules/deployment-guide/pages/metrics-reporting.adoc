@@ -184,7 +184,7 @@ This element also supports the `clock` parameter shown above with the `meter` el
 |===
 +
 The fully-qualified class name of the `Reservoir` implementation to use.
-The default is `com.codahale.metrics.ExponentiallyDecayingReservoir` but there are other options available with the http://metrics.dropwizard.io/{ivy-dropwizard-version}/manual/core.html#histograms[Codahale Metrics library] that Solr uses.
+The default is `com.codahale.metrics.ExponentiallyDecayingReservoir` but there are other options available with the http://metrics.dropwizard.io/{dep-version-dropwizard}/manual/core.html#histograms[Codahale Metrics library] that Solr uses.
 
 `<int name="size">`:::
 +

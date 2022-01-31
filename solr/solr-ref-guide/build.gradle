@@ -169,15 +169,16 @@ task buildAntoraYaml(type: Copy) {
     ]
     doFirst {
         // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
+        // These variable names must use underscores, not dashes or periods
         props.putAll([
             ["dep_version_commons_codec", "commons-codec", "commons-codec"],
-            ["ivyDropwizardMetrics", "io.dropwizard.metrics", "metrics-core"],
-            ["ivyHadoop", "org.apache.hadoop", "hadoop-auth"],
-            ["ivyLog4j", "org.apache.logging.log4j", "log4j-core"],
-            ["ivyOpennlpTools", "org.apache.opennlp", "opennlp-tools"],
-            ["ivyTika", "org.apache.tika", "tika-core"],
-            ["ivyZookeeper", "org.apache.zookeeper", "zookeeper"],
-            ["ivyLucene", "org.apache.lucene", "lucene-core"],
+            ["dep_version_dropwizard", "io.dropwizard.metrics", "metrics-core"],
+            ["dep_version_hadoop", "org.apache.hadoop", "hadoop-auth"],
+            ["dep_version_log4j", "org.apache.logging.log4j", "log4j-core"],
+            ["dep_version_opennlp", "org.apache.opennlp", "opennlp-tools"],
+            ["dep_version_tika", "org.apache.tika", "tika-core"],
+            ["dep_version_zookeeper", "org.apache.zookeeper", "zookeeper"],
+            ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
         ].collectEntries { propKey, depGroup, depId -> [propKey, "${-> project.getVersion(depGroup, depId)}"] })
 
         props.putAll([
@@ -185,7 +186,7 @@ task buildAntoraYaml(type: Copy) {
             solrRootPath         : project(':solr').projectDir.toString() + File.separator,
             buildDate            : rootProject.ext['buildDate'],
             buildYear            : rootProject.ext['buildYear'],
-            'lucene_version_docs': props.ivyLucene.replaceAll("\\.", "_")
+            'lucene_version_docs': props.dep_version_lucene.replaceAll("\\.", "_")
         ])
     }
 

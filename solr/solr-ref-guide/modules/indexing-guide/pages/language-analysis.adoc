@@ -702,6 +702,7 @@ Second, since the pre-trained OpenNLP models used by these filters were trained 
 
 To use the OpenNLP components, you must add additional .jars to Solr's classpath (as described in the section xref:configuration-guide:solr-plugins.adoc#installing-plugins[Installing Plugins]).
 See `solr/modules/analysis-extras/README.md` for instructions on which jars you need to add.
+
 === OpenNLP Tokenizer
 
 The OpenNLP Tokenizer takes two language-specific binary model files as parameters: a sentence detector model and a tokenizer model.

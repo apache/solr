@@ -30,7 +30,7 @@ The first question to answer is the number of ZooKeeper nodes you will run in yo
 When planning how many ZooKeeper nodes to configure, keep in mind that the main principle for a ZooKeeper ensemble is maintaining a majority of servers to serve requests.
 This majority is called a _quorum_.
 
-[quote,ZooKeeper Administrator's Guide,http://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/zookeeperAdmin.html]
+[quote,ZooKeeper Administrator's Guide,http://zookeeper.apache.org/doc/r{dep-version-zookeeper}/zookeeperAdmin.html]
 ____
 "For a ZooKeeper service to be active, there must be a majority of non-failing machines that can communicate with each other.
 *To create a deployment that can tolerate the failure of F machines, you should count on deploying 2xF+1 machines*.
@@ -48,14 +48,14 @@ It's not generally recommended to go above 5 nodes.
 While it may seem that more nodes provide greater fault-tolerance and availability, in practice it becomes less efficient because of the amount of inter-node coordination that occurs.
 Unless you have a truly massive Solr cluster (on the scale of 1,000s of nodes), try to stay to 3 as a general rule, or maybe 5 if you have a larger cluster.
 
-More information on ZooKeeper clusters is available from the ZooKeeper documentation at http://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/zookeeperAdmin.html#sc_zkMulitServerSetup.
+More information on ZooKeeper clusters is available from the ZooKeeper documentation at http://zookeeper.apache.org/doc/r{dep-version-zookeeper}/zookeeperAdmin.html#sc_zkMulitServerSetup.
 
 == Download Apache ZooKeeper
 
 The first step in setting up Apache ZooKeeper is, of course, to download the software.
 It's available from http://zookeeper.apache.org/releases.html.
 
-Solr currently uses Apache ZooKeeper v{ivy-zookeeper-version}.
+Solr currently uses Apache ZooKeeper v{dep-version-zookeeper}.
 
 [WARNING]
 ====
@@ -71,7 +71,7 @@ The actual directory itself doesn't matter, as long as you know where it is.
 The command to unpack the ZooKeeper package is:
 
 [source,bash,subs="attributes"]
-tar xvf zookeeper-{ivy-zookeeper-version}.tar.gz
+tar xvf zookeeper-{dep-version-zookeeper}.tar.gz
 
 This location is the `<ZOOKEEPER_HOME>` for ZooKeeper on this server.
 
@@ -327,7 +327,7 @@ At this point, you are ready to start your ZooKeeper ensemble.
 === More Information about ZooKeeper
 
 ZooKeeper provides a great deal of power through additional configurations, but delving into them is beyond the scope of Solr's documentation.
-For more information, see the  http://zookeeper.apache.org/doc/r{ivy-zookeeper-version}[ZooKeeper documentation].
+For more information, see the  http://zookeeper.apache.org/doc/r{dep-version-zookeeper}[ZooKeeper documentation].
 
 == Starting and Stopping ZooKeeper
 
@@ -474,7 +474,7 @@ By default, ZooKeeper's file size limit is 1MB.
 Attempting to write or read files larger than this will cause errors.
 
 Some Solr features, e.g., text analysis synonyms, LTR, and OpenNLP named entity recognition, require configuration resources that can be larger than the default limit.
-ZooKeeper can be configured, via Java system property https://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/zookeeperAdmin.html#Unsafe+Options[`jute.maxbuffer`], to increase this limit.
+ZooKeeper can be configured, via Java system property https://zookeeper.apache.org/doc/r{dep-version-zookeeper}/zookeeperAdmin.html#Unsafe+Options[`jute.maxbuffer`], to increase this limit.
 Note that this configuration, which is required both for ZooKeeper server(s) and for all clients that connect to the server(s), must be the same everywhere it is specified.
 
 === Configuring jute.maxbuffer on ZooKeeper Nodes

@@ -25,7 +25,7 @@ This plugin can be particularly useful in leveraging an extended set of features
 
 Please note that the version of Hadoop library used by Solr is upgraded periodically.
 While Solr will ensure the stability and backwards compatibility of the structure of the plugin configuration (viz., the parameter names of this plugin), the values of these parameters may change based on the version of the Hadoop library.
-Please review the Hadoop documentation for v{ivy-hadoop-version} used by this version of Solr.
+Please review the Hadoop documentation for v{dep-version-hadoop} used by this version of Solr.
 
 For some authentication schemes (e.g., Kerberos), Solr provides a native implementation of authentication plugin.
 If you require a more stable setup, in terms of configuration, ability to perform rolling upgrades, backward compatibility, etc., you should consider using one of these plugins.

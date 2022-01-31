@@ -18,7 +18,7 @@
 
 This section describes using ZooKeeper access control lists (ACLs) with Solr.
 
-For information about ZooKeeper ACLs, see the http://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/zookeeperProgrammers.html#sc_ZooKeeperAccessControl[ZooKeeper ACL documentation].
+For information about ZooKeeper ACLs, see the http://zookeeper.apache.org/doc/r{dep-version-zookeeper}/zookeeperProgrammers.html#sc_ZooKeeperAccessControl[ZooKeeper ACL documentation].
 
 == About ZooKeeper ACLs
 
