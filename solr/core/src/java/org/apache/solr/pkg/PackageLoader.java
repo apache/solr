@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import java.util.function.Consumer;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -139,20 +140,47 @@ public class PackageLoader implements Closeable, MapWriter {
    */
   private PackageAPI.Packages readDirAsPackages(Path packagesPath) {
     PackageAPI.Packages localDirAsPackages = new PackageAPI.Packages();
+    try {
+      Files.list(packagesPath).forEach(subDir -> {
+        if (Files.isDirectory(subDir)) {
+          PackageAPI.PkgVersion version = new PackageAPI.PkgVersion();
+          version.pkg = subDir.getFileName().toString();
+          version.version = "0";
+          version.files = new ArrayList<>();
+          try {
+            Files.list(subDir).forEach(file -> {
+              String fName = file.getFileName().toString();
+              if (Files.isRegularFile(file) && fName.endsWith(".jar")) {
+                version.files.add(version.pkg + File.separator + fName);
+              }
+            });
+          } catch (IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "error reading local package directory", e);
+          }
+
+          if (!version.files.isEmpty()) {
+            //there are jar files in the dir. So, this is a package
+            localDirAsPackages.packages.put(version.pkg, Collections.singletonList(version));
+          }
+        }
+      });
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "error reading local package directory", e);
+    }
     packagesPath.toFile().list((dir, pkgName) -> {
       File subDir = new File(dir, pkgName);
-      if(subDir.isDirectory()) {
+      if (subDir.isDirectory()) {
         PackageAPI.PkgVersion version = new PackageAPI.PkgVersion();
         version.pkg = pkgName;
         version.version = "0";
         version.files = new ArrayList<>();
         subDir.list((dir1, jarName) -> {
-          if(jarName.endsWith(".jar")){
-            version.files.add(pkgName+File.separator+jarName);
+          if (jarName.endsWith(".jar")) {
+            version.files.add(pkgName + File.separator + jarName);
           }
           return false;
         });
-        if(!version.files.isEmpty()) {
+        if (!version.files.isEmpty()) {
           //there are jar files in the dir. So, this is a package
           localDirAsPackages.packages.put(pkgName, Collections.singletonList(version));
         }

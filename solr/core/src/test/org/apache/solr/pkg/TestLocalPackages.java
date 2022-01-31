@@ -29,7 +29,7 @@ public class TestLocalPackages extends SolrCloudTestCase {
     System.setProperty(ENABLED_LOCAL_PKGS_PROP, PKG_NAME);
     System.setProperty(LOCAL_PKGS_DIR_PROP, localPackagesDir);
     MiniSolrCloudCluster cluster =
-            configureCluster(4)
+            configureCluster(2)
                     .withJettyConfig(builder -> builder.enableV2(true))
                     .withJettyConfig(it -> it.withPreStartupHook(jsr -> {
                       try {
@@ -79,7 +79,7 @@ public class TestLocalPackages extends SolrCloudTestCase {
     System.setProperty(ENABLED_LOCAL_PKGS_PROP, PKG_NAME);
     System.setProperty(LOCAL_PKGS_DIR_PROP, localPackagesDir);
     MiniSolrCloudCluster cluster =
-            configureCluster(4)
+            configureCluster(2)
                     .withJettyConfig(builder -> builder.enableV2(true))
                     .withJettyConfig(it -> it.withPreStartupHook(jsr -> {
                       try {
