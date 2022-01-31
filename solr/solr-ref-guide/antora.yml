@@ -19,7 +19,7 @@ asciidoc:
     idprefix: ''
     # 'patch-version' is the 'z' part of x.y.z semantic version
     page-solr-javadocs: https://solr.apache.org/docs/10_0_0
-    solr-javadocs: "{page-solr-javadocs}"
+    solr-javadocs: https://solr.apache.org/docs/10_0_0
     lucene-javadocs: https://lucene.apache.org/core/9_0_0
     java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
     # Some constructed  links may be 404 TODO to check
