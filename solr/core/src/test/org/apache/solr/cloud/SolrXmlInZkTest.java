@@ -140,8 +140,20 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNotInZkOrOnDisk() throws Exception {
+  public void testNotInZkOrOnDiskFallbackDefault() throws Exception {
     try {
+      setUpZkAndDiskXml(false, false);
+      assertEquals("Should have gotten the default port",
+          cfg.getCloudConfig().getSolrHostPort(), 8983);
+    } finally {
+      closeZK();
+    }
+  }
+
+  @Test
+  public void testNotInZkOrOnDiskWhenRequired() throws Exception {
+    try {
+      System.setProperty("solr.solrxml.required", "true");
       SolrException e = expectThrows(SolrException.class, () -> {
         System.setProperty("hostPort", "8787");
         setUpZkAndDiskXml(false, false); // solr.xml not on disk either
@@ -150,6 +162,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
           e.getMessage().contains("solr.xml does not exist"));
     } finally {
       closeZK();
+      System.clearProperty("solr.solrxml.required");
     }
   }
 
