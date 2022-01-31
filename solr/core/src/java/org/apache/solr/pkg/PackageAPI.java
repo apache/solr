@@ -194,6 +194,9 @@ public class PackageAPI {
     @JsonProperty
     public String manifestSHA512;
 
+    @JsonProperty
+    public Boolean local;
+
     public PkgVersion() {
     }
 

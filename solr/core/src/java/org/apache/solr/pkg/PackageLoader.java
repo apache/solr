@@ -50,7 +50,7 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 /**
  * The class that holds a mapping of various packages and classloaders
  */
-public class PackageLoader implements Closeable {
+public class PackageLoader implements Closeable, MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String LATEST = "$LATEST";
   public static final String LOCAL_PKGS_DIR_PROP = "solr.packages.local.dir";
@@ -118,11 +118,16 @@ public class PackageLoader implements Closeable {
       localPackages =  readDirAsPackages(packagesPath);
     }
 
-    for (Map.Entry<String, List<PackageAPI.PkgVersion>> e : localPackages.packages.entrySet()) {
-      if(!enabledPackages.contains(e.getKey())) continue;
-      Package p = new Package(e.getKey());
-      p.updateVersions(e.getValue(), packagesPath);
-      packageClassLoaders.put(e.getKey(), p);
+    if(localPackages != null) {
+      localPackages.packages.forEach((s, versions) -> versions.forEach(v -> {
+        v.local = Boolean.TRUE;
+      }));
+      for (Map.Entry<String, List<PackageAPI.PkgVersion>> e : localPackages.packages.entrySet()) {
+        if(!enabledPackages.contains(e.getKey())) continue;
+        Package p = new Package(e.getKey(), e.getValue());
+        p.updateVersions(e.getValue(), packagesPath);
+        packageClassLoaders.put(e.getKey(), p);
+      }
     }
   }
 
@@ -179,7 +184,7 @@ public class PackageLoader implements Closeable {
       if (e.getValue() != null) {
         Package p = packageClassLoaders.get(e.getKey());
         if (e.getValue() != null && p == null) {
-          packageClassLoaders.put(e.getKey(), p = new Package(e.getKey()));
+          packageClassLoaders.put(e.getKey(), p = new Package(e.getKey(), e.getValue()));
         }
         p.updateVersions(e.getValue(), null);
         updated.add(p);
@@ -242,16 +247,22 @@ public class PackageLoader implements Closeable {
   /**
    * represents a package definition in the packages.json
    */
-  public class Package implements Closeable {
+  public class Package implements Closeable, MapWriter {
     final String name;
+    final List<PackageAPI.PkgVersion> versions;
     final Map<String, Version> myVersions = new ConcurrentHashMap<>();
     private List<String> sortedVersions = new CopyOnWriteArrayList<>();
     String latest;
     private boolean deleted;
 
-
-    Package(String name) {
+    Package(String name, List<PackageAPI.PkgVersion> versions) {
       this.name = name;
+      this.versions = versions;
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.put(name, versions);
     }
 
     public boolean isDeleted() {
@@ -270,7 +281,9 @@ public class PackageLoader implements Closeable {
           log.info("A new version: {} added for package: {} with artifacts {}", v.version, this.name, v.files);
           Version ver = null;
           try {
-            ver = new Version(this, v, localpkgDir);
+            ver = v.local == Boolean.TRUE ?
+                    new LocalPkgVersion(this, v, localpkgDir) :
+                    new Version(this, v, null);
           } catch (Exception e) {
             log.error("package could not be loaded {}", ver, e);
             continue;
@@ -344,11 +357,33 @@ public class PackageLoader implements Closeable {
       for (Version v : myVersions.values()) v.close();
     }
 
+    /**
+     * The class that loads jars from local packages
+     */
+    public class LocalPkgVersion  extends Version {
+
+      LocalPkgVersion(Package parent, PackageAPI.PkgVersion v, Path localPkgDir) {
+        super(parent, v, localPkgDir);
+      }
+
+
+      @Override
+      List<Path>  resolveFilePaths() {
+        List<Path> paths =  new ArrayList<>();
+        for (String file : version.files) {
+          if(file.charAt(0)== '/') file =file.substring(1);
+          paths.add( localPkgDir.resolve(file).toAbsolutePath()) ;
+        }
+        return paths;
+      }
+    }
+
     public class Version implements MapWriter, Closeable {
       private final Package parent;
       private SolrResourceLoader loader;
+      final PackageAPI.PkgVersion version;
+      Path localPkgDir;
 
-      private final PackageAPI.PkgVersion version;
 
       @Override
       public void writeMap(EntryWriter ew) throws IOException {
@@ -356,31 +391,30 @@ public class PackageLoader implements Closeable {
         version.writeMap(ew);
       }
 
-      Version(Package parent, PackageAPI.PkgVersion v, Path localPkgDir) {
+      Version(Package parent, PackageAPI.PkgVersion v,Path localPkgDir) {
         this.parent = parent;
         this.version = v;
-        List<Path> paths = new ArrayList<>();
-        if(localPkgDir != null) {
-          for (String file : v.files) {
-            if(file.charAt(0)== '/') file =file.substring(1);
-            paths.add( localPkgDir.resolve(file).toAbsolutePath()) ;
-          }
-        } else {
-          List<String> errs = new ArrayList<>();
-          coreContainer.getPackageStoreAPI().validateFiles(version.files, true, s -> errs.add(s));
-          if(!errs.isEmpty()) {
-            throw new RuntimeException("Cannot load package: " +errs);
-          }
-          for (String file : version.files) {
-            paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
-          }
-        }
+        this.localPkgDir = localPkgDir;
         loader = new PackageResourceLoader(
-            "PACKAGE_LOADER: " + parent.name() + ":" + version,
-            paths,
+            "PACKAGE_LOADER: " + this.parent.name() + ":" + version,
+            resolveFilePaths(),
             Paths.get(coreContainer.getSolrHome()),
             coreContainer.getResourceLoader().getClassLoader());
       }
+
+      List<Path>  resolveFilePaths() {
+        List<Path> paths =  new ArrayList<>();
+        List<String> errs = new ArrayList<>();
+        coreContainer.getPackageStoreAPI().validateFiles(version.files, true, errs::add);
+        if(!errs.isEmpty()) {
+          throw new RuntimeException("Cannot load package: " +errs);
+        }
+        for (String file : version.files) {
+          paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
+        }
+        return paths;
+      }
+
 
       public String getVersion() {
         return version.version;
@@ -461,5 +495,11 @@ public class PackageLoader implements Closeable {
   @Override
   public void close()  {
     for (Package p : packageClassLoaders.values()) closeWhileHandlingException(p);
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) {
+    packageClassLoaders.forEach((s, p) -> ew.putNoEx(p.name, p.versions));
+
   }
 }

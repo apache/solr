@@ -1,9 +1,9 @@
 package org.apache.solr.pkg;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -33,23 +33,8 @@ public class TestLocalPackages extends SolrCloudTestCase {
                     .withJettyConfig(builder -> builder.enableV2(true))
                     .withJettyConfig(it -> it.withPreStartupHook(jsr -> {
                       try {
-                        File pkgDir = new File(jsr.getSolrHome() + File.separator + localPackagesDir);
-                        if (!pkgDir.exists()) {
-                          pkgDir.mkdir();
-                        }
-                        File subDir = new File(pkgDir, PKG_NAME);
-                        if (!subDir.exists()) {
-                          subDir.mkdir();
-                        }
-                        try (FileInputStream fis = new FileInputStream(getFile("runtimecode/runtimelibs.jar.bin"))) {
-                          byte[] buf = new byte[fis.available()];
-
-                          fis.read(buf);
-                          try (FileOutputStream fos = new FileOutputStream(new File(subDir, jarName))) {
-                            fos.write(buf, 0, buf.length);
-                          }
-                        }
-
+                        Files.write(Files.createDirectories(Path.of(jsr.getSolrHome(), localPackagesDir, PKG_NAME)).resolve(jarName),
+                                Files.readAllBytes(getFile("runtimecode/runtimelibs.jar.bin").toPath()));
                       } catch (Exception e) {
                         throw new RuntimeException("Unable to create files", e);
                       }
@@ -98,22 +83,9 @@ public class TestLocalPackages extends SolrCloudTestCase {
                     .withJettyConfig(builder -> builder.enableV2(true))
                     .withJettyConfig(it -> it.withPreStartupHook(jsr -> {
                       try {
-                        File pkgDir = new File(jsr.getSolrHome() + File.separator + localPackagesDir);
-                        if (!pkgDir.exists()) {
-                          pkgDir.mkdir();
-                        }
-                        try (FileInputStream fis = new FileInputStream(getFile("runtimecode/runtimelibs.jar.bin"))) {
-                          byte[] buf = new byte[fis.available()];
-
-                          fis.read(buf);
-                          try (FileOutputStream fos = new FileOutputStream(new File(pkgDir, jarName))) {
-                            fos.write(buf, 0, buf.length);
-                          }
-                        }
-
-                        try( FileOutputStream fos = new FileOutputStream( new File(pkgDir, PackageLoader.LOCAL_PACKAGES_JSON) )) {
-                          fos.write(Utils.toJSON(p));
-                        }
+                        Path pkgDir = Files.createDirectories(Path.of(jsr.getSolrHome(), localPackagesDir));
+                        Files.write(pkgDir.resolve(jarName), Files.readAllBytes(getFile("runtimecode/runtimelibs.jar.bin").toPath()));
+                        Files.write(pkgDir.resolve(PackageLoader.LOCAL_PACKAGES_JSON), Utils.toJSON(p));
                       } catch (Exception e) {
                         throw new RuntimeException("Unable to create files", e);
                       }
