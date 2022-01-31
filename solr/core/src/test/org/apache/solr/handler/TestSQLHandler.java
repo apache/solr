@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +26,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -42,6 +44,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -2491,5 +2494,27 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     // just a bunch of OR's that end up matching all docs
     expectResults("SELECT id FROM $ALIAS WHERE a_s <> 'hello-1' OR a_i <> 2 OR d_s <> 'x' ORDER BY id ASC LIMIT 10", 4);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testTranslateSQLToSolrQuery() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "a_s", "hello-1", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "2", "a_s", "world-2", "b_s", "foo", "a_i", "2", "d_s", "a")
+        .add("id", "3", "a_s", "hello-3", "b_s", "foo", "c_s", "bar", "d_s", "x")
+        .add("id", "4", "a_s", "world-4", "b_s", "foo", "a_i", "3", "d_s", "b")
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String sqlStmt = "SELECT id FROM $ALIAS WHERE b_s = 'foo' ORDER BY id ASC LIMIT 100";
+    sqlStmt = sqlStmt.replace("$ALIAS", COLLECTIONORALIAS);
+    SolrParams params = mapParams(CommonParams.QT, "/sql", "stmt", sqlStmt, "returnSolrQueryOnly", "true");
+    List<Tuple> tuples = getTuples(params, sqlUrl());
+    assertEquals(1, tuples.size());
+    String query = tuples.get(0).getString("query");
+    assertNotNull(query);
+    Map<String, Object> parsed = (Map<String, Object>) Utils.fromJSON(query.getBytes(StandardCharsets.UTF_8));
+    assertEquals("b_s:\"foo\"", parsed.get("q"));
+    assertEquals("id asc", parsed.get("sort"));
   }
 }
