@@ -23,7 +23,6 @@ import java.util.Map;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
