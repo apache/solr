@@ -148,6 +148,50 @@ ext {
     ]
 }
 
+task buildAntoraYaml(type: Copy) {
+    description "Creates an antora.yaml with all variables populated"
+
+    from "antora.yml.template"
+    into projectDir
+    rename("antora.yml.template", "antora.yml")
+
+    def splitVersion = version.toString().split("\\p{Punct}")
+    def props = [
+        // NOTE: Only include values here that are distinct and unique to the Official Dockerfiles
+        //
+        // Values identical in both Dockerfiles should use consistent names in both templates and
+        // be defined in the task creation
+
+        'solr_version'      : "${splitVersion[0]}.${splitVersion[1]}.${splitVersion[2]}",
+        'solr_version_major': splitVersion[0],
+        'solr_version_minor': splitVersion[1],
+        'solr_version_patch': splitVersion[2],
+    ]
+    doFirst {
+        // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
+        props.putAll([
+            ["dep_version_commons_codec", "commons-codec", "commons-codec"],
+            ["ivyDropwizardMetrics", "io.dropwizard.metrics", "metrics-core"],
+            ["ivyHadoop", "org.apache.hadoop", "hadoop-auth"],
+            ["ivyLog4j", "org.apache.logging.log4j", "log4j-core"],
+            ["ivyOpennlpTools", "org.apache.opennlp", "opennlp-tools"],
+            ["ivyTika", "org.apache.tika", "tika-core"],
+            ["ivyZookeeper", "org.apache.zookeeper", "zookeeper"],
+            ["ivyLucene", "org.apache.lucene", "lucene-core"],
+        ].collectEntries { propKey, depGroup, depId -> [propKey, "${-> project.getVersion(depGroup, depId)}"] })
+
+        props.putAll([
+            solrGuideDraftStatus : propertyOrDefault('solrGuideDraft', "true").toBoolean() ? "DRAFT" : "",
+            solrRootPath         : project(':solr').projectDir.toString() + File.separator,
+            buildDate            : rootProject.ext['buildDate'],
+            buildYear            : rootProject.ext['buildYear'],
+            'lucene_version_docs': props.ivyLucene.replaceAll("\\.", "_")
+        ])
+    }
+
+    expand(props)
+}
+
 // dynamically define the 2 variations of each target that we need...
 [ htmlSiteDetails, linkCheckSiteDetails ].each{ details ->
     final def contentDir = file("${buildDir}/${details.path}-content")
@@ -326,3 +370,6 @@ antora {
   // TODO figure out if we can fail the build when this task outputs errors about broken links
   // TODO declare inputs and outputs so that we can cache the results
 }
+
+
+tasks.antora.dependsOn tasks.buildAntoraYaml

@@ -1,6 +1,6 @@
 name: solr
-version: '10_0'
-display_version: '10.0'
+version: '${solr_version_major}_${solr_version_minor}'
+display_version: '${solr_version_major}.${solr_version_minor}'
 # Marking a version as 'prerelease: true' is only needed for unpublished branches
 #prerelease: true
 title: Solr Reference Guide
@@ -18,19 +18,19 @@ asciidoc:
     idseparator: '-'
     idprefix: ''
     # 'patch-version' is the 'z' part of x.y.z semantic version
-    page-solr-javadocs: https://solr.apache.org/docs/10_0_0
+    page-solr-javadocs: https://solr.apache.org/docs/${solr_version_major}_${solr_version_minor}_${solr_version_patch}
     solr-javadocs: "{page-solr-javadocs}"
-    lucene-javadocs: https://lucene.apache.org/core/9_0_0
+    lucene-javadocs: https://lucene.apache.org/core/${lucene_version_docs}
     java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
     # Some constructed  links may be 404 TODO to check
-    solr-docs-version: '10.0'
-    solr-full-version: '10.0.0'
+    solr-docs-version: '${solr_version_major}.${solr_version_minor}'
+    solr-full-version: '${solr_version}'
 
-    dep-version-commons-codec: '1.13'
-    ivyDropwizardMetrics: '4.1.5'
-    ivyHadoop: '3.2.0'
-    ivyLog4j: '2.17.1'
-    ivyOpennlpTools: '1.9.1'
-    ivyTika: '1.27'
-    ivyZookeeper: '3.7.0'
-    ivyLucene: '9.0.0'
+    dep-version-commons-codec: '${dep_version_commons_codec}'
+    ivyDropwizardMetrics: '${ivyDropwizardMetrics}'
+    ivyHadoop: '${ivyHadoop}'
+    ivyLog4j: '${ivyLog4j}'
+    ivyOpennlpTools: '${ivyOpennlpTools}'
+    ivyTika: '${ivyTika}'
+    ivyZookeeper: '${ivyZookeeper}'
+    ivyLucene: '${ivyLucene}'

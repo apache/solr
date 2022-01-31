@@ -467,7 +467,7 @@ Setting this to `false` will enable phonetic matching, but the exact spelling of
 
 == Double Metaphone Filter
 
-This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec.
+This filter creates tokens using the http://commons.apache.org/proper/commons-codec/archives/{dep-version-commons-codec}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[`DoubleMetaphone`] encoding algorithm from commons-codec.
 For more information, see xref:phonetic-matching.adoc[].
 
 *Factory class:* `solr.DoubleMetaphoneFilterFactory`
@@ -2215,13 +2215,13 @@ s|Required |Default: none
 The name of the encoder to use.
 The encoder name must be one of the following (case insensitive):
 
-* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[DoubleMetaphone]`
-* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Metaphone.html[Metaphone]`
-* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Soundex.html[Soundex]`
-* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/RefinedSoundex.html[RefinedSoundex]`
-* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Caverphone.html[Caverphone]` (v2.0)
-* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/ColognePhonetic.html[ColognePhonetic]`
-* `http://commons.apache.org/proper/commons-codec/archives/{ivy-commons-codec-version}/apidocs/org/apache/commons/codec/language/Nysiis.html[Nysiis]`
+* `http://commons.apache.org/proper/commons-codec/archives/{dep-version-commons-codec}/apidocs/org/apache/commons/codec/language/DoubleMetaphone.html[DoubleMetaphone]`
+* `http://commons.apache.org/proper/commons-codec/archives/{dep-version-commons-codec}/apidocs/org/apache/commons/codec/language/Metaphone.html[Metaphone]`
+* `http://commons.apache.org/proper/commons-codec/archives/{dep-version-commons-codec}/apidocs/org/apache/commons/codec/language/Soundex.html[Soundex]`
+* `http://commons.apache.org/proper/commons-codec/archives/{dep-version-commons-codec}/apidocs/org/apache/commons/codec/language/RefinedSoundex.html[RefinedSoundex]`
+* `http://commons.apache.org/proper/commons-codec/archives/{dep-version-commons-codec}/apidocs/org/apache/commons/codec/language/Caverphone.html[Caverphone]` (v2.0)
+* `http://commons.apache.org/proper/commons-codec/archives/{dep-version-commons-codec}/apidocs/org/apache/commons/codec/language/ColognePhonetic.html[ColognePhonetic]`
+* `http://commons.apache.org/proper/commons-codec/archives/{dep-version-commons-codec}/apidocs/org/apache/commons/codec/language/Nysiis.html[Nysiis]`
 
 `inject`::
 +
