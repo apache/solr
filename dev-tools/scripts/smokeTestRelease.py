@@ -144,7 +144,7 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
     for verify in (
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
-      'Specification-Title: Solr Search Engine:',
+      'Specification-Title: Apache Solr Search Server:',
       'Implementation-Title: org.apache.solr',
       'X-Compile-Source-JDK: 11',
       'X-Compile-Target-JDK: 11',
@@ -281,8 +281,6 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
 
   if dockerURL is None:
     raise RuntimeError('solr is missing docker')
-  else:
-    os.exists
 
   if changesURL is None:
     raise RuntimeError('solr is missing changes-%s' % version)
@@ -590,7 +588,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin',  'bin-test',  'build',  'modules',  'core',  'docker',  'documentation',  'example',  'licenses',  'packaging',  'server',  'solr-ref-guide',  'solrj',  'test-framework',  'webapp']
+    expected_src_solr_folders = ['benchmark',  'bin', 'bin-test', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
@@ -598,7 +596,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     if len(in_solr_folder) > 0:
       raise RuntimeError('solr: unexpected files/dirs in artifact %s solr/ folder: %s' % (artifact, in_solr_folder))
   else:
-    is_in_list(in_root_folder, ['bin', 'modules', 'dist', 'docs', 'example', 'licenses', 'server'])
+    is_in_list(in_root_folder, ['bin', 'modules', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server'])
 
   if len(in_root_folder) > 0:
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
@@ -606,11 +604,17 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   if isSrc:
     print('    make sure no JARs/WARs in src dist...')
     lines = os.popen('find . -name \\*.jar').readlines()
-    if len(lines) != 0:
+    if len(lines) > 1:
       print('    FAILED:')
       for line in lines:
         print('      %s' % line.strip())
       raise RuntimeError('source release has JARs...')
+    else:
+      if 'gradle-wrapper.jar' in lines[0]:
+        print('    Allowed jar in src: gradle-wrapper.jar')
+      else:
+        print('      %s' % lines[0].strip())
+        raise RuntimeError('source release has JARs...')
     lines = os.popen('find . -name \\*.war').readlines()
     if len(lines) != 0:
       print('    FAILED:')
@@ -1023,6 +1027,8 @@ def parse_config():
                       help='Path to Java17 home directory, to run tests with if specified')
   parser.add_argument('--download-only', action='store_true', default=False,
                       help='Only perform download and sha hash check steps')
+  parser.add_argument('--dev-mode', action='store_true', default=False,
+                      help='Enable dev mode, will not check branch compatibility')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to gradle for testing, e.g. -Dwhat=ever.')
@@ -1070,7 +1076,7 @@ def main():
 
   # Pick <major>.<minor> part of version and require script to be from same branch
   scriptVersion = re.search(r'((\d+).(\d+)).(\d+)', scriptutil.find_current_version()).group(1).strip()
-  if not c.version.startswith(scriptVersion + '.'):
+  if not c.version.startswith(scriptVersion + '.') and not c.dev_mode:
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
