@@ -33,6 +33,7 @@
 * xref:resource-loading.adoc[]
 * xref:solr-plugins.adoc[]
 ** xref:libs.adoc[]
+** xref:solr-modules.adoc[]
 ** xref:package-manager.adoc[]
 *** xref:package-manager-internals.adoc[]
 ** xref:cluster-plugins.adoc[]

@@ -181,7 +181,7 @@ See xref:deployment-guide:collection-management.adoc#listbackup[List Backups] fo
 See xref:deployment-guide:collection-management.adoc#deletebackup[Delete Backups] for more details.
 
 A new option for backup repository is also available in 8.9, which is to use Google Cloud Storage (GCS).
-This is a contrib (located in `contrib/gcs-repository`).
+This is a module (located in `modules/gcs-repository`).
 See xref:deployment-guide:backup-restore.adoc#gcsbackuprepository[GCSBackupRepository] for configuration details.
 The Solr community is working to add support for S3 buckets in the near future.
 
@@ -232,10 +232,10 @@ You might have it for other purposes though (e.g., for `uniqueBlock(...)`).
 ** This feature no longer requires the `\_nest_path_` field, although you probably ought to
 continue to define it as it's useful for other things.
 
-*Removed Contribs*
+*Removed Modules*
 
-* The search results clustering contrib (Carrot2) has been removed from 8.x Solr due to lack of Java 1.8 compatibility in the dependency that provides online clustering of search results.
-The contrib will be re-introduced in Solr 9.0.
+* The search results clustering module (Carrot2) has been removed from 8.x Solr due to lack of Java 1.8 compatibility in the dependency that provides online clustering of search results.
+The module will be re-introduced in Solr 9.0.
 
 *Learning to Rank*
 
@@ -251,8 +251,8 @@ For examples using this feature, see the section xref:query-guide:learning-to-ra
 
 *Prometheus Exporter*
 
-* The `./bin` scripts included with the Prometheus Exporter contrib now allow use of custom java options with environment variables.
-See the section <xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc#environment-variable-options[Environment Variable Options] for more details.
+* The `./bin` scripts included with the Prometheus Exporter now allow use of custom java options with environment variables.
+See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc#environment-variable-options[Environment Variable Options] for more details.
 * The default Grafana dashboards now include panels for query performance monitoring.
 The default Prometheus Exporter configuration includes metrics like queries-per-second (QPS) and 95th percentiles (P95) to populate the new panels.
 * The default Prometheus Exporter configuration also includes the two new metrics mentioned in the Metrics above.
@@ -621,7 +621,7 @@ The `sample_techproducts_configs` and the examples found in `./example` are unch
 * Configsets that have been uploaded with an unsecured Configset API (i.e., when authentication is not enabled) are considered "Untrusted Configsets".
 +
 In order to bolster Solr's out-of-the-box security, these untrusted configsets
-are no longer allowed to use the `<lib .../>` directive to implement contribs
+are no longer allowed to use the `<lib .../>` directive to implement modules
 or custom Jars.
 +
 When upgrading to 8.4, if you are using untrusted configsets that contain `<lib ../>`

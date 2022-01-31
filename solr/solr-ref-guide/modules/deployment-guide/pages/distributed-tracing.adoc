@@ -48,7 +48,7 @@ https://docs.datadoghq.com/tracing/setup/java/[datadog-java-agent] uses Javaagen
 
 == Jaeger Tracer Configurator
 
-The `contrib/jagertracer-configurator` provides a default implementation for setting up Jaeger Tracer.
+The `modules/jagertracer-configurator` provides a default implementation for setting up Jaeger Tracer.
 
 Add the solr-jaegertracer JAR file and the other JARs provided with this module to your Solr installation, ideally to each node.
 GSON is a dependency that is only used by Jaeger's "remote" sampler,

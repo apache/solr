@@ -190,8 +190,6 @@ Sets the `solr.solr.home` system property.
 Solr will create core directories under this directory.
 This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the `-d` parameter.
 +
-If set, the specified directory should contain a `solr.xml` file, unless `solr.xml` exists in ZooKeeper.
-+
 This parameter is ignored when running examples (`-e`), as the `solr.solr.home` depends on which example is run.
 +
 *Example*: `bin/solr start -s newHome`
