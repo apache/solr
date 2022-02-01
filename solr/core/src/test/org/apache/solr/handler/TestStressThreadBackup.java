@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -341,7 +342,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
   private void initCoreNameAndSolrCoreClient() {
     // Sigh.
-    Replica r = cluster.getSolrClient().getZkStateReader().getClusterState()
+      Replica r = ZkStateReader.from(cluster.getSolrClient()).getClusterState()
       .getCollection(DEFAULT_TEST_COLLECTION_NAME).getActiveSlices().iterator().next()
       .getReplicas().iterator().next();
     coreName = r.getCoreName();

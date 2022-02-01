@@ -25,7 +25,7 @@ import java.util.Random;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.NodesSysPropsCacher;
+import org.apache.solr.common.cloud.NodesSysProps;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
@@ -44,7 +44,7 @@ public class RequestReplicaListTransformerGenerator {
   private final String defaultShardPreferences;
   private final String nodeName;
   private final String localHostAddress;
-  private final NodesSysPropsCacher sysPropsCacher;
+  private final NodesSysProps sysPropsCacher;
 
   public RequestReplicaListTransformerGenerator() {
     this(null);
@@ -58,11 +58,11 @@ public class RequestReplicaListTransformerGenerator {
     this(defaultRltFactory, stableRltFactory, null, null, null, null);
   }
 
-  public RequestReplicaListTransformerGenerator(String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
+  public RequestReplicaListTransformerGenerator(String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysProps sysPropsCacher) {
     this(null, null, defaultShardPreferences, nodeName, localHostAddress, sysPropsCacher);
   }
 
-  public RequestReplicaListTransformerGenerator(ReplicaListTransformerFactory defaultRltFactory, ReplicaListTransformerFactory stableRltFactory, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
+  public RequestReplicaListTransformerGenerator(ReplicaListTransformerFactory defaultRltFactory, ReplicaListTransformerFactory stableRltFactory, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysProps sysPropsCacher) {
     this.defaultRltFactory = Objects.requireNonNullElse(defaultRltFactory, RANDOM_RLTF);
     this.stableRltFactory = Objects.requireNonNullElseGet(stableRltFactory, AffinityReplicaListTransformerFactory::new);
     this.defaultShardPreferences = Objects.requireNonNullElse(defaultShardPreferences, "");
@@ -79,7 +79,7 @@ public class RequestReplicaListTransformerGenerator {
     return getReplicaListTransformer(requestParams, defaultShardPreferences, null, null, null);
   }
 
-  public ReplicaListTransformer getReplicaListTransformer(final SolrParams requestParams, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
+  public ReplicaListTransformer getReplicaListTransformer(final SolrParams requestParams, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysProps sysPropsCacher) {
     defaultShardPreferences = Objects.requireNonNullElse(defaultShardPreferences, this.defaultShardPreferences);
     final String shardsPreferenceSpec = requestParams.get(ShardParams.SHARDS_PREFERENCE, defaultShardPreferences);
 

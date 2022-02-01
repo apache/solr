@@ -29,8 +29,10 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -63,7 +65,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+    CloudSolrClientUtils.waitForState(cluster.getSolrClient(), COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, sliceCount, 1));
 
     new UpdateRequest()
@@ -307,8 +309,8 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
   }
 
   private void assertParamsEquals(TrackingShardHandlerFactory.RequestTrackingQueue trackingQueue, String collection, String shard, String paramName, int purpose, String... values) {
-    TrackingShardHandlerFactory.ShardRequestAndParams getByIdRequest
-        = trackingQueue.getShardRequestByPurpose(cluster.getSolrClient().getZkStateReader(), collection, shard, purpose);
+      TrackingShardHandlerFactory.ShardRequestAndParams getByIdRequest
+        = trackingQueue.getShardRequestByPurpose(ZkStateReader.from(cluster.getSolrClient()), collection, shard, purpose);
     assertParamsEquals(getByIdRequest, paramName, values);
   }
 

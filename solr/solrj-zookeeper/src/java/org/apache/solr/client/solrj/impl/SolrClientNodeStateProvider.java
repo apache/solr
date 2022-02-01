@@ -47,10 +47,7 @@ import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.*;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -312,7 +309,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
     @Override
     public Map<?,?> getZkJson(String path) throws KeeperException, InterruptedException {
-      return Utils.getJson(zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
+      return ZkUtils.getJson(zkClientClusterStateProvider.getZkStateReader().getZkClient(), path, true);
     }
 
     /**

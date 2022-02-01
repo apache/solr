@@ -106,8 +106,8 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
   
   private List<Replica> getReplicas() {
     List<Replica> replicas = new ArrayList<Replica>();
-    
-    DocCollection collection = this.cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION);
+
+      DocCollection collection = ((ZkStateReader) ZkStateReader.from(this.cloudClient)).getClusterState().getCollection(DEFAULT_COLLECTION);
     for(Slice slice : collection.getSlices()) {
       replicas.addAll(slice.getReplicas());
     }

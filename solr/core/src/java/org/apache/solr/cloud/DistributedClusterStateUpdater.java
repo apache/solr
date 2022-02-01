@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.overseer.*;
 import org.apache.solr.common.SolrException;
@@ -429,7 +430,7 @@ public class DistributedClusterStateUpdater {
         if (allStatesOps != null) {
           if (docCollection != null) {
             // Fetch the per replica states updates done previously or skip fetching if we already have them
-            fetchedPerReplicaStates = PerReplicaStates.fetch(docCollection.getZNode(), zkStateReader.getZkClient(), fetchedPerReplicaStates);
+            fetchedPerReplicaStates = PerReplicaStatesFetcher.fetch(docCollection.getZNode(), zkStateReader.getZkClient(), fetchedPerReplicaStates);
             // Transpose the per replica states into the cluster state
             updatedState = updatedState.copyWith(updater.getCollectionName(), docCollection.copyWith(fetchedPerReplicaStates));
           }
@@ -527,7 +528,7 @@ public class DistributedClusterStateUpdater {
 
       // This factory method can detect a missing configName and supply it by reading it from the old ZK location.
       // TODO in Solr 10 remove that factory method
-      ClusterState clusterState = ClusterState.createFromJsonSupportingLegacyConfigName(
+      ClusterState clusterState = ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
               stat.getVersion(), data, Collections.emptySet(), updater.getCollectionName(), zkStateReader.getZkClient());
       return clusterState;
     }

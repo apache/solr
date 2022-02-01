@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.Utils;
@@ -40,7 +41,7 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
     configureCluster(1).configure();
     CollectionAdminRequest.createCollection(COLLECTION, 2, 1) // _default configset
         .process(cluster.getSolrClient());
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+    CloudSolrClientUtils.waitForState(cluster.getSolrClient(), COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
   }
 

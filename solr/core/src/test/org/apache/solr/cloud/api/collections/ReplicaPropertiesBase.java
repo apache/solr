@@ -21,10 +21,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
@@ -57,7 +54,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
     ClusterState clusterState = null;
     Replica replica = null;
     for (int idx = 0; idx < 300; ++idx) {
-      clusterState = client.getZkStateReader().getClusterState();
+        clusterState = ZkStateReader.from(client).getClusterState();
       final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
       replica = (docCollection == null) ? null : docCollection.getReplica(replicaName);
       if (replica == null) {
@@ -83,7 +80,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
     ClusterState clusterState = null;
 
     for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
-      clusterState = client.getZkStateReader().getClusterState();
+        clusterState = ZkStateReader.from(client).getClusterState();
       final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
       replica = (docCollection == null) ? null : docCollection.getReplica(replicaName);
       if (replica == null) {
@@ -117,7 +114,7 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
 
     DocCollection col = null;
     for (int idx = 0; idx < 300; ++idx) {
-      ClusterState clusterState = client.getZkStateReader().getClusterState();
+        ClusterState clusterState = ZkStateReader.from(client).getClusterState();
 
       col = clusterState.getCollection(collectionName);
       if (col == null) {

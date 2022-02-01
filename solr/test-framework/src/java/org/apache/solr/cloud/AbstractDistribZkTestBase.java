@@ -214,7 +214,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   static void waitForNewLeader(CloudSolrClient cloudClient, String shardName, Replica oldLeader, TimeOut timeOut)
       throws Exception {
     log.info("Will wait for a node to become leader for {} secs", timeOut.timeLeft(SECONDS));
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
 
     for (; ; ) {

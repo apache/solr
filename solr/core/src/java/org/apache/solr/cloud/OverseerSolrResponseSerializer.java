@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ZkUtils;
 
 public class OverseerSolrResponseSerializer {
   
@@ -41,7 +42,7 @@ public class OverseerSolrResponseSerializer {
       return SolrResponse.serializable(responseObject);
     }
     try {
-      return Utils.toJavabin(responseObject.getResponse()).readAllBytes();
+      return ZkUtils.toJavabin(responseObject.getResponse()).readAllBytes();
     } catch (IOException|RuntimeException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Exception serializing response to Javabin", e);
     }

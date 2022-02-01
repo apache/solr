@@ -72,7 +72,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
                                 ObjectCache objectCache) {
     this.queueFactory = queueFactory;
     this.solrClient = solrClient;
-    this.zkStateReader = solrClient.getZkStateReader();
+      this.zkStateReader = ZkClientClusterStateProvider.extractZkStateReader(solrClient);
     this.zkClient = zkStateReader.getZkClient();
     this.stateManager = new ZkDistribStateManager(zkClient);
     this.isClosed = false;

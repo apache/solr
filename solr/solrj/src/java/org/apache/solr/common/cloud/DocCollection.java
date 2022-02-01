@@ -34,12 +34,6 @@ import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
@@ -47,6 +41,14 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  // nocommit : to move these from ZkStateReader
+  public static final String NRT_REPLICAS = "nrtReplicas";
+  public static final String PULL_REPLICAS = "pullReplicas";
+  public static final String READ_ONLY = "readOnly";
+  public static final String REPLICATION_FACTOR = "replicationFactor";
+  public static final String TLOG_REPLICAS = "tlogReplicas";
+  public final static String CONFIGNAME_PROP = "configName";
 
 
   public static final String DOC_ROUTER = "router";
@@ -120,7 +122,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     }
     this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
     this.router = router;
-    this.znode = ZkStateReader.getCollectionPath(name);
+    this.znode = "/collections/" + name + "/state.json"; // nocommit : check if this needs to become generic
     assert name != null && slices != null;
   }
 

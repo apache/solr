@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -139,7 +140,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
 
   private void doTestDocVersions() throws Exception {
     log.info("### STARTING doTestDocVersions");
-    assertEquals(2, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+      assertEquals(2, ZkStateReader.from(cloudClient).getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
 
     solrClient = cloudClient;
 

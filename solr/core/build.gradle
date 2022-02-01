@@ -38,6 +38,7 @@ dependencies {
   api "org.apache.lucene:lucene-analysis-common"
   api "org.apache.lucene:lucene-queries"
 
+  api project(':solr:solrj-zookeeper')
   api project(':solr:solrj')
   api project(':solr:server')
 

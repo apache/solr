@@ -20,7 +20,7 @@
 // type information.
 
 configure([project(":solr:core"),
-           project(":solr:solrj"),
+           project(":solr:solrj-zookeeper"),
            project(":solr:test-framework"),
            project(":solr:contrib:analytics"),
            project(":solr:contrib:langid"),

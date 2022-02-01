@@ -40,6 +40,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.IdUtils;
 import org.junit.After;
@@ -116,7 +117,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     addDocs(coll, 100);
 
     Replica replica = getRandomReplica(coll, cloudClient);
-    Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+      Set<String> liveNodes = ZkStateReader.from(cloudClient).getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String targetNode = null;
@@ -128,7 +129,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     }
     assertNotNull(targetNode);
     String shardId = null;
-    for (Slice slice : cloudClient.getZkStateReader().getClusterState().getCollection(coll).getSlices()) {
+      for (Slice slice : ZkStateReader.from(cloudClient).getClusterState().getCollection(coll).getSlices()) {
       if (slice.getReplicas().contains(replica)) {
         shardId = slice.getName();
       }
@@ -268,7 +269,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       replica = getRandomReplica(coll, cloudClient);
     } while (!replica.getNodeName().equals(overseerLeader) && count-- > 0);
     assertNotNull("could not find non-overseer replica???", replica);
-    Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+      Set<String> liveNodes = ZkStateReader.from(cloudClient).getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String targetNode = null;
@@ -307,7 +308,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     assertFalse(success);
 
     if (log.isInfoEnabled()) {
-      log.info("--- current collection state: {}", cloudClient.getZkStateReader().getClusterState().getCollection(coll));
+        log.info("--- current collection state: {}", ZkStateReader.from(cloudClient).getClusterState().getCollection(coll));
     }
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
@@ -321,7 +322,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   }
 
   private Replica getRandomReplica(String coll, CloudSolrClient cloudClient) {
-    List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(coll).getReplicas();
+      List<Replica> replicas = ZkStateReader.from(cloudClient).getClusterState().getCollection(coll).getReplicas();
     Collections.shuffle(replicas, random());
     return replicas.get(0);
   }
@@ -335,7 +336,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   }
 
   private int getNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName, String replicaType) throws IOException, SolrServerException {
-    try (HttpSolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
+      try (HttpSolrClient coreclient = getHttpSolrClient(ZkStateReader.from(cloudClient).getBaseUrlForNodeName(nodeName))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       if (status.getCoreStatus().size() == 0) {
         return 0;

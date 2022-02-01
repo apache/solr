@@ -81,7 +81,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
   }
 
   public static String getRandomServer(CloudSolrClient cloudClient, String collName) {
-    DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(collName);
+      DocCollection coll = ((ZkStateReader) ZkStateReader.from(cloudClient)).getClusterState().getCollection(collName);
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
@@ -91,7 +91,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
   }
 
   private void testReqParams() throws Exception{
-    DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
+      DocCollection coll = ((ZkStateReader) ZkStateReader.from(cloudClient)).getClusterState().getCollection("collection1");
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())

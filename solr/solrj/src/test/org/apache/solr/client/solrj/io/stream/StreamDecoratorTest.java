@@ -63,6 +63,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Assume;
@@ -103,8 +104,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(collection, 2, 2);
-    
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
+
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, ZkStateReader.from(cluster.getSolrClient()),
         false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());

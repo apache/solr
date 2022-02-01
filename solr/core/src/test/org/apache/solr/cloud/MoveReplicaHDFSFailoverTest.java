@@ -90,7 +90,7 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     ulogDir += "/tlog";
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cluster.getSolrClient());
     assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000));
 
     DocCollection docCollection = zkStateReader.getClusterState().getCollection(coll);
@@ -147,23 +147,23 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
     Replica replica = getCollectionState(coll).getReplicas().iterator().next();
 
     cluster.getJettySolrRunners().get(0).stop();
-    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+      assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(ZkStateReader.from(cluster.getSolrClient()), 20000));
 
     // move replica from node0 -> node1
     new CollectionAdminRequest.MoveReplica(coll, replica.getName(), cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
-    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 20000));
+      assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(ZkStateReader.from(cluster.getSolrClient()), 20000));
 
     cluster.getJettySolrRunners().get(1).stop();
-    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+      assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(ZkStateReader.from(cluster.getSolrClient()), 20000));
 
     // node0 will delete it replica because of CloudUtil.checkSharedFSFailoverReplaced()
     cluster.getJettySolrRunners().get(0).start();
     Thread.sleep(5000);
-    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+      assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(ZkStateReader.from(cluster.getSolrClient()), 20000));
 
     cluster.getJettySolrRunners().get(1).start();
-    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 20000));
+      assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(ZkStateReader.from(cluster.getSolrClient()), 20000));
 
     assertEquals(1, getCollectionState(coll).getReplicas().size());
     assertEquals(2, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
@@ -180,21 +180,21 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
     Replica replica = getCollectionState(coll).getReplicas().iterator().next();
 
     cluster.getJettySolrRunners().get(0).stop();
-    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+      assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(ZkStateReader.from(cluster.getSolrClient()), 20000));
 
     // move replica from node0 -> node1
     new CollectionAdminRequest.MoveReplica(coll, replica.getName(), cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
-    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 20000));
+      assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(ZkStateReader.from(cluster.getSolrClient()), 20000));
 
     cluster.getJettySolrRunners().get(1).stop();
-    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+      assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(ZkStateReader.from(cluster.getSolrClient()), 20000));
 
     cluster.getJettySolrRunners().get(1).start();
     // node0 will delete it replica because of CloudUtil.checkSharedFSFailoverReplaced()
     cluster.getJettySolrRunners().get(0).start();
     Thread.sleep(5000);
-    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 20000));
+      assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(ZkStateReader.from(cluster.getSolrClient()), 20000));
 
     assertEquals(1, getCollectionState(coll).getReplicas().size());
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());

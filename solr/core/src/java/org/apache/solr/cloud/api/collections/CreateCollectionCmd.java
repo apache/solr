@@ -335,11 +335,11 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       boolean failure = results.get("failure") != null && ((SimpleOrderedMap<?>)results.get("failure")).size() > 0;
       if (isPRS) {
         TimeOut timeout = new TimeOut(Integer.getInteger("solr.waitToSeeReplicasInStateTimeoutSeconds", 120), TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource()); // could be a big cluster
-        PerReplicaStates prs = PerReplicaStates.fetch(collectionPath, ccc.getZkStateReader().getZkClient(), null);
+        PerReplicaStates prs = PerReplicaStatesFetcher.fetch(collectionPath, ccc.getZkStateReader().getZkClient(), null);
         while (!timeout.hasTimedOut()) {
           if(prs.allActive()) break;
           Thread.sleep(100);
-          prs = PerReplicaStates.fetch(collectionPath, ccc.getZkStateReader().getZkClient(), null);
+          prs = PerReplicaStatesFetcher.fetch(collectionPath, ccc.getZkStateReader().getZkClient(), null);
         }
         if (prs.allActive()) {
           // we have successfully found all replicas to be ACTIVE

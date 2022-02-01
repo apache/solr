@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.RTimer;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -88,7 +89,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     }
 
     // let's put the leader in its own partition, no replicas can contact it now
-    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+      Replica leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     if (log.isInfoEnabled()) {
       log.info("Creating partition to leader at {}", leader.getCoreUrl());
     }
@@ -96,13 +97,13 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     leaderProxy.close();
 
     // let's find the leader of shard2 and ask him to commit
-    Replica shard2Leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard2");
+      Replica shard2Leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard2");
     sendCommitWithRetry(shard2Leader);
 
     Thread.sleep(sleepMsBeforeHealPartition);
 
-    cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName); // get the latest state
-    leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+      ZkStateReader.from(cloudClient).forceUpdateCollection(testCollectionName); // get the latest state
+      leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
 
     if (log.isInfoEnabled()) {
@@ -135,7 +136,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     log.info("All replicas active for {}", testCollectionName);
 
     // let's put the leader in its own partition, no replicas can contact it now
-    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+      Replica leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     if (log.isInfoEnabled()) {
       log.info("Creating partition to leader at {}", leader.getCoreUrl());
     }
@@ -147,8 +148,8 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     sendCommitWithRetry(replica);
     Thread.sleep(sleepMsBeforeHealPartition);
 
-    cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName); // get the latest state
-    leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+      ZkStateReader.from(cloudClient).forceUpdateCollection(testCollectionName); // get the latest state
+      leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
 
     if (log.isInfoEnabled()) {

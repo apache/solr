@@ -151,7 +151,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     try  (CloudSolrClient ourCloudClient = createCloudClient(DEFAULT_COLLECTION)) {
       handle.clear();
       handle.put("timestamp", SKIPVAL);
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+        ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cloudClient);
       // make sure we have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
         zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);

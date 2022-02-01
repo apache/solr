@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -42,7 +43,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
   public void testSingleZkHostSpecified() throws IOException {
     try(CloudHttp2SolrClient createdClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
         .build()) {
-      final String clientZkHost = createdClient.getZkHost();
+      final String clientZkHost = CloudSolrClientUtils.getZkHost(createdClient);
 
       assertTrue(clientZkHost.contains(ANY_ZK_HOST));
     }
@@ -54,7 +55,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
     zkHostList.add(ANY_ZK_HOST); zkHostList.add(ANY_OTHER_ZK_HOST);
     try (CloudHttp2SolrClient createdClient = new CloudHttp2SolrClient.Builder(zkHostList, Optional.of(ANY_CHROOT))
         .build()) {
-      final String clientZkHost = createdClient.getZkHost();
+      final String clientZkHost = CloudSolrClientUtils.getZkHost(createdClient);
 
       assertTrue(clientZkHost.contains(ANY_ZK_HOST));
       assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));
@@ -67,7 +68,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
     zkHosts.add(ANY_ZK_HOST);
     zkHosts.add(ANY_OTHER_ZK_HOST);
     try(CloudHttp2SolrClient createdClient = new CloudHttp2SolrClient.Builder(zkHosts, Optional.of(ANY_CHROOT)).build()) {
-      final String clientZkHost = createdClient.getZkHost();
+      final String clientZkHost = CloudSolrClientUtils.getZkHost(createdClient);
 
       assertTrue(clientZkHost.contains(ANY_ZK_HOST));
       assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));

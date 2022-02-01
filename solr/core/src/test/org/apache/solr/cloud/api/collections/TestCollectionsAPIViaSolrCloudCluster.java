@@ -130,7 +130,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     assertEquals(1, rsp.getResults().getNumFound());
 
     // remove a server not hosting any replicas
-    ZkStateReader zkStateReader = client.getZkStateReader();
+      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(client);
     zkStateReader.forceUpdateCollection(collectionName);
     ClusterState clusterState = zkStateReader.getClusterState();
     Map<String,JettySolrRunner> jettyMap = new HashMap<>();
@@ -163,8 +163,8 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     assertEquals(nodeCount, cluster.getJettySolrRunners().size());
 
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
-    AbstractDistribZkTestBase.waitForCollectionToDisappear
-        (collectionName, client.getZkStateReader(), true, 330);
+      AbstractDistribZkTestBase.waitForCollectionToDisappear
+        (collectionName, (ZkStateReader) ZkStateReader.from(client), true, 330);
 
     // create it again
     createCollection(collectionName, null);
@@ -194,7 +194,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     // check the collection's corelessness
     int coreCount = 0;
-    DocCollection docCollection = client.getZkStateReader().getClusterState().getCollection(collectionName);
+      DocCollection docCollection = ((ZkStateReader) ZkStateReader.from(client)).getClusterState().getCollection(collectionName);
     for (Map.Entry<String,Slice> entry : docCollection.getSlicesMap().entrySet()) {
       coreCount += entry.getValue().getReplicasMap().entrySet().size();
     }
@@ -202,8 +202,8 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     // delete the collection
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
-    AbstractDistribZkTestBase.waitForCollectionToDisappear
-        (collectionName, client.getZkStateReader(), true, 330);
+      AbstractDistribZkTestBase.waitForCollectionToDisappear
+        (collectionName, (ZkStateReader) ZkStateReader.from(client), true, 330);
   }
 
   @Test
@@ -225,7 +225,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     // create collection
     createCollection(collectionName, null);
 
-    ZkStateReader zkStateReader = client.getZkStateReader();
+      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(client);
 
     // modify collection
     final int numDocs = 1 + random().nextInt(10);

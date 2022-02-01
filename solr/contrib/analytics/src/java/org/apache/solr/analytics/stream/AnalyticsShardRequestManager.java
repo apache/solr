@@ -104,8 +104,7 @@ public class AnalyticsShardRequestManager {
   protected void pickShards(String collection) throws IOException {
     try {
 
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-      ClusterState clusterState = zkStateReader.getClusterState();
+      ClusterState clusterState = ZkStateReader.from(cloudSolrClient).getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
 
       Slice[] slices = clusterState.getCollection(collection).getActiveSlicesArr();

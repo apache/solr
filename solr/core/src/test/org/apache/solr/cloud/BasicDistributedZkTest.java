@@ -192,7 +192,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   public void test() throws Exception {
     // setLoggingLevel(null);
 
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cloudClient);
     // make sure we have leaders for each shard
     for (int j = 1; j < sliceCount; j++) {
       zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
@@ -392,8 +392,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     add(cloudClient, params , getDoc("id", 300), getDoc("id", 301));
 
     newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
-    
-    ClusterState clusterState = getCommonCloudSolrClient().getZkStateReader().getClusterState();
+
+      ClusterState clusterState = ((ZkStateReader) ZkStateReader.from(getCommonCloudSolrClient())).getClusterState();
     DocCollection dColl = clusterState.getCollection(DEFAULT_COLLECTION);
 
     assertSliceCounts("should have found 2 docs, 300 and 301", before + 2, dColl);
@@ -547,7 +547,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       throws Exception {
     AtomicLong total = new AtomicLong(-1);
     try {
-      getCommonCloudSolrClient().getZkStateReader().waitForState(DEFAULT_COLLECTION, waitMillis, TimeUnit.MILLISECONDS, (n, c) -> {
+        ((ZkStateReader) ZkStateReader.from(getCommonCloudSolrClient())).waitForState(DEFAULT_COLLECTION, waitMillis, TimeUnit.MILLISECONDS, (n, c) -> {
         long docTotal;
         try {
           docTotal = checkSlicesSameCounts(c);
@@ -724,9 +724,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     printLayout();
 
     cloudJettys.get(0).jetty.start();
-    cloudClient.getZkStateReader().forceUpdateCollection("multiunload2");
+      ((ZkStateReader) ZkStateReader.from(cloudClient)).forceUpdateCollection("multiunload2");
     try {
-      cloudClient.getZkStateReader().getLeaderRetry("multiunload2", "shard1", 30000);
+        ((ZkStateReader) ZkStateReader.from(cloudClient)).getLeaderRetry("multiunload2", "shard1", 30000);
     } catch (SolrException e) {
       printLayout();
       throw e;
@@ -813,7 +813,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
   
   protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
-    ClusterState clusterState = getCommonCloudSolrClient().getZkStateReader().getClusterState();
+      ClusterState clusterState = ((ZkStateReader) ZkStateReader.from(getCommonCloudSolrClient())).getClusterState();
     ZkNodeProps leader = clusterState.getCollection(collection).getLeader(slice);
     if (leader == null) {
       throw new RuntimeException("Could not find leader:" + collection + " " + slice);
@@ -975,9 +975,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
 
     // no one should be recovering
-    waitForRecoveriesToFinish(oneInstanceCollection2, getCommonCloudSolrClient().getZkStateReader(), false, true);
-    
-    assertAllActive(oneInstanceCollection2, getCommonCloudSolrClient().getZkStateReader());
+      waitForRecoveriesToFinish(oneInstanceCollection2, (ZkStateReader) ZkStateReader.from(getCommonCloudSolrClient()), false, true);
+
+      assertAllActive(oneInstanceCollection2, (ZkStateReader) ZkStateReader.from(getCommonCloudSolrClient()));
     
     //printLayout();
     
@@ -1012,12 +1012,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     assertEquals(3, allDocs);
     
     // we added a role of none on these creates - check for it
-    ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
+      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(getCommonCloudSolrClient());
     zkStateReader.forceUpdateCollection(oneInstanceCollection2);
     Map<String,Slice> slices = zkStateReader.getClusterState().getCollection(oneInstanceCollection2).getSlicesMap();
     assertNotNull(slices);
-    
-    ZkCoreNodeProps props = new ZkCoreNodeProps(getCommonCloudSolrClient().getZkStateReader().getClusterState()
+
+      ZkCoreNodeProps props = new ZkCoreNodeProps(((ZkStateReader) ZkStateReader.from(getCommonCloudSolrClient())).getClusterState()
         .getCollection(oneInstanceCollection2).getLeader("shard1"));
     
     // now test that unloading a core gets us a new leader
@@ -1042,7 +1042,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       });
 
       try {
-        getCommonCloudSolrClient().getZkStateReader().waitForState(oneInstanceCollection2, 20000, TimeUnit.MILLISECONDS, (n, c) -> {
+          ((ZkStateReader) ZkStateReader.from(getCommonCloudSolrClient())).waitForState(oneInstanceCollection2, 20000, TimeUnit.MILLISECONDS, (n, c) -> {
           
  
           try {
@@ -1111,9 +1111,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     SolrClient client2 = collectionClients.get(1);
     SolrClient client3 = collectionClients.get(2);
     SolrClient client4 = collectionClients.get(3);
- 
-    waitForRecoveriesToFinish(oneInstanceCollection, getCommonCloudSolrClient().getZkStateReader(), false);
-    assertAllActive(oneInstanceCollection, getCommonCloudSolrClient().getZkStateReader());
+
+      waitForRecoveriesToFinish(oneInstanceCollection, (ZkStateReader) ZkStateReader.from(getCommonCloudSolrClient()), false);
+      assertAllActive(oneInstanceCollection, (ZkStateReader) ZkStateReader.from(getCommonCloudSolrClient()));
     
     client2.add(getDoc(id, "1")); 
     client3.add(getDoc(id, "2")); 

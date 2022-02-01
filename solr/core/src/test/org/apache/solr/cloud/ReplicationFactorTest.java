@@ -37,10 +37,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -95,8 +92,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
         
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
     if (log.isInfoEnabled()) {
-      log.info("replication factor testing complete! final clusterState is: {}",
-          cloudClient.getZkStateReader().getClusterState());
+        log.info("replication factor testing complete! final clusterState is: {}",
+          ZkStateReader.from(cloudClient).getClusterState());
     }
   }
   
@@ -126,7 +123,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     UpdateRequest up = new UpdateRequest();
     up.add(batch);
 
-    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
+      Replica leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, shardId);
 
     sendNonDirectUpdateRequestReplicaWithRetry(leader, up, 2, testCollectionName);
     sendNonDirectUpdateRequestReplicaWithRetry(replicas.get(0), up, 2, testCollectionName);

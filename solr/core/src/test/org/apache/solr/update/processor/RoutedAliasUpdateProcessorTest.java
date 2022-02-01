@@ -94,7 +94,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     // separated into separate lines to make it easier to track down an NPE that occurred once
     // 3000 runs if it shows up again...
     CloudSolrClient solrClient = cluster.getSolrClient();
-    ZkStateReader zkStateReader = solrClient.getZkStateReader();
+      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(solrClient);
     Aliases aliases = zkStateReader.getAliases();
     Map<String, List<String>> collectionAliasListMap = aliases.getCollectionAliasListMap();
     List<String> strings = collectionAliasListMap.get(alias);

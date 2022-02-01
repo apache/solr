@@ -36,12 +36,6 @@ dependencies {
     exclude group: "commons-logging", module: "commons-logging"
   })
 
-  implementation('org.apache.zookeeper:zookeeper', {
-    exclude group: "org.apache.yetus", module: "audience-annotations"
-    exclude group: "log4j", module: "log4j"
-    exclude group: "org.slf4j", module: "slf4j-log4j12"
-  })
-
   testImplementation project(':solr:test-framework')
   testImplementation 'commons-io:commons-io'
   testImplementation 'org.eclipse.jetty:jetty-webapp'

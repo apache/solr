@@ -37,9 +37,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.client.solrj.impl.*;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -1000,7 +998,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertEquals(1,resp.getResults().getNumFound());
 
     // now knock out the collection backing our alias
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cluster.getSolrClient());
     Aliases aliases = zkStateReader.getAliases();
     List<String> collections = aliases.getCollectionAliasListMap().get(alias);
     for (String collection : collections) {

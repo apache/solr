@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 
 /**
@@ -73,7 +74,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
         .createCollection(collection, "conf", numShards, numReplicas)
         .processAndWait(cluster.getSolrClient(), SolrCloudTestCase.DEFAULT_TIMEOUT);
 
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(), false, true, SolrCloudTestCase.DEFAULT_TIMEOUT);
+          AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, ZkStateReader.from(cluster.getSolrClient()), false, true, SolrCloudTestCase.DEFAULT_TIMEOUT);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

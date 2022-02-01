@@ -33,6 +33,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
@@ -148,7 +149,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       QueryResponse rsp = req.process(cloudSolrClient, collectionName);
       assertTrue(rsp.getResponseHeader().getBooleanArg("zkConnected"));
 
-      Collection<Slice> slices = cloudSolrClient.getZkStateReader().getClusterState().getCollection(collectionName).getSlices();
+        Collection<Slice> slices = ZkStateReader.from(cloudSolrClient).getClusterState().getCollection(collectionName).getSlices();
       Slice slice = getRandomEntry(slices);
       Replica replica = getRandomEntry(slice.getReplicas());
       JettySolrRunner jetty = miniCluster.getReplicaJetty(replica);
@@ -193,7 +194,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       QueryResponse rsp = req.process(cloudSolrClient, collectionName);
       assertTrue(rsp.getResponseHeader().getBooleanArg("zkConnected"));
 
-      Collection<Slice> slices = cloudSolrClient.getZkStateReader().getClusterState().getCollection(collectionName).getSlices();
+        Collection<Slice> slices = ZkStateReader.from(cloudSolrClient).getClusterState().getCollection(collectionName).getSlices();
       Slice disconnectedSlice = getRandomEntry(slices);
       Replica disconnectedReplica = getRandomEntry(disconnectedSlice.getReplicas());
       JettySolrRunner disconnectedJetty = miniCluster.getReplicaJetty(disconnectedReplica);
@@ -241,7 +242,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       QueryResponse rsp = req.process(cloudSolrClient, collectionName);
       assertTrue(rsp.getResponseHeader().getBooleanArg("zkConnected"));
 
-      Collection<Slice> slices = cloudSolrClient.getZkStateReader().getClusterState().getCollection(collectionName).getSlices();
+        Collection<Slice> slices = ZkStateReader.from(cloudSolrClient).getClusterState().getCollection(collectionName).getSlices();
       Slice disconnectedSlice = getRandomEntry(slices);
       Replica disconnectedReplica = getRandomEntry(disconnectedSlice.getReplicas());
 

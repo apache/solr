@@ -32,6 +32,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.junit.AfterClass;
@@ -178,7 +179,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     String backupLocation = getBackupLocation();
     String backupName = BACKUPNAME_PREFIX + testSuffix;
 
-    DocCollection backupCollection = solrClient.getZkStateReader().getClusterState().getCollection(getCollectionName());
+      DocCollection backupCollection = ZkStateReader.from(solrClient).getClusterState().getCollection(getCollectionName());
 
     log.info("Triggering Backup command");
 
@@ -257,7 +258,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   }
 
   private int getActiveSliceCount(String collectionName) {
-    return cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices().size();
+      return ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(collectionName).getActiveSlices().size();
   }
 
   private int indexDocs(String collectionName, boolean useUUID) throws Exception {
@@ -290,7 +291,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     String backupName = BACKUPNAME_PREFIX + testSuffix;
 
     CloudSolrClient client = cluster.getSolrClient();
-    DocCollection backupCollection = client.getZkStateReader().getClusterState().getCollection(collectionName);
+      DocCollection backupCollection = ZkStateReader.from(client).getClusterState().getCollection(collectionName);
 
     Map<String, Integer> origShardToDocCount = getShardToDocCountMap(client, backupCollection);
     assert origShardToDocCount.isEmpty() == false;
@@ -356,11 +357,11 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     } else {
       assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(client, 60));//async
     }
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        restoreCollectionName, ZkStateReader.from(cluster.getSolrClient()), log.isDebugEnabled(), true, 30);
 
     //Check the number of results are the same
-    DocCollection restoreCollection = client.getZkStateReader().getClusterState().getCollection(restoreCollectionName);
+      DocCollection restoreCollection = ZkStateReader.from(client).getClusterState().getCollection(restoreCollectionName);
     assertEquals(origShardToDocCount, getShardToDocCountMap(client, restoreCollection));
     //Re-index same docs (should be identical docs given same random seed) and test we have the same result.  Helps
     //  test we reconstituted the hash ranges / doc router.

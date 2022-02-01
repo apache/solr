@@ -40,6 +40,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SimplePostTool;
@@ -64,7 +65,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       response1 = createCollectionRequest.process(client);
       assertEquals(0, response1.getStatus());
       assertTrue(response1.isSuccess());
-      DocCollection sysColl = cloudClient.getZkStateReader().getClusterState().getCollection(".system");
+        DocCollection sysColl = ZkStateReader.from(cloudClient).getClusterState().getCollection(".system");
       Replica replica = sysColl.getActiveSlicesMap().values().iterator().next().getLeader();
 
       String baseUrl = replica.getBaseUrl();

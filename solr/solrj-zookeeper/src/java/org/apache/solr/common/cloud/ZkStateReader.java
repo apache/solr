@@ -44,6 +44,8 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrCloseable;
@@ -217,6 +219,15 @@ public class ZkStateReader implements SolrCloseable {
   private static final long LAZY_CACHE_TIME = TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
 
   private Future<?> collectionPropsCacheCleaner; // only kept to identify if the cleaner has already been started.
+
+  public static ZkStateReader from(BaseCloudSolrClient solrClient) {
+    if (solrClient.getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
+      ZkClientClusterStateProvider provider = (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
+      provider.connect();
+      return provider.getZkStateReader();
+    }
+    throw new IllegalStateException("This has no Zk stateReader");
+  }
 
   private static class CollectionWatch<T> {
 
@@ -1427,7 +1438,7 @@ public class ZkStateReader implements SolrCloseable {
     while (true) {
       ClusterState.initReplicaStateProvider(() -> {
         try {
-          PerReplicaStates replicaStates = PerReplicaStates.fetch(collectionPath, zkClient, null);
+          PerReplicaStates replicaStates = PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null);
           log.debug("per-replica-state ver: {} fetched for initializing {} ", replicaStates.cversion, collectionPath);
           return replicaStates;
         } catch (Exception e) {
@@ -1441,7 +1452,7 @@ public class ZkStateReader implements SolrCloseable {
 
         // This factory method can detect a missing configName and supply it by reading it from the old ZK location.
         // TODO in Solr 10 remove that factory method
-        ClusterState state = ClusterState.createFromJsonSupportingLegacyConfigName(stat.getVersion(), data, Collections.emptySet(), coll, zkClient);
+        ClusterState state = ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(stat.getVersion(), data, Collections.emptySet(), coll, zkClient);
 
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();
@@ -1594,7 +1605,7 @@ public class ZkStateReader implements SolrCloseable {
   private DocCollection updatePerReplicaState(DocCollection c) {
     if (c == null || !c.isPerReplicaState()) return c;
     PerReplicaStates current = c.getPerReplicaStates();
-    PerReplicaStates newPrs = PerReplicaStates.fetch(c.getZNode(), zkClient, current);
+    PerReplicaStates newPrs = PerReplicaStatesFetcher.fetch(c.getZNode(), zkClient, current);
     if (newPrs != current) {
       if(log.isDebugEnabled()) {
         log.debug("update for a fresh per-replica-state {}", c.getName());

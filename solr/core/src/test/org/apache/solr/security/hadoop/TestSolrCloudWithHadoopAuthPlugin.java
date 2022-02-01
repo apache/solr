@@ -25,6 +25,7 @@ import org.apache.solr.cloud.KerberosTestServices;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -85,8 +86,8 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
 
     CollectionAdminRequest.Delete deleteReq = CollectionAdminRequest.deleteCollection(collectionName);
     deleteReq.process(solrClient);
-    AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
-        solrClient.getZkStateReader(), true, 330);
+      AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
+              ZkStateReader.from(solrClient), true, 330);
     // cookie was used to avoid re-authentication
     assertAuthMetricsMinimums(6, 4, 0, 2, 0, 0);
   }

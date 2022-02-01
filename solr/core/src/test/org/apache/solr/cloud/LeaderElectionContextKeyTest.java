@@ -62,15 +62,15 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
     }
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish("testCollection1", cluster.getSolrClient().getZkStateReader(),
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish("testCollection1", (ZkStateReader) ZkStateReader.from(cluster.getSolrClient()),
         false, true, 30);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish("testCollection2", cluster.getSolrClient().getZkStateReader(),
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish("testCollection2", (ZkStateReader) ZkStateReader.from(cluster.getSolrClient()),
         false, true, 30);
   }
 
   @Test
   public void test() throws KeeperException, InterruptedException, IOException, SolrServerException {
-    ZkStateReader stateReader = cluster.getSolrClient().getZkStateReader();
+      ZkStateReader stateReader = (ZkStateReader) ZkStateReader.from(cluster.getSolrClient());
     stateReader.forceUpdateCollection(TEST_COLLECTION_1);
     ClusterState clusterState = stateReader.getClusterState();
     // The test assume that TEST_COLLECTION_1 and TEST_COLLECTION_2 will have identical layout

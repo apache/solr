@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.BadZookeeperThreadsFilter;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -136,9 +137,9 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
         
     // delete the collection we created earlier
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
-        
-    AbstractDistribZkTestBase.waitForCollectionToDisappear
-        (collectionName, client.getZkStateReader(), true, 330);
+
+      AbstractDistribZkTestBase.waitForCollectionToDisappear
+        (collectionName, ZkStateReader.from(client), true, 330);
   }
 
   @Override

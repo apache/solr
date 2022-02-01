@@ -93,7 +93,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
   }
 
   private void waitForLiveNodes(int numNodes) throws InterruptedException, KeeperException {
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cluster.getSolrClient());
     for (int i = 0; i < 100; i++) {
       zkStateReader.updateLiveNodes();
       if (zkStateReader.getClusterState().getLiveNodes().size() == numNodes) return;

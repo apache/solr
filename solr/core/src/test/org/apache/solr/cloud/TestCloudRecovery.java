@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ClusterStateUtil;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -118,12 +119,12 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       cluster.waitForJettyToStop(jettySolrRunner);
     }
-    assertTrue("Timeout waiting for all not live", ClusterStateUtil.waitForAllReplicasNotLive(cloudClient.getZkStateReader(), 45000));
+      assertTrue("Timeout waiting for all not live", ClusterStateUtil.waitForAllReplicasNotLive(ZkStateReader.from(cloudClient), 45000));
     ChaosMonkey.start(cluster.getJettySolrRunners());
     
     cluster.waitForAllNodes(30);
-    
-    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cloudClient.getZkStateReader(), COLLECTION, 120000));
+
+      assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(ZkStateReader.from(cloudClient), COLLECTION, 120000));
 
     resp = cloudClient.query(COLLECTION, params);
     assertEquals(4, resp.getResults().getNumFound());
@@ -200,8 +201,8 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     for (JettySolrRunner j : cluster.getJettySolrRunners()) {
       cluster.waitForJettyToStop(j);
     }
-    
-    assertTrue("Timeout waiting for all not live", ClusterStateUtil.waitForAllReplicasNotLive(cloudClient.getZkStateReader(), 45000));
+
+      assertTrue("Timeout waiting for all not live", ClusterStateUtil.waitForAllReplicasNotLive(ZkStateReader.from(cloudClient), 45000));
 
     for (Map.Entry<String, byte[]> entry : contentFiles.entrySet()) {
       byte[] tlogBytes = entry.getValue();
@@ -219,12 +220,12 @@ public class TestCloudRecovery extends SolrCloudTestCase {
     cluster.waitForAllNodes(30);
     
     Thread.sleep(1000);
-    
-    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(cloudClient.getZkStateReader(), COLLECTION, 120000));
+
+      assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(ZkStateReader.from(cloudClient), COLLECTION, 120000));
     
     cluster.waitForActiveCollection(COLLECTION, 2, 2 * (nrtReplicas + tlogReplicas));
-    
-    cloudClient.getZkStateReader().forceUpdateCollection(COLLECTION);
+
+      ZkStateReader.from(cloudClient).forceUpdateCollection(COLLECTION);
     
     resp = cloudClient.query(COLLECTION, params);
     // Make sure cluster still healthy

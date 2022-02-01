@@ -290,7 +290,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
     TimeUnit.MILLISECONDS.sleep(1000);
     // in both cases, the collection should have default to the core name
-    cluster.getSolrClient().getZkStateReader().forceUpdateCollection("noconfig");
+      ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).forceUpdateCollection("noconfig");
     assertFalse(CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains("noconfig"));
   }
 
@@ -299,7 +299,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("nodes_used_collection", "conf", 2, 2)
         .process(cluster.getSolrClient());
 
-    Set<String> liveNodes = cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes();
+      Set<String> liveNodes = ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).getClusterState().getLiveNodes();
 
     List<String> createNodeList = new ArrayList<>(liveNodes);
 
@@ -408,8 +408,8 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     
     // TODO: we should not need this...beast test well when trying to fix
     Thread.sleep(1000);
-    
-    cluster.getSolrClient().getZkStateReader().forciblyRefreshAllClusterStateSlow();
+
+      ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).forciblyRefreshAllClusterStateSlow();
 
     new UpdateRequest()
         .add("id", "6")
@@ -444,8 +444,8 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
             CollectionAdminRequest.Create req = createRequests[j];
             return DocCollection.isFullyActive(n, c, req.getNumShards(), req.getReplicationFactor());
           });
-      
-      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+
+        ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cluster.getSolrClient());
       // make sure we have leaders for each shard
       for (int z = 1; z < createRequests[j].getNumShards(); z++) {
         zkStateReader.getLeaderRetry(collectionName, "shard" + z, 10000);
@@ -583,8 +583,8 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
-    ArrayList<String> nodeList
-        = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());
+      ArrayList<String> nodeList
+        = new ArrayList<>(((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
 
     CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
@@ -592,8 +592,8 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     Replica newReplica = grabNewReplica(response, getCollectionState(collectionName));
 
-    assertEquals("Replica should be created on the right node",
-        cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)), newReplica.getBaseUrl());
+      assertEquals("Replica should be created on the right node",
+        ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).getBaseUrlForNodeName(nodeList.get(0)), newReplica.getBaseUrl());
 
     Path instancePath = createTempDir();
     response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")

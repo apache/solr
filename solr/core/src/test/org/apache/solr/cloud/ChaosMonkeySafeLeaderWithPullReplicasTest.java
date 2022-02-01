@@ -31,6 +31,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -114,7 +115,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
   @Test
   //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
-    DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION);
+      DocCollection docCollection = ZkStateReader.from(cloudClient).getClusterState().getCollection(DEFAULT_COLLECTION);
     assertEquals(this.sliceCount, docCollection.getSlices().size());
     Slice s = docCollection.getSlice("shard1");
     assertNotNull(s);
@@ -170,8 +171,8 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
         }
         runLength = runTimes[random().nextInt(runTimes.length - 1)];
       }
-      
-      ChaosMonkey.wait(runLength, DEFAULT_COLLECTION, cloudClient.getZkStateReader());
+
+        ChaosMonkey.wait(runLength, DEFAULT_COLLECTION, ZkStateReader.from(cloudClient));
     } finally {
       chaosMonkey.stopTheMonkey();
     }
@@ -208,8 +209,8 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
       log.info("control docs:{}\n\n", controlClient.query(new SolrQuery("*:*")).getResults().getNumFound());
       log.info("collection state: {}", printClusterStateInfo(DEFAULT_COLLECTION)); // nowarn
     }
-    
-    waitForReplicationFromReplicas(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME));
+
+      waitForReplicationFromReplicas(DEFAULT_COLLECTION, ZkStateReader.from(cloudClient), new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME));
 //    waitForAllWarmingSearchers();
 
     checkShardConsistency(batchSize == 1, true);

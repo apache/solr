@@ -204,7 +204,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
   private void waitTillNodesActive() throws Exception {
     for (int i = 0; i < 60; i++) {
       Thread.sleep(3000);
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+        ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cloudClient);
       ClusterState clusterState = zkStateReader.getClusterState();
       DocCollection collection1 = clusterState.getCollection("collection1");
       Slice slice = collection1.getSlice("shard1");

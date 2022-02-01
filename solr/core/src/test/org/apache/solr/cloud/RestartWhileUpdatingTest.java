@@ -25,6 +25,7 @@ import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -146,8 +147,8 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
     
     Thread.sleep(5000);
-    
-    waitForRecoveriesToFinish(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), false, true);
+
+      waitForRecoveriesToFinish(DEFAULT_COLLECTION, ZkStateReader.from(cloudClient), false, true);
 
     for (StoppableIndexingThread thread : threads) {
       thread.join();

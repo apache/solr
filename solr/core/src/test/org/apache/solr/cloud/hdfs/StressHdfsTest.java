@@ -33,10 +33,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.BasicDistributedZkTest;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -159,7 +156,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
     
     // data dirs should be in zk, SOLR-8913
-    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+      ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(DELETE_DATA_DIR_COLLECTION);
     assertNotNull("Could not find :"+DELETE_DATA_DIR_COLLECTION, docCollection);
     Slice slice = docCollection.getSlice("shard1");
@@ -171,10 +168,10 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     }
     
     cloudClient.setDefaultCollection(DELETE_DATA_DIR_COLLECTION);
-    cloudClient.getZkStateReader().forceUpdateCollection(DELETE_DATA_DIR_COLLECTION);
+      ZkStateReader.from(cloudClient).forceUpdateCollection(DELETE_DATA_DIR_COLLECTION);
     
     for (int i = 1; i < nShards + 1; i++) {
-      cloudClient.getZkStateReader().getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);
+        ZkStateReader.from(cloudClient).getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);
     }
     
     // collect the data dirs
@@ -223,7 +220,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     cloudClient.request(request);
 
     final TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cloudClient.getZkStateReader().getClusterState().hasCollection(DELETE_DATA_DIR_COLLECTION)) {
+      while (ZkStateReader.from(cloudClient).getClusterState().hasCollection(DELETE_DATA_DIR_COLLECTION)) {
       if (timeout.hasTimedOut()) {
         throw new AssertionError("Timeout waiting to see removed collection leave clusterstate");
       }

@@ -17,29 +17,19 @@
 
 package org.apache.solr.common.cloud;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.BiConsumer;
-
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.WrappedSimpleMap;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.*;
+import java.util.function.BiConsumer;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.VERSION;
@@ -123,29 +113,6 @@ public class PerReplicaStates implements ReflectMapWriter {
   }
 
 
-  /**
-   * Fetch the latest {@link PerReplicaStates} . It fetches data after checking the {@link Stat#getCversion()} of state.json.
-   * If this is not modified, the same object is returned
-   */
-  public static PerReplicaStates fetch(String path, SolrZkClient zkClient, PerReplicaStates current) {
-    try {
-      if (current != null) {
-        Stat stat = zkClient.exists(current.path, null, true);
-        if (stat == null) return new PerReplicaStates(path, -1, Collections.emptyList());
-        if (current.cversion == stat.getCversion()) return current;// not modifiedZkStateReaderTest
-      }
-      Stat stat = new Stat();
-      List<String> children = zkClient.getChildren(path, null, stat, true);
-      return new PerReplicaStates(path, stat.getCversion(), Collections.unmodifiableList(children));
-    } catch (KeeperException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching per-replica states", e);
-    } catch (InterruptedException e) {
-      SolrZkClient.checkInterrupted(e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Thread interrupted when loading per-replica states from " + path, e);
-    }
-  }
-
-
   public static String getReplicaName(String s) {
     int idx = s.indexOf(SEPARATOR);
     if (idx > 0) {
@@ -207,6 +174,9 @@ public class PerReplicaStates implements ReflectMapWriter {
    */
   public static class State implements MapWriter {
 
+    // nocommit : to move these from ZkStateReader
+    public static final String STATE_PROP = "state";
+
     public final String replica;
 
     public final Replica.State state;
@@ -260,7 +230,7 @@ public class PerReplicaStates implements ReflectMapWriter {
     public void writeMap(EntryWriter ew) throws IOException {
       ew.put(NAME, replica);
       ew.put(VERSION, version);
-      ew.put(ZkStateReader.STATE_PROP, state.toString());
+      ew.put(STATE_PROP, state.toString());
       if (isLeader) ew.put(Slice.LEADER, isLeader);
       ew.putIfNotNull("duplicate", duplicate);
     }

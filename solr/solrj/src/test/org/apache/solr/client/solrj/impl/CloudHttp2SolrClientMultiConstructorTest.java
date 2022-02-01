@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.junit.Test;
 
 public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
@@ -71,7 +72,7 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
     }
 
     try (CloudHttp2SolrClient client = new CloudHttp2SolrClient.Builder(new ArrayList<>(hosts), Optional.ofNullable(clientChroot)).build()) {
-      assertEquals(sb.toString(), client.getZkHost());
+      assertEquals(sb.toString(), CloudSolrClientUtils.getZkHost(client));
     }
   }
   

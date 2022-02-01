@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
@@ -177,7 +178,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     expectThrows(TimeoutException.class,
                  "Did not time out waiting for new leader, out of sync replica became leader",
                  () -> {
-                   cluster.getSolrClient().waitForState(collection, 10, TimeUnit.SECONDS, (state) -> {
+                   CloudSolrClientUtils.waitForState(cluster.getSolrClient(), collection, 10, TimeUnit.SECONDS, (state) -> {
             Replica newLeader = state.getSlice("shard1").getLeader();
             if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
               // this is is the bad case, our "bad" state was found before timeout
@@ -227,7 +228,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     expectThrows(TimeoutException.class,
                  "Did not time out waiting for new leader, out of sync replica became leader",
                  () -> {
-                   cluster.getSolrClient().waitForState(collection, 10, TimeUnit.SECONDS, (state) -> {
+                   CloudSolrClientUtils.waitForState(cluster.getSolrClient(), collection, 10, TimeUnit.SECONDS, (state) -> {
             Replica newLeader = state.getSlice("shard1").getLeader();
             if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
               // this is is the bad case, our "bad" state was found before timeout
@@ -269,8 +270,8 @@ public class TestCloudConsistency extends SolrCloudTestCase {
 
   private void assertDocsExistInAllReplicas(List<Replica> notLeaders,
                                               String testCollectionName, int firstDocId, int lastDocId) throws Exception {
-    Replica leader =
-        cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
+      Replica leader =
+        ZkStateReader.from(cluster.getSolrClient()).getLeaderRetry(testCollectionName, "shard1", 10000);
     HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
     List<HttpSolrClient> replicas =
         new ArrayList<HttpSolrClient>(notLeaders.size());

@@ -184,8 +184,8 @@ public class SolrZkClientTest extends SolrCloudTestCase {
 
     //Thread.sleep(600000);
 
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null,true);
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped2A, null,true);
+      ((ZkStateReader) ZkStateReader.from(solrClient)).getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null,true);
+      ((ZkStateReader) ZkStateReader.from(solrClient)).getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped2A, null,true);
 
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bam")
         .process(solrClient);
@@ -197,8 +197,8 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     }
     assertEquals(1, calls.get()); // same wrapped watch set twice, only invoked once
 
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null,true);
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrappedB, null,true);
+      ((ZkStateReader) ZkStateReader.from(solrClient)).getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null,true);
+      ((ZkStateReader) ZkStateReader.from(solrClient)).getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrappedB, null,true);
 
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bang")
         .process(solrClient);

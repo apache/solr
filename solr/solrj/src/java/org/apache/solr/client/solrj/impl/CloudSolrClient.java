@@ -57,6 +57,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
    *
    * @param builder a {@link CloudSolrClient.Builder} with the options used to create the client.
    */
+  @SuppressWarnings("rawtypes")
   protected CloudSolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
     if (builder.stateProvider == null) {
@@ -64,7 +65,12 @@ public class CloudSolrClient extends BaseCloudSolrClient {
         throw new IllegalArgumentException("Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       }
       if (builder.zkHosts != null) {
-        this.stateProvider = new ZkClientClusterStateProvider(builder.zkHosts, builder.zkChroot);
+        try {
+          Class<?> zkStateProviderClass = Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
+          this.stateProvider = (ClusterStateProvider) zkStateProviderClass.getConstructor(new Class[]{Collection.class, String.class}).newInstance(builder.zkHosts, builder.zkChroot);
+        } catch (Exception e) {
+          throw new RuntimeException(e.toString(), e);
+        }
       } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
         try {
           this.stateProvider = new HttpClusterStateProvider(builder.solrUrls, builder.httpClient);
@@ -306,10 +312,16 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     /**
      * Create a {@link CloudSolrClient} based on the provided configuration.
      */
+    @SuppressWarnings("rawtypes")
     public CloudSolrClient build() {
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
-          stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot);
+          try {
+            Class<?> zkStateProviderClass = Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider");
+            stateProvider = (ClusterStateProvider) zkStateProviderClass.getConstructor(new Class[]{Collection.class, String.class}).newInstance(zkHosts, zkChroot);
+          } catch (Exception e) {
+            throw new RuntimeException(e.toString(), e);
+          }
         }
         else if (!this.solrUrls.isEmpty()) {
           try {

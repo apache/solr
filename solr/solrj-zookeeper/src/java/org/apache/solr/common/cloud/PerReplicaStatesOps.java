@@ -99,7 +99,7 @@ public class PerReplicaStatesOps {
                 if(log.isInfoEnabled()) {
                     log.info("Stale state for {}, attempt: {}. retrying...", znode, i);
                 }
-                operations = refresh(PerReplicaStates.fetch(znode, zkClient, null));
+                operations = refresh(PerReplicaStatesFetcher.fetch(znode, zkClient, null));
             }
         }
     }

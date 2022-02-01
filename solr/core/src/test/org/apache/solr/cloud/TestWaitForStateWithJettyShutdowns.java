@@ -52,7 +52,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).process(cluster.getSolrClient());
       
       log.info("Sanity check that our collection has come online");
-      cluster.getSolrClient().waitForState(col_name, 30, TimeUnit.SECONDS, clusterShape(1, 1));
+      CloudSolrClientUtils.waitForState(cluster.getSolrClient(), col_name, 30, TimeUnit.SECONDS, clusterShape(1, 1));
                                            
       log.info("Shutdown 1 node");
       final JettySolrRunner nodeToStop = cluster.getJettySolrRunner(0);
@@ -63,7 +63,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       // now that we're confident that node has stoped, check if a waitForState
       // call will detect the missing replica -- shouldn't need long wait times (we know it's down)...
       log.info("Now check if waitForState will recognize we already have the exepcted state");
-      cluster.getSolrClient().waitForState(col_name, 500, TimeUnit.MILLISECONDS, clusterShape(1, 0));
+      CloudSolrClientUtils.waitForState(cluster.getSolrClient(), col_name, 500, TimeUnit.MILLISECONDS, clusterShape(1, 0));
                                            
       
     } finally {
@@ -82,7 +82,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).process(cluster.getSolrClient());
       
       log.info("Sanity check that our collection has come online");
-      cluster.getSolrClient().waitForState(col_name, 30, TimeUnit.SECONDS,
+      CloudSolrClientUtils.waitForState(cluster.getSolrClient(), col_name, 30, TimeUnit.SECONDS,
                                            SolrCloudTestCase.clusterShape(1, 1));
 
 
@@ -99,7 +99,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       final Future<?> backgroundWaitForState = executor.submit
         (() -> {
           try {
-            cluster.getSolrClient().waitForState(col_name, 180, TimeUnit.SECONDS,
+            CloudSolrClientUtils.waitForState(cluster.getSolrClient(), col_name, 180, TimeUnit.SECONDS,
                                                  new LatchCountingPredicateWrapper(latch,
                                                                                    clusterShape(1, 0)));
           } catch (Exception e) {

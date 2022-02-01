@@ -35,10 +35,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.CloudInspectUtil;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 
@@ -104,7 +101,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
   
   private void checkShardsConsistentNumFound() throws Exception {
     final SolrParams params = params("q", "*:*", "distrib", "false");
-    final DocCollection collection = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLL);
+      final DocCollection collection = ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLL);
     for (Map.Entry<String,Slice> entry : collection.getActiveSlicesMap().entrySet()) {
       final String shardName = entry.getKey();
       final Slice slice = entry.getValue();
@@ -245,7 +242,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
    */
   public void testGlassBoxUpdateRequestRoutesToShards() throws Exception {
 
-    final DocCollection docCol = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLL);
+      final DocCollection docCol = ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLL);
     // we don't need "real" urls for all replicas, just something we can use as lookup keys for verification
     // so we'll use the shard names as "leader urls"
     final Map<String,List<String>> urlMap = docCol.getActiveSlices().stream().collect
