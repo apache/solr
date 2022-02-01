@@ -33,6 +33,7 @@ import static java.util.stream.Collectors.toMap;
  * at request time
  */
 public interface PermissionNameProvider {
+  // 'null' means the permission applies to system-level, while '*' means any collection
   enum Name {
     COLL_EDIT_PERM("collection-admin-edit", null),
     COLL_READ_PERM("collection-admin-read", null),
@@ -42,20 +43,19 @@ public interface PermissionNameProvider {
     READ_PERM("read", "*"),
     UPDATE_PERM("update", "*"),
     CONFIG_EDIT_PERM("config-edit", unmodifiableSet(new HashSet<>(asList("*", null)))),
-    CONFIG_READ_PERM("config-read", "*"),
+    CONFIG_READ_PERM("config-read", unmodifiableSet(new HashSet<>(asList("*", null)))),
     SCHEMA_READ_PERM("schema-read", "*"),
     SCHEMA_EDIT_PERM("schema-edit", "*"),
     SECURITY_EDIT_PERM("security-edit", null),
     SECURITY_READ_PERM("security-read", null),
-    METRICS_READ_PERM("metrics-read", null),
-    METRICS_HISTORY_READ_PERM("metrics-history-read", null),
+    METRICS_READ_PERM("metrics-read", unmodifiableSet(new HashSet<>(asList("*", null)))),
+    HEALTH_PERM("health", unmodifiableSet(new HashSet<>(asList("*", null)))),
     FILESTORE_READ_PERM("filestore-read", null),
     FILESTORE_WRITE_PERM("filestore-write", null),
     PACKAGE_EDIT_PERM("package-edit", null),
     PACKAGE_READ_PERM("package-read", null),
 
-    ALL("all", unmodifiableSet(new HashSet<>(asList("*", null))))
-    ;
+    ALL("all", unmodifiableSet(new HashSet<>(asList("*", null))));
     final String name;
     final Set<String> collName;
 

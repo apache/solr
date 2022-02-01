@@ -39,7 +39,7 @@ public class DOMUtil {
 
   public static final String XML_RESERVED_PREFIX = "xml";
 
-  public static final Set<String>  NL_TAGS = Set.of("str", "int","long","float","double","bool");
+  public static final Set<String>  NL_TAGS = Set.of("str", "int", "long", "float", "double", "bool", "null");
 
 
   public static Map<String,String> toMap(NamedNodeMap attrs) {
@@ -131,8 +131,7 @@ public class DOMUtil {
     return nodesToNamedList(nd.getChildNodes());
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public static List childNodesToList(Node nd) {
+  public static List<Object> childNodesToList(Node nd) {
     return nodesToList(nd.getChildNodes());
   }
 
@@ -148,9 +147,8 @@ public class DOMUtil {
     return clst;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public static List nodesToList(NodeList nlst) {
-    List lst = new ArrayList();
+  public static List<Object> nodesToList(NodeList nlst) {
+    List<Object> lst = new ArrayList<>();
     for (int i=0; i<nlst.getLength(); i++) {
       addToNamedList(nlst.item(i), null, lst);
     }
@@ -170,10 +168,9 @@ public class DOMUtil {
    * @param arr A List to add the item to.
    *             If this param is null it will be ignored.
    */
-  @SuppressWarnings("unchecked")
   public static void addToNamedList(Node nd,
-                                    @SuppressWarnings({"rawtypes"})NamedList nlst,
-                                    @SuppressWarnings({"rawtypes"})List arr) {
+                                    NamedList<Object> nlst,
+                                    List<Object> arr) {
     // Nodes often include whitespace, etc... so just return if this
     // is not an Element.
     if (nd.getNodeType() != Node.ELEMENT_NODE) return;
@@ -212,6 +209,8 @@ public class DOMUtil {
         val = Double.valueOf(textValue);
       } else if ("bool".equals(type)) {
         val = StrUtils.parseBool(textValue);
+      } else if("null".equals(type)) {
+        val = null;
       }
       // :NOTE: Unexpected Node names are ignored
       // :TODO: should we generate an error here?
@@ -231,7 +230,7 @@ public class DOMUtil {
       String tag = it.name();
       String varName = it.attributes().get("name");
       if (NL_TAGS.contains(tag)) {
-        result.add(varName, parseVal(tag, varName, it.textValue()));
+        result.add(varName, parseVal(tag, varName, it.txt()));
       }
       if ("lst".equals(tag)) {
         result.add(varName, readNamedListChildren(it));
@@ -240,7 +239,9 @@ public class DOMUtil {
         result.add(varName, l);
         it.forEachChild(n -> {
           if (NL_TAGS.contains(n.name())) {
-            l.add(parseVal(n.name(), null, n.textValue()));
+            l.add(parseVal(n.name(), null, n.txt()));
+          } else if("lst".equals(n.name())){
+            l.add(readNamedListChildren(n));
           }
           return Boolean.TRUE;
         });

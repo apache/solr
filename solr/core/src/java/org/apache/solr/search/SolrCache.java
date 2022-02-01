@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.util.IOFunction;
 
 import java.io.IOException;
 import java.util.Map;
@@ -41,6 +42,7 @@ public interface SolrCache<K,V> extends SolrInfoBean {
   String INITIAL_SIZE_PARAM = "initialSize";
   String CLEANUP_THREAD_PARAM = "cleanupThread";
   String SHOW_ITEMS_PARAM = "showItems";
+  String ASYNC_PARAM = "async";
 
   /**
    * The initialization routine. Instance specific arguments are passed in
@@ -64,7 +66,7 @@ public interface SolrCache<K,V> extends SolrInfoBean {
    * regenerate an item in the new cache from an entry in the old cache.
    *
    */
-  public Object init(@SuppressWarnings({"rawtypes"})Map args, Object persistence, CacheRegenerator regenerator);
+  public Object init(Map<String,String> args, Object persistence, CacheRegenerator regenerator);
   // I don't think we need a factory for faster creation given that these
   // will be associated with slow-to-create SolrIndexSearchers.
   // change to NamedList when other plugins do?
@@ -105,8 +107,10 @@ public interface SolrCache<K,V> extends SolrInfoBean {
    *                        must NOT attempt to modify any mappings in the cache.
    * @return existing or newly computed value, null if there was no existing value and
    * it was not possible to compute a new value (in which case the new mapping won't be created).
+   * @throws IOException if and only if mappingFunction threw an IOException.
+   * A cache mapping will not be created in this case
    */
-  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction);
+  V computeIfAbsent(K key, IOFunction<? super K, ? extends V> mappingFunction) throws IOException;
 
   /** :TODO: copy from Map */
   public void clear();
@@ -170,4 +174,14 @@ public interface SolrCache<K,V> extends SolrInfoBean {
    * only on implementations that support it, it's a no-op otherwise.
    */
   void setMaxRamMB(int maxRamMB);
+
+  /**
+   * Check if this SolrCache supports recursive calls to {@link #computeIfAbsent(Object, IOFunction)}.
+   * Caches backed by {@link java.util.concurrent.ConcurrentHashMap#computeIfAbsent(Object, Function)} explicitly do
+   * not support that, but other caches might.
+   * @return whether this cache allows recursive computations
+   */
+  default boolean isRecursionSupported() {
+    return false;
+  }
 }

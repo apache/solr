@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -101,7 +100,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     final int numNodes = (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_COLL1_CONF();
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     
@@ -171,7 +170,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
   /**
    * Given a (random) field number, returns a random (integer based) value for that field.
-   * NOTE: The number of unique values in each field is constant acording to {@link #UNIQUE_FIELD_VALS}
+   * NOTE: The number of unique values in each field is constant according to {@link #UNIQUE_FIELD_VALS}
    * but the precise <em>range</em> of values will vary for each unique field number, such that cross field joins 
    * will match fewer documents based on how far apart the field numbers are.
    *
@@ -476,8 +475,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
     QueryResponse rsp = null;
     // JSON Facets not (currently) available from QueryResponse...
-    @SuppressWarnings({"rawtypes"})
-    NamedList topNamedList = null;
+    NamedList<Object> topNamedList = null;
     try {
       rsp = (new QueryRequest(initParams)).process(getRandClient(random()));
       assertNotNull(initParams + " is null rsp?", rsp);
@@ -488,8 +486,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
                                  e.getMessage(), e);
     }
     try {
-      @SuppressWarnings({"rawtypes"})
-      final NamedList facetResponse = (NamedList) topNamedList.get("facets");
+      @SuppressWarnings("unchecked")
+      final NamedList<Object> facetResponse = (NamedList<Object>) topNamedList.get("facets");
       assertNotNull("null facet results?", facetResponse);
       assertEquals("numFound mismatch with top count?",
                    rsp.getResults().getNumFound(), ((Number)facetResponse.get("count")).longValue());
@@ -512,16 +510,16 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   private void assertFacetCountsAreCorrect(final AtomicInteger maxBucketsToCheck,
                                            final Map<String,TermFacet> expected,
                                            final SolrParams baseParams,
-                                           @SuppressWarnings({"rawtypes"})final NamedList actualFacetResponse) throws SolrServerException, IOException {
+                                           final NamedList<Object> actualFacetResponse) throws SolrServerException, IOException {
 
     for (Map.Entry<String,TermFacet> entry : expected.entrySet()) {
       final String facetKey = entry.getKey();
       final TermFacet facet = entry.getValue();
-      @SuppressWarnings({"rawtypes"})
-      final NamedList results = (NamedList) actualFacetResponse.get(facetKey);
+      @SuppressWarnings("unchecked")
+      final NamedList<Object> results = (NamedList<Object>) actualFacetResponse.get(facetKey);
       assertNotNull(facetKey + " key missing from: " + actualFacetResponse, results);
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      final List<NamedList> buckets = (List<NamedList>) results.get("buckets");
+      @SuppressWarnings({"unchecked"})
+      final List<NamedList<Object>> buckets = (List<NamedList<Object>>) results.get("buckets");
       assertNotNull(facetKey + " has null buckets: " + actualFacetResponse, buckets);
 
       if (buckets.isEmpty()) {
@@ -532,7 +530,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
                      0, docsWithField);
       }
       
-      for (@SuppressWarnings({"rawtypes"})NamedList bucket : buckets) {
+      for (NamedList<Object> bucket : buckets) {
         final long count = ((Number) bucket.get("count")).longValue();
         final String fieldVal = bucket.get("val").toString(); // int or stringified int
 

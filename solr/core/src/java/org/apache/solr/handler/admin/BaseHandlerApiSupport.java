@@ -30,8 +30,8 @@ import com.google.common.collect.ImmutableList;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
-import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
+import org.apache.solr.client.solrj.request.ApiMapping.CommandMeta;
+import org.apache.solr.client.solrj.request.ApiMapping.V2EndPoint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -112,7 +112,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
                 }
               }
             }
-            wrapParams(req, new CommandOperation("", Collections.EMPTY_MAP), commands.get(0), true);
+            wrapParams(req, new CommandOperation("", Collections.emptyMap()), commands.get(0), true);
             commands.get(0).invoke(req, rsp, apiHandler);
           }
 
@@ -132,7 +132,6 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
   /**
    * Wrapper for SolrParams that wraps V2 params and exposes them as V1 params.
    */
-  @SuppressWarnings({"unchecked"})
   private static void wrapParams(final SolrQueryRequest req, final CommandOperation co, final ApiCommand cmd, final boolean useRequestParams) {
     final Map<String, String> pathValues = req.getPathTemplateValues();
     final Map<String, Object> map = co == null || !(co.getCommandData() instanceof Map) ?
@@ -159,8 +158,8 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             if (o == null) o = pathValues.get(param);
             if (o == null && useRequestParams) o = origParams.getParams(param);
             if (o instanceof List) {
-              @SuppressWarnings({"rawtypes"})
-              List l = (List) o;
+              @SuppressWarnings("unchecked")
+              List<String> l = (List<String>) o;
               return l.toArray(new String[l.size()]);
             }
 

@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.FastStreamingDocsCallback;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -124,7 +123,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
   public void testFastJavabinStreamingDecoder() throws IOException {
     BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
     try (InputStream is = getClass().getResourceAsStream("/solrj/javabin_sample.bin")) {
-      IOUtils.copy(is, baos);
+      is.transferTo(baos);
     }
 
     SolrDocumentList list;
@@ -187,7 +186,6 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
     parser.processResponse(new FastInputStream(null, baos.getbuf(), 0, baos.size()), null);
   }
 
-  @SuppressWarnings({"unchecked"})
   public void testParsingWithChildDocs() throws IOException {
     SolrDocument d1 = TestJavaBinCodec.generateSolrDocumentWithChildDocs();
     d1.setField("id", "101");
@@ -201,8 +199,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
     sdocs.add(d1);
     sdocs.add(d2);
 
-    @SuppressWarnings({"rawtypes"})
-    SimpleOrderedMap orderedMap = new SimpleOrderedMap();
+    SimpleOrderedMap<SolrDocumentList> orderedMap = new SimpleOrderedMap<>();
     orderedMap.add("response", sdocs);
 
     BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();

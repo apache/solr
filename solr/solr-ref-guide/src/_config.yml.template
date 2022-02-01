@@ -54,7 +54,7 @@ defaults:
       search: true
 
 # needed for sitemap.xml
-url: https://lucene.apache.org/solr/guide/
+url: https://solr.apache.org/guide/
 
 # Asciidoc settings - disabled so we can use asciidoctor instead
 asciidoc: {}
@@ -69,6 +69,7 @@ asciidoc: {}
 # them to the <asciidoctor:convert/> ant task for precommit validation as well.
 solr-attributes: &solr-attributes-ref
   solr-root-path: '${solrRootPath}'
+  solr-full-version: '${solrFullVersion}'
   solr-guide-draft-status: '${solrGuideDraftStatus}'
   solr-guide-version-path: '${solrGuideVersionPath}'
   solr-docs-version: '${solrDocsVersion}'
@@ -79,6 +80,7 @@ solr-attributes: &solr-attributes-ref
   build-year: '${buildYear}'
   ivy-commons-codec-version: '${ivyCommonsCodec}'
   ivy-dropwizard-version: '${ivyDropwizardMetrics}'
+  ivy-hadoop-version: '${ivyHadoop}'
   ivy-log4j-version: '${ivyLog4j}'
   ivy-opennlp-version: '${ivyOpennlpTools}'
   ivy-tika-version: '${ivyTika}'
@@ -92,5 +94,7 @@ asciidoctor:
     attribute-missing: "warn"
     icons: "font"
     source-highlighter: "rouge"
-    rouge-theme: "thankful-eyes"
+    rouge-css: "style"
+    rouge-style: "github"
     stem:
+    sectanchors: "true"

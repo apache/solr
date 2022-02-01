@@ -16,12 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.solr.api.ApiBag.ReqHandlerToApi;
+import com.google.common.collect.ImmutableList;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -29,15 +25,19 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.api.Api;
+import org.apache.solr.security.AuthorizationContext;
 
-import static java.util.Collections.singletonList;
-import static org.apache.solr.common.util.Utils.getSpec;
+import java.util.Collection;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 public class InfoHandler extends RequestHandlerBase  {
 
   protected final CoreContainer coreContainer;
+  private Map<String, RequestHandlerBase> handlers = new ConcurrentHashMap<>();
 
   /**
    * Overloaded ctor to inject CoreContainer into the handler.
@@ -59,9 +59,7 @@ public class InfoHandler extends RequestHandlerBase  {
 
 
   @Override
-  final public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-
-  }
+  final public void init(NamedList<?> args) { }
 
   /**
    * The instance of CoreContainer this handler handles. This should be the CoreContainer instance that created this
@@ -110,21 +108,25 @@ public class InfoHandler extends RequestHandlerBase  {
     return Category.ADMIN;
   }
 
-  protected PropertiesRequestHandler getPropertiesHandler() {
+  public PropertiesRequestHandler getPropertiesHandler() {
     return (PropertiesRequestHandler) handlers.get("properties");
 
   }
 
-  protected ThreadDumpHandler getThreadDumpHandler() {
+  public ThreadDumpHandler getThreadDumpHandler() {
     return (ThreadDumpHandler) handlers.get("threads");
   }
 
-  protected LoggingHandler getLoggingHandler() {
+  public LoggingHandler getLoggingHandler() {
     return (LoggingHandler) handlers.get("logging");
   }
 
-  protected SystemInfoHandler getSystemInfoHandler() {
+  public SystemInfoHandler getSystemInfoHandler() {
     return (SystemInfoHandler) handlers.get("system");
+  }
+
+  public HealthCheckHandler getHealthCheckHandler() {
+    return (HealthCheckHandler) handlers.get("health");
   }
 
   protected void setPropertiesHandler(PropertiesRequestHandler propertiesHandler) {
@@ -143,20 +145,41 @@ public class InfoHandler extends RequestHandlerBase  {
     handlers.put("system", systemInfoHandler);
   }
 
+  protected void setHealthCheckHandler(HealthCheckHandler healthCheckHandler) {
+    handlers.put("health", healthCheckHandler);
+  }
+
   @Override
   public SolrRequestHandler getSubHandler(String subPath) {
     return this;
   }
 
-  private Map<String, RequestHandlerBase> handlers = new ConcurrentHashMap<>();
-
-  @Override
-  public Collection<Api> getApis() {
-    return singletonList(new ReqHandlerToApi(this, getSpec("node.Info")));
-  }
-
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    final ImmutableList.Builder<Api> list = new ImmutableList.Builder<>();
+    list.addAll(handlers.get("threads").getApis());
+    list.addAll(handlers.get("properties").getApis());
+    list.addAll(handlers.get("logging").getApis());
+    list.addAll(handlers.get("system").getApis());
+    list.addAll(handlers.get("health").getApis());
+    return list.build();
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    // Delegate permission to the actual handler
+    String path = request.getResource();
+    String lastPath = path.substring(path.lastIndexOf("/") +1 );
+    RequestHandlerBase handler = handlers.get(lastPath.toLowerCase(Locale.ROOT));
+    if (handler != null) {
+      return handler.getPermissionName(request);
+    } else {
+      return null;
+    }
   }
 }

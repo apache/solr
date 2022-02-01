@@ -292,6 +292,15 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
   }
 
+  private static long applyDefaultOverrequest(long offset, long limit) {
+    // NOTE: consider modifying the below heuristic; see SOLR-15760
+    // add over-request if this is a shard request and if we have a small offset (large offsets will already be gathering many more buckets than needed)
+    if (offset < 10) {
+      return (long) (limit * 1.1 + 4); // default: add 10% plus 4 (to overrequest for very small limits)
+    }
+    return limit;
+  }
+
   /** Processes the collected data to finds the top slots, and composes it in the response NamedList. */
   SimpleOrderedMap<Object> findTopSlots(final int numSlots, final int slotCardinality,
                                         @SuppressWarnings("rawtypes") IntFunction<Comparable> bucketValFromSlotNumFunc,
@@ -305,13 +314,31 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     if (freq.limit >= 0) {
       effectiveLimit = freq.limit;
       if (fcontext.isShard()) {
-        if (freq.overrequest == -1) {
-          // add over-request if this is a shard request and if we have a small offset (large offsets will already be gathering many more buckets than needed)
-          if (freq.offset < 10) {
-            effectiveLimit = (long) (effectiveLimit * 1.1 + 4); // default: add 10% plus 4 (to overrequest for very small limits)
-          }
-        } else {
+        if (freq.overrequest > 0) {
+          // NOTE: although _default_ distrib overrequest is disabled for the "index sort" case (see
+          // below), we _do_ want to respect an _explicit_ `overrequest` value, if present. Overrequest
+          // is always relevant (regardless of prelim sort) for the `resort` case; but even in the case of
+          // "index sort, no resort", overrequest can be relevant in some edge cases of the "shard" case,
+          // where it can affect the behavior of `isBucketComplete()` (see SOLR-14595).
           effectiveLimit += freq.overrequest;
+        } else {
+          switch (freq.overrequest) {
+            case 0:
+              // no-op (overrequest explicitly disabled)
+              break;
+            case -1:
+              // default
+              if (!"index".equals(this.sort.sortVariable)) {
+                // NOTE: even for distrib requests, `overrequest` is not directly relevant for "index" sort, hence
+                // there is no default/implicit overrequest for "index sort" (even if `resort` is also specified --
+                // overrequest that is exclusively for `resort` must be explicit, even in a distrib context)
+                effectiveLimit = applyDefaultOverrequest(freq.offset, effectiveLimit);
+              }
+              break;
+            default:
+              // other negative values are not supported
+              throw new IllegalArgumentException("Illegal `overrequest` specified: " + freq.overrequest);
+          }
         }
       } else if (null != resort && 0 < freq.overrequest) {
         // in non-shard situations, if we have a 'resort' we check for explicit overrequest > 0
@@ -462,8 +489,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         sortedSlots = Arrays.copyOfRange(sortedSlots, off, endOffset);
       }
     }
-    @SuppressWarnings({"rawtypes"})
-    List<SimpleOrderedMap> bucketList = new ArrayList<>(sortedSlots.length);
+    List<SimpleOrderedMap<?>> bucketList = new ArrayList<>(sortedSlots.length);
 
     for (Slot slot : sortedSlots) {
       SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
@@ -494,9 +520,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
    * Trivial helper method for building up a bucket query given the (Stringified) bucket value
    */
   protected Query makeBucketQuery(final String bucketValue) {
-    // TODO: this isn't viable for things like text fields w/ analyzers that are non-idempotent (ie: stemmers)
-    // TODO: but changing it to just use TermQuery isn't safe for things like numerics, dates, etc...
-    return sf.getType().getFieldQuery(null, sf, bucketValue);
+    return sf.getType().getFieldTermQuery(null, sf, bucketValue);
   }
 
   private void calculateNumBuckets(SimpleOrderedMap<Object> target) throws IOException {
@@ -1021,7 +1045,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     // fieldQuery currently relies on a string input of the value...
     String bucketStr = bucketVal instanceof Date ? ((Date)bucketVal).toInstant().toString() : bucketVal.toString();
-    Query domainQ = ft.getFieldQuery(null, sf, bucketStr);
+    Query domainQ = ft.getFieldTermQuery(null, sf, bucketStr);
 
     fillBucket(bucket, domainQ, null, skip, facetInfo);
 

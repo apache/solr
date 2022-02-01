@@ -66,6 +66,7 @@ import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,11 +90,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase
 
   static final String ERR_MSG_SINGLE_STREAM_ONLY =
       "MoreLikeThis does not support multiple ContentStreams";
-
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    super.init(args);
-  }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
@@ -258,22 +254,19 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         // TODO resolve duplicated code with DebugComponent.  Perhaps it should be added to doStandardDebug?
         if (dbg == true) {
           try {
-            @SuppressWarnings({"unchecked"})
             NamedList<Object> dbgInfo = SolrPluginUtils.doStandardDebug(req, q, mlt.getRawMLTQuery(), mltDocs.docList, dbgQuery, dbgResults);
-            if (null != dbgInfo) {
-              if (null != filters) {
-                dbgInfo.add("filter_queries", req.getParams().getParams(CommonParams.FQ));
-                List<String> fqs = new ArrayList<>(filters.size());
-                for (Query fq : filters) {
-                  fqs.add(QueryParsing.toString(fq, req.getSchema()));
-                }
-                dbgInfo.add("parsed_filter_queries", fqs);
+            if (null != filters) {
+              dbgInfo.add("filter_queries", req.getParams().getParams(CommonParams.FQ));
+              List<String> fqs = new ArrayList<>(filters.size());
+              for (Query fq : filters) {
+                fqs.add(QueryParsing.toString(fq, req.getSchema()));
               }
-              rsp.add("debug", dbgInfo);
+              dbgInfo.add("parsed_filter_queries", fqs);
             }
+            rsp.add("debug", dbgInfo);
           } catch (Exception e) {
-            SolrException.log(log, "Exception during debug", e);
-            rsp.add("exception_during_debug", SolrException.toStr(e));
+            log.error("Exception during debug: {}", e, e);
+            rsp.add("exception_during_debug", e.getMessage());
           }
         }
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
@@ -282,7 +275,12 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         SolrQueryTimeoutImpl.reset();
       }
   }
-  
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.READ_PERM;
+  }
+
   public static class InterestingTerm
   {
     public Term term;

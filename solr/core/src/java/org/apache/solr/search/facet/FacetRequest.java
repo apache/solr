@@ -314,8 +314,7 @@ public abstract class FacetRequest {
    * @param params a typed parameter structure (unlike SolrParams which are all string values).
    */
   public static FacetRequest parse(SolrQueryRequest req, Map<String, Object> params) {
-    @SuppressWarnings({"rawtypes"})
-    FacetParser parser = new FacetParser.FacetTopParser(req);
+    FacetParser<?> parser = new FacetParser.FacetTopParser(req);
     try {
       return parser.parse(params);
     } catch (SyntaxError syntaxError) {
@@ -419,8 +418,7 @@ public abstract class FacetRequest {
 
   /** Process the request with the facet context settings, a parameter-object. */
   final Object process(FacetContext fcontext) throws IOException {
-    @SuppressWarnings("rawtypes")
-    FacetProcessor facetProcessor = createFacetProcessor(fcontext);
+    FacetProcessor<?> facetProcessor = createFacetProcessor(fcontext);
 
     FacetDebugInfo debugInfo = fcontext.getDebugInfo();
     if (debugInfo == null) {
@@ -443,8 +441,7 @@ public abstract class FacetRequest {
     return facetProcessor.getResponse(); 
   }
 
-  @SuppressWarnings("rawtypes")
-  public abstract FacetProcessor createFacetProcessor(FacetContext fcontext);
+  public abstract FacetProcessor<? extends FacetRequest> createFacetProcessor(FacetContext fcontext);
 
   public abstract FacetMerger createFacetMerger(Object prototype);
   

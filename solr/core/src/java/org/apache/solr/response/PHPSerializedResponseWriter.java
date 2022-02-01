@@ -44,7 +44,7 @@ public class PHPSerializedResponseWriter implements QueryResponseWriter {
   private String contentType = CONTENT_TYPE_PHP_UTF8;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList namedList) {
+  public void init(NamedList<?> namedList) {
     String contentType = (String) namedList.get("content-type");
     if (contentType != null) {
       this.contentType = contentType;
@@ -85,7 +85,7 @@ class PHPSerializedWriter extends JSONWriter {
   }
   
   @Override
-  public void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  public void writeNamedList(String name, NamedList<?> val) throws IOException {
     writeNamedListAsMapMangled(name, val);
   }
 
@@ -168,7 +168,8 @@ class PHPSerializedWriter extends JSONWriter {
 
   
   @Override
-  public void writeArray(String name, Object[] val) throws IOException {
+  public void writeArray(String name, Object[] val, boolean raw) throws IOException {
+    assert !raw;
     writeMapOpener(val.length);
     for(int i=0; i < val.length; i++) {
       writeKey(i, false);
@@ -178,14 +179,13 @@ class PHPSerializedWriter extends JSONWriter {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator val) throws IOException {
-    @SuppressWarnings({"rawtypes"})
-    ArrayList vals = new ArrayList();
+  public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
+    assert !raw;
+    ArrayList<Object> vals = new ArrayList<>();
     while( val.hasNext() ) {
       vals.add(val.next());
     }
-    writeArray(name, vals.toArray());
+    writeArray(name, vals.toArray(), false);
   }
   
   @Override

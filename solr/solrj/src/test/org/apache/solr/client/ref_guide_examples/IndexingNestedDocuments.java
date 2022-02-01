@@ -150,7 +150,7 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
   }
   
   /**
-   * Demo of using <code>NestPath</code> related psuedo-fields when indexing hierarchical documents.
+   * Demo of using <code>NestPath</code> related pseudo-fields when indexing hierarchical documents.
    * This test code is used as an 'include' from the ref-guide
    */
   public void testIndexingUsingNestPath() throws Exception {

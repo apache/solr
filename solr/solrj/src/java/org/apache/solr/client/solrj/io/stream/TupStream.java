@@ -174,7 +174,6 @@ public class TupStream extends TupleStream implements Expressible {
     // Nothing to do here
   }
 
-  @SuppressWarnings({"unchecked"})
   public void open() throws IOException {
     Map<String, Object> values = new HashMap<>();
 
@@ -222,9 +221,9 @@ public class TupStream extends TupleStream implements Expressible {
         if(o instanceof Tuple) {
           unnestedTuple = (Tuple)o;
         } else if(o instanceof List) {
-          @SuppressWarnings({"rawtypes"})
-          List l = (List)o;
+          List<?> l = (List<?>)o;
           if(l.size() > 0 && l.get(0) instanceof Tuple) {
+            @SuppressWarnings({"unchecked"})
             List<Tuple> tl = (List<Tuple>)l;
             unnestedTuples = tl.iterator();
           }

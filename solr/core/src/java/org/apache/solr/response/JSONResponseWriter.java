@@ -40,7 +40,7 @@ public class JSONResponseWriter implements QueryResponseWriter {
   private String contentType = CONTENT_TYPE_JSON_UTF8;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList namedList) {
+  public void init(NamedList<?> namedList) {
     String contentType = (String) namedList.get("content-type");
     if (contentType != null) {
       this.contentType = contentType;
@@ -103,7 +103,7 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   }
 
   @Override
-  public void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  public void writeNamedList(String name, NamedList<?> val) throws IOException {
 
     if (val instanceof SimpleOrderedMap) {
       super.writeNamedList(name, val);
@@ -204,6 +204,16 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   }
 
   @Override
+  public void writeStrRaw(String name, String val) throws IOException {
+    if (writeTypeAndValueKey) {
+      throw new IllegalStateException("NamedList should never be a field value");
+      // and thus `writeTypeAndValueKey` should always have been cleared (set to false) by the
+      // time `writeStrRaw(...)` is called (at the level of individual SolrDocument fields).
+    }
+    super.writeStrRaw(name, val);
+  }
+
+  @Override
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     ifNeededWriteTypeAndValueKey("str");
     super.writeStr(name, val, needsEscaping);
@@ -223,16 +233,16 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
 
 
   @Override
-  public void writeMap(String name, @SuppressWarnings({"rawtypes"})Map val,
+  public void writeMap(String name, Map<?, ?> val,
                        boolean excludeOuter, boolean isFirstVal) throws IOException {
     ifNeededWriteTypeAndValueKey("map");
     super.writeMap(name, val, excludeOuter, isFirstVal);
   }
 
   @Override
-  public void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator val) throws IOException {
+  public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
     ifNeededWriteTypeAndValueKey("array");
-    super.writeArray(name, val);
+    super.writeArray(name, val, raw);
   }
 
   @Override

@@ -65,6 +65,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertMaps;
+
 /**
 *  All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so
 *  SolrStream will get fully exercised through these tests.
@@ -425,18 +427,15 @@ public void testParallelRankStream() throws Exception {
       assertEquals(3, tuples.size());
 
       Tuple t0 = tuples.get(0);
-      @SuppressWarnings({"rawtypes"})
-      List<Map> maps0 = t0.getMaps("group");
+      List<Map<?,?>> maps0 = t0.getMaps("group");
       assertMaps(maps0, 0, 2, 1, 9);
 
       Tuple t1 = tuples.get(1);
-      @SuppressWarnings({"rawtypes"})
-      List<Map> maps1 = t1.getMaps("group");
+      List<Map<?,?>> maps1 = t1.getMaps("group");
       assertMaps(maps1, 3, 5, 7, 8);
 
       Tuple t2 = tuples.get(2);
-      @SuppressWarnings({"rawtypes"})
-      List<Map> maps2 = t2.getMaps("group");
+      List<Map<?,?>> maps2 = t2.getMaps("group");
       assertMaps(maps2, 4, 6);
 
       //Test with spaces in the parameter lists using a comparator
@@ -538,18 +537,15 @@ public void testParallelRankStream() throws Exception {
       assertEquals(3, tuples.size());
 
       Tuple t0 = tuples.get(0);
-      @SuppressWarnings({"rawtypes"})
-      List<Map> maps0 = t0.getMaps("group");
+      List<Map<?,?>> maps0 = t0.getMaps("group");
       assertMaps(maps0, 9, 1, 2, 0);
 
       Tuple t1 = tuples.get(1);
-      @SuppressWarnings({"rawtypes"})
-      List<Map> maps1 = t1.getMaps("group");
+      List<Map<?,?>> maps1 = t1.getMaps("group");
       assertMaps(maps1, 8, 7, 5, 3);
 
       Tuple t2 = tuples.get(2);
-      @SuppressWarnings({"rawtypes"})
-      List<Map> maps2 = t2.getMaps("group");
+      List<Map<?,?>> maps2 = t2.getMaps("group");
       assertMaps(maps2, 6, 4);
 
       //Test Descending with Ascending subsort
@@ -2332,7 +2328,6 @@ public void testParallelRankStream() throws Exception {
    * streaming expression to only consider data found on the local node.
    */
   @Test
-  @SuppressWarnings({"unchecked"})
   public void streamLocalTests() throws Exception {
 
     new UpdateRequest()
@@ -2642,21 +2637,19 @@ public void testParallelRankStream() throws Exception {
   }
 
 
-  protected boolean assertOrder(List<Tuple> tuples, int... ids) throws Exception {
+  protected boolean assertOrder(List<Tuple> tuples, int... ids) {
     int i = 0;
     for(int val : ids) {
       Tuple t = tuples.get(i);
       String tip = (String)t.get("id");
       String valStr = Integer.toString(val);
-      if(!tip.equals(valStr)) {
-        assertEquals("Found value:"+tip+" expecting:"+valStr, val, tip);
-      }
+      assertEquals(valStr, tip);
       ++i;
     }
     return true;
   }
 
-  protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {
+  protected boolean assertGroupOrder(Tuple tuple, int... ids) {
     @SuppressWarnings({"rawtypes"})
     List group = (List)tuple.get("tuples");
     int i=0;
@@ -2664,27 +2657,7 @@ public void testParallelRankStream() throws Exception {
       @SuppressWarnings({"rawtypes"})
       Map t = (Map)group.get(i);
       Long tip = (Long)t.get("id");
-      if(tip.intValue() != val) {
-        throw new Exception("Found value:"+tip.intValue()+" expecting:"+val);
-      }
-      ++i;
-    }
-    return true;
-  }
-
-  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
-    if(maps.size() != ids.length) {
-      throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
-    }
-
-    int i=0;
-    for(int val : ids) {
-      @SuppressWarnings({"rawtypes"})
-      Map t = maps.get(i);
-      String tip = (String)t.get("id");
-      if(!tip.equals(Integer.toString(val))) {
-        throw new Exception("Found value:"+tip+" expecting:"+val);
-      }
+      assertEquals(val, tip.intValue());
       ++i;
     }
     return true;

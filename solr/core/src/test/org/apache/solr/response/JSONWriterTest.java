@@ -93,15 +93,13 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     assertEquals(JSONWriter.JSON_NL_STYLE_COUNT, namedListStyles.length);
   }
 
-  @SuppressWarnings({"unchecked"})
   private void implTestJSON(final String namedListStyle) throws IOException {
     SolrQueryRequest req = req("wt","json","json.nl",namedListStyle, "indent", "off");
     SolrQueryResponse rsp = new SolrQueryResponse();
     JSONResponseWriter w = new JSONResponseWriter();
 
     StringWriter buf = new StringWriter();
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = new NamedList();
+    NamedList<Object> nl = new NamedList<>();
     nl.add("data1", "he\u2028llo\u2029!");       // make sure that 2028 and 2029 are both escaped (they are illegal in javascript)
     nl.add(null, 42);
     nl.add(null, null);
@@ -205,13 +203,13 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     methodsExpectedNotOverriden.add("writeMapOpener");
     methodsExpectedNotOverriden.add("writeMapSeparator");
     methodsExpectedNotOverriden.add("writeMapCloser");
-    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeArray(java.lang.String,java.util.List) throws java.io.IOException");
+    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeArray(java.lang.String,java.util.List,boolean) throws java.io.IOException");
     methodsExpectedNotOverriden.add("writeArrayOpener");
     methodsExpectedNotOverriden.add("writeArraySeparator");
     methodsExpectedNotOverriden.add("writeArrayCloser");
     methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeMap(org.apache.solr.common.MapWriter) throws java.io.IOException");
     methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeIterator(org.apache.solr.common.IteratorWriter) throws java.io.IOException");
-    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeJsonIter(java.util.Iterator) throws java.io.IOException");
+    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeJsonIter(java.util.Iterator,boolean) throws java.io.IOException");
 
     final Class<?> subClass = JSONResponseWriter.ArrayOfNameTypeValueJSONWriter.class;
     final Class<?> superClass = subClass.getSuperclass();

@@ -26,18 +26,6 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     assertConfigs("bad-solrconfig-nrtmode.xml","schema.xml", "nrtMode");
   }
 
-  public void testMultipleDirectoryFactories() throws Exception {
-      assertConfigs("bad-solrconfig-multiple-dirfactory.xml", "schema12.xml",
-                    "directoryFactory");
-  }
-  public void testMultipleIndexConfigs() throws Exception {
-      assertConfigs("bad-solrconfig-multiple-indexconfigs.xml", "schema12.xml",
-                    "indexConfig");
-  }
-  public void testMultipleCFS() throws Exception {
-      assertConfigs("bad-solrconfig-multiple-cfs.xml", "schema12.xml",
-                    "useCompoundFile");
-  }
 
   public void testUpdateLogButNoVersionField() throws Exception {
 
@@ -56,7 +44,7 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
 
   public void testSchemaMutableButNotManaged() throws Exception {
     assertConfigs("bad-solrconfig-schema-mutable-but-not-managed.xml",
-                  "schema-minimal.xml", "Unexpected arg(s): {mutable=false, managedSchemaResourceName=schema.xml}");
+                  "schema-minimal.xml", "Unexpected arg(s)"); // SOLR-15939
   }
 
   public void testManagedSchemaCannotBeNamedSchemaDotXml() throws Exception {

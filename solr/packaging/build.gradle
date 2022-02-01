@@ -31,42 +31,49 @@ ext {
 }
 
 configurations {
-  distSolr {
-    transitive = false
-  }
-  distSolrj
-  contrib
+  modules
   example
+  prometheusExporter
   server
   docs
+  docker
+  solrTgz
+  solrTgzSignature
+}
+
+artifacts {
+  solrTgz(distTar)
 }
 
 dependencies {
-  distSolrj project(":solr:solrj")
-
-  [":solr:contrib:analysis-extras",
-   ":solr:contrib:analytics",
-   ":solr:contrib:extraction",
-   ":solr:contrib:clustering",
-   ":solr:contrib:jaegertracer-configurator",
-   ":solr:contrib:langid",
-   ":solr:contrib:ltr",
-   ":solr:contrib:prometheus-exporter",
-   ":solr:contrib:scripting"
-  ].each { contribName ->
-    distSolr project(contribName)
-    contrib  project(path: contribName, configuration: "packaging")
+  [":solr:modules:analysis-extras",
+   ":solr:modules:analytics",
+   ":solr:modules:extraction",
+   ":solr:modules:clustering",
+   ":solr:modules:gcs-repository",
+   ":solr:modules:hdfs",
+   ":solr:modules:jaegertracer-configurator",
+   ":solr:modules:langid",
+   ":solr:modules:ltr",
+   ":solr:modules:s3-repository",
+   ":solr:modules:scripting"
+  ].each { moduleName ->
+    modules project(path: moduleName, configuration: "packaging")
   }
 
-  distSolr project(":solr:core")
-  distSolr project(":solr:solrj")
-  distSolr project(":solr:test-framework")
+  prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
 
   // Copy files from documentation output
   docs project(path: ':solr:documentation', configuration: 'minimalSite')
+
+  docker project(path: ':solr:docker', configuration: 'packaging')
+
+  solrTgzSignature files("$buildDir/distributions/solr-${version}.tgz.asc") {
+    builtBy ":solr:distribution:signBinaryTgz"
+  }
 }
 
 distributions {
@@ -74,6 +81,48 @@ distributions {
     distributionBaseName = 'solr'
     contents {
       // TODO: This is missing module README files, as compared to 8x
+
+      from(rootDir, {
+        include "LICENSE.txt"
+        include "NOTICE.txt"
+      })
+
+      from(project(":solr").projectDir, {
+        include "bin/**"
+        include "licenses/**"
+        exclude "licenses/README.committers.txt"
+        include "CHANGES.txt"
+        include "README.md"
+      })
+
+      from(configurations.modules, {
+        into "modules"
+      })
+
+      from(configurations.example, {
+        into "example"
+      })
+
+      from(configurations.prometheusExporter, {
+        into "prometheus-exporter"
+      })
+
+      from(configurations.server, {
+        into "server"
+      })
+
+      from(configurations.docs, {
+        into "docs"
+      })
+
+      from(configurations.docker, {
+        into "docker"
+        filesMatching([
+            "scripts/**",
+        ]) { copy ->
+          copy.setMode(0755)
+        }
+      })
 
       // Manually correct posix permissions (matters when packaging on Windows).
       filesMatching([
@@ -87,47 +136,6 @@ distributions {
         copy.setMode(0755)
       }
 
-      from(project(":solr").projectDir, {
-        include "bin/**"
-        include "licenses/**"
-        exclude "licenses/README.committers.txt"
-        include "CHANGES.txt"
-        include "LICENSE.txt"
-        include "NOTICE.txt"
-        include "README.md"
-      })
-
-      // Should we include Lucene changes?
-      /*
-        from(project(":lucene").projectDir, {
-          include "CHANGES.txt"
-          rename { file -> 'LUCENE_CHANGES.txt' }
-        })
-      */
-
-      from(configurations.contrib, {
-        into "contrib"
-      })
-
-      from(configurations.distSolr, {
-        into "dist"
-      })
-
-      from(configurations.distSolrj - configurations.distSolr, {
-        into "dist/solrj-lib"
-      })
-
-      from(configurations.example, {
-        into "example"
-      })
-
-      from(configurations.server, {
-        into "server"
-      })
-
-      from(configurations.docs, {
-        into "docs"
-      })
     }
   }
 }
@@ -143,5 +151,11 @@ task dev(type: Copy) {
   from installDist.outputs
   into devDir
 }
+
+distTar {
+  compression = Compression.GZIP
+}
+
+distZip.enabled = false
 
 assemble.dependsOn installDist

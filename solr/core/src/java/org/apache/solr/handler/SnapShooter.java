@@ -36,6 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -95,7 +96,7 @@ public class SnapShooter {
       SimpleDateFormat fmt = new SimpleDateFormat(DATE_FMT, Locale.ROOT);
       directoryName = "snapshot." + fmt.format(new Date());
     }
-    this.snapshotDirPath = backupRepo.resolve(location, directoryName);
+    this.snapshotDirPath = backupRepo.resolveDirectory(location, directoryName);
     this.commitName = commitName;
   }
 
@@ -120,7 +121,7 @@ public class SnapShooter {
       paths = backupRepo.listAll(baseSnapDirPath);
       for (String path : paths) {
         if (path.equals(this.directoryName)
-            && backupRepo.getPathType(baseSnapDirPath.resolve(path)) == PathType.DIRECTORY) {
+            && backupRepo.getPathType(backupRepo.resolveDirectory(baseSnapDirPath, path)) == PathType.DIRECTORY) {
           dirFound = true;
           break;
         }
@@ -151,8 +152,7 @@ public class SnapShooter {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public NamedList createSnapshot() throws Exception {
+  public NamedList<Object> createSnapshot() throws Exception {
     final IndexCommit indexCommit = getAndSaveIndexCommit();
     try {
       return createSnapshot(indexCommit);
@@ -217,11 +217,10 @@ public class SnapShooter {
             commitName + " for core " + solrCore.getName());
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public void createSnapAsync(final int numberToKeep, Consumer<NamedList> result) throws IOException {
+  public void createSnapAsync(final int numberToKeep, Consumer<NamedList<?>> result) throws IOException {
     //TODO should use Solr's ExecutorUtil
     new Thread(() -> {
-      NamedList snapShootDetails;
+      NamedList<Object> snapShootDetails;
       try {
         snapShootDetails = createSnapshot();
       } catch (Exception e) {
@@ -252,15 +251,14 @@ public class SnapShooter {
    * @see IndexDeletionPolicyWrapper#saveCommitPoint
    * @see IndexDeletionPolicyWrapper#releaseCommitPoint
    */
-  @SuppressWarnings({"rawtypes"})
-  protected NamedList createSnapshot(final IndexCommit indexCommit) throws Exception {
+  protected NamedList<Object> createSnapshot(final IndexCommit indexCommit) throws Exception {
     assert indexCommit != null;
     if (log.isInfoEnabled()) {
       log.info("Creating backup snapshot {} at {}", (snapshotName == null ? "<not named>" : snapshotName), baseSnapDirPath);
     }
     boolean success = false;
     try {
-      NamedList<Object> details = new NamedList<>();
+      NamedList<Object> details = new SimpleOrderedMap<>();
       details.add("startTime", new Date().toString());//bad; should be Instant.now().toString()
 
       Collection<String> files = indexCommit.getFileNames();

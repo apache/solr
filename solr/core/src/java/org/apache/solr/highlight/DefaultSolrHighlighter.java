@@ -424,7 +424,6 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * turns contains sets (field, summary) pairs.
    */
   @Override
-  @SuppressWarnings("unchecked")
   public NamedList<Object> doHighlighting(DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
     SolrParams params = req.getParams();
     if (!isHighlightingEnabled(params)) // also returns early if no unique key field
@@ -461,15 +460,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     IndexReader reader = new TermVectorReusingLeafReader(req.getSearcher().getSlowAtomicReader()); // SOLR-5855
 
     // Highlight each document
-    @SuppressWarnings({"rawtypes"})
-    NamedList fragments = new SimpleOrderedMap();
+    NamedList<Object> fragments = new SimpleOrderedMap<>();
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
       int docId = iterator.nextDoc();
       SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, returnFields);
 
-      @SuppressWarnings("rawtypes")
-      NamedList docHighlights = new SimpleOrderedMap();
+      NamedList<Object> docHighlights = new SimpleOrderedMap<>();
       // Highlight per-field
       for (String fieldName : fieldNames) {
         SchemaField schemaField = schema.getFieldOrNull(fieldName);
@@ -570,7 +567,6 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
 
   /** Highlights and returns the highlight object for this field -- a String[] by default.  Null if none. */
-  @SuppressWarnings("unchecked")
   protected Object doHighlightingByFastVectorHighlighter(SolrDocument doc, int docId,
                                                          SchemaField schemaField, FvhContainer fvhContainer,
                                                          IndexReader reader, SolrQueryRequest req) throws IOException {
@@ -592,7 +588,6 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
 
   /** Highlights and returns the highlight object for this field -- a String[] by default. Null if none. */
-  @SuppressWarnings("unchecked")
   protected Object doHighlightingByHighlighter(SolrDocument doc, int docId, SchemaField schemaField, Query query,
                                                IndexReader reader, SolrQueryRequest req) throws IOException {
     final SolrParams params = req.getParams();
@@ -767,7 +762,6 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
 
   /** Returns the alternate highlight object for this field -- a String[] by default.  Null if none. */
-  @SuppressWarnings("unchecked")
   protected Object alternateField(SolrDocument doc, int docId, String fieldName, FvhContainer fvhContainer, Query query,
                                   IndexReader reader, SolrQueryRequest req) throws IOException {
     IndexSchema schema = req.getSearcher().getSchema();
@@ -978,11 +972,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     }
   }
 
+
   /**
    * Wraps a DirectoryReader that caches the {@link LeafReader#getTermVectors(int)} so that
    * if the next call has the same ID, then it is reused.
    */
   static class TermVectorReusingLeafReader extends FilterLeafReader {
+
 
     private int lastDocId = -1;
     private Fields tvFields;
@@ -999,6 +995,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       }
       return tvFields;
     }
+
 
     @Override
     public CacheHelper getCoreCacheHelper() {

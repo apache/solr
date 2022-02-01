@@ -30,7 +30,7 @@ print_usage() {
   echo "Usage: install_solr_service.sh <path_to_solr_distribution_archive> [OPTIONS]"
   echo ""
   echo "  The first argument to the script must be a path to a Solr distribution archive, such as solr-5.0.0.tgz"
-  echo "    (only .tgz or .zip are supported formats for the archive)"
+  echo "    (only .tgz is supported format for the archive)"
   echo ""
   echo "  Supported OPTIONS include:"
   echo ""
@@ -79,7 +79,7 @@ for command in "grep -E \"^NAME=\" /etc/os-release" \
       distro=SUSE
     elif [[ ${distro_string,,} == *"darwin"* ]]; then
       echo "Sorry, this script does not support macOS. You'll need to setup Solr as a service manually using the documentation provided in the Solr Reference Guide."
-      echo "You could also try installing via Homebrew (http://brew.sh/), e.g. brew install solr"
+      echo "You could also try installing via Homebrew (https://brew.sh/), e.g. brew install solr"
       exit 1
     fi
     if [[ $distro ]] ; then break ; fi
@@ -102,14 +102,10 @@ fi
 
 # strip off path info
 SOLR_INSTALL_FILE=${SOLR_ARCHIVE##*/}
-is_tar=true
 if [ ${SOLR_INSTALL_FILE: -4} == ".tgz" ]; then
   SOLR_DIR=${SOLR_INSTALL_FILE%.tgz}
-elif [ ${SOLR_INSTALL_FILE: -4} == ".zip" ]; then
-  SOLR_DIR=${SOLR_INSTALL_FILE%.zip}
-  is_tar=false
 else
-  print_usage "Solr installation archive $SOLR_ARCHIVE is invalid, expected a .tgz or .zip file!"
+  print_usage "Solr installation archive $SOLR_ARCHIVE is invalid, expected a .tgz file!"
   exit 1
 fi
 
@@ -187,11 +183,7 @@ if [ $# -gt 1 ]; then
 fi
 
 # Test for availability of needed tools
-if [[ $is_tar ]] ; then
-  tar --version &>/dev/null     || print_error "Script requires the 'tar' command"
-else
-  unzip -hh &>/dev/null         || print_error "Script requires the 'unzip' command"
-fi
+tar --version &>/dev/null       || print_error "Script requires the 'tar' command"
 if [[ $SOLR_START == "true" ]] ; then
   service --version &>/dev/null || service --help &>/dev/null || print_error "Script requires the 'service' command"
   java -version &>/dev/null     || print_error "Solr requires java, please install or set JAVA_HOME properly"
@@ -265,11 +257,7 @@ if [ ! -d "$SOLR_INSTALL_DIR" ]; then
 
   echo -e "\nExtracting $SOLR_ARCHIVE to $SOLR_EXTRACT_DIR\n"
 
-  if $is_tar ; then
-    tar zxf "$SOLR_ARCHIVE" -C "$SOLR_EXTRACT_DIR"
-  else
-    unzip -q "$SOLR_ARCHIVE" -d "$SOLR_EXTRACT_DIR"
-  fi
+  tar zxf "$SOLR_ARCHIVE" -C "$SOLR_EXTRACT_DIR"
 
   if [ ! -d "$SOLR_INSTALL_DIR" ]; then
     echo -e "\nERROR: Expected directory $SOLR_INSTALL_DIR not found after extracting $SOLR_ARCHIVE ... script fails.\n" 1>&2

@@ -106,7 +106,7 @@ public abstract class BaseSolrResource {
     addDeprecatedWarning();
 
     if (log.isInfoEnabled() && solrResponse.getToLog().size() > 0) {
-      log.info(solrResponse.getToLogAsString(solrCore.getLogId()));
+      log.info(solrResponse.getToLogAsString());
     }
   }
 
@@ -125,8 +125,7 @@ public abstract class BaseSolrResource {
   protected void handleException(Logger log) {
     Exception exception = getSolrResponse().getException();
     if (null != exception) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList info = new SimpleOrderedMap();
+      NamedList<Object> info = new SimpleOrderedMap<>();
       this.statusCode = ResponseUtils.getErrorInfo(exception, info, log);
       getSolrResponse().add("error", info);
       String message = (String)info.get("msg");

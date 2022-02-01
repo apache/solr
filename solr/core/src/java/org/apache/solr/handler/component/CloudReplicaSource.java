@@ -18,6 +18,8 @@
 package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
+import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +40,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +62,6 @@ class CloudReplicaSource implements ReplicaSource {
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void withClusterState(Builder builder, SolrParams params) {
     ClusterState clusterState = builder.zkStateReader.getClusterState();
     String shardKeys = params.get(ShardParams._ROUTE_);
@@ -92,18 +94,17 @@ class CloudReplicaSource implements ReplicaSource {
     }
 
     this.slices = sliceMap.keySet().toArray(new String[sliceMap.size()]);
-    this.replicas = new List[slices.length];
+    this.replicas = newReplicasArray(slices.length);
     for (int i = 0; i < slices.length; i++) {
       String sliceName = slices[i];
       replicas[i] = findReplicas(builder, null, clusterState, sliceMap.get(sliceName));
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void withShardsParam(Builder builder, String shardsParam) {
     List<String> sliceOrUrls = StrUtils.splitSmart(shardsParam, ",", true);
     this.slices = new String[sliceOrUrls.size()];
-    this.replicas = new List[sliceOrUrls.size()];
+    this.replicas = newReplicasArray(sliceOrUrls.size());
 
     ClusterState clusterState = builder.zkStateReader.getClusterState();
 
@@ -117,8 +118,27 @@ class CloudReplicaSource implements ReplicaSource {
         // this has urls
         this.replicas[i] = StrUtils.splitSmart(sliceOrUrl, "|", true);
         builder.replicaListTransformer.transform(replicas[i]);
-        builder.hostChecker.checkWhitelist(clusterState, shardsParam, replicas[i]);
+        checkUrlsAllowList(builder.urlChecker, clusterState, shardsParam, replicas[i]);
       }
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<String>[] newReplicasArray(int size) {
+    return (List<String>[]) Array.newInstance(List.class, size);
+  }
+
+  static void checkUrlsAllowList(AllowListUrlChecker urlChecker, ClusterState clusterState, String shardsParam, List<String> urls) {
+    try {
+      urlChecker.checkAllowList(urls, clusterState);
+    } catch (MalformedURLException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid URL syntax in '" + ShardParams.SHARDS + "' parameter: " + shardsParam, e);
+    } catch (SolrException e) {
+      throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
+              "The '" + ShardParams.SHARDS + "' parameter value '" + shardsParam
+                      + "' contained value(s) not allowed: "
+                      + e.getMessage() + ". "
+                      + AllowListUrlChecker.SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE);
     }
   }
 
@@ -135,9 +155,9 @@ class CloudReplicaSource implements ReplicaSource {
           .filter(replica -> !builder.onlyNrt || (replica.getType() == Replica.Type.NRT || (replica.getType() == Replica.Type.TLOG && isShardLeader.test(replica))))
           .collect(Collectors.toList());
       builder.replicaListTransformer.transform(list);
-      List<String> collect = list.stream().map(Replica::getCoreUrl).collect(Collectors.toList());
-      builder.hostChecker.checkWhitelist(clusterState, shardsParam, collect);
-      return collect;
+      List<String> coreUrls = list.stream().map(Replica::getCoreUrl).collect(Collectors.toList());
+      checkUrlsAllowList(builder.urlChecker, clusterState, shardsParam, coreUrls);
+      return coreUrls;
     }
   }
 
@@ -149,7 +169,8 @@ class CloudReplicaSource implements ReplicaSource {
 
   @Override
   public List<String> getSliceNames() {
-    return Collections.unmodifiableList(Arrays.asList(slices));
+    // This is maybe a bug?
+    return Collections.unmodifiableList(Arrays.asList(slices)); // Do not use List.of because slices could have null
   }
 
   @Override
@@ -209,7 +230,7 @@ class CloudReplicaSource implements ReplicaSource {
     private SolrParams params;
     private boolean onlyNrt;
     private ReplicaListTransformer replicaListTransformer;
-    private HttpShardHandlerFactory.WhitelistHostChecker hostChecker;
+    private AllowListUrlChecker urlChecker;
 
     public Builder collection(String collection) {
       this.collection = collection;
@@ -236,8 +257,8 @@ class CloudReplicaSource implements ReplicaSource {
       return this;
     }
 
-    public Builder whitelistHostChecker(HttpShardHandlerFactory.WhitelistHostChecker hostChecker) {
-      this.hostChecker = hostChecker;
+    public Builder allowListUrlChecker(AllowListUrlChecker urlChecker) {
+      this.urlChecker = urlChecker;
       return this;
     }
 

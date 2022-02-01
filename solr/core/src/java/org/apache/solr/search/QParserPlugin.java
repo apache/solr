@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -31,6 +30,7 @@ import org.apache.solr.search.join.FiltersQParserPlugin;
 import org.apache.solr.search.join.GraphQParserPlugin;
 import org.apache.solr.search.join.HashRangeQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
+import org.apache.solr.search.neural.KnnQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrInfoBean {
@@ -88,16 +88,13 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(MinHashQParserPlugin.NAME, new MinHashQParserPlugin());
     map.put(HashRangeQParserPlugin.NAME, new HashRangeQParserPlugin());
     map.put(RankQParserPlugin.NAME, new RankQParserPlugin());
+    map.put(KnnQParserPlugin.NAME, new KnnQParserPlugin());
 
     standardPlugins = Collections.unmodifiableMap(map);
   }
 
   /** return a {@link QParser} */
   public abstract QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);
-
-  @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args ) {
-  }
 
   @Override
   public String getName() {

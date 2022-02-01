@@ -16,7 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -40,11 +39,5 @@ public abstract class UpdateRequestProcessorFactory implements NamedListInitiali
    */
   public interface RunAlways {}
 
-  @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args )
-  {
-    // could process the Node
-  }
-  
   abstract public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next );
 }

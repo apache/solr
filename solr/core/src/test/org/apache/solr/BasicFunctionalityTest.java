@@ -53,6 +53,7 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -452,11 +453,15 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @SuppressWarnings({"rawtypes"})
   public void testRequestHandlerBaseException() {
     final String tmp = "BOO! ignore_exception";
     SolrRequestHandler handler = new RequestHandlerBase() {
-        @Override
+      @Override
+      public Name getPermissionName(AuthorizationContext request) {
+        return Name.ALL;
+      }
+
+      @Override
         public String getDescription() { return tmp; }
         @Override
         public void handleRequestBody
@@ -464,7 +469,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
           throw new RuntimeException(tmp);
         }
       };
-    handler.init(new NamedList());
+    handler.init(new NamedList<>());
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequest req = req();
     h.getCore().execute(handler, 
@@ -542,10 +547,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testLocalSolrQueryRequestParams() {
-    @SuppressWarnings({"rawtypes"})
-    HashMap args = new HashMap();
+    HashMap<String, Object> args = new HashMap<>();
     args.put("string", "string value");
     args.put("array", new String[] {"array", "value"});
     SolrQueryRequest req = new LocalSolrQueryRequest(null, null, null, 0, 20, args);
@@ -619,10 +622,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testSolrParams() throws Exception {
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = new NamedList();
+    NamedList<Object> nl = new NamedList<>();
     nl.add("i",555);
     nl.add("s","bbb");
     nl.add("bt","true");
@@ -659,8 +660,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals(p.getBool("foo",false), false);
     assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList more = new NamedList();
+    NamedList<String> more = new NamedList<>();
     more.add("s", "aaa");
     more.add("s", "ccc");
     more.add("ss","YYY");

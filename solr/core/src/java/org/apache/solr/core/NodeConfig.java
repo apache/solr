@@ -16,20 +16,37 @@
  */
 package org.apache.solr.core;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.logging.LogWatcherConfig;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.ModuleUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.logging.LogWatcherConfig;
-import org.apache.solr.update.UpdateShardHandlerConfig;
-
 
 public class NodeConfig {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   // all Path fields here are absolute and normalized.
 
   private final String nodeName;
@@ -44,7 +61,11 @@ public class NodeConfig {
 
   private final Set<Path> allowPaths;
 
+  private final List<String> allowUrls;
+
   private final String sharedLibDirectory;
+
+  private final String modules;
 
   private final PluginInfo shardHandlerFactoryConfig;
 
@@ -102,7 +123,8 @@ public class NodeConfig {
                      Path solrHome, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
                      MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig,
-                     boolean fromZookeeper, String defaultZkHost, Set<Path> allowPaths,String configSetServiceClass) {
+                     boolean fromZookeeper, String defaultZkHost, Set<Path> allowPaths, List<String> allowUrls,
+                     String configSetServiceClass, String modules) {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
@@ -134,7 +156,9 @@ public class NodeConfig {
     this.fromZookeeper = fromZookeeper;
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
+    this.allowUrls = allowUrls;
     this.configSetServiceClass = configSetServiceClass;
+    this.modules = modules;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -142,6 +166,38 @@ public class NodeConfig {
     }
     if (null == this.solrHome) throw new NullPointerException("solrHome");
     if (null == this.loader) throw new NullPointerException("loader");
+
+    setupSharedLib();
+    initModules();
+  }
+
+  /**
+   * Get the NodeConfig whether stored on disk, in ZooKeeper, etc.
+   * This may also be used by custom filters to load relevant configuration.
+   * @return the NodeConfig
+   */
+  public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
+    if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
+      log.warn("Solr property solr.solrxml.location is no longer supported. Will automatically load solr.xml from ZooKeeper if it exists");
+    }
+    nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
+    String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
+    if (!StringUtils.isEmpty(zkHost)) {
+      int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
+      startUpZkTimeOut *= 1000;
+      try (SolrZkClient zkClient = new SolrZkClient(zkHost, startUpZkTimeOut, startUpZkTimeOut)) {
+        if (zkClient.exists("/solr.xml", true)) {
+          log.info("solr.xml found in ZooKeeper. Loading...");
+          byte[] data = zkClient.getData("/solr.xml", null, null, true);
+          return SolrXmlConfig.fromInputStream(solrHome, new ByteArrayInputStream(data), nodeProperties, true);
+        }
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
+      }
+      log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
+    }
+
+    return SolrXmlConfig.fromSolrHome(solrHome, nodeProperties);
   }
 
   public String getConfigSetServiceClass() {
@@ -162,7 +218,20 @@ public class NodeConfig {
     return solrDataHome;
   }
 
-  /** 
+  /**
+   * Obtain the path of solr's binary installation directory, e.g. <code>/opt/solr</code>
+   * @return path to install dir
+   * @throws SolrException if property 'solr.install.dir' has not been initialized
+   */
+  public Path getSolrInstallDir() {
+    String prop = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    if (prop == null || prop.isBlank()) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "solr.install.dir property not initialized");
+    }
+    return Paths.get(prop);
+  }
+
+  /**
    * If null, the lucene default will not be overridden
    *
    * @see IndexSearcher#setMaxClauseCount
@@ -309,6 +378,88 @@ public class NodeConfig {
    */
   public Set<Path> getAllowPaths() { return allowPaths; }
 
+  /**
+   * Allow-list of Solr nodes URLs.
+   */
+  public List<String> getAllowUrls() {
+    return allowUrls;
+  }
+
+  // Configures SOLR_HOME/lib to the shared class loader
+  private void setupSharedLib() {
+    // Always add $SOLR_HOME/lib to the shared resource loader
+    Set<String> libDirs = new LinkedHashSet<>();
+    libDirs.add("lib");
+
+    if (!StringUtils.isBlank(getSharedLibDirectory())) {
+      List<String> sharedLibs = Arrays.asList(getSharedLibDirectory().split("\\s*,\\s*"));
+      libDirs.addAll(sharedLibs);
+    }
+
+    addFoldersToSharedLib(libDirs);
+  }
+
+  /**
+   * Returns the modules as configured in solr.xml. Comma separated list. May be null if not defined
+   */
+  public String getModules() {
+    return modules;
+  }
+
+  // Finds every jar in each folder and adds it to shardLib, then reloads Lucene SPI
+  private void addFoldersToSharedLib(Set<String> libDirs) {
+    boolean modified = false;
+    // add the sharedLib to the shared resource loader before initializing cfg based plugins
+    for (String libDir : libDirs) {
+      Path libPath = getSolrHome().resolve(libDir);
+      if (Files.exists(libPath)) {
+        try {
+          loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
+          modified = true;
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't load libs: " + e, e);
+        }
+      }
+    }
+    if (modified) {
+      loader.reloadLuceneSPI();
+    }
+  }
+
+  // Adds modules to shared classpath
+  private void initModules() {
+    var moduleNames = ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(getModules());
+    boolean modified = false;
+    for (String m : moduleNames) {
+      if (!ModuleUtils.moduleExists(getSolrInstallDir(), m)) {
+        log.error("No module with name {}, available modules are {}", m, ModuleUtils.listAvailableModules(getSolrInstallDir()));
+        // Fail-fast if user requests a non-existing module
+        throw new SolrException(ErrorCode.SERVER_ERROR, "No module with name " + m);
+      }
+      Path moduleLibPath = ModuleUtils.getModuleLibPath(getSolrInstallDir(), m);
+      if (Files.exists(moduleLibPath)) {
+        try {
+          List<URL> urls = SolrResourceLoader.getURLs(moduleLibPath);
+          loader.addToClassLoader(urls);
+          if (log.isInfoEnabled()) {
+            log.info("Added module {}. libPath={} with {} libs", m, moduleLibPath, urls.size());
+          }
+          if (log.isDebugEnabled()) {
+            log.debug("Libs loaded from {}: {}", moduleLibPath, urls);
+          }
+          modified = true;
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't load libs for module " + m + ": " + e, e);
+        }
+      } else {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Module lib folder " + moduleLibPath + " not found.");
+      }
+    }
+    if (modified) {
+      loader.reloadLuceneSPI();
+    }
+  }
+
   public static class NodeConfigBuilder {
     // all Path fields here are absolute and normalized.
     private SolrResourceLoader loader;
@@ -317,6 +468,7 @@ public class NodeConfig {
     private Integer booleanQueryMaxClauseCount;
     private Path configSetBaseDirectory;
     private String sharedLibDirectory;
+    private String modules;
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
     private String configSetServiceClass;
@@ -342,6 +494,7 @@ public class NodeConfig {
     private boolean fromZookeeper = false;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
+    private List<String> allowUrls = Collections.emptyList();
 
     private final Path solrHome;
     private final String nodeName;
@@ -363,7 +516,10 @@ public class NodeConfig {
         "javax.net.ssl.trustStorePassword",
         "basicauth",
         "zkDigestPassword",
-        "zkDigestReadonlyPassword"
+        "zkDigestReadonlyPassword",
+        "aws.secretKey", // AWS SDK v1
+        "aws.secretAccessKey", // AWS SDK v2
+        "http.proxyPassword"
     ));
 
     public NodeConfigBuilder(String nodeName, Path solrHome) {
@@ -516,8 +672,22 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setAllowUrls(List<String> urls) {
+      this.allowUrls = urls;
+      return this;
+    }
+
     public NodeConfigBuilder setConfigSetServiceClass(String configSetServiceClass){
       this.configSetServiceClass = configSetServiceClass;
+      return this;
+    }
+
+    /**
+     * Set list of modules to add to class path
+     * @param moduleNames comma separated list of module names to add to class loader, e.g. "extracting,ltr,langid"
+     */
+    public NodeConfigBuilder setModules(String moduleNames) {
+      this.modules = moduleNames;
       return this;
     }
 
@@ -526,12 +696,17 @@ public class NodeConfig {
       if (loader == null) {
         loader = new SolrResourceLoader(solrHome);
       }
-      return new NodeConfig(nodeName, coreRootDirectory, solrDataHome, booleanQueryMaxClauseCount,
-                            configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
-                            updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
-                            logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath,
-                            solrHome, loader, solrProperties,
-                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, fromZookeeper, defaultZkHost, allowPaths, configSetServiceClass);
+      return new NodeConfig(
+              nodeName, coreRootDirectory, solrDataHome, booleanQueryMaxClauseCount,
+              configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
+              updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass,
+              healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
+              logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads,
+              transientCacheSize, useSchemaCache, managementPath,
+              solrHome, loader, solrProperties,
+              backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig,
+              fromZookeeper, defaultZkHost, allowPaths, allowUrls, configSetServiceClass,
+              modules);
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {

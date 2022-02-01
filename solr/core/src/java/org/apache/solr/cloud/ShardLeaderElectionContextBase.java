@@ -117,7 +117,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
     String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
     try {
-      RetryUtil.retryOnThrowable(NodeExistsException.class, 60000, 5000, () -> {
+      RetryUtil.retryOnException(NodeExistsException.class, 60000, 5000, () -> {
         synchronized (lock) {
           log.info("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
           List<Op> ops = new ArrayList<>(2);
@@ -147,10 +147,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     } catch (NoNodeException e) {
       log.info("Will not register as leader because it seems the election is no longer taking place.");
       return;
+    } catch (OutOfMemoryError e) {
+      throw e;
     } catch (Throwable t) {
-      if (t instanceof OutOfMemoryError) {
-        throw (OutOfMemoryError) t;
-      }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed", t);
     }
 
@@ -166,11 +165,11 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       }
     }
     if (!isAlreadyLeader) {
-      ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
+      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
           ZkStateReader.SHARD_ID_PROP, shardId,
           ZkStateReader.COLLECTION_PROP, collection,
-          ZkStateReader.NODE_NAME_PROP, leaderProps.get(ZkStateReader.NODE_NAME_PROP),
-          ZkStateReader.CORE_NAME_PROP, leaderProps.get(ZkStateReader.CORE_NAME_PROP),
+          ZkStateReader.NODE_NAME_PROP, leaderProps.getStr(ZkStateReader.NODE_NAME_PROP),
+          ZkStateReader.CORE_NAME_PROP, leaderProps.getStr(ZkStateReader.CORE_NAME_PROP),
           ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
       assert zkController != null;
       assert zkController.getOverseer() != null;

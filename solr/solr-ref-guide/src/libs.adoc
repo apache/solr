@@ -32,12 +32,14 @@ There are several special places you can place Solr plugin `.jar` files:
 This directory is not present by default so create it.
 See <<taking-solr-to-production.adoc#solr-home-directory,Solr home directory>>.
 
-* `<core_instance>/lib/`: In standalone Solr, you may want to add plugins just for a specific Solr core.
+* `<core_instance>/lib/`: In a user-managed cluster or a single-node installation, you may want to add plugins just for a specific Solr core.
 Create this adjacent to the `conf/` directory; it's not present by default.
 
 * `<solr_install>/server/solr-webapp/webapp/WEB-INF/lib/`: The `.jar` files for Solr itself and it's dependencies live here.
 Certain plugins or add-ons to plugins require placement here.
 They will document themselves to say so.
+
+* `<solr_install>/server/lib/ext`: The `.jar` files used for the Solr server as well as Solr Core/SolrJ.
 
 Solr incorporates Jetty for providing HTTP server functionality.
 Jetty has some directories that contain `.jar` files for itself and its own plugins / modules or JVM level plugins (e.g., loggers).
@@ -59,18 +61,15 @@ A `<lib/>` directive must have one (not both) of these two attributes:
 
 All directories are resolved as relative to the Solr core's `instanceDir`.
 
-These examples show how to load contrib modules into Solr:
+These examples show how to load modules into Solr:
 
 [source,xml]
 ----
-  <lib dir="${solr.install.dir:../../../..}/contrib/extraction/lib" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-extraction-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/extraction/lib" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/contrib/clustering/lib/" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-clustering-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/clustering/lib/" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/contrib/langid/lib/" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-langid-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/langid/lib/" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/ltr/lib/" regex=".*\.jar" />
 ----

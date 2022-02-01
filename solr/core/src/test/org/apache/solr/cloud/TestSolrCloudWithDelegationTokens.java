@@ -37,7 +37,9 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.DelegationTokenRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -169,8 +171,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     assertEquals("Did not receive expected status code", expectedStatusCode, lastStatusCode);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private SolrRequest getAdminRequest(final SolrParams params) {
+  private SolrRequest<CollectionAdminResponse> getAdminRequest(final SolrParams params) {
     return new CollectionAdminRequest.List() {
       @Override
       public SolrParams getParams() {
@@ -180,8 +181,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       }
     };
   }
-  @SuppressWarnings({"rawtypes"})
-  private SolrRequest getUpdateRequest(boolean commit) {
+  private SolrRequest<UpdateResponse> getUpdateRequest(boolean commit) {
     UpdateRequest request = new UpdateRequest();
     if (commit) {
       request.setAction(ACTION.COMMIT, false, false);
@@ -192,7 +192,6 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     return request;
   }
 
-  @SuppressWarnings({"unchecked"})
   private int getStatusCode(String token, final String user, final String op, HttpSolrClient client)
   throws Exception {
     SolrClient delegationTokenClient;
@@ -213,8 +212,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       ModifiableSolrParams p = new ModifiableSolrParams();
       if (user != null) p.set(USER_PARAM, user);
       if (op != null) p.set("op", op);
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest req = getAdminRequest(p);
+      SolrRequest<?> req = getAdminRequest(p);
       if (user != null || op != null) {
         Set<String> queryParams = new HashSet<>();
         if (user != null) queryParams.add(USER_PARAM);
@@ -233,7 +231,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
   }
 
   private void doSolrRequest(HttpSolrClient client,
-                             @SuppressWarnings({"rawtypes"})SolrRequest request,
+                             SolrRequest<?> request,
       int expectedStatusCode) throws Exception {
     try {
       client.request(request);
@@ -244,7 +242,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
   }
 
   private void doSolrRequest(HttpSolrClient client,
-                             @SuppressWarnings({"rawtypes"})SolrRequest request, String collectionName,
+                             SolrRequest<?> request, String collectionName,
       int expectedStatusCode) throws Exception {
     try {
       client.request(request, collectionName);
@@ -414,8 +412,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     String token = getDelegationToken(null, "bar", solrClientPrimary);
     assertNotNull(token);
 
-    @SuppressWarnings({"rawtypes"})
-    SolrRequest request = getAdminRequest(new ModifiableSolrParams());
+    SolrRequest<?> request = getAdminRequest(new ModifiableSolrParams());
 
     // test without token
     final HttpSolrClient ssWoToken =
@@ -472,8 +469,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
 
     try {
       // test update request with token via property and commit=true
-      @SuppressWarnings({"rawtypes"})
-      SolrRequest request = getUpdateRequest(true);
+      SolrRequest<?> request = getUpdateRequest(true);
       doSolrRequest(scUpdateWToken, request, collectionName, HttpStatus.SC_OK);
 
       // test update request with token via property and commit=false

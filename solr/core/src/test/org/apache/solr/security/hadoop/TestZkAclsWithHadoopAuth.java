@@ -29,12 +29,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
@@ -56,7 +54,7 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    HdfsTestUtil.checkAssumptions();
+    HadoopTestUtil.checkAssumptions();
 
     System.setProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
         VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());
@@ -122,8 +120,7 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
     if (zkChroot != null) {
       temp = path.replace(zkChroot, "");
     }
-    return !ZkStateReader.SOLR_SECURITY_CONF_PATH.equals(path) &&
-           temp.startsWith(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH);
+    return temp.startsWith(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH);
   }
 
   private void checkSecurityACLs(ZooKeeper keeper, String path) throws Exception {

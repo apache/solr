@@ -43,6 +43,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -51,12 +52,12 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 
 /**
- *
+ * Base class for all request handlers.
  */
-public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport {
+public abstract class RequestHandlerBase implements
+    SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport, PermissionNameProvider {
 
-  @SuppressWarnings({"rawtypes"})
-  protected NamedList initArgs = null;
+  protected NamedList<?> initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
   protected SolrParams invariants;
@@ -129,7 +130,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    * See also the example solrconfig.xml located in the Solr codebase (example/solr/conf).
    */
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     initArgs = args;
 
     if (args != null) {
@@ -170,16 +171,15 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     solrMetricsContext.gauge(() -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
 
-  public static SolrParams getSolrParamsFromNamedList(@SuppressWarnings({"rawtypes"})NamedList args, String key) {
+  public static SolrParams getSolrParamsFromNamedList(NamedList<?> args, String key) {
     Object o = args.get(key);
     if (o != null && o instanceof NamedList) {
-      return ((NamedList) o).toSolrParams();
+      return ((NamedList<?>) o).toSolrParams();
     }
     return null;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public NamedList getInitArgs() {
+  public NamedList<?> getInitArgs() {
     return initArgs;
   }
 
@@ -213,8 +213,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
       // count timeouts
-      @SuppressWarnings({"rawtypes"})
-      NamedList header = rsp.getResponseHeader();
+      NamedList<?> header = rsp.getResponseHeader();
       if (header != null) {
         if (Boolean.TRUE.equals(header.getBooleanArg(
             SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
@@ -336,5 +335,3 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     return ImmutableList.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
   }
 }
-
-

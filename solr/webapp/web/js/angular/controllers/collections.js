@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CollectionsController',
-    function($scope, $routeParams, $location, $timeout, Collections, Zookeeper, Constants){
+    function($scope, $routeParams, $location, $timeout, Collections, Zookeeper, Constants, ConfigSets){
       $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
 
       $scope.refresh = function() {
@@ -26,6 +26,9 @@ solrAdminApp.controller('CollectionsController',
           Collections.status(function (data) {
               $scope.collections = [];
               for (var name in data.cluster.collections) {
+                  if (name.startsWith("._designer_")) {
+                      continue;
+                  }
                   var collection = data.cluster.collections[name];
                   collection.name = name;
                   collection.type = 'collection';
@@ -75,11 +78,11 @@ solrAdminApp.controller('CollectionsController',
 
               $scope.liveNodes = data.cluster.liveNodes;
           });
-          Zookeeper.configs(function(data) {
+          ConfigSets.configs(function(data) {
               $scope.configs = [];
-              var items = data.tree[0].children;
+              var items = data.configSets;
               for (var i in items) {
-                  $scope.configs.push({name: items[i].text});
+                  $scope.configs.push({name: items[i]});
               }
           });
       };

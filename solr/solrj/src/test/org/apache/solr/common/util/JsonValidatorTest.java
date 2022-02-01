@@ -17,23 +17,15 @@
 package org.apache.solr.common.util;
 
 
-import java.util.List;
-import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 
-import static org.apache.solr.common.util.Utils.toJSONString;
-import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
+import java.util.List;
+import java.util.Map;
 
 public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   public void testSchema() {
-    checkSchema("collections.collection.Commands");
-    checkSchema("collections.collection.shards.Commands");
-    checkSchema("collections.collection.shards.shard.Commands");
-    checkSchema("cores.Commands");
     checkSchema("cores.core.Commands");
-    checkSchema("node.Commands");
     checkSchema("cluster.security.BasicAuth.Commands");
     checkSchema("cluster.security.RuleBasedAuthorization");
     checkSchema("core.config.Commands");
@@ -42,35 +34,13 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
 
 
   public void testSchemaValidation() {
-    // merge-indexes chosen to exercise string and array/list props.
-    ValidatingJsonMap spec = Utils.getSpec("cores.core.Commands").getSpec();
-    final Map<String, Object> mergeIndexesSchema = spec.getMap("commands", NOT_NULL).getMap("merge-indexes", NOT_NULL);
-    final JsonSchemaValidator mergeIndexesSchemaValidator = new JsonSchemaValidator(mergeIndexesSchema);
-
-    List<String> errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : x, indexDir: [ c1 , c2]}"));
-    assertNull(toJSONString(errs), errs);
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : x, indexDir: [c1] }"));
-    assertNull(toJSONString(errs), errs);
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : x, x:y, indexDir: [ c1 , c2]}"));
-    assertNotNull(toJSONString(errs), errs);
-    assertTrue(toJSONString(errs), errs.get(0).contains("Unknown"));
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : 123, indexDir: c1 }"));
-    assertNotNull(toJSONString(errs), errs);
-    assertTrue(toJSONString(errs), errs.get(0).contains("expected"));
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{x:y, indexDir: [ c1 , c2]}"));
-    assertTrue(toJSONString(errs), StrUtils.join(errs, '|').contains("Unknown"));
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : x, indexDir: [ 1 , 2]}"));
-    assertFalse(toJSONString(errs), errs.isEmpty());
-    assertTrue(toJSONString(errs), errs.get(0).contains("expected"));
-
-
     final JsonSchemaValidator personSchemaValidator = new JsonSchemaValidator("{" +
         "  type:object," +
         "  properties: {" +
         "   age : {type: number}," +
         "   adult : {type: boolean}," +
         "   name: {type: string}}}");
-    errs = personSchemaValidator.validateJson(Utils.fromJSONString("{name:x, age:21, adult:true}"));
+    List<String> errs = personSchemaValidator.validateJson(Utils.fromJSONString("{name:x, age:21, adult:true}"));
     assertNull(errs);
     errs = personSchemaValidator.validateJson(Utils.fromJSONString("{name:x, age:'21', adult:'true'}"));
     assertNotNull(errs);
@@ -86,7 +56,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
           "   adult : {type: Boolean}," +
           "   name: {type: string}}}");
     });
-    assertTrue(e.getMessage().contains("Unknown type"));
+    assertTrue(e.getMessage().contains("Unknown type int"));
 
     e = expectThrows(Exception.class, () -> {
       new JsonSchemaValidator("{" +
@@ -121,6 +91,23 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
     errs = personWithEnumValidator.validateJson(Utils.fromJSONString("{name: 'Joe Average' , sex:m}"));
     assertEquals(1, errs.size());
     assertTrue(errs.get(0).contains("Value of enum"));
+
+    {
+      final JsonSchemaValidator durationValidator = new JsonSchemaValidator("{" +
+          "  type:object," +
+          "  properties: {" +
+          "   i : {type: integer}," +
+          "   l : {type: long}," +
+          "   name: {type: string}}}");
+      for (Long val : new Long[] { 30L, 30L*24, 30L*24*60, 30L*24*60*60, 30L*24*60*60*1000 }) { // month: days, hours, minutes, seconds, milliseconds
+        if (val <= Integer.MAX_VALUE) {
+          errs = durationValidator.validateJson(Utils.fromJSONString("{name: 'val', i:"+Integer.toString(val.intValue())+"}"));
+          assertNull("errs are " + errs, errs);
+        }
+        errs = durationValidator.validateJson(Utils.fromJSONString("{name: 'val', l:"+val.toString()+"}"));
+        assertNull("errs are " + errs, errs);
+      }
+    }
 
     String schema = "{\n" +
         "  'type': 'object',\n" +

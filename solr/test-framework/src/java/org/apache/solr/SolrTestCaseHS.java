@@ -24,6 +24,7 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,7 +37,6 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -57,6 +57,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.TestHarness;
 import org.noggit.JSONUtil;
@@ -69,8 +70,6 @@ import org.slf4j.LoggerFactory;
 //@LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending","Asserting"})
 public class SolrTestCaseHS extends SolrTestCaseJ4 {
   
-  public static final String SOLR_TESTS_SHARDS_WHITELIST = "solr.tests.shardsWhitelist";
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   @SafeVarargs
   public static <T> Set<T> set(T... a) {
@@ -522,10 +521,10 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       // silly stuff included from solrconfig.snippet.randomindexconfig.xml
       System.setProperty("solr.tests.maxBufferedDocs", String.valueOf(100000));
       
-      // If we want to run with whitelist list, this must be explicitly set to true for the test
+      // If we want to run with allowlist, this must be explicitly set to true for the test
       // otherwise we disable the check
-      if (System.getProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST) == null) {
-        systemSetPropertySolrDisableShardsWhitelist("true");
+      if (System.getProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST) == null) {
+        systemSetPropertySolrDisableUrlAllowList("true");
       }
 
       jetty.start();
@@ -545,9 +544,9 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     }
 
     private static void copyConfFile(File dstRoot, String destCollection, String file) throws Exception {
-      File subHome = new File(dstRoot, destCollection + File.separator + "conf");
-      String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-      FileUtils.copyFile(new File(top, file), new File(subHome, file));
+      Path subHome = dstRoot.toPath().resolve(destCollection).resolve("conf");
+      Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
+      Files.copy(top.resolve(file), subHome.resolve(file));
     }
 
     public void copyConfigFile(File dstRoot, String destCollection, String file) throws Exception {
@@ -555,9 +554,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         createHome();
       }
 
-      File subHome = new File(dstRoot, destCollection + File.separator + "conf");
-      String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-      FileUtils.copyFile(new File(top, file), new File(subHome, file));
+      SolrInstance.copyConfFile(dstRoot, destCollection, file);
     }
 
   }
@@ -596,20 +593,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       return getShardsParam(slist);
     }
     
-    public String getWhitelistString() {
-      StringBuilder sb = new StringBuilder();
-      boolean first = true;
-      for (SolrInstance instance : slist) {
-        if (first) {
-          first = false;
-        } else {
-          sb.append(',');
-        }
-        sb.append( instance.getBaseURL().replace("/solr", ""));
-      }
-      return sb.toString();
-    }
-
     public List<SolrClient> getSolrJs() {
       List<SolrClient> solrjs = new ArrayList<>(slist.size());
       for (SolrInstance instance : slist) {

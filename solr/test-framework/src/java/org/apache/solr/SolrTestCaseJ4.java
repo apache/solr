@@ -31,6 +31,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -40,6 +41,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -59,7 +63,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -67,10 +71,10 @@ import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.TraceFormatting;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
-import org.apache.commons.io.FileUtils;
+import io.opentracing.noop.NoopTracerFactory;
+import io.opentracing.util.GlobalTracer;
 import org.apache.http.client.HttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -130,6 +134,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
@@ -137,6 +142,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 import org.apache.solr.util.RefCounted;
@@ -159,11 +165,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import org.apache.commons.io.IOUtils;
+
 import static java.util.Objects.requireNonNull;
 import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * A junit4 Solr test harness that extends SolrTestCase and, by extension, LuceneTestCase.
@@ -177,14 +186,6 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final List<String> DEFAULT_STACK_FILTERS = Arrays.asList(new String [] {
-      "org.junit.",
-      "junit.framework.",
-      "sun.",
-      "java.lang.reflect.",
-      "com.carrotsearch.randomizedtesting.",
-  });
   
   public static final String DEFAULT_TEST_COLLECTION_NAME = "collection1";
   public static final String DEFAULT_TEST_CORENAME = DEFAULT_TEST_COLLECTION_NAME;
@@ -192,8 +193,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY = "solr.tests.mergePolicyFactory";
 
-  @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  public static final String SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST = "solr.disable.shardsWhitelist";
+  public static final String TEST_URL_ALLOW_LIST = "solr.tests." + AllowListUrlChecker.URL_ALLOW_LIST;
 
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
@@ -219,6 +219,17 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     try (Writer writer =
              new OutputStreamWriter(Files.newOutputStream(coreDirectory.resolve(CORE_PROPERTIES_FILENAME)), Charset.forName("UTF-8"))) {
       properties.store(writer, testname);
+    }
+  }
+
+  protected void assertExceptionThrownWithMessageContaining(Class<? extends Throwable> expectedType,
+                                                            List<String> expectedStrings, ThrowingRunnable runnable) {
+    Throwable thrown = expectThrows(expectedType, runnable);
+
+    if (expectedStrings != null) {
+      for (String expectedString : expectedStrings) {
+        assertThat(thrown.getMessage(), containsString(expectedString));
+      }
     }
   }
 
@@ -249,7 +260,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value
-  protected static volatile SSLTestConfig sslConfig;
+  public static volatile SSLTestConfig sslConfig;
 
   @Rule
   public TestRule solrTestRules = 
@@ -283,10 +294,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
-    System.setProperty("enable.update.log", usually() ? "true" : "false");
+    System.setProperty("enable.update.log", Boolean.toString(usually()));
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
+    System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
 
     System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
     System.setProperty("pkiHandlerPublicKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/pub_key512.der").toExternalForm());
@@ -307,6 +319,35 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } else {
       UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
     }
+
+    resetGlobalTracer();
+    ExecutorUtil.resetThreadLocalProviders();
+  }
+
+  /**
+   * GlobalTracer is initialized by org.apache.solr.core.TracerConfigurator by
+   * org.apache.solr.core.CoreContainer.  Tests may need to reset it in the beginning of a test if
+   * it might have differing configuration from other tests in the same suite.
+   * It's also important to call {@link ExecutorUtil#resetThreadLocalProviders()}.
+   */
+  @SuppressForbidden(reason = "Hack to reset internal state of GlobalTracer")
+  public static void resetGlobalTracer() {
+    AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+      try {
+        final Class<GlobalTracer> globalTracerClass = GlobalTracer.class;
+        final Field isRegistered = globalTracerClass.getDeclaredField("isRegistered");
+        isRegistered.setAccessible(true);
+        isRegistered.setBoolean(null, false);
+        final Field tracer = globalTracerClass.getDeclaredField("tracer");
+        tracer.setAccessible(true);
+        tracer.set(null, NoopTracerFactory.create());
+      } catch (NoSuchFieldException | IllegalAccessException e) {
+        throw new RuntimeException(e);
+      }
+      return null;
+    });
+
+    assert GlobalTracer.isRegistered() == false;
   }
 
   @AfterClass
@@ -326,13 +367,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
       resetExceptionIgnores();
 
-      if (suiteFailureMarker.wasSuccessful()) {
-        // if the tests passed, make sure everything was closed / released
-        String orr = clearObjectTrackerAndCheckEmpty(60, false);
-        assertNull(orr, orr);
-      } else {
-        ObjectReleaseTracker.tryClose();
-      }
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
     } finally {
@@ -395,58 +429,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       fail("ByteBuddy and Mockito are not available on classpath: " + e.toString());
     }
   }
-  
-  /**
-   * @return null if ok else error message
-   */
-  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds) {
-    return clearObjectTrackerAndCheckEmpty(waitSeconds, false);
-  }
-  
-  /**
-   * @return null if ok else error message
-   */
-  public static String clearObjectTrackerAndCheckEmpty(int waitSeconds, boolean tryClose) {
-    int retries = 0;
-    String result;
-    do {
-      result = ObjectReleaseTracker.checkEmpty();
-      if (result == null)
-        break;
-      try {
-        if (retries % 10 == 0) {
-          log.info("Waiting for all tracked resources to be released");
-          if (retries > 10) {
-            TraceFormatting tf = new TraceFormatting(DEFAULT_STACK_FILTERS);
-            Map<Thread,StackTraceElement[]> stacksMap = Thread.getAllStackTraces();
-            Set<Entry<Thread,StackTraceElement[]>> entries = stacksMap.entrySet();
-            for (Entry<Thread,StackTraceElement[]> entry : entries) {
-              String stack = tf.formatStackTrace(entry.getValue());
-              System.err.println(entry.getKey().getName() + ":\n" + stack);
-            }
-          }
-        }
-        TimeUnit.SECONDS.sleep(1);
-      } catch (InterruptedException e) { break; }
-    }
-    while (retries++ < waitSeconds);
-    
-    
-    log.info("------------------------------------------------------- Done waiting for tracked resources to be released");
-    
-    ObjectReleaseTracker.clear();
-    
-    return result;
-  }
 
   @SuppressForbidden(reason = "Using the Level class from log4j2 directly")
   private static Map<String, Level> savedClassLogLevels = new HashMap<>();
 
   public static void initClassLogLevels() {
-    @SuppressWarnings({"rawtypes"})
-    Class currentClass = RandomizedContext.current().getTargetClass();
-    @SuppressWarnings({"unchecked"})
-    LogLevel annotation = (LogLevel) currentClass.getAnnotation(LogLevel.class);
+    Class<?> currentClass = RandomizedContext.current().getTargetClass();
+    LogLevel annotation = currentClass.getAnnotation(LogLevel.class);
     if (annotation == null) {
       return;
     }
@@ -683,28 +672,42 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       numOpens = numCloses = 0;
     }
   }
-  
-  /** Causes an exception matching the regex pattern to not be logged. */
-  public static void ignoreException(String pattern) {
-    if (SolrException.ignorePatterns == null) // usually initialized already but in case not...
-      resetExceptionIgnores();
-    SolrException.ignorePatterns.add(pattern);
-  }
 
-  public static void unIgnoreException(String pattern) {
-    if (SolrException.ignorePatterns != null)
-      SolrException.ignorePatterns.remove(pattern);
+  private final static Map<String,ErrorLogMuter> errorMuters = new ConcurrentHashMap<>();
+  
+  /** 
+   * Causes any ERROR log messages matching with a substring matching the regex pattern to be filtered out by the ROOT logger
+   *
+   * @see #resetExceptionIgnores
+   * @deprecated use a {@link ErrorLogMuter} instead
+   */
+  @Deprecated
+  public static void ignoreException(String pattern) {
+    errorMuters.computeIfAbsent(pattern, (pat) -> ErrorLogMuter.regex(pat));
   }
 
   /**
-   * Clears all exception patterns, although keeps {@code "ignore_exception"}.
-   * {@link SolrTestCaseJ4} calls this in {@link AfterClass} so usually tests don't need to call this.
+   * @see #ignoreException
+   * @deprecated use a {@link ErrorLogMuter} instead
    */
-  public static void resetExceptionIgnores() {
-    // CopyOnWrite for safety; see SOLR-11757
-    SolrException.ignorePatterns = new CopyOnWriteArraySet<>(Collections.singleton("ignore_exception"));
+  @Deprecated
+  public static void unIgnoreException(String pattern) {
+    errorMuters.computeIfPresent(pattern, (pat, muter) -> { IOUtils.closeQuietly(muter); return null; } );
   }
-
+  
+  /**
+   * Clears all exception patterns, immediately re-registering {@code "ignore_exception"}.
+   * {@link SolrTestCaseJ4} calls this in both {@link BeforeClass} {@link AfterClass} so usually tests don't need to call this.
+   * 
+   * @see #ignoreException
+   * @deprecated use a {@link ErrorLogMuter} instead
+   */
+  @Deprecated
+  public static void resetExceptionIgnores() {
+    errorMuters.forEach( (k, muter) -> { IOUtils.closeQuietly(muter); errorMuters.remove(k); } );
+    ignoreException("ignore_exception");
+  }
+  
   protected static String getClassName() {
     return getTestClass().getName();
   }
@@ -997,10 +1000,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
             + "\n\txml response was: " + response
             + "\n\trequest was:" + req.getParamString();
 
-        log.error(msg);
-        throw new RuntimeException(msg);
+        fail(msg);
       }
-
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
@@ -1293,14 +1294,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return msp;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public static Map map(Object... params) {
-    LinkedHashMap ret = new LinkedHashMap();
-    for (int i=0; i<params.length; i+=2) {
-      Object o = ret.put(params[i], params[i+1]);
-      // TODO: handle multi-valued map?
-    }
-    return ret;
+  public static Map<String, String> map(String... params) {
+    return Utils.makeMap(params);
+  }
+
+  public static Map<String, Object> map(Object... params) {
+    return Utils.makeMap(params);
   }
 
   /**
@@ -2131,6 +2130,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static Path TEST_PATH() { return getFile("solr/collection1").getParentFile().toPath(); }
 
+  public static Path TEST_COLL1_CONF() { return TEST_PATH().resolve("collection1").resolve("conf"); }
+
   public static Path configset(String name) {
     return TEST_PATH().resolve("configsets").resolve(name).resolve("conf");
   }
@@ -2147,7 +2148,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       throws IOException, SAXException {
 
     try {
-      String xml = FileUtils.readFileToString(file, "UTF-8");
+      String xml = Files.readString(file.toPath());
       String results = TestHarness.validateXPath(xml, xpath);
       if (null != results) {
         String msg = "File XPath failure: file=" + file.getPath() + " xpath="
@@ -2194,62 +2195,52 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public static void copyMinConf(File dstRoot, String propertiesContent, String solrconfigXmlName) throws IOException {
+    Path dstPath = dstRoot.toPath();
+    Path subHome = dstPath.resolve("conf");
+    Files.createDirectories(subHome);
 
-    File subHome = new File(dstRoot, "conf");
-    if (! dstRoot.exists()) {
-      assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
-    }
-    Files.createFile(dstRoot.toPath().resolve("core.properties"));
     if (propertiesContent != null) {
-      FileUtils.writeStringToFile(new File(dstRoot, "core.properties"), propertiesContent, StandardCharsets.UTF_8);
+      Files.writeString(dstRoot.toPath().resolve(CORE_PROPERTIES_FILENAME), propertiesContent);
     }
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema.xml"));
-    FileUtils.copyFile(new File(top, solrconfigXmlName), new File(subHome, "solrconfig.xml"));
-    FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
+    Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
+    Files.copy(top.resolve("schema-tiny.xml"), subHome.resolve("schema.xml"));
+    Files.copy(top.resolve(solrconfigXmlName), subHome.resolve("solrconfig.xml"));
+    Files.copy(top.resolve("solrconfig.snippet.randomindexconfig.xml"), subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
   }
 
   // Creates minimal full setup, including solr.xml
   public static void copyMinFullSetup(File dstRoot) throws IOException {
-    if (! dstRoot.exists()) {
-      assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
-    }
-    File xmlF = new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml");
-    FileUtils.copyFile(xmlF, new File(dstRoot, "solr.xml"));
+    Files.createDirectories(dstRoot.toPath());
+    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.toPath().resolve("solr.xml"));
     copyMinConf(dstRoot);
   }
 
   // Just copies the file indicated to the tmp home directory naming it "solr.xml"
   public static void copyXmlToHome(File dstRoot, String fromFile) throws IOException {
-    if (! dstRoot.exists()) {
-      assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
-    }
-    File xmlF = new File(SolrTestCaseJ4.TEST_HOME(), fromFile);
-    FileUtils.copyFile(xmlF, new File(dstRoot, "solr.xml"));
-    
+    Files.createDirectories(dstRoot.toPath());
+    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.toPath().resolve("solr.xml"));
   }
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf and copies
   // the stock files in there.
 
   public static void copySolrHomeToTemp(File dstRoot, String collection) throws IOException {
-    if (!dstRoot.exists()) {
-      assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
-    }
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(dstRoot, "solr.xml"));
+    Path subHome = dstRoot.toPath().resolve(collection).resolve("conf");
+    Files.createDirectories(subHome);
 
-    File subHome = new File(dstRoot, collection + File.separator + "conf");
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, "currency.xml"), new File(subHome, "currency.xml"));
-    FileUtils.copyFile(new File(top, "mapping-ISOLatin1Accent.txt"), new File(subHome, "mapping-ISOLatin1Accent.txt"));
-    FileUtils.copyFile(new File(top, "old_synonyms.txt"), new File(subHome, "old_synonyms.txt"));
-    FileUtils.copyFile(new File(top, "open-exchange-rates.json"), new File(subHome, "open-exchange-rates.json"));
-    FileUtils.copyFile(new File(top, "protwords.txt"), new File(subHome, "protwords.txt"));
-    FileUtils.copyFile(new File(top, "schema.xml"), new File(subHome, "schema.xml"));
-    FileUtils.copyFile(new File(top, "enumsConfig.xml"), new File(subHome, "enumsConfig.xml"));
-    FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
-    FileUtils.copyFile(new File(top, "solrconfig.xml"), new File(subHome, "solrconfig.xml"));
-    FileUtils.copyFile(new File(top, "stopwords.txt"), new File(subHome, "stopwords.txt"));
-    FileUtils.copyFile(new File(top, "synonyms.txt"), new File(subHome, "synonyms.txt"));
+    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.toPath().resolve("solr.xml"), StandardCopyOption.REPLACE_EXISTING);
+
+    Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
+    Files.copy(top.resolve("currency.xml"), subHome.resolve("currency.xml"));
+    Files.copy(top.resolve("mapping-ISOLatin1Accent.txt"), subHome.resolve("mapping-ISOLatin1Accent.txt"));
+    Files.copy(top.resolve("old_synonyms.txt"), subHome.resolve("old_synonyms.txt"));
+    Files.copy(top.resolve("open-exchange-rates.json"), subHome.resolve("open-exchange-rates.json"));
+    Files.copy(top.resolve("protwords.txt"), subHome.resolve("protwords.txt"));
+    Files.copy(top.resolve("schema.xml"), subHome.resolve("schema.xml"));
+    Files.copy(top.resolve("enumsConfig.xml"), subHome.resolve("enumsConfig.xml"));
+    Files.copy(top.resolve("solrconfig.snippet.randomindexconfig.xml"), subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
+    Files.copy(top.resolve("solrconfig.xml"), subHome.resolve("solrconfig.xml"));
+    Files.copy(top.resolve("stopwords.txt"), subHome.resolve("stopwords.txt"));
+    Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
   }
 
   public boolean compareSolrDocument(Object expected, Object actual) {
@@ -2903,7 +2894,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     if (null != allowedAlg) {
       // the user has explicitly requested to bypass our assertions and allow a particular alg
-      // the only thing we should do is assert that the algorithm they have whitelisted is actaully used
+      // the only thing we should do is assert that the algorithm they have allowed is actually used
       
       
       final String actualAlg = (new SecureRandom()).getAlgorithm();
@@ -2924,10 +2915,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     
     assertFalse("SecureRandom algorithm '" + algorithm + "' is in use by your JVM, " +
                 "which is a potentially blocking algorithm on some environments. " +
-                "Please report the details of this failure (and your JVM vendor/version) to solr-user@lucene.apache.org. " +
+                "Please report the details of this failure (and your JVM vendor/version) to users@solr.apache.org. " +
                 "You can try to run your tests with -D"+EGD+"="+URANDOM+" or bypass this check using " +
                 "-Dtest.solr.allowed.securerandom="+ algorithm +" as a JVM option when running tests.",
-                // be permissive in our checks and blacklist only algorithms 
+                // be permissive in our checks and deny only algorithms
                 // that are known to be blocking under some circumstances
                 algorithm.equals("NativePRNG") || algorithm.equals("NativePRNGBlocking"));
   }
@@ -2941,17 +2932,17 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
   
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemSetPropertySolrDisableShardsWhitelist(String value) {
-    System.setProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST, value);
+  protected static void systemSetPropertySolrDisableUrlAllowList(String value) {
+    System.setProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST, value);
   }
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemClearPropertySolrDisableShardsWhitelist() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST);
+  protected static void systemClearPropertySolrDisableUrlAllowList() {
+    System.clearProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST);
   }
 
-  @SuppressWarnings({"unchecked"})
-  protected <T> T pickRandom(T... options) {
+  @SafeVarargs
+  protected static <T> T pickRandom(T... options) {
     return options[random().nextInt(options.length)];
   }
   
@@ -3001,7 +2992,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @lucene.experimental
    * @lucene.internal
    */
-  @SuppressWarnings({"rawtypes"})
   private static void randomizeNumericTypesProperties() {
 
     final boolean useDV = random().nextBoolean();
@@ -3039,7 +3029,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       
       System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
     }
-    for (Map.Entry<Class,String> entry : RANDOMIZED_NUMERIC_FIELDTYPES.entrySet()) {
+    for (Map.Entry<Class<?>,String> entry : RANDOMIZED_NUMERIC_FIELDTYPES.entrySet()) {
       System.setProperty("solr.tests." + entry.getKey().getSimpleName() + "FieldType",
                          entry.getValue());
 
@@ -3065,7 +3055,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
     System.clearProperty("solr.tests.numeric.points");
     System.clearProperty("solr.tests.numeric.points.dv");
-    for (@SuppressWarnings({"rawtypes"})Class c : RANDOMIZED_NUMERIC_FIELDTYPES.keySet()) {
+    for (Class<?> c : RANDOMIZED_NUMERIC_FIELDTYPES.keySet()) {
       System.clearProperty("solr.tests." + c.getSimpleName() + "FieldType");
     }
     private_RANDOMIZED_NUMERIC_FIELDTYPES.clear();
@@ -3081,8 +3071,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static boolean isChildDoc(Object o) {
     if(o instanceof Collection) {
-      @SuppressWarnings({"rawtypes"})
-      Collection col = (Collection) o;
+      Collection<?> col = (Collection<?>) o;
       if(col.size() == 0) {
         return false;
       }
@@ -3091,8 +3080,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return o instanceof SolrInputDocument;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private static final Map<Class,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();
+  private static final Map<Class<?>,String> private_RANDOMIZED_NUMERIC_FIELDTYPES = new HashMap<>();
   
   /**
    * A Map of "primitive" java "numeric" types and the string name of the <code>class</code> used in the
@@ -3103,8 +3091,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @see #randomizeNumericTypesProperties
    */
-  @SuppressWarnings({"rawtypes"})
-  protected static final Map<Class,String> RANDOMIZED_NUMERIC_FIELDTYPES
+  protected static final Map<Class<?>,String> RANDOMIZED_NUMERIC_FIELDTYPES
     = Collections.unmodifiableMap(private_RANDOMIZED_NUMERIC_FIELDTYPES);
 
 }

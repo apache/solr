@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.request;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.beans.DeleteBackupPayload;
 import org.apache.solr.client.solrj.request.beans.ListBackupPayload;
@@ -28,6 +27,7 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -128,6 +128,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
+   * Take the request specific basic auth creds on this admin request and propagate them to a related request if does
+   * not already have credentials set, such as a CollectionAdminRequest.RequestStatus when doing async requests.
+   */
+  protected <T extends CollectionAdminRequest<? extends CollectionAdminResponse>> T propagateBasicAuthCreds(T req) {
+    String user = getBasicAuthUser();
+    String pass = getBasicAuthPassword();
+    if (user != null && pass != null && req.getBasicAuthUser() == null) {
+      req.setBasicAuthCredentials(user, pass);
+    }
+    return req;
+  }
+
+  /**
    * Base class for asynchronous collection admin requests
    */
   public abstract static class AsyncCollectionAdminRequest extends CollectionAdminRequest<CollectionAdminResponse> {
@@ -208,7 +221,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public RequestStatusState processAndWait(String asyncId, SolrClient client, long timeoutSeconds)
         throws IOException, SolrServerException, InterruptedException {
       processAsync(asyncId, client);
-      return requestStatus(asyncId).waitFor(client, timeoutSeconds);
+      return propagateBasicAuthCreds(requestStatus(asyncId)).waitFor(client, timeoutSeconds);
     }
 
     @Override
@@ -271,8 +284,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  protected abstract static class ShardSpecificAdminRequest extends CollectionAdminRequest {
+  protected abstract static class ShardSpecificAdminRequest extends CollectionAdminRequest<CollectionAdminResponse> {
 
     protected String collection;
     protected String shard;
@@ -293,7 +305,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
-    protected SolrResponse createResponse(SolrClient client) {
+    protected CollectionAdminResponse createResponse(SolrClient client) {
       return new CollectionAdminResponse();
     }
   }
@@ -645,7 +657,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CollectionParams.SOURCE_NODE, sourceNode);
-      params.set(CollectionParams.TARGET_NODE, targetNode);
+      if (!StringUtils.isEmpty(targetNode)) {
+        params.set(CollectionParams.TARGET_NODE, targetNode);
+      }
       if (parallel != null) params.set("parallel", parallel.toString());
       return params;
     }
@@ -848,14 +862,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
-   * Return a SolrRequest for low-level detailed status of the specified collection. 
+   * Return a SolrRequest for low-level detailed status of the specified collection.
    * @param collection the collection to get the status of.
    */
   public static ColStatus collectionStatus(String collection) {
     checkNotNull(CoreAdminParams.COLLECTION, collection);
     return new ColStatus(collection);
   }
-  
+
   /**
    * Return a SolrRequest for low-level detailed status of all collections on the cluster.
    */
@@ -878,7 +892,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       super(CollectionAction.COLSTATUS);
       this.collection = collection;
     }
-    
+
     private ColStatus() {
       super(CollectionAction.COLSTATUS);
     }
@@ -1341,6 +1355,35 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   /**
+   * Returns a SolrRequest to run a mock task. For tests only.
+   */
+  public static MockCollTask mockCollTask(String collection) {
+    return new MockCollTask(collection);
+  }
+
+  // MOCK_COLL_TASK request
+  public static class MockCollTask extends AsyncCollectionAdminRequest {
+    protected final String collection;
+    protected String sleep;
+
+    private MockCollTask(String collection) {
+      super(CollectionAction.MOCK_COLL_TASK);
+      this.collection = checkNotNull(CoreAdminParams.COLLECTION, collection);
+
+    }
+
+    public MockCollTask setSleep(String sleep) { this.sleep = sleep; return this; }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.add(CoreAdminParams.COLLECTION, collection);
+      params.setNonNull("sleep", sleep);
+      return params;
+    }
+  }
+
+  /**
    * Returns a SolrRequest to split a shard in a collection
    */
   public static SplitShard splitShard(String collection) {
@@ -1532,8 +1575,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static class RequestStatusResponse extends CollectionAdminResponse {
 
     public RequestStatusState getRequestStatus() {
-      @SuppressWarnings({"rawtypes"})
-      NamedList innerResponse = (NamedList) getResponse().get("status");
+      NamedList<?> innerResponse = (NamedList<?>) getResponse().get("status");
       return RequestStatusState.fromKey((String) innerResponse.get("state"));
     }
 
@@ -1591,7 +1633,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       while (System.nanoTime() < finishTime) {
         state = this.process(client).getRequestStatus();
         if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
-          deleteAsyncId(requestId).process(client);
+          propagateBasicAuthCreds(deleteAsyncId(requestId)).process(client);
           return state;
         }
         TimeUnit.SECONDS.sleep(1);
@@ -1765,7 +1807,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     private final String interval;
     //Optional:
     private TimeZone tz;
-    private Integer maxFutureMs;
+    private Long maxFutureMs;
     private String preemptiveCreateMath;
     private String autoDeleteAge;
 
@@ -1786,8 +1828,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
-    /** Sets how long into the future (millis) that we will allow a document to pass. */
+    /**
+     * Sets how long into the future (millis) that we will allow a document to pass.
+     *
+     * @deprecated Please use {@link #setMaxFutureMs(Long)} instead.
+     * */
+    @Deprecated
     public CreateTimeRoutedAlias setMaxFutureMs(Integer maxFutureMs) {
+      this.maxFutureMs = Long.valueOf(maxFutureMs);
+      return this;
+    }
+
+    /** Sets how long into the future (millis) that we will allow a document to pass. */
+    public CreateTimeRoutedAlias setMaxFutureMs(Long maxFutureMs) {
       this.maxFutureMs = maxFutureMs;
       return this;
     }
@@ -2605,6 +2658,28 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  // DISTRIBUTEDAPIPROCESSING request for verifying if Collection API execution is distributed
+  public static class RequestApiDistributedProcessing extends CollectionAdminRequest<RequestApiDistributedProcessingResponse> {
+
+    public RequestApiDistributedProcessing() {
+      super(CollectionAction.DISTRIBUTEDAPIPROCESSING);
+    }
+
+    @Override
+    protected RequestApiDistributedProcessingResponse createResponse(SolrClient client) {
+      return new RequestApiDistributedProcessingResponse();
+    }
+  }
+
+  /**
+   * A response object for {@link RequestApiDistributedProcessing} requests
+   */
+  public static class RequestApiDistributedProcessingResponse extends CollectionAdminResponse {
+    public boolean getIsCollectionApiDistributed() {
+      return (Boolean) getResponse().get("isDistributedApi");
+    }
+  }
+
   /**
    * Return a SolrRequest to get the Cluster status
    */
@@ -3088,7 +3163,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      * Sets the collection attribute to the given value
      *
      * @param key   a string attribute key, must be one of the entries documented
-     *              in the <a href="https://lucene.apache.org/solr/guide/collections-api.html#modifycollection">Modify Collection API documentation</a>
+     *              in the <a href="https://solr.apache.org/guide/collections-api.html#modifycollection">Modify Collection API documentation</a>
      * @param value the attribute value for the given key
      */
     public Modify setAttribute(String key, Object value) {
@@ -3113,7 +3188,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      * Removes the given key from the collection
      *
      * @param key the string attribute key, must be one of the entries documented
-     *            in the <a href="https://lucene.apache.org/solr/guide/collections-api.html#modifycollection">Modify Collection API documentation</a>
+     *            in the <a href="https://solr.apache.org/guide/collections-api.html#modifycollection">Modify Collection API documentation</a>
      */
     public Modify unsetAttribute(String key) {
       if (key == null) {

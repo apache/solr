@@ -18,19 +18,16 @@ package org.apache.solr.handler;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
+
 import java.net.URLEncoder;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -45,10 +42,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test
+@LuceneTestCase.SuppressCodecs("SimpleText") // Backups do checksum validation against a footer value not present in 'SimpleText'
 public class TestRestoreCore extends SolrJettyTestBase {
 
   JettySolrRunner leaderJetty;
-  TestReplicationHandler.SolrInstance leader = null;
+    ReplicationTestHelper.SolrInstance leader = null;
   SolrClient leaderClient;
 
   private static final String CONF_DIR = "solr" + File.separator + DEFAULT_TEST_CORENAME + File.separator + "conf"
@@ -57,7 +55,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
   private static String context = "/solr";
   private static long docsSeed; // see indexDocs()
 
-  private static JettySolrRunner createAndStartJetty(TestReplicationHandler.SolrInstance instance) throws Exception {
+  private static JettySolrRunner createAndStartJetty(ReplicationTestHelper.SolrInstance instance) throws Exception {
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
@@ -85,7 +83,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     super.setUp();
     String configFile = "solrconfig-leader.xml";
 
-    leader = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
+    leader = new ReplicationTestHelper.SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
     leader.setUp();
     leader.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 
@@ -172,7 +170,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
       TestReplicationHandlerBackup.runBackupCommand(leaderJetty, ReplicationHandler.CMD_RESTORE, params);
 
-      while (!fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME)) {
+      while (!TestRestoreCoreUtil.fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME)) {
         Thread.sleep(1000);
       }
 
@@ -221,7 +219,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     expectThrows(AssertionError.class, () -> {
         for (int i = 0; i < 10; i++) {
           // this will throw an assertion once we get what we expect
-          fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME);
+          TestRestoreCoreUtil.fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME);
           Thread.sleep(50);
         }
         // if we never got an assertion let expectThrows complain
@@ -235,29 +233,5 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   }
 
-  public static boolean fetchRestoreStatus (String baseUrl, String coreName) throws IOException {
-    String leaderUrl = baseUrl + "/" + coreName +
-        ReplicationHandler.PATH + "?wt=xml&command=" + ReplicationHandler.CMD_RESTORE_STATUS;
-    final Pattern pException = Pattern.compile("<str name=\"exception\">(.*?)</str>");
 
-    InputStream stream = null;
-    try {
-      URL url = new URL(leaderUrl);
-      stream = url.openStream();
-      String response = IOUtils.toString(stream, "UTF-8");
-      Matcher matcher = pException.matcher(response);
-      if(matcher.find()) {
-        fail("Failed to complete restore action with exception " + matcher.group(1));
-      }
-      if(response.contains("<str name=\"status\">success</str>")) {
-        return true;
-      } else if (response.contains("<str name=\"status\">failed</str>")){
-        fail("Restore Failed");
-      }
-      stream.close();
-    } finally {
-      IOUtils.closeQuietly(stream);
-    }
-    return false;
-  }
 }

@@ -273,7 +273,7 @@ public class SyncStrategy {
     ShardCoreRequest sreq = new ShardCoreRequest();
     sreq.coreName = coreName;
     sreq.baseUrl = baseUrl;
-    sreq.purpose = 1;
+    sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
     sreq.shards = new String[]{replica};
     sreq.actualShards = sreq.shards;
     sreq.params = new ModifiableSolrParams();

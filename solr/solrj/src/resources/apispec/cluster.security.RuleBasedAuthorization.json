@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/rule-based-authorization-plugin.html",
+  "documentation": "https://solr.apache.org/guide/rule-based-authorization-plugin.html",
   "description": "Defines roles for accessing Solr, and assigns users to those roles. Use this API to change user authorizations to each of Solr's components.",
   "methods": [
     "POST"

@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -795,7 +794,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
     String shard_fld = "shard_s";
     try (CloudSolrClient client = createCloudClient(null)) {
-      Map<String, Object> props = Utils.makeMap(
+      Map<String, Object> props = Map.of(
           REPLICATION_FACTOR, replicationFactor,
           CollectionHandlingUtils.NUM_SLICES, numShards,
           "router.field", shard_fld);
@@ -854,7 +853,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     HashMap<String, List<Integer>> collectionInfos = new HashMap<>();
 
     try (CloudSolrClient client = createCloudClient(null)) {
-      Map<String, Object> props = Utils.makeMap(
+      Map<String, Object> props = Map.of(
           REPLICATION_FACTOR, replicationFactor,
           CollectionHandlingUtils.NUM_SLICES, numShards);
 
@@ -1035,8 +1034,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     if (splitKey != null) {
       params.set("split.key", splitKey);
     }
-    @SuppressWarnings({"rawtypes"})
-    SolrRequest request = new QueryRequest(params);
+    QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
     String baseUrl = ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.getSolrClient()).getBaseURL();

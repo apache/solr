@@ -35,7 +35,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
+    systemSetPropertySolrDisableUrlAllowList("true");
     JSONTestUtil.failRepeatedKeys = true;
 
     // we need DVs on point fields to compute stats & facets
@@ -56,7 +56,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   @SuppressWarnings("deprecation")
   @AfterClass
   public static void afterTests() throws Exception {
-    systemClearPropertySolrDisableShardsWhitelist();
+    systemClearPropertySolrDisableUrlAllowList();
     JSONTestUtil.failRepeatedKeys = false;
     if (servers != null) {
       servers.stop();
@@ -93,15 +93,12 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   public void doTestErrors(Client client) throws Exception {
     client.deleteByQuery("*:*", null);
 
-    try {
+    SolrException e = assertThrows(SolrException.class, () ->
       client.testJQ(params("ignore_exception", "true", "q", "*:*"
           , "json.facet", "{f:{type:ignore_exception_aaa, field:bbbbbb}}"
           )
-      );
-    } catch (SolrException e) {
-      assertTrue( e.getMessage().contains("ignore_exception_aaa") );
-    }
-
+    ));
+    assertTrue( e.getMessage().contains("ignore_exception_aaa") );
   }
 
   @Test

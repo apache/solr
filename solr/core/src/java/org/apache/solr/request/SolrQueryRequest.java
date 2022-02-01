@@ -16,19 +16,23 @@
  */
 package org.apache.solr.request;
 
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.servlet.HttpSolrCall;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.util.RTimerTree;
-
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.noop.NoopSpan;
+import io.opentracing.util.GlobalTracer;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.servlet.HttpSolrCall;
+import org.apache.solr.util.RTimerTree;
 
 /**
  * <p>Container for a request to execute a query.</p>
@@ -131,6 +135,23 @@ public interface SolrQueryRequest extends AutoCloseable {
 
   default HttpSolrCall getHttpSolrCall() {
     return null;
+  }
+
+  /**
+   * Distributed tracing Tracer. Never null but might implement
+   * {@link io.opentracing.noop.NoopTracer}.
+   */
+  default Tracer getTracer() {
+    return GlobalTracer.get(); // default impl is only for some tests
+  }
+
+  /**
+   * The distributed tracing Span for the request itself; never null. This is useful for adding tags
+   * or updating the operation name of the request span. If you need the current span, which might
+   * not necessarily be the request span, do this instead: {@code tracer.activeSpan()}.
+   */
+  default Span getSpan() {
+    return NoopSpan.INSTANCE;
   }
 }
 

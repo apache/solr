@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
@@ -37,6 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
+@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
     @Before // unique core per test
     public void coreInit() throws Exception {
@@ -364,7 +366,7 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
         final String locationPathStr = locationPath.toString();
         h.getCoreContainer().getAllowPaths().add(locationPath);
         try (BackupRepository backupRepo = h.getCoreContainer().newBackupRepository(null)) {
-            final URI locationUri = backupRepo.createURI(locationPathStr);
+            final URI locationUri = backupRepo.createDirectoryURI(locationPathStr);
             final BackupFilePaths backupFilePaths = new BackupFilePaths(backupRepo, locationUri);
             backupFilePaths.createIncrementalBackupFolders();
             return locationUri;

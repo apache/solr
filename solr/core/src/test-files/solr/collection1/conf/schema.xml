@@ -50,7 +50,14 @@
   <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
   <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
   <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
-  
+
+  <!-- Dense Vector Fields -->
+  <fieldType name="knn_vector_cosine" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
+  <fieldType name="knn_vector_dot_product" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="dot_product"/>
+  <fieldType name="knn_vector5" class="solr.DenseVectorField" vectorDimension="5" similarityFunction="dot_product"/>
+
+
+
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
     <analyzer type="index">
@@ -428,10 +435,6 @@
   <fieldType name="x" class="solr.PointType" dimension="1" subFieldType="double"/>
   <fieldType name="tenD" class="solr.PointType" dimension="10" subFieldType="double"/>
   <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1"/>
-  <fieldType name="geohash" class="solr.GeoHashField"/>
-
-
-  <fieldType name="latLon" class="solr.LatLonType" subFieldType="double"/>
 
   <!-- Currency type -->
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
@@ -461,7 +464,7 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
+  <fieldType name="location" class="solr.LatLonPointSpatialField" />
 
   <!-- 
     Example of using PathHierarchyTokenizerFactory at index time, so
@@ -497,6 +500,34 @@
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
     </analyzer>
   </fieldType>
+
+  <!-- CommonGrams for phrase queries -->
+  <dynamicField name="*_commongrams" type="commongrams" />
+  <fieldType name="commongrams" class="solr.TextField" indexed="true" stored="true">
+    <analyzer type="index">
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.CommonGramsFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.CommonGramsQueryFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  <dynamicField name="*_commongrams_stop" type="commongrams_stop" />
+  <fieldType name="commongrams_stop" class="solr.TextField" indexed="true" stored="true">
+    <analyzer type="index">
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.CommonGramsFilterFactory"/>
+      <filter class="solr.StopFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.CommonGramsQueryFilterFactory"/>
+      <filter class="solr.StopFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  <copyField source="*_commongrams" dest="*_commongrams_stop" />
+  
   <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
   
   <fieldType name="binary" class="solr.BinaryField" />
@@ -537,21 +568,12 @@
   <field name="shouldbestored" type="unstored" stored="true"/>
   <field name="shouldbeunindexed" type="unstored" indexed="false" stored="true"/>
 
-  <!-- Test points -->
-  <!-- Test points -->
+  <!-- Test spatial PointType -->
   <field name="home" type="xy" indexed="true" stored="true" multiValued="false"/>
   <field name="x" type="x" indexed="true" stored="true" multiValued="false"/>
   <field name="homed" type="xyd" indexed="true" stored="true" multiValued="false"/>
   <field name="home_ns" type="xy" indexed="true" stored="false" multiValued="false"/>
   <field name="work" type="xy" indexed="true" stored="true" multiValued="false"/>
-
-  <field name="home_ll" type="latLon" indexed="true" stored="true" multiValued="false"/>
-  <field name="work_ll" type="latLon" indexed="true" stored="true" multiValued="false"/>
-
-  <field name="home_gh" type="geohash" indexed="true" stored="true" multiValued="false"/>
-
-
-  <field name="point10" type="tenD" indexed="true" stored="true" multiValued="false"/>
 
   <!-- Test currency -->
   <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
@@ -669,7 +691,7 @@
 
   <field name="title_stringNoNorms" type="string" omitNorms="true" indexed="true" stored="true"/>
 
-  <field name="store" type="location" indexed="true" stored="true" omitNorms="false"/>
+  <field name="store" type="location" indexed="true" stored="true" docValues="true"/>
 
   <field name="lower" type="lowerfilt" indexed="false" stored="true" multiValued="true"/>
   <field name="_route_" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -682,8 +704,14 @@
   <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
 
   <field name="max_chars" type="string" indexed="false" stored="true"/>
-
-
+  
+  <!-- Dense Vector-->
+  <field name="vector" type="knn_vector_cosine" indexed="true" stored="true"/>
+  <field name="vector2" type="knn_vector_dot_product" indexed="true" stored="true"/>
+  <field name="vector3" type="knn_vector_cosine" indexed="true" stored="true"/>
+  <field name="vector4" type="knn_vector_cosine" indexed="true" stored="true"/>
+  <field name="vector5" type="knn_vector5" indexed="true" stored="true"/>
+  
   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
        will be used if the name matches any of the patterns.
        RESTRICTION: the glob-like pattern in the name attribute must have
@@ -760,7 +788,7 @@
 
   <dynamicField name="*_mfacet" type="string" indexed="true" stored="false" multiValued="true"/>
 
-  <!-- Type used to index the lat and lon components for the "location" FieldType -->
+  <!-- Type used to index the  components for the "point" FieldType -->
   <dynamicField name="*_coordinate" type="double" indexed="true" stored="false" omitNorms="true" docValues="false"/>
 
   <dynamicField name="*_path" type="path" indexed="true" stored="true" omitNorms="true" multiValued="true"/>
@@ -889,6 +917,9 @@
   <copyField source="*_path" dest="*_ancestor"/>
 
   <copyField source="title" dest="max_chars" maxChars="10"/>
+  <copyField source="vector" dest="vector2"/>
+  <copyField source="vector3" dest="vector_f_p"/>
+  <copyField source="vector4" dest="vector5"/>
 
   <!-- example of a custom similarity -->
   <similarity class="solr.CustomSimilarityFactory">

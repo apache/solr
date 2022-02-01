@@ -16,14 +16,14 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Locale;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -34,11 +34,15 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.ENABLE;
+import static org.apache.solr.common.params.CommonParams.DISABLE;
+import static org.apache.solr.common.params.CommonParams.ACTION;
 
 /**
  * Ping Request Handler for reporting SolrCore health to a Load Balancer.
@@ -133,13 +137,27 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String HEALTHCHECK_FILE_PARAM = "healthcheckFile";
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    String action = request.getParams().get(ACTION, "").strip().toLowerCase(Locale.ROOT);
+    // Modifying the health check file requires more permission than just doing a ping
+    switch (action) {
+      case ENABLE:
+      case DISABLE:
+        return Name.CONFIG_EDIT_PERM;
+      default:
+        return Name.HEALTH_PERM;
+    }
+  }
+
   protected enum ACTIONS {STATUS, ENABLE, DISABLE, PING};
   
   private String healthFileName = null;
-  private File healthcheck = null;
+  private Path healthcheck = null;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     Object tmp = args.get(HEALTHCHECK_FILE_PARAM);
     healthFileName = (null == tmp ? null : tmp.toString());
@@ -148,17 +166,17 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public void inform( SolrCore core ) {
     if (null != healthFileName) {
-      healthcheck = new File(healthFileName);
-      if ( ! healthcheck.isAbsolute()) {
-        healthcheck = new File(core.getDataDir(), healthFileName);
-        healthcheck = healthcheck.getAbsoluteFile();
+      healthcheck = Path.of(healthFileName);
+      if (!healthcheck.isAbsolute()) {
+        healthcheck = Path.of(core.getDataDir(), healthFileName);
+        healthcheck = healthcheck.toAbsolutePath();
       }
 
-      if ( ! healthcheck.getParentFile().canWrite()) {
+      if (!Files.isWritable(healthcheck.getParent())) {
         // this is not fatal, users may not care about enable/disable via 
         // solr request, file might be touched/deleted by an external system
         log.warn("Directory for configured healthcheck file is not writable by solr, PingRequestHandler will not be able to control enable/disable: {}",
-                 healthcheck.getParentFile().getAbsolutePath());
+                 healthcheck.getParent().toAbsolutePath());
       }
 
     }
@@ -171,7 +189,7 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
    * returns false. 
    */
   public boolean isPingDisabled() {
-    return (null != healthcheck && ! healthcheck.exists() );
+    return (null != healthcheck && ! Files.exists(healthcheck) );
   }
 
   @Override
@@ -309,18 +327,18 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
     if ( enable ) {
       try {
         // write out when the file was created
-        FileUtils.write(healthcheck, Instant.now().toString(), "UTF-8");
+        Files.write(healthcheck, Instant.now().toString().getBytes(StandardCharsets.UTF_8));
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
                                 "Unable to write healthcheck flag file", e);
       }
     } else {
       try {
-        Files.deleteIfExists(healthcheck.toPath());
+        Files.deleteIfExists(healthcheck);
       } catch (Throwable cause) {
         throw new SolrException(SolrException.ErrorCode.NOT_FOUND,
                                 "Did not successfully delete healthcheck file: "
-                                +healthcheck.getAbsolutePath(), cause);
+                                +healthcheck.toAbsolutePath(), cause);
       }
     }
   }

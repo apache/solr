@@ -30,8 +30,6 @@
 
 <config>
 
-  <jmx />
-
   <!-- Used to specify an alternate directory to hold all index data.
        It defaults to "index" if not present, and should probably
        not be changed if replication is in use. -->
@@ -222,49 +220,12 @@
     </httpCaching>
   </requestDispatcher>
 
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
-  </admin>
-
   <!-- test getting system property -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
             attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
   <queryParser name="foo" class="FooQParserPlugin"/>
 
-  <updateRequestProcessorChain name="dedupe">
-    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
-      <bool name="enabled">false</bool>
-      <bool name="overwriteDupes">true</bool>
-      <str name="fields">v_t,t_field</str>
-      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-  <updateRequestProcessorChain name="dedupe-allfields">
-    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
-      <bool name="enabled">false</bool>
-      <bool name="overwriteDupes">false</bool>
-      <str name="signatureField">id</str>
-      <str name="fields"></str>
-      <str name="signatureClass">org.apache.solr.update.processor.Lookup3Signature</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-  <updateRequestProcessorChain name="stored_sig">
-    <!-- this chain is valid even though the signature field is not
-         indexed, because we are not asking for dups to be overwritten
-      -->
-    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
-      <bool name="enabled">true</bool>
-      <str name="signatureField">non_indexed_signature_sS</str>
-      <bool name="overwriteDupes">false</bool>
-      <str name="fields">v_t,t_field</str>
-      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
   <updateRequestProcessorChain name="uniq-fields">
     <processor class="org.apache.solr.update.processor.UniqFieldsUpdateProcessorFactory">
       <arr name="fieldName">
@@ -313,4 +274,3 @@
     </lst>
   </initParams>
 </config>
-

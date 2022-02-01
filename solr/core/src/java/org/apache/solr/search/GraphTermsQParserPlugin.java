@@ -155,7 +155,9 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     };
   }
 
+  /** Similar to {@code TermsQuery} but adds a {@code maxDocFreq}. */
   private class GraphTermsQuery extends Query implements ExtendedQuery {
+    // Not a post filter. This will typically be used as the main query.
 
     private Term[] queryTerms;
     private String field;
@@ -181,20 +183,13 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       return false;
     }
 
-    public boolean getCacheSep() {
-      return false;
-    }
-
-    public void setCacheSep(boolean sep) {
-
-    }
-
     public void setCache(boolean cache) {
-
+      // TODO support user choice
     }
 
     public int getCost() {
-      return 1; // Not a post filter. The GraphTermsQuery will typically be used as the main query.
+      // 0 is the default and keeping it avoids a needless wrapper for TwoPhaseIterator matchCost.
+      return 0;
     }
 
     public void setCost(int cost) {
@@ -325,7 +320,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
 
 
-// modified version of PointInSetQuery
+/** Modified version of {@code PointInSetQuery} to support {@code maxDocFreq}. */
 abstract class PointSetQuery extends Query implements DocSetProducer, Accountable {
   protected static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(PointSetQuery.class);
 
@@ -561,21 +556,16 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
   @Override
   public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
-      Filter filter;
+      DocSet docs;
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        if (filter == null) {
-          DocSet set = getDocSet(searcher);
-          filter = set.getTopFilter();
+        if (docs == null) {
+          docs = getDocSet(searcher);
         }
 
         // Although this set only includes live docs, other filters can be pushed down to queries.
-        DocIdSet readerSet = filter.getDocIdSet(context, null);
-        if (readerSet == null) {
-          return null;
-        }
-        DocIdSetIterator readerSetIterator = readerSet.iterator();
+        DocIdSetIterator readerSetIterator = docs.iterator(context);
         if (readerSetIterator == null) {
           return null;
         }

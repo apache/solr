@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -67,8 +66,6 @@ public class RepositoryManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final private PackageManager packageManager;
-
-  public static final String systemVersion = Version.LATEST.toString();
 
   final HttpSolrClient solrClient;
 

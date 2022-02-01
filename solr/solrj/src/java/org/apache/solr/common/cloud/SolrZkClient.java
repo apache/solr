@@ -16,20 +16,12 @@
  */
 package org.apache.solr.common.cloud;
 
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Source;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -39,7 +31,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -433,15 +424,15 @@ public class SolrZkClient implements Closeable {
     makePath(path, null, CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
-  public void makePath(String path, File file, boolean failOnExists, boolean retryOnConnLoss)
+  public void makePath(String path, Path data, boolean failOnExists, boolean retryOnConnLoss)
       throws IOException, KeeperException, InterruptedException {
-    makePath(path, FileUtils.readFileToByteArray(file),
+    makePath(path, Files.readAllBytes(data),
         CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
-  public void makePath(String path, File file, boolean retryOnConnLoss) throws IOException,
+  public void makePath(String path, Path data, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
-    makePath(path, FileUtils.readFileToByteArray(file), retryOnConnLoss);
+    makePath(path, Files.readAllBytes(data), retryOnConnLoss);
   }
 
   public void makePath(String path, CreateMode createMode, boolean retryOnConnLoss) throws KeeperException,
@@ -508,6 +499,8 @@ public class SolrZkClient implements Closeable {
    *
    * Note: retryOnConnLoss is only respected for the final node - nodes
    * before that are always retried on connection loss.
+   *
+   * Note: if failOnExists == false then we will always overwrite the existing data with the given data
    */
   public void makePath(String path, byte[] data, CreateMode createMode,
       Watcher watcher, boolean failOnExists, boolean retryOnConnLoss, int skipPathParts) throws KeeperException, InterruptedException {
@@ -552,6 +545,9 @@ public class SolrZkClient implements Closeable {
           throw e;
         }
       } catch (NodeExistsException e) {
+        if (log.isDebugEnabled()) {
+          log.debug("Node exists: {}", e.getPath());
+        }
 
         if (!failOnExists && i == paths.length - 1) {
           // TODO: version ? for now, don't worry about race
@@ -587,15 +583,14 @@ public class SolrZkClient implements Closeable {
    * Write file to ZooKeeper - default system encoding used.
    *
    * @param path path to upload file to e.g. /solr/conf/solrconfig.xml
-   * @param file path to file to be uploaded
+   * @param data a filepath to read data from
    */
-  public Stat setData(String path, File file, boolean retryOnConnLoss) throws IOException,
+  public Stat setData(String path, Path data, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
     if (log.isDebugEnabled()) {
-      log.debug("Write to ZooKeeper: {} to {}", file.getAbsolutePath(), path);
+      log.debug("Write to ZooKeeper: {} to {}", data.toAbsolutePath(), path);
     }
-    byte[] data = FileUtils.readFileToByteArray(file);
-    return setData(path, data, retryOnConnLoss);
+    return setData(path, Files.readAllBytes(data), retryOnConnLoss);
   }
 
   public List<OpResult> multi(final Iterable<Op> ops, boolean retryOnConnLoss) throws InterruptedException, KeeperException  {
@@ -645,26 +640,6 @@ public class SolrZkClient implements Closeable {
     StringBuilder sb = new StringBuilder();
     printLayout("/", 0, sb);
     out.println(sb.toString());
-  }
-
-  public static String prettyPrint(String input, int indent) {
-    try {
-      Source xmlInput = new StreamSource(new StringReader(input));
-      StringWriter stringWriter = new StringWriter();
-      StreamResult xmlOutput = new StreamResult(stringWriter);
-      TransformerFactory transformerFactory = TransformerFactory.newInstance();
-      transformerFactory.setAttribute("indent-number", indent);
-      Transformer transformer = transformerFactory.newTransformer();
-      transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-      transformer.transform(xmlInput, xmlOutput);
-      return xmlOutput.getWriter().toString();
-    } catch (Exception e) {
-      throw new RuntimeException("Problem pretty printing XML", e);
-    }
-  }
-
-  private static String prettyPrint(String input) {
-    return prettyPrint(input, 2);
   }
 
   public void close() {
@@ -786,11 +761,23 @@ public class SolrZkClient implements Closeable {
   }
 
   /**
+   * @return the ACLs on a single node in ZooKeeper.
+   */
+  public List<ACL> getACL(String path, Stat stat, boolean retryOnConnLoss) throws KeeperException, InterruptedException {
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(() -> keeper.getACL(path, stat));
+    } else {
+      return keeper.getACL(path, stat);
+    }
+  }
+
+  /**
    * Set the ACL on a single node in ZooKeeper. This will replace all existing ACL on that node.
    *
    * @param path path to set ACL on e.g. /solr/conf/solrconfig.xml
    * @param acls a list of {@link ACL}s to be applied
    * @param retryOnConnLoss true if the command should be retried on connection loss
+   * @return the stat of the node
    */
   public Stat setACL(String path, List<ACL> acls, boolean retryOnConnLoss) throws InterruptedException, KeeperException  {
     if (retryOnConnLoss) {
@@ -809,9 +796,8 @@ public class SolrZkClient implements Closeable {
       try {
         setACL(path, getZkACLProvider().getACLsToAdd(path), true);
         log.debug("Updated ACL on {}", path);
-      } catch (NoNodeException e) {
+      } catch (NoNodeException ignored) {
         // If a node was deleted, don't bother trying to set ACLs on it.
-        return;
       }
     });
   }
@@ -826,7 +812,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public void upConfig(Path confPath, String confName) throws IOException {
-    ZkMaintenanceUtils.upConfig(this, confPath, confName);
+    ZkMaintenanceUtils.uploadToZK(this, confPath, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
 
   public String listZnode(String path, Boolean recurse) throws KeeperException, InterruptedException, SolrServerException {
@@ -834,7 +820,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public void downConfig(String confName, Path confPath) throws IOException {
-    ZkMaintenanceUtils.downConfig(this, confName, confPath);
+    ZkMaintenanceUtils.downloadFromZK(this, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, confPath);
   }
 
   public void zkTransfer(String src, Boolean srcIsZk,

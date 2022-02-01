@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import com.google.common.base.Strings;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -33,7 +34,10 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.http.MimeTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +46,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -87,15 +93,21 @@ import java.util.Set;
  *
  * @since solr 1.3
  */
-public class ShowFileRequestHandler extends RequestHandlerBase
+public class ShowFileRequestHandler extends RequestHandlerBase implements PermissionNameProvider
 {
   public static final String HIDDEN = "hidden";
   public static final String USE_CONTENT_TYPE = "contentType";
+  private static final Set<String> KNOWN_MIME_TYPES;
 
   protected Set<String> hiddenFiles;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  static {
+    KNOWN_MIME_TYPES = new HashSet<>(MimeTypes.getKnownMimeTypes());
+    KNOWN_MIME_TYPES.add("text/xml");
+    KNOWN_MIME_TYPES.add("text/javascript");
+  }
 
   public ShowFileRequestHandler()
   {
@@ -103,7 +115,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     super.init( args );
     hiddenFiles = initHidden(invariants);
   }
@@ -178,7 +190,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       params.set(CommonParams.WT, "raw");
       req.setParams(params);
       ContentStreamBase content = new ContentStreamBase.ByteArrayStream(zkClient.getData(adminFile, null, null, true), adminFile);
-      content.setContentType(req.getParams().get(USE_CONTENT_TYPE));
+      content.setContentType(getSafeContentType(req.getParams().get(USE_CONTENT_TYPE)));
       
       rsp.add(RawResponseWriter.CONTENT, content);
     }
@@ -187,28 +199,29 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
   // Return the file indicated (or the directory listing) from the local file system.
   private void showFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp) {
-    File adminFile = getAdminFileFromFileSystem(req, rsp, hiddenFiles);
+    Path admin = getAdminFileFromFileSystem(req, rsp, hiddenFiles);
 
-    if (adminFile == null) { // exception already recorded
+    if (admin == null) { // exception already recorded
       return;
     }
 
+    File adminFile = admin.toFile();
     // Make sure the file exists, is readable and is not a hidden file
     if( !adminFile.exists() ) {
       log.error("Can not find: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath());
       rsp.setException(new SolrException
-                       ( ErrorCode.NOT_FOUND, "Can not find: "+adminFile.getName() 
+                       ( ErrorCode.NOT_FOUND, "Can not find: "+adminFile.getName()
                          + " ["+adminFile.getAbsolutePath()+"]" ));
       return;
     }
     if( !adminFile.canRead() || adminFile.isHidden() ) {
       log.error("Can not show: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath());
       rsp.setException(new SolrException
-                       ( ErrorCode.NOT_FOUND, "Can not show: "+adminFile.getName() 
+                       ( ErrorCode.NOT_FOUND, "Can not show: "+adminFile.getName()
                          + " ["+adminFile.getAbsolutePath()+"]" ));
       return;
     }
-    
+
     // Show a directory listing
     if( adminFile.isDirectory() ) {
       // it's really a directory, just go for it.
@@ -225,7 +238,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
         SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<>();
         files.add( path, fileInfo );
         if( f.isDirectory() ) {
-          fileInfo.add( "directory", true ); 
+          fileInfo.add( "directory", true );
         }
         else {
           // TODO? content type
@@ -243,11 +256,32 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       req.setParams(params);
 
       ContentStreamBase content = new ContentStreamBase.FileStream( adminFile );
-      content.setContentType(req.getParams().get(USE_CONTENT_TYPE));
+      content.setContentType(getSafeContentType(req.getParams().get(USE_CONTENT_TYPE)));
 
       rsp.add(RawResponseWriter.CONTENT, content);
     }
     rsp.setHttpCaching(false);
+  }
+
+  /**
+   * Checks content type string and returns it if it is one of allowed types.
+   * The allowed types are all standard mime types.
+   * If an HTML type is requested, it is instead returned as text/plain
+   */
+  public static String getSafeContentType(String contentType) {
+    if (Strings.isNullOrEmpty(contentType)) {
+      log.debug("No contentType specified");
+      return null;
+    }
+    String rawContentType = contentType.split(";")[0].trim().toLowerCase(Locale.ROOT); // Strip away charset part
+    if (!KNOWN_MIME_TYPES.contains(rawContentType)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Requested content type '" + contentType + "' is not supported.");
+    }
+    if (rawContentType.contains("html")) {
+      log.info("Using text/plain instead of {}", contentType);
+      return "text/plain";
+    }
+    return contentType;
   }
 
   //////////////////////// Static methods //////////////////////////////
@@ -318,15 +352,14 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
   // Find the file indicated by the "file=XXX" parameter or the root of the conf directory on the local
   // file system. Respects all the "interesting" stuff around what the resource loader does to find files.
-  public static File getAdminFileFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp,
+  public static Path getAdminFileFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp,
                                                 Set<String> hiddenFiles) {
-    File adminFile = null;
     final SolrResourceLoader loader = req.getCore().getResourceLoader();
-    File configdir = new File( loader.getConfigDir() );
-    if (!configdir.exists()) {
+    Path configDir = loader.getConfigPath();
+    if (!Files.exists(configDir)) {
       // TODO: maybe we should just open it this way to start with?
       try {
-        configdir = new File( loader.getClassLoader().getResource(loader.getConfigDir()).toURI() );
+        configDir = Path.of(loader.getClassLoader().getResource(loader.getConfigDir()).toURI());
       } catch (URISyntaxException e) {
         log.error("Can not access configuration directory!");
         rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access configuration directory!", e));
@@ -335,23 +368,19 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     }
     String fname = req.getParams().get("file", null);
     if( fname == null ) {
-      adminFile = configdir;
+      return configDir;
     }
-    else {
-      fname = fname.replace( '\\', '/' ); // normalize slashes
-      if( hiddenFiles.contains( fname.toUpperCase(Locale.ROOT) ) ) {
-        log.error("Can not access: {}", fname);
-        rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access: "+fname ));
-        return null;
-      }
-      if( fname.indexOf( ".." ) >= 0 ) {
-        log.error("Invalid path: {}", fname);
-        rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Invalid path: "+fname ));
-        return null;
-      }
-      adminFile = new File( configdir, fname );
+
+    fname = fname.replace( '\\', '/' ); // normalize slashes
+    if( hiddenFiles.contains( fname.toUpperCase(Locale.ROOT) ) ) {
+      log.error("Can not access: {}", fname);
+      rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access: "+fname ));
+      return null;
     }
-    return adminFile;
+    // A leading slash is unnecessary but supported and interpreted as start of config dir
+    Path filePath = configDir.resolve(fname.startsWith("/") ? fname.substring(1) : fname);
+    req.getCore().getCoreContainer().assertPathAllowed(filePath);
+    return filePath;
   }
 
   public final Set<String> getHiddenFiles() {
@@ -367,5 +396,10 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.CONFIG_READ_PERM;
   }
 }

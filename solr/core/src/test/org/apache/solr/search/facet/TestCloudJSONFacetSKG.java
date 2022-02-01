@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -130,7 +129,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     final int numNodes = (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_COLL1_CONF();
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     
@@ -371,8 +370,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
     QueryResponse rsp = null;
     // JSON Facets not (currently) available from QueryResponse...
-    @SuppressWarnings({"rawtypes"})
-    NamedList topNamedList = null;
+    NamedList<Object> topNamedList = null;
     try {
       rsp = (new QueryRequest(initParams)).process(getRandClient(random()));
       assertNotNull(initParams + " is null rsp?", rsp);
@@ -383,8 +381,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
                                  e.getMessage(), e);
     }
     try {
-      @SuppressWarnings({"rawtypes"})
-      final NamedList facetResponse = (NamedList) topNamedList.get("facets");
+      @SuppressWarnings("unchecked")
+      final NamedList<Object> facetResponse = (NamedList<Object>) topNamedList.get("facets");
       assertNotNull("null facet results?", facetResponse);
       assertEquals("numFound mismatch with top count?",
                    rsp.getResults().getNumFound(), ((Number)facetResponse.get("count")).longValue());
@@ -410,14 +408,13 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   private void assertFacetSKGsAreCorrect(final AtomicInteger maxBucketsToCheck,
                                          final Map<String,TermFacet> expected,
                                          final SolrParams baseParams,
-                                         @SuppressWarnings({"rawtypes"})final NamedList actualFacetResponse) throws SolrServerException, IOException {
+                                         final NamedList<Object> actualFacetResponse) throws SolrServerException, IOException {
 
     for (Map.Entry<String,TermFacet> entry : expected.entrySet()) {
       final String facetKey = entry.getKey();
       final TermFacet facet = entry.getValue();
       
-      @SuppressWarnings({"rawtypes"})
-      final NamedList results = (NamedList) actualFacetResponse.get(facetKey);
+      final NamedList<Object> results = (NamedList<Object>) actualFacetResponse.get(facetKey);
       assertNotNull(facetKey + " key missing from: " + actualFacetResponse, results);
 
       if (null != results.get("allBuckets")) {
@@ -426,10 +423,9 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         // 'skg' key must not exist in th allBuckets bucket
         assertEquals(facetKey + " has skg in allBuckets: " + results.get("allBuckets"),
                      Collections.emptyList(),
-                     ((NamedList)results.get("allBuckets")).getAll("skg"));
+                     ((NamedList<Object>)results.get("allBuckets")).getAll("skg"));
       }
-      @SuppressWarnings({"rawtypes"})
-      final List<NamedList> buckets = (List<NamedList>) results.get("buckets");
+      final List<NamedList<Object>> buckets = (List<NamedList<Object>>) results.get("buckets");
       assertNotNull(facetKey + " has null buckets: " + actualFacetResponse, buckets);
 
       if (buckets.isEmpty()) {
@@ -446,7 +442,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       // NOTE: it's important that we do this depth first -- not just because it's the easiest way to do it,
       // but because it means that our maxBucketsToCheck will ensure we do a lot of deep sub-bucket checking,
       // not just all the buckets of the top level(s) facet(s)
-      for (@SuppressWarnings({"rawtypes"})NamedList bucket : buckets) {
+      for (NamedList<Object> bucket : buckets) {
         final String fieldVal = bucket.get("val").toString(); // int or stringified int
 
         verifySKGResults(facetKey, facet, baseParams, fieldVal, bucket);
@@ -466,8 +462,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     
     { // make sure we don't have any facet keys we don't expect
       // a little hackish because subfacets have extra keys...
-      @SuppressWarnings({"rawtypes"})
-      final LinkedHashSet expectedKeys = new LinkedHashSet(expected.keySet());
+      final LinkedHashSet<String> expectedKeys = new LinkedHashSet<>(expected.keySet());
       expectedKeys.add("count");
       if (0 <= actualFacetResponse.indexOf("val",0)) {
         expectedKeys.add("val");

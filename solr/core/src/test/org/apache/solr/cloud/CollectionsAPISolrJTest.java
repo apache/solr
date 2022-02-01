@@ -141,8 +141,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
 
       for (int i = 0; i < 300; i++) {
-        @SuppressWarnings({"rawtypes"})
-        Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
+        Map<?, ?> m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
         if (m != null) break;
         Thread.sleep(10);
       }
@@ -226,8 +225,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
 
       for (int i = 0; i < 300; i++) {
-        @SuppressWarnings({"rawtypes"})
-        Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
+        Map<?, ?> m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
         if (m != null) break;
         Thread.sleep(10);
       }
@@ -627,8 +625,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       doc.addField("number_tl", i);
       doc.addField("number_tf", i);
       doc.addField("number_td", i);
-      doc.addField("point", i + "," + i);
-      doc.addField("pointD", i + "," + i);
       doc.addField("store", (i * 5) + "," + (i * 5));
       doc.addField("boolean_b", true);
       doc.addField("multi_int_with_docvals", i);
@@ -657,7 +653,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("info", "core", "startTime"));
     assertNotNull(Utils.toJSONString(rsp), segInfos.get("fieldInfoLegend"));
     assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "fields", "id", "flags"));
-    assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "ramBytesUsed"));
     // test for replicas not active - SOLR-13882
     DocCollection coll = cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(collectionName);
     Replica firstReplica = coll.getSlice("shard1").getReplicas().iterator().next();
@@ -671,6 +666,20 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     Number down = (Number) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "replicas", "down");
     assertTrue("should be some down replicas, but there were none in shard1:" + rsp, down.intValue() > 0);
+
+    // test for a collection with implicit router
+    String implicitColl = "implicitColl";
+    CollectionAdminRequest.createCollection(implicitColl, "conf2", 2, 1)
+        .setRouterName("implicit")
+        .setRouterField("routerField")
+        .setShards("shardA,shardB")
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(implicitColl, 2, 2);
+    req = CollectionAdminRequest.collectionStatus(implicitColl);
+    rsp = req.process(cluster.getSolrClient());
+    assertNotNull(rsp.getResponse().get(implicitColl));
+    assertNotNull(rsp.toString(), rsp.getResponse().findRecursive(implicitColl, "shards", "shardA"));
+    assertNotNull(rsp.toString(), rsp.getResponse().findRecursive(implicitColl, "shards", "shardB"));
   }
   
   @Test
@@ -879,11 +888,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     Aliases aliases;
     if (!followAliases) {
-      try {
-        rename.process(cluster.getSolrClient());
-      } catch (Exception e) {
-        assertTrue(e.toString(), e.toString().contains("source collection 'col1' not found"));
-      }
+      Exception e = assertThrows(Exception.class, () ->
+        rename.process(cluster.getSolrClient()));
+      assertTrue(e.toString(), e.toString().contains("source collection 'col1' not found"));
     } else {
       rename.process(cluster.getSolrClient());
       zkStateReader.aliasesManager.update();
@@ -911,30 +918,24 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(compoundAliases.toString(), 1, compoundAliases.size());
     assertTrue(compoundAliases.toString(), compoundAliases.contains(collectionName2));
 
-    try {
-      rename = CollectionAdminRequest.renameCollection("catAlias", "bar");
-      rename.setFollowAliases(followAliases);
-      rename.process(cluster.getSolrClient());
-      fail("category-based alias renaming should fail");
-    } catch (Exception e) {
-      if (followAliases) {
-        assertTrue(e.toString(), e.toString().contains("is a routed alias"));
-      } else {
-        assertTrue(e.toString(), e.toString().contains("source collection 'catAlias' not found"));
-      }
+    CollectionAdminRequest.Rename catRename = CollectionAdminRequest.renameCollection("catAlias", "bar");
+    catRename.setFollowAliases(followAliases);
+    Exception e = assertThrows("category-based alias renaming should fail", Exception.class,
+        () -> catRename.process(cluster.getSolrClient()));
+    if (followAliases) {
+      assertTrue(e.toString(), e.toString().contains("is a routed alias"));
+    } else {
+      assertTrue(e.toString(), e.toString().contains("source collection 'catAlias' not found"));
     }
 
-    try {
-      rename = CollectionAdminRequest.renameCollection("col2", "foo");
-      rename.setFollowAliases(followAliases);
-      rename.process(cluster.getSolrClient());
-      fail("should fail because 'foo' already exists");
-    } catch (Exception e) {
-      if (followAliases) {
-        assertTrue(e.toString(), e.toString().contains("exists"));
-      } else {
-        assertTrue(e.toString(), e.toString().contains("source collection 'col2' not found"));
-      }
+    CollectionAdminRequest.Rename rename2 = CollectionAdminRequest.renameCollection("col2", "foo");
+    rename2.setFollowAliases(followAliases);
+    e = assertThrows("should fail because 'foo' already exists", Exception.class,
+        () -> rename2.process(cluster.getSolrClient()));
+    if (followAliases) {
+      assertTrue(e.toString(), e.toString().contains("exists"));
+    } else {
+      assertTrue(e.toString(), e.toString().contains("source collection 'col2' not found"));
     }
   }
 
@@ -1031,6 +1032,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void testOverseerStatus() throws IOException, SolrServerException {
     CollectionAdminResponse response = new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
+    // When running with Distributed Collection API, no real data in Overseer status, but the Collection API call above shouldn't fail
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+      return;
+    }
     assertNotNull("overseer_operations shouldn't be null", response.getResponse().get("overseer_operations"));
   }
 

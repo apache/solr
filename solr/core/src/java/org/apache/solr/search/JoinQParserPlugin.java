@@ -16,9 +16,9 @@
  */
 package org.apache.solr.search;
 
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.search.Query;
@@ -173,13 +173,14 @@ public class JoinQParserPlugin extends QParserPlugin {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     routerField = (String) args.get("routerField");
 
     if (args.get("allowSolrUrls") != null) {
-      allowSolrUrls = new HashSet<>();
-      allowSolrUrls.addAll((List<String>) args.get("allowSolrUrls"));
+      @SuppressWarnings("unchecked")
+      Collection<String> configUrls = (Collection<String>) args.get("allowSolrUrls");
+
+      allowSolrUrls = new HashSet<>(configUrls);
     } else {
       allowSolrUrls = null;
     }
@@ -209,7 +210,7 @@ public class JoinQParserPlugin extends QParserPlugin {
     };
   }
 
-  private static final EnumSet<Method> JOIN_METHOD_WHITELIST = EnumSet.of(Method.index, Method.topLevelDV, Method.dvWithScore);
+  private static final EnumSet<Method> JOIN_METHOD_ALLOWLIST = EnumSet.of(Method.index, Method.topLevelDV, Method.dvWithScore);
   /**
    * A helper method for other plugins to create (non-scoring) JoinQueries wrapped around arbitrary queries against the same core.
    * 
@@ -227,7 +228,7 @@ public class JoinQParserPlugin extends QParserPlugin {
 
 
     final Method joinMethod = parseMethodString(method);
-    if (! JOIN_METHOD_WHITELIST.contains(joinMethod)) {
+    if (! JOIN_METHOD_ALLOWLIST.contains(joinMethod)) {
       // TODO Throw something that the callers here (FacetRequest) can catch and produce a more domain-appropriate error message for?
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Join method " + method + " not supported for non-scoring, same-core joins");

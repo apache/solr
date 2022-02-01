@@ -49,7 +49,6 @@ import org.apache.solr.util.SolrJacksonAnnotationInspector;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zafarkhaja.semver.Version;
-import com.google.common.base.Strings;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
@@ -156,13 +155,6 @@ public class PackageUtils {
   }
 
   /**
-   * Checks whether a given version satisfies the constraint (defined by a semver expression)
-   */
-  public static boolean checkVersionConstraint(String ver, String constraint) {
-    return Strings.isNullOrEmpty(constraint) || Version.valueOf(ver).satisfies(constraint);
-  }
-
-  /**
    * Fetches a manifest file from the File Store / Package Store. A SHA512 check is enforced after fetching.
    */
   public static Manifest fetchManifest(HttpSolrClient solrClient, String solrBaseUrl, String manifestFilePath, String expectedSHA512) throws MalformedURLException, IOException {
@@ -257,10 +249,9 @@ public class PackageUtils {
     return "/api/collections/" + collection + "/config/params";
   }
 
-  public static void uploadKey(byte bytes[], String path, Path home, HttpSolrClient client) throws IOException {
-    ByteBuffer buf = ByteBuffer.wrap(bytes);
-    PackageStoreAPI.MetaData meta = PackageStoreAPI._createJsonMetaData(buf, null);
-    DistribPackageStore._persistToFile(home, path, buf, ByteBuffer.wrap(Utils.toJSON(meta)));
+  public static void uploadKey(byte[] bytes, String path, Path home, HttpSolrClient client) throws IOException {
+    PackageStoreAPI.MetaData meta = PackageStoreAPI._createJsonMetaData(bytes, null);
+    DistribPackageStore._persistToFile(home, path, ByteBuffer.wrap(bytes), ByteBuffer.wrap(Utils.toJSON(meta)));
   }
 
 }

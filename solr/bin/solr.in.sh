@@ -70,6 +70,9 @@
 # Leave empty if not using SolrCloud
 #ZK_HOST=""
 
+# Set to true if your ZK host has a chroot path, and you want to create it automatically.
+#ZK_CREATE_CHROOT=true
+
 # Set the ZooKeeper client timeout (for SolrCloud mode)
 #ZK_CLIENT_TIMEOUT="30000"
 
@@ -122,13 +125,8 @@
 # Location where Solr should write logs to. Absolute or relative to solr start dir
 #SOLR_LOGS_DIR=logs
 
-# Enables log rotation before starting Solr. Setting SOLR_LOG_PRESTART_ROTATION=true will let Solr take care of pre
-# start rotation of logs. This is false by default as log4j2 handles this for us. If you choose to use another log
-# framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
-#SOLR_LOG_PRESTART_ROTATION=false
-
 # Enables jetty request log for all requests
-#SOLR_REQUESTLOG_ENABLED=false
+#SOLR_REQUESTLOG_ENABLED=true
 
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT=8983
@@ -136,12 +134,12 @@
 # Restrict access to solr by IP address.
 # Specify a comma-separated list of addresses or networks, for example:
 #   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
-#SOLR_IP_WHITELIST=
+#SOLR_IP_ALLOWLIST=
 
 # Block access to solr from specific IP addresses.
 # Specify a comma-separated list of addresses or networks, for example:
 #   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
-#SOLR_IP_BLACKLIST=
+#SOLR_IP_DENYLIST=
 
 # Sets the network interface the Solr binds to. To prevent administrators from
 # accidentally exposing Solr more widely than intended, this defaults to 127.0.0.1.
@@ -207,6 +205,8 @@
 #  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
 #SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
 
+# Jetty GZIP module enabled by default
+#SOLR_GZIP_ENABLED=true
 
 # Settings for common system values that may cause operational imparement when system defaults are used.
 # Solr can use many processes and many file handles. On modern operating systems the savings by leaving
@@ -219,10 +219,10 @@
 #SOLR_ULIMIT_CHECKS=
 
 # When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
-# list of hosts needs to be whitelisted or Solr will forbid the request. The whitelist can be configured in solr.xml,
-# or if you are using the OOTB solr.xml, can be specified using the system property "solr.shardsWhitelist". Alternatively
-# host checking can be disabled by using the system property "solr.disable.shardsWhitelist"
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.shardsWhitelist=http://localhost:8983,http://localhost:8984"
+# list of hosts needs to be defined in an allow-list or Solr will forbid the request. The allow-list can be configured
+# in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.allowUrls".
+# Alternatively host checking can be disabled by using the system property "solr.disable.allowUrls"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowUrls=http://localhost:8983,http://localhost:8984"
 
 # For a visual indication in the Admin UI of what type of environment this cluster is, configure
 # a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
@@ -258,3 +258,14 @@
 # You can test this behaviour by setting SOLR_HEAP=25m
 #SOLR_HEAP_DUMP=true
 #SOLR_HEAP_DUMP_DIR=/var/log/dumps
+
+# Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
+# To restore the old behaviour, set the variable below to true
+#SOLR_SOLRXML_REQUIRED=false
+
+# Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
+# then enable the following setting to address CVE-2021-44228
+# SOLR_OPTS="$SOLR_OPTS -Dlog4j2.formatMsgNoLookups=true"
+
+# The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
+# SOLR_MODULES=extraction,ltr

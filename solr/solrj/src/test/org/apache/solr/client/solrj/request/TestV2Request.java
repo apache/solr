@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.request;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ThreadLeakLingering(linger = 0)
 public class TestV2Request extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -53,8 +55,7 @@ public class TestV2Request extends SolrCloudTestCase {
         .forceV2(true)
         .withMethod(SolrRequest.METHOD.GET).build()
         .process(cluster.getSolrClient());
-    @SuppressWarnings({"rawtypes"})
-    List l = (List) rsp._get("nodes",null);
+    List<?> l = (List<?>) rsp._get("nodes",null);
     assertNotNull(l);
     assertFalse(l.isEmpty());
     rsp = new V2Request.Builder("/cluster/aliases")

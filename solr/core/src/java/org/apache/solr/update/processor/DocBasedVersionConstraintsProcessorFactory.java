@@ -105,7 +105,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
 
   @SuppressWarnings("unchecked")
   @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args )  {
+  public void init(NamedList<?> args )  {
 
     Object tmp = args.remove("versionField");
     if (null == tmp) {
@@ -150,7 +150,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
         throw new SolrException(SERVER_ERROR,
                 "'supportMissingVersionOnOldDocs' must be configured as a <bool>");
       }
-      supportMissingVersionOnOldDocs = ((Boolean)tmp).booleanValue();
+      supportMissingVersionOnOldDocs = (Boolean) tmp;
     }
     
     tmp = args.remove("tombstoneConfig");
