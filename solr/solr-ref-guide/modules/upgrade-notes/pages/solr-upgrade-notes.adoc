@@ -525,7 +525,7 @@ Note that if you are using HDFS to store indexes, you cannot enable the security
 
 In Solr 9.0, this will be the default.
 
-// See SOLR-14147: See also the section <<securing-solr.adoc#enable-security-manager,Enable Security Manager>>.
+// See SOLR-14147: See also the section xref:deployment-guide:securing-solr.adoc#enable-security-manager[Enable Security Manager].
 
 *Block/Allow Specific IPs*
 

@@ -921,7 +921,7 @@ There is currently one Query Parser in Solr to provide Neural Search: `knn`.
 
 KNN stands for k-nearest neighbors.
 
-Details are documented further in the section <<dense-vector-search.adoc#,Dense Vector Search>>.
+Details are documented further in the section xref:query-guide:dense-vector-search.adoc[].
 
 
 == Payload Query Parsers
