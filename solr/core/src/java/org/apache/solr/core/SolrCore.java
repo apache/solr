@@ -1573,17 +1573,20 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   @Override
   public void close() {
-    int count = refCount.decrementAndGet();
-    if (count > 0) {
-      MDCLoggingContext.clear(); // balance out open with close
-      return; // close is called often, and only actually closes if nothing is using it.
+    try {
+      int count = refCount.decrementAndGet();
+      if (count < 0) {
+        log.error("Too many close [count:{}] on {}. Please report this exception to users@solr.apache.org", count, this);
+        assert false : "Too many closes on SolrCore";
+      } else if (count == 0) {
+        doClose();
+      }
+    } finally {
+      MDCLoggingContext.clear(); // balance out from SolrCore open with close
     }
-    if (count < 0) {
-      log.error("Too many close [count:{}] on {}. Please report this exception to users@solr.apache.org", count, this);
-      MDCLoggingContext.clear(); // balance out open with close
-      assert false : "Too many closes on SolrCore";
-      return;
-    }
+  }
+
+  private void doClose() {
     log.info("CLOSING SolrCore {}", this);
 
     ExecutorUtil.shutdownAndAwaitTermination(coreAsyncTaskExecutor);
@@ -1723,8 +1726,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
       }
     }
-
-    MDCLoggingContext.clear(); // balance out open with close
 
     assert ObjectReleaseTracker.release(this);
   }
