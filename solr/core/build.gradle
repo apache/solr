@@ -26,6 +26,7 @@ configurations.all {
   exclude group: 'org.slf4j', module: 'slf4j-log4j12'
   exclude group: 'org.apache.yetus', module: 'audience-annotations'
   exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
+  exclude group: "com.google.code.findbugs", module: "jsr305"
   // be conservative on what's added here.  Affects *all* configs, including internal ones.
 }
 
