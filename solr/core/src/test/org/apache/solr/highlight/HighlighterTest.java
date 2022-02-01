@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -34,6 +35,7 @@ import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.HighlightParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
@@ -71,7 +73,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   @Test
   public void testConfig()
   {
-    DefaultSolrHighlighter highlighter = (DefaultSolrHighlighter) HighlightComponent.getHighlighter(h.getCore());
+    DefaultSolrHighlighter highlighter = (DefaultSolrHighlighter) getHighlighter();
 
     // Make sure we loaded the one formatter
     SolrFormatter fmt1 = highlighter.formatters.get( null );
@@ -87,21 +89,6 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     assertSame( gap, frag );
     assertTrue(gap instanceof GapFragmenter);
     assertTrue(regex instanceof RegexFragmenter);
-  }
-
-  @Test
-  public void testMethodPostings() {
-    String field = "t_text";
-    assertU(adoc(field, LONG_TEXT,
-        "id", "1"));
-    assertU(commit());
-
-    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
-      h.query(req("q", "long", "hl.method", "postings", "df", field, "hl", "true"));
-    });
-    assertTrue("Should warn no offsets", e.getMessage().contains("indexed without offsets"));
-    // note: the default schema.xml has no offsets in postings to test the PostingsHighlighter. Leave that for another
-    //  test class.
   }
 
   @Test
@@ -880,7 +867,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         10, args);
 
     SolrQueryRequest request = lrf.makeRequest("test");
-    SolrHighlighter highlighter = HighlightComponent.getHighlighter(h.getCore());
+    SolrHighlighter highlighter = getHighlighter();
     List<String> highlightFieldNames = Arrays.asList(highlighter
         .getHighlightFields(null, request, new String[] {}));
     assertTrue("Expected to highlight on field \"title\"", highlightFieldNames
@@ -894,7 +881,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     args.put("hl.fl", "foo_*");
     lrf = h.getRequestFactory("", 0, 10, args);
     request = lrf.makeRequest("test");
-    highlighter = HighlightComponent.getHighlighter(h.getCore());
+    highlighter = getHighlighter();
     highlightFieldNames = Arrays.asList(highlighter.getHighlightFields(null,
         request, new String[] {}));
     assertEquals("Expected one field to highlight on", 1, highlightFieldNames
@@ -911,7 +898,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     highlightedSetExpected.add("foo_s");
     highlightedSetExpected.add("bar_s");
     try (LocalSolrQueryRequest localRequest = lrf.makeRequest("test")) {
-      highlighter = HighlightComponent.getHighlighter(h.getCore());
+      highlighter = getHighlighter();
       final Set<String> highlightedSetActual = new HashSet<String>(
           Arrays.asList(highlighter.getHighlightFields(null,
               localRequest, new String[] {})));
@@ -922,7 +909,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     args.put("hl.fl", "title, text"); // comma then space
     lrf = h.getRequestFactory("", 0, 10, args);
     request = lrf.makeRequest("test");
-    highlighter = HighlightComponent.getHighlighter(h.getCore());
+    highlighter = getHighlighter();
     highlightFieldNames = Arrays.asList(highlighter.getHighlightFields(null,
         request, new String[] {}));
     assertEquals("Expected one field to highlight on", 2, highlightFieldNames
@@ -1260,5 +1247,10 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     } finally {
       req.close();
     }
+  }
+
+  private static SolrHighlighter getHighlighter() {
+    var hl = (HighlightComponent) h.getCore().getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
+    return hl.getHighlighter(new MapSolrParams(Map.of("hl.method", "original")));
   }
 }

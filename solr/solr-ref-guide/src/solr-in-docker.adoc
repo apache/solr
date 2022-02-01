@@ -22,7 +22,6 @@
 
 Instructions below apply to `solr:8.0.0` and above.
 
-
 See the https://hub.docker.com/_/solr?tab=tags[Docker Hub page] for a full list of tags and architectures available.
 
 === Running Solr with host-mounted directories

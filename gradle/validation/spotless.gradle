@@ -49,6 +49,7 @@ configure(project(":solr").subprojects) { prj ->
           case ":solr:modules:clustering":
           case ":solr:modules:extraction":
           case ":solr:modules:gcs-repository":
+          case ":solr:modules:hdfs":
           case ":solr:modules:langid":
           case ":solr:modules:ltr":
           case ":solr:modules:scripting":
