@@ -402,7 +402,7 @@ dependencies {
     }
 }
 
-def isLocalGuide = propertyOrEnvOrDefault("refguide.local", "REFGUIDE_LOCAL", "true").contains("t")
+def isLocalGuide = propertyOrEnvOrDefault("refguide.local", "REFGUIDE_LOCAL", "true").trim().toLowerCase().startsWith("t")
 
 // Documentation for Antora-Gradle plugin at
 // https://gitlab.com/antora/antora-gradle-plugin
