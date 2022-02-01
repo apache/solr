@@ -49,6 +49,7 @@ configurations {
     refGuide
     officialPlaybook
     localPlaybook
+    localJavadocs
 }
 
 dependencies {
@@ -82,6 +83,9 @@ dependencies {
     gems 'rubygems:slim:4.1.0'
     gems 'rubygems:concurrent-ruby:1.1.9'
     gems 'rubygems:http_parser.rb:0.6.0'
+
+    localJavadocs project(path: ":solr:documentation", configuration: 'javadocs')
+    localJavadocs project(path: ":solr:documentation", configuration: 'site')
 }
 
 sourceSets {
@@ -301,7 +305,11 @@ node {
   version = "16.13.2" // LTS
 }
 
+// TODO document these properties in help
+def isLocalGuide = propertyOrEnvOrDefault("refguide.local", "REFGUIDE_LOCAL", "true").trim().toLowerCase().startsWith("t")
+
 ext {
+    siteDir = "${buildDir}/site"
     playbooksDir = "${buildDir}/playbooks"
     playbookTemplate = "playbook.template.yml"
     localPlaybook = "local-playbook.yml"
@@ -321,10 +329,10 @@ task buildAntoraYaml {
     doLast {
         def splitVersion = version.toString().split("\\p{Punct}")
         def props = [
-            'solr_version'      : "${splitVersion[0]}.${splitVersion[1]}.${splitVersion[2]}",
-            'solr_version_major': splitVersion[0],
-            'solr_version_minor': splitVersion[1],
-            'solr_version_patch': splitVersion[2],
+            solr_version       : "${splitVersion[0]}.${splitVersion[1]}.${splitVersion[2]}",
+            solr_version_major : splitVersion[0],
+            solr_version_minor : splitVersion[1],
+            solr_version_patch : splitVersion[2],
         ]
         // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
         // These variable names must use underscores, not dashes or periods
@@ -343,7 +351,8 @@ task buildAntoraYaml {
             solrRootPath        : project(':solr').projectDir.toString() + File.separator,
             buildDate           : rootProject.ext['buildDate'],
             buildYear           : rootProject.ext['buildYear'],
-            lucene_version_docs : props.dep_version_lucene.replaceAll("\\.", "_")
+            solr_javadocs_link : "https://solr.apache.org/docs/${props.solr_version.replaceAll("\\.", "_")}",
+            lucene_javadocs_link :  project(':solr:documentation').luceneDocUrl,
         ])
 
         copy {
@@ -402,20 +411,27 @@ dependencies {
     }
 }
 
-def isLocalGuide = propertyOrEnvOrDefault("refguide.local", "REFGUIDE_LOCAL", "true").trim().toLowerCase().startsWith("t")
-
 // Documentation for Antora-Gradle plugin at
 // https://gitlab.com/antora/antora-gradle-plugin
 antora {
-    // TODO document these properties in help
     playbookFile = file("${project.ext.playbooksDir}/${isLocalGuide ? project.ext.localPlaybook : project.ext.officialPlaybook}")
     antoraVersion = "3.0.1"
     // TODO this is duplicated but I think the other instance of this is going away because it's specific to jekyll?
     // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
+    def extraArgs = []
+    if (isLocalGuide) {
+        // Use a local build of the Lucene and Solr javadocs if building a local refGuide
+        extraArgs.addAll([
+            // This attribute should not include ":link", the other 2 should
+            "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toPath()}",
+            "--attribute", "solr-javadocs=link:${project(':solr:documentation').docroot.toPath()}",
+            "--attribute", "lucene-javadocs=link:${project(':solr:documentation').luceneDocsDir.toPath()}"
+        ])
+    }
     arguments = [
         "--fetch",
         "--to-dir=${buildDir}/site",
-    ]
+    ] + extraArgs
 
     // TODO figure out if we can fail the build when this task outputs errors about broken links
     // TODO declare inputs and outputs so that we can cache the results
@@ -424,6 +440,8 @@ antora {
 tasks.antora.dependsOn tasks.buildAntoraYaml
 if (isLocalGuide) {
     tasks.antora.dependsOn configurations.localPlaybook
+
+    tasks.antora.dependsOn configurations.localJavadocs
 } else {
     tasks.antora.dependsOn configurations.officialPlaybook
 }
