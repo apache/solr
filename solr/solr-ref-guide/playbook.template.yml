@@ -12,24 +12,16 @@ urls:
 # See https://docs.antora.org/antora/latest/playbook/urls-redirect-facility/
 #  redirect_facility: httpd
 content:
-# The URL for "Edit this page" links will always go to 'main' in Github
+  # The URL for "Edit this page" links will always go to 'main' in Github
   edit_url: '{web_url}/tree/main/{path}'
   sources:
-#  TODO: this section needs to be edited before merging
-  - url: https://github.com/apache/solr.git
-    branches: jira/solr-15556-antora
+  - url: "${source_url}"
+    branches: ${source_branches}
     start_path: solr/solr-ref-guide
-# Uncomment these sections for local development but DO NOT COMMIT IT
-#  - url: ../..
-#    branches: HEAD
-#    start_path: solr/solr-ref-guide
 
 ui:
   bundle:
-# Uncomment next line when developing UI to see local changes before pushing
-#    url: ./ui/build/ui-bundle.zip
-# Uncomment next line when pulling stable UI build from nightlies
-    url: https://nightlies.apache.org/solr/draft-guides/ui-bundle.zip
+    url: "${ui_bundle_url}"
     snapshot: true
 output:
   clean: true

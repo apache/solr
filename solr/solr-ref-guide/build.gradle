@@ -47,6 +47,8 @@ repositories {
 configurations {
     depVer
     refGuide
+    officialPlaybook
+    localPlaybook
 }
 
 dependencies {
@@ -80,8 +82,6 @@ dependencies {
     gems 'rubygems:slim:4.1.0'
     gems 'rubygems:concurrent-ruby:1.1.9'
     gems 'rubygems:http_parser.rb:0.6.0'
-
-
 }
 
 sourceSets {
@@ -146,51 +146,6 @@ ext {
          // you could just sync the resources you need into the final structure (that's why I declared javadocs as an artifact).
          // This does entail some duplication (syncing between folders) but if it's reused in different places then it's fine.
     ]
-}
-
-task buildAntoraYaml(type: Copy) {
-    description "Creates an antora.yaml with all variables populated"
-
-    from "antora.yml.template"
-    into projectDir
-    rename("antora.yml.template", "antora.yml")
-
-    def splitVersion = version.toString().split("\\p{Punct}")
-    def props = [
-        // NOTE: Only include values here that are distinct and unique to the Official Dockerfiles
-        //
-        // Values identical in both Dockerfiles should use consistent names in both templates and
-        // be defined in the task creation
-
-        'solr_version'      : "${splitVersion[0]}.${splitVersion[1]}.${splitVersion[2]}",
-        'solr_version_major': splitVersion[0],
-        'solr_version_minor': splitVersion[1],
-        'solr_version_patch': splitVersion[2],
-    ]
-    doFirst {
-        // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
-        // These variable names must use underscores, not dashes or periods
-        props.putAll([
-            ["dep_version_commons_codec", "commons-codec", "commons-codec"],
-            ["dep_version_dropwizard", "io.dropwizard.metrics", "metrics-core"],
-            ["dep_version_hadoop", "org.apache.hadoop", "hadoop-auth"],
-            ["dep_version_log4j", "org.apache.logging.log4j", "log4j-core"],
-            ["dep_version_opennlp", "org.apache.opennlp", "opennlp-tools"],
-            ["dep_version_tika", "org.apache.tika", "tika-core"],
-            ["dep_version_zookeeper", "org.apache.zookeeper", "zookeeper"],
-            ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
-        ].collectEntries { propKey, depGroup, depId -> [propKey, "${-> project.getVersion(depGroup, depId)}"] })
-
-        props.putAll([
-            solrGuideDraftStatus : propertyOrDefault('solrGuideDraft', "true").toBoolean() ? "DRAFT" : "",
-            solrRootPath         : project(':solr').projectDir.toString() + File.separator,
-            buildDate            : rootProject.ext['buildDate'],
-            buildYear            : rootProject.ext['buildYear'],
-            'lucene_version_docs': props.dep_version_lucene.replaceAll("\\.", "_")
-        ])
-    }
-
-    expand(props)
 }
 
 // dynamically define the 2 variations of each target that we need...
@@ -346,31 +301,129 @@ node {
   version = "16.13.2" // LTS
 }
 
+ext {
+    playbooksDir = "${buildDir}/playbooks"
+    playbookTemplate = "playbook.template.yml"
+    localPlaybook = "local-playbook.yml"
+    officialPlaybook = "official-playbook.yml"
+    playbooksDir = "${buildDir}/playbooks"
+}
+
+task buildAntoraYaml {
+    description "Creates an antora.yml with all variables populated"
+
+    def templateYaml = "antora.yml.template"
+    def outputYaml = "antora.yml"
+
+    inputs.file(templateYaml)
+    outputs.file(outputYaml)
+
+    doLast {
+        def splitVersion = version.toString().split("\\p{Punct}")
+        def props = [
+            'solr_version'      : "${splitVersion[0]}.${splitVersion[1]}.${splitVersion[2]}",
+            'solr_version_major': splitVersion[0],
+            'solr_version_minor': splitVersion[1],
+            'solr_version_patch': splitVersion[2],
+        ]
+        // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
+        // These variable names must use underscores, not dashes or periods
+        props.putAll([
+            ["dep_version_commons_codec", "commons-codec", "commons-codec"],
+            ["dep_version_dropwizard", "io.dropwizard.metrics", "metrics-core"],
+            ["dep_version_hadoop", "org.apache.hadoop", "hadoop-auth"],
+            ["dep_version_log4j", "org.apache.logging.log4j", "log4j-core"],
+            ["dep_version_opennlp", "org.apache.opennlp", "opennlp-tools"],
+            ["dep_version_tika", "org.apache.tika", "tika-core"],
+            ["dep_version_zookeeper", "org.apache.zookeeper", "zookeeper"],
+            ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
+        ].collectEntries { propKey, depGroup, depId -> [propKey, "${-> project.getVersion(depGroup, depId)}"] })
+
+        props.putAll([
+            solrRootPath        : project(':solr').projectDir.toString() + File.separator,
+            buildDate           : rootProject.ext['buildDate'],
+            buildYear           : rootProject.ext['buildYear'],
+            lucene_version_docs : props.dep_version_lucene.replaceAll("\\.", "_")
+        ])
+
+        copy {
+            from(templateYaml) {
+                rename {
+                    outputYaml
+                }
+            }
+            into projectDir
+
+            expand(props)
+        }
+    }
+}
+
+task buildLocalAntoraPlaybookYaml(type: Copy) {
+    description "Creates ${project.ext.localPlaybook} to build and test the site locally"
+
+    from(project.ext.playbookTemplate) {
+        rename {
+            project.ext.localPlaybook
+        }
+    }
+    into project.ext.playbooksDir
+
+    expand([
+        'source_url'      : projectDir.parentFile.parentFile.path,
+        'source_branches' : "HEAD",
+        'ui_bundle_url'   : "https://nightlies.apache.org/solr/draft-guides/ui-bundle.zip",
+    ])
+}
+
+task buildOfficialAntoraPlaybookYaml(type: Copy) {
+    description "Creates ${project.ext.officialPlaybook} to build the official Solr ref-guide"
+
+    from(project.ext.playbookTemplate) {
+        rename {
+            project.ext.officialPlaybook
+        }
+    }
+    into project.ext.playbooksDir
+
+    expand([
+        'source_url'      : "https://github.com/apache/solr.git",
+        'source_branches' : ["jira/solr-15556-antora"],
+        'ui_bundle_url'   : "https://nightlies.apache.org/solr/draft-guides/ui-bundle.zip",
+    ])
+}
+
+dependencies {
+    localPlaybook files("${project.ext.playbooksDir}/${project.ext.localPlaybook}") {
+        builtBy tasks.buildLocalAntoraPlaybookYaml
+    }
+    officialPlaybook files("${project.ext.playbooksDir}/${project.ext.officialPlaybook}") {
+        builtBy tasks.buildOfficialAntoraPlaybookYaml
+    }
+}
+
+def isLocalGuide = propertyOrEnvOrDefault("refguide.local", "REFGUIDE_LOCAL", "true").contains("t")
 
 // Documentation for Antora-Gradle plugin at
 // https://gitlab.com/antora/antora-gradle-plugin
 antora {
     // TODO document these properties in help
-  playbookFile = file(propertyOrEnvOrDefault("refguide.playbook", "REFGUIDE_PLAYBOOK", "playbook.yml"))
-  antoraVersion = "3.0.1"
+    playbookFile = file("${project.ext.playbooksDir}/${isLocalGuide ? project.ext.localPlaybook : project.ext.officialPlaybook}")
+    antoraVersion = "3.0.1"
     // TODO this is duplicated but I think the other instance of this is going away because it's specific to jekyll?
     // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
     arguments = [
-        // [ asciidoctor-attribute-key, "maven.groupId", "maven.artifactId" ]
-            ["ivy-commons-codec-version", "commons-codec", "commons-codec"],
-            ["ivy-dropwizard-version", "io.dropwizard.metrics", "metrics-core"],
-            ["ivy-hadoop-version", "org.apache.hadoop", "hadoop-auth"],
-            ["ivy-log4j-version", "org.apache.logging.log4j", "log4j-core"],
-            ["ivy-opennlp-version", "org.apache.opennlp", "opennlp-tools"],
-            ["ivy-tika-version", "org.apache.tika", "tika-core"],
-            ["ivy-zookeeper-version", "org.apache.zookeeper", "zookeeper"],
-    ].collectEntries {
-        propKey, depGroup, depId -> [propKey, "${ -> project.getVersion(depGroup, depId) }"]
-    }.collect { k,v -> ['--attribute', "$k=$v"]}.flatten() + '--fetch'
+        "--fetch",
+        "--to-dir=${buildDir}/site",
+    ]
 
-  // TODO figure out if we can fail the build when this task outputs errors about broken links
-  // TODO declare inputs and outputs so that we can cache the results
+    // TODO figure out if we can fail the build when this task outputs errors about broken links
+    // TODO declare inputs and outputs so that we can cache the results
 }
 
-
 tasks.antora.dependsOn tasks.buildAntoraYaml
+if (isLocalGuide) {
+    tasks.antora.dependsOn configurations.localPlaybook
+} else {
+    tasks.antora.dependsOn configurations.officialPlaybook
+}
