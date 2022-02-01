@@ -75,10 +75,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
             .removalListener(
                 (coreName, core, cause) -> {
                   if (core != null && cause.wasEvicted()) {
-                    if (log.isInfoEnabled()) {
-                      log.info("Closing transient core [{}] evicted from the cache", core.getName());
-                    }
-                    coreContainer.queueCoreToClose(core);
+                    onEvict(core);
                   }
                 });
     if (cacheMaxSize != Integer.MAX_VALUE) {
@@ -88,6 +85,21 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
 
     transientDescriptors = new LinkedHashMap<>(initialCapacity);
   }
+
+  private void onEvict(SolrCore core) {
+    if (core.getOpenCount() > 1) {
+      if (log.isInfoEnabled()) {
+        log.info("NOT evicting transient core [{}]; it's still in use", core.getName());
+      }
+      transientCores.put(core.getName(), core); // perhaps triggers another eviction?  Or not.
+    } else {
+      if (log.isInfoEnabled()) {
+        log.info("Closing transient core [{}] evicted from the cache", core.getName());
+      }
+      coreContainer.queueCoreToClose(core);
+    }
+  }
+
 
   private int getConfiguredCacheMaxSize(CoreContainer container) {
     int configuredCacheMaxSize = NodeConfig.NodeConfigBuilder.DEFAULT_TRANSIENT_CACHE_SIZE;
