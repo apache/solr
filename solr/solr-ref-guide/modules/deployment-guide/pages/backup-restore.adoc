@@ -402,8 +402,8 @@ An example configuration using this property can be found below.
 === HdfsBackupRepository
 
 Stores and retrieves backup files from HDFS directories.
-
-WARNING: HdfsBackupRepository is deprecated and may be removed or relocated in a subsequent version of Solr.
+This is provided in the `hdfs` xref:configuration-guide:solr-modules.adoc[Solr Module].
+This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
 
 HdfsBackupRepository accepts the following configuration options:
 
@@ -461,7 +461,9 @@ An example configuration using these properties can be found below:
 
 === GCSBackupRepository
 
-Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket. This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
+Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket.
+This is provided in the `gcs-repository` xref:configuration-guide:solr-modules.adoc[Solr Module].
+This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
 
 GCSBackupRepository accepts the following options for overall configuration:
 
@@ -660,6 +662,7 @@ An example configuration using the overall and GCS-client properties can be seen
 === S3BackupRepository
 
 Stores and retrieves backup files in an Amazon S3 bucket.
+This is provided in the `s3-repository` xref:configuration-guide:solr-modules.adoc[Solr Module].
 This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
 
 This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html[default AWS credentials provider chain], so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).

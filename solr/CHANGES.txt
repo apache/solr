@@ -105,6 +105,8 @@ New Features
 
 * SOLR-15880: Introduce support for k nearest neighbors search (Alessandro Benedetti, Elia Porciani)
 
+* SOLR-14660: Move HDFS support to a new HDFS module (Istvan Farkas, Kevin Risden)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
