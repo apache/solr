@@ -378,6 +378,7 @@ task buildLocalAntoraPlaybookYaml(type: Copy) {
     into project.ext.playbooksDir
 
     expand([
+        'site_url'        : "",
         'source_url'      : projectDir.parentFile.parentFile.path,
         'source_branches' : "HEAD",
         'ui_bundle_url'   : "https://nightlies.apache.org/solr/draft-guides/ui-bundle.zip",
@@ -395,6 +396,7 @@ task buildOfficialAntoraPlaybookYaml(type: Copy) {
     into project.ext.playbooksDir
 
     expand([
+        'site_url'        : "https://solr.apache.org/guide",
         'source_url'      : "https://github.com/apache/solr.git",
         'source_branches' : ["jira/solr-15556-antora"],
         'ui_bundle_url'   : "https://nightlies.apache.org/solr/draft-guides/ui-bundle.zip",
@@ -446,6 +448,12 @@ task downloadAntoraLinkValidator(type: NpmTask) {
     args = ["install", "gitlab:antora/xref-validator"]
 }
 
+task downloadLinkValidator(type: NpmTask) {
+    dependsOn tasks.downloadAntoraCli
+
+    args = ["install", "linkinator"]
+}
+
 task validateSiteLinks(type: NpxTask) {
     dependsOn tasks.downloadAntoraLinkValidator
     dependsOn tasks.buildAntoraYaml
@@ -473,9 +481,10 @@ task buildSiteNew(type: NpxTask) {
         // Use a local build of the Lucene and Solr javadocs if building a local refGuide
         extraArgs.addAll([
             // This attribute should not include ":link", the other 2 should
+            // This attribute should also not be relative, because it is used in multiple path directories in the site
             "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toPath()}",
-            "--attribute", "solr-javadocs=link:${project(':solr:documentation').docroot.toPath()}",
-            "--attribute", "lucene-javadocs=link:${project(':solr:documentation').luceneDocsDir.toPath()}"
+            "--attribute", "solr-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}",
+            "--attribute", "lucene-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').luceneDocsDir)}"
         ])
     }
     args = [
@@ -483,4 +492,25 @@ task buildSiteNew(type: NpxTask) {
         "--fetch",
         "--to-dir=${buildDir}/site",
     ] + extraArgs
+}
+
+task validateJavadocsLinks(type: NpxTask) {
+    //dependsOn tasks.downloadLinkValidator
+    dependsOn tasks.buildSiteNew
+
+    command = "link-checker"
+    args = [
+        "${buildDir}/site",
+        "--url-ignore", "file:/",
+        "--mkdocs",
+        "--allow-hash-href",
+        "--disable-external",
+        "--debug",
+        // Ignore the java docs url in the header, since it is an absolute path
+        "--url-ignore", "${project(':solr:documentation').docroot.toPath()}/index\\.html",
+        //"--json",
+        "-v",
+    ]
+
+    //inputs.files("${buildDir}/site")
 }

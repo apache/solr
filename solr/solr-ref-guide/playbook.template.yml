@@ -1,6 +1,6 @@
 site:
   title: Apache Solr Reference Guide
-  url: https://solr.apache.org/guide
+  url: ${site_url}
   start_page: solr::index.adoc
 urls:
   latest_version_segment: latest
@@ -25,7 +25,7 @@ ui:
     snapshot: true
 output:
   clean: true
-  dir: ./build
+  dir: ./build/site
 asciidoc:
   attributes:
     stem:

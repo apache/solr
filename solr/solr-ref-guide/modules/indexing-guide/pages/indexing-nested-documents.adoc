@@ -25,7 +25,7 @@ The "top most" parent with all children is referred to as a "root" document or f
 document" and it explains some of the nomenclature of related features.
 
 At query time, the xref:query-guide:block-join-query-parser.adoc[] can search these relationships, and the xref:query-guide:document-transformers.adoc#child-childdoctransformerfactory[`[child]`] Document Transformer can attach child (or other "descendent") documents to the result documents.
-In terms of performance, indexing the relationships between documents usually yields much faster queries than an equivalent xref:query-guide:join-query-parser["query time join"],
+In terms of performance, indexing the relationships between documents usually yields much faster queries than an equivalent xref:query-guide:join-query-parser.adoc["query time join"],
  since the relationships are already stored in the index and do not need to be computed.
 
 However, nested documents are less flexible than query time joins as it imposes rules that some applications may not be able to accept.
@@ -251,7 +251,7 @@ when using the xref:query-guide:searching-nested-documents.adoc#child-doc-transf
 ** If this field does not exist, the `[child]` transformer will return all descendent child documents as a flattened list -- just as if they had been <<indexing-anonymous-children,indexed as anonymous children>>.
 * If you do not use `\_nest_path_` it is strongly recommended that every document have some
 field that differentiates root documents from their nested children -- and differentiates different "types" of child documents.
-This is not strictly necessary, so long as it's possible to write a "filter" query that can be used to isolate and select only parent documents for use in the xref:query-guide:block-join-query-parser[] and xref:query-guide:searching-nested-documents.adoc#child-doc-transformer[`[child]`] doc transformer
+This is not strictly necessary, so long as it's possible to write a "filter" query that can be used to isolate and select only parent documents for use in the xref:query-guide:block-join-query-parser.adoc[] and xref:query-guide:searching-nested-documents.adoc#child-doc-transformer[`[child]`] doc transformer
 * It's possible to query on this field, although at present it's only documented how to in the
 context of `[child]`'s `childFilter` parameter.
 

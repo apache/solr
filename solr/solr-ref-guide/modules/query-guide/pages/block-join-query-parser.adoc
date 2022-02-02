@@ -210,4 +210,4 @@ A similar problematic situation can arise when mixing parent/child documents wit
 ...then our simple `doc_type:parent` Block Mask would no longer be adequate.
  We would instead need to use `\*:* -doc_type:child` or `doc_type:(simple parent)` to prevent our "simple" document from mistakenly being treated as a "child" of an adjacent "parent" document.
 
-The xref:query-guide:searching-nested-documents[] section contains more detailed examples of specifying Block Mask queries with non trivial hierarchies of documents.
+The xref:query-guide:searching-nested-documents.adoc[] section contains more detailed examples of specifying Block Mask queries with non trivial hierarchies of documents.
