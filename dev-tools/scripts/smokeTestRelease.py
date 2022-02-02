@@ -93,6 +93,7 @@ def getHREFs(urlString):
     raise
 
   for subUrl, text in reHREF.findall(html):
+    #print("Got suburl %s and text %s" % (subUrl, text))
     fullURL = urllib.parse.urljoin(urlString, subUrl)
     links.append((text, fullURL))
   return links
@@ -100,7 +101,10 @@ def getHREFs(urlString):
 
 def load(urlString):
   try:
-    content = urllib.request.urlopen(urlString).read().decode('utf-8')
+    raw_request = urllib.request.Request(urlString)
+    raw_request.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0')
+    raw_request.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
+    content = urllib.request.urlopen(raw_request).read().decode('utf-8')
   except Exception as e:
     print('Retrying download of url %s after exception: %s' % (urlString, e))
     content = urllib.request.urlopen(urlString).read().decode('utf-8')
@@ -140,7 +144,7 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
     for verify in (
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
-      'Specification-Title: Solr Search Engine:',
+      'Specification-Title: Apache Solr Search Server:',
       'Implementation-Title: org.apache.solr',
       'X-Compile-Source-JDK: 11',
       'X-Compile-Target-JDK: 11',
@@ -215,6 +219,7 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   artifact = None
   changesURL = None
   mavenURL = None
+  dockerURL = None
   artifactURL = None
   expectedSigs = []
   if isSigned:
@@ -228,6 +233,8 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
       raise RuntimeError('solr: release dir should not contain a KEYS file - only toplevel /dist/solr/KEYS is used')
     elif text == 'maven/':
       mavenURL = subURL
+    elif text == 'docker/':
+      dockerURL = subURL
     elif text.startswith('changes'):
       if text not in ('changes/', 'changes-%s/' % version):
         raise RuntimeError('solr: found %s vs expected changes-%s/' % (text, version))
@@ -240,7 +247,7 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
         raise RuntimeError('solr: unknown artifact %s: expected prefix %s' % (text, expected))
       sigs = []
     elif text.startswith(artifact + '.'):
-      sigs.append(text[len(artifact)+1:])
+      sigs.append(subURL.rsplit(".")[-1:][0])
     else:
       if sigs != expectedSigs:
         raise RuntimeError('solr: artifact %s has wrong sigs: expected %s but got %s' % (artifact, expectedSigs, sigs))
@@ -271,6 +278,9 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
 
   if mavenURL is None:
     raise RuntimeError('solr is missing maven')
+
+  if dockerURL is None:
+    raise RuntimeError('solr is missing docker')
 
   if changesURL is None:
     raise RuntimeError('solr is missing changes-%s' % version)
@@ -578,7 +588,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin',  'bin-test',  'build',  'modules',  'core',  'docker',  'documentation',  'example',  'licenses',  'packaging',  'server',  'solr-ref-guide',  'solrj',  'test-framework',  'webapp']
+    expected_src_solr_folders = ['benchmark',  'bin', 'bin-test', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
@@ -586,7 +596,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     if len(in_solr_folder) > 0:
       raise RuntimeError('solr: unexpected files/dirs in artifact %s solr/ folder: %s' % (artifact, in_solr_folder))
   else:
-    is_in_list(in_root_folder, ['bin', 'modules', 'dist', 'docs', 'example', 'licenses', 'server'])
+    is_in_list(in_root_folder, ['bin', 'modules', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server'])
 
   if len(in_root_folder) > 0:
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
@@ -1011,6 +1021,8 @@ def parse_config():
                       help='Path to Java17 home directory, to run tests with if specified')
   parser.add_argument('--download-only', action='store_true', default=False,
                       help='Only perform download and sha hash check steps')
+  parser.add_argument('--dev-mode', action='store_true', default=False,
+                      help='Enable dev mode, will not check branch compatibility')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to gradle for testing, e.g. -Dwhat=ever.')
@@ -1058,7 +1070,7 @@ def main():
 
   # Pick <major>.<minor> part of version and require script to be from same branch
   scriptVersion = re.search(r'((\d+).(\d+)).(\d+)', scriptutil.find_current_version()).group(1).strip()
-  if not c.version.startswith(scriptVersion + '.'):
+  if not c.version.startswith(scriptVersion + '.') and not c.dev_mode:
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
