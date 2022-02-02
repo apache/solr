@@ -2084,12 +2084,13 @@ public class CoreContainer {
     return solrCores.isLoaded(name);
   }
 
-  public boolean isLoadedNotPendingClose(String name) {
-    return solrCores.isLoadedNotPendingClose(name);
+  /** The core is loading, unloading, or reloading. */
+  boolean hasPendingCoreOps(String name) {
+    return solrCores.hasPendingCoreOps(name);
   }
 
   // Primarily for transient cores when a core is aged out.
-  public void queueCoreToClose(SolrCore coreToClose) {
+  void queueCoreToClose(SolrCore coreToClose) {
     solrCores.queueCoreToClose(coreToClose);
   }
 
@@ -2284,8 +2285,10 @@ class CloserThread extends Thread {
 
       SolrCore core;
       while (!container.isShutDown() && (core = solrCores.getCoreToClose()) != null) {
+        assert core.getOpenCount() == 1;
         try {
-          core.close();
+          MDCLoggingContext.setCore(core);
+          core.close(); // will clear MDC
         } finally {
           solrCores.removeFromPendingOps(core.getName());
         }

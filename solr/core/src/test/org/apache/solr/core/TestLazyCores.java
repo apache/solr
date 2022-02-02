@@ -910,11 +910,12 @@ public class TestLazyCores extends SolrTestCaseJ4 {
         .substring("NOT evicting transient core [" + transientCoreNames[0] + "]")) {
       cc.waitForLoadingCoresToFinish(1000);
       var solr = new EmbeddedSolrServer(cc, null);
-      final var longReqTimeMs = 1000;
+      final var longReqTimeMs = 2000; // if lower too much, the test will fail on a slow/busy CI
 
       // First, start a long request on the first transient core
       var thread = new Thread(() -> {
         try {
+          // TODO Solr ought to have a query test "latch" mechanism so we don't sleep arbitrarily
           solr.query(transientCoreNames[0], params("q", "{!func}sleep(" + longReqTimeMs + ",1)"));
         } catch (SolrServerException | IOException e) {
           fail(e.toString());
