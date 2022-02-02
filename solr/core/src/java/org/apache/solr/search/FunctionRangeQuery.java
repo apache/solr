@@ -31,14 +31,17 @@ import org.apache.lucene.search.Weight;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 
-// This class works as either a normal constant score query, or as a PostFilter using a collector
+// This class works as either an ExtendedQuery, or as a PostFilter using a collector
 public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter {
 
   final ValueSourceRangeFilter rangeFilt;
+  boolean cache = true; // cache by default
+  int cost;
 
   public FunctionRangeQuery(ValueSourceRangeFilter filter) {
     super();
     this.rangeFilt = filter;
+    this.cost = 100; // default behavior should be PostFiltering
   }
 
   @Override
@@ -56,6 +59,26 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     return new FunctionRangeCollector(fcontext, weight);
+  }
+
+  @Override
+  public void setCache(boolean cache) {
+    this.cache = cache;
+  }
+
+  @Override
+  public boolean getCache() {
+    return cache;
+  }
+
+  @Override
+  public void setCost(int cost) {
+    this.cost = cost;
+  }
+
+  @Override
+  public int getCost() {
+    return cost;
   }
 
   class FunctionRangeCollector extends DelegatingCollector {

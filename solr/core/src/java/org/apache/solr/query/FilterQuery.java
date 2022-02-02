@@ -26,6 +26,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
+import org.apache.solr.search.DocSet;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -89,8 +90,10 @@ public class FilterQuery extends ExtendedQueryBase {
       return new ConstantScoreQuery(q).createWeight(searcher, scoreMode, 1f);
     }
 
+    SolrIndexSearcher solrSearcher = (SolrIndexSearcher)searcher;
+    DocSet docs = solrSearcher.getDocSet(q);
     // reqInfo.addCloseHook(docs);  // needed for off-heap refcounting
 
-    return new ConstantScoreQuery(q).createWeight(searcher, scoreMode, 1f);
+    return new ConstantScoreQuery(docs.makeQuery()).createWeight(searcher, scoreMode, 1f);
   }
 }
