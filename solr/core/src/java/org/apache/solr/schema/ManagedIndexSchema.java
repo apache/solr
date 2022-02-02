@@ -16,13 +16,13 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,9 +39,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenizerFactory;
@@ -72,7 +72,6 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.util.DOMConfigNode;
-import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -122,31 +121,20 @@ public final class ManagedIndexSchema extends IndexSchema {
       return persistManagedSchemaToZooKeeper(createOnly);
     }
     // Persist locally
-    File managedSchemaFile = new File(loader.getConfigDir(), managedSchemaResourceName);
-    OutputStreamWriter writer = null;
+    Path managedSchemaFile = loader.getConfigPath().resolve(managedSchemaResourceName);
     try {
-      File parentDir = managedSchemaFile.getParentFile();
-      if ( ! parentDir.isDirectory()) {
-        if ( ! parentDir.mkdirs()) {
-          final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
-          log.error(msg);
-          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
-        }
+      Files.createDirectories(managedSchemaFile.getParent());
+      try (Writer out = Files.newBufferedWriter(managedSchemaFile, StandardCharsets.UTF_8)) {
+        persist(out);
       }
-      final FileOutputStream out = new FileOutputStream(managedSchemaFile);
-      writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
-      persist(writer);
-      if (log.isInfoEnabled()) {
-        log.info("Upgraded to managed schema at {}", managedSchemaFile.getPath());
-      }
+      log.info("Upgraded to managed schema at {}", managedSchemaFile);
     } catch (IOException e) {
       final String msg = "Error persisting managed schema " + managedSchemaFile;
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
     } finally {
-      IOUtils.closeQuietly(writer);
       try {
-        FileUtils.sync(managedSchemaFile);
+        IOUtils.fsync(managedSchemaFile, false);
       } catch (IOException e) {
         final String msg = "Error syncing the managed schema file " + managedSchemaFile;
         log.error(msg, e);
@@ -230,7 +218,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
     List<GetZkSchemaVersionCallable> concurrentTasks = new ArrayList<>();
     for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, localCoreNodeName))
-      concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion));
+      concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion, zkController));
     if (concurrentTasks.isEmpty())
       return; // nothing to wait for ...
 
@@ -317,15 +305,16 @@ public final class ManagedIndexSchema extends IndexSchema {
     return activeReplicaCoreUrls;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private static class GetZkSchemaVersionCallable extends SolrRequest implements Callable<Integer> {
+  private static class GetZkSchemaVersionCallable extends SolrRequest<SolrResponse> implements Callable<Integer> {
 
+    private final ZkController zkController;
     private String coreUrl;
     private int expectedZkVersion;
 
-    GetZkSchemaVersionCallable(String coreUrl, int expectedZkVersion) {
+    GetZkSchemaVersionCallable(String coreUrl, int expectedZkVersion,
+        ZkController zkController) {
       super(METHOD.GET, "/schema/zkversion");
-
+      this.zkController = zkController;
       this.coreUrl = coreUrl;
       this.expectedZkVersion = expectedZkVersion;
     }
@@ -342,7 +331,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       int remoteVersion = -1;
       try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
-        while (remoteVersion == -1 || remoteVersion < expectedZkVersion) {
+        while (remoteVersion == -1 || remoteVersion < expectedZkVersion && !zkController.getCoreContainer().isShutDown()) {
           try {
             HttpSolrClient.HttpUriRequestResponse mrr = solr.httpUriRequest(this);
             NamedList<Object> zkversionResp = mrr.future.get();
@@ -359,6 +348,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
           } catch (Exception e) {
             if (e instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
               break; // stop looping
             } else {
               log.warn("Failed to get /schema/zkversion from {} due to: ", coreUrl, e);

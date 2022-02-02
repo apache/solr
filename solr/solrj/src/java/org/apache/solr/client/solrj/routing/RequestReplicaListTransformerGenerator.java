@@ -122,7 +122,7 @@ public class RequestReplicaListTransformerGenerator {
     }
 
     @Override
-    public void transform(List<?> choices) {
+    public <T> void transform(List<T> choices) {
       if (choices.size() > 1) {
         if (log.isDebugEnabled()) {
           log.debug("Applying the following sorting preferences to replicas: {}",

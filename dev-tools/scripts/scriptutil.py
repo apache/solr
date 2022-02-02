@@ -21,7 +21,6 @@ import os
 from enum import Enum
 import time
 import urllib.request, urllib.error, urllib.parse
-import urllib.parse
 
 class Version(object):
   def __init__(self, major, minor, bugfix, prerelease):
@@ -124,7 +123,7 @@ def find_branch_type():
   else:
     raise Exception('git status missing branch name')
 
-  if branchName == b'master':
+  if branchName == b'main':
     return BranchType.unstable
   if re.match(r'branch_(\d+)x', branchName.decode('UTF-8')):
     return BranchType.stable
@@ -176,10 +175,21 @@ def attemptDownload(urlString, fileName):
       os.remove(fileName)
 
 version_prop_re = re.compile(r'baseVersion\s*=\s*([\'"])(.*)\1')
+
+lucene_version_prop_re = re.compile(r'org\.apache\.lucene:\*=(.*?)\n')
+
 def find_current_version():
   script_path = os.path.dirname(os.path.realpath(__file__))
   top_level_dir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
   return version_prop_re.search(open('%s/build.gradle' % top_level_dir).read()).group(2).strip()
+
+
+def find_current_lucene_version():
+  script_path = os.path.dirname(os.path.realpath(__file__))
+  top_level_dir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
+  versions_file = open('%s/versions.props' % top_level_dir).read()
+  return lucene_version_prop_re.search(versions_file).group(1).strip()
+
 
 if __name__ == '__main__':
   print('This is only a support module, it cannot be run')

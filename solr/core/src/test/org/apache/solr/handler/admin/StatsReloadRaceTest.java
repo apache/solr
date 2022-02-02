@@ -96,7 +96,6 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
         CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(),
         CoreAdminParams.REQUESTID, "" + asyncId), rsp);
     
-    @SuppressWarnings("unchecked")
     List<Object> statusLog = rsp.getValues().getAll(CoreAdminAction.STATUS.name());
 
     assertFalse("expect status check w/o error, got:" + statusLog,
@@ -116,13 +115,11 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
       h.getCoreContainer().getRequestHandler("/admin/metrics").handleRequest(
           req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
 
-      @SuppressWarnings({"rawtypes"})
-      NamedList values = rsp.getValues();
+      NamedList<?> values = rsp.getValues();
       // this is not guaranteed to exist right away after core reload - there's a
       // small window between core load and before searcher metrics are registered
       // so we may have to check a few times, and then fail softly if reload is not complete yet
-      @SuppressWarnings({"rawtypes"})
-      NamedList metrics = (NamedList)values.get("metrics");
+      NamedList<?> metrics = (NamedList<?>)values.get("metrics");
       if (metrics == null) {
         if (softFail) {
           return;
@@ -130,7 +127,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
           fail("missing 'metrics' element in handler's output: " + values.asMap(5).toString());
         }
       }
-      metrics = (NamedList)metrics.get(registry);
+      metrics = (NamedList<?>)metrics.get(registry);
       if (metrics.get(key) != null) {
         found = true;
         assertTrue(metrics.get(key) instanceof Long);

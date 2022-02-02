@@ -243,9 +243,9 @@ public class SolrPluginUtils {
         fieldFilter = new HashSet<>(fieldFilter);
         // add highlight fields
 
-        SolrHighlighter highlighter = HighlightComponent.getHighlighter(req.getCore());
-        for (String field: highlighter.getHighlightFields(query, req, null))
-          fieldFilter.add(field);
+        HighlightComponent hl = (HighlightComponent) req.getCore().getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
+        SolrHighlighter highlighter = hl.getHighlighter(req.getParams());
+        Collections.addAll(fieldFilter, highlighter.getHighlightFields(query, req, null));
 
         // fetch unique key if one exists.
         SchemaField keyField = searcher.getSchema().getUniqueKeyField();
@@ -323,8 +323,7 @@ public class SolrPluginUtils {
    * @return The debug info
    * @throws java.io.IOException if there was an IO error
    */
-  @SuppressWarnings({"rawtypes"})
-  public static NamedList doStandardDebug(
+  public static NamedList<Object> doStandardDebug(
           SolrQueryRequest req,
           String userQuery,
           Query query,
@@ -333,20 +332,19 @@ public class SolrPluginUtils {
           boolean dbgResults)
           throws IOException
   {
-    NamedList dbg = new SimpleOrderedMap();
+    NamedList<Object> dbg = new SimpleOrderedMap<>();
     doStandardQueryDebug(req, userQuery, query, dbgQuery, dbg);
     doStandardResultsDebug(req, query, results, dbgResults, dbg);
     return dbg;
   }
 
 
-  @SuppressWarnings({"unchecked"})
   public static void doStandardQueryDebug(
           SolrQueryRequest req,
           String userQuery,
           Query query,
           boolean dbgQuery,
-          @SuppressWarnings({"rawtypes"})NamedList dbg)
+          NamedList<Object> dbg)
   {
     if (dbgQuery) {
       /* userQuery may have been pre-processed .. expose that */
@@ -362,13 +360,12 @@ public class SolrPluginUtils {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   public static void doStandardResultsDebug(
           SolrQueryRequest req,
           Query query,
           DocList results,
           boolean dbgResults,
-          @SuppressWarnings({"rawtypes"})NamedList dbg) throws IOException
+          NamedList<Object> dbg) throws IOException
   {
     if (dbgResults) {
       SolrIndexSearcher searcher = req.getSearcher();
@@ -847,7 +844,7 @@ public class SolrPluginUtils {
    * {@code resultIds} is.  {@code resultIds} comes from {@link ResponseBuilder#resultIds}.  If the doc key
    * isn't in {@code resultIds} then it is ignored.
    * Note: most likely you will call {@link #removeNulls(Map.Entry[], NamedList)} sometime after calling this. */
-  public static void copyNamedListIntoArrayByDocPosInResponse(@SuppressWarnings({"rawtypes"})NamedList namedList, Map<Object, ShardDoc> resultIds,
+  public static void copyNamedListIntoArrayByDocPosInResponse(NamedList<Object> namedList, Map<Object, ShardDoc> resultIds,
                                                               Map.Entry<String, Object>[] destArr) {
     assert resultIds.size() == destArr.length;
     for (int i = 0; i < namedList.size(); i++) {
@@ -995,14 +992,14 @@ public class SolrPluginUtils {
     return out;
   }
 
-  public static void invokeSetters(Object bean, Iterable<Map.Entry<String,Object>> initArgs) {
+  public static void invokeSetters(Object bean, Iterable<? extends Map.Entry<String,?>> initArgs) {
     invokeSetters(bean, initArgs, false);
   }
 
-  public static void invokeSetters(Object bean, Iterable<Map.Entry<String,Object>> initArgs, boolean lenient) {
+  public static void invokeSetters(Object bean, Iterable<? extends Map.Entry<String,?>> initArgs, boolean lenient) {
     if (initArgs == null) return;
     final Class<?> clazz = bean.getClass();
-    for (Map.Entry<String,Object> entry : initArgs) {
+    for (Map.Entry<String,?> entry : initArgs) {
       String key = entry.getKey();
       String setterName = "set" + String.valueOf(Character.toUpperCase(key.charAt(0))) + key.substring(1);
       try {

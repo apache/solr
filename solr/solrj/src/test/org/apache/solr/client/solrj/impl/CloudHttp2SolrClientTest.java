@@ -61,6 +61,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -239,7 +240,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings({"unchecked"})
   public void testRouting() throws Exception {
     CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1).process(cluster.getSolrClient());
     cluster.waitForActiveCollection("routing_collection", 2, 2);
@@ -254,13 +254,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     if (getRandomClient().isDirectUpdatesToLeadersOnly()) {
       checkSingleServer(response);
     }
-    @SuppressWarnings({"rawtypes"})
-    RouteResponse rr = (RouteResponse) response;
-    Map<String,LBSolrClient.Req> routes = rr.getRoutes();
-    Iterator<Map.Entry<String,LBSolrClient.Req>> it = routes.entrySet()
+    RouteResponse<?> rr = (RouteResponse<?>) response;
+    Map<String,? extends LBSolrClient.Req> routes = rr.getRoutes();
+    Iterator<? extends Map.Entry<String,? extends LBSolrClient.Req>> it = routes.entrySet()
         .iterator();
     while (it.hasNext()) {
-      Map.Entry<String,LBSolrClient.Req> entry = it.next();
+      Map.Entry<String,? extends LBSolrClient.Req> entry = it.next();
       String url = entry.getKey();
       UpdateRequest updateRequest = (UpdateRequest) entry.getValue()
           .getRequest();
@@ -306,7 +305,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       it = routes.entrySet()
           .iterator();
       while (it.hasNext()) {
-        Map.Entry<String,LBSolrClient.Req> entry = it.next();
+        Map.Entry<String,? extends LBSolrClient.Req> entry = it.next();
         String url = entry.getKey();
         UpdateRequest updateRequest = (UpdateRequest) entry.getValue()
             .getRequest();
@@ -774,9 +773,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testWrongZkChrootTest() throws IOException {
-
     exception.expect(SolrException.class);
     exception.expectMessage("cluster not found/not ready");
+    exception.expectMessage("Expected node '" + ZkStateReader.ALIASES + "' does not exist");
 
     try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
       client.setZkClientTimeout(1000 * 60);
@@ -841,8 +840,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     response = deleteRequest.commit(getRandomClient(), "versions_collection").getResponse();
     Object deletesObject = response.get("deletes");
     assertNotNull("There must be a deletes parameter", deletesObject);
-    @SuppressWarnings({"rawtypes"})
-    NamedList deletes = (NamedList) deletesObject;
+    NamedList<?> deletes = (NamedList<?>) deletesObject;
     assertEquals("There must be 1 version", 1, deletes.size());
   }
   
@@ -936,14 +934,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   
 
   private static void checkSingleServer(NamedList<Object> response) {
-    @SuppressWarnings({"rawtypes"})
-    final RouteResponse rr = (RouteResponse) response;
-    @SuppressWarnings({"unchecked"})
-    final Map<String,LBSolrClient.Req> routes = rr.getRoutes();
-    final Iterator<Map.Entry<String,LBSolrClient.Req>> it =
+    final RouteResponse<?> rr = (RouteResponse<?>) response;
+    final Map<String,? extends LBSolrClient.Req> routes = rr.getRoutes();
+    final Iterator<? extends Map.Entry<String,? extends LBSolrClient.Req>> it =
         routes.entrySet().iterator();
     while (it.hasNext()) {
-      Map.Entry<String,LBSolrClient.Req> entry = it.next();
+      Map.Entry<String,? extends LBSolrClient.Req> entry = it.next();
         assertEquals("wrong number of servers: "+entry.getValue().getServers(),
             1, entry.getValue().getServers().size());
     }

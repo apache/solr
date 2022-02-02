@@ -58,6 +58,7 @@ import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.util.SolrCLI;
+import org.apache.solr.util.SolrVersion;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,30 +156,29 @@ public class PackageManager implements Closeable {
     PackageUtils.printGreen("Package uninstalled: " + packageName + ":" + version + ":-)");
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public List<SolrPackageInstance> fetchInstalledPackageInstances() throws SolrException {
     log.info("Getting packages from packages.json...");
-    List<SolrPackageInstance> ret = new ArrayList<SolrPackageInstance>();
-    packages = new HashMap<String, List<SolrPackageInstance>>();
+    List<SolrPackageInstance> ret = new ArrayList<>();
+    packages = new HashMap<>();
     try {
-      Map packagesZnodeMap = null;
-
       if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH, true) == true) {
-        packagesZnodeMap = (Map)getMapper().readValue(
-            new String(zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null, true), "UTF-8"), Map.class).get("packages");
-        for (Object packageName: packagesZnodeMap.keySet()) {
-          List pkg = (List)packagesZnodeMap.get(packageName);
-          for (Map pkgVersion: (List<Map>)pkg) {
+        @SuppressWarnings("unchecked")
+        Map<String, List<Map<?,?>>> packagesZnodeMap = (Map<String, List<Map<?,?>>>)
+                getMapper().readValue(new String(zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null, true), "UTF-8"), Map.class).get("packages");
+        for (String packageName: packagesZnodeMap.keySet()) {
+          List<Map<?,?>> pkg = packagesZnodeMap.get(packageName);
+          for (Map<?,?> pkgVersion: pkg) {
             Manifest manifest = PackageUtils.fetchManifest(solrClient, solrBaseUrl, pkgVersion.get("manifest").toString(), pkgVersion.get("manifestSHA512").toString());
             List<Plugin> solrPlugins = manifest.plugins;
-            SolrPackageInstance pkgInstance = new SolrPackageInstance(packageName.toString(), null,
+            SolrPackageInstance pkgInstance = new SolrPackageInstance(packageName, null,
                     pkgVersion.get("version").toString(), manifest, solrPlugins, manifest.parameterDefaults);
-            if (pkgVersion.containsKey("files")) {
-              pkgInstance.files = (List) pkgVersion.get("files");
+            @SuppressWarnings("unchecked")
+            List<String> files = (List<String>) pkgVersion.get("files");
+            if (files != null) {
+              pkgInstance.files = files;
             }
-            List<SolrPackageInstance> list = packages.containsKey(packageName) ? packages.get(packageName) : new ArrayList<SolrPackageInstance>();
+            List<SolrPackageInstance> list = packages.computeIfAbsent(packageName, k -> new ArrayList<>());
             list.add(pkgInstance);
-            packages.put(packageName.toString(), list);
             ret.add(pkgInstance);
           }
         }
@@ -219,7 +219,6 @@ public class PackageManager implements Closeable {
   public Map<String, SolrPackageInstance> getPackagesDeployedAsClusterLevelPlugins() {
     Map<String, String> packageVersions = new HashMap<>();
     MultiValuedMap<String, PluginMeta> packagePlugins = new HashSetValuedHashMap<>(); // map of package name to multiple values of pluginMeta (Map<String, String>)
-    @SuppressWarnings({"unchecked"})
     Map<String, Object> result;
     try {
       result = (Map<String, Object>) Utils.executeGET(solrClient.getHttpClient(),
@@ -657,12 +656,16 @@ public class PackageManager implements Closeable {
       PackageUtils.printRed("Package instance doesn't exist: " + packageName + ":" + version + ". Use install command to install this version first.");
       System.exit(1);
     }
-    if (version == null) version = packageInstance.version;
 
     Manifest manifest = packageInstance.manifest;
-    if (PackageUtils.checkVersionConstraint(RepositoryManager.systemVersion, manifest.versionConstraint) == false) {
-      PackageUtils.printRed("Version incompatible! Solr version: "
-          + RepositoryManager.systemVersion + ", package version constraint: " + manifest.versionConstraint);
+    try {
+      if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
+        PackageUtils.printRed("Version incompatible! Solr version: "
+            + SolrVersion.LATEST + ", package version constraint: " + manifest.versionConstraint);
+        System.exit(1);
+      }
+    } catch (SolrVersion.InvalidSemVerExpressionException ex) {
+      PackageUtils.printRed("Error in version constraint given in package manifest: " +  manifest.versionConstraint + ". It does not a valid SemVer expression.");
       System.exit(1);
     }
 

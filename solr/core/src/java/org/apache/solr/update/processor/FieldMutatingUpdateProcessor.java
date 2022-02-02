@@ -139,7 +139,7 @@ public abstract class FieldMutatingUpdateProcessor
    * @param excludes a selector identifying field names that should be 
    *        <i>not</i> be selected, even if they are matched by the 'includes' 
    *        selector
-   * @return Either a new FieldNameSelector or one of the input selecors 
+   * @return Either a new FieldNameSelector or one of the input selectors
    *         if the combination lends itself to optimization.
    */
   public static FieldNameSelector wrap(final FieldNameSelector includes, 
@@ -209,15 +209,13 @@ public abstract class FieldMutatingUpdateProcessor
   private static final class ConfigurableFieldNameSelectorHelper {
 
     final SelectorParams params;
-    @SuppressWarnings({"rawtypes"})
-    final Collection<Class> classes;
+    final Collection<Class<?>> classes;
 
     private ConfigurableFieldNameSelectorHelper(final SolrResourceLoader loader,
                                           final SelectorParams params) {
       this.params = params;
 
-      @SuppressWarnings({"rawtypes"})
-      final Collection<Class> classes = new ArrayList<>(params.typeClass.size());
+      final Collection<Class<?>> classes = new ArrayList<>(params.typeClass.size());
 
       for (String t : params.typeClass) {
         try {
@@ -269,9 +267,8 @@ public abstract class FieldMutatingUpdateProcessor
      * returns true if the Object 'o' is an instance of any class in 
      * the Collection
      */
-    private static boolean instanceOfAny(Object o,
-                                         @SuppressWarnings({"rawtypes"})Collection<Class> classes) {
-      for (@SuppressWarnings({"rawtypes"})Class c : classes) {
+    private static boolean instanceOfAny(Object o, Collection<Class<?>> classes) {
+      for (Class<?> c : classes) {
         if ( c.isInstance(o) ) return true;
       }
       return false;

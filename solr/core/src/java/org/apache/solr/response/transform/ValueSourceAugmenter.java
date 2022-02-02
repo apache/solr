@@ -60,7 +60,6 @@ public class ValueSourceAugmenter extends DocTransformer
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public void setContext( ResultContext context ) {
     super.setContext(context);
     try {
@@ -73,8 +72,7 @@ public class ValueSourceAugmenter extends DocTransformer
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  Map fcontext;
+  Map<Object,Object> fcontext;
   SolrIndexSearcher searcher;
   List<LeafReaderContext> readerContexts;
 
@@ -87,7 +85,6 @@ public class ValueSourceAugmenter extends DocTransformer
       // TODO: calculate this stuff just once across diff functions
       int idx = ReaderUtil.subIndex(docid, readerContexts);
       LeafReaderContext rcontext = readerContexts.get(idx);
-      @SuppressWarnings({"unchecked"})
       FunctionValues values = valueSource.getValues(fcontext, rcontext);
       int localId = docid - rcontext.docBase;
       setValue(doc,values.objectVal(localId));

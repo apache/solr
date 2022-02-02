@@ -18,42 +18,45 @@
 package org.apache.solr.util.tracing;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
+import io.opentracing.util.GlobalTracer;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.util.LogLevel;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-
+@LogLevel("org.apache.solr.core.TracerConfigurator=trace")
 public class TestDistributedTracing extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  static MockTracer tracer;
 
   @BeforeClass
   public static void beforeTest() throws Exception {
+    tracer = new MockTracer();
+    assertTrue(GlobalTracer.registerIfAbsent(tracer));
+
     configureCluster(4)
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .withSolrXml(TEST_PATH().resolve("solr-tracing.xml"))
         .configure();
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.SAMPLE_PERCENTAGE, "100.0")
-        .process(cluster.getSolrClient());
-    waitForSampleRateUpdated(1.0);
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", 2, 2)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
@@ -61,43 +64,39 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
   }
 
-  private static void waitForSampleRateUpdated(double rate) throws TimeoutException, InterruptedException {
-    TimeOut timeOut = new TimeOut(1, TimeUnit.MINUTES, TimeSource.NANO_TIME);
-    timeOut.waitFor("Waiting for sample rate is updated", () ->
-        Math.abs(GlobalTracer.get().getSampleRate() - rate) < 0.001
-            && GlobalTracer.get().tracer instanceof MockTracer);
-  }
-
-  private List<MockSpan> getFinishedSpans() {
-    return ((MockTracer)GlobalTracer.get().tracer).finishedSpans();
+  @AfterClass
+  public static void afterTest() {
+    tracer = null;
   }
 
   @Test
   public void test() throws IOException, SolrServerException, TimeoutException, InterruptedException {
-    CloudSolrClient cloudClient = cluster.getSolrClient();
-    List<MockSpan> allSpans = getFinishedSpans();
+    // TODO it would be clearer if we could compare the complete Span tree between reality
+    //   and what we assert it looks like in a structured visual way.
 
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    List<MockSpan> finishedSpans;
+
+    // Indexing
     cloudClient.add(COLLECTION, sdoc("id", "1"));
-    List<MockSpan> finishedSpans = getRecentSpans(allSpans);
+    finishedSpans = getAndClearSpans();
     finishedSpans.removeIf(x ->
         !x.tags().get("http.url").toString().endsWith("/update"));
     assertEquals(2, finishedSpans.size());
     assertOneSpanIsChildOfAnother(finishedSpans);
+    // core because cloudClient routes to core
+    assertEquals("post:/{core}/update", finishedSpans.get(0).operationName());
+    assertDbInstanceCore(finishedSpans.get(0));
 
     cloudClient.add(COLLECTION, sdoc("id", "2"));
-    finishedSpans = getRecentSpans(allSpans);
-    finishedSpans.removeIf(x ->
-        !x.tags().get("http.url").toString().endsWith("/update"));
-    assertEquals(2, finishedSpans.size());
-    assertOneSpanIsChildOfAnother(finishedSpans);
-
     cloudClient.add(COLLECTION, sdoc("id", "3"));
     cloudClient.add(COLLECTION, sdoc("id", "4"));
     cloudClient.commit(COLLECTION);
+    getAndClearSpans();
 
-    getRecentSpans(allSpans);
+    // Searching
     cloudClient.query(COLLECTION, new SolrQuery("*:*"));
-    finishedSpans = getRecentSpans(allSpans);
+    finishedSpans = getAndClearSpans();
     finishedSpans.removeIf(x ->
         !x.tags().get("http.url").toString().endsWith("/select"));
     // one from client to server, 2 for execute query, 2 for fetching documents
@@ -112,15 +111,71 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         fail("All spans must belong to single span, but:"+finishedSpans);
       }
     }
+    assertEquals("get:/{collection}/select", finishedSpans.get(0).operationName());
+    assertDbInstanceColl(finishedSpans.get(0));
+  }
 
-    CollectionAdminRequest.setClusterProperty(ZkStateReader.SAMPLE_PERCENTAGE, "0.0")
-        .process(cluster.getSolrClient());
-    waitForSampleRateUpdated(0);
+  @Test
+  public void testAdminApi() throws Exception {
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    List<MockSpan> finishedSpans;
 
-    getRecentSpans(allSpans);
-    cloudClient.add(COLLECTION, sdoc("id", "5"));
-    finishedSpans = getRecentSpans(allSpans);
-    assertEquals(0, finishedSpans.size());
+    // Admin API call
+    cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params()));
+    finishedSpans = getAndClearSpans();
+    assertEquals("get:/admin/metrics", finishedSpans.get(0).operationName());
+
+    CollectionAdminRequest.listCollections(cloudClient);
+    finishedSpans = getAndClearSpans();
+    assertEquals("list:/admin/collections", finishedSpans.get(0).operationName());
+  }
+
+  @Test
+  public void testV2Api() throws Exception {
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    List<MockSpan> finishedSpans;
+
+    new V2Request.Builder("/c/" + COLLECTION)
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{\n" +
+            " \"reload\" : {}\n" +
+            "}")
+        .build()
+        .process(cloudClient);
+    finishedSpans = getAndClearSpans();
+    assertEquals("reload:/c/{collection}", finishedSpans.get(0).operationName());
+    assertDbInstanceColl(finishedSpans.get(0));
+
+    new V2Request.Builder("/c/" + COLLECTION + "/update/json")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{\n" +
+            " \"id\" : \"9\"\n" +
+            "}")
+        .withParams(params("commit", "true"))
+        .build()
+        .process(cloudClient);
+    finishedSpans = getAndClearSpans();
+    assertEquals("post:/c/{collection}/update/json", finishedSpans.get(0).operationName());
+    assertDbInstanceColl(finishedSpans.get(0));
+
+    final V2Response v2Response = new V2Request.Builder("/c/" + COLLECTION + "/select")
+        .withMethod(SolrRequest.METHOD.GET)
+        .withParams(params("q", "id:9"))
+        .build()
+        .process(cloudClient);
+    finishedSpans = getAndClearSpans();
+    assertEquals("get:/c/{collection}/select", finishedSpans.get(0).operationName());
+    assertDbInstanceColl(finishedSpans.get(0));
+    assertEquals(1, ((SolrDocumentList)v2Response.getResponse().get("response")).getNumFound());
+  }
+
+  private void assertDbInstanceColl(MockSpan mockSpan) {
+    MatcherAssert.assertThat(mockSpan.tags().get("db.instance"), Matchers.equalTo("collection1"));
+  }
+
+  private void assertDbInstanceCore(MockSpan mockSpan) {
+    MatcherAssert.assertThat(
+        (String) mockSpan.tags().get("db.instance"), Matchers.startsWith("collection1_"));
   }
 
   private void assertOneSpanIsChildOfAnother(List<MockSpan> finishedSpans) {
@@ -135,11 +190,10 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals(child.parentId(), parent.context().spanId());
   }
 
-  private List<MockSpan> getRecentSpans(List<MockSpan> allSpans) {
-    List<MockSpan> result = new ArrayList<>(getFinishedSpans());
-    result.removeAll(allSpans);
-    allSpans.clear();
-    allSpans.addAll(getFinishedSpans());
+  private List<MockSpan> getAndClearSpans() {
+    List<MockSpan> result = tracer.finishedSpans(); // returns a mutable copy
+    Collections.reverse(result); // nicer to see spans chronologically
+    tracer.reset();
     return result;
   }
 }

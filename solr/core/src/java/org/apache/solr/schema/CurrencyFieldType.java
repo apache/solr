@@ -49,11 +49,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Field type for support of monetary values.
  * <p>
- * See <a href="http://wiki.apache.org/solr/CurrencyField">http://wiki.apache.org/solr/CurrencyField</a>
+ * See <a href="https://solr.apache.org/guide/currencies-exchange-rates.html">https://solr.apache.org/guide/currencies-exchange-rates.html</a>
  */
 public class CurrencyFieldType extends FieldType implements SchemaAware, ResourceLoaderAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   protected static final String PARAM_DEFAULT_CURRENCY = "defaultCurrency";
   protected static final String DEFAULT_DEFAULT_CURRENCY = "USD";
   protected static final String PARAM_RATE_PROVIDER_CLASS = "providerClass";
@@ -66,7 +66,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   protected FieldType fieldTypeAmountRaw;
   protected String fieldSuffixAmountRaw;
   protected String fieldSuffixCurrency;
-  
+
   private String exchangeRateProviderClass;
   private String defaultCurrency;
   private ExchangeRateProvider provider;
@@ -137,7 +137,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
         args.remove(PARAM_FIELD_SUFFIX_AMOUNT_RAW);
       }
     }
-    
+
     if (fieldTypeCurrency == null) {       // Don't initialize if subclass already has done so
       fieldSuffixCurrency = args.get(PARAM_FIELD_SUFFIX_CURRENCY);
       if (fieldSuffixCurrency == null) {
@@ -182,7 +182,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
     return f;
   }
-  
+
   private SchemaField getAmountField(SchemaField field) {
     return schema.getField(field.getName() + POLY_FIELD_SEPARATOR + fieldSuffixAmountRaw);
   }
@@ -192,7 +192,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   }
 
   /**
-   * When index schema is informed, get field types for the configured dynamic sub-fields 
+   * When index schema is informed, get field types for the configured dynamic sub-fields
    *
    * {@inheritDoc}
    *
@@ -256,19 +256,19 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
   /**
    * <p>
-   * Returns a ValueSource over this field in which the numeric value for 
-   * each document represents the indexed value as converted to the default 
-   * currency for the field, normalized to its most granular form based 
+   * Returns a ValueSource over this field in which the numeric value for
+   * each document represents the indexed value as converted to the default
+   * currency for the field, normalized to its most granular form based
    * on the default fractional digits.
    * </p>
    * <p>
-   * For example: If the default Currency specified for a field is 
-   * <code>USD</code>, then the values returned by this value source would 
+   * For example: If the default Currency specified for a field is
+   * <code>USD</code>, then the values returned by this value source would
    * represent the equivalent number of "cents" (ie: value in dollars * 100)
-   * after converting each document's native currency to USD -- because the 
-   * default fractional digits for <code>USD</code> is "<code>2</code>".  
+   * after converting each document's native currency to USD -- because the
+   * default fractional digits for <code>USD</code> is "<code>2</code>".
    * So for a document whose indexed value was currently equivalent to
-   * "<code>5.43,USD</code>" using the the exchange provider for this field, 
+   * "<code>5.43,USD</code>" using the the exchange provider for this field,
    * this ValueSource would return a value of "<code>543</code>"
    * </p>
    *
@@ -286,18 +286,18 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
   /**
    * <p>
-   * Returns a ValueSource over this field in which the numeric value for 
-   * each document represents the value from the underlying 
-   * <code>RawCurrencyValueSource</code> as converted to the specified target 
+   * Returns a ValueSource over this field in which the numeric value for
+   * each document represents the value from the underlying
+   * <code>RawCurrencyValueSource</code> as converted to the specified target
    * Currency.
    * </p>
    * <p>
    * For example: If the <code>targetCurrencyCode</code> param is set to
-   * <code>USD</code>, then the values returned by this value source would 
+   * <code>USD</code>, then the values returned by this value source would
    * represent the equivalent number of dollars after converting each
-   * document's raw value to <code>USD</code>.  So for a document whose 
+   * document's raw value to <code>USD</code>.  So for a document whose
    * indexed value was currently equivalent to "<code>5.43,USD</code>"
-   * using the the exchange provider for this field, this ValueSource would 
+   * using the the exchange provider for this field, this ValueSource would
    * return a value of "<code>5.43</code>"
    * </p>
    *
@@ -394,7 +394,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
       if (null == targetCurrency) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Currency code not supported by this JVM: " + targetCurrencyCode);
       }
-      // the target digits & currency of our source, 
+      // the target digits & currency of our source,
       // become the source digits & currency of ourselves
       this.rate = provider.getExchangeRate
           (source.getTargetCurrency().getCurrencyCode(),
@@ -402,10 +402,10 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     }
 
     @Override
-    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext reader)
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext reader)
         throws IOException {
       final FunctionValues amounts = source.getValues(context, reader);
-      // the target digits & currency of our source, 
+      // the target digits & currency of our source,
       // become the source digits & currency of ourselves
       final String sourceCurrencyCode = source.getTargetCurrency().getCurrencyCode();
       final double divisor = Math.pow(10D, targetCurrency.getDefaultFractionDigits());
@@ -477,14 +477,14 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
   /**
    * <p>
-   * A value source whose values represent the "raw" (ie: normalized using 
-   * the number of default fractional digits) values in the specified 
+   * A value source whose values represent the "raw" (ie: normalized using
+   * the number of default fractional digits) values in the specified
    * target currency).
    * </p>
    * <p>
-   * For example: if the specified target currency is "<code>USD</code>" 
-   * then the numeric values are the number of pennies in the value 
-   * (ie: <code>$n * 100</code>) since the number of default fractional 
+   * For example: if the specified target currency is "<code>USD</code>"
+   * then the numeric values are the number of pennies in the value
+   * (ie: <code>$n * 100</code>) since the number of default fractional
    * digits for <code>USD</code> is "<code>2</code>")
    * </p>
    * @see ConvertedCurrencyValueSource
@@ -514,8 +514,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     public Currency getTargetCurrency() { return targetCurrency; }
 
     @Override
-    @SuppressWarnings({"unchecked"})
-    public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext reader) throws IOException {
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext reader) throws IOException {
       final FunctionValues amounts = amountValues.getValues(context, reader);
       final FunctionValues currencies = currencyValues.getValues(context, reader);
 
@@ -571,7 +570,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
         public long longVal(int doc) throws IOException {
           long amount = amounts.longVal(doc);
           // bail fast using whatever amounts defaults to if no value
-          // (if we don't do this early, currencyOrd may be < 0, 
+          // (if we don't do this early, currencyOrd may be < 0,
           // causing index bounds exception
           if ( ! exists(doc) ) {
             return amount;
@@ -680,4 +679,3 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   }
 
 }
-

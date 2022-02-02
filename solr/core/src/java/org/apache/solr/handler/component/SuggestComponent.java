@@ -43,9 +43,10 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -86,8 +87,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   /** SolrConfig label to identify boolean value to build suggesters on startup */
   private static final String BUILD_ON_STARTUP_LABEL = "buildOnStartup";
 
-  @SuppressWarnings({"rawtypes"})
-  protected NamedList initParams;
+  protected NamedList<?> initParams;
 
   /**
    * Key is the dictionary name used in SolrConfig, value is the corresponding {@link SolrSuggester}
@@ -105,8 +105,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
   
   @Override
-  @SuppressWarnings("unchecked")
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     this.initParams = args;
   }
@@ -118,8 +117,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       boolean hasDefault = false;
       for (int i = 0; i < initParams.size(); i++) {
         if (initParams.getName(i).equals(CONFIG_PARAM_LABEL)) {
-          @SuppressWarnings({"rawtypes"})
-          NamedList suggesterParams = (NamedList) initParams.getVal(i);
+          NamedList<?> suggesterParams = (NamedList<?>) initParams.getVal(i);
           SolrSuggester suggester = new SolrSuggester();
           String dictionary = suggester.init(suggesterParams, core);
           if (dictionary != null) {
@@ -141,8 +139,8 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
           boolean buildOnStartup;
           Object buildOnStartupObj = suggesterParams.get(BUILD_ON_STARTUP_LABEL);
           if (buildOnStartupObj == null) {
-            File storeFile = suggester.getStoreFile();
-            buildOnStartup = storeFile == null || !storeFile.exists();
+            Path storeFile = suggester.getStoreFile();
+            buildOnStartup = storeFile == null || !Files.exists(storeFile);
           } else {
             buildOnStartup = Boolean.parseBoolean((String) buildOnStartupObj);
           }
@@ -188,7 +186,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       rb.rsp.add("command", (!buildAll) ? "build" : "buildAll");
     } else if (params.getBool(SUGGEST_RELOAD, false) || reloadAll) {
       for (SolrSuggester suggester : querysuggesters) {
-        suggester.reload(rb.req.getCore(), rb.req.getSearcher());
+        suggester.reload();
       }
       rb.rsp.add("command", (!reloadAll) ? "reload" : "reloadAll");
     }
@@ -500,9 +498,6 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       this.buildOnStartup = buildOnStartup;
       this.isCoreReload = isCoreReload;
     }
-
-    @Override
-    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
 
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher,

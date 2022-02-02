@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -125,13 +124,12 @@ public class CloudUtil {
   public static String unifiedResourcePath(SolrResourceLoader loader) {
     return (loader instanceof ZkSolrResourceLoader) ?
             ((ZkSolrResourceLoader) loader).getConfigSetZkPath() + "/" :
-            loader.getConfigDir() + File.separator;
+            loader.getConfigPath() + "/";
   }
 
   /**Read the list of public keys from ZK
    */
 
-  @SuppressWarnings({"unchecked"})
   public static Map<String, byte[]> getTrustedKeys(SolrZkClient zk, String dir) {
     Map<String, byte[]> result = new HashMap<>();
     try {
@@ -142,7 +140,7 @@ public class CloudUtil {
       }
     } catch (KeeperException.NoNodeException e) {
       log.info("Error fetching key names");
-      return Collections.EMPTY_MAP;
+      return Collections.emptyMap();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVER_ERROR,"Unable to read crypto keys",e );

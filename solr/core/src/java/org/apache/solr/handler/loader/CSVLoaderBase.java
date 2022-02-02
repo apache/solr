@@ -37,7 +37,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.io.*;
 
-abstract class CSVLoaderBase extends ContentStreamLoader {
+public abstract class CSVLoaderBase extends ContentStreamLoader {
   public static final String SEPARATOR="separator";
   public static final String FIELDNAMES="fieldnames";
   public static final String HEADER="header";
@@ -59,7 +59,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   
   final SolrParams params;
   final CSVStrategy strategy;
-  final UpdateRequestProcessor processor;
+  protected final UpdateRequestProcessor processor;
   // hashmap to save any literal fields and their values
   HashMap <String, String> literals;
 
@@ -71,7 +71,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
 
   int skipLines;    // number of lines to skip at start of file
 
-  final AddUpdateCommand templateAdd;
+  protected final AddUpdateCommand templateAdd;
 
 
 
@@ -157,7 +157,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
 
   String errHeader="CSVLoader:";
 
-  CSVLoaderBase(SolrQueryRequest req, UpdateRequestProcessor processor) {
+  protected CSVLoaderBase(SolrQueryRequest req, UpdateRequestProcessor processor) {
     this.processor = processor;
     this.params = req.getParams();
     this.literals = new HashMap<>();
@@ -166,44 +166,50 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
     templateAdd.overwrite=params.getBool(OVERWRITE,true);
     templateAdd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
     
-    strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true, "\n");
+    char delimiter = ',';
     String sep = params.get(SEPARATOR);
     if (sep!=null) {
       if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid separator:'"+sep+"'");
-      strategy.setDelimiter(sep.charAt(0));
+      delimiter = sep.charAt(0);
     }
 
+    char encapsulatorChar = '"';
     String encapsulator = params.get(ENCAPSULATOR);
     if (encapsulator!=null) {
       if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid encapsulator:'"+encapsulator+"'");
     }
 
+    char escapeChar = CSVStrategy.ESCAPE_DISABLED;
     String escape = params.get(ESCAPE);
     if (escape!=null) {
       if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid escape:'"+escape+"'");
     }
-    rowId = params.get(ROW_ID);
-    rowIdOffset = params.getInt(ROW_ID_OFFSET, 0);
 
+    boolean interpretUnicodeEscapes = false;
     // if only encapsulator or escape is set, disable the other escaping mechanism
     if (encapsulator == null && escape != null) {
-      strategy.setEncapsulator( CSVStrategy.ENCAPSULATOR_DISABLED);     
-      strategy.setEscape(escape.charAt(0));
+      encapsulatorChar = CSVStrategy.ENCAPSULATOR_DISABLED;
+      escapeChar = escape.charAt(0);
     } else {
       if (encapsulator != null) {
-        strategy.setEncapsulator(encapsulator.charAt(0));
+        encapsulatorChar = encapsulator.charAt(0);
       }
       if (escape != null) {
         char ch = escape.charAt(0);
-        strategy.setEscape(ch);
+        escapeChar = ch;
         if (ch == '\\') {
           // If the escape is the standard backslash, then also enable
           // unicode escapes (it's harmless since 'u' would not otherwise
           // be escaped.                    
-          strategy.setUnicodeEscapeInterpretation(true);
+          interpretUnicodeEscapes = true;
         }
       }
     }
+
+    strategy = new CSVStrategy(delimiter, encapsulatorChar, CSVStrategy.COMMENTS_DISABLED, escapeChar, false, false, interpretUnicodeEscapes, true, "\n");
+
+    rowId = params.get(ROW_ID);
+    rowIdOffset = params.getInt(ROW_ID_OFFSET, 0);
 
     String fn = params.get(FIELDNAMES);
     fieldnames = fn != null ? commaSplit.split(fn,-1) : null;
@@ -368,10 +374,10 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   }
 
   /** called for each line of values (document) */
-  abstract void addDoc(int line, String[] vals) throws IOException;
+  public abstract void addDoc(int line, String[] vals) throws IOException;
 
   /** this must be MT safe... may be called concurrently from multiple threads. */
-  void doAdd(int line, String[] vals, SolrInputDocument doc, AddUpdateCommand template) throws IOException {
+  protected void doAdd(int line, String[] vals, SolrInputDocument doc, AddUpdateCommand template) throws IOException {
     // the line number is passed for error reporting in MT mode as well as for optional rowId.
     // first, create the lucene document
     for (int i=0; i<vals.length; i++) {

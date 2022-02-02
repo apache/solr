@@ -20,22 +20,22 @@ import java.time.format.DateTimeFormatter
 
 plugins {
   id "base"
-  id "com.palantir.consistent-versions" version "1.14.0"
-  id "org.owasp.dependencycheck" version "5.3.0"
-  id 'de.thetaphi.forbiddenapis' version '3.1' apply false
+  id "com.palantir.consistent-versions" version "2.0.0"
+  id "org.owasp.dependencycheck" version "6.4.1.1"
+  id 'de.thetaphi.forbiddenapis' version '3.2' apply false
   id "de.undercouch.download" version "4.0.2" apply false
-  id "net.ltgt.errorprone" version "1.2.1" apply false
-  id 'com.diffplug.spotless' version "5.8.2" apply false
+  id "net.ltgt.errorprone" version "2.0.2" apply false
+  id 'com.diffplug.spotless' version "5.14.3" apply false
 }
 
-apply from: file('gradle/defaults.gradle')
+apply from: file('gradle/globals.gradle')
 
 // General metadata.
 
 // Calculate project version:
 version = {
   // Release manager: update base version here after release:
-  String baseVersion = '9.0.0'
+  String baseVersion = '10.0.0'
 
   // On a release explicitly set release version in one go:
   //  -Dversion.release=x.y.z
@@ -46,7 +46,7 @@ version = {
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
   return propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
 }()
-description = 'Grandparent project for Apache Lucene Core and Apache Solr'
+description = 'Grandparent project for Apache Solr'
 
 // Propagate version and derived properties across projects.
 allprojects {
@@ -54,9 +54,6 @@ allprojects {
 }
 
 ext {
-  skipSolr = (System.getProperty("skip.solr") as Boolean)
-  skipLucene = (System.getProperty("skip.lucene") as Boolean)
-
   // "base" version is stripped of the qualifier. Compute it.
   baseVersion = {
     def m = (version =~ /^(\d+\.\d+\.\d+)(-(.+))?/)
@@ -102,6 +99,17 @@ ext {
     logger.info("External tool '${name}' resolved to: ${resolved}")
     return resolved
   }
+  
+  luceneBaseVersionProvider = project.provider { 
+    def luceneVersion = getVersion('org.apache.lucene:lucene-core')
+    def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
+    if (!m) {
+      throw GradleException("Can't strip base version from " + luceneVersion)
+    }
+    def luceneBaseVersion = m[0]
+    logger.debug('Lucene base version (without suffix): {}', luceneBaseVersion)
+    return luceneBaseVersion
+  }
 }
 
 // Include smaller chunks configuring dedicated build areas.
@@ -110,27 +118,24 @@ ext {
 // if the build file is incorrectly written and evaluates something
 // eagerly).
 
-apply from: file('gradle/generate-defaults.gradle')
+apply from: file('gradle/generation/local-settings.gradle')
 
 // Ant-compatibility layer: apply folder layout early so that
 // evaluation of other scripts doesn't need to be deferred.
-apply from: file('gradle/ant-compat/folder-layout.gradle')
-if (!skipSolr) {
-  apply from: file('gradle/ant-compat/solr.folder-layout.gradle') // SOLR ONLY
-}
+apply from: file('gradle/ant-compat/solr.folder-layout.gradle')
 
 // Set up defaults and configure aspects for certain modules or functionality
 // (java, tests)
-apply from: file('gradle/defaults-java.gradle')
+apply from: file('gradle/java/folder-layout.gradle')
+apply from: file('gradle/java/javac.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
 apply from: file('gradle/testing/fail-on-no-tests.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
-apply from: file('gradle/jar-manifest.gradle')
+apply from: file('gradle/java/jar-manifest.gradle')
 
 // Publishing and releasing
 apply from: file('gradle/maven/defaults-maven.gradle')
-apply from: file('gradle/releasing.gradle')
 
 // IDE support, settings and specials.
 apply from: file('gradle/ide/intellij-idea.gradle')
@@ -152,15 +157,13 @@ apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')
 apply from: file('gradle/validation/check-broken-links.gradle')
 
-if (!skipSolr) {
-  apply from: file('gradle/validation/solr.config-file-sanity.gradle') // SOLR ONLY
-}
+apply from: file('gradle/validation/solr.config-file-sanity.gradle')
+
+apply from: file('gradle/validation/spotless.gradle')
 
 // Source or data regeneration tasks
+apply from: file('gradle/generation/regenerate.gradle')
 apply from: file('gradle/generation/javacc.gradle')
-
-// Shared configuration of subprojects containing native code.
-apply from: file('gradle/native/disable-native.gradle')
 
 // Additional development aids.
 apply from: file('gradle/maven/maven-local.gradle')
@@ -171,29 +174,34 @@ apply from: file('gradle/testing/profiling.gradle')
 apply from: file('gradle/testing/beasting.gradle')
 apply from: file('gradle/help.gradle')
 
+// Configures development for joint Lucene/ Solr composite build.
+apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
+
 // Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
 // here so that we can coexist with current ant build but they are indicative
 // of potential problems with the build conventions, dependencies, etc.
 apply from: file('gradle/ant-compat/misc.gradle')
 
-apply from: file('gradle/ant-compat/force-versions.gradle') // SOLR ONLY
-apply from: file('gradle/ant-compat/artifact-naming.gradle') // SOLR ONLY
+apply from: file('gradle/ant-compat/force-versions.gradle')
+apply from: file('gradle/ant-compat/artifact-naming.gradle')
 
+apply from: file('gradle/documentation/pull-lucene-javadocs.gradle')
 apply from: file('gradle/documentation/documentation.gradle')
 apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
 
 apply from: file('gradle/hacks/gradle-archives.gradle')
-apply from: file('gradle/hacks/solr.findbugs.gradle') // SOLR ONLY
+apply from: file('gradle/hacks/solr.findbugs.gradle')
 
-apply from: file('gradle/hacks/gradle.gradle')
+apply from: file('gradle/hacks/wipe-temp.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
+apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
+apply from: file('gradle/hacks/dummy-outputs.gradle')
 
-apply from: file('gradle/solr-tlp-migration/inaccessible-test-sources.gradle')
-apply from: file('gradle/solr-tlp-migration/disable-links-checking.gradle')
+apply from: file('gradle/solr/packaging.gradle')
+apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
-apply from: file('gradle/solr/packaging.gradle') // SOLR ONLY
-apply from: file('gradle/solr/solr-forbidden-apis.gradle') // SOLR ONLY
+apply from: file('gradle/ant-compat/solr.post-jar.gradle')
 
-apply from: file('gradle/ant-compat/solr.post-jar.gradle') // SOLR ONLY
+

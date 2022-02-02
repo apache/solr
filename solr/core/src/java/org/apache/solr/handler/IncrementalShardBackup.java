@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -76,8 +77,7 @@ public class IncrementalShardBackup {
         this.commitNameOption = commitNameOption;
     }
 
-    @SuppressWarnings({"rawtypes"})
-    public NamedList backup() throws Exception {
+    public NamedList<Object> backup() throws Exception {
         final IndexCommit indexCommit = getAndSaveIndexCommit();
         try {
             return backup(indexCommit);
@@ -128,12 +128,11 @@ public class IncrementalShardBackup {
     }
 
     // note: remember to reserve the indexCommit first so it won't get deleted concurrently
-    @SuppressWarnings({"rawtypes"})
-    protected NamedList backup(final IndexCommit indexCommit) throws Exception {
+    protected NamedList<Object> backup(final IndexCommit indexCommit) throws Exception {
         assert indexCommit != null;
         URI backupLocation = incBackupFiles.getBackupLocation();
         log.info("Creating backup snapshot at {} shardBackupMetadataFile:{}", backupLocation, shardBackupId);
-        NamedList<Object> details = new NamedList<>();
+        NamedList<Object> details = new SimpleOrderedMap<>();;
         details.add("startTime", Instant.now().toString());
 
         Collection<String> files = indexCommit.getFileNames();

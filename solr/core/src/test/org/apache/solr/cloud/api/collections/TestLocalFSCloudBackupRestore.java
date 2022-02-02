@@ -23,13 +23,14 @@ import java.net.URI;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,6 +40,7 @@ import org.junit.Test;
  * Solr backup/restore still requires a "shared" file-system. Its just that in this case such file-system would be
  * exposed via local file-system API.
  */
+@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   private static String backupLocation;
 
@@ -62,7 +64,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
         .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(solrXml)
         .configure();
-    cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + "/" + "confFaulty" + "/" + "solrconfig.xml", -1, true);
+    cluster.getZkClient().delete(ZkConfigSetService.CONFIGS_ZKNODE + "/" + "confFaulty" + "/" + "solrconfig.xml", -1, true);
 
     boolean whitespacesInPath = random().nextBoolean();
     if (whitespacesInPath) {

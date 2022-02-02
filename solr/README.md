@@ -23,7 +23,7 @@ from the Apache Lucene project.
 
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr web site at
-https://lucene.apache.org/solr
+https://solr.apache.org/solr
 
 
 Getting Started
@@ -117,11 +117,11 @@ For more information about Solr examples please read...
    
 For more information about the "Solr Home" and Solr specific configuration
  
- * https://lucene.apache.org/solr/guide/solr-tutorial.html
+ * https://solr.apache.org/guide/solr-tutorial.html
    
 For a Solr tutorial
  
- * https://lucene.apache.org/solr/resources.html
+ * https://solr.apache.org/resources.html
 
 For a list of other tutorials and introductory articles.
 
@@ -129,7 +129,7 @@ or linked from "docs/index.html" in a binary distribution.
 
 Also, there are Solr clients for many programming languages, see
 
-  * https://wiki.apache.org/solr/IntegratingSolr
+  * https://cwiki.apache.org/confluence/display/solr/IntegratingSolr
 
 
 Files included in an Apache Solr binary distribution
@@ -141,18 +141,30 @@ server/
   configuration and documents to index. Please see: bin/solr start -help
   for more information about starting a Solr server.
 
+bin/
+   Scripts to startup, manage and interact with Solr instances.
+
 example/
   Contains example documents and an alternative Solr home
   directory containing various examples.
 
-dist/solr-<component>-XX.jar
-  The Apache Solr libraries.  To compile Apache Solr Plugins,
-  one or more of these will be required.  The core library is
-  required at a minimum. (see http://wiki.apache.org/solr/SolrPlugins
-  for more information).
+modules/
+  Contains modules to extend the functionality of Solr.
+  Libraries for these modules can be found under modules/*/lib
+
+prometheus-exporter/
+  Contains a separate application to monitor Solr instances and export Prometheus metrics
+
+docker/
+  Contains a Dockerfile to build a Docker image using the source or binary distribution.
+  `docker/scripts` contains scripts that the Docker image uses to manage Solr.
+  Refer to the README.md for instructions on how to build an image.
 
 docs/index.html
   A link to the online version of Apache Solr Javadoc API documentation and Tutorial
+
+licenses/
+  Licenses, notice files and signatures for Solr dependencies.
 ```
 
 Instructions for Building Apache Solr from Source
@@ -168,7 +180,7 @@ Instructions for Building Apache Solr from Source
    Alternately, you can obtain a copy of the latest Apache Solr source code
    directly from the GIT repository:
 
-     https://lucene.apache.org/solr/community.html#version-control
+     https://solr.apache.org/community.html#version-control
 
 3. Navigate to the root of your source tree folder and issue the `./gradlew tasks` 
    command to see the available options for building, testing, and packaging Solr.
@@ -195,7 +207,7 @@ possession, use, and/or re-export to another country, of
 encryption software.  BEFORE using any encryption software, please
 check your country's laws, regulations and policies concerning the
 import, possession, or use, and re-export of encryption software, to
-see if this is permitted.  See <http://www.wassenaar.org/> for more
+see if this is permitted.  See <https://www.wassenaar.org/> for more
 information.
 
 The U.S. Government Department of Commerce, Bureau of Industry and
@@ -213,4 +225,4 @@ software:
 
 Apache Solr uses the Apache Tika which uses the Bouncy Castle generic encryption libraries for
 extracting text content and metadata from encrypted PDF files.
-See http://www.bouncycastle.org/ for more details on Bouncy Castle.
+See https://www.bouncycastle.org/ for more details on Bouncy Castle.

@@ -109,7 +109,6 @@ public class IndexSchema {
   public static final String REQUIRED = "required";
   public static final String SCHEMA = "schema";
   public static final String SIMILARITY = "similarity";
-  public static final String SLASH = "/";
   public static final String SOURCE = "source";
   public static final String TYPE = "type";
   public static final String TYPES = "types";
@@ -142,8 +141,7 @@ public class IndexSchema {
   private static final Set<String> FIELDTYPE_KEYS = ImmutableSet.of("fieldtype", "fieldType");
   private static final Set<String> FIELD_KEYS = ImmutableSet.of("dynamicField", "field");
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  protected Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache(10000, 8000, 9000,100, false,false, null);
+  protected Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache<>(10000, 8000, 9000,100, false,false, null);
 
   private Analyzer indexAnalyzer;
   private Analyzer queryAnalyzer;
@@ -174,7 +172,7 @@ public class IndexSchema {
     this(luceneVersion, resourceLoader, substitutableProperties);
 
     this.resourceName = Objects.requireNonNull(name);
-    ConfigNode.SUBSTITUTES.set(substitutableProperties::getProperty);
+    if(substitutableProperties !=null) ConfigNode.SUBSTITUTES.set(substitutableProperties::getProperty);
     try {
       readSchema(schemaResource);
       loader.inform(loader);
@@ -515,9 +513,9 @@ public class IndexSchema {
       // load the Field Types
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
 
-      List<ConfigNode> fTypes = rootNode.children(null, FIELDTYPE_KEYS);
+      List<ConfigNode> fTypes = rootNode.getAll(null, FIELDTYPE_KEYS);
       ConfigNode types = rootNode.child(TYPES);
-      if(types != null) fTypes.addAll(types.children(null, FIELDTYPE_KEYS));
+      if(types != null) fTypes.addAll(types.getAll(null, FIELDTYPE_KEYS));
       typeLoader.load(solrClassLoader, fTypes);
 
       // load the fields
@@ -562,7 +560,7 @@ public class IndexSchema {
       if (node==null) {
         log.warn("no {} specified in schema.", UNIQUE_KEY);
       } else {
-        uniqueKeyField=getIndexedField(node.textValue().trim());
+        uniqueKeyField=getIndexedField(node.txt().trim());
         uniqueKeyFieldName=uniqueKeyField.getName();
         uniqueKeyFieldType=uniqueKeyField.getType();
         
@@ -649,10 +647,11 @@ public class IndexSchema {
     
     ArrayList<DynamicField> dFields = new ArrayList<>();
 
-    List<ConfigNode> nodes = n.children(null,  FIELD_KEYS);
+    List<ConfigNode> nodes = n.getAll(null,  FIELD_KEYS);
     ConfigNode child = n.child(FIELDS);
     if(child != null) {
-      nodes.addAll(child.children(null, FIELD_KEYS));
+      nodes = new ArrayList<>(nodes);
+      nodes.addAll(child.getAll(null, FIELD_KEYS));
     }
 
     for (ConfigNode node : nodes) {
@@ -732,12 +731,11 @@ public class IndexSchema {
    * Loads the copy fields
    */
   protected synchronized void loadCopyFields(ConfigNode n) {
-    List<ConfigNode> nodes = n.children(COPY_FIELD);
+    List<ConfigNode> nodes = n.getAll(COPY_FIELD);
     ConfigNode f = n.child(FIELDS);
     if (f != null) {
-      List<ConfigNode> c = f.children(COPY_FIELD);
-      if (nodes.isEmpty()) nodes = c;
-      else nodes.addAll(c);
+      nodes = new ArrayList<>(nodes);
+      nodes.addAll(f.getAll(COPY_FIELD));
     }
     for (ConfigNode node : nodes) {
 
@@ -1382,9 +1380,8 @@ public class IndexSchema {
   /**
    * Get a map of property name -&gt; value for the whole schema.
    */
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public Map getNamedPropertyValues() {
-    return getNamedPropertyValues(null, new MapSolrParams(Collections.EMPTY_MAP));
+  public Map<String, Object> getNamedPropertyValues() {
+    return getNamedPropertyValues(null, new MapSolrParams(Collections.emptyMap()));
   }
 
   public static class SchemaProps implements MapSerializable {
@@ -1411,9 +1408,8 @@ public class IndexSchema {
           .map(it -> it.getNamedPropertyValues(sp.showDefaults))
           .collect(Collectors.toList())),
 
-      @SuppressWarnings({"unchecked", "rawtypes"})
       FIELDS(IndexSchema.FIELDS, sp -> {
-        List<SimpleOrderedMap> result = (sp.requestedFields != null ? sp.requestedFields : new TreeSet<>(sp.schema.fields.keySet()))
+        List<SimpleOrderedMap<Object>> result = (sp.requestedFields != null ? sp.requestedFields : new TreeSet<>(sp.schema.fields.keySet()))
             .stream()
             .map(sp.schema::getFieldOrNull)
             .filter(it -> it != null)
@@ -1464,9 +1460,9 @@ public class IndexSchema {
       requestedFields = readMultiVals(CommonParams.FL);
 
     }
-    @SuppressWarnings({"rawtypes"})
-    public Collection applyDynamic(){
-      return (Collection) Handler.DYNAMIC_FIELDS.fun.apply(this);
+    @SuppressWarnings("unchecked")
+    public Collection<SimpleOrderedMap<Object>> applyDynamic() {
+      return (List<SimpleOrderedMap<Object>>) Handler.DYNAMIC_FIELDS.fun.apply(this);
     }
 
     private Set<String> readMultiVals(String name) {
@@ -1484,8 +1480,7 @@ public class IndexSchema {
     }
 
 
-    @SuppressWarnings({"rawtypes"})
-    SimpleOrderedMap getProperties(SchemaField sf) {
+    SimpleOrderedMap<Object> getProperties(SchemaField sf) {
       SimpleOrderedMap<Object> result = sf.getNamedPropertyValues(showDefaults);
       if (schema.isDynamicField(sf.name)) {
         String dynamicBase = schema.getDynamicPattern(sf.getName());

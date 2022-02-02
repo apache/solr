@@ -30,7 +30,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.transform.WriteableGeoJSON;
 import org.apache.solr.schema.AbstractSpatialFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ReturnFields;
@@ -63,7 +62,7 @@ public class GeoJSONResponseWriter extends JSONResponseWriter {
     
     SupportedFormats formats = null;
     if(sf.getType() instanceof AbstractSpatialFieldType) {
-      SpatialContext ctx = ((AbstractSpatialFieldType)sf.getType()).getSpatialContext();
+      SpatialContext ctx = ((AbstractSpatialFieldType<?>)sf.getType()).getSpatialContext();
       formats = ctx.getFormats();
     }
 
@@ -196,8 +195,7 @@ class GeoJSONWriter extends JSONWriter {
   {
     // Support multi-valued geometries
     if(geo instanceof Iterable) {
-      @SuppressWarnings({"rawtypes"})
-      Iterator iter = ((Iterable)geo).iterator();
+      Iterator<?> iter = ((Iterable<?>)geo).iterator();
       if(!iter.hasNext()) {
         return; // empty list
       }
@@ -260,11 +258,7 @@ class GeoJSONWriter extends JSONWriter {
     }
     else if(geo instanceof IndexableField) {
       str = ((IndexableField)geo).stringValue();
-    }
-    else if(geo instanceof WriteableGeoJSON) {
-      shape = ((WriteableGeoJSON)geo).shape;
-    }
-    else {
+    } else {
       str = geo.toString();
     }
     

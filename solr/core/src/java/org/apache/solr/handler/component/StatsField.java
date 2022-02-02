@@ -184,7 +184,7 @@ public class StatsField {
    * @see Stat#countDistinct
    * @see Stat#distinctValues
    */
-  private static final EnumSet<Stat> CALCDISTINCT_PSUEDO_STAT = EnumSet.of(Stat.countDistinct, Stat.distinctValues);
+  private static final EnumSet<Stat> CALCDISTINCT_PSEUDO_STAT = EnumSet.of(Stat.countDistinct, Stat.distinctValues);
 
   /**
    * The set of stats computed by default when no localparams are used to specify explicit stats 
@@ -542,15 +542,15 @@ public class StatsField {
 
     // if no individual stat setting use the default set
     if ( ! ( statSpecifiedByLocalParam
-             // calcdistinct (as a local param) is a psuedo-stat, prevents default set
+             // calcdistinct (as a local param) is a pseudo-stat, prevents default set
              || localParams.getBool("calcdistinct", false) ) ) {
       statsInResponse.addAll(DEFAULT_STATS);
     }
 
-    // calcDistinct is a psuedo-stat with optional top level param default behavior
+    // calcDistinct is a pseudo-stat with optional top level param default behavior
     // if not overridden by the specific individual stats
     if (localParams.getBool("calcdistinct", topLevelCalcDistinct)) {
-      for (Stat stat : CALCDISTINCT_PSUEDO_STAT) {
+      for (Stat stat : CALCDISTINCT_PSEUDO_STAT) {
         // assume true, but don't include if specific stat overrides
         if (localParams.getBool(stat.name(), true)) {
           statsInResponse.add(stat);

@@ -90,7 +90,6 @@ public class Traversal {
     LEAVES;
   }
 
-  @SuppressWarnings({"unchecked"})
   public Iterator<Tuple> iterator() {
     return new TraversalIterator(this, scatter);
   }

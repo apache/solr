@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -41,7 +40,7 @@ import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   //only for debugging purposes
   public static final ThreadLocal<AtomicLong> v2Calls = new ThreadLocal<>();
-  static final Pattern COLL_REQ_PATTERN = Pattern.compile("/(c|collections)/([^/])+/(?!shards)");
+  static final Pattern COLL_REQ_PATTERN = Pattern.compile("/(c|collections)/([^/]+)/(?!shards)");
   private Object payload;
   private SolrParams solrParams;
   public final boolean useBinary;
@@ -87,7 +86,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
           return;
         }
         if (payload instanceof InputStream) {
-          IOUtils.copy((InputStream) payload, os);
+          ((InputStream) payload).transferTo(os);
           return;
         }
         if (useBinary) {

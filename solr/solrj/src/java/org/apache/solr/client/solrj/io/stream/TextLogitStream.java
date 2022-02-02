@@ -99,7 +99,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   public TextLogitStream(String zkHost,
                      String collectionName,
-                     @SuppressWarnings({"rawtypes"})Map params,
+                     Map<String,String> params,
                      String name,
                      String field,
                      TupleStream termsStream,
@@ -283,10 +283,9 @@ public class TextLogitStream extends TupleStream implements Expressible {
     return expression;
   }
 
-  @SuppressWarnings({"unchecked"})
   private void init(String collectionName,
                     String zkHost,
-                    @SuppressWarnings({"rawtypes"})Map params,
+                    Map<String,String> params,
                     String name,
                     String feature,
                     TupleStream termsStream,
@@ -439,7 +438,6 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   public Tuple read() throws IOException {
     try {
 
@@ -462,17 +460,17 @@ public class TextLogitStream extends TupleStream implements Expressible {
         for (Future<Tuple> logitCall : callShards(getShardUrls())) {
 
           Tuple tuple = logitCall.get();
+          @SuppressWarnings({"unchecked"})
           List<Double> shardWeights = (List<Double>) tuple.get("weights");
           allWeights.add(shardWeights);
           this.error += tuple.getDouble("error");
-          @SuppressWarnings({"rawtypes"})
-          Map shardEvaluation = (Map) tuple.get("evaluation");
+          @SuppressWarnings({"unchecked"})
+          Map<String, Object> shardEvaluation = (Map<String, Object>) tuple.get("evaluation");
           this.evaluation.addEvaluation(shardEvaluation);
         }
 
         this.weights = averageWeights(allWeights);
-        @SuppressWarnings({"rawtypes"})
-        Map map = new HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put(ID, name+"_"+iteration);
         map.put("name_s", name);
         map.put("field_s", field);
@@ -526,7 +524,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     return ave;
   }
 
-  static String toString(@SuppressWarnings({"rawtypes"})List items) {
+  static String toString(List<?> items) {
     StringBuilder buf = new StringBuilder();
     for(Object item : items) {
       if(buf.length() > 0) {
@@ -644,11 +642,9 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
       QueryRequest  request= new QueryRequest(params, SolrRequest.METHOD.POST);
       QueryResponse response = request.process(solrClient);
-      @SuppressWarnings({"rawtypes"})
-      NamedList res = response.getResponse();
+      NamedList<?> res = response.getResponse();
 
-      @SuppressWarnings({"rawtypes"})
-      NamedList logit = (NamedList)res.get("logit");
+      NamedList<?> logit = (NamedList<?>)res.get("logit");
 
       @SuppressWarnings({"unchecked"})
       List<Double> shardWeights = (List<Double>)logit.get("weights");

@@ -33,7 +33,7 @@ public class DeleteAliasCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results) throws Exception {
     String aliasName = message.getStr(NAME);
 
     ZkStateReader zkStateReader = ccc.getZkStateReader();

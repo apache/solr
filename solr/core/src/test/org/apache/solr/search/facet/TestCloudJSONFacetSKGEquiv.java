@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -124,7 +123,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     final int numNodes = (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_COLL1_CONF();
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     
@@ -214,7 +213,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
   /**
    * Given a (random) field number, returns a random (integer based) value for that field.
-   * NOTE: The number of unique values in each field is constant acording to {@link #UNIQUE_FIELD_VALS}
+   * NOTE: The number of unique values in each field is constant according to {@link #UNIQUE_FIELD_VALS}
    * but the precise <em>range</em> of values will vary for each unique field number, such that cross field joins 
    * will match fewer documents based on how far apart the field numbers are.
    *
@@ -496,8 +495,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     try {
       final QueryResponse rsp = (new QueryRequest(params)).process(getRandClient(random()));
       assertNotNull(params + " is null rsp?", rsp);
-      @SuppressWarnings({"rawtypes"})
-      final NamedList topNamedList = rsp.getResponse();
+      final NamedList<?> topNamedList = rsp.getResponse();
       assertNotNull(params + " is null topNamedList?", topNamedList);
       
       // skip past the (implicit) top Facet query to get it's "sub-facets" (the real facets)...
@@ -544,7 +542,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     { // trivial single level facet w/ prefix 
       Map<String,TermFacet> facets = new LinkedHashMap<>();
       facets.put("xxx", new TermFacet(multiStrField(9),
-                                      map("prefix", "2")));
+                                      Map.of("prefix", "2")));
       
       
       assertFacetSKGsAreConsistent(facets, multiStrField(7)+":11", multiStrField(5)+":9", "*:*");
@@ -725,8 +723,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     try {
 
       // start by recording the results of the purely "default" behavior...
-      @SuppressWarnings({"rawtypes"})
-      final NamedList expected = getFacetResponse(basicParams);
+      final NamedList<?> expected = getFacetResponse(basicParams);
 
       // now loop over all permutations of processors and sweep values and and compare them to the "default"...
       for (FacetMethod method : EnumSet.allOf(FacetMethod.class)) {
@@ -737,8 +734,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
             options.add("sweep_val", sweep.toString());
           }
           
-          @SuppressWarnings({"rawtypes"})
-          final NamedList actual = getFacetResponse(SolrParams.wrapAppended(options, basicParams));
+          final NamedList<?> actual = getFacetResponse(SolrParams.wrapAppended(options, basicParams));
           
           // we can't rely on a trivial assertEquals() comparison...
           // 
@@ -768,14 +764,13 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    * We ignore {@link QueryResponse#getJsonFacetingResponse()} because it isn't as useful for
    * doing a "deep equals" comparison across requests
    */
-  @SuppressWarnings({"rawtypes"})
-  private NamedList getFacetResponse(final SolrParams params) {
+  private NamedList<?> getFacetResponse(final SolrParams params) {
     try {
       final QueryResponse rsp = (new QueryRequest(params)).process(getRandClient(random()));
       assertNotNull(params + " is null rsp?", rsp);
-      final NamedList topNamedList = rsp.getResponse();
+      final NamedList<Object> topNamedList = rsp.getResponse();
       assertNotNull(params + " is null topNamedList?", topNamedList);
-      final NamedList facetResponse = (NamedList) topNamedList.get("facets");
+      final NamedList<?> facetResponse = (NamedList<?>) topNamedList.get("facets");
       assertNotNull("null facet results?", facetResponse);
       assertEquals("numFound mismatch with top count?",
                    rsp.getResults().getNumFound(), ((Number)facetResponse.get("count")).longValue());
@@ -841,11 +836,11 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     
     /** Assumes null for fore/back queries w/no options */
     public RelatednessFacet() {
-      this(null, null, map());
+      this(null, null, Collections.emptyMap());
     }
     /** Assumes no options */
     public RelatednessFacet(final String foreQ, final String backQ) {
-      this(foreQ, backQ, map());
+      this(foreQ, backQ, Collections.emptyMap());
     }
     public RelatednessFacet(final String foreQ, final String backQ,
                             final Map<String,Object> options) {
@@ -1108,25 +1103,12 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     
     /**
      * picks a random value for the "overrequest" param, biased in favor of interesting test cases.
-     * <p>
-     * <b>NOTE:</b> due to variations in overrequest behavior betewen <code>metod:enum<code> and other 
-     * processors (see <a href="https://issues.apache.org/jira/browse/SOLR-14595">SOLR-14595</a>) this 
-     * method takes in the "sort" param and returns a constant value of <code>0</code> if the sort is 
-     * <code>index asc</code> to ensure that the set of candidate buckets considered during merging 
-     * (and refinement) is consistent regardless of what processor is used (and/or what sort is used 
-     * on the parent facet)
-     * </p>
      *
      * @return a number to specify in the request, or null to specify nothing (trigger default behavior)
      * @see #UNIQUE_FIELD_VALS
-     * @see <a href="https://issues.apache.org/jira/browse/SOLR-14595">SOLR-14595</a>
      */
     public static Integer randomOverrequestParam(final Random r, final String sort) {
 
-      if ("index asc".equals(sort)) {
-        return 0; // test work around for SOLR-14595
-      }
-      
       switch(r.nextInt(10)) {
         case 0:
         case 1:

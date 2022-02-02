@@ -20,13 +20,13 @@ package org.apache.solr.search.join;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -69,8 +69,6 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
 
     buildIndexes(routeByKey);
 
-    assertResultCount("products", "*:*", NUM_PRODUCTS, true);
-    assertResultCount("parts", "*:*", NUM_PRODUCTS * 10 / 4, true);
   }
 
   private static void clearCollection(String collection) throws IOException, SolrServerException {
@@ -105,11 +103,20 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
       }
     }
 
+    // some extra docs in each collection (not counded in NUM_PRODUCTS) that should drop out of the joins because they don't have the join key
+    productDocs.add(new SolrInputDocument("id", buildId(NUM_PRODUCTS+10, String.valueOf(NUM_PRODUCTS+10), routeByKey), "size_s", "M"));
+    partDocs.add(new SolrInputDocument("id", buildId(NUM_PRODUCTS+10, String.valueOf(NUM_PRODUCTS+10), routeByKey)));
+
+    Collections.shuffle(productDocs, random());
+    Collections.shuffle(partDocs, random());
+
     indexDocs("products", productDocs);
     cluster.getSolrClient().commit("products");
+    assertResultCount("products", "*:*", 1 + NUM_PRODUCTS, true);
 
     indexDocs("parts", partDocs);
     cluster.getSolrClient().commit("parts");
+    assertResultCount("parts", "*:*", 1 + (NUM_PRODUCTS * 10 / 4), true);
   }
 
   private static String buildId(int productId, String id, boolean routeByKey) {
@@ -141,7 +148,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudSolrClient client = cluster.getSolrClient();
-      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("ccjoin"), "ccjoin");
+      cluster.uploadConfigSet(configset("ccjoin"), "ccjoin");
       // reload the cores with the updated allowSolrUrls config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
@@ -221,7 +228,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudSolrClient client = cluster.getSolrClient();
-      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("ccjoin"), "ccjoin");
+      cluster.uploadConfigSet(configset("ccjoin"), "ccjoin");
       // reload the cores with the updated allowSolrUrls config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);

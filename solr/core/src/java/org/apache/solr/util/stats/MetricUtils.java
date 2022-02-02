@@ -219,7 +219,6 @@ public class MetricUtils {
       }
     };
     if (o instanceof MapWriter) {
-      @SuppressWarnings({"unchecked"})
       MapWriter writer = (MapWriter) o;
       writer._forEachEntry(consumer);
     } else if (o instanceof Map) {
@@ -229,7 +228,6 @@ public class MetricUtils {
         consumer.accept(entry.getKey(), entry.getValue());
       }
     } else if (o instanceof IteratorWriter) {
-      @SuppressWarnings({"unchecked"})
       IteratorWriter writer = (IteratorWriter) o;
       final String name = prefix != null ? prefix : "value";
       try {
@@ -376,11 +374,10 @@ public class MetricUtils {
       Counter counter = (Counter) metric;
       convertCounter(n, counter, propertyFilter, compact, consumer);
     } else if (metric instanceof Gauge) {
-      @SuppressWarnings({"rawtypes"})
-      Gauge gauge = (Gauge) metric;
+      Gauge<?> gauge = (Gauge<?>) metric;
       // unwrap if needed
       if (gauge instanceof SolrMetricManager.GaugeWrapper) {
-        gauge = ((SolrMetricManager.GaugeWrapper) gauge).getGauge();
+        gauge = ((SolrMetricManager.GaugeWrapper<?>) gauge).getGauge();
       }
       try {
         if (gauge instanceof MapWriter) {
@@ -637,7 +634,7 @@ public class MetricUtils {
    * @param consumer consumer that accepts produced objects
    */
   static void convertGauge(String name,
-                           @SuppressWarnings({"rawtypes"})Gauge gauge,
+                           Gauge<?> gauge,
                            Predicate<CharSequence> propertyFilter, boolean simple, boolean compact,
                            String separator, BiConsumer<String, Object> consumer) {
     if (compact || simple) {

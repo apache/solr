@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -32,6 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.hadoop.security.authentication.util.KerberosName;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationHandler;
 import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
@@ -57,6 +59,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   private Filter kerberosFilter;
   
   public static final String NAME_RULES_PARAM = "solr.kerberos.name.rules";
+  public static final String NAME_RULES_MECHANISM_PARAM = "solr.kerberos.name.rules.mechanism";
   public static final String COOKIE_DOMAIN_PARAM = "solr.kerberos.cookie.domain";
   public static final String COOKIE_PATH_PARAM = "solr.kerberos.cookie.path";
   public static final String PRINCIPAL_PARAM = "solr.kerberos.principal";
@@ -104,6 +107,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     Map<String, String> params = new HashMap<>();
     params.put("type", "kerberos");
     putParam(params, "kerberos.name.rules", NAME_RULES_PARAM, "DEFAULT");
+    putParam(params, "kerberos.name.rules.mechanism", NAME_RULES_MECHANISM_PARAM, KerberosName.DEFAULT_MECHANISM);
     putParam(params, "token.valid", TOKEN_VALID_PARAM, "30");
     putParam(params, "cookie.path", COOKIE_PATH_PARAM, "/");
     if (!skipKerberosChecking) {
@@ -244,23 +248,16 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   }
 
   @Override
-  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
-    SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-    if (info != null && (info.getAction() == SolrDispatchFilter.Action.FORWARD ||
-        info.getAction() == SolrDispatchFilter.Action.REMOTEQUERY)) {
-      if (info.getUserPrincipal() != null) {
-        if (log.isInfoEnabled()) {
-          log.info("Setting original user principal: {}", info.getUserPrincipal().getName());
-        }
-        httpRequest.setHeader(ORIGINAL_USER_PRINCIPAL_HEADER, info.getUserPrincipal().getName());
-        return true;
-      }
-    }
-    return false;
+  public boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
+    return intercept(httpRequest::setHeader);
   }
 
   @Override
   protected boolean interceptInternodeRequest(Request request) {
+    return intercept(request::header);
+  }
+
+  private boolean intercept(BiConsumer<String, String> header) {
     SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
     if (info != null && (info.getAction() == SolrDispatchFilter.Action.FORWARD ||
         info.getAction() == SolrDispatchFilter.Action.REMOTEQUERY)) {
@@ -268,7 +265,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
         if (log.isInfoEnabled()) {
           log.info("Setting original user principal: {}", info.getUserPrincipal().getName());
         }
-        request.header(ORIGINAL_USER_PRINCIPAL_HEADER, info.getUserPrincipal().getName());
+        header.accept(ORIGINAL_USER_PRINCIPAL_HEADER, info.getUserPrincipal().getName());
         return true;
       }
     }

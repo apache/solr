@@ -25,6 +25,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.solr.SolrTestCaseJ4;
@@ -45,13 +46,10 @@ import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.util.LogLevel;
 import org.hamcrest.core.IsInstanceOf;
-import org.hamcrest.core.IsNot;
 import org.junit.Before;
 import org.junit.Test;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
+import static java.util.Collections.*;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -213,14 +211,14 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "userPrincipal", "tim",
         "handler", new ReplicationHandler(),
         "collectionRequests", singletonList(new CollectionRequest("mycoll")) )
-        , FORBIDDEN);
+        , STATUS_OK); // Replication requires "READ" permission, which Tim has
 
     checkRules(Map.of("resource", ReplicationHandler.PATH,
         "httpMethod", "POST",
         "userPrincipal", "cio",
         "handler", new ReplicationHandler(),
         "collectionRequests", singletonList(new CollectionRequest("mycoll")) )
-        , STATUS_OK);
+        , FORBIDDEN); // User cio has role 'su' which does not have 'read' permission
 
     checkRules(Map.of("resource", "/admin/collections",
         "userPrincipal", "tim",
@@ -353,7 +351,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         , STATUS_OK);
 
     handler = new PropertiesRequestHandler();
-    assertThat(handler, new IsNot<>(new IsInstanceOf(PermissionNameProvider.class)));
+    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     checkRules(Map.of("resource", "/admin/info/properties",
         "userPrincipal", "dev",
         "requestType", RequestType.UNKNOWN,
@@ -385,7 +383,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         , STATUS_OK);
 
     handler = new PropertiesRequestHandler();
-    assertThat(handler, new IsNot<>(new IsInstanceOf(PermissionNameProvider.class)));
+    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     checkRules(Map.of("resource", "/admin/info/properties",
         "userPrincipal", "dev",
         "requestType", RequestType.UNKNOWN,
@@ -416,7 +414,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         , FORBIDDEN);
 
     handler = new PropertiesRequestHandler();
-    assertThat(handler, new IsNot<>(new IsInstanceOf(PermissionNameProvider.class)));
+    assertThat(handler, new IsInstanceOf(PermissionNameProvider.class));
     checkRules(Map.of("resource", "/admin/info/properties",
         "userPrincipal", "dev",
         "requestType", RequestType.UNKNOWN,
@@ -450,6 +448,20 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     checkRules(values, STATUS_OK);
   }
 
+  @Test
+  public void testGetPermissionNamesForRoles() {
+    // Tests the method that maps role(s) to permissions, used by SystemInfoHandler to provide UI with logged in user's permissions
+    try (RuleBasedAuthorizationPluginBase plugin = createPlugin()) {
+      plugin.init(rules);
+      assertEquals(Set.of("mycoll_update", "read"), plugin.getPermissionNamesForRoles(Set.of("dev")));
+      assertEquals(emptySet(), plugin.getPermissionNamesForRoles(Set.of("user")));
+      assertEquals(Set.of("schema-edit", "collection-admin-edit", "mycoll_update"), plugin.getPermissionNamesForRoles(Set.of("admin")));
+      assertEquals(Set.of("schema-edit", "collection-admin-edit", "mycoll_update", "read"), plugin.getPermissionNamesForRoles(Set.of("admin", "dev")));
+    } catch (IOException e) {
+      ; // swallow error, otherwise a you have to add a _lot_ of exceptions to methods.
+    }
+  }
+
   void addPermission(String permissionName, String role, String path, Map<String, Object> params) {
     ((List)rules.get("permissions")).add(Map.of("name", permissionName, "role", role, "path", path, "params", params));
   }
@@ -480,13 +492,44 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     assertEquals("/a/b", perms.getVal("permissions[1]/path"));
     perms.runCmd("{update-permission : {index : 2, method : POST }}", true);
     assertEquals("POST", perms.getVal("permissions[1]/method"));
+    assertEquals("/a/b", perms.getVal("permissions[1]/path"));
+
     perms.runCmd("{set-permission : {name : read, collection : y, role:[guest, dev] ,  before :2}}", true);
     assertNotNull(perms.getVal("permissions[2]"));
     assertEquals("y", perms.getVal("permissions[1]/collection"));
     assertEquals("read", perms.getVal("permissions[1]/name"));
+    assertEquals("POST", perms.getVal("permissions[2]/method"));
+    assertEquals("/a/b", perms.getVal("permissions[2]/path"));
+
     perms.runCmd("{delete-permission : 3}", true);
     assertTrue(captureErrors(perms.parsedCommands).isEmpty());
     assertEquals("y", perms.getVal("permissions[1]/collection"));
+
+    List<Map<String,Object>> permList = (List<Map<String,Object>>)perms.getVal("permissions");
+    assertEquals(2, permList.size());
+    assertEquals("config-edit", perms.getVal("permissions[0]/name"));
+    assertEquals(1, perms.getVal("permissions[0]/index"));
+    assertEquals("read", perms.getVal("permissions[1]/name"));
+    assertEquals(2, perms.getVal("permissions[1]/index"));
+
+    // delete a non-existent permission
+    perms.runCmd("{delete-permission : 3}", false);
+    assertEquals(1, perms.parsedCommands.size());
+    assertEquals(1, perms.parsedCommands.get(0).getErrors().size());
+    assertEquals("No such index: 3", perms.parsedCommands.get(0).getErrors().get(0));
+
+    perms.runCmd("{delete-permission : 1}", true);
+    assertTrue(captureErrors(perms.parsedCommands).isEmpty());
+    permList = (List<Map<String,Object>>)perms.getVal("permissions");
+    assertEquals(1, permList.size());
+    // indexes should have been re-ordered after the delete, so now "read" has index==1
+    assertEquals("read", perms.getVal("permissions[0]/name"));
+    assertEquals(1, perms.getVal("permissions[0]/index"));
+    // delete last remaining
+    perms.runCmd("{delete-permission : 1}", true);
+    assertTrue(captureErrors(perms.parsedCommands).isEmpty());
+    permList = (List<Map<String,Object>>)perms.getVal("permissions");
+    assertEquals(0, permList.size());
   }
 
   static class Perms {
@@ -498,8 +541,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
       parsedCommands = CommandOperation.parse(new StringReader(cmds));
       Map<String, Object> edited = plugin.edit(conf, parsedCommands);
       if(edited!= null) conf = edited;
-      @SuppressWarnings({"rawtypes"})
-      List<Map> maps = captureErrors(parsedCommands);
+      List<Map<String,Object>> maps = captureErrors(parsedCommands);
       if(failOnError){
         assertTrue("unexpected error ,"+maps , maps.isEmpty());
       } else {

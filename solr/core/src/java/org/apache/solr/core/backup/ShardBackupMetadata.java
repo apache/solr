@@ -17,6 +17,12 @@
 
 package org.apache.solr.core.backup;
 
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.util.PropertiesInputStream;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,12 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.util.PropertiesInputStream;
 
 /**
  * Represents the shard-backup metadata file.
@@ -80,6 +80,14 @@ public class ShardBackupMetadata {
         return new ShardBackupMetadata();
     }
 
+    /**
+     * Reads a shard metadata file from a {@link BackupRepository} and parses the result into a {@link ShardBackupMetadata}
+     *
+     * @param repository the storage repository to read shard-metadata from
+     * @param dir URI for the 'shard_backup_metadata' directory of the backup to read from
+     * @param shardBackupId the ID of the shard metadata file to read
+     * @return a ShardBackupMetadata object representing the provided 'shardBackupId' if it could be found in 'dir', null otherwise
+     */
     public static ShardBackupMetadata from(BackupRepository repository, URI dir, ShardBackupId shardBackupId) throws IOException {
         final String shardBackupMetadataFilename = shardBackupId.getBackupMetadataFilename();
         if (!repository.exists(repository.resolve(dir, shardBackupMetadataFilename))) {
@@ -112,8 +120,7 @@ public class ShardBackupMetadata {
     }
 
     private void store(OutputStream os) throws IOException {
-        @SuppressWarnings({"rawtypes"})
-        Map<String, Map> map = new HashMap<>();
+        Map<String, Map<String, Object>> map = new HashMap<>();
 
         for (BackedFile backedFile : allFiles.values()) {
             Map<String, Object> fileMap = new HashMap<>();

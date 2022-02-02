@@ -40,8 +40,7 @@ public abstract class DelegationTokenResponse extends SolrResponseBase {
      */
     public String getDelegationToken() {
       try {
-        @SuppressWarnings({"rawtypes"})
-        Map map = (Map)getResponse().get("Token");
+        Map<?,?> map = (Map<?,?>)getResponse().get("Token");
         if (map != null) {
           return (String)map.get("urlString");
         }

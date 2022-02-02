@@ -1,0 +1,77 @@
+{ "add-field-type": {
+  "name": "test_txt",
+  "class": "solr.TextField",
+  "positionIncrementGap": "100",
+  "autoGeneratePhraseQueries": false,
+  "enableGraphQueries": true,
+  "synonymQueryStyle": "AS_SAME_TERM",
+  "indexed": true,
+  "stored": true,
+  "docValues": false,
+  "termVectors": false,
+  "omitNorms": false,
+  "omitTermFreqAndPositions": false,
+  "omitPositions": false,
+  "storeOffsetsWithPositions": false,
+  "multiValued": false,
+  "large": false,
+  "uninvertible": true,
+  "tokenized": true,
+  "indexAnalyzer": {
+    "tokenizer": {
+      "name": "standard"
+    },
+    "filters": [
+      {
+        "words": "lang/stopwords_en.txt",
+        "ignoreCase": "true",
+        "name": "stop"
+      },
+      {
+        "name": "lowercase"
+      },
+      {
+        "name": "englishPossessive"
+      },
+      {
+        "name": "keywordMarker",
+        "protected": "protwords.txt"
+      },
+      {
+        "name": "porterStem"
+      }
+    ]
+  },
+  "queryAnalyzer": {
+    "tokenizer": {
+      "name": "standard"
+    },
+    "filters": [
+      {
+        "name": "synonymGraph",
+        "synonyms": "synonyms.txt",
+        "ignoreCase": "true",
+        "expand": "true"
+      },
+      {
+        "words": "lang/stopwords_en.txt",
+        "ignoreCase": "true",
+        "name": "stop"
+      },
+      {
+        "name": "lowercase"
+      },
+      {
+        "name": "englishPossessive"
+      },
+      {
+        "name": "keywordMarker",
+        "protected": "protwords.txt"
+      },
+      {
+        "name": "porterStem"
+      }
+    ]
+  }
+}
+}

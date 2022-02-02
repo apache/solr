@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.admin.ConfigSetsHandler;
 
 /**
  * A utility class that can create mock ZkStateReader objects with custom ClusterState objects created
@@ -125,6 +126,7 @@ public class ClusterStateMockUtil {
       switch (m.group(1)) {
         case "c":
           slices = new HashMap<>();
+          collectionProps.put(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
           docCollection = new DocCollection(collName = "collection" + (collectionStates.size() + 1), slices, collectionProps, DocRouter.DEFAULT);
           collectionStates.put(docCollection.getName(), docCollection);
           break;

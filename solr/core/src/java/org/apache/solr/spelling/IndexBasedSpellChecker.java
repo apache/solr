@@ -25,19 +25,19 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * <p>
  * A spell checker implementation that loads words from Solr as well as arbitrary Lucene indices.
  * </p>
- * 
+ *
  * <p>
- * Refer to <a href="http://wiki.apache.org/solr/SpellCheckComponent">SpellCheckComponent</a>
+ * Refer to <a href="https://solr.apache.org/guide/spell-checking.html">https://solr.apache.org/guide/spell-checking.html</a>
  * for more details.
  * </p>
- * 
+ *
  * @since solr 1.3
  **/
 public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
@@ -48,7 +48,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   protected IndexReader reader;
 
   @Override
-  public String init(@SuppressWarnings({"rawtypes"})NamedList config, SolrCore core) {
+  public String init(NamedList<?> config, SolrCore core) {
     super.init(config, core);
     threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
             : (Float) config.get(THRESHOLD_TOKEN_FREQUENCY);
@@ -59,7 +59,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   private void initSourceReader() {
     if (sourceLocation != null) {
       try {
-        FSDirectory luceneIndexDir = FSDirectory.open(new File(sourceLocation).toPath());
+        FSDirectory luceneIndexDir = FSDirectory.open(Path.of(sourceLocation));
         this.reader = DirectoryReader.open(luceneIndexDir);
       } catch (IOException e) {
         throw new RuntimeException(e);

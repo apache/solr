@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -110,8 +111,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     this.commitWithinSoftCommit = value;
   }
 
-  protected boolean indexWriterCloseWaitsForMerges;
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public DirectUpdateHandler2(SolrCore core) {
@@ -131,7 +130,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, NO_FILE_SIZE_UPPER_BOUND_PLACEHOLDER, true, true);
     
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
-    indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
 
     ZkController zkController = core.getCoreContainer().getZkController();
     if (zkController != null && core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
@@ -157,7 +155,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, NO_FILE_SIZE_UPPER_BOUND_PLACEHOLDER, updateHandlerInfo.openSearcher, true);
     
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
-    indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
 
     UpdateLog existingLog = updateHandler.getUpdateLog();
     if (this.ulog != null && this.ulog == existingLog) {
@@ -211,9 +208,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private void deleteAll() throws IOException {
-    if (log.isInfoEnabled()) {
-      log.info("{} REMOVING ALL DOCUMENTS FROM INDEX", core.getLogId());
-    }
+    log.info("REMOVING ALL DOCUMENTS FROM INDEX");
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       iw.get().deleteAll();
@@ -604,7 +599,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public void commit(CommitUpdateCommand cmd) throws IOException {
     TestInjection.injectDirectUpdateLatch();
     if (cmd.prepareCommit) {
@@ -619,10 +613,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       if (cmd.expungeDeletes) expungeDeleteCommands.mark();
     }
 
-    Future[] waitSearcher = null;
-    if (cmd.waitSearcher) {
-      waitSearcher = new Future[1];
-    }
+    @SuppressWarnings("unchecked")
+    Future<Void>[] waitSearcher = cmd.waitSearcher ? (Future<Void>[]) Array.newInstance(Future.class, 1) : null;
 
     boolean error=true;
     try {
@@ -684,7 +676,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         callPostOptimizeCallbacks();
       }
 
-
       if (cmd.softCommit) {
         // ulog.preSoftCommit();
         synchronized (solrCoreState.getUpdateLock()) {
@@ -737,7 +728,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
     // if we are supposed to wait for the searcher to be registered, then we should do it
     // outside any synchronized block so that other update operations can proceed.
-    if (waitSearcher!=null && waitSearcher[0] != null) {
+    if (waitSearcher != null && waitSearcher[0] != null) {
        try {
         waitSearcher[0].get();
       } catch (InterruptedException | ExecutionException e) {

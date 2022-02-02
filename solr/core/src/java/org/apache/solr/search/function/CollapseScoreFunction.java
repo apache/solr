@@ -41,8 +41,7 @@ public class CollapseScoreFunction extends ValueSource {
     return 1213241257;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     return new CollapseScoreFunctionValues(context);
   }
 
@@ -50,8 +49,7 @@ public class CollapseScoreFunction extends ValueSource {
 
     private CollapseScore cscore;
 
-    @SuppressWarnings({"rawtypes"})
-    public CollapseScoreFunctionValues(Map context) {
+    public CollapseScoreFunctionValues(Map<?,?> context) {
       this.cscore = (CollapseScore) context.get("CSCORE");
       assert null != this.cscore;
     }

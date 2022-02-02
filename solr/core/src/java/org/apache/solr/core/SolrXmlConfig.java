@@ -16,28 +16,6 @@
  */
 package org.apache.solr.core;
 
-import javax.management.MBeanServer;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.google.common.base.Strings;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -49,6 +27,7 @@ import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.JmxUtil;
 import org.slf4j.Logger;
@@ -56,6 +35,27 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+
+import javax.management.MBeanServer;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -73,6 +73,8 @@ public class SolrXmlConfig {
   public final static String SOLR_DATA_HOME = "solr.data.home";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Pattern COMMA_SEPARATED_PATTERN = Pattern.compile("\\s*,\\s*");
 
   /**
    * Given some node Properties, checks if non-null and a 'zkHost' is alread included.  If so, the Properties are
@@ -160,14 +162,21 @@ public class SolrXmlConfig {
   }
 
   public static NodeConfig fromFile(Path solrHome, Path configFile, Properties substituteProps) {
-
-    log.info("Loading container configuration from {}", configFile);
-
     if (!Files.exists(configFile)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "solr.xml does not exist in " + configFile.getParent() + " cannot start Solr");
+      if (Boolean.getBoolean("solr.solrxml.required")) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "solr.xml does not exist in " + configFile.getParent() + " cannot start Solr");
+      }
+      log.info("solr.xml not found in SOLR_HOME, using built-in default");
+      String solrInstallDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+      if (solrInstallDir == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Could not find default solr.xml file due to missing " + SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+      }
+      configFile = Path.of(solrInstallDir).resolve("server").resolve("solr").resolve("solr.xml");
     }
 
+    log.info("Loading solr.xml from {}", configFile);
     try (InputStream inputStream = Files.newInputStream(configFile)) {
       return fromInputStream(solrHome, inputStream, substituteProps);
     } catch (SolrException exc) {
@@ -234,7 +243,7 @@ public class SolrXmlConfig {
 
     if (config.getVal(xPath, false) != null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
-          "\n. Please upgrade your solr.xml: https://lucene.apache.org/solr/guide/format-of-solr-xml.html");
+          "\n. Please upgrade your solr.xml: https://solr.apache.org/guide/format-of-solr-xml.html");
     }
   }
 
@@ -326,8 +335,11 @@ public class SolrXmlConfig {
         case "sharedLib":
           builder.setSharedLibDirectory(value);
           break;
+        case "modules":
+          builder.setModules(value);
+          break;
         case "allowPaths":
-          builder.setAllowPaths(stringToPaths(value));
+          builder.setAllowPaths(separatePaths(value));
           break;
         case "configSetBaseDir":
           builder.setConfigSetBaseDirectory(value);
@@ -344,6 +356,9 @@ public class SolrXmlConfig {
         case "transientCacheSize":
           builder.setTransientCacheSize(parseInt(name, value));
           break;
+        case "allowUrls":
+          builder.setAllowUrls(separateStrings(value));
+          break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration value in solr.xml: " + name);
       }
@@ -352,13 +367,24 @@ public class SolrXmlConfig {
     return builder.build();
   }
 
-  private static Set<Path> stringToPaths(String commaSeparatedString) {
+  private static List<String> separateStrings(String commaSeparatedString) {
+    if (Strings.isNullOrEmpty(commaSeparatedString)) {
+      return Collections.emptyList();
+    }
+    return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
+  }
+
+  private static Set<Path> separatePaths(String commaSeparatedString) {
     if (Strings.isNullOrEmpty(commaSeparatedString)) {
       return Collections.emptySet();
     }
-    // Parse list of paths. The special value '*' is mapped to _ALL_ to mean all paths
-    return Arrays.stream(commaSeparatedString.split(",\\s?"))
-        .map(p -> Paths.get("*".equals(p) ? "_ALL_" : p)).collect(Collectors.toSet());
+    // Parse the list of paths. The special values '*' and '_ALL_' mean all paths.
+    String[] pathStrings = COMMA_SEPARATED_PATTERN.split(commaSeparatedString);
+    SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
+    for (String p : pathStrings) {
+      allowPathBuilder.addPath(p);
+    }
+    return allowPathBuilder.build();
   }
 
   private static UpdateShardHandlerConfig loadUpdateConfig(NamedList<Object> nl, boolean alwaysDefine) {
@@ -491,6 +517,9 @@ public class SolrXmlConfig {
         case "distributedClusterStateUpdates":
           builder.setUseDistributedClusterStateUpdates(Boolean.parseBoolean(value));
           break;
+        case "distributedCollectionConfigSetExecution":
+          builder.setUseDistributedCollectionConfigSetExecution(Boolean.parseBoolean(value));
+          break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration parameter in <solrcloud> section of solr.xml: " + name);
       }
@@ -580,10 +609,6 @@ public class SolrXmlConfig {
     node = config.getNode("solr/metrics/suppliers/histogram", false);
     if (node != null) {
       builder = builder.setHistogramSupplier(new PluginInfo(node, "histogramSupplier", false, false));
-    }
-    node = config.getNode("solr/metrics/history", false);
-    if (node != null) {
-      builder = builder.setHistoryHandler(new PluginInfo(node, "history", false, false));
     }
     node = config.getNode("solr/metrics/missingValues", false);;
     if (node != null) {

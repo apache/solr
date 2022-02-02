@@ -53,7 +53,6 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
@@ -166,8 +165,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
 
     log.debug("*** called: {}", message);
 
@@ -244,7 +242,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       router = DocRouter.DEFAULT;
     }
 
-    String configName = message.getStr(ZkStateReader.CONFIGNAME_PROP, ccc.getZkStateReader().readConfigName(collection));
+    String configName = message.getStr(ZkStateReader.CONFIGNAME_PROP, coll.getConfigName());
     String targetCollection;
     int seq = tmpCollectionSeq.getAndIncrement();
     if (sameTarget) {
@@ -283,8 +281,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // delete the checkpoint collection
         cmd = new ZkNodeProps(
             Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower(),
-            CommonParams.NAME, chkCollection,
-            CoreAdminParams.DELETE_METRICS_HISTORY, "true"
+            CommonParams.NAME, chkCollection
         );
         new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
         CollectionHandlingUtils.checkResults("deleting old checkpoint collection " + chkCollection, cmdResults, true);
@@ -458,8 +455,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       log.debug("- deleting {}", chkCollection);
       cmd = new ZkNodeProps(
           Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower(),
-          CommonParams.NAME, chkCollection,
-          CoreAdminParams.DELETE_METRICS_HISTORY, "true"
+          CommonParams.NAME, chkCollection
       );
       cmdResults = new NamedList<>();
       new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
@@ -471,8 +467,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
         cmd = new ZkNodeProps(
             Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower(),
             CommonParams.NAME, collection,
-            FOLLOW_ALIASES, "false",
-            CoreAdminParams.DELETE_METRICS_HISTORY, "true"
+            FOLLOW_ALIASES, "false"
         );
         cmdResults = new NamedList<>();
         new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
@@ -795,8 +790,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       ZkNodeProps cmd = new ZkNodeProps(
           Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower(),
           CommonParams.NAME, targetCollection,
-          FOLLOW_ALIASES, "false",
-          CoreAdminParams.DELETE_METRICS_HISTORY, "true"
+          FOLLOW_ALIASES, "false"
       );
       new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
       CollectionHandlingUtils.checkResults("CLEANUP: deleting target collection " + targetCollection, cmdResults, false);
@@ -808,8 +802,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       ZkNodeProps cmd = new ZkNodeProps(
           Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower(),
           CommonParams.NAME, chkCollection,
-          FOLLOW_ALIASES, "false",
-          CoreAdminParams.DELETE_METRICS_HISTORY, "true"
+          FOLLOW_ALIASES, "false"
       );
       cmdResults = new NamedList<>();
       new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);

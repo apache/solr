@@ -60,7 +60,6 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object ... values) throws IOException{
 
     if(values.length == 2) {
@@ -83,21 +82,21 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
       if (type.equals(CorrelationType.pearsons)) {
         PearsonsCorrelation pearsonsCorrelation = new PearsonsCorrelation();
         return pearsonsCorrelation.correlation(
-            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+            ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+            ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
         );
       } else if (type.equals(CorrelationType.kendalls)) {
         KendallsCorrelation kendallsCorrelation = new KendallsCorrelation();
         return kendallsCorrelation.correlation(
-            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+            ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+            ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
         );
 
       } else if (type.equals(CorrelationType.spearmans)) {
         SpearmansCorrelation spearmansCorrelation = new SpearmansCorrelation();
         return spearmansCorrelation.correlation(
-            ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-            ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+            ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+            ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
         );
       } else {
         return null;

@@ -16,22 +16,11 @@
  */
 package org.apache.solr.security;
 
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.Principal;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.CryptoKeys;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
@@ -44,9 +33,24 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
-import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
-import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.Principal;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.*;
 
 @SuppressWarnings("unchecked")
 public class JWTAuthPluginTest extends SolrTestCaseJ4 {
@@ -56,7 +60,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static RsaJsonWebKey rsaJsonWebKey;
   private HashMap<String, Object> testConfig;
   private HashMap<String, Object> minimalConfig;
-
+  private static String trustedPemCert;
   // Shared with other tests
   static HashMap<String, Object> testJwk;
 
@@ -73,7 +77,9 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
       testJwk.put("kid", rsaJsonWebKey.getKeyId());
       testJwk.put("alg", rsaJsonWebKey.getAlgorithm());
       testJwk.put("n", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getModulus()));
-    } catch (JoseException e) {
+
+      trustedPemCert = Files.readString(TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem"));
+    } catch (JoseException | IOException e) {
       fail("Failed static initialization: " + e.getMessage());
     }
   }
@@ -108,7 +114,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     claims.setIssuedAtToNow();  // when the token was issued/created (now)
     claims.setNotBeforeMinutesInThePast(2); // time before which the token is not yet valid (2 minutes ago)
     claims.setSubject("solruser"); // the subject/principal is whom the token is about
-    claims.setStringClaim("scope", "solr:read"); 
+    claims.setStringClaim("scope", "solr:read");
     claims.setClaim("name", "Solr User"); // additional claims/attributes about the subject can be added
     claims.setClaim("customPrincipal", "custom"); // additional claims/attributes about the subject can be added
     claims.setClaim("claim1", "foo"); // additional claims/attributes about the subject can be added
@@ -131,7 +137,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("principalClaim", "customPrincipal");
     testConfig.put("jwk", testJwk);
     plugin.init(testConfig);
-    
+
     minimalConfig = new HashMap<>();
     minimalConfig.put("class", "org.apache.solr.security.JWTAuthPlugin");
   }
@@ -183,17 +189,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Deprecated(since = "8.3")
-  public void initWithJwkUrlForBackwardsCompat() {
-    HashMap<String, Object> authConf = new HashMap<>();
-    authConf.put("jwkUrl", "https://127.0.0.1:9999/foo.jwk");
-    plugin = new JWTAuthPlugin();
-    plugin.init(authConf);
-    assertEquals(1, plugin.getIssuerConfigs().size());
-    assertEquals(1, plugin.getIssuerConfigs().get(0).getJwksUrls().size());
-  }
-
-  @Test
   public void initWithJwksUrl() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
@@ -204,7 +199,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void initWithJwkUrlArray() {
+  public void initWithJwksUrlArray() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwksUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
     authConf.put("iss", "myIssuer");
@@ -326,12 +321,12 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void algWhitelist() {
-    testConfig.put("algWhitelist", Arrays.asList("PS384", "PS512"));
+  public void algAllowlist() {
+    testConfig.put("algAllowlist", Arrays.asList("PS384", "PS512"));
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
-    assertTrue(resp.getErrorMessage().contains("not a whitelisted"));
+    assertTrue(resp.getErrorMessage().contains("not a permitted algorithm"));
   }
 
   @Test
@@ -375,7 +370,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertNull(resp.getPrincipal());
     assertEquals(SCOPE_MISSING, resp.getAuthCode());
   }
-  
+
   @Test
   public void noHeaderBlockUnknown() {
     testConfig.put("blockUnknown", true);
@@ -399,7 +394,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(null);
     assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PASS_THROUGH, resp.getAuthCode());
   }
-  
+
   @Test
   public void wellKnownConfigNoHeaderPassThrough() {
     String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
@@ -442,7 +437,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("clientId", "solr-cluster");
     plugin.init(testConfig);
     String headerBase64 = plugin.generateAuthDataHeader();
-    String headerJson = new String(Base64.base64ToByteArray(headerBase64), StandardCharsets.UTF_8);
+    String headerJson = new String(Base64.getDecoder().decode(headerBase64), StandardCharsets.UTF_8);
     Map<String,String> parsed = (Map<String, String>) Utils.fromJSONString(headerJson);
     assertEquals("solr:admin", parsed.get("scope"));
     assertEquals("http://acmepaymentscorp/oauth/auz/authorize", parsed.get("authorizationEndpoint"));
@@ -487,5 +482,78 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertEquals("aud2", plugin.getPrimaryIssuer().getAud());
     // Top-level (name=PRIMARY) issuer config does not need "iss" for back compat
     assertNull(plugin.getPrimaryIssuer().getIss());
+  }
+
+  @Test
+  public void initWithIdpCertString() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
+    authConf.put("trustedCerts", trustedPemCert);
+    plugin = new JWTAuthPlugin();
+    plugin.init(authConf);
+  }
+
+  @Test
+  public void initWithTrustedCertsFile() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
+    authConf.put("trustedCertsFile", TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem").toString());
+    plugin = new JWTAuthPlugin();
+    plugin.init(authConf);
+    assertEquals(2, plugin.getIssuerConfigs().get(0).getTrustedCerts().size());
+  }
+
+  @Test
+  public void initWithInvalidIdpCertString() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
+    authConf.put("trustedCerts", "-----BEGIN CERTIFICATE-----\nINVALID-----END CERTIFICATE-----\n");
+    plugin = new JWTAuthPlugin();
+    expectThrows(SolrException.class, () -> plugin.init(authConf));
+  }
+
+  @Test
+  public void initWithInvalidTrustedCertsFile() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
+    authConf.put("trustedCertsFile", TEST_PATH().resolve("security").resolve("jwt_plugin_idp_invalidcert.pem").toString());
+    plugin = new JWTAuthPlugin();
+    expectThrows(SolrException.class, () -> plugin.init(authConf));
+  }
+
+  @Test
+  public void initWithIdpCertWrongDoubleConfig() {
+    HashMap<String, Object> authConf = new HashMap<>();
+    authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
+    authConf.put("trustedCerts", trustedPemCert);
+    authConf.put("trustedCertsFile", "/path/to/cert.pem");
+    plugin = new JWTAuthPlugin();
+    expectThrows(SolrException.class, () -> {
+      plugin.init(authConf);
+    });
+  }
+
+  @Test
+  public void parsePemToX509() {
+    Collection<X509Certificate> parsed =
+        CryptoKeys.parseX509Certs(IOUtils.toInputStream(trustedPemCert, StandardCharsets.UTF_8));
+    assertEquals(2, parsed.size());
+  }
+
+  @Test
+  public void parseInvalidPemToX509() {
+    expectThrows(SolrException.class, CertificateException.class, () -> {
+      CryptoKeys.parseX509Certs(IOUtils.toInputStream(
+          "-----BEGIN CERTIFICATE-----\n" +
+              "foo\n" +
+              "-----END CERTIFICATE-----\n", StandardCharsets.UTF_8));
+    });
+  }
+
+  @Test
+  public void extractCertificate() throws IOException {
+    Path pemFilePath = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
+    String cert = CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath));
+    assertEquals(2, CryptoKeys.parseX509Certs(IOUtils.toInputStream(cert, StandardCharsets.UTF_8)).size());
   }
 }

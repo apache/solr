@@ -18,7 +18,6 @@ package org.apache.solr.spelling;
 import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -27,7 +26,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * input "raw" queries into a set of tokens for spell checking. It is used to
  * "parse" the CommonParams.Q (the input query) and converts it to tokens.
  * </p>
- * 
+ *
  * <p>
  * It is only invoked for the CommonParams.Q parameter, and <b>not</b> the
  * "spellcheck.q" parameter. Systems that use their own query parser or those
@@ -36,23 +35,20 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * (SpellingQueryConverter) by overriding the appropriate methods on the
  * SpellingQueryConverter and registering it in the solrconfig.xml
  * </p>
- * 
+ *
  * <p>
- * Refer to <a href="http://wiki.apache.org/solr/SpellCheckComponent">SpellCheckComponent</a>
+ * Refer to <a href="https://solr.apache.org/guide/spell-checking.html">https://solr.apache.org/guide/spell-checking.html</a>
  * for more details
  * </p>
- * 
+ *
  * @since solr 1.3
  */
 public abstract class QueryConverter implements NamedListInitializedPlugin {
-  @SuppressWarnings({"rawtypes"})
-  private NamedList args;
-
   protected Analyzer analyzer;
-  
+
   /**
    * <p>This term is marked prohibited in the query with the minus sign.</p>
-   * 
+   *
    */
   public static final int PROHIBITED_TERM_FLAG = 16384;
   /**
@@ -75,10 +71,6 @@ public abstract class QueryConverter implements NamedListInitializedPlugin {
    * </p>
    */
   public static final int TERM_IN_BOOLEAN_QUERY_FLAG = 131072;
-  @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    this.args = args;
-  }
 
   /**
    * Returns the Collection of {@link Token}s for

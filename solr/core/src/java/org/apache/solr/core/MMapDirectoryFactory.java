@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package org.apache.solr.core;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -47,8 +46,7 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
   private int maxChunk;
 
   @Override
-  @SuppressWarnings({"rawtypes"})
-  public void init(NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     SolrParams params = args.toSolrParams();
     maxChunk = params.getInt("maxChunkSize", MMapDirectory.DEFAULT_MAX_CHUNK_SIZE);
@@ -61,8 +59,7 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
-    // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
-    MMapDirectory mapDirectory = new MMapDirectory(new File(path).toPath(), lockFactory, maxChunk);
+    MMapDirectory mapDirectory = new MMapDirectory(Path.of(path), lockFactory, maxChunk);
     try {
       mapDirectory.setUseUnmap(unmapHack);
     } catch (IllegalArgumentException e) {
@@ -70,10 +67,5 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
     }
     mapDirectory.setPreload(preload);
     return mapDirectory;
-  }
-  
-  @Override
-  public boolean isAbsolute(String path) {
-    return new File(path).isAbsolute();
   }
 }

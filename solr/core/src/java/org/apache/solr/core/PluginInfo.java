@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
@@ -42,23 +43,28 @@ import static org.apache.solr.schema.FieldType.CLASS_NAME;
 public class PluginInfo implements MapSerializable {
   public final String name, className, type, pkgName;
   public final ClassName cName;
-  @SuppressWarnings({"rawtypes"})
-  public final NamedList initArgs;
+  public final NamedList<Object> initArgs;
   public final Map<String, String> attributes;
   public final List<PluginInfo> children;
   private boolean isFromSolrConfig;
 
 
 
-  public PluginInfo(String type, Map<String, String> attrs, @SuppressWarnings({"rawtypes"})NamedList initArgs, List<PluginInfo> children) {
+  public PluginInfo(String type, Map<String, String> attrs, NamedList<?> initArgs, List<PluginInfo> children) {
     this.type = type;
     this.name = attrs.get(NAME);
     cName = parseClassName(attrs.get(CLASS_NAME));
     this.className = cName.className;
     this.pkgName = cName.pkg;
-    this.initArgs = initArgs;
+    // Make a shallow copy for type safety
+    this.initArgs = new NamedList<>();
+    if (initArgs != null) {
+      for (Map.Entry<String, ?> entry : initArgs) {
+        this.initArgs.add(entry.getKey(), entry.getValue());
+      }
+    }
     attributes = unmodifiableMap(attrs);
-    this.children = children == null ? Collections.<PluginInfo>emptyList(): unmodifiableList(children);
+    this.children = children == null ? Collections.emptyList(): unmodifiableList(children);
     isFromSolrConfig = false;
   }
 
@@ -99,6 +105,18 @@ public class PluginInfo implements MapSerializable {
   }
 
 
+  public PluginInfo(ConfigNode node,  String err,boolean requireName, boolean requireClass) {
+    type = node.name();
+    name = node.requiredStrAttr(NAME,requireName? () -> new RuntimeException(err + ": missing mandatory attribute 'name'"):null);
+    cName = parseClassName(node.requiredStrAttr(CLASS_NAME, requireClass? () -> new RuntimeException(err + ": missing mandatory attribute 'class'"):null ));
+    className = cName.className;
+    pkgName = cName.pkg;
+    initArgs = DOMUtil.childNodesToNamedList(node);
+    attributes = node.attributes().asMap();
+    children = loadSubPlugins(node);
+    isFromSolrConfig = true;
+
+  }
   public PluginInfo(Node node, String err, boolean requireName, boolean requireClass) {
     type = node.getNodeName();
     name = DOMUtil.getAttr(node, NAME, requireName ? err : null);
@@ -114,12 +132,12 @@ public class PluginInfo implements MapSerializable {
   @SuppressWarnings({"unchecked", "rawtypes"})
   public PluginInfo(String type, Map<String,Object> map) {
     LinkedHashMap m = new LinkedHashMap<>(map);
-    initArgs = new NamedList();
+    initArgs = new NamedList<>();
     for (Map.Entry<String, Object> entry : map.entrySet()) {
       if (NAME.equals(entry.getKey()) || CLASS_NAME.equals(entry.getKey())) continue;
       Object value = entry.getValue();
       if (value instanceof List) {
-        List list = (List) value;
+        List<?> list = (List<?>) value;
         if (!list.isEmpty() && list.get(0) instanceof Map) {//this is a subcomponent
           for (Object o : list) {
             if (o instanceof Map) o = new NamedList<>((Map) o);
@@ -138,11 +156,23 @@ public class PluginInfo implements MapSerializable {
     cName = parseClassName((String) m.get(CLASS_NAME));
     this.className = cName.className;
     this.pkgName = cName.pkg;
+    // TODO This is not type-safe and needs to be fixed - https://issues.apache.org/jira/browse/SOLR-14696
     attributes = unmodifiableMap(m);
-    this.children =  Collections.<PluginInfo>emptyList();
+    this.children =  Collections.emptyList();
     isFromSolrConfig = true;
   }
 
+  private List<PluginInfo> loadSubPlugins(ConfigNode node) {
+    List<PluginInfo> children = new ArrayList<>();
+    //if there is another sub tag with a non namedlist tag that has to be another plugin
+    node.forEachChild(nd -> {
+      if (NL_TAGS.contains(nd.name())) return null;
+      PluginInfo pluginInfo = new PluginInfo(nd, null, false, false);
+      if (pluginInfo.isEnabled()) children.add(pluginInfo);
+      return null;
+    });
+    return children.isEmpty() ? Collections.emptyList() : unmodifiableList(children);
+  }
   private List<PluginInfo> loadSubPlugins(Node node) {
     List<PluginInfo> children = new ArrayList<>();
     //if there is another sub tag with a non namedlist tag that has to be another plugin
@@ -154,7 +184,7 @@ public class PluginInfo implements MapSerializable {
       PluginInfo pluginInfo = new PluginInfo(nd, null, false, false);
       if (pluginInfo.isEnabled()) children.add(pluginInfo);
     }
-    return children.isEmpty() ? Collections.<PluginInfo>emptyList() : unmodifiableList(children);
+    return children.isEmpty() ? Collections.emptyList() : unmodifiableList(children);
   }
 
   @Override
@@ -218,8 +248,7 @@ public class PluginInfo implements MapSerializable {
     for (PluginInfo child : children) if(type.equals(child.type)) result.add(child);
     return result;
   }
-  @SuppressWarnings({"rawtypes"})
-  public static final PluginInfo EMPTY_INFO = new PluginInfo("",Collections.<String,String>emptyMap(), new NamedList(),Collections.<PluginInfo>emptyList());
+  public static final PluginInfo EMPTY_INFO = new PluginInfo("", Collections.emptyMap(), new NamedList<>(), Collections.emptyList());
 
   private static final HashSet<String> NL_TAGS = new HashSet<>
     (asList("lst", "arr",

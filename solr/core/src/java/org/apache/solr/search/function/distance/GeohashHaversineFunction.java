@@ -35,11 +35,11 @@ import java.util.Map;
  *
  * <p>
  * Ex: ghhsin(ValueSource, ValueSource, radius)
- * <p>
  *
  * @see org.apache.solr.search.function.distance.HaversineFunction for more details on the implementation
  *
- **/
+ */
+@Deprecated
 public class GeohashHaversineFunction extends ValueSource {
 
   private final ValueSource geoHash1, geoHash2;
@@ -59,11 +59,9 @@ public class GeohashHaversineFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context,
+  public FunctionValues getValues(Map<Object, Object> context,
                                   LeafReaderContext readerContext) throws IOException {
-    @SuppressWarnings({"unchecked"})
     final FunctionValues gh1DV = geoHash1.getValues(context, readerContext);
-    @SuppressWarnings({"unchecked"})
     final FunctionValues gh2DV = geoHash2.getValues(context, readerContext);
 
     return new DoubleDocValues(this) {
@@ -99,8 +97,7 @@ public class GeohashHaversineFunction extends ValueSource {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void createWeight(@SuppressWarnings({"rawtypes"})Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     geoHash1.createWeight(context, searcher);
     geoHash2.createWeight(context, searcher);
   }

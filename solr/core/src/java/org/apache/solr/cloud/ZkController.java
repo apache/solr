@@ -17,16 +17,14 @@
 package org.apache.solr.cloud;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,7 +49,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import com.google.common.base.Strings;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -67,7 +64,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.cloud.Replica.Type;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -82,12 +78,11 @@ import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.NodeRoles;
 import org.apache.solr.core.SolrCoreInitializationException;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -98,6 +93,7 @@ import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,6 +105,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 /**
  * Handle ZooKeeper interactions.
@@ -360,7 +358,9 @@ public class ZkController implements Closeable {
 
                 overseerElector.setup(context);
 
-                overseerElector.joinElection(context, true);
+                if (cc.nodeRoles.isOverseerAllowedOrPreferred()) {
+                  overseerElector.joinElection(context, true);
+                }
               }
 
               cc.cancelCoreRecoveries();
@@ -751,15 +751,6 @@ public class ZkController implements Closeable {
 
 
   /**
-   * Returns true if config file exists
-   */
-  public boolean configFileExists(String collection, String fileName)
-      throws KeeperException, InterruptedException {
-    Stat stat = zkClient.exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + collection + "/" + fileName, null, true);
-    return stat != null;
-  }
-
-  /**
    * @return information about the cluster from ZooKeeper
    */
   public ClusterState getClusterState() {
@@ -788,22 +779,6 @@ public class ZkController implements Closeable {
       cloudManager.getClusterStateProvider().connect();
     }
     return cloudManager;
-  }
-
-  /**
-   * Returns config file data (in bytes)
-   */
-  public byte[] getConfigFileData(String zkConfigName, String fileName)
-      throws KeeperException, InterruptedException {
-    String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + zkConfigName + "/" + fileName;
-    byte[] bytes = zkClient.getData(zkPath, null, null, true);
-    if (bytes == null) {
-      log.error("Config file contains no data:{}", zkPath);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "Config file contains no data:" + zkPath);
-    }
-
-    return bytes;
   }
 
   // normalize host removing any url scheme.
@@ -882,48 +857,52 @@ public class ZkController implements Closeable {
       throws KeeperException, InterruptedException, IOException {
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
     cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES, zkClient);
+    for (NodeRoles.Role role: NodeRoles.Role.values()) {
+      cmdExecutor.ensureExists(NodeRoles.getZNodeForRole(role), zkClient);
+      for (String mode: role.supportedModes()) {
+        cmdExecutor.ensureExists(NodeRoles.getZNodeForRoleMode(role, mode), zkClient);
+      }
+    }
+
     cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.ALIASES, zkClient);
     byte[] emptyJson = "{}".getBytes(StandardCharsets.UTF_8);
-    cmdExecutor.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH, emptyJson, CreateMode.PERSISTENT, zkClient);
-    bootstrapDefaultConfigSet(zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH, emptyJson, zkClient);
+    repairSecurityJson(zkClient);
   }
 
-  private static void bootstrapDefaultConfigSet(SolrZkClient zkClient) throws KeeperException, InterruptedException, IOException {
-    if (zkClient.exists("/configs/_default", true) == false) {
-      String configDirPath = getDefaultConfigDirPath();
-      if (configDirPath == null) {
-        log.warn("The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}"
-            , "intended to be the default. Current 'solr.default.confdir' value:"
-            , System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
+  private static void repairSecurityJson(SolrZkClient zkClient) throws KeeperException, InterruptedException {
+    List<ACL> securityConfAcl = zkClient.getACL(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, true);
+    ZkACLProvider aclProvider = zkClient.getZkACLProvider();
+
+    boolean tryUpdate = false;
+
+    if (OPEN_ACL_UNSAFE.equals(securityConfAcl)) {
+      List<ACL> aclToAdd = aclProvider.getACLsToAdd(ZkStateReader.SOLR_SECURITY_CONF_PATH);
+      if (OPEN_ACL_UNSAFE.equals(aclToAdd)) {
+        log.warn("Contents of zookeeper /security.json are world-readable;" +
+            " consider setting up ACLs as described in https://solr.apache.org/guide/zookeeper-access-control.html");
       } else {
-        ZkMaintenanceUtils.upConfig(zkClient, Paths.get(configDirPath), ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
+        tryUpdate = true;
+      }
+    } else if (aclProvider instanceof SecurityAwareZkACLProvider) {
+      // Use Set to explicitly ignore order
+      Set<ACL> nonSecureACL = new HashSet<>(aclProvider.getACLsToAdd(null));
+      // case where security.json was not treated as a secure path
+      if (nonSecureACL.equals(new HashSet<>(securityConfAcl))) {
+        tryUpdate = true;
       }
     }
-  }
 
-  /**
-   * Gets the absolute filesystem path of the _default configset to bootstrap from.
-   * First tries the sysprop "solr.default.confdir". If not found, tries to find
-   * the _default dir relative to the sysprop "solr.install.dir".
-   * Returns null if not found anywhere.
-   *
-   * @lucene.internal
-   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
-   */
-  public static String getDefaultConfigDirPath() {
-    String configDirPath = null;
-    String serverSubPath = "solr" + File.separator +
-        "configsets" + File.separator + "_default" +
-        File.separator + "conf";
-    String subPath = File.separator + "server" + File.separator + serverSubPath;
-    if (System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE) != null && new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE)).exists()) {
-      configDirPath = new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE)).getAbsolutePath();
-    } else if (System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) != null &&
-        new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).exists()) {
-      configDirPath = new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).getAbsolutePath();
+    if (tryUpdate) {
+      if (Boolean.getBoolean("solr.security.aclautorepair.disable")) {
+        log.warn("Detected inconsistent ACLs for zookeeper /security.json, but self-repair is disabled.");
+      } else {
+        log.info("Detected inconsistent ACLs for zookeeper /security.json, attempting to repair.");
+        zkClient.updateACLs(ZkStateReader.SOLR_SECURITY_CONF_PATH);
+      }
     }
-    return configDirPath;
   }
 
   private void init() {
@@ -942,10 +921,11 @@ public class ZkController implements Closeable {
         overseerElector = new LeaderElector(zkClient);
         this.overseer = new Overseer((HttpShardHandler) cc.getShardHandlerFactory().getShardHandler(), cc.getUpdateShardHandler(),
             CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
-        ElectionContext context = new OverseerElectionContext(zkClient,
-            overseer, getNodeName());
+        ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
         overseerElector.setup(context);
-        overseerElector.joinElection(context, false);
+        if (cc.nodeRoles.isOverseerAllowedOrPreferred()) {
+          overseerElector.joinElection(context, false);
+        }
       }
 
       Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
@@ -1095,6 +1075,7 @@ public class ZkController implements Closeable {
         zkHost.indexOf("/")), 60000, 30000, null, null, null);
     boolean exists = tmpClient.exists(chrootPath, true);
     if (!exists && create) {
+      log.info("creating chroot {}", chrootPath);
       tmpClient.makePath(chrootPath, false, true);
       exists = true;
     }
@@ -1117,6 +1098,11 @@ public class ZkController implements Closeable {
     log.info("Register node as live in ZooKeeper:{}", nodePath);
     List<Op> ops = new ArrayList<>(2);
     ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
+
+    // Create the roles node as well
+   cc.nodeRoles.getRoles().forEach((role, mode) -> ops.add(Op.create(NodeRoles.getZNodeForRoleMode(role, mode) +"/" + nodeName,
+           null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL)));
+
     zkClient.multi(ops, true);
   }
 
@@ -1512,14 +1498,14 @@ public class ZkController implements Closeable {
     return baseURL;
   }
 
-  public void publish(final CoreDescriptor cd, final Replica.State state) throws Exception {
+  public void publish(final CoreDescriptor cd, final Replica.State state) throws KeeperException, InterruptedException {
     publish(cd, state, true, false);
   }
 
   /**
    * Publish core state to overseer.
    */
-  public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState, boolean forcePublish) throws Exception {
+  public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState, boolean forcePublish) throws KeeperException, InterruptedException {
     if (!forcePublish) {
       try (SolrCore core = cc.getCore(cd.getName())) {
         if (core == null || core.isClosed()) {
@@ -2026,31 +2012,6 @@ public class ZkController implements Closeable {
 
   }
 
-  /**
-   * If in SolrCloud mode, upload config sets for each SolrCore in solr.xml.
-   */
-  public static void bootstrapConf(SolrZkClient zkClient, CoreContainer cc) throws IOException {
-
-    ZkConfigManager configManager = new ZkConfigManager(zkClient);
-
-    //List<String> allCoreNames = cfg.getAllCoreNames();
-    List<CoreDescriptor> cds = cc.getCoresLocator().discover(cc);
-
-    if (log.isInfoEnabled()) {
-      log.info("bootstrapping config for {} cores into ZooKeeper using solr.xml from {}", cds.size(), cc.getSolrHome());
-    }
-
-    for (CoreDescriptor cd : cds) {
-      String coreName = cd.getName();
-      String confName = cd.getCollectionName();
-      if (StringUtils.isEmpty(confName))
-        confName = coreName;
-      Path udir = cd.getInstanceDir().resolve("conf");
-      log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
-      configManager.uploadConfigDir(udir, confName);
-    }
-  }
-
   public ZkDistributedQueue getOverseerJobQueue() {
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
       throw new IllegalStateException("Cluster is configured with distributed state update, not expecting the queue to be retrieved");
@@ -2249,24 +2210,27 @@ public class ZkController implements Closeable {
     try {
       byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
       if (data == null) return;
-      @SuppressWarnings({"rawtypes"})
-      Map roles = (Map) Utils.fromJSON(data);
+      Map<?,?> roles = (Map<?,?>) Utils.fromJSON(data);
       if (roles == null) return;
-      @SuppressWarnings({"rawtypes"})
-      List nodeList = (List) roles.get("overseer");
+      List<?> nodeList = (List<?>) roles.get("overseer");
       if (nodeList == null) return;
       if (nodeList.contains(getNodeName())) {
-        ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.ADDROLE.toString().toLowerCase(Locale.ROOT),
-            "node", getNodeName(),
-            "role", "overseer");
-        log.info("Going to add role {} ", props);
-        getOverseerCollectionQueue().offer(Utils.toJSON(props));
+       setPreferredOverseer();
       }
     } catch (NoNodeException nne) {
       return;
     } catch (Exception e) {
       log.warn("could not read the overseer designate ", e);
     }
+  }
+
+  public void setPreferredOverseer() throws KeeperException, InterruptedException {
+    ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDROLE.toString().toLowerCase(Locale.ROOT),
+        "node", getNodeName(),
+        "role", "overseer",
+        "persist", "false");
+    log.warn("Going to add role {}. It is deprecated to use ADDROLE and consider using Node Roles instead.", props);
+    getOverseerCollectionQueue().offer(Utils.toJSON(props));
   }
 
   public CoreContainer getCoreContainer() {
@@ -2449,10 +2413,6 @@ public class ZkController implements Closeable {
         @Override
         public void preClose(SolrCore core) {
           unregisterConfListener(confDir, listener);
-        }
-
-        @Override
-        public void postClose(SolrCore core) {
         }
       });
     }
@@ -2686,8 +2646,8 @@ public class ZkController implements Closeable {
         }
         registeredSearcher.decref();
       } else  {
-        @SuppressWarnings({"rawtypes"})
-        Future[] waitSearcher = new Future[1];
+        @SuppressWarnings("unchecked")
+        Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
         if (log.isInfoEnabled()) {
           log.info("No registered searcher found for core: {}, waiting until a searcher is registered before publishing as active", core.getName());
         }

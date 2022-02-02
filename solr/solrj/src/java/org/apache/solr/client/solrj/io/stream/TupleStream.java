@@ -183,7 +183,6 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
     return replicas;
   }
 
-  @SuppressWarnings({"unchecked"})
   public static List<String> getShards(String zkHost,
                                        String collection,
                                        StreamContext streamContext,
@@ -191,6 +190,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       throws IOException {
 
     List<String> shards;
+    @SuppressWarnings({"unchecked"})
     Map<String, List<String>> shardsMap = streamContext != null ? (Map<String, List<String>>)streamContext.get("shards") : null;
     if(shardsMap != null) {
       //Manual Sharding

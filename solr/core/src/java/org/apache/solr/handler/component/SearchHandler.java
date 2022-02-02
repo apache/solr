@@ -39,7 +39,9 @@ import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.SolrQueryTimeoutImpl;
+import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
@@ -51,6 +53,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -141,10 +144,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         public void preClose(SolrCore core) {
           shardHandlerFactory.close();
         }
-
-        @Override
-        public void postClose(SolrCore core) {
-        }
       });
     }
 
@@ -234,7 +233,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     return result;
   }
 
-  private ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
+  public ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
     CoreContainer cc = req.getCore().getCoreContainer();
@@ -281,7 +280,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     List<SearchComponent> components  = getComponents();
@@ -289,6 +287,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);
     }
+    
+    tagRequestWithRequestId(rb);
 
     boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
     rb.setDebug(dbg);
@@ -298,19 +298,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
-    if (req.getCore().getCircuitBreakerManager().isEnabled()) {
+    final CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
+    if (circuitBreakerManager.isEnabled()) {
       List<CircuitBreaker> trippedCircuitBreakers;
 
       if (timer != null) {
         RTimerTree subt = timer.sub("circuitbreaker");
         rb.setTimer(subt);
 
-        CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
         trippedCircuitBreakers = circuitBreakerManager.checkTripped();
 
         rb.getTimer().stop();
       } else {
-        CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
         trippedCircuitBreakers = circuitBreakerManager.checkTripped();
       }
 
@@ -323,8 +322,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
 
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed
-
-    tagRequestWithRequestId(rb);
 
     if (timer == null) {
       // non-debugging prepare phase
@@ -342,6 +339,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       subt.stop();
     }
 
+    { // Once all of our components have been prepared, check if this request involves a SortSpec.
+      // If it does, and if our request includes a cursorMark param, then parse & init the CursorMark state
+      // (This must happen after the prepare() of all components, because any component may have modified the SortSpec)
+      final SortSpec spec = rb.getSortSpec();
+      final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
+      if (null != spec && null != cursorStr) {
+        final CursorMark cursorMark = new CursorMark(rb.req.getSchema(), spec);
+        cursorMark.parseSerializedTotem(cursorStr);
+        rb.setCursorMark(cursorMark);
+      }
+    }
+    
     if (!rb.isDistrib) {
       // a normal non-distributed request
 
@@ -383,8 +392,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
           }
         }
         if(rb.isDebug()) {
-          NamedList debug = new NamedList();
-          debug.add("explain", new NamedList());
+          NamedList<Object> debug = new NamedList<>();
+          debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
         rb.rsp.getResponseHeader().asShallowMap()
@@ -435,6 +444,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
               params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
               params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
               params.set(CommonParams.OMIT_HEADER, false);
+
+              // Distributed request -- need to send queryID as a part of the distributed request
+              params.setNonNull(ShardParams.QUERY_ID, rb.queryID);
               if (rb.requestInfo != null) {
                 // we could try and detect when this is needed, but it could be tricky
                 params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));
@@ -534,6 +546,17 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     final boolean ridTaggingDisabled = rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, false);
     if (! ridTaggingDisabled) {
       String rid = getOrGenerateRequestId(rb.req);
+
+      // NOTE: SearchHandler explicitly never clears/removes this MDC value...
+      // We want it to live for the entire request, beyond the scope of SearchHandler's processing, and trust
+      // SolrDispatchFilter to clean it up at the end of the request.
+      //
+      // Examples:
+      // - ERROR logging of Exceptions propogated up to our base class
+      // - SolrCore.RequestLog
+      // - ERRORs that may be logged during response writing
+      MDC.put(CommonParams.REQUEST_ID, rid);
+      
       if (StringUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
         ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
         params.add(CommonParams.REQUEST_ID, rid);//add rid to the request so that shards see it

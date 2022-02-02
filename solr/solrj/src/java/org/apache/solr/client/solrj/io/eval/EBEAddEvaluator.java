@@ -34,7 +34,6 @@ public class EBEAddEvaluator extends RecursiveObjectEvaluator implements TwoValu
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object first, Object second) throws IOException{
     if(null == first){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
@@ -45,8 +44,8 @@ public class EBEAddEvaluator extends RecursiveObjectEvaluator implements TwoValu
 
     if(first instanceof List && second instanceof List) {
       double[] result = MathArrays.ebeAdd(
-          ((List) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
-          ((List) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
+          ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray(),
+          ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray()
       );
 
       List<Number> numbers = new ArrayList<>();

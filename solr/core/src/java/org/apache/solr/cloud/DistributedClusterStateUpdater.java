@@ -299,7 +299,7 @@ public class DistributedClusterStateUpdater {
      * through {@link #getPerReplicaStatesOps()}). Any or both of these methods will return {@code null} if there is no
      * corresponding update to apply.
      */
-    void computeUpdates(ClusterState currentState);
+    void computeUpdates(ClusterState currentState, SolrZkClient client);
 
     /**
      * Method can only be called after {@link #computeUpdates} has been called.
@@ -398,7 +398,7 @@ public class DistributedClusterStateUpdater {
         // (it's read from ZK just above). So assumptions made in the mutators (like SliceMutator.removeReplica() deleting
         // the whole collection if it's not found) are ok. Actually in the removeReplica case, the collection will always
         // exist otherwise the call to fetchStateForCollection() above would have failed.
-        updater.computeUpdates(initialClusterState);
+        updater.computeUpdates(initialClusterState, zkStateReader.getZkClient());
 
         ClusterState updatedState = updater.getUpdatedClusterState();
         List<PerReplicaStatesOps> allStatesOps = updater.getPerReplicaStatesOps();
@@ -524,7 +524,11 @@ public class DistributedClusterStateUpdater {
       String collectionStatePath = ZkStateReader.getCollectionPath(updater.getCollectionName());
       Stat stat = new Stat();
       byte[] data = zkStateReader.getZkClient().getData(collectionStatePath, null, stat, true);
-      ClusterState clusterState = ClusterState.createFromJson(stat.getVersion(), data, Collections.emptySet());
+
+      // This factory method can detect a missing configName and supply it by reading it from the old ZK location.
+      // TODO in Solr 10 remove that factory method
+      ClusterState clusterState = ClusterState.createFromJsonSupportingLegacyConfigName(
+              stat.getVersion(), data, Collections.emptySet(), updater.getCollectionName(), zkStateReader.getZkClient());
       return clusterState;
     }
   }
@@ -661,7 +665,7 @@ public class DistributedClusterStateUpdater {
       }
 
       @Override
-      public void computeUpdates(ClusterState clusterState) {
+      public void computeUpdates(ClusterState clusterState, SolrZkClient client) {
         boolean hasJsonUpdates = false;
         List<PerReplicaStatesOps> perReplicaStateOps = new LinkedList<>();
         for (Pair<MutatingCommand, ZkNodeProps> mutation : mutations) {
@@ -793,9 +797,9 @@ public class DistributedClusterStateUpdater {
     }
 
     @Override
-    public void computeUpdates(ClusterState clusterState) {
+    public void computeUpdates(ClusterState clusterState, SolrZkClient client) {
       final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
-      Optional<ZkWriteCommand> result = docCollection != null ? NodeMutator.computeCollectionUpdate(nodeName, collectionName, docCollection) : Optional.empty();
+      Optional<ZkWriteCommand> result = docCollection != null ? NodeMutator.computeCollectionUpdate(nodeName, collectionName, docCollection, client) : Optional.empty();
 
       if (docCollection == null) {
         // This is possible but should be rare. Logging warn in case it is seen often and likely a sign of another issue

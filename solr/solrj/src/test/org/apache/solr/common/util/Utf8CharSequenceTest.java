@@ -27,7 +27,6 @@ import org.apache.solr.SolrTestCaseJ4;
 
 public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
 
-  @SuppressWarnings({"unchecked"})
   public void testLargeString() throws IOException {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < 100; i++) {
@@ -49,8 +48,7 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
     utf81 = new ByteArrayUtf8CharSequence(result, 0, result.length);
     assertTrue(utf81.equals(utf8));
 
-    @SuppressWarnings({"rawtypes"})
-    Map m0 = new HashMap();
+    Map<String, Object> m0 = new HashMap<>();
     m0.put("str", utf8);
     baos.reset();
     try (JavaBinCodec jbc = new JavaBinCodec()) {
@@ -58,8 +56,7 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
     }
     result = baos.toByteArray();
     try (JavaBinCodec jbc = new JavaBinCodec()) {
-      @SuppressWarnings({"rawtypes"})
-      Map m1 = (Map) jbc
+      Map<?,?> m1 = (Map<?,?>) jbc
           .setReadStringAsCharSeq(true)
           .unmarshal(new ByteArrayInputStream(result));
       utf81 = (ByteArrayUtf8CharSequence) m1.get("str");
@@ -67,10 +64,8 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
     }
   }
 
-  @SuppressWarnings({"unchecked"})
   public void testUnMarshal() throws IOException {
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl = new NamedList();
+    NamedList<String> nl = new NamedList<>();
     String str = " The value!";
     for (int i = 0; i < 5; i++) {
       StringBuffer sb = new StringBuffer();
@@ -93,10 +88,9 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
     }
     byte[] bytes = baos.toByteArray();
 
-    @SuppressWarnings({"rawtypes"})
-    NamedList nl1;
+    NamedList<?> nl1;
     try (JavaBinCodec jbc = new JavaBinCodec()) {
-      nl1 = (NamedList) jbc
+      nl1 = (NamedList<?>) jbc
           .setReadStringAsCharSeq(true)
           .unmarshal(new ByteArrayInputStream(bytes, 0, bytes.length));
     }

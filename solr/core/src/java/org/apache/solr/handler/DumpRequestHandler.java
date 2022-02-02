@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,14 +29,22 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.util.plugin.SolrCoreAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-public class DumpRequestHandler extends RequestHandlerBase
+public class DumpRequestHandler extends RequestHandlerBase implements SolrCoreAware
 {
+  private SolrCore solrCore;
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @Override
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException
@@ -44,8 +53,7 @@ public class DumpRequestHandler extends RequestHandlerBase
     rsp.add( "params", req.getParams().toNamedList() );
     String[] parts = req.getParams().getParams("urlTemplateValues");
     if (parts != null && parts.length > 0) {
-      @SuppressWarnings({"rawtypes"})
-      Map map = new LinkedHashMap<>();
+      Map<String, String> map = new LinkedHashMap<>();
       rsp.getValues().add("urlTemplateValues", map);
       for (String part : parts) {
         map.put(part, req.getPathTemplateValues().get(part));
@@ -54,8 +62,8 @@ public class DumpRequestHandler extends RequestHandlerBase
 
     String[] returnParams = req.getParams().getParams("param");
     if(returnParams !=null) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList params = (NamedList) rsp.getValues().get("params");
+      @SuppressWarnings({"unchecked"})
+      NamedList<Object> params = (NamedList<Object>) rsp.getValues().get("params");
       for (String returnParam : returnParams) {
         String[] vals = req.getParams().getParams(returnParam);
         if(vals != null){
@@ -71,8 +79,7 @@ public class DumpRequestHandler extends RequestHandlerBase
     }
 
     if(req.getParams().getBool("getdefaults", false)){
-      @SuppressWarnings({"rawtypes"})
-      NamedList def = (NamedList) initArgs.get(PluginInfo.DEFAULTS);
+      NamedList<?> def = (NamedList<?>) initArgs.get(PluginInfo.DEFAULTS);
       rsp.add("getdefaults", def);
     }
 
@@ -120,13 +127,27 @@ public class DumpRequestHandler extends RequestHandlerBase
   private List<String> subpaths;
 
   @Override
-  @SuppressWarnings({"unchecked"})
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     super.init(args);
     if(args !=null) {
-      @SuppressWarnings({"rawtypes"})
-      NamedList nl = (NamedList) args.get(PluginInfo.DEFAULTS);
-      if(nl!=null) subpaths = nl.getAll("subpath");
+      @SuppressWarnings("unchecked")
+      NamedList<String> nl = (NamedList<String>) args.get(PluginInfo.DEFAULTS);
+      if (nl!=null) subpaths = nl.getAll("subpath");
     }
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    if (solrCore != null && solrCore.getSolrConfig().isEnableRemoteStreams()) {
+      log.warn("Dump request handler requires config-read permission when remote streams are enabled");
+      return Name.CONFIG_READ_PERM;
+    } else {
+      return Name.ALL;
+    }
+  }
+
+  @Override
+  public void inform(SolrCore core) {
+    this.solrCore = core;
   }
 }

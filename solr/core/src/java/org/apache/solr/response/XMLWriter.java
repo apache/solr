@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -208,7 +207,7 @@ public class XMLWriter extends TextResponseWriter {
           log.debug(String.valueOf(val));
         }
       }
-      writeVal(fname, val);
+      writeVal(fname, val, shouldWriteRaw(fname, returnFields));
     }
 
     if(doc.hasChildDocuments()) {
@@ -236,7 +235,7 @@ public class XMLWriter extends TextResponseWriter {
   //
 
   @Override
-  public void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  public void writeNamedList(String name, NamedList<?> val) throws IOException {
     int sz = val.size();
     startTag("lst", name, sz<=0);
 
@@ -275,8 +274,7 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public void writeMap(String name, @SuppressWarnings({"rawtypes"})Map map, boolean excludeOuter, boolean isFirstVal) throws IOException {
+  public void writeMap(String name, Map<?, ?> map, boolean excludeOuter, boolean isFirstVal) throws IOException {
     int sz = map.size();
 
     if (!excludeOuter) {
@@ -284,7 +282,7 @@ public class XMLWriter extends TextResponseWriter {
       incLevel();
     }
 
-    for (Map.Entry entry : (Set<Map.Entry>)map.entrySet()) {
+    for (Map.Entry<?,?> entry : map.entrySet()) {
       Object k = entry.getKey();
       Object v = entry.getValue();
       // if (sz<indentThreshold) indent();
@@ -301,17 +299,17 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeArray(String name, Object[] val) throws IOException {
-    writeArray(name, Arrays.asList(val).iterator());
+  public void writeArray(String name, Object[] val, boolean raw) throws IOException {
+    writeArray(name, Arrays.asList(val).iterator(), raw);
   }
 
   @Override
-  public void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator iter) throws IOException {
+  public void writeArray(String name, Iterator<?> iter, boolean raw) throws IOException {
     if( iter.hasNext() ) {
       startTag("arr", name, false );
       incLevel();
       while( iter.hasNext() ) {
-        writeVal(null, iter.next());
+        writeVal(null, iter.next(), raw);
       }
       decLevel();
       if (doIndent) indent();
@@ -323,7 +321,7 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeIterator(String name, IteratorWriter val) throws IOException {
+  public void writeIterator(String name, IteratorWriter val, boolean raw) throws IOException {
     // As the size is not known. So, always both startTag and endTag is written
     // irrespective of number of entries in IteratorWriter
     startTag("arr", name, false );
@@ -332,7 +330,7 @@ public class XMLWriter extends TextResponseWriter {
     val.writeIter(new IteratorWriter.ItemWriter() {
       @Override
       public IteratorWriter.ItemWriter add(Object o) throws IOException {
-        writeVal(null, o);
+        writeVal(null, o, raw);
         return this;
       }
     });
@@ -351,6 +349,15 @@ public class XMLWriter extends TextResponseWriter {
   @Override
   public void writeNull(String name) throws IOException {
     writePrim("null",name,"",false);
+  }
+
+  @Override
+  public void writeStrRaw(String name, String val) throws IOException {
+    int contentLen = val == null ? 0 : val.length();
+    startTag("raw", name, contentLen == 0);
+    if (contentLen == 0) return;
+    writer.write(val, 0, contentLen);
+    writer.write("</raw>");
   }
 
   @Override

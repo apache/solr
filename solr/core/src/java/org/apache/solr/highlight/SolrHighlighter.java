@@ -118,6 +118,5 @@ public abstract class SolrHighlighter
    * @return NamedList containing a NamedList for each document, which in
    * turns contains sets (field, summary) pairs.
    */
-  @SuppressWarnings("unchecked")
   public abstract NamedList<Object> doHighlighting(DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException;
 }

@@ -19,11 +19,11 @@ package org.apache.solr.update;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
@@ -75,6 +76,7 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.LongSet;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -210,9 +212,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected boolean existOldBufferLog = false;
 
   // keep track of deletes only... this is not updated on an add
-  protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
+  protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<>(numDeletesToKeep) {
     @Override
-    protected boolean removeEldestEntry(@SuppressWarnings({"rawtypes"})Map.Entry eldest) {
+    protected boolean removeEldestEntry(Map.Entry<BytesRef, LogPtr> eldest) {
       return size() > numDeletesToKeep;
     }
   };
@@ -232,8 +234,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   protected LinkedList<DBQ> deleteByQueries = new LinkedList<>();
 
-  protected String[] tlogFiles;
-  protected File tlogDir;
+  protected String[] tlogFiles; // Needs to be String because hdfs.Path is incompatible with nio.Path
+  protected Path tlogDir;
   protected Collection<String> globalStrings;
 
   protected String dataDir;
@@ -371,28 +373,38 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       return;
     }
     lastDataDir = dataDir;
-    tlogDir = new File(dataDir, TLOG_NAME);
-    tlogDir.mkdirs();
-    tlogFiles = getLogList(tlogDir);
+    tlogDir = Path.of(dataDir, TLOG_NAME);
+    try {
+      Files.createDirectories(tlogDir);
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Could not set up tlogs", e);
+    }
+    tlogFiles = getLogList(tlogDir.toFile());
     id = getLastLogId() + 1;   // add 1 since we will create a new log for the next update
 
     if (debug) {
       log.debug("UpdateHandler init: tlogDir={}, existing tlogs={}, next id={}", tlogDir, Arrays.asList(tlogFiles), id);
     }
 
-    String[] oldBufferTlog = getBufferLogList(tlogDir);
-    if (oldBufferTlog != null && oldBufferTlog.length != 0) {
-      existOldBufferLog = true;
+    final String prefix = BUFFER_TLOG_NAME + '.';
+    try (Stream<Path> bufferedTLogs = Files.walk(tlogDir, 1)) {
+      existOldBufferLog = bufferedTLogs.anyMatch(path -> path.getFileName().toString().startsWith(prefix));
+    } catch (IOException e) {
+      // Existance of buffered t-logs indicates previous recovery failed and lets us skip peer sync as an optimization
+      // Failing to read them is non-fatal and almost not even worth logging about
+      log.debug("Could not read {} directory searching for buffered transaction log files.", tlogDir, e);
+      existOldBufferLog = false;
     }
     TransactionLog oldLog = null;
     for (String oldLogName : tlogFiles) {
-      File f = new File(tlogDir, oldLogName);
+      Path path = tlogDir.resolve(oldLogName);
       try {
-        oldLog = newTransactionLog(f, null, true);
+        oldLog = newTransactionLog(path, null, true);
         addOldLog(oldLog, false);  // don't remove old logs on startup since more than one may be uncapped.
-      } catch (Exception e) {
-        SolrException.log(log, "Failure to open existing log file (non fatal) " + f, e);
-        deleteFile(f);
+      } catch (RuntimeException e) {
+        // This could be a SolrException, why is it non-fatal?
+        log.error("Failure to open existing log file (non fatal) {} ", path, e);
+        deleteFile(path);
       }
     }
 
@@ -472,12 +484,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * Returns a new {@link org.apache.solr.update.TransactionLog}. Sub-classes can override this method to
    * change the implementation of the transaction log.
    */
-  public TransactionLog newTransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) {
+  public TransactionLog newTransactionLog(Path tlogFile, Collection<String> globalStrings, boolean openExisting) {
     return new TransactionLog(tlogFile, globalStrings, openExisting);
   }
 
   public String getLogDir() {
-    return tlogDir.getAbsolutePath();
+    return tlogDir.toAbsolutePath().toString();
   }
 
   public List<Long> getStartingVersions() {
@@ -521,11 +533,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     logs.addFirst(oldLog);
   }
 
-  public String[] getBufferLogList(File directory) {
-    final String prefix = BUFFER_TLOG_NAME+'.';
-    return directory.list((dir, name) -> name.startsWith(prefix));
-  }
-
   /**
    * Does update from old tlogs (not from buffer tlog)?
    * If yes we must skip writing {@code cmd} to current tlog
@@ -536,12 +543,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   public String[] getLogList(File directory) {
     final String prefix = TLOG_NAME+'.';
-    String[] names = directory.list(new FilenameFilter() {
-      @Override
-      public boolean accept(File dir, String name) {
-        return name.startsWith(prefix);
-      }
-    });
+    String[] names = directory.list((dir, name) -> name.startsWith(prefix));
     if (names == null) {
       throw new RuntimeException(new FileNotFoundException(directory.getAbsolutePath()));
     }
@@ -909,15 +911,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    */
   @SuppressWarnings({"unchecked"})
   synchronized public long applyPartialUpdates(BytesRef id, long prevPointer, long prevVersion,
-      Set<String> onlyTheseFields, @SuppressWarnings({"rawtypes"})SolrDocumentBase latestPartialDoc) {
+      Set<String> onlyTheseFields, SolrDocumentBase<?, ?> latestPartialDoc) {
     
     SolrInputDocument partialUpdateDoc = null;
 
     List<TransactionLog> lookupLogs = Arrays.asList(tlog, prevMapLog, prevMapLog2);
     while (prevPointer >= 0) {
       //go through each partial update and apply it on the incoming doc one after another
-      @SuppressWarnings({"rawtypes"})
-      List entry;
+      List<?> entry;
       entry = getEntryFromTLog(prevPointer, prevVersion, lookupLogs);
       if (entry == null) {
         return prevPointer; // a previous update was supposed to be found, but wasn't found (due to log rotation)
@@ -957,7 +958,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   /**
    * Add all fields from olderDoc into newerDoc if not already present in newerDoc
    */
-  private void applyOlderUpdates(@SuppressWarnings({"rawtypes"})SolrDocumentBase newerDoc, SolrInputDocument olderDoc, Set<String> mergeFields) {
+  private void applyOlderUpdates(SolrDocumentBase<?,?> newerDoc, SolrInputDocument olderDoc, Set<String> mergeFields) {
     for (String fieldName : olderDoc.getFieldNames()) {
       // if the newerDoc has this field, then this field from olderDoc can be ignored
       if (!newerDoc.containsKey(fieldName) && (mergeFields == null || mergeFields.contains(fieldName))) {
@@ -974,8 +975,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    *
    * @return The entry if found, otherwise null
    */
-  @SuppressWarnings({"rawtypes"})
-  private synchronized List getEntryFromTLog(long lookupPointer, long lookupVersion, List<TransactionLog> lookupLogs) {
+  private synchronized List<?> getEntryFromTLog(long lookupPointer, long lookupVersion, List<TransactionLog> lookupLogs) {
     for (TransactionLog lookupLog : lookupLogs) {
       if (lookupLog != null && lookupLog.getLogSize() > lookupPointer) {
         lookupLog.incref();
@@ -993,8 +993,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           }
 
           if (obj != null && obj instanceof List) {
-            List tmpEntry = (List) obj;
-            if (tmpEntry.size() >= 2 && 
+            List<?> tmpEntry = (List<?>) obj;
+            if (tmpEntry.size() >= 2 &&
+                    // why not Objects.equals(lookupVersion, tmpEntry.get())?
                 (tmpEntry.get(UpdateLog.VERSION_IDX) instanceof Long) &&
                 ((Long) tmpEntry.get(UpdateLog.VERSION_IDX)).equals(lookupVersion)) {
               return tmpEntry;
@@ -1271,8 +1272,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     try {
       while ( (o = logReader.next()) != null ) {
         try {
-          @SuppressWarnings({"rawtypes"})
-          List entry = (List)o;
+          List<?> entry = (List<?>) o;
           int operationAndFlags = (Integer) entry.get(0);
           int oper = operationAndFlags & OPERATION_MASK;
           long version = (Long) entry.get(1);
@@ -1329,17 +1329,19 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected void ensureBufferTlog() {
     if (bufferTlog != null) return;
     String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, BUFFER_TLOG_NAME, System.nanoTime());
-    bufferTlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false);
+    bufferTlog = newTransactionLog(tlogDir.resolve(newLogName), globalStrings, false);
     bufferTlog.isBuffer = true;
   }
 
   // Cleanup old buffer tlogs
   protected void deleteBufferLogs() {
-    String[] oldBufferTlog = getBufferLogList(tlogDir);
-    if (oldBufferTlog != null && oldBufferTlog.length != 0) {
-      for (String oldBufferLogName : oldBufferTlog) {
-        deleteFile(new File(tlogDir, oldBufferLogName));
-      }
+    try (Stream<Path> tlogs = Files.walk(tlogDir, 1)) {
+      final String prefix = BUFFER_TLOG_NAME + '.';
+      tlogs.filter(Files::isRegularFile)
+          .filter(path -> path.getFileName().toString().startsWith(prefix))
+          .forEach(UpdateLog::deleteFile);
+    } catch (IOException e) {
+      log.warn("Could not clean up buffered transaction logs in {}", tlogDir, e);
     }
   }
 
@@ -1347,7 +1349,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected void ensureLog() {
     if (tlog == null) {
       String newLogName = String.format(Locale.ROOT, LOG_FILENAME_PATTERN, TLOG_NAME, id);
-      tlog = newTransactionLog(new File(tlogDir, newLogName), globalStrings, false);
+      tlog = newTransactionLog(tlogDir.resolve(newLogName), globalStrings, false);
     }
   }
 
@@ -1456,10 +1458,18 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     public List<Long> getVersions(int n, long maxVersion) {
       List<Long> ret = new ArrayList<>(n);
+      LongSet set = new LongSet(n);
+      final int nInput = n;
 
       for (List<Update> singleList : updateList) {
         for (Update ptr : singleList) {
           if(Math.abs(ptr.version) > Math.abs(maxVersion)) continue;
+          if (!set.add(ptr.version)) {
+            if (debug) {
+              log.debug("getVersions(n={}, maxVersion={}) not returning duplicate version = {}", nInput, maxVersion, ptr.version);
+            }
+            continue;
+          }
           ret.add(ptr.version);
           if (--n <= 0) return ret;
         }
@@ -1476,12 +1486,19 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     /** Returns the list of deleteByQueries that happened after the given version */
-    public List<Object> getDeleteByQuery(long afterVersion) {
+    public List<Object> getDeleteByQuery(long afterVersion, LongSet updateVersions) {
       List<Object> result = new ArrayList<>(deleteByQueryList.size());
       for (Update update : deleteByQueryList) {
         if (Math.abs(update.version) > afterVersion) {
-          Object dbq = update.log.lookup(update.pointer);
-          result.add(dbq);
+          if (updateVersions.add(update.version)) {
+            Object dbq = update.log.lookup(update.pointer);
+            result.add(dbq);
+          } else {
+            if (debug) {
+              log.debug("UpdateLog.RecentUpdates.getDeleteByQuery(afterVersion={}) not returning duplicate version = {}",
+                  afterVersion, update.version);
+            }
+          }
         }
       }
       return result;
@@ -1508,8 +1525,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               if (o==null) break;
 
               // should currently be a List<Oper,Ver,Doc/Id>
-              @SuppressWarnings({"rawtypes"})
-              List entry = (List)o;
+              List<?> entry = (List<?>)o;
 
               // TODO: refactor this out so we get common error handling
               int opAndFlags = (Integer)entry.get(UpdateLog.FLAGS_IDX);
@@ -1892,8 +1908,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           try {
 
             // should currently be a List<Oper,Ver,Doc/Id>
-            @SuppressWarnings({"rawtypes"})
-            List entry = (List) o;
+            List<?> entry = (List<?>) o;
             operationAndFlags = (Integer) entry.get(UpdateLog.FLAGS_IDX);
             int oper = operationAndFlags & OPERATION_MASK;
             long version = (Long) entry.get(UpdateLog.VERSION_IDX);
@@ -2101,7 +2116,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * @param version Version already obtained from the entry.
    */
   public static AddUpdateCommand convertTlogEntryToAddUpdateCommand(SolrQueryRequest req,
-                                                                    @SuppressWarnings({"rawtypes"})List entry,
+                                                                    List<?> entry,
                                                                     int operation, long version) {
     assert operation == UpdateLog.ADD || operation == UpdateLog.UPDATE_INPLACE;
     SolrInputDocument sdoc = (SolrInputDocument) entry.get(entry.size()-1);
@@ -2121,10 +2136,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       new SolrNamedThreadFactory("recoveryExecutor"));
 
 
-  public static void deleteFile(File file) {
+  public static void deleteFile(Path file) {
     boolean success = false;
     try {
-      Files.deleteIfExists(file.toPath());
+      Files.deleteIfExists(file);
       success = true;
     } catch (Exception e) {
       log.error("Error deleting file: {}", file, e);
@@ -2132,7 +2147,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     if (!success) {
       try {
-        file.deleteOnExit();
+        file.toFile().deleteOnExit();
       } catch (Exception e) {
         log.error("Error deleting file on exit: {}", file, e);
       }
@@ -2162,17 +2177,20 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    */
   public void clearLog(SolrCore core, PluginInfo ulogPluginInfo) {
     if (ulogPluginInfo == null) return;
-    File tlogDir = new File(getTlogDir(core, ulogPluginInfo));
-    if (tlogDir.exists()) {
-      String[] files = getLogList(tlogDir);
-      for (String file : files) {
-        File f = new File(tlogDir, file);
-        try {
-          Files.delete(f.toPath());
-        } catch (IOException cause) {
-          // NOTE: still throws SecurityException as before.
-          log.error("Could not remove tlog file:{}", f, cause);
-        }
+    Path tlogPath = Path.of(getTlogDir(core, ulogPluginInfo));
+    if (Files.exists(tlogPath)) {
+      try (Stream<Path> paths = Files.walk(tlogPath)) {
+        paths.filter(Files::isRegularFile)
+            .forEach(path -> {
+              try {
+                Files.delete(path);
+              } catch (IOException cause) {
+                // NOTE: still throws SecurityException as before.
+                log.error("Could not remove tlog file: {}", path, cause);
+              }
+            });
+      } catch (IOException e) {
+        log.error("Could not clear old tlogs in {}", tlogPath);
       }
     }
   }
