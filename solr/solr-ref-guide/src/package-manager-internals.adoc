@@ -97,9 +97,9 @@ Use the following steps to upload a jar signed with your public key:
 
 . If you don't have a jar file with plugins, download a sample from github:
 +
-[source, bash]
+[source, bash,subs="attributes"]
 ----
-$ curl -o runtimelibs.jar   -LO https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
+$ curl -o runtimelibs.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
 ----
 
 . Sign the jar with your private key:
@@ -305,9 +305,9 @@ $ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
 . Update the version of our component.
 Get a new version of the jar, sign and upload it:
 +
-[source, bash]
+[source, bash,subs="attributes"]
 ----
-$ curl -o runtimelibs3.jar   -LO https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/runtimecode/runtimelibs_v3.jar.bin?raw=true
+$ curl -o runtimelibs3.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs_v3.jar.bin?raw=true
 
 $ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
 
