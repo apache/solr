@@ -282,7 +282,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   private void getCoreAndPutBack(CoreContainer cc, String name) {
     SolrCore core1 = cc.getCore(name);
-    core1.close();
+    core1.close(); // note: the core can't have a refCount > 1 to be an eviction candidate
   }
 
   // Test case for SOLR-4300
