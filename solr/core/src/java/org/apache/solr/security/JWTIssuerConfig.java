@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -363,6 +364,7 @@ public class JWTIssuerConfig {
     private final long jwkCacheDuration;
     private final long refreshReprieveThreshold;
     private Collection<X509Certificate> trustedCerts;
+    private static final Set<String> PRETRUSTED_HOSTS = Set.of("localhost", "localhost.localdomain");
 
     public HttpsJwksFactory(long jwkCacheDuration, long refreshReprieveThreshold) {
       this.jwkCacheDuration = jwkCacheDuration;
@@ -394,7 +396,7 @@ public class JWTIssuerConfig {
       if (trustedCerts != null) {
         Get getWithCustomTrust = new Get();
         getWithCustomTrust.setTrustedCertificates(trustedCerts);
-        if ("localhost".equals(jwksUrl.getHost())) {
+        if (PRETRUSTED_HOSTS.contains(jwksUrl.getHost())) {
           getWithCustomTrust.setHostnameVerifier((hostname, session) -> true);
         }
         httpsJkws.setSimpleHttpGet(getWithCustomTrust);
