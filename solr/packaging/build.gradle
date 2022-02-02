@@ -152,10 +152,6 @@ task dev(type: Copy) {
 
   from installDist.outputs
   into devDir
-
-  // Copy over the generated local_packages.json into the contrib/ directory.
-  from(new File(project(":solr:contrib").projectDir, "local_packages.json"));
-  rename("local_packages.json", "contrib/local_packages.json");
 }
 
 distTar {

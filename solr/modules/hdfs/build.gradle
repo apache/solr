@@ -17,7 +17,7 @@
 
 apply plugin: 'java-library'
 
-description = 'HDFS Contrib Module'
+description = 'HDFS Module'
 
 dependencies {
   configurations.all {
