@@ -60,7 +60,7 @@ dependencies {
     implementation('org.slf4j:jcl-over-slf4j')
     implementation('org.slf4j:slf4j-simple')
     implementation('org.apache.logging.log4j:log4j-core')
-    implementation('com.google.guava:guava')
+    implementation('com.google.guava:guava') { transitive = false }
     implementation('commons-codec:commons-codec')
 
     // Dependencies referenced in the guide.

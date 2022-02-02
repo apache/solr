@@ -785,7 +785,7 @@ The `security.json` file will look similar to:
 ----
 # The following lines added by ./solr for enabling BasicAuth
 SOLR_AUTH_TYPE="basic"
-SOLR_AUTHENTICATION_OPTS="-Dsolr.httpclient.config=/path/to/solr-{solr-docs-version}.0/server/solr/basicAuth.conf"
+SOLR_AUTHENTICATION_OPTS="-Dsolr.httpclient.config=/path/to/solr-{solr-full-version}/server/solr/basicAuth.conf"
 ----
 * Creates the file `server/solr/basicAuth.conf` to store the credential information that is used with `bin/solr` commands.
 

@@ -557,6 +557,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-15957: Add port and scraping information to Solr Prometheus startup logging. (Houston Putman)
 
+* SOLR-15936: Reduce unnecessary startup logging, such as SSL warnings when SSL not in use (janhoy)
+
 * SOLR-15777: Forbid useDocValuesAsStored for ICUCollationField (warn for luceneMatchVersion < 9.0.0). (Michael Gibney)
 
 Bug Fixes
@@ -605,6 +607,8 @@ Bug Fixes
 
 * SOLR-15961: Fix bug in PKIAuthenticationPlugin that can cause a request to fail with 401 Unauthorized instead
  of re-fetching expired remote keys from other nodes. (Tomás Fernández Löbbe)
+
+* SOLR-15968: Hide annoying WARN log from bin/solr zk command (janhoy, Mike Drob)
 
 ==================  8.11.2 ==================
 
