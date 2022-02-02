@@ -583,6 +583,8 @@ Bug Fixes
 * SOLR-15961: Fix bug in PKIAuthenticationPlugin that can cause a request to fail with 401 Unauthorized instead
  of re-fetching expired remote keys from other nodes. (Tomás Fernández Löbbe)
 
+* SOLR-15968: Hide annoying WARN log from bin/solr zk command (janhoy, Mike Drob)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
