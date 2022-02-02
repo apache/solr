@@ -40,12 +40,12 @@ import java.util.Map;
 public class TestManagedSchemaWithMultipleAdd extends SolrCloudTestCase {
 
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final int AUTOSOFTCOMMIT_MAXTIME_MS = 3000;
 
     @BeforeClass
     public static void createClusterAndInitSysProperties() throws Exception {
         System.setProperty("managed.schema.mutable", "true");
-        System.setProperty("solr.autoCommit.maxTime", "10000");
-        System.setProperty("solr.autoSoftCommit.maxTime", "3000");
+        System.setProperty("solr.autoSoftCommit.maxTime", Integer.toString(AUTOSOFTCOMMIT_MAXTIME_MS));
         configureCluster(1)
                 .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed-autocommit").resolve("conf"))
                 .configure();
@@ -54,7 +54,6 @@ public class TestManagedSchemaWithMultipleAdd extends SolrCloudTestCase {
     @AfterClass
     public static void afterRestartWhileUpdatingTest() {
         System.clearProperty("managed.schema.mutable");
-        System.clearProperty("solr.autoCommit.maxTime");
         System.clearProperty("solr.autoSoftCommit.maxTime");
     }
 
@@ -83,8 +82,9 @@ public class TestManagedSchemaWithMultipleAdd extends SolrCloudTestCase {
         }
         cloudClient.request(ureq, collection);
 
-        // Wait for autoCommit to finish if there is one.
-        Thread.sleep(3500);
+        // The issue we test in this class does not appear when using explicit commits.
+        // Because of this we are waiting for autoSoftCommit to finish if there is one.
+        Thread.sleep( AUTOSOFTCOMMIT_MAXTIME_MS + 500 );
 
         assertEquals(numDocs, cloudClient.query(collection, new SolrQuery("*:*")).getResults().getNumFound());
     }
