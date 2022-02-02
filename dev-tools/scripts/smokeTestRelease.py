@@ -587,7 +587,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   if isSrc:
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
-    expected_src_solr_files = ['build.gradle']
+    expected_src_solr_files = ['build.gradle', 'cp-deps.sh']
     expected_src_solr_folders = ['benchmark',  'bin', 'bin-test', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
@@ -604,17 +604,11 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   if isSrc:
     print('    make sure no JARs/WARs in src dist...')
     lines = os.popen('find . -name \\*.jar').readlines()
-    if len(lines) > 1:
+    if len(lines) != 0:
       print('    FAILED:')
       for line in lines:
         print('      %s' % line.strip())
       raise RuntimeError('source release has JARs...')
-    else:
-      if 'gradle-wrapper.jar' in lines[0]:
-        print('    Allowed jar in src: gradle-wrapper.jar')
-      else:
-        print('      %s' % lines[0].strip())
-        raise RuntimeError('source release has JARs...')
     lines = os.popen('find . -name \\*.war').readlines()
     if len(lines) != 0:
       print('    FAILED:')
