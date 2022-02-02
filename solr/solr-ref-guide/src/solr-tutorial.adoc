@@ -53,9 +53,9 @@ For example, with a shell in UNIX, Cygwin, or MacOS:
 [source,bash,subs="verbatim,attributes+"]
 ----
 ~$ ls solr*
-solr-{solr-full-version}.zip
+solr-{solr-full-version}.tgz
 
-~$ unzip -q solr-{solr-full-version}.zip
+~$ tar -xzf solr-{solr-full-version}.tgz
 
 ~$ cd solr-{solr-full-version}/
 ----

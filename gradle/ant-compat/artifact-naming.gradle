@@ -16,6 +16,6 @@
  */
 
 // Stick to previous artifact names (not identical to path/ folders).
-configure(subprojects.findAll { it.path.contains(':solr:contrib:') }) {
-  project.archivesBaseName = project.archivesBaseName.replace("-contrib-", "-")
+configure(subprojects.findAll { it.path.contains(':solr:modules:') }) {
+  project.archivesBaseName = project.archivesBaseName.replace("-modules-", "-")
 }

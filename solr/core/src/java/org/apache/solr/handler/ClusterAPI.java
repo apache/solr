@@ -17,9 +17,6 @@
 
 package org.apache.solr.handler;
 
-import java.io.IOException;
-import java.util.*;
-
 import com.google.common.collect.Maps;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
@@ -48,18 +45,21 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.KeeperException;
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.*;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.common.params.CollectionParams.ACTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.*;
 
 /**
  * All V2 APIs that have  a prefix of /api/cluster/
@@ -293,7 +293,11 @@ public class ClusterAPI {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     m.forEach((k, v) -> {
       if (v == null) return;
-      solrParams.add(k.toString(), String.valueOf(v));
+      if (v instanceof String[]) {
+        solrParams.add(k, (String[]) v);
+      } else {
+        solrParams.add(k, String.valueOf(v));
+      }
     });
     DefaultSolrParams dsp = new DefaultSolrParams(req.getParams(), solrParams);
     req.setParams(dsp);

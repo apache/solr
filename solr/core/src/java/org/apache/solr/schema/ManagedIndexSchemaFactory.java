@@ -166,7 +166,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    * Once the IndexSchema is instantiated, if the managed schema file does not exist,
    * the instantiated IndexSchema is persisted to the managed schema file named in the
    * managedSchemaResourceName param, in the directory given by
-   * {@link org.apache.solr.core.SolrResourceLoader#getConfigDir()}, or if configs are
+   * {@link SolrResourceLoader#getConfigPath()}, or if configs are
    * in ZooKeeper, under {@link org.apache.solr.cloud.ZkSolrResourceLoader#getConfigSetZkPath()}.
    *
    * After the managed schema file is persisted, the original schema file is
