@@ -56,7 +56,7 @@ dependencies {
     implementation('org.slf4j:jcl-over-slf4j')
     implementation('org.slf4j:slf4j-simple')
     implementation('org.apache.logging.log4j:log4j-core')
-    implementation('com.google.guava:guava')
+    implementation('com.google.guava:guava') { transitive = false }
     implementation('commons-codec:commons-codec')
 
     // Dependencies referenced in the guide.
@@ -175,6 +175,7 @@ ext {
             solrRootPath : project(':solr').projectDir.toString() + File.separator,
             solrDocsVersion : project.ext['solrDocsVersion'],
             solrGuideVersionPath : project.ext['solrGuideVersionPath'],
+            solrFullVersion: project.version,
             buildDate : rootProject.ext['buildDate'],
             buildYear : rootProject.ext['buildYear'],
             * : details.props,
@@ -200,7 +201,7 @@ ext {
         dependsOn "build${details.name}"
 
         classpath = sourceSets.main.runtimeClasspath
-        main = 'CheckLinksAndAnchors'
+        main = 'org.apache.solr.guide.CheckLinksAndAnchors'
         workingDir = contentDir
 
         // NOTE: even for the 'real' site, we check all relative links
@@ -285,7 +286,7 @@ abstract class PrepareSources extends DefaultTask {
                                       .getPlugin(JavaPluginConvention.class)
                                       .getSourceSets().getByName("main").getRuntimeClasspath() )
                 execSpec.setWorkingDir( intoDir )
-                execSpec.setMain( 'BuildNavDataFiles' )
+                execSpec.setMain( 'org.apache.solr.guide.BuildNavDataFiles' )
                 execSpec.args([ intoDir, p.property('mainPage') ])
             })
         }

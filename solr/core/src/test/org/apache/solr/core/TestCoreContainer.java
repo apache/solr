@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -42,7 +43,10 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.ModuleUtils;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -88,7 +92,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   public void testSolrHomeAndResourceLoader() throws Exception {
     // regardless of what sys prop may be set, the CoreContainer's init arg should be the definitive
-    // solr home -- and nothing i nthe call stack should be "setting" the sys prop to make that work...
+    // solr home -- and nothing in the call stack should be "setting" the sys prop to make that work...
     final Path fakeSolrHome = createTempDir().toAbsolutePath();
     System.setProperty(SOLR_HOME_PROP, fakeSolrHome.toString());
     final Path realSolrHome = createTempDir().toAbsolutePath();
@@ -420,6 +424,40 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testModuleLibs() throws Exception {
+    Path tmpRoot = createTempDir("testModLib");
+
+    File lib = Files.createDirectories(ModuleUtils.getModuleLibPath(tmpRoot, "mod1")).toFile();;
+
+    try (JarOutputStream jar1 = new JarOutputStream(new FileOutputStream(new File(lib, "jar1.jar")))) {
+      jar1.putNextEntry(new JarEntry("moduleLibFile"));
+      jar1.closeEntry();
+    }
+
+    System.setProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE, tmpRoot.toAbsolutePath().toString());
+    final CoreContainer cc1 = init(tmpRoot, "<solr></solr>");
+    try {
+      Assert.assertThrows(SolrResourceNotFoundException.class, () -> cc1.loader.openResource("moduleLibFile").close());
+    } finally {
+      cc1.shutdown();
+    }
+
+    // Explicitly declaring 'lib' makes no change compared to the default
+    final CoreContainer cc2 = init(tmpRoot, "<solr><str name=\"modules\">mod1</str></solr>");
+    try {
+      cc2.loader.openResource("moduleLibFile").close();
+    } finally {
+      cc2.shutdown();
+    }
+
+    SolrException ex = Assert.assertThrows(SolrException.class, () ->
+        init(tmpRoot, "<solr><str name=\"modules\">nope</str></solr>"));
+    assertEquals("No module with name nope", ex.getMessage());
+
+    System.clearProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+  }
+
   private static final String CONFIGSETS_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
       "<solr>\n" +
       "<str name=\"configSetBaseDir\">${configsets:configsets}</str>\n" +
@@ -525,7 +563,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     @Override
-    protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) {
+    protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) throws IOException {
       return null;
     }
   }

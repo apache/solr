@@ -62,6 +62,7 @@ public class BackupManager {
   public static final String BACKUP_NAME_PROP = "backupName";
   public static final String INDEX_VERSION_PROP = "indexVersion";
   public static final String START_TIME_PROP = "startTime";
+  public static final String END_TIME_PROP = "endTime";
 
   protected final ZkStateReader zkStateReader;
   protected final BackupRepository repository;

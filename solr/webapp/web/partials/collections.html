@@ -61,7 +61,7 @@ limitations under the License.
         </p>
 
         <p class="clearfix buttons">
-          <button type="submit" class="submit" ng-click="addCollection()"><span>Add Collection</span></button>
+          <button type="submit" class="submit" ng-disabled="!isPermitted(permissions.COLL_EDIT_PERM)" ng-click="addCollection()"><span>Add Collection</span></button>
           <button type="reset" class="reset" ng-click="cancelAddCollection()"><span>Cancel</span></button>
         </p>
 
@@ -372,7 +372,7 @@ limitations under the License.
   </div>
 
   <div id="navigation" class="requires-core clearfix">
-    <button id="add" class="action" ng-click="showAddCollection()"><span>Add Collection</span></button>
+    <button id="add" class="action" ng-disabled="!isPermitted(permissions.COLL_EDIT_PERM)" ng-click="showAddCollection()"><span>Add Collection</span></button>
     <ul>
       <li ng-repeat="c in collections" ng-class="{current: collection.name == c.name && collection.type === 'collection'}"><a href="#~collections/{{c.name}}">{{c.name}}</a></li>
     </ul>

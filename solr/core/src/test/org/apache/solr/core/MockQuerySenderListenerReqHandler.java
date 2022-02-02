@@ -21,6 +21,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.security.AuthorizationContext;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -57,5 +58,10 @@ public class MockQuerySenderListenerReqHandler extends RequestHandlerBase {
   public String getDescription() {
     String result = null;
     return result;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.ALL;
   }
 }

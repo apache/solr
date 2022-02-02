@@ -46,7 +46,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -268,7 +267,7 @@ public class SolrCLI implements CLIO {
 
     if (args.length == 1 && Arrays.asList("-v","-version","version").contains(args[0])) {
       // Simple version tool, no need for its own class
-      CLIO.out(Version.LATEST.toString());
+      CLIO.out(SolrVersion.LATEST.toString());
       exit(0);
     }
 
@@ -1925,9 +1924,7 @@ public class SolrCLI implements CLIO {
         if (configSetPath.endsWith("/conf") == false) {
           configSetPath = Paths.get(configSetPath.toString(), "conf");
         }
-        if (Files.exists(configSetPath) == false) {
-          Files.createDirectories(configSetPath);
-        }
+        Files.createDirectories(configSetPath);
         echo("Downloading configset " + confName + " from ZooKeeper at " + zkHost +
             " to directory " + configSetPath.toAbsolutePath());
 

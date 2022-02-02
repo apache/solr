@@ -16,6 +16,26 @@
  */
 package org.apache.solr.core;
 
+import com.google.common.base.Strings;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.PropertiesUtil;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.logging.LogWatcherConfig;
+import org.apache.solr.metrics.reporters.SolrJmxReporter;
+import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.apache.solr.util.JmxUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+
 import javax.management.MBeanServer;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -36,25 +56,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
-
-import com.google.common.base.Strings;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.DOMUtil;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.PropertiesUtil;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.logging.LogWatcherConfig;
-import org.apache.solr.metrics.reporters.SolrJmxReporter;
-import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.apache.solr.util.JmxUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -161,14 +162,21 @@ public class SolrXmlConfig {
   }
 
   public static NodeConfig fromFile(Path solrHome, Path configFile, Properties substituteProps) {
-
-    log.info("Loading container configuration from {}", configFile);
-
     if (!Files.exists(configFile)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "solr.xml does not exist in " + configFile.getParent() + " cannot start Solr");
+      if (Boolean.getBoolean("solr.solrxml.required")) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "solr.xml does not exist in " + configFile.getParent() + " cannot start Solr");
+      }
+      log.info("solr.xml not found in SOLR_HOME, using built-in default");
+      String solrInstallDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+      if (solrInstallDir == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Could not find default solr.xml file due to missing " + SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+      }
+      configFile = Path.of(solrInstallDir).resolve("server").resolve("solr").resolve("solr.xml");
     }
 
+    log.info("Loading solr.xml from {}", configFile);
     try (InputStream inputStream = Files.newInputStream(configFile)) {
       return fromInputStream(solrHome, inputStream, substituteProps);
     } catch (SolrException exc) {
@@ -326,6 +334,9 @@ public class SolrXmlConfig {
           break;
         case "sharedLib":
           builder.setSharedLibDirectory(value);
+          break;
+        case "modules":
+          builder.setModules(value);
           break;
         case "allowPaths":
           builder.setAllowPaths(separatePaths(value));
@@ -648,7 +659,7 @@ public class SolrXmlConfig {
     // if there's an MBean server running but there was no JMX reporter then add a default one
     MBeanServer mBeanServer = JmxUtil.findFirstMBeanServer();
     if (mBeanServer != null && !hasJmxReporter) {
-      log.info("MBean server found: {}, but no JMX reporters were configured - adding default JMX reporter.", mBeanServer);
+      log.debug("MBean server found: {}, but no JMX reporters were configured - adding default JMX reporter.", mBeanServer);
       Map<String,Object> attributes = new HashMap<>();
       attributes.put("name", "default");
       attributes.put("class", SolrJmxReporter.class.getName());

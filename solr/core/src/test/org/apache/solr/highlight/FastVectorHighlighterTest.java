@@ -18,7 +18,9 @@ package org.apache.solr.highlight;
 
 import java.util.HashMap;
 
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
@@ -30,10 +32,10 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
   }
-  
+
   @Test
   public void testConfig(){
-    DefaultSolrHighlighter highlighter = (DefaultSolrHighlighter) HighlightComponent.getHighlighter(h.getCore());
+    DefaultSolrHighlighter highlighter = getHighlighter();
 
     // Make sure we loaded one fragListBuilder
     SolrFragListBuilder solrFlbNull = highlighter.fragListBuilders.get( null );
@@ -88,5 +90,10 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
             "//lst[@name='highlighting']/lst[@name='1']",
             "//lst[@name='1']/arr[@name='tv_text']/str[.='basic fast <fvpre>vector</em> highlighter test']"
             );
+  }
+
+  private static DefaultSolrHighlighter getHighlighter() {
+    var hl = (HighlightComponent) h.getCore().getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
+    return (DefaultSolrHighlighter) hl.getHighlighter(new MapSolrParams(Map.of()));
   }
 }

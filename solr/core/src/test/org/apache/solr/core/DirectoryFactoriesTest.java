@@ -36,8 +36,6 @@ import java.util.List;
  * </p>
  */
 public class DirectoryFactoriesTest extends SolrTestCaseJ4 {
-
-  // TODO: what do we need to setup to be able to test HdfsDirectoryFactory?
   public static final List<Class<? extends DirectoryFactory>> ALL_CLASSES
     = Arrays.asList(MMapDirectoryFactory.class,
                     MockDirectoryFactory.class,
@@ -95,7 +93,7 @@ public class DirectoryFactoriesTest extends SolrTestCaseJ4 {
       assertTrue(path + " should still exist even after being released", dirFac.exists(path));
       
     } catch (AssertionError ae) {
-      throw new AssertionError(clazz + ": " + ae.getMessage());
+      throw new AssertionError("Failed with " + clazz.getName(), ae);
     } finally {
       if (null != dirFac) {
         dirFac.close();

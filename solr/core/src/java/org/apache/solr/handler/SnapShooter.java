@@ -36,6 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -257,7 +258,7 @@ public class SnapShooter {
     }
     boolean success = false;
     try {
-      NamedList<Object> details = new NamedList<>();
+      NamedList<Object> details = new SimpleOrderedMap<>();
       details.add("startTime", new Date().toString());//bad; should be Instant.now().toString()
 
       Collection<String> files = indexCommit.getFileNames();

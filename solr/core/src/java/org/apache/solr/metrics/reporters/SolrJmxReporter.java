@@ -108,7 +108,7 @@ public class SolrJmxReporter extends FilteringSolrMetricReporter {
                           .build();
     reporter.start();
     started = true;
-    log.info("JMX monitoring for '{}' (registry '{}') enabled at server: {}", fullDomain, registryName, mBeanServer);
+    log.debug("JMX monitoring for '{}' (registry '{}') enabled at server: {}", fullDomain, registryName, mBeanServer);
   }
 
   /**
@@ -123,7 +123,7 @@ public class SolrJmxReporter extends FilteringSolrMetricReporter {
    */
   @Override
   public synchronized void close() {
-    log.info("Closing reporter {} for registry {}/{}", this, registryName, registry);
+    log.debug("Closing reporter {} for registry {}/{}", this, registryName, registry);
     started = false;
     if (reporter != null) {
       reporter.close();

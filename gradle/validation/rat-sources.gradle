@@ -98,11 +98,17 @@ allprojects {
                     include "dev-tools/solr-missing-doclet/src/**"
                     break
 
-                case ":solr:contrib:clustering":
+                case ":solr:modules:clustering":
                     exclude "src/test-files/META-INF/services/*"
                     break
 
-                case ":solr:contrib:langid":
+                case ":solr:modules:hdfs":
+                    exclude "src/test-files/**/*.aff"
+                    exclude "src/test-files/**/*.dic"
+                    exclude "src/test-files/**/*.incl"
+                    break
+
+                case ":solr:modules:langid":
                     exclude "**/langdetect-profiles/*"
                     break
 

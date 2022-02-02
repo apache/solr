@@ -2,7 +2,8 @@
 :page-children: libs, \
     package-manager, \
     cluster-plugins, \
-    replica-placement-plugins
+    replica-placement-plugins, \
+    solr-modules
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -45,8 +46,8 @@ Examples of these are <<authentication-and-authorization-plugins.adoc#,authentic
 
 == Installing Plugins ==
 
-Most plugins are built-in to Solr and there is nothing to install.
-The subject here is how to make other plugins available to Solr, including those in contrib modules.
+Most plugins are built-in to Solr core and there is nothing to install.
+The subject here is how to make the bundled modules and other plugins available to Solr.
 Plugins are packaged into a Java jar file and may have other dependent jar files to function.
 
 The next sections describe some options:
@@ -57,6 +58,7 @@ The next sections describe some options:
 [cols="1,1",frame=none,grid=none,stripes=none]
 |===
 | <<libs.adoc#,Lib Directories>>: Plugins as libraries on the filesystem.
+| <<solr-modules.adoc#,Solr Modules>>: Loading bundled modules.
 | <<package-manager.adoc#,Package Management>>: Package-based plugins.
 | <<cluster-plugins.adoc#,Cluster Plugins>>: Cluster-level plugins.
 | <<replica-placement-plugins.adoc#,Replica Placement Plugins>>: Plugins specifically for replica placement.

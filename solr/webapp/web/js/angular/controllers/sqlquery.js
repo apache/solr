@@ -36,7 +36,14 @@ solrAdminApp.controller('SQLQueryController',
       var params = {};
       params.core = $routeParams.core;
       params.handler = $scope.qt;
-      params.stmt = [$scope.stmt]
+
+      var stmt = $scope.stmt
+
+      if(!stmt.toLowerCase().replace(/(\r\n|\n|\r)/gm," ").includes(' limit ')) {
+        params.stmt = [stmt + " limit 10"]
+      } else {
+        params.stmt = [$scope.stmt]
+      }
 
       $scope.lang = "json";
       $scope.response = null;
