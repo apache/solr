@@ -60,13 +60,12 @@ import static org.apache.solr.security.PermissionNameProvider.Name.PACKAGE_READ_
  *
  */
 public class PackageAPI {
-  public final boolean enablePackages = Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ERR_MSG = "Package loading is not enabled , Start your nodes with -Denable.packages=true";
 
   final CoreContainer coreContainer;
-  private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
+  public static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private final PackageLoader packageLoader;
   Packages pkgs;
 
@@ -81,6 +80,7 @@ public class PackageAPI {
     this.coreContainer = coreContainer;
     this.packageLoader = loader;
     pkgs = new Packages();
+    if(!loader.repoPackagesEnabled) return;
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
     try {
       pkgs = readPkgsFromZk(null, null);
@@ -360,11 +360,11 @@ public class PackageAPI {
   }
 
   public boolean isEnabled() {
-    return enablePackages;
+    return packageLoader.repoPackagesEnabled;
   }
 
   private boolean checkEnabled(CommandOperation payload) {
-    if (!enablePackages) {
+    if (!packageLoader.repoPackagesEnabled) {
       payload.addError(ERR_MSG);
       return false;
     }

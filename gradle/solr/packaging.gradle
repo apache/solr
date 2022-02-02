@@ -65,6 +65,8 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
     task assemblePackaging(type: Sync) {
       from "README.md"
 
+      from "manifest.json"
+
       from (tasks.jar, {
         into "lib"
       })
