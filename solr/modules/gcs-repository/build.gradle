@@ -20,6 +20,11 @@ apply plugin: 'java-library'
 
 description = 'GCS Backup Repository'
 
+configurations.all {
+  exclude group: "javax.annotation", module: "javax.annotation-api"
+  exclude group: "com.google.code.findbugs", module: "jsr305"
+}
+
 dependencies {
     api project(':solr:core')
 
@@ -38,7 +43,6 @@ dependencies {
     implementation('com.google.api-client:google-api-client') { exclude group: 'com.google.guava', module: 'guava' }
     implementation('com.google.api.grpc:proto-google-common-protos') { transitive = false }
     implementation('com.google.api.grpc:proto-google-iam-v1') { transitive = false }
-    implementation('com.google.code.findbugs:jsr305') { transitive = false }
     implementation('com.google.code.gson:gson') { transitive = false }
     implementation('com.google.http-client:google-http-client') { exclude group: 'com.google.guava', module: 'guava' }
     implementation('com.google.http-client:google-http-client-appengine') { transitive = false }

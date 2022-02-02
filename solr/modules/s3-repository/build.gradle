@@ -20,6 +20,11 @@ apply plugin: 'java-library'
 
 description = 'S3 Repository'
 
+configurations.all {
+  exclude group: "javax.annotation", module: "javax.annotation-api"
+  exclude group: "com.google.code.findbugs", module: "jsr305"
+}
+
 dependencies {
     api project(':solr:core')
 
