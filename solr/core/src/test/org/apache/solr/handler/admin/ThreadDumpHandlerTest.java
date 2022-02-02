@@ -257,8 +257,8 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
     SolrClient client = new EmbeddedSolrServer(h.getCore());
     ModifiableSolrParams mparams = new ModifiableSolrParams();
     mparams.set("indent", true);
-    NamedList<?> req = client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, path, mparams));
-    consumer.accept(req);
+    NamedList<?> rsp = client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, path, mparams));
+    consumer.accept(rsp);
   }
 
   private NamedList<?> getThreadInfo(NamedList<?> req, String threadName) {
