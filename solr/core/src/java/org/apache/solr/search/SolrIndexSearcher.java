@@ -1432,10 +1432,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         // put unsorted list in place
         out.docList = constantScoreDocList(cmd.getOffset(), cmd.getLen(), out.docSet);
         if (0 == cmd.getSupersetMaxDoc()) {
+          // this is the only case where `cursorMark && !needSort`
           qr.setNextCursorMark(cmd.getCursorMark());
         } else {
-          final DocIterator lastDocOnly = out.docList.subset(out.docList.size() - 1, 1).iterator();
-          populateNextCursorMarkFromTopDocs(qr, cmd, getTopDocs(lastDocOnly, 1, cmd));
+          assert cmd.getCursorMark() == null;
         }
       }
     } else {
@@ -2063,24 +2063,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // bit of a hack to tell if a set is sorted - do it better in the future.
     boolean inOrder = set instanceof BitDocSet || set instanceof SortedIntDocSet;
 
-    TopDocs topDocs = getTopDocs(set.iterator(), nDocs, cmd);
-
-    int nDocsReturned = topDocs.scoreDocs.length;
-    int[] ids = new int[nDocsReturned];
-
-    for (int i = 0; i < nDocsReturned; i++) {
-      ScoreDoc scoreDoc = topDocs.scoreDocs[i];
-      ids[i] = scoreDoc.doc;
-    }
-
-    assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
-    qr.getDocListAndSet().docList = new DocSlice(0, nDocsReturned, ids, null, topDocs.totalHits.value, 0.0f, topDocs.totalHits.relation);
-    populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
-  }
-
-  private TopDocs getTopDocs(DocIterator iter, int nDocs, QueryCommand cmd) throws IOException {
     TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(nDocs, cmd);
 
+    DocIterator iter = set.iterator();
     int base = 0;
     int end = 0;
     int readerIndex = 0;
@@ -2098,7 +2083,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       leafCollector.collect(doc - base);
     }
 
-    return topCollector.topDocs(0, nDocs);
+    TopDocs topDocs = topCollector.topDocs(0, nDocs);
+
+    int nDocsReturned = topDocs.scoreDocs.length;
+    int[] ids = new int[nDocsReturned];
+
+    for (int i = 0; i < nDocsReturned; i++) {
+      ScoreDoc scoreDoc = topDocs.scoreDocs[i];
+      ids[i] = scoreDoc.doc;
+    }
+
+    assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+    qr.getDocListAndSet().docList = new DocSlice(0, nDocsReturned, ids, null, topDocs.totalHits.value, 0.0f, topDocs.totalHits.relation);
+    populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
   }
 
   /**
