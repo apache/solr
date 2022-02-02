@@ -2084,16 +2084,6 @@ public class CoreContainer {
     return solrCores.isLoaded(name);
   }
 
-  /** The core is loading, unloading, or reloading. */
-  boolean hasPendingCoreOps(String name) {
-    return solrCores.hasPendingCoreOps(name);
-  }
-
-  // Primarily for transient cores when a core is aged out.
-  void queueCoreToClose(SolrCore coreToClose) {
-    solrCores.queueCoreToClose(coreToClose);
-  }
-
   /**
    * Gets a solr core descriptor for a core that is not loaded. Note that if the caller calls this on a
    * loaded core, the unloaded descriptor will be returned.
