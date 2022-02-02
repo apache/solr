@@ -57,6 +57,8 @@ Other Changes
 
 * SOLR-9529: Consistency in how dynamic fields are defined in sample schema.xml files (Eric Pugh, Trey Grainger)
 
+* SOLR-15886: Remove deprecated showItems configuration value from solrconfig.xml files (Andy Lester via Eric Pugh)
+
 ==================  9.0.0 ==================
 
 Docker and modules have separate CHANGES.md files.
