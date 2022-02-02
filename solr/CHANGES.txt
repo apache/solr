@@ -534,6 +534,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-15957: Add port and scraping information to Solr Prometheus startup logging. (Houston Putman)
 
+* SOLR-15936: Reduce unnecessary startup logging, such as SSL warnings when SSL not in use (janhoy)
+
 * SOLR-15777: Forbid useDocValuesAsStored for ICUCollationField (warn for luceneMatchVersion < 9.0.0). (Michael Gibney)
 
 Bug Fixes
