@@ -108,7 +108,6 @@ allprojects {
 configure(project(':solr:core')) {
   project.tasks.withType(ValidateSourcePatternsTask) {
     sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'
-    sourceFiles.exclude 'src/test/org/apache/hadoop/**'
   }
 }
 

@@ -36,11 +36,15 @@
 // I don't know how to untie these two cleanly.
 //
 
-configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib") }) {
+configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules") || project.path.startsWith(":solr:prometheus-exporter") }) {
   plugins.withType(JavaPlugin) {
     ext {
       packagingDir = file("${buildDir}/packaging")
-      deps = file("${packagingDir}/${project.name}")
+      if (project.path.startsWith(":solr:prometheus-exporter")) {
+        deps = packagingDir
+      } else {
+        deps = file("${packagingDir}/${project.name}")
+      }
     }
 
     configurations {
@@ -113,7 +117,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
       dependsOn syncLib, syncTestLib
     }
 
-    // Contrib packaging currently depends on internal resolve.
+    // Module packaging currently depends on internal resolve.
     artifacts {
       packaging packagingDir, {
         builtBy assemblePackaging

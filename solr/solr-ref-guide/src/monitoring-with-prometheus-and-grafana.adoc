@@ -25,7 +25,7 @@ This graphic provides a more detailed view:
 .solr-exporter Diagram
 image::images/monitoring-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
 
-The Prometheus exporter is included in Solr as a contrib, and is located in `contrib/prometheus-exporter` in your Solr instance.
+The Prometheus exporter is included with the Solr distribution, and is located under `prometheus-exporter/`.
 
 There are three aspects to running `solr-exporter`:
 
@@ -37,7 +37,7 @@ See the section below <<Starting the Exporter>>.
 See the section below <<Prometheus Configuration>>
 
 == Starting the Exporter
-You can start `solr-exporter` by running `./bin/solr-exporter` (Linux) or `.\bin\solr-exporter.cmd` (Windows) from the `contrib/prometheus-exporter` directory.
+You can start `solr-exporter` by running `./bin/solr-exporter` (Linux) or `.\bin\solr-exporter.cmd` (Windows) from the `prometheus-exporter/` directory.
 
 See the commands below depending on your operating system and Solr operating mode:
 
@@ -50,14 +50,14 @@ See the commands below depending on your operating system and Solr operating mod
 .User-managed / Single-node
 [source,bash]
 ----
-$ cd contrib/prometheus-exporter
+$ cd prometheus-exporter
 $ ./bin/solr-exporter -p 9854 -b http://localhost:8983/solr -f ./conf/solr-exporter-config.xml -n 8
 ----
 
 .SolrCloud
 [source,bash]
 ----
-$ cd contrib/prometheus-exporter
+$ cd prometheus-exporter
 $ ./bin/solr-exporter -p 9854 -z localhost:2181/solr -f ./conf/solr-exporter-config.xml -n 16
 ----
 ====
@@ -69,14 +69,14 @@ $ ./bin/solr-exporter -p 9854 -z localhost:2181/solr -f ./conf/solr-exporter-con
 .User-managed / Single-node
 [source,text]
 ----
-> cd contrib\prometheus-exporter
+> cd prometheus-exporter
 > .\bin\solr-exporter.cmd -p 9854 -b http://localhost:8983/solr -f .\conf\solr-exporter-config.xml -n 8
 ----
 
 .SolrCloud
 [source,text]
 ----
-> cd contrib\prometheus-exporter
+> cd prometheus-exporter
 > .\bin\solr-exporter -p 9854 -z localhost:2181/solr -f .\conf\solr-exporter-config.xml -n 16
 ----
 ====
@@ -133,7 +133,7 @@ If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` param
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `contrib/prometheus-exporter/conf/solr-exporter-config.xml`
+|Optional |Default: `prometheus-exporter/conf/solr-exporter-config.xml`
 |===
 +
 The path to the configuration file that defines the Solr metrics to read.
@@ -244,10 +244,10 @@ Then you can start the Exporter as follows (Linux).
 
 [source,bash]
 ----
-$ cd contrib/prometheus-exporter
+$ cd prometheus-exporter
 $ export JAVA_OPTS="-Djavax.net.ssl.trustStore=truststore.p12 -Djavax.net.ssl.trustStorePassword=truststorePassword -Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory -Dsolr.httpclient.config=basicauth.properties"
 $ export ZK_CREDS_AND_ACLS="-DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider -DzkDigestUsername=readonly-user -DzkDigestPassword=zkUserPassword"
-$ export CLASSPATH_PREFIX="../../server/solr-webapp/webapp/WEB-INF/lib/commons-codec-1.11.jar"
+$ export CLASSPATH_PREFIX="../server/solr-webapp/webapp/WEB-INF/lib/commons-codec-1.11.jar"
 $ ./bin/solr-exporter -p 9854 -z zk1:2181,zk2:2181,zk3:2181 -f ./conf/solr-exporter-config.xml -n 16
 ----
 
@@ -259,7 +259,7 @@ Of course, you can use a different source.
 The configuration for the `solr-exporter` defines the data to get from Solr.
 This includes the metrics, but can also include queries to the PingRequestHandler, the Collections API, and a query to any query request handler.
 
-A default example configuration is in `contrib/prometheus-exporter/conf/solr-exporter-config.xml`.
+A default example configuration is in `prometheus-exporter/conf/solr-exporter-config.xml`.
 Below is a slightly shortened version of it:
 
 [source,xml]
@@ -559,7 +559,7 @@ To use Grafana for visualization, it must be downloaded and deployed separately.
 More information can be found on the Grafana https://grafana.com/docs/grafana/latest/[Documentation] site.
 Grafana consumes data from many sources, including the Prometheus server that you previously set up.
 
-A Grafana sample dashboard is provided in the following JSON file: `contrib/prometheus-exporter/conf/grafana-solr-dashboard.json`.
+A Grafana sample dashboard is provided in the following JSON file: `prometheus-exporter/conf/grafana-solr-dashboard.json`.
 You can place this with your other Grafana dashboard configurations and modify it as necessary depending on any customization you've done for the `solr-exporter` configuration.
 
 TIP: You can directly import the Solr dashboard https://grafana.com/grafana/dashboards/12456[via grafana.com] by using the Import function with the dashboard id `12456`.

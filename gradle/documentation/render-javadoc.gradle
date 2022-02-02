@@ -108,7 +108,7 @@ configure(project(":solr").allprojects) {
   }
 }
 
-configure(project(":solr:contrib:analysis-extras")) {
+configure(project(":solr:modules:analysis-extras")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages
     javadocMissingIgnore = [
@@ -118,7 +118,7 @@ configure(project(":solr:contrib:analysis-extras")) {
   }
 }
 
-configure(project(":solr:contrib:analytics")) {
+configure(project(":solr:modules:analytics")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages
     javadocMissingIgnore = [
@@ -129,7 +129,7 @@ configure(project(":solr:contrib:analytics")) {
   }
 }
 
-configure(project(":solr:contrib:langid")) {
+configure(project(":solr:modules:langid")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages
     javadocMissingIgnore = ["org.apache.solr.update.processor"]
@@ -151,8 +151,25 @@ configure(project(":solr:test-framework")) {
         "org.apache.solr.analysis",
         "org.apache.solr.cloud",
         "org.apache.solr.core",
+        "org.apache.solr.handler",
         "org.apache.solr.handler.component",
         "org.apache.solr.update.processor",
+        "org.apache.solr.util",
+        "org.apache.solr.search.similarities",
+        "org.apache.solr.search.function",
+        "org.apache.solr.search.facet",
+        "org.apache.solr.schema"
+    ]
+  }
+}
+
+configure(project(":solr:modules:hdfs")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages
+    javadocMissingIgnore = [
+        "org.apache.solr.core",
+        "org.apache.solr.core.backup.repository",
+        "org.apache.solr.update",
         "org.apache.solr.util"
     ]
   }

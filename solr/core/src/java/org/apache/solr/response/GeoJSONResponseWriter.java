@@ -30,7 +30,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.transform.WriteableGeoJSON;
 import org.apache.solr.schema.AbstractSpatialFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ReturnFields;
@@ -259,11 +258,7 @@ class GeoJSONWriter extends JSONWriter {
     }
     else if(geo instanceof IndexableField) {
       str = ((IndexableField)geo).stringValue();
-    }
-    else if(geo instanceof WriteableGeoJSON) {
-      shape = ((WriteableGeoJSON)geo).shape;
-    }
-    else {
+    } else {
       str = geo.toString();
     }
     

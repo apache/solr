@@ -194,15 +194,15 @@ Typically, simply update the pattern by changing an uppercase 'Z' to lowercase '
 +
 For the current recommended set of patterns in schemaless mode, see the section <<schemaless-mode.adoc#,Schemaless Mode>>, or simply examine the `_default` configset (found in `server/solr/configsets`).
 +
-Also note that the default set of date patterns (formats) have expanded from previous releases to subsume those patterns previously handled by the "extract" contrib (Solr Cell / Tika).
+Also note that the default set of date patterns (formats) have expanded from previous releases to subsume those patterns previously handled by the "extraction" module (Solr Cell / Tika).
 
 *Solr Cell*
 
-* The extraction contrib (<<indexing-with-tika.adoc#,Solr Cell>>) no longer does any date parsing, and thus no longer supports the `date.formats` parameter. To ensure date strings are properly parsed, use the `ParseDateFieldUpdateProcessorFactory` in your update chain. This update request processor is found by default with the "parse-date" update processor when running Solr in "<<schemaless-mode.adoc#set-the-default-updaterequestprocessorchain,schemaless mode>>".
+* The extraction module (<<indexing-with-tika.adoc#,Solr Cell>>) no longer does any date parsing, and thus no longer supports the `date.formats` parameter. To ensure date strings are properly parsed, use the `ParseDateFieldUpdateProcessorFactory` in your update chain. This update request processor is found by default with the "parse-date" update processor when running Solr in "<<schemaless-mode.adoc#set-the-default-updaterequestprocessorchain,schemaless mode>>".
 
-*Langid Contrib*
+*Langid Module*
 
-* The `LanguageIdentifierUpdateProcessor` base class in the langid contrib (found in `contrib/langid`) changed some method signatures. If you have a custom language identifier implementation you will need to adapt your code. See the Jira issue https://issues.apache.org/jira/browse/SOLR-11774[SOLR-11774] for details of the changes.
+* The `LanguageIdentifierUpdateProcessor` base class in the langid module (found in `modules/langid`) changed some method signatures. If you have a custom language identifier implementation you will need to adapt your code. See the Jira issue https://issues.apache.org/jira/browse/SOLR-11774[SOLR-11774] for details of the changes.
 
 === Query Changes in 8.0
 
@@ -371,7 +371,7 @@ The `TieredMergePolicy` will also reclaim resources from segments that exceed `m
 
 *UIMA Removed*
 
-* The UIMA contrib has been removed from Solr and is no longer available.
+* The UIMA module has been removed from Solr and is no longer available.
 
 *Logging*
 

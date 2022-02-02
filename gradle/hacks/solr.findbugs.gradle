@@ -22,12 +22,12 @@
 configure([project(":solr:core"),
            project(":solr:solrj"),
            project(":solr:test-framework"),
-           project(":solr:contrib:analytics"),
-           project(":solr:contrib:langid"),
-           project(":solr:contrib:ltr"),
-           project(":solr:contrib:s3-repository"),
-           project(":solr:contrib:scripting"),
-           project(":solr:contrib:prometheus-exporter")]) {
+           project(":solr:modules:analytics"),
+           project(":solr:modules:langid"),
+           project(":solr:modules:ltr"),
+           project(":solr:modules:s3-repository"),
+           project(":solr:modules:scripting"),
+           project(":solr:prometheus-exporter")]) {
   plugins.withType(JavaPlugin) {
     dependencies {
       // Use versionless variants because these libraries are in versions.lock.
