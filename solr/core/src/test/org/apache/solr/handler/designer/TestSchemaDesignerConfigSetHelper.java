@@ -126,9 +126,11 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase impleme
 
     ZipEntry entry;
     while ((entry = stream.getNextEntry()) != null) {
-      if ("solrconfig.xml".equals(entry.getName())) {
+      // ZipEntry names have file separators that are OS specific. This normalizes to forward slash.
+      String entryName = entry.getName().replace('\\', '/');
+      if ("solrconfig.xml".equals(entryName)) {
         foundSolrConfig = true;
-      } else if ("lang/stopwords_en.txt".equals(entry.getName())) {
+      } else if ("lang/stopwords_en.txt".equals(entryName)) {
         foundStopWords = true;
       }
     }
