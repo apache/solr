@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import org.apache.tools.ant.util.TeeOutputStream
+
 buildscript {
     repositories {
         mavenCentral()
@@ -306,6 +308,7 @@ abstract class PrepareSources extends DefaultTask {
 ext {
     antoraVersion = "3.0.1"
     rootNodeDir = "${project.rootDir}/.gradle/node"
+    nodeProjectDir = file("${project.ext.rootNodeDir}/ref-guide-project")
 
     siteDir = "${buildDir}/site"
     playbooksDir = "${buildDir}/playbooks"
@@ -429,44 +432,34 @@ node {
     // The Node.js project directory location
     // This is where the package.json file and node_modules directory are located
     // By default it is at the root of the current project
-    nodeProjectDir = file("${project.ext.rootNodeDir}/ref-guide-project")
+    nodeProjectDir = project.ext.nodeProjectDir
 }
 
 task downloadAntoraCli(type: NpmTask) {
     args = ["install", "@antora/cli@${project.ext.antoraVersion}"]
+
+    inputs.property("Antora version", project.ext.antoraVersion)
+    inputs.files("${project.ext.nodeProjectDir}/package.json")
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/")
 }
 
 task downloadAntoraSiteGenerator(type: NpmTask) {
     dependsOn tasks.downloadAntoraCli
 
     args = ["install", "@antora/site-generator-default@${project.ext.antoraVersion}"]
-}
 
-task downloadAntoraLinkValidator(type: NpmTask) {
-    dependsOn tasks.downloadAntoraCli
-
-    args = ["install", "gitlab:antora/xref-validator"]
+    inputs.property("Antora version", project.ext.antoraVersion)
+    inputs.files("${project.ext.nodeProjectDir}/package.json")
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/")
 }
 
 task downloadLinkValidator(type: NpmTask) {
     dependsOn tasks.downloadAntoraCli
 
     args = ["install", "linkinator"]
-}
 
-task validateSiteLinks(type: NpxTask) {
-    dependsOn tasks.downloadAntoraLinkValidator
-    dependsOn tasks.buildAntoraYaml
-    dependsOn configurations.playbookInUse
-
-    command = "antora"
-    args = [
-        "--generator",
-        "@antora/xref-validator",
-        "${project.ext.playbookFilePath}"
-    ]
-
-    inputs.files(project.ext.playbookFilePath, "${projectDir}/modules")
+    inputs.files("${project.ext.nodeProjectDir}/package.json")
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/")
 }
 
 task buildSiteNew(type: NpxTask) {
@@ -490,12 +483,18 @@ task buildSiteNew(type: NpxTask) {
     args = [
         "${project.ext.playbookFilePath}",
         "--fetch",
-        "--to-dir=${buildDir}/site",
+        "--to-dir=${project.ext.siteDir}",
     ] + extraArgs
+
+    inputs.files(fileTree("${projectDir}/modules"))
+    inputs.files("${projectDir}/antora.yml")
+    inputs.files(project.ext.playbookFilePath)
+    inputs.property("Antora version", project.ext.antoraVersion)
+    outputs.dir(project.ext.siteDir)
 }
 
-task validateJavadocsLinks(type: NpxTask) {
-    //dependsOn tasks.downloadLinkValidator
+task validateSiteLinks(type: NpxTask) {
+    dependsOn tasks.downloadLinkValidator
     dependsOn tasks.buildSiteNew
 
     command = "link-checker"
@@ -508,9 +507,16 @@ task validateJavadocsLinks(type: NpxTask) {
         "--debug",
         // Ignore the java docs url in the header, since it is an absolute path
         "--url-ignore", "${project(':solr:documentation').docroot.toPath()}/index\\.html",
-        //"--json",
+        "--json",
         "-v",
     ]
 
-    //inputs.files("${buildDir}/site")
+    def outputFile = "${buildDir}/validation/link-check.json"
+    execOverrides {
+        // The it variable contains the `ExecSpec`
+        it.standardOutput = new TeeOutputStream(it.standardOutput, new FileOutputStream(outputFile))
+    }
+
+    inputs.files(fileTree(siteDir))
+    outputs.file(outputFile)
 }
