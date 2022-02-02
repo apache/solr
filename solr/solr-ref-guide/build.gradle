@@ -29,7 +29,7 @@ buildscript {
 plugins {
     id 'java'
     id 'com.github.jruby-gradle.base' version '2.0.1'
-    id 'io.github.rwinch.antora' version '0.0.2'
+    id "com.github.node-gradle.node" version "3.1.1"
 }
 
 // This project does not contribute anything to main dependencies.
@@ -44,12 +44,17 @@ repositories {
     ruby.gems()
 }
 
+// TODO document these properties in help
+def isLocalGuide = propertyOrEnvOrDefault("refguide.local", "REFGUIDE_LOCAL", "true").trim().toLowerCase().startsWith("t")
+
 configurations {
     depVer
     refGuide
     officialPlaybook
     localPlaybook
-    localJavadocs
+    playbookInUse {
+        extendsFrom (isLocalGuide ? localPlaybook : officialPlaybook)
+    }
 }
 
 dependencies {
@@ -84,8 +89,8 @@ dependencies {
     gems 'rubygems:concurrent-ruby:1.1.9'
     gems 'rubygems:http_parser.rb:0.6.0'
 
-    localJavadocs project(path: ":solr:documentation", configuration: 'javadocs')
-    localJavadocs project(path: ":solr:documentation", configuration: 'site')
+    localPlaybook project(path: ":solr:documentation", configuration: 'javadocs')
+    localPlaybook project(path: ":solr:documentation", configuration: 'site')
 }
 
 sourceSets {
@@ -298,23 +303,17 @@ abstract class PrepareSources extends DefaultTask {
     }
 }
 
-// Even though we don't use node.js, Antora does so we need to configure it for our build
-node {
-  // Antora plugin depends on an old version of node, force a newer one
-  download = true
-  version = "16.13.2" // LTS
-}
-
-// TODO document these properties in help
-def isLocalGuide = propertyOrEnvOrDefault("refguide.local", "REFGUIDE_LOCAL", "true").trim().toLowerCase().startsWith("t")
-
 ext {
+    antoraVersion = "3.0.1"
+    rootNodeDir = "${project.rootDir}/.gradle/node"
+
     siteDir = "${buildDir}/site"
     playbooksDir = "${buildDir}/playbooks"
     playbookTemplate = "playbook.template.yml"
     localPlaybook = "local-playbook.yml"
     officialPlaybook = "official-playbook.yml"
     playbooksDir = "${buildDir}/playbooks"
+    playbookFilePath = "${project.ext.playbooksDir}/${isLocalGuide ? project.ext.localPlaybook : project.ext.officialPlaybook}"
 }
 
 task buildAntoraYaml {
@@ -411,13 +410,64 @@ dependencies {
     }
 }
 
-// Documentation for Antora-Gradle plugin at
-// https://gitlab.com/antora/antora-gradle-plugin
-antora {
-    playbookFile = file("${project.ext.playbooksDir}/${isLocalGuide ? project.ext.localPlaybook : project.ext.officialPlaybook}")
-    antoraVersion = "3.0.1"
-    // TODO this is duplicated but I think the other instance of this is going away because it's specific to jekyll?
-    // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
+// We use Node to install and run Antora
+node {
+    download = true
+    version = "16.13.2" // LTS
+
+    // The directory where Node.js is unpacked (when download is true)
+    workDir = file("${project.ext.rootNodeDir}/nodejs")
+
+    // The directory where npm is installed (when a specific version is defined)
+    npmWorkDir = file("${project.ext.rootNodeDir}/npm")
+
+    // The directory where yarn is installed (when a Yarn task is used)
+    yarnWorkDir = file("${project.ext.rootNodeDir}/yarn")
+
+    // The Node.js project directory location
+    // This is where the package.json file and node_modules directory are located
+    // By default it is at the root of the current project
+    nodeProjectDir = file("${project.ext.rootNodeDir}/ref-guide-project")
+}
+
+task downloadAntoraCli(type: NpmTask) {
+    args = ["install", "@antora/cli@${project.ext.antoraVersion}"]
+}
+
+task downloadAntoraSiteGenerator(type: NpmTask) {
+    dependsOn tasks.downloadAntoraCli
+
+    args = ["install", "@antora/site-generator-default@${project.ext.antoraVersion}"]
+}
+
+task downloadAntoraLinkValidator(type: NpmTask) {
+    dependsOn tasks.downloadAntoraCli
+
+    args = ["install", "gitlab:antora/xref-validator"]
+}
+
+task validateSiteLinks(type: NpxTask) {
+    dependsOn tasks.downloadAntoraLinkValidator
+    dependsOn tasks.buildAntoraYaml
+    dependsOn configurations.playbookInUse
+
+    command = "antora"
+    args = [
+        "--generator",
+        "@antora/xref-validator",
+        "${project.ext.playbookFilePath}"
+    ]
+
+    inputs.files(project.ext.playbookFilePath, "${projectDir}/modules")
+}
+
+task buildSiteNew(type: NpxTask) {
+    dependsOn tasks.downloadAntoraSiteGenerator
+    dependsOn tasks.buildAntoraYaml
+    dependsOn configurations.playbookInUse
+
+    command = "antora"
+
     def extraArgs = []
     if (isLocalGuide) {
         // Use a local build of the Lucene and Solr javadocs if building a local refGuide
@@ -428,20 +478,9 @@ antora {
             "--attribute", "lucene-javadocs=link:${project(':solr:documentation').luceneDocsDir.toPath()}"
         ])
     }
-    arguments = [
+    args = [
+        "${project.ext.playbookFilePath}",
         "--fetch",
         "--to-dir=${buildDir}/site",
     ] + extraArgs
-
-    // TODO figure out if we can fail the build when this task outputs errors about broken links
-    // TODO declare inputs and outputs so that we can cache the results
-}
-
-tasks.antora.dependsOn tasks.buildAntoraYaml
-if (isLocalGuide) {
-    tasks.antora.dependsOn configurations.localPlaybook
-
-    tasks.antora.dependsOn configurations.localJavadocs
-} else {
-    tasks.antora.dependsOn configurations.officialPlaybook
 }
