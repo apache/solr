@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -102,8 +103,12 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     solrHomeDirectory = createTempDir().toFile();
     copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr.xml");
     NodeConfig cfg = NodeConfig.loadNodeConfig(solrHomeDirectory.toPath(), null);
-    return createCoreContainer(cfg, new CorePropertiesLocator(solrHomeDirectory.toPath()));
-  }
+    return createCoreContainer(cfg, new ReadOnlyCoresLocator() {
+      @Override
+      public List<CoreDescriptor> discover(CoreContainer cc) {
+        return Collections.emptyList();
+      }
+    });  }
 
   @Test
   public void testLazyLoad() throws Exception {
@@ -839,7 +844,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
       // Just proving that some cores have been evicted to respect transient core cache max size.
       checkSomeCoresNotLoaded(cc, transientCoreNames.length - TRANSIENT_CORE_CACHE_MAX_SIZE, transientCoreNames);
-      
+
       // We still should have 4 transient cores loaded, their reference counts have NOT dropped to zero
       checkLoadedCores(cc, "collection1", "collection5");
       checkSomeLoadedCores(cc, TRANSIENT_CORE_CACHE_MAX_SIZE, transientCoreNames);
