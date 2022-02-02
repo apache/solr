@@ -306,7 +306,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         req("q", "{!parent which=\"" + parentFilter + "\"}"),
         "//*[@numFound='6']");
 
-    // nocommit: temporarily added explicit non-score sort to prevent optimization consulting filterCache for constant score sort
+    // NOTE: add explicit non-score sort to prevent optimization consulting filterCache for constant score sort
     assertQ("filter by parent filter",
         req("q", "*:*", "fq", "{!parent which=\"" + parentFilter + "\"}", "sort", "id asc"),
         "//*[@numFound='6']");
@@ -314,7 +314,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     assertEquals("didn't hit fqCache yet ", 0L,
         delta("hits", filterCache.getValue(), filtersBefore));
 
-    // nocommit: temporarily added explicit non-score sort to prevent optimization consulting filterCache for constant score sort
+    // NOTE: add explicit non-score sort to prevent optimization consulting filterCache for constant score sort
     assertQ(
         "filter by join",
         req("q", "*:*", "fq", "{!parent which=\"" + parentFilter

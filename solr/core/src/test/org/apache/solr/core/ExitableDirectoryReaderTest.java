@@ -67,13 +67,13 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertJQ(req("q", q,  "timeAllowed", "1", "sleep", sleep), assertionString);
 
     // now do the same for the filter cache
-    // nocommit: temporarily added explicit non-score sort to prevent optimization consulting filterCache for constant score sort
-    // nocommit: added to prevent failures in testCacheAssumptions()!!
+    // NOTE: add explicit non-score sort to prevent optimization consulting filterCache for constant score sort
+    // added to prevent failures in testCacheAssumptions()
     assertJQ(req("q","*:*", "fq",q, "timeAllowed", "1", "sleep", sleep, "sort", "id asc"), failureAssertionString);
 
     // make sure that the result succeeds this time, and that a bad filter wasn't cached
-    // nocommit: temporarily added explicit non-score sort to prevent optimization consulting filterCache for constant score sort
-    // nocommit: added to prevent failures in testCacheAssumptions()!!
+    // NOTE: add explicit non-score sort to prevent optimization consulting filterCache for constant score sort
+    // added to prevent failures in testCacheAssumptions()
     assertJQ(req("q","*:*", "fq",q, "timeAllowed", longTimeout, "sort", "id asc"), assertionString);
 
     // test that Long.MAX_VALUE works
@@ -102,8 +102,9 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
 
     // This gets 0 docs back. Use 10000 instead of 1 for timeAllowed and it gets 100 back and the for loop below
     // succeeds.
-    // nocommit: temporarily added explicit non-score sort to prevent optimization consulting filterCache for constant score sort
-    // nocommit: related failures can be triggered by cache consultation in other methods (e.g., testPrefixQuery())
+    // NOTE: add explicit non-score sort to prevent optimization consulting filterCache for constant score sort
+    // TODO: address crosstalk between test methods; failures here can be triggered by cache consultation
+    //  in other methods (e.g., testPrefixQuery())
     String response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", "1", "sleep", sleep, "sort", "id asc"));
     Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
     Map<?, ?> body = (Map<?, ?>) (res.get("response"));
@@ -118,8 +119,9 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertEquals("Should NOT have another insert", fqInserts, (long) filterCacheStats.getValue().get("inserts"));
 
     // At the end of all this, we should have no hits in the queryResultCache.
-    // nocommit: temporarily added explicit non-score sort to prevent optimization consulting filterCache for constant score sort
-    // nocommit: related failures can be triggered by cache consultation in other methods (e.g., testPrefixQuery())
+    // NOTE: add explicit non-score sort to prevent optimization consulting filterCache for constant score sort
+    // TODO: address crosstalk between test methods; failures here can be triggered by cache consultation
+    //  in other methods (e.g., testPrefixQuery())
     response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", longTimeout, "sort", "id asc"));
 
     // Check that we did insert this one.
