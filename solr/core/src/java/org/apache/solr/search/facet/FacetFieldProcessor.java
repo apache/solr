@@ -355,6 +355,14 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     final int startSlot;
     final int limitSlot;
     final int increment;
+    final boolean inherentSort;
+    final boolean forceInlineNumBuckets; // this variable is top-level scope only as a sanity-check/assertion
+    // NOTE: `canShortcircuit` is an optimization that can be taken only if we don't need any side-effects that
+    // require looping over the full term domain -- e.g., `numBuckets`. Even if all the `canShorcircuit` logic
+    // were removed (simplifying somewhat), there is still benefit to dynamically setting `startSlot`, `limitSlot`,
+    // and `increment` (and to a lesser extent, `inherentSort`) -- in fact such dynamic setting is essential
+    // for achieving performance parity between `sort:"index asc"` and `sort:"index desc"`, particularly over
+    // high-cardinality fields. See SOLR-14764.
     final boolean canShortcircuit;
     if (indexOrderAcc != null && indexOrderAcc != sortAcc) {
       orderPredicate = (a, b) -> {
@@ -364,20 +372,24 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       startSlot = 0;
       limitSlot = numSlots;
       increment = 1;
+      inherentSort = false;
+      forceInlineNumBuckets = false;
       canShortcircuit = false;
     } else {
       orderPredicate = (a, b) -> {
         int cmp = sortAcc.compare(a.slot, b.slot) * sortMul;
         return cmp == 0 ? b.slot < a.slot : cmp < 0;
       };
-      canShortcircuit = indexOrderAcc == sortAcc && this instanceof FacetFieldProcessorByArray;
-      if (canShortcircuit && sortMul == 1) {
-        // desc (and shortcircuitable, so order matters)
+      inherentSort = indexOrderAcc == sortAcc && this instanceof FacetFieldProcessorByArray;
+      forceInlineNumBuckets = fcontext.getDebugInfo() != null || (freq.numBuckets && !fcontext.isShard());
+      canShortcircuit = inherentSort && !forceInlineNumBuckets;
+      if (inherentSort && sortMul == 1) {
+        // desc (and `inherentSort`, so order of slot iteration matters)
         startSlot = numSlots - 1;
         limitSlot = -1;
         increment = -1;
       } else {
-        // asc (or not shortcircuitable, so order doesn't matter)
+        // asc (or not `inherentSort`, so order of slot iteration doesn't matter)
         startSlot = 0;
         limitSlot = numSlots;
         increment = 1;
@@ -394,6 +406,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     boolean shardHasMoreBuckets = false;  // This shard has more buckets than were returned
     for (int slotNum = startSlot; slotNum != limitSlot; slotNum += increment) {
 
+      // CAUTION: be careful when modifying this loop; if adding extra logic that assumes accumulation over the
+      // full term domain (e.g., `numBuckets`), ensure that such logic is factored into determining the value
+      // of `canShortcircuit`)
+
       // screen out buckets not matching mincount
       if (effectiveMincount > 0) {
         long count = countAcc.getCount(slotNum);
@@ -408,10 +424,18 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
       if (bottom != null) {
         shardHasMoreBuckets = true;
-        scratchSlot.slot = slotNum; // scratchSlot is only used to hold this slotNum for the following line
-        if (orderPredicate.test(bottom, scratchSlot)) {
-          bottom.slot = slotNum;
-          bottom = queue.updateTop();
+        if (canShortcircuit) {
+          break;
+        } else if (!inherentSort) {
+          // NOTE: if `inherentSort==true`, no new entries will be accepted by the priorityQueue.
+          scratchSlot.slot = slotNum; // scratchSlot is only used to hold this slotNum for the following line
+          if (orderPredicate.test(bottom, scratchSlot)) {
+            bottom.slot = slotNum;
+            bottom = queue.updateTop();
+          }
+        } else {
+          // The only reason we haven't shortcircuited is because we need to populate numBuckets
+          assert forceInlineNumBuckets;
         }
       } else if (effectiveLimit > 0) {
         // queue not full
@@ -419,7 +443,9 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         s.slot = slotNum;
         queue.add(s);
         if (queue.size() >= maxTopVals) {
-          if (canShortcircuit) {
+          if (canShortcircuit && !fcontext.isShard()) {
+            // we can shortcircuit early if `!isShard()`; otherwise defer shortcircuit
+            // until we determine whether to set `shardHasMoreBuckets=true`
             break;
           }
           bottom = queue.top();
