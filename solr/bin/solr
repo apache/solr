@@ -698,7 +698,7 @@ function solr_pid_by_port() {
   THE_PORT="$1"
   if [ -e "$SOLR_PID_DIR/solr-$THE_PORT.pid" ]; then
     PID=`cat "$SOLR_PID_DIR/solr-$THE_PORT.pid"`
-    CHECK_PID=`ps -o pid --no-headers $PID | tr -d ' '`
+    CHECK_PID=`ps -o pid='' $PID | tr -d ' '`
     if [ "$CHECK_PID" != "" ]; then
       local solrPID=$PID
     fi
@@ -854,7 +854,8 @@ function stop_solr() {
     do
       # Check if a process is running with the specified PID.
       # -o stat will output the STAT, where Z indicates a zombie
-      STAT=`ps -o stat --no-headers $SOLR_PID | tr -d ' '`
+      # stat='' removes the header (--no-headers isn't supported on all platforms)
+      STAT=`ps -o stat='' $SOLR_PID | tr -d ' '`
       if [[ "$STAT" != "" && "$STAT" != "Z" ]]; then
         slept=$((loops * 2))
         if [ $slept -lt $SOLR_STOP_WAIT ]; then
@@ -870,7 +871,7 @@ function stop_solr() {
   spinner $!
   rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
 
-  STAT=`ps -o stat --no-headers $SOLR_PID | tr -d ' '`
+  STAT=`ps -o stat='' $SOLR_PID | tr -d ' '`
   if [[ "$STAT" != "" && "$STAT" != "Z" ]]; then
     if [ "$JSTACK" != "" ]; then
       echo -e "Solr process $SOLR_PID is still running; jstacking it now."
@@ -886,7 +887,7 @@ function stop_solr() {
     sleep 10
   fi
 
-  STAT=`ps -o stat --no-headers $SOLR_PID | tr -d ' '`
+  STAT=`ps -o stat='' $SOLR_PID | tr -d ' '`
   if [ "$STAT" == "Z" ]; then
     # This can happen if, for example, you are running Solr inside a docker container with multiple processes
     # rather than running it is as the only service. The --init flag on docker avoids that particular problem.
@@ -1875,7 +1876,7 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "$SOLR_PORT" ]]; then
     if [ $numSolrs -eq 1 ]; then
       # only do this if there is only 1 node running, otherwise they must provide the -p or -all
       PID="$(cat "$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)")"
-      CHECK_PID=`ps -o pid --no-headers $PID | tr -d ' '`
+      CHECK_PID=`ps -o pid='' $PID | tr -d ' '`
       if [ "$CHECK_PID" != "" ]; then
         port=`jetty_port "$CHECK_PID"`
         if [ "$port" != "" ]; then
