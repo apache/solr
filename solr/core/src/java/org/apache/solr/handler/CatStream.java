@@ -98,11 +98,7 @@ public class CatStream extends TupleStream implements Expressible {
 
     this.chroot = core.getCoreContainer().getUserFilesPath();
     if (! Files.exists(chroot)) {
-      try {
-        Files.createDirectories(chroot);
-      } catch (IOException e) {
-        throw new IllegalStateException(chroot + " directory used to load files could not be created!");
-      }
+      throw new IllegalStateException(chroot + " directory used to load files must exist but could not be found!");
     }
   }
 
