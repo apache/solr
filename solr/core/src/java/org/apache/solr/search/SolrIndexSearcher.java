@@ -1386,29 +1386,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // check if we should try and use the filter cache
     final boolean needSort;
-    if (cmd.getLen() < 1) {
-      needSort = false;
-    } else if (q instanceof MatchAllDocsQuery || q instanceof ConstantScoreQuery) {
-      final Sort sort = cmd.getSort();
-      final SortField[] sortFields;
-      // sort by "score" alone is pointless for these constant score queries
-      needSort = sort != null && ((sortFields = sort.getSort()).length > 1 || sortFields[0].getType() != Type.SCORE);
+    final boolean useFilterCache;
+    if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) != 0 || filterCache == null) {
+      needSort = true; // this value should be irrelevant when `useFilterCache=false`
+      useFilterCache = false;
     } else {
-      needSort = true;
-    }
-    boolean useFilterCache = false;
-    if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) == 0 && filterCache != null) {
-      if (!needSort) {
-        useFilterCache = true;
-      } else if (useFilterForSortedQuery && cmd.getSort() != null) {
-        useFilterCache = true;
-        SortField[] sfields = cmd.getSort().getSort();
-        for (SortField sf : sfields) {
-          if (sf.getType() == SortField.Type.SCORE) {
-            useFilterCache = false;
-            break;
-          }
-        }
+      final Sort sort;
+      if (q instanceof  MatchAllDocsQuery // special-case MatchAllDocsQuery: implicit default useFilterForSortedQuery=true
+              || (useFilterForSortedQuery && q instanceof ConstantScoreQuery)) { // default behavior should not risk filterCache thrashing
+        final SortField[] sortFields;
+        // We only need to sort if we're returning results AND sorting by something other than SCORE (sort by
+        // "score" alone is pointless for these constant score queries)
+        needSort = cmd.getLen() > 0 && (sort = cmd.getSort()) != null && ((sortFields = sort.getSort()).length > 1 || sortFields[0].getType() != Type.SCORE);
+        useFilterCache = true; // even if `sort:score` is specified, it will have no effect, so always use filterCache
+      } else {
+        needSort = cmd.getLen() > 0; // for non-constant-score queries, must sort unless no docs requested
+        useFilterCache = useFilterForSortedQuery && (sort = cmd.getSort()) != null
+                && Arrays.stream(sort.getSort()).noneMatch((sf) -> sf.getType() == SortField.Type.SCORE);
       }
     }
 
@@ -1435,6 +1429,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           // this is the only case where `cursorMark && !needSort`
           qr.setNextCursorMark(cmd.getCursorMark());
         } else {
+	  // cursorMark should always add a `uniqueKey` sort field tie-breaker, which
+	  // should prevent `needSort` from ever being false in conjunction with
+	  // cursorMark, _except_ in the event of `rows=0` (accounted for in the clause
+	  // above)
           assert cmd.getCursorMark() == null;
         }
       }

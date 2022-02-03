@@ -67,14 +67,14 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertJQ(req("q", q,  "timeAllowed", "1", "sleep", sleep), assertionString);
 
     // now do the same for the filter cache
-    // NOTE: add explicit non-score sort to prevent optimization consulting filterCache for constant score sort
-    // added to prevent failures in testCacheAssumptions()
-    assertJQ(req("q","*:*", "fq",q, "timeAllowed", "1", "sleep", sleep, "sort", "id asc"), failureAssertionString);
+    // NOTE: explicitly request score to prevent optimization consulting filterCache for MatchAllDocsQuery
+    // added to prevent crosstalk-related failures in testCacheAssumptions()!
+    assertJQ(req("q","*:*", "fq",q, "timeAllowed", "1", "sleep", sleep, "fl", "id,score"), failureAssertionString);
 
     // make sure that the result succeeds this time, and that a bad filter wasn't cached
-    // NOTE: add explicit non-score sort to prevent optimization consulting filterCache for constant score sort
-    // added to prevent failures in testCacheAssumptions()
-    assertJQ(req("q","*:*", "fq",q, "timeAllowed", longTimeout, "sort", "id asc"), assertionString);
+    // NOTE: explicitly request score to prevent optimization consulting filterCache for MatchAllDocsQuery
+    // added to prevent crosstalk-related failures in testCacheAssumptions()!
+    assertJQ(req("q","*:*", "fq",q, "timeAllowed", longTimeout, "fl", "id,score"), assertionString);
 
     // test that Long.MAX_VALUE works
     assertJQ(req("q","name:b*", "timeAllowed",Long.toString(Long.MAX_VALUE)), assertionString);
@@ -102,10 +102,15 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
 
     // This gets 0 docs back. Use 10000 instead of 1 for timeAllowed and it gets 100 back and the for loop below
     // succeeds.
-    // NOTE: add explicit non-score sort to prevent optimization consulting filterCache for constant score sort
     // TODO: address crosstalk between test methods; failures here can be triggered by cache consultation
-    //  in other methods (e.g., testPrefixQuery())
-    String response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", "1", "sleep", sleep, "sort", "id asc"));
+    //  in other methods (e.g., testPrefixQuery()) -- specifically, if the "values of interest" that are
+    //  supposed to trigger cache additions in _this_ class have already been inserted into the cache as
+    //  a result of other, previously-executed test methods, we won't see the expected increment in _this_
+    //  test method where it's explicitly expected. So this is a _non-reproducing_ failure; but it should
+    //  be safe as long as the `fq`s are exclusive per-test-method. (That's why the _problem_ manifested in
+    //  the case of `*:*` being added to the `filterCache`: `*:*` is of course _not_ exclusive per-test-method).
+    // NOTE: explicitly request score to prevent optimization consulting filterCache for MatchAllDocsQuery
+    String response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", "1", "sleep", sleep, "fl", "id,score"));
     Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
     Map<?, ?> body = (Map<?, ?>) (res.get("response"));
     assertTrue("Should have fewer docs than " + NUM_DOCS, (long) (body.get("numFound")) < NUM_DOCS);
@@ -119,10 +124,8 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertEquals("Should NOT have another insert", fqInserts, (long) filterCacheStats.getValue().get("inserts"));
 
     // At the end of all this, we should have no hits in the queryResultCache.
-    // NOTE: add explicit non-score sort to prevent optimization consulting filterCache for constant score sort
-    // TODO: address crosstalk between test methods; failures here can be triggered by cache consultation
-    //  in other methods (e.g., testPrefixQuery())
-    response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", longTimeout, "sort", "id asc"));
+    // NOTE: explicitly request score to prevent optimization consulting filterCache for MatchAllDocsQuery
+    response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", longTimeout, "fl", "id,score"));
 
     // Check that we did insert this one.
     assertEquals("Hits should still be 0", 0L, (long) filterCacheStats.getValue().get("hits"));
