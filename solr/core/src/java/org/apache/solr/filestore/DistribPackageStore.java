@@ -41,6 +41,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.exec.OS;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.lucene.util.IOUtils;
@@ -91,18 +92,15 @@ public class DistribPackageStore implements PackageStore {
     if (File.separatorChar == '\\') {
       path = path.replace('/', File.separatorChar);
     }
-    if (!path.isEmpty() && path.charAt(0) != File.separatorChar) {
-      path = File.separator + path;
-    }
-    if (path.startsWith("\\\\")) { // Windows absolute UNC
+    if (OS.isFamilyWindows() && path.startsWith("\\\\")) { // Windows absolute UNC
       throw new SolrException(BAD_REQUEST, "Illegal path " + path);
     }
-    while (path.startsWith("/")) { // Trim all leading slashes
+    while (path.startsWith(File.separator)) { // Trim all leading slashes
       path = path.substring(1);
     }
     var finalPath = getPackageStoreDirPath(solrHome).resolve(path);
     // Guard against path traversal by asserting final path is sub path of filestore
-    if (finalPath.normalize().startsWith(getPackageStoreDirPath(solrHome).normalize())) {
+    if (!finalPath.normalize().startsWith(getPackageStoreDirPath(solrHome).normalize())) {
       throw new SolrException(BAD_REQUEST, "Illegal path " + path);
     }
     return finalPath;
