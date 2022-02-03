@@ -8,7 +8,9 @@ body {
 
 .navbar {
   background: var(--navbar-background);
+  /* Solr Changes - Start */
   border-bottom: 2px solid var(--color-solr-primary-orange);
+  /* Solr Changes - End */
   color: var(--navbar-font-color);
   font-size: calc(16 / var(--rem-base) * 1rem);
   height: var(--navbar-height);
@@ -24,21 +26,42 @@ body {
 
 .navbar-brand {
   display: flex;
+  flex: auto;
   padding-left: 1rem;
 }
 
-.navbar-brand .navbar-item:first-child,
-.navbar-brand .navbar-item:first-child a,
-.navbar-brand .navbar-item:nth-child(2),
-.navbar-brand .navbar-item:nth-child(2) a {
+.navbar-brand .navbar-item:first-child {
   align-self: center;
   padding: 0;
   color: var(--navbar-font-color);
   font-size: calc(22 / var(--rem-base) * 1rem);
+  flex-wrap: wrap;
+  line-height: 1;
 }
 
-.navbar-brand .separator {
-  padding: 0 0.375rem;
+.navbar-brand .navbar-item:first-child a {
+  color: inherit;
+  word-wrap: normal;
+}
+
+.navbar-brand .navbar-item:first-child :not(:last-child) {
+  padding-right: 0.375rem;
+}
+
+.navbar-brand .navbar-item.search {
+  flex: auto;
+  justify-content: flex-end;
+}
+
+#search-input {
+  color: #333;
+  font-family: inherit;
+  font-size: 0.95rem;
+  width: 150px;
+  border: 1px solid #dbdbdb;
+  border-radius: 0.1em;
+  line-height: 1.5;
+  padding: 0 0.25em;
 }
 
 .navbar-burger {
@@ -48,12 +71,12 @@ body {
   line-height: 1;
   position: relative;
   width: 3rem;
-  margin-left: auto;
   padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  margin-left: auto;
   min-width: 0;
 }
 
@@ -132,12 +155,27 @@ body {
   display: inline-flex;
   align-items: center;
   background: var(--navbar-button-background);
+  /* Solr Changes - Start */
   border: 1.25px solid var(--color-solr-primary-orange);
+  /* Solr Changes - End */
   border-radius: 0.15rem;
   height: 1.75rem;
   color: var(--navbar-button-font-color);
   padding: 0 0.75em;
   white-space: nowrap;
+}
+
+@media screen and (max-width: 768.5px) {
+  .navbar-brand .navbar-item.search {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+@media screen and (min-width: 769px) {
+  #search-input {
+    width: 200px;
+  }
 }
 
 @media screen and (max-width: 1023.5px) {
@@ -178,14 +216,6 @@ body {
   .navbar-menu,
   .navbar-end {
     display: flex;
-  }
-
-  .navbar-menu {
-    flex: auto;
-  }
-
-  .navbar-end {
-    margin-left: auto;
   }
 
   .navbar-item,

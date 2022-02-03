@@ -46,9 +46,11 @@
   }
 }
 
-.doc > h1.page:first-child + aside.toc.embedded {
+/* Solr Changes - Start */
+.doc > h1.page:first-child + nav.toc.embedded {
   margin-top: -0.5rem;
 }
+/* Solr Changes - End */
 
 .doc > h2#name + .sectionbody {
   margin-top: 1rem;

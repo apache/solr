@@ -100,6 +100,7 @@ html.is-clipped--nav {
   color: inherit;
 }
 
+/* Solr Changes - Start */
 .nav-list {
   margin: 0 0 0 0.75rem;
 }
@@ -107,6 +108,7 @@ html.is-clipped--nav {
 .nav-menu > ul.nav-list {
   padding-top: 20px;
 }
+/* Solr Changes - End */
 
 .nav-menu > .nav-list + .nav-list {
   margin-top: 0.5rem;
@@ -114,7 +116,9 @@ html.is-clipped--nav {
 
 .nav-item {
   list-style: none;
+  /* Solr Changes - Start */
   margin-top: 10px;
+  /* Solr Changes - End */
 }
 
 /* adds some breathing room below a nested list */
@@ -151,7 +155,9 @@ html.is-clipped--nav {
 .is-current-page > .nav-link,
 .is-current-page > .nav-text {
   font-weight: var(--body-font-weight-bold);
+  /* Solr Changes - Start */
   color: var(--color-solr-primary-orange);
+  /* Solr Changes - End */
 }
 
 .nav-panel-explore {

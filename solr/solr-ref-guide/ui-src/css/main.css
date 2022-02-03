@@ -1,0 +1,37 @@
+/* Solr Changes - Rename 'aside' -> 'nav' across whole file */
+
+@media screen and (max-width: 1023.5px) {
+  nav.toc.sidebar {
+    display: none;
+  }
+
+  main > .content {
+    overflow-x: auto;
+  }
+}
+
+@media screen and (min-width: 1024px) {
+  main {
+    flex: auto;
+    min-width: 0; /* min-width: 0 required for flexbox to constrain overflowing elements */
+  }
+
+  main > .content {
+    display: flex;
+  }
+
+  nav.toc.embedded {
+    display: none;
+  }
+
+  nav.toc.sidebar {
+    flex: 0 0 var(--toc-width);
+    order: 1;
+  }
+}
+
+@media screen and (min-width: 1216px) {
+  nav.toc.sidebar {
+    flex-basis: var(--toc-width--widescreen);
+  }
+}
