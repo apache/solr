@@ -1429,10 +1429,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           // this is the only case where `cursorMark && !needSort`
           qr.setNextCursorMark(cmd.getCursorMark());
         } else {
-	  // cursorMark should always add a `uniqueKey` sort field tie-breaker, which
-	  // should prevent `needSort` from ever being false in conjunction with
-	  // cursorMark, _except_ in the event of `rows=0` (accounted for in the clause
-	  // above)
+          // cursorMark should always add a `uniqueKey` sort field tie-breaker, which
+          // should prevent `needSort` from ever being false in conjunction with
+          // cursorMark, _except_ in the event of `rows=0` (accounted for in the clause
+          // above)
           assert cmd.getCursorMark() == null;
         }
       }
