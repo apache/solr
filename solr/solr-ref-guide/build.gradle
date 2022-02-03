@@ -183,7 +183,7 @@ task downloadAntoraCli(type: NpmTask) {
 
     inputs.property("Antora version", project.ext.antoraVersion)
     inputs.files("${project.ext.nodeProjectDir}/package.json")
-    outputs.dir("${project.ext.nodeProjectDir}/node_modules/")
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/cli")
 }
 
 task downloadAntoraSiteGenerator(type: NpmTask) {
@@ -191,7 +191,7 @@ task downloadAntoraSiteGenerator(type: NpmTask) {
 
     inputs.property("Antora version", project.ext.antoraVersion)
     inputs.files("${project.ext.nodeProjectDir}/package.json")
-    outputs.dir("${project.ext.nodeProjectDir}/node_modules/")
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/site-generator-default")
 }
 
 task downloadAntora {
@@ -202,22 +202,17 @@ task downloadAntora {
 task downloadLinkValidator(type: NpmTask) {
     dependsOn tasks.downloadAntoraCli
 
-    args = ["install", "linkinator"]
+    args = ["install", "link-checker"]
 
     inputs.files("${project.ext.nodeProjectDir}/package.json")
-    outputs.dir("${project.ext.nodeProjectDir}/node_modules/")
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/link-checker")
 }
 
 task downloadUIDependencies(type: NpmTask) {
     args = ["install", "gitlab:antora/antora-ui-default", "--include=dev"]
 
-    /*execOverrides {
-        // The it variable contains the `ExecSpec`
-        it.workingDir = file("${projectDir}/ui")
-    }*/
-
     inputs.files("${project.ext.nodeProjectDir}/package.json")
-    outputs.dir("${project.ext.nodeProjectDir}/node_modules/")
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/ui-default")
 }
 
 task startUIBuildDir(type: Copy) {
@@ -282,7 +277,9 @@ task buildUIBundle(type: NpxTask) {
         }
     }
 
-    inputs.files(fileTree("${buildDir}/ui"))
+    inputs.files(fileTree("${buildDir}/ui/src") {
+        exclude "node_modules"
+    })
     outputs.dir(project.ext.siteDir)
 }
 
