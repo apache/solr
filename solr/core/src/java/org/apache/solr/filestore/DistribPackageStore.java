@@ -586,7 +586,7 @@ public class DistribPackageStore implements PackageStore {
         Files.createDirectories(path);
         log.info("Created filestore folder {}", path);
       } catch (IOException e) {
-        throw new SolrException(SERVER_ERROR, "Faild creating 'filestore' folder in SOLR_HOME. Check permissions");
+        throw new SolrException(SERVER_ERROR, "Faild creating 'filestore' folder in SOLR_HOME", e);
       }
     }
     return path;
