@@ -190,6 +190,17 @@ public final class CryptoKeys {
     return rsaCipher.doFinal(buffer, 0, buffer.length);
   }
 
+  public static boolean verifySha256(byte[] data, byte[] sig, PublicKey key) throws SignatureException, InvalidKeyException {
+    try {
+      Signature signature = Signature.getInstance("SHA256withRSA");
+      signature.initVerify(key);
+      signature.update(data);
+      return signature.verify(sig);
+    } catch (NoSuchAlgorithmException e) {
+      throw new InternalError("SHA256withRSA must be supported by the JVM.");
+    }
+  }
+
   /**
    * Tries for find X509 certificates in the input stream in DER or PEM format.
    * Supports multiple certs in same stream if multiple PEM certs are concatenated.
@@ -276,6 +287,7 @@ public final class CryptoKeys {
       }
     }
 
+
     public String getPublicKeyStr() {
       return pubKeyStr;
     }
@@ -295,18 +307,21 @@ public final class CryptoKeys {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
       }
     }
-    public byte[] signSha256(byte[] bytes) throws InvalidKeyException, SignatureException {
+
+    public byte[] signSha256(byte[] bytes) {
       Signature dsa = null;
       try {
         dsa = Signature.getInstance("SHA256withRSA");
       } catch (NoSuchAlgorithmException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        throw new InternalError("SHA256withRSA is required to be supported by the JVM.", e);
       }
-      dsa.initSign(privateKey);
-      dsa.update(bytes,0,bytes.length);
-      return dsa.sign();
-
+      try {
+        dsa.initSign(privateKey);
+        dsa.update(bytes,0, bytes.length);
+        return dsa.sign();
+      } catch (InvalidKeyException | SignatureException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error generating PKI Signature", e);
+      }
     }
-
   }
 }

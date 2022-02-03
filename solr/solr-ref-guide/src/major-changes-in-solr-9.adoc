@@ -53,7 +53,11 @@ SolrCloud doesn't support that but may sometime.
 
 * SOLR-14702: All references to "master" and "slave" were replaced in the code with "leader" and "follower".
 This includes API calls for the replication handler and metrics.
-For rolling upgrades into 9.0, you need to be on Solr version 8.7 or greater. Some metrics also changed, alerts and  monitors on Solr KPIs that mention "master" or "slave" will also now be "leader" and "follower"
+For rolling upgrades into 9.0, you need to be on Solr version 8.7 or greater. Some metrics also changed, alerts and monitors on Solr KPIs that mention "master" or "slave" will also now be "leader" and "follower"
+
+* SOLR-15965: Internode communication secured by PKI Authentication has changed formats. To maintain compatability, you will need to either:
+** Upgrade the cluster to 8.11.2 or newer before proceeding to 9.0
+** Set system properties `solr.pki.sendVersion=v1` and `solr.pki.acceptVersions=v1,v2` on the upgraded nodes. After the whole cluster has been upgraded, you can optionally remove them and perform an additional rolling restart to reject requests coming in via the old format. For more information, see <<authentication-and-authorization-plugins.adoc#_pkiauthenticationplugin,PKI Authentication Plugin>>.
 
 === Reindexing After Upgrade
 
