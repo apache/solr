@@ -548,8 +548,6 @@ Other Changes
 
 * SOLR-15953: Remove unused LTRThreadModule.preClose CloseHook logic. (Christine Poerschke)
 
-* SOLR-15950: Create SOLR_HOME/userfiles and SOLR_HOME/filestore lazily on first use (janhoy)
-
 * SOLR-15916: Remove dist/ from the binary release. The solr-core and solrj jars will be included in the server WEB-INF/lib directory,
 and each individual module's jar will be included in its directory's lib/ folder. (Houston Putman)
 
@@ -562,6 +560,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 * SOLR-15957: Add port and scraping information to Solr Prometheus startup logging. (Houston Putman)
 
 * SOLR-15936: Reduce unnecessary startup logging, such as SSL warnings when SSL not in use (janhoy)
+
+* SOLR-15950: Create SOLR_HOME/userfiles and SOLR_HOME/filestore lazily on first use (janhoy)
 
 * SOLR-15777: Forbid useDocValuesAsStored for ICUCollationField (warn for luceneMatchVersion < 9.0.0). (Michael Gibney)
 
