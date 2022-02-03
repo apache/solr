@@ -52,6 +52,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrPaths;
 import org.apache.solr.filestore.PackageStoreAPI.MetaData;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -92,9 +93,7 @@ public class DistribPackageStore implements PackageStore {
     if (File.separatorChar == '\\') {
       path = path.replace('/', File.separatorChar);
     }
-    if (OS.isFamilyWindows() && path.startsWith("\\\\")) { // Windows absolute UNC
-      throw new SolrException(BAD_REQUEST, "Illegal path " + path);
-    }
+    SolrPaths.assertNotUnc(Path.of(path));
     while (path.startsWith(File.separator)) { // Trim all leading slashes
       path = path.substring(1);
     }
