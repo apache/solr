@@ -327,6 +327,24 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
 
   }
 
-  
+  @Test
+  public void CSVLoader_denseVector_shouldIndexCorrectly() throws Exception {
+    makeFile("id,vector\n"
+            + "999,\"1.3,2.3,3.3,4.3\"\n");
 
-}
+    loadLocal("commit", "true",
+            "f.str_s.map", ":EMPTY",
+            "f.vector.split", "true");
+
+    assertQ(req("q", "id:999", "fl", "vector"), "*[count(//doc)=1]",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[1][.='" + 1.3 + "']",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[2][.='" + 2.3 + "']",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[3][.='" + 3.3 + "']",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[4][.='" + 4.3 + "']"
+    );
+  }
+  
+}  
+
+
+    

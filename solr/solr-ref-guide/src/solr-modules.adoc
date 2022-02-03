@@ -1,0 +1,41 @@
+= Solr Modules
+
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr modules are addon Solr plugins that are not part of solr-core, but officially maintained
+by the Solr project. They provide well-defined features such as the "extracting" module which lets
+users index rich text documents with Apache Tika. A single module can contain multiple Plugins.
+Modules were earlier known as "contribs".
+
+Each module produces a separate `.jar` file in the build, and additional dependencies required by
+each module are also packaged with the module. This helps keep the main core of Solr small and lean.
+
+== Installing a module
+
+The easiest way to enable a module is to list the modules you intend to use either in the
+system property `solr.modules` or in the environment variable `SOLR_MODULES` (e.g. in`solr.in.sh`
+or `solr.in.cmd`). You can also add a `<str name="modules">` tag to
+<<configuring-solr-xml.adoc#,solr.xml>>. The expected value is a comma separated list
+of module names, e.g. `SOLR_MODULES=extracting,ltr`. This way of adding modules will add
+them to the shared class loader, making them available for every collection in Solr.
+
+If you only wish to enable a module for a single collection, you may add `<lib>` tags to `solrconfig.xml`
+as explained in <<libs.adoc#,Lib Directories>>.
+
+Some modules may have been made available as packages for the <<package-manager.adoc#,Package Manager>>,
+check by listing available pacakges.

@@ -32,6 +32,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -119,20 +120,22 @@ public abstract class ManagedResourceStorage {
     if (storageIO instanceof FileStorageIO) {
       // using local fs, if storageDir is not set in the solrconfig.xml, assume the configDir for the core
       if (initArgs.get(STORAGE_DIR_INIT_ARG) == null) {
-        File configDir = new File(resourceLoader.getConfigDir());
-        boolean hasAccess = false;
+        Path configDir = resourceLoader.getConfigPath();
+        boolean hasAccess;
         try {
-          hasAccess = configDir.isDirectory() && configDir.canWrite();
-        } catch (java.security.AccessControlException ace) {}
+          hasAccess = Files.isDirectory(configDir) && Files.isWritable(configDir);
+        } catch (SecurityException noAccess) {
+          hasAccess = false;
+        }
         
         if (hasAccess) {
-          initArgs.add(STORAGE_DIR_INIT_ARG, configDir.getAbsolutePath());
+          initArgs.add(STORAGE_DIR_INIT_ARG, configDir.toAbsolutePath().toString());
         } else {
           // most likely this is because of a unit test 
           // that doesn't have write-access to the config dir
           // while this failover approach is not ideal, it's better
           // than causing the core to fail esp. if managed resources aren't being used
-          log.warn("Cannot write to config directory {} ; switching to use InMemory storage instead.", configDir.getAbsolutePath());
+          log.warn("Cannot write to config directory {} ; switching to use InMemory storage instead.", configDir.toAbsolutePath());
           storageIO = new ManagedResourceStorage.InMemoryStorageIO();
         }
       }       
