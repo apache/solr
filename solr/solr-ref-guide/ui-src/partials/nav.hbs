@@ -1,0 +1,10 @@
+<div class="nav-container"{{#if page.component}} data-component="{{page.component.name}}" data-version="{{page.version}}"{{/if}}>
+  <!-- Solr Changes - Start (change 'aside' -> 'nav') -->
+  <nav class="nav">
+    <div class="panels">
+{{> nav-menu}}
+{{> nav-explore}}
+    </div>
+  </nav>
+  <!-- Solr Changes - End -->
+</div>
