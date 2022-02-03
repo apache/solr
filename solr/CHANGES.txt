@@ -561,7 +561,7 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-15936: Reduce unnecessary startup logging, such as SSL warnings when SSL not in use (janhoy)
 
-* SOLR-15950: Create SOLR_HOME/userfiles and SOLR_HOME/filestore lazily on first use (janhoy)
+* SOLR-15950: Create SOLR_HOME/filestore lazily on first use (janhoy)
 
 * SOLR-15777: Forbid useDocValuesAsStored for ICUCollationField (warn for luceneMatchVersion < 9.0.0). (Michael Gibney)
 
