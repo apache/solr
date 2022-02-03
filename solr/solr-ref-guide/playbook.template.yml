@@ -21,7 +21,7 @@ content:
 
 ui:
   bundle:
-    url: "${ui_bundle_url}"
+    url: "https://nightlies.apache.org/solr/draft-guides/ui-bundle.zip"
     snapshot: true
 output:
   clean: true

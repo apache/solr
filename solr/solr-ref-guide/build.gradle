@@ -27,6 +27,7 @@ description = 'Solr Reference Guide'
 // TODO Maybe split official and local into separate tasks instead of using a property to switch.
 //      This is possible now that we own the antora build process.
 def isLocalGuide = propertyOrEnvOrDefault("refguide.local", "REFGUIDE_LOCAL", "true").toBoolean()
+def buildLocalUI = propertyOrEnvOrDefault("refguide.buildLocalUI", "REFGUIDE_BUILD_LOCAL_UI", "false").toBoolean()
 
 // Attach building the ref guide to standard convention tasks. This
 // can be optionally turned off (see SOLR-15670).
@@ -128,7 +129,6 @@ task buildLocalAntoraPlaybookYaml(type: Copy) {
         'site_url'        : "",
         'source_url'      : projectDir.parentFile.parentFile.path,
         'source_branches' : "HEAD",
-        'ui_bundle_url'   : "https://nightlies.apache.org/solr/draft-guides/ui-bundle.zip",
     ])
 }
 
@@ -146,7 +146,6 @@ task buildOfficialAntoraPlaybookYaml(type: Copy) {
         'site_url'        : "https://solr.apache.org/guide",
         'source_url'      : "https://github.com/apache/solr.git",
         'source_branches' : ["jira/solr-15556-antora"],
-        'ui_bundle_url'   : "https://nightlies.apache.org/solr/draft-guides/ui-bundle.zip",
     ])
 }
 
@@ -188,13 +187,16 @@ task downloadAntoraCli(type: NpmTask) {
 }
 
 task downloadAntoraSiteGenerator(type: NpmTask) {
-    dependsOn tasks.downloadAntoraCli
-
     args = ["install", "@antora/site-generator-default@${project.ext.antoraVersion}"]
 
     inputs.property("Antora version", project.ext.antoraVersion)
     inputs.files("${project.ext.nodeProjectDir}/package.json")
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/")
+}
+
+task downloadAntora {
+    dependsOn tasks.downloadAntoraCli
+    dependsOn tasks.downloadAntoraSiteGenerator
 }
 
 task downloadLinkValidator(type: NpmTask) {
@@ -206,10 +208,91 @@ task downloadLinkValidator(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/")
 }
 
+task downloadUIDependencies(type: NpmTask) {
+    args = ["install", "gitlab:antora/antora-ui-default", "--include=dev"]
+
+    /*execOverrides {
+        // The it variable contains the `ExecSpec`
+        it.workingDir = file("${projectDir}/ui")
+    }*/
+
+    inputs.files("${project.ext.nodeProjectDir}/package.json")
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/")
+}
+
+task startUIBuildDir(type: Copy) {
+    dependsOn tasks.downloadUIDependencies
+
+    // Copy the antora latest default ui into the root folder, to mimick a new checkout of the default ui
+    with {
+        from "${project.ext.nodeProjectDir}/node_modules/@antora/ui-default"
+        duplicatesStrategy = 'EXCLUDE'
+    }
+
+    // Overwrite the parts of the UI that we have changed.
+    from("${projectDir}/ui-src") {
+        into "src"
+    }
+    duplicatesStrategy = 'INCLUDE'
+
+    into "${buildDir}/ui"
+}
+
+task setupUIBuildDir(type: NpmTask) {
+    dependsOn tasks.startUIBuildDir
+    workingDir = file("${buildDir}/ui")
+    args = ["install"]
+
+    inputs.files("${buildDir}/ui/package.json")
+    outputs.dir("${buildDir}/ui/node_modules/")
+}
+
+task downloadGulp(type: NpmTask) {
+    dependsOn tasks.startUIBuildDir
+
+    args = ["install", "gulp-cli", "--legacy-peer-deps"]
+    execOverrides {
+        // The it variable contains the `ExecSpec`
+        workingDir = "${buildDir}/ui"
+    }
+
+    inputs.property("Antora version", project.ext.antoraVersion)
+    inputs.files("${buildDir}/ui/package.json")
+    outputs.dir("${buildDir}/ui/node_modules/")
+}
+
+task buildUIBundle(type: NpxTask) {
+    dependsOn tasks.setupUIBuildDir
+    dependsOn tasks.downloadGulp
+
+    command = "gulp"
+
+    args = [
+        "bundle",
+    ]
+    execOverrides {
+        // The it variable contains the `ExecSpec`
+        workingDir = "${buildDir}/ui"
+    }
+
+    doLast {
+        copy {
+            from "${buildDir}/ui/build/ui-bundle.zip"
+            into "${buildDir}/dist"
+        }
+    }
+
+    inputs.files(fileTree("${buildDir}/ui"))
+    outputs.dir(project.ext.siteDir)
+}
+
 task buildSite(type: NpxTask) {
-    dependsOn tasks.downloadAntoraSiteGenerator
+    dependsOn tasks.downloadAntora
     dependsOn tasks.buildAntoraYaml
     dependsOn configurations.playbookInUse
+    if (buildLocalUI) {
+        dependsOn tasks.buildUIBundle
+    }
 
     command = "antora"
 
@@ -224,6 +307,11 @@ task buildSite(type: NpxTask) {
             "--attribute", "lucene-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').luceneDocsDir)}"
         ])
     }
+    if (buildLocalUI) {
+        extraArgs.addAll([
+            "--ui-bundle-url", "${buildDir}/dist/ui-bundle.zip"
+        ])
+    }
     args = [
         "${project.ext.playbookFilePath}",
         "--fetch",
@@ -234,6 +322,9 @@ task buildSite(type: NpxTask) {
     inputs.files("${projectDir}/antora.yml")
     inputs.files(project.ext.playbookFilePath)
     inputs.property("Antora version", project.ext.antoraVersion)
+    if (buildLocalUI) {
+        inputs.files("${buildDir}/dist/ui-bundle.zip")
+    }
     outputs.dir(project.ext.siteDir)
 }
 

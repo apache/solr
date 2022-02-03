@@ -16,6 +16,7 @@
   --color-jet-70: #222;
   --color-jet-80: #191919;
   --color-black: #000;
+  /* Solr Additions - Start */
   --color-solr-primary-orange: #d9411e;
   --color-solr-gray: #e6e7e8;
   --color-solr-light-gray: #f8f8f7;
@@ -23,6 +24,7 @@
   --color-solr-blue: #305cb3;
   --color-solr-light-blue: #a5dbff;
   --color-solr-dark-blue: #262130;
+  /* Solr Additions - End */
   /* fonts */
   --rem-base: 18; /* used to compute rem value from desired pixel value (e.g., calc(18 / var(--rem-base) * 1rem) = 18px) */
   --body-font-size: 1.0625em; /* 17px */
@@ -30,20 +32,24 @@
   --body-font-size--print: 0.9375em; /* 15px */
   --body-line-height: 1.15;
   --body-font-color: var(--color-jet-70);
+  /* Solr Changes - Start */
   --body-font-family: "Noto Sans", sans-serif;
   --body-font-weight-bold: 700;
   --monospace-font-family: "Inconsolata", monospace;
   --monospace-font-weight-bold: 700;
+  /* Solr Changes - End */
   /* base */
   --body-background: var(--color-white);
   --panel-background: var(--color-smoke-30);
   --panel-border-color: var(--color-smoke-90);
   --scrollbar-thumb-color: var(--color-gray-10);
   /* navbar */
+  /* Solr Changes - Start */
   --navbar-background: var(--color-smoke-30);
   --navbar-font-color: var(--color-black);
   --navbar-border-color: var(--color-solr-primary-orange);
   --navbar_hover-background: var(--color-solr-light-orange);
+  /* Solr Changes - End */
   --navbar-button-background: var(--color-white);
   --navbar-button-border-color: var(--panel-border-color);
   --navbar-button-font-color: var(--body-font-color);
@@ -84,12 +90,14 @@
   --doc-line-height: 1.6;
   --doc-margin: 0 auto;
   --doc-margin--desktop: 0 2rem;
+  /* Solr Changes - Start */
   --heading-font-color: var(--color-solr-primary-orange);
   --heading-font-weight: normal;
   --alt-heading-font-weight: var(--body-font-weight-bold);
   --section-divider-color: var(--panel-border-color);
   --link-font-color: var(--color-solr-blue);
   --link_hover-font-color: var(--color-solr-blue);
+  /* Solr Changes - End */
   --link_unresolved-font-color: var(--important-color);
   --abstract-background: var(--color-smoke-70);
   --abstract-font-color: var(--color-jet-20);
@@ -111,7 +119,9 @@
   --quote-border-color: var(--color-gray-70);
   --quote-font-color: var(--color-gray-70);
   --quote-attribution-font-color: var(--color-gray-30);
+  /* Solr Changes - Start */
   --sidebar-background: var(--color-solr-light-gray);
+  /* Solr Changes - End */
   --table-border-color: var(--panel-border-color);
   --table-stripe-background: var(--panel-background);
   --table-footer-background: linear-gradient(to bottom, var(--color-smoke-70) 0%, var(--color-white) 100%);
