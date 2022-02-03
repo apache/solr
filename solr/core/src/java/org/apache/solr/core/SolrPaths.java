@@ -24,7 +24,6 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import org.apache.commons.exec.OS;
 import org.apache.solr.common.SolrException;

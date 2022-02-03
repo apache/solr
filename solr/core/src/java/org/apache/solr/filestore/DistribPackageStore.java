@@ -41,7 +41,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.exec.OS;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.lucene.util.IOUtils;
