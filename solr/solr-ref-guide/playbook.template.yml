@@ -23,6 +23,7 @@ ui:
   bundle:
     url: "https://nightlies.apache.org/solr/draft-guides/ui-bundle.zip"
     snapshot: true
+  supplemental_files: "${supplemental_files}"
 output:
   clean: true
   dir: ./build/site
@@ -31,3 +32,6 @@ asciidoc:
     stem:
 runtime:
   fetch: true
+antora:
+  extensions:
+    - '@antora/lunr-extension'

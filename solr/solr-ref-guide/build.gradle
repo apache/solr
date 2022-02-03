@@ -129,6 +129,7 @@ task buildLocalAntoraPlaybookYaml(type: Copy) {
         'site_url'        : "",
         'source_url'      : projectDir.parentFile.parentFile.path,
         'source_branches' : "HEAD",
+        'supplemental_files' : "${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension/supplemental_ui",
     ])
 }
 
@@ -146,6 +147,7 @@ task buildOfficialAntoraPlaybookYaml(type: Copy) {
         'site_url'        : "https://solr.apache.org/guide",
         'source_url'      : "https://github.com/apache/solr.git",
         'source_branches' : ["jira/solr-15556-antora"],
+        'supplemental_files' : "${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension/supplemental_ui",
     ])
 }
 
@@ -194,14 +196,20 @@ task downloadAntoraSiteGenerator(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/site-generator-default")
 }
 
+task downloadAntoraLunrExtension(type: NpmTask) {
+    args = ["install", "@antora/lunr-extension"]
+
+    inputs.files("${project.ext.nodeProjectDir}/package.json")
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension")
+}
+
 task downloadAntora {
     dependsOn tasks.downloadAntoraCli
     dependsOn tasks.downloadAntoraSiteGenerator
+    dependsOn tasks.downloadAntoraLunrExtension
 }
 
 task downloadLinkValidator(type: NpmTask) {
-    dependsOn tasks.downloadAntoraCli
-
     args = ["install", "link-checker"]
 
     inputs.files("${project.ext.nodeProjectDir}/package.json")
@@ -314,6 +322,8 @@ task buildSite(type: NpxTask) {
         "--fetch",
         "--to-dir=${project.ext.siteDir}",
     ] + extraArgs
+
+    environment = ["SITE_SEARCH_ENABLED": "true"]
 
     inputs.files(fileTree("${projectDir}/modules"))
     inputs.files("${projectDir}/antora.yml")
