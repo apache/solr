@@ -25,8 +25,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * <p>
@@ -59,7 +59,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   private void initSourceReader() {
     if (sourceLocation != null) {
       try {
-        FSDirectory luceneIndexDir = FSDirectory.open(new File(sourceLocation).toPath());
+        FSDirectory luceneIndexDir = FSDirectory.open(Path.of(sourceLocation));
         this.reader = DirectoryReader.open(luceneIndexDir);
       } catch (IOException e) {
         throw new RuntimeException(e);

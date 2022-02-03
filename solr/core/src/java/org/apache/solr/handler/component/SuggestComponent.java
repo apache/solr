@@ -43,9 +43,10 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -138,8 +139,8 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
           boolean buildOnStartup;
           Object buildOnStartupObj = suggesterParams.get(BUILD_ON_STARTUP_LABEL);
           if (buildOnStartupObj == null) {
-            File storeFile = suggester.getStoreFile();
-            buildOnStartup = storeFile == null || !storeFile.exists();
+            Path storeFile = suggester.getStoreFile();
+            buildOnStartup = storeFile == null || !Files.exists(storeFile);
           } else {
             buildOnStartup = Boolean.parseBoolean((String) buildOnStartupObj);
           }
@@ -185,7 +186,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       rb.rsp.add("command", (!buildAll) ? "build" : "buildAll");
     } else if (params.getBool(SUGGEST_RELOAD, false) || reloadAll) {
       for (SolrSuggester suggester : querysuggesters) {
-        suggester.reload(rb.req.getCore(), rb.req.getSearcher());
+        suggester.reload();
       }
       rb.rsp.add("command", (!reloadAll) ? "reload" : "reloadAll");
     }
