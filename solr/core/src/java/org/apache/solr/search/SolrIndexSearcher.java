@@ -126,6 +126,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final SolrCache<String,UnInvertedField> fieldValueCache;
   private long fullSortCount = 0;
   private long skipSortCount = 0;
+  private long matchAllDocsCacheConsultationCount = 0;
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final Map<String,SolrCache<?, ?>> cacheMap;
@@ -843,6 +844,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (query instanceof MatchAllDocsQuery) {
       // bypass the filterCache for MatchAllDocsQuery; we're "caching" it in `liveDocs` anyway
+      matchAllDocsCacheConsultationCount++;
       return getLiveDocSet();
     }
 
@@ -2404,6 +2406,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     parentContext.gauge(() -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> fullSortCount, true, "fullSortCount", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> skipSortCount, true, "skipSortCount", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> matchAllDocsCacheConsultationCount, true, "matchAllDocsCacheConsultationCount", Category.SEARCHER.toString(), scope);
     // reader stats
     parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.numDocs()), true, "numDocs", Category.SEARCHER.toString(), scope);
     parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.maxDoc()), true, "maxDoc", Category.SEARCHER.toString(), scope);

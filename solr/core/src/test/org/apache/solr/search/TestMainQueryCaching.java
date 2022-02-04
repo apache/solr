@@ -23,6 +23,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -66,6 +67,13 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
+  @Before
+  public void beforeTest() throws Exception {
+    // testing caching, it's far simpler to just reload the core every time to prevent
+    // subsequent requests from affecting each other
+    h.reload();
+  }
+
   private static long coreToInserts(SolrCore core) {
     return (long)((MetricsMap)((SolrMetricManager.GaugeWrapper<?>)core
             .getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache")).getGauge())
@@ -78,120 +86,99 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
             .getValue();
   }
 
-  @Test
-  public void testQueryCaching() throws Exception {
-    String q = "str:d*";
-    String constQ = "("+q+")^=1.0"; // wrapped as a ConstantScoreQuery
+  private static long coreToMatchAllDocsCacheConsultationCount(SolrCore core) {
+    return (long)((SolrMetricManager.GaugeWrapper<?>)core
+            .getCoreMetricManager().getRegistry().getMetrics().get("SEARCHER.searcher.matchAllDocsCacheConsultationCount")).getGauge()
+            .getValue();
+  }
 
-    for (int i = 0; i < 6; i++) {
-      // testing caching, it's far simpler to just reload the core every time to prevent
-      // subsequent requests from affecting each other
-      h.reload();
-      final String response;
-      final int expectInserts;
-      final int expectSkipSortCount;
-      final int expectFullSortCount;
-      switch (i) {
-        case 0:
-          // plain request should not be cached
-          response = JQ(req("q", q, "indent", "true"));
-          expectInserts = 0;
-          expectFullSortCount = 1;
-          expectSkipSortCount = 0;
-          break;
-        case 1:
-          // explicitly requesting scores should unconditionally disable fq insert
-          response = JQ(req("q", constQ, "indent", "true", "rows", "0", "fl", "id,score", "sort", (random().nextBoolean() ? "id asc" : "score desc")));
-          expectInserts = 0;
-          expectFullSortCount = 1;
-          expectSkipSortCount = 0;
-          break;
-        case 2:
-          // plain request with no score in sort should consult filterCache, but need full sorting
-          response = JQ(req("q", q, "indent", "true", "sort", "id asc"));
-          expectInserts = USE_FILTER_FOR_SORTED_QUERY ? 1 : 0;
-          expectFullSortCount = 1;
-          expectSkipSortCount = 0;
-          break;
-        case 3:
-          // hit cache because rows=0
-          response = JQ(req("q", q, "indent", "true", "rows", "0", "sort", (random().nextBoolean() ? "id asc" : "score desc")));
-          expectInserts = USE_FILTER_FOR_SORTED_QUERY ? 1 : 0;
-          expectFullSortCount = USE_FILTER_FOR_SORTED_QUERY ? 0 : 1;
-          expectSkipSortCount = USE_FILTER_FOR_SORTED_QUERY ? 1 : 0;
-          break;
-        case 4:
-          // hit cache because constant score query
-          response = JQ(req("q", constQ, "indent", "true"));
-          expectInserts = USE_FILTER_FOR_SORTED_QUERY ? 1 : 0;
-          expectFullSortCount = USE_FILTER_FOR_SORTED_QUERY ? 0 : 1;
-          expectSkipSortCount = USE_FILTER_FOR_SORTED_QUERY ? 1 : 0;
-          break;
-        case 5:
-          // consult filterCache because constant score query, but no skip sort (because sort-by-id)
-          response = JQ(req("q", constQ, "indent", "true", "sort", "id asc"));
-          expectInserts = USE_FILTER_FOR_SORTED_QUERY ? 1 : 0;
-          expectFullSortCount = 1;
-          expectSkipSortCount = 0;
-          break;
-        default:
-          throw new IllegalStateException();
-      }
-      Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
-      Map<?, ?> body = (Map<?, ?>) (res.get("response"));
-      assertEquals("Bad filterCache insert count", expectInserts, coreToInserts(h.getCore()));
-      assertEquals("Bad full sort count", expectFullSortCount, coreToSortCount(h.getCore(), "full"));
-      assertEquals("Bad skip sort count", expectSkipSortCount, coreToSortCount(h.getCore(), "skip"));
-      assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound"))); // sanity check
-    }
+  private static final String SCORING_QUERY = "str:d*";
+  private static final String CONSTANT_SCORE_QUERY = "(" + SCORING_QUERY + ")^=1.0"; // wrapped as a ConstantScoreQuery
+  private static final String MATCH_ALL_DOCS_QUERY = "*:*";
+
+  @Test
+  public void testScoringQuery() throws Exception {
+    // plain request should have no caching or sorting optimization
+    String response = JQ(req("q", SCORING_QUERY, "indent", "true"));
+    assertMetricCounts(response, false, 0, 1, 0);
   }
 
   @Test
-  public void testMatchAllDocsQueryCaching() throws Exception {
-    String q = "*:*";
-
-    for (int i = 0; i < 4; i++) {
-      h.reload();
-      final String response;
-      final int expectSkipSortCount;
-      final int expectFullSortCount;
-      switch (i) {
-        case 0:
-          // plain request should consult cache, irrespective of `rows` requested
-          response = JQ(req("q", q, "indent", "true"));
-          expectFullSortCount = 0;
-          expectSkipSortCount = 1;
-          break;
-        case 1:
-          // explicitly requesting scores should unconditionally disable fq insert
-          response = JQ(req("q", q, "indent", "true", "rows", "0", "fl", "id,score", "sort", (random().nextBoolean() ? "id asc" : "score desc")));
-          expectFullSortCount = 1;
-          expectSkipSortCount = 0;
-          break;
-        case 2:
-          // plain request should _always_ consult cache and skip sort when `rows=0`
-          response = JQ(req("q", q, "indent", "true", "rows", "0", "sort", "id asc"));
-          expectFullSortCount = 0;
-          expectSkipSortCount = 1;
-          break;
-        case 3:
-          // plain request _with_ rows should consult cache, but not skip sort
-          response = JQ(req("q", q, "indent", "true", "sort", "id asc"));
-          expectFullSortCount = 1;
-          expectSkipSortCount = 0;
-          break;
-        default:
-          throw new IllegalStateException();
-      }
-      Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
-      Map<?, ?> body = (Map<?, ?>) (res.get("response"));
-      assertEquals("MatchAllDocsQuery should bypass the actual filterCache", 0, coreToInserts(h.getCore()));
-      assertEquals("Bad full sort count", expectFullSortCount, coreToSortCount(h.getCore(), "full"));
-      assertEquals("Bad skip sort count", expectSkipSortCount, coreToSortCount(h.getCore(), "skip"));
-      assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound"))); // sanity check
-    }
+  public void testConstantScoreFlScore() throws Exception {
+    // explicitly requesting scores should unconditionally disable caching and sorting optimizations
+    String response = JQ(req("q", CONSTANT_SCORE_QUERY, "indent", "true", "rows", "0", "fl", "id,score", "sort", (random().nextBoolean() ? "id asc" : "score desc")));
+    assertMetricCounts(response, false, 0, 1, 0);
   }
 
+  @Test
+  public void testScoringQueryNonScoreSort() throws Exception {
+    // plain request with no score in sort should consult filterCache, but need full sorting
+    String response = JQ(req("q", SCORING_QUERY, "indent", "true", "sort", "id asc"));
+    assertMetricCounts(response, false, USE_FILTER_FOR_SORTED_QUERY ? 1 : 0, 1, 0);
+  }
+
+  @Test
+  public void testScoringQueryZeroRows() throws Exception {
+    // always hit cache, optimize sort because rows=0
+    String response = JQ(req("q", SCORING_QUERY, "indent", "true", "rows", "0", "sort", (random().nextBoolean() ? "id asc" : "score desc")));
+    final int insertAndSkipCount = USE_FILTER_FOR_SORTED_QUERY ? 1 : 0;
+    assertMetricCounts(response, false, insertAndSkipCount, USE_FILTER_FOR_SORTED_QUERY ? 0 : 1, insertAndSkipCount);
+  }
+
+  @Test
+  public void testConstantScoreSortByScore() throws Exception {
+    // hit cache and skip sort because constant score query
+    String response = JQ(req("q", CONSTANT_SCORE_QUERY, "indent", "true"));
+    final int insertAndSkipCount = USE_FILTER_FOR_SORTED_QUERY ? 1 : 0;
+    assertMetricCounts(response, false, insertAndSkipCount, USE_FILTER_FOR_SORTED_QUERY ? 0 : 1, insertAndSkipCount);
+  }
+
+  @Test
+  public void testConstantScoreNonScoreSort() throws Exception {
+    // consult filterCache because constant score query, but no skip sort (because sort-by-id)
+    String response = JQ(req("q", CONSTANT_SCORE_QUERY, "indent", "true", "sort", "id asc"));
+    assertMetricCounts(response, false, USE_FILTER_FOR_SORTED_QUERY ? 1 : 0, 1, 0);
+  }
+
+  @Test
+  public void testMatchAllDocsPlain() throws Exception {
+    // plain request with "score" sort should skip sort even if `rows` requested
+    String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true"));
+    assertMetricCounts(response, true, 0, 0, 1);
+  }
+
+  @Test
+  public void testMatchAllDocsFlScore() throws Exception {
+    // explicitly requesting scores should unconditionally disable all cache consultation and sort optimization
+    String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true", "rows", "0", "fl", "id,score", "sort", (random().nextBoolean() ? "id asc" : "score desc")));
+    // NOTE: pretend we're not MatchAllDocs ...
+    assertMetricCounts(response, false, 0, 1, 0);
+  }
+
+  @Test
+  public void testMatchAllDocsZeroRows() throws Exception {
+    // plain request should _always_ skip sort when `rows=0`
+    String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true", "rows", "0", "sort", "id asc"));
+    assertMetricCounts(response, true, 0, 0, 1);
+  }
+
+  @Test
+  public void testMatchAllDocsNonScoreSort() throws Exception {
+    // plain request _with_ rows and non-score sort should consult cache, but not skip sort
+    String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true", "sort", "id asc"));
+    assertMetricCounts(response, true, 0, 1, 0);
+  }
+
+  private static void assertMetricCounts(String response, boolean matchAllDocs, int expectFilterCacheInsertCount, int expectFullSortCount, int expectSkipSortCount) {
+    Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
+    Map<?, ?> body = (Map<?, ?>) (res.get("response"));
+    SolrCore core = h.getCore();
+    assertEquals("Bad matchAllDocsCacheConsultation count", (matchAllDocs ? 1 : 0), coreToMatchAllDocsCacheConsultationCount(core));
+    assertEquals("Bad filterCache insert count", expectFilterCacheInsertCount, coreToInserts(core));
+    assertEquals("Bad full sort count", expectFullSortCount, coreToSortCount(core, "full"));
+    assertEquals("Bad skip sort count", expectSkipSortCount, coreToSortCount(core, "skip"));
+    assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound"))); // sanity check
+  }
 }
 
 
