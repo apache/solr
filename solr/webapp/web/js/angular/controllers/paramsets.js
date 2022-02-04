@@ -34,10 +34,7 @@ solrAdminApp.controller('ParamSetsController',
         "  }\n" +
         "}"
     };
-
     $scope.refresh();
-
-
 
     $scope.submit = function () {
       var params = {};
