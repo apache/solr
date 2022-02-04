@@ -138,6 +138,15 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
 
       backupMgr.writeBackupProperties(backupProperties);
 
+      // It can't be done within aggregateResults call
+      // since endTime is filled later
+      if(backupProperties != null) {
+        // It is safe to extract results here
+        @SuppressWarnings("unchecked")
+        NamedList<Object> response = (NamedList<Object>) results.get("response");
+        response.add("endTime", backupProperties.getEndTime());
+      }
+      
       log.info("Completed backing up ZK data for backupName={}", backupName);
 
       int maxNumBackup = message.getInt(CoreAdminParams.MAX_NUM_BACKUP_POINTS, -1);
