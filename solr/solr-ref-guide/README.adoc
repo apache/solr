@@ -18,10 +18,11 @@
 
 This is the source for the Solr Reference Guide.
 
-Raw content is stored in Asciidoc (`.adoc`) formatted files in the `src/` directory.
+Raw content is stored in Asciidoc (`.adoc`) formatted files in the `modules/` directory.
 
-To build the Ref Guide, simply run `./gradlew checkSite`.
+To build the Ref Guide, simply run `./gradlew buildSite`.
 This will build the HTML files and validate that page references and internal links work properly.
+You can find the home page of the generated site under `build/site/index.html`
 
 See the `../../dev-docs/ref-guide` directory for information about editing and publishing the Ref Guide.
 

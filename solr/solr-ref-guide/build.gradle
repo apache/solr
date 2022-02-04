@@ -57,6 +57,7 @@ ext {
 
     siteDir = "${buildDir}/site"
     playbooksDir = "${buildDir}/playbooks"
+    uiBuildDir = "${buildDir}/ui"
     playbookTemplate = "playbook.template.yml"
     localPlaybook = "local-playbook.yml"
     officialPlaybook = "official-playbook.yml"
@@ -64,8 +65,11 @@ ext {
     playbookFilePath = "${project.ext.playbooksDir}/${isLocalGuide ? project.ext.localPlaybook : project.ext.officialPlaybook}"
 }
 
+/*
+    Generating the Antora and Playbook YAML files
+ */
 task buildAntoraYaml {
-    description "Creates an antora.yml with all variables populated"
+    description "Creates an antora.yml with all variables populated. Note: This will change the antora.yml in the repo, not a build folder."
 
     def templateYaml = "antora.yml.template"
     def outputYaml = "antora.yml"
@@ -160,6 +164,10 @@ dependencies {
     }
 }
 
+/*
+    Downloading Build Tools
+ */
+
 // We use Node to install and run Antora
 node {
     download = true
@@ -238,33 +246,40 @@ task startUIBuildDir(type: Copy) {
     }
     duplicatesStrategy = 'INCLUDE'
 
-    into "${buildDir}/ui"
+    into project.ext.uiBuildDir
 }
 
 task setupUIBuildDir(type: NpmTask) {
     dependsOn tasks.startUIBuildDir
-    workingDir = file("${buildDir}/ui")
+    workingDir = file(project.ext.uiBuildDir)
     args = ["install"]
 
-    inputs.files("${buildDir}/ui/package.json")
-    outputs.dir("${buildDir}/ui/node_modules/")
+    inputs.files("${project.ext.uiBuildDir}/package.json")
+    outputs.dir("${project.ext.uiBuildDir}/node_modules/")
 }
 
+// Note that Gulp must be installed in the UI Build Directory, not our project node_modules
 task downloadGulp(type: NpmTask) {
     dependsOn tasks.startUIBuildDir
 
     args = ["install", "gulp-cli", "--legacy-peer-deps"]
     execOverrides {
         // The it variable contains the `ExecSpec`
-        workingDir = "${buildDir}/ui"
+        workingDir = project.ext.uiBuildDir
     }
 
     inputs.property("Antora version", project.ext.antoraVersion)
-    inputs.files("${buildDir}/ui/package.json")
-    outputs.dir("${buildDir}/ui/node_modules/")
+    inputs.files("${project.ext.uiBuildDir}/package.json")
+    outputs.dir("${project.ext.uiBuildDir}/node_modules/")
 }
 
+/*
+    Build and/or validate the Site
+ */
+
 task buildUIBundle(type: NpxTask) {
+    description "Creates a local UI bundle using the 'ui-src' directory. This can be used to preview UI changes with a local ref-guide build."
+
     dependsOn tasks.setupUIBuildDir
     dependsOn tasks.downloadGulp
 
@@ -275,23 +290,28 @@ task buildUIBundle(type: NpxTask) {
     ]
     execOverrides {
         // The it variable contains the `ExecSpec`
-        workingDir = "${buildDir}/ui"
+        workingDir = project.ext.uiBuildDir
     }
 
     doLast {
         copy {
-            from "${buildDir}/ui/build/ui-bundle.zip"
+            from "${project.ext.uiBuildDir}/build/ui-bundle.zip"
             into "${buildDir}/dist"
         }
     }
 
-    inputs.files(fileTree("${buildDir}/ui/src") {
-        exclude "node_modules"
-    })
-    outputs.dir(project.ext.siteDir)
+    inputs.files(fileTree("${project.ext.uiBuildDir}/src"))
+    outputs.file("${buildDir}/dist/ui-bundle.zip")
+
+    doLast {
+        project.logger.lifecycle("The generated ui-bundle.zip can be found at:")
+        project.logger.lifecycle("\t${buildDir}/dist/ui-bundle.zip")
+    }
 }
 
 task buildSite(type: NpxTask) {
+    description "Creates a local build of the ref-guide."
+
     dependsOn tasks.downloadAntora
     dependsOn tasks.buildAntoraYaml
     dependsOn configurations.playbookInUse
@@ -333,9 +353,16 @@ task buildSite(type: NpxTask) {
         inputs.files("${buildDir}/dist/ui-bundle.zip")
     }
     outputs.dir(project.ext.siteDir)
+
+    doLast {
+        project.logger.lifecycle("The generated ref-guide can be found at:")
+        project.logger.lifecycle("\t${project.ext.siteDir}")
+    }
 }
 
 task checkSiteLinks(type: NpxTask) {
+    description "Check that all links in the ref-guide, both internal and java-docs, are correct."
+
     dependsOn tasks.downloadLinkValidator
     dependsOn tasks.buildSite
 
