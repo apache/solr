@@ -841,6 +841,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     assert !(query instanceof WrappedQuery) : "should have unwrapped";
     assert filterCache != null : "must check for caching before calling this method";
 
+    if (query instanceof MatchAllDocsQuery) {
+      // bypass the filterCache for MatchAllDocsQuery; we're "caching" it in `liveDocs` anyway
+      return getLiveDocSet();
+    }
+
     if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled()) {
       // If there is a possibility of timeout for this query, then don't reserve a computation slot. Further, we can't
       // naively wait for an in progress computation to finish, because if we time out before it does then we won't
@@ -857,7 +862,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return filterCache.computeIfAbsent(query, q -> getDocSetNC(q, null));
   }
 
-  private static Query matchAllDocsQuery = new MatchAllDocsQuery();
+  private static final Query MATCH_ALL_DOCS_QUERY = new MatchAllDocsQuery();
   private volatile BitDocSet liveDocs;
 
   /**
@@ -869,8 +874,48 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // but the addition of setLiveDocs means we needed to add volatile to "liveDocs".
     BitDocSet docs = liveDocs;
     if (docs == null) {
-      //note: maybe should instead calc manually by segment, using FixedBitSet.copyOf(segLiveDocs); avoid filter cache?
-      liveDocs = docs = getDocSetBits(matchAllDocsQuery);
+      switch (leafContexts.size()) {
+        case 0:
+          assert numDocs() == 0;
+          docs = new BitDocSet(BitDocSet.empty().getFixedBitSet(), 0);
+          break;
+        case 1:
+          final Bits onlySegLiveDocs = leafContexts.get(0).reader().getLiveDocs();
+          final FixedBitSet fbs;
+          if (onlySegLiveDocs == null) {
+            final int onlySegMaxDoc = maxDoc();
+            fbs = new FixedBitSet(onlySegMaxDoc);
+            fbs.set(0, onlySegMaxDoc);
+          } else {
+            fbs = FixedBitSet.copyOf(onlySegLiveDocs);
+          }
+          assert fbs.cardinality() == numDocs();
+          docs = new BitDocSet(fbs, numDocs());
+          break;
+        default:
+          final FixedBitSet bs = new FixedBitSet(maxDoc());
+          for (LeafReaderContext ctx : leafContexts) {
+            final LeafReader r = ctx.reader();
+            final Bits segLiveDocs = r.getLiveDocs();
+            final int segDocBase = ctx.docBase;
+            int segOrd = r.maxDoc() - 1;
+            if (segLiveDocs == null) {
+              do {
+                bs.set(segDocBase + segOrd);
+              } while (segOrd-- > 0);
+            } else {
+              do {
+                if (segLiveDocs.get(segOrd)) {
+                  bs.set(segDocBase + segOrd);
+                }
+              } while (segOrd-- > 0);
+            }
+          }
+          assert bs.cardinality() == numDocs();
+          docs = new BitDocSet(bs, numDocs());
+          break;
+      }
+      liveDocs = docs;
     }
     assert docs.size() == numDocs();
     return docs;
@@ -928,7 +973,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       collector = pf.postFilter;
     }
 
-    Query query = pf.filter != null ? pf.filter : matchAllDocsQuery;
+    Query query = pf.filter != null ? pf.filter : MATCH_ALL_DOCS_QUERY;
 
     search(query, collector);
 
