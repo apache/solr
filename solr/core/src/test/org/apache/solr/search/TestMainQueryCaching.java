@@ -96,6 +96,8 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   private static final String CONSTANT_SCORE_QUERY = "(" + SCORING_QUERY + ")^=1.0"; // wrapped as a ConstantScoreQuery
   private static final String MATCH_ALL_DOCS_QUERY = "*:*";
 
+  private static final String[] ALL_QUERIES = new String[] { SCORING_QUERY, CONSTANT_SCORE_QUERY, MATCH_ALL_DOCS_QUERY };
+
   @Test
   public void testScoringQuery() throws Exception {
     // plain request should have no caching or sorting optimization
@@ -167,6 +169,23 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     // plain request _with_ rows and non-score sort should consult cache, but not skip sort
     String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true", "sort", "id asc"));
     assertMetricCounts(response, true, 0, 1, 0);
+  }
+
+  @Test
+  public void testCursorMark() throws Exception {
+    String q = pickRandom(ALL_QUERIES);
+    boolean includeScoreInSort = random().nextBoolean();
+    String response = JQ(req("q", q, "indent", "true", "cursorMark", "*", "sort", includeScoreInSort ? "score desc,id asc" : "id asc"));
+    assertMetricCounts(response, MATCH_ALL_DOCS_QUERY.equals(q) && !includeScoreInSort,
+            !MATCH_ALL_DOCS_QUERY.equals(q) && !includeScoreInSort && USE_FILTER_FOR_SORTED_QUERY ? 1 : 0, 1, 0);
+  }
+
+  @Test
+  public void testCursorMarkZeroRows() throws Exception {
+    String q = pickRandom(ALL_QUERIES);
+    String response = JQ(req("q", q, "indent", "true", "cursorMark", "*", "rows", "0", "sort", random().nextBoolean() ? "id asc" : "score desc,id asc"));
+    assertMetricCounts(response, MATCH_ALL_DOCS_QUERY.equals(q), !MATCH_ALL_DOCS_QUERY.equals(q) && USE_FILTER_FOR_SORTED_QUERY ? 1 : 0,
+            MATCH_ALL_DOCS_QUERY.equals(q) || USE_FILTER_FOR_SORTED_QUERY ? 0 : 1, MATCH_ALL_DOCS_QUERY.equals(q) || USE_FILTER_FOR_SORTED_QUERY ? 1 : 0);
   }
 
   private static void assertMetricCounts(String response, boolean matchAllDocs, int expectFilterCacheInsertCount, int expectFullSortCount, int expectSkipSortCount) {
