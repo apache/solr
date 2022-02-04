@@ -49,28 +49,31 @@ def out(text):
         print(text)
 
 
+def lines_from_file(filename):
+    with open(filename, 'r') as fp:
+        lines = []
+        for line in fp.readlines():
+            if line.startswith("#") or len(line.strip()) == 0:
+                continue
+            lines.append(line.replace(".adoc", ".html").strip())
+        return lines
+
+
 def main():
     global conf
     conf = read_config()
 
-    old = []
     new = {}
     name_map = {}
 
     out("Reading config")
-    with open(conf.old, 'r') as fp:
-        for line in fp.readlines():
-            old.append(line.replace(".adoc", ".html").strip())
-    with open(conf.new, 'r') as fp:
-        for line in fp.readlines():
-            l = line.replace(".adoc", ".html").strip()
-            (path, file) = l.split("/")
-            new[file] = l
-    with open(conf.mapping, 'r') as fp:
-        for line in fp.readlines():
-            l = line.replace(".adoc", ".html").strip()
-            (frm, to) = l.split(";")
-            name_map[frm] = to
+    old = lines_from_file(conf.old)
+    for line in lines_from_file(conf.new):
+        (path, file) = line.split("/")
+        new[file] = line
+    for line in lines_from_file(conf.mapping):
+        (frm, to) = line.split(";")
+        name_map[frm] = to
 
     # Files in src/old-pages as of 2022-02-04
     old_pages = ["configuration-apis.html", "configuration-guide.html", "controlling-results.html", "deployment-guide.html", "enhancing-queries.html", "field-types.html", "fields-and-schema-design.html", "getting-started.html", "indexing-data-operations.html", "installation-deployment.html", "monitoring-solr.html", "query-guide.html", "scaling-solr.html", "schema-indexing-guide.html", "solr-concepts.html", "solr-schema.html", "solrcloud-clusters.html", "user-managed-clusters.html"]
@@ -85,6 +88,10 @@ def main():
             new_name = name_map[frm]
             if new_name in new:
                 result[frm] = new[new_name]
+            elif new_name.startswith("/guide/"):
+                result[frm] = new_name[7:]
+            elif new_name == "_8_11":
+                result[frm] = "8_11/%s" % frm
             else:
                 failed[frm] = "There was mapping to %s, but it does not exist in new guide" % new_name
         elif frm in old_pages:

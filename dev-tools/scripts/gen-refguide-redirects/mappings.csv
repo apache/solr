@@ -1,3 +1,4 @@
+# Renamed pages
 a-quick-overview.html;introduction.html
 aws-solrcloud-tutorial.html;tutorial-aws.html
 collection-aliasing.html;alias-management.html
@@ -68,3 +69,54 @@ working-with-currencies-and-exchange-rates.html;currencies-exchange-rates.html
 working-with-dates.html;date-formatting-math.html
 working-with-enum-fields.html;enum-fields.html
 working-with-external-files-and-processes.html;external-files-processes.html
+
+# Removed pages that should link to another page
+about-filters.adoc;filters.adoc
+about-tokenizers.adoc;tokenizers.adoc
+choosing-an-output-format.html;client-apis.html
+client-api-lineup.adoc;client-apis.html
+collection-specific-tools.adoc;solr-admin-ui.adoc
+combining-distribution-and-replication.adoc;user-managed-distributed-search.adoc
+files-screen.adoc;configuration-files.adoc
+core-specific-tools.adoc;solr-admin-ui.adoc
+# TODO: This mapping does not exist. Use deployment-guide/cluster-types.html ?
+how-solrcloud-works.adoc;solrcloud.adoc
+introduction-to-client-apis.adoc;client-apis.adoc
+java-properties.adoc;jvm-settings.adoc
+logging.adoc;configuring-logging.adoc
+merging-indexes.adoc;coreadmin-api.adoc
+near-real-time-searching.adoc;commits-transaction-logs.adoc
+overview-of-the-solr-admin-ui.adoc;solr-admin-ui.adoc
+replication-screen.adoc;user-managed-index-replication.adoc
+segments-info.adoc;index-segments-merging.adoc
+solr-cores-and-solr-xml.adoc;core-discovery.adoc
+
+# A bit uncertain of these
+parallel-sql-interface.html;sql-query.html
+
+# Removed functionality, redirect to same page in 8.11 guide
+cross-data-center-replication-cdcr.html;_8_11
+cdcr-api.html;_8_11
+cdcr-architecture.html;_8_11
+cdcr-config.html;_8_11
+cdcr-operations.html;_8_11
+dataimport-screen.html;_8_11
+adding-custom-plugins-in-solrcloud-mode.adoc;_8_11
+solrcloud-autoscaling-api.adoc;_8_11
+solrcloud-autoscaling-auto-add-replicas.adoc;_8_11
+solrcloud-autoscaling-fault-tolerance.adoc;_8_11
+solrcloud-autoscaling-listeners.adoc;_8_11
+solrcloud-autoscaling-overview.adoc;_8_11
+solrcloud-autoscaling-policy-preferences.adoc;_8_11
+solrcloud-autoscaling-trigger-actions.adoc;_8_11
+solrcloud-autoscaling-triggers.adoc;_8_11
+solrcloud-autoscaling.adoc;_8_11
+suggestions-screen.adoc;_8_11
+uploading-structured-data-store-data-with-the-data-import-handler.adoc;_8_11
+velocity-response-writer.adoc;_8_11
+velocity-search-ui.adoc;_8_11
+blob-store-api.html;_8_11
+colocating-collections.html;_8_11
+metrics-history.html;_8_11
+migrate-to-policy-rule.html;_8_11
+rule-based-replica-placement.html;_8_11
