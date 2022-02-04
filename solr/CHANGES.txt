@@ -24,6 +24,8 @@ Bug Fixes
 ---------------------
 * SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
   halving the latency of synchronous commits (Michael Gibney)
+  
+* SOLR-15558: Don't wait for zombie processes to exit when stopping. (Colvin Cowie)
 
 Other Changes
 ---------------------
