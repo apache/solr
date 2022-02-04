@@ -261,8 +261,8 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
     consumer.accept(rsp);
   }
 
-  private NamedList<?> getThreadInfo(NamedList<?> req, String threadName) {
-    for (Map.Entry<String, ?> threadInfoEntry : (NamedList<?>) req._get("system/threadDump", null)) {
+  private NamedList<?> getThreadInfo(NamedList<?> rsp, String threadName) {
+    for (Map.Entry<String, ?> threadInfoEntry : (NamedList<?>) rsp._get("system/threadDump", null)) {
       NamedList<?> thread = (NamedList<?>) threadInfoEntry.getValue();
       if (thread._getStr("name",  "").contains(threadName)) {
         return thread;
