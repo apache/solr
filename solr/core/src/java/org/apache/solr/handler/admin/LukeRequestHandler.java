@@ -22,9 +22,12 @@ import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -66,7 +69,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -77,6 +79,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,6 +105,11 @@ public class LukeRequestHandler extends RequestHandlerBase
   public static final int DEFAULT_COUNT = 10;
 
   static final int HIST_ARRAY_SIZE = 33;
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.READ_PERM;
+  }
 
   private static enum ShowStyle {
     ALL,
@@ -294,7 +302,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
       BytesRef bytes = field.binaryValue();
       if (bytes != null) {
-        f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
+        f.add( "binary", new String(Base64.getEncoder().encode(ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length)).array(), StandardCharsets.ISO_8859_1));
       }
       if (!ftype.isPointField()) {
         Term t = new Term(field.name(), ftype!=null ? ftype.storedToIndexed(field) : field.stringValue());

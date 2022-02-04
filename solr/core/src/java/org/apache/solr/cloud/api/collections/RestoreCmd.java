@@ -163,12 +163,12 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       this.container = ccc.getCoreContainer();
       this.repository = this.container.newBackupRepository(repo);
 
-      this.location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
-      final URI backupNameUri = repository.resolve(location, backupName);
+      this.location = repository.createDirectoryURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
+      final URI backupNameUri = repository.resolveDirectory(location, backupName);
       final String[] entries = repository.listAll(backupNameUri);
       final boolean incremental = ! Arrays.stream(entries).anyMatch(entry -> entry.equals(BackupManager.TRADITIONAL_BACKUP_PROPS_FILE));
       this.backupPath = (incremental) ?
-              repository.resolve(backupNameUri, entries[0]) : // incremental backups have an extra path component representing the backed up collection
+              repository.resolveDirectory(backupNameUri, entries[0]) : // incremental backups have an extra path component representing the backed up collection
               backupNameUri;
       this.zkStateReader = ccc.getZkStateReader();
       this.backupManager = backupId == -1 ?
@@ -182,7 +182,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
 
       this.shardHandler = ccc.newShardHandler();
       this.nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(
-              zkStateReader.getClusterState().getLiveNodes(), message, CollectionHandlingUtils.RANDOM);
+              zkStateReader.getClusterState().getLiveNodes(), message, CollectionHandlingUtils.RANDOM, container.getZkController().getSolrCloudManager().getDistribStateManager());
     }
 
     @Override
@@ -246,7 +246,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       List<String> sliceNames = new ArrayList<>();
       restoreCollection.getSlices().forEach(x -> sliceNames.add(x.getName()));
 
-      List<ReplicaPosition> replicaPositions = getReplicaPositions(restoreCollection, rc.nodeList, clusterState, sliceNames);
+      List<ReplicaPosition> replicaPositions = getReplicaPositions(rc.restoreCollectionName, rc.nodeList, sliceNames);
 
       createSingleReplicaPerShard(results, restoreCollection, rc.asyncId, clusterState, replicaPositions);
       Object failures = results.get("failure");
@@ -353,18 +353,16 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
 
-    private List<ReplicaPosition> getReplicaPositions(DocCollection restoreCollection, List<String> nodeList, ClusterState clusterState, List<String> sliceNames) throws IOException, InterruptedException {
+    private List<ReplicaPosition> getReplicaPositions(String restoreCollection, List<String> nodeList, List<String> sliceNames) throws IOException, InterruptedException {
       Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
-              .forCollection(restoreCollection.getName())
+              .forCollection(restoreCollection)
               .forShard(sliceNames)
               .assignNrtReplicas(numNrtReplicas)
               .assignTlogReplicas(numTlogReplicas)
               .assignPullReplicas(numPullReplicas)
               .onNodes(nodeList)
               .build();
-      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
-              ccc.getCoreContainer(),
-              clusterState, restoreCollection);
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
       return assignStrategy.assign(ccc.getSolrCloudManager(), assignRequest);
     }
 

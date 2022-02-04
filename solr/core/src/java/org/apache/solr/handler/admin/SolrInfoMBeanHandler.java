@@ -28,6 +28,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 
 import java.io.StringReader;
 import java.text.NumberFormat;
@@ -294,5 +295,10 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.METRICS_READ_PERM;
   }
 }

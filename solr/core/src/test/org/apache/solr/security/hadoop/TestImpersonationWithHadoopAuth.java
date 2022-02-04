@@ -29,7 +29,6 @@ import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.HadoopAuthPlugin;
@@ -51,7 +50,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   @BeforeClass
   public static void setupClass() throws Exception {
-    HdfsTestUtil.checkAssumptions();
+    HadoopTestUtil.checkAssumptions();
 
     InetAddress loopback = InetAddress.getLoopbackAddress();
     Path securityJsonPath = TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json");

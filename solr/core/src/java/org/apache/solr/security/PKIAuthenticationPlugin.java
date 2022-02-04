@@ -24,11 +24,13 @@ import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.PublicKey;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
@@ -43,7 +45,6 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -75,6 +76,15 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * If a number has less than this number of digits, it'll not be considered a timestamp.
+   */
+  private static final int MIN_TIMESTAMP_DIGITS = 10; // a timestamp of 9999999999 is year 1970
+  /**
+   * If a number has more than this number of digits, it'll not be considered a timestamp.
+   */
+  private static final int MAX_TIMESTAMP_DIGITS = 13; // a timestamp of 9999999999999 is year 2286
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final PublicKeyHandler publicKeyHandler;
   private final CoreContainer cores;
@@ -177,17 +187,19 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     }
   }
 
-  private static PKIHeaderData parseCipher(String cipher, PublicKey key) {
+  @VisibleForTesting
+  static PKIHeaderData parseCipher(String cipher, PublicKey key) {
     byte[] bytes;
     try {
-      bytes = CryptoKeys.decryptRSA(Base64.base64ToByteArray(cipher), key);
+      bytes = CryptoKeys.decryptRSA(Base64.getDecoder().decode(cipher), key);
     } catch (Exception e) {
       log.error("Decryption failed , key must be wrong", e);
       return null;
     }
     String s = new String(bytes, UTF_8).trim();
     int splitPoint = s.lastIndexOf(' ');
-    if (splitPoint == -1) {
+    int timestampDigits = s.length() - 1 - splitPoint;
+    if (splitPoint == -1 || timestampDigits < MIN_TIMESTAMP_DIGITS || timestampDigits > MAX_TIMESTAMP_DIGITS) {
       log.warn("Invalid cipher {} deciphered data {}", cipher, s);
       return null;
     }
@@ -322,7 +334,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = publicKeyHandler.keyPair.encrypt(ByteBuffer.wrap(payload));
-    String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
+    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     log.trace("generateToken: usr={} token={}", usr, base64Cipher);
     return Optional.of(base64Cipher);
   }

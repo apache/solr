@@ -17,11 +17,15 @@
 
 package org.apache.solr.handler.designer;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -110,6 +114,26 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase impleme
 
     byte[] zipped = helper.downloadAndZipConfigSet(mutableId);
     assertTrue(zipped != null && zipped.length > 0);
+  }
+
+  @Test
+  public void testDownloadAndZip() throws IOException {
+    byte[] zipped = helper.downloadAndZipConfigSet(DEFAULT_CONFIGSET_NAME);
+    ZipInputStream stream = new ZipInputStream(new ByteArrayInputStream(zipped));
+
+    boolean foundSolrConfig = false;
+    boolean foundStopWords = false;
+
+    ZipEntry entry;
+    while ((entry = stream.getNextEntry()) != null) {
+      if ("solrconfig.xml".equals(entry.getName())) {
+        foundSolrConfig = true;
+      } else if ("lang/stopwords_en.txt".equals(entry.getName())) {
+        foundStopWords = true;
+      }
+    }
+    assertTrue("Did not find solrconfig.xml in downloaded configset", foundSolrConfig);
+    assertTrue("Did not find stopwords_en.txt in downloaded configset", foundStopWords);
   }
 
   @Test

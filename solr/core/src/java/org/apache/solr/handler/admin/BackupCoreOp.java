@@ -56,7 +56,8 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
                 + " parameter or as a default repository property");
       }
 
-      URI locationUri = repository.createURI(location);
+      URI locationUri = repository.createDirectoryURI(location);
+      repository.createDirectory(locationUri);
 
       if (incremental) {
         if ("file".equals(locationUri.getScheme())) {
@@ -81,7 +82,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
                           "requires a shared file system mounted at the same path on all nodes!");
         }
         snapShooter.validateCreateSnapshot();
-        snapShooter.createSnapshot();
+        it.rsp.addResponse(snapShooter.createSnapshot());
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

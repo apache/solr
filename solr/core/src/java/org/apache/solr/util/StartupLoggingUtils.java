@@ -114,7 +114,7 @@ public final class StartupLoggingUtils {
   private static boolean isLog4jActive() {
     try {
       // Make sure we have log4j LogManager in classpath
-      Class.forName("org.apache.log4j.LogManager");
+      Class.forName("org.apache.logging.log4j.LogManager");
       // Make sure that log4j is really selected as logger in slf4j - we could have LogManager in the bridge class :)
       return binder.getLoggerFactoryClassStr().contains("Log4jLoggerFactory");
     } catch (Exception e) {
@@ -186,5 +186,21 @@ public final class StartupLoggingUtils {
     else if (rootLogger.isWarnEnabled()) return "WARN";
     else if (rootLogger.isErrorEnabled()) return "ERROR";
     else return "INFO";
+  }
+
+  /**
+   * Check whether Jetty request logging is enabled and log info about it.
+   * The property "solr.log.requestlog.enabled is set in solr/server/etc/jetty-requestlog.xml
+   */
+  public static void checkRequestLogging() {
+    boolean requestLogEnabled = Boolean.getBoolean("solr.log.requestlog.enabled");
+    String retainDays= System.getProperty("solr.log.requestlog.retaindays");
+    if (requestLogEnabled) {
+      if (retainDays == null) {
+        log.warn("Jetty request logging enabled. Will retain logs for last 3 days. See chapter \"Configuring Logging\" in reference guide for how to configure.");
+      } else {
+        log.info("Jetty request logging enabled. Will retain logs for last {} days.", retainDays);
+      }
+    }
   }
 }

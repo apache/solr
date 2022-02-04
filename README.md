@@ -116,6 +116,9 @@ For more info on building an image, run:
 
 `./gradlew helpDocker`
 
+Docker images can also be built from the Solr binary distribution (i.e. `solr-<version>.tgz`).
+Please refer to the [Solr Docker README](solr/docker/README.md) for more information.
+
 ### Running Solr on Kubernetes
 
 Solr has official support for running on Kubernetes, in the official Docker image.

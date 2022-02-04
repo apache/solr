@@ -20,7 +20,6 @@ package org.noggit;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.nio.CharBuffer;
 
 public class CharArr implements CharSequence, Appendable {
@@ -324,71 +323,5 @@ public class CharArr implements CharSequence, Appendable {
       return sz;
     }
 
-  }
-
-
-  class CharArrWriter extends CharArr {
-    protected Writer sink;
-
-    @Override
-    public void flush() {
-      try {
-        sink.write(buf, start, end - start);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      start = end = 0;
-    }
-
-    @Override
-    public void write(char b) {
-      if (end >= buf.length) {
-        flush();
-      }
-      unsafeWrite(b);
-    }
-
-    @Override
-    public void write(char b[], int off, int len) {
-      int space = buf.length - end;
-      if (len < space) {
-        unsafeWrite(b, off, len);
-      } else if (len < buf.length) {
-        unsafeWrite(b, off, space);
-        flush();
-        unsafeWrite(b, off + space, len - space);
-      } else {
-        flush();
-        try {
-          sink.write(b, off, len);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    }
-
-    @Override
-    public void write(String s, int stringOffset, int len) {
-      int space = buf.length - end;
-      if (len < space) {
-        s.getChars(stringOffset, stringOffset + len, buf, end);
-        end += len;
-      } else if (len < buf.length) {
-        // if the data to write is small enough, buffer it.
-        s.getChars(stringOffset, stringOffset + space, buf, end);
-        flush();
-        s.getChars(stringOffset + space, stringOffset + len, buf, 0);
-        end = len - space;
-      } else {
-        flush();
-        // don't buffer, just write to sink
-        try {
-          sink.write(s, stringOffset, len);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-
-      }
-    }
   }
 }

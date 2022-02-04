@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -460,15 +461,10 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                         "{!"+type+"}");
       // diff SpatialQueryable FieldTypes matter for determining final query
       assertQueryEquals(type, req,
-                        "{!"+type+" sfield=point_hash}",
-                        "{!"+type+" sfield=point_hash d=109}",
-                        "{!"+type+" sfield=point_hash d=$d pt=$pt}",
-                        "{!"+type+" sfield=point_hash d=$d pt=10.312,-20.556}");
-      assertQueryEquals(type, req,
-                        "{!"+type+" sfield=point}",
-                        "{!"+type+" sfield=point d=109}",
-                        "{!"+type+" sfield=point d=$d pt=$pt}",
-                        "{!"+type+" sfield=point d=$d pt=10.312,-20.556}");
+                        "{!"+type+" sfield=xy}",
+                        "{!"+type+" sfield=xy d=109}",
+                        "{!"+type+" sfield=xy d=$d pt=$pt}",
+                        "{!"+type+" sfield=xy d=$d pt=10.312,-20.556}");
     } finally {
       req.close();
     }
@@ -787,17 +783,20 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testFuncGeodist() throws Exception {
-    SolrQueryRequest req = req("pt","10.312,-20.556",
-                               "sfield","store");
-    try {
+    String pt = "10.312,-20.556";
+    try (SolrQueryRequest req = req("pt", pt,
+        "sfield", "store")) {
+
       assertFuncEquals(req,
-                       "geodist()",
-                       "geodist($sfield,$pt)",
-                       "geodist(store,$pt)",
-                       "geodist(field(store),$pt)",
-                       "geodist(store,10.312,-20.556)");
-    } finally {
-      req.close();
+          "geodist($pt)",
+          "geodist(" + pt + ")",
+          "geodist(" + pt + "," + pt + ")");
+
+      assertFuncEquals(req,
+          "geodist()");
+      // geodist() does not support field names in its arguments sometimes
+      //               "geodist(store,$pt)",
+      //               "geodist(field(store),$pt)",
     }
   }
 
@@ -805,8 +804,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("hsin(45,true,0,0,45,45)");
   }
   public void testFuncGhhsin() throws Exception {
-    assertFuncEquals("ghhsin(45,point_hash,'asdf')",
-                     "ghhsin(45,field(point_hash),'asdf')");
+    assertFuncEquals("ghhsin(45,id,'asdf')",
+                     "ghhsin(45,field(id),'asdf')");// "id" is just a single-valued string field
   }
   public void testFuncGeohash() throws Exception {
     assertFuncEquals("geohash(45,99)");
@@ -1147,6 +1146,22 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "{!mlt qf=lowerfilt v=1}");
     } finally {
       delQ("*:*");
+      assertU(commit());
+    }
+  }
+
+  public void testQueryKNN() throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "0");
+    doc.addField("vector", Arrays.asList(1, 2, 3, 4));
+    assertU(adoc(doc));
+    assertU(commit());
+    
+    try {
+      assertQueryEquals("knn", "{!knn f=vector}[1.0,2.0,3.0,4.0]",
+              "{!knn f=vector v=[1.0,2.0,3.0,4.0]}");
+    } finally {
+      delQ("id:0");
       assertU(commit());
     }
   }

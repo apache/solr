@@ -17,10 +17,14 @@
 package org.apache.solr.common.cloud;
 
 import com.google.common.base.Throwables;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.core.ConfigSetService;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
@@ -34,11 +38,14 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
 
+@LogLevel("org.apache.solr.common.cloud=DEBUG")
 public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
   private static ZkTestServer zkServer;
@@ -204,6 +211,25 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     }
 
   }
+
+  @Test
+  public void testBootstrapConf() throws IOException, KeeperException, InterruptedException {
+
+    String solrHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
+
+    CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
+    System.setProperty("zkHost", zkServer.getZkAddress());
+
+    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    zkClient.makePath("/solr", false, true);
+    cc.setCoreConfigService(new ZkConfigSetService(zkClient));
+    assertFalse(cc.getConfigSetService().checkConfigExists("collection1"));
+    ConfigSetService.bootstrapConf(cc);
+    assertTrue(cc.getConfigSetService().checkConfigExists("collection1"));
+
+    zkClient.close();
+  }
+
 
   static SolrZkClient buildZkClient(String zkAddress, final ZkACLProvider aclProvider,
                                     final ZkCredentialsProvider credentialsProvider) {

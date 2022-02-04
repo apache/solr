@@ -28,9 +28,9 @@ def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCK
 def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
 def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
 def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
-def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DOCKER_GITHUB_URL", 'github.com')
+def officialDockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}")
 
-def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName','');
+def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId',''));
 
 // Build directory locations
 def imageIdFile = "$buildDir/image-id"
@@ -40,6 +40,9 @@ def imageIdFileOfficial = "$smokeTestOfficial/image-id"
 
 configurations {
   packaging {
+    canBeResolved = true
+  }
+  packagingOfficial {
     canBeResolved = true
   }
   solrTgz {
@@ -60,6 +63,7 @@ configurations {
 }
 
 ext {
+  dockerfilesDirPath = "${buildDir}/dockerfiles"
   packagingDir = file("${buildDir}/packaging")
 }
 
@@ -68,7 +72,11 @@ dependencies {
     builtBy 'assemblePackaging'
   }
 
-  solrTgz project(path: ":solr:packaging", configuration: 'solrTgz')
+  packagingOfficial files("${dockerfilesDirPath}/Dockerfile.official") {
+    builtBy 'createDockerfileOfficial'
+  }
+
+  solrTgz project(path: ":solr:packaging", configuration: "solrTgz")
   solrTgzSignature project(path: ":solr:packaging", configuration: 'solrTgzSignature')
 
   dockerImage files(imageIdFile) {
@@ -98,9 +106,13 @@ task assemblePackaging(type: Sync) {
 
   from(projectDir, {
     include "scripts/**"
+    include "README.md"
   })
-  from(buildDir, {
+  from(dockerfilesDirPath, {
     include 'Dockerfile.local'
+    rename {
+      'Dockerfile'
+    }
   })
   into packagingDir
 }
@@ -111,8 +123,7 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
 
   // Ensure that the docker image is rebuilt on build-arg changes or changes in the docker context
   inputs.properties([
-          baseDockerImage: baseDockerImage,
-          githubUrlOrMirror: githubUrlOrMirror
+          baseDockerImage: baseDockerImage
   ])
   inputs.files(configurations.solrTgz)
 
@@ -120,10 +131,9 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
     exec {
       standardInput = configurations.solrTgz.singleFile.newDataInputStream()
       commandLine "docker", "build",
-              "-f", "solr-${version}/docker/Dockerfile.local",
+              "-f", "solr-${version}/docker/Dockerfile",
               "--iidfile", imageIdFile,
               "--build-arg", "BASE_IMAGE=${inputs.properties.baseDockerImage}",
-              "--build-arg", "GITHUB_URL=${inputs.properties.githubUrlOrMirror}",
               "-"
     }
   }
@@ -167,7 +177,7 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
 
 task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
   group = 'Docker'
-  description = 'Test Solr docker image built from Dockerfile.local'
+  description = 'Test Solr docker image built from the local Dockerfile'
 
   idFile = tasks.dockerBuild.outputs.files.singleFile
   outputDir = file("$buildDir/test-results")
@@ -274,7 +284,7 @@ The final Dockerfiles are merely the snippet headers combined with the snippet b
  */
 [ dfLocalDetails, dfOfficialDetails ].each{ details ->
   def fileName = "Dockerfile.${ -> details.name.toLowerCase(Locale.ROOT) }"
-  def outFile = file("$buildDir/${fileName}")
+  def outFile = file("$dockerfilesDirPath/${fileName}")
   
   def props = [
     // Values defined here should be common (and consistent) across both Dockerfiles
@@ -330,7 +340,7 @@ tasks.createDockerfileOfficial.dependsOn configurations.solrTgz // to lazy compu
 if (''.equals(releaseGpgFingerprint)) {
   gradle.taskGraph.whenReady { graph ->
     if ( graph.hasTask(createDockerfileOfficial) ) {
-      throw new GradleException("No GPG keyName found, please see help/gpgSigning.txt (GPG key is neccessary to create Dockerfile.official)")
+      throw new GradleException("No GPG keyName found, please see help/publishing.txt (GPG key is neccessary to create Dockerfile.official)")
     }
   }
 }
@@ -341,10 +351,10 @@ task testBuildDockerfileOfficial(type: Copy) {
   dependsOn createDockerfileOfficial
   dependsOn configurations.solrTgz
   dependsOn configurations.solrTgzSignature
-  
+
   def mockHttpdHome = file("$smokeTestOfficial/mock-httpd-home");
   
-  inputs.file("$buildDir/Dockerfile.official")
+  inputs.file("$dockerfilesDirPath/Dockerfile.official")
   outputs.dir(mockHttpdHome)
   outputs.file(imageIdFileOfficial)
 
@@ -386,17 +396,23 @@ task testBuildDockerfileOfficial(type: Copy) {
         // *NOW* we can actually run our docker build command...
         logger.lifecycle('Running docker build on Dockerfile.official...');
         exec {
-          standardInput = file("${buildDir}/Dockerfile.official").newDataInputStream()
+          standardInput = file("${dockerfilesDirPath}/Dockerfile.official").newDataInputStream()
           commandLine 'docker', 'build',
             '--add-host', "mock-solr-dl-server:${mockServerIp}",
             '--no-cache', // force fresh downloads from our current network
             "--iidfile", imageIdFileOfficial,
             '--build-arg', "SOLR_CLOSER_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
             '--build-arg', "SOLR_ARCHIVE_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
-            "--build-arg", "GITHUB_URL=${githubUrlOrMirror}",
+            '--tag', officialDockerImageName,
             '-'
         }
-        
+
+        def officialDockerImageId = file(imageIdFileOfficial).text
+
+        // Print information on the image after it has been created
+        project.logger.lifecycle("\"Official\" Solr Docker Image Tagged")
+        project.logger.lifecycle("\tID: \t$officialDockerImageId")
+        project.logger.lifecycle("\tTag: \t$officialDockerImageName")
       } finally {
         // Try to shut down our mock httpd server....
         if (mockServerIdFile.exists()) {
@@ -424,8 +440,8 @@ task testBuildDockerfileOfficial(type: Copy) {
 }
 
 task testDockerfileOfficial(type: TestDockerImageTask, dependsOn: configurations.dockerOfficialSmokeCheckImage) {
-  description = 'Smoke Test Solr docker image built from Dockerfile.official'
-  
+  description = 'Smoke Test Solr docker image built from the official Dockerfile'
+
   idFile = file(imageIdFileOfficial)
   outputDir = file("$smokeTestOfficial/test-results")
   
@@ -436,18 +452,30 @@ task testDockerfileOfficial(type: TestDockerImageTask, dependsOn: configurations
 }
 
 // Re-usable class for running tests...
-public abstract class TestDockerImageTask extends DefaultTask {
+abstract class TestDockerImageTask extends DefaultTask {
 
   // Ensure that the docker image is re-tested if the image ID changes or the test files change
-  @InputFile abstract public RegularFileProperty getIdFile()
-  @InputDirectory final public File sourceDir = project.file("tests/cases")
+  @InputFile
+  abstract public RegularFileProperty getIdFile()
 
-  @Input final public SetProperty<String> testCasesInclude = project.objects.setProperty(String)
-  @Input final public SetProperty<String> testCasesExclude = project.objects.setProperty(String)
+  // Ensure that the docker image is re-tested if the shared test library changes
+  @InputFile
+  File sharedTestLibraryFile = project.file("tests/shared.sh")
+
+  @InputDirectory
+  File sourceDir = project.file("tests/cases")
+
+  @Input
+  SetProperty<String> testCasesInclude = project.objects.setProperty(String)
+
+  @Input
+  SetProperty<String> testCasesExclude = project.objects.setProperty(String)
   
-  @OutputDirectory abstract public DirectoryProperty getOutputDir()
+  @OutputDirectory
+  abstract public DirectoryProperty getOutputDir()
 
-  @Inject abstract public WorkerExecutor getWorkerExecutor();
+  @Inject
+  abstract public WorkerExecutor getWorkerExecutor();
 
   public static interface SingleTestParameters extends WorkParameters {
     // NOTE: we explicitly don't use DirectoryProperty here because the way WorkerExecutor serializes the params
@@ -457,6 +485,7 @@ public abstract class TestDockerImageTask extends DefaultTask {
     Property<String> getWorkDir();
     Property<String> getImageId();
   }
+
   public abstract static class SingleTestAction implements WorkAction<SingleTestParameters> {
     @Inject
     abstract public ExecOperations getExec();

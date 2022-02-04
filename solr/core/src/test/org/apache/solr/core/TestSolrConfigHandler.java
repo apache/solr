@@ -93,7 +93,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     public static  ByteBuffer persistZip(String loc, Class<?>... classes) throws IOException {
       ByteBuffer jar = generateZip(classes);
       try (FileOutputStream fos =  new FileOutputStream(loc)){
-        fos.write(jar.array(), 0, jar.limit());
+        fos.write(jar.array(), jar.arrayOffset(), jar.limit());
         fos.flush();
       }
       return jar;
@@ -108,7 +108,7 @@ public class TestSolrConfigHandler extends RestTestBase {
           ZipEntry entry = new ZipEntry(path);
           ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
           zipOut.putNextEntry(entry);
-          zipOut.write(b.array(), 0, b.limit());
+          zipOut.write(b.array(), b.arrayOffset(), b.limit());
           zipOut.closeEntry();
         }
       }
@@ -156,9 +156,6 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/system"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/mbeans"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/plugins"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/threads"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/properties"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/logging"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/file"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/ping"), null));
 

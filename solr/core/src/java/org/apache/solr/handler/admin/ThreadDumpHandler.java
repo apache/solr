@@ -16,20 +16,26 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.LockInfo;
-import java.lang.management.ThreadMXBean;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.NodeThreadsAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+
+import java.io.IOException;
+import java.lang.management.LockInfo;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+
+import org.apache.solr.security.AuthorizationContext;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -38,8 +44,8 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * 
  * @since solr 1.2
  */
-public class ThreadDumpHandler extends RequestHandlerBase
-{
+public class ThreadDumpHandler extends RequestHandlerBase {
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
   {    
@@ -171,5 +177,20 @@ public class ThreadDumpHandler extends RequestHandlerBase
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return AnnotatedApi.getApis(new NodeThreadsAPI(this));
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.METRICS_READ_PERM;
   }
 }

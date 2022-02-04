@@ -19,8 +19,11 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -40,6 +43,10 @@ import org.apache.solr.common.PushWriter;
 public interface TextWriter extends PushWriter {
 
   default void writeVal(String name, Object val) throws IOException {
+    writeVal(name, val, false);
+  }
+
+  default void writeVal(String name, Object val, boolean raw) throws IOException {
 
     // if there get to be enough types, perhaps hashing on the type
     // to get a handler might be faster (but types must be exact to do that...)
@@ -49,8 +56,12 @@ public interface TextWriter extends PushWriter {
     if (val == null) {
       writeNull(name);
     } else if (val instanceof CharSequence) {
-      writeStr(name, val.toString(), true);
-      // micro-optimization... using toString() avoids a cast first
+      if (raw) {
+        writeStrRaw(name, val.toString());
+      } else {
+        writeStr(name, val.toString(), true);
+        // micro-optimization... using toString() avoids a cast first
+      }
     } else if (val instanceof Number) {
       writeNumber(name, (Number) val);
     } else if (val instanceof Boolean) {
@@ -62,9 +73,14 @@ public interface TextWriter extends PushWriter {
     } else if (val instanceof NamedList) {
       writeNamedList(name, (NamedList)val);
     } else if (val instanceof Path) {
-      writeStr(name, ((Path) val).toAbsolutePath().toString(), true);
+      final String pathStr = ((Path) val).toAbsolutePath().toString();
+      if (raw) {
+        writeStrRaw(name, pathStr);
+      } else {
+        writeStr(name, pathStr, true);
+      }
     } else if (val instanceof IteratorWriter) {
-      writeIterator(name, (IteratorWriter) val);
+      writeIterator(name, (IteratorWriter) val, raw);
     } else if (val instanceof MapWriter) {
       writeMap(name, (MapWriter) val);
     } else if (val instanceof MapSerializable) {
@@ -73,29 +89,39 @@ public interface TextWriter extends PushWriter {
     } else if (val instanceof Map) {
       writeMap(name, (Map)val, false, true);
     } else if (val instanceof Iterator) { // very generic; keep towards the end
-      writeArray(name, (Iterator) val);
+      writeArray(name, (Iterator) val, raw);
     } else if (val instanceof Iterable) { // very generic; keep towards the end
-      writeArray(name,((Iterable)val).iterator());
+      writeArray(name,((Iterable)val).iterator(), raw);
     } else if (val instanceof Object[]) {
-      writeArray(name,(Object[])val);
+      writeArray(name,(Object[])val, raw);
     } else if (val instanceof byte[]) {
       byte[] arr = (byte[])val;
       writeByteArr(name, arr, 0, arr.length);
     } else if (val instanceof EnumFieldValue) {
-      writeStr(name, val.toString(), true);
-    } else if (val instanceof WriteableValue) {
-      ((WriteableValue)val).write(name, this);
+      if (raw) {
+        writeStrRaw(name, val.toString());
+      } else {
+        writeStr(name, val.toString(), true);
+      }
     } else {
       // default... for debugging only.  Would be nice to "assert false" ?
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
     }
   }
 
+  /**
+   * Writes the specified val directly to the backing writer, without wrapping (e.g., in quotes) or escaping
+   * of any kind.
+   */
+  default void writeStrRaw(String name, String val) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
   void writeStr(String name, String val, boolean needsEscaping) throws IOException;
 
   void writeMap(String name, Map<?, ?> val, boolean excludeOuter, boolean isFirstVal) throws IOException;
 
-  void writeArray(String name, Iterator<?> val) throws IOException;
+  void writeArray(String name, Iterator<?> val, boolean raw) throws IOException;
 
   void writeNull(String name) throws IOException;
 
@@ -150,12 +176,12 @@ public interface TextWriter extends PushWriter {
     }
   }
 
-  default void writeArray(String name, Object[] val) throws IOException {
-    writeArray(name, Arrays.asList(val));
+  default void writeArray(String name, Object[] val, boolean raw) throws IOException {
+    writeArray(name, Arrays.asList(val), raw);
   }
 
-  default void writeArray(String name, List<?> l) throws IOException {
-    writeArray(name, l.iterator());
+  default void writeArray(String name, List<?> l, boolean raw) throws IOException {
+    writeArray(name, l.iterator(), raw);
   }
 
 
@@ -164,7 +190,7 @@ public interface TextWriter extends PushWriter {
   }
 
   default void writeByteArr(String name, byte[] buf, int offset, int len) throws IOException {
-    writeStr(name, Base64.byteArrayToBase64(buf, offset, len), false);
+    writeStr(name, new String(Base64.getEncoder().encode(ByteBuffer.wrap(buf, offset, len)).array(), StandardCharsets.ISO_8859_1), false);
   }
 
   default void writeInt(String name, int val) throws IOException {
@@ -221,7 +247,7 @@ public interface TextWriter extends PushWriter {
     /*todo*/
   }
 
-  default void writeIterator(String name, IteratorWriter iw) throws IOException {
+  default void writeIterator(String name, IteratorWriter iw, boolean raw) throws IOException {
     writeIterator(iw);
   }
 

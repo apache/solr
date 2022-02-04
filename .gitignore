@@ -6,6 +6,7 @@ build/
 
 # IntelliJ IDEA
 /.idea/
+.run
 **/*.iml
 **/*.ipr
 **/*.iws
@@ -20,6 +21,8 @@ out/
 #    Eclipse Gradle oddity
 **/bin/default/
 
+.editorconfig
+
 # macOS
 .DS_Store
 
@@ -29,3 +32,9 @@ __pycache__
 
 # Emacs backup
 *~
+
+# Ignore lucene included build
+lucene/
+
+# Ignore gradle wrapper
+gradle/wrapper/gradle-wrapper.jar

@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -87,7 +86,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
           return;
         }
         if (payload instanceof InputStream) {
-          IOUtils.copy((InputStream) payload, os);
+          ((InputStream) payload).transferTo(os);
           return;
         }
         if (useBinary) {

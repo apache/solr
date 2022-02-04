@@ -28,6 +28,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -43,7 +44,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -57,7 +57,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.client.solrj.util.Constants;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -65,7 +64,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -197,25 +195,22 @@ public class Http2SolrClient extends SolrClient {
     }
 
     SslContextFactory.Client sslContextFactory;
-    boolean ssl;
+    boolean sslEnabled;
     if (builder.sslConfig == null) {
-      sslContextFactory = getDefaultSslContextFactory();
-      ssl = sslContextFactory.getTrustStore() != null || sslContextFactory.getTrustStorePath() != null;
+      sslEnabled = System.getProperty("javax.net.ssl.keyStore") != null || System.getProperty("javax.net.ssl.trustStore") != null;
+      sslContextFactory = sslEnabled ? getDefaultSslContextFactory() : null;
     } else {
       sslContextFactory = builder.sslConfig.createClientContextFactory();
-      ssl = true;
+      sslEnabled = true;
     }
 
-    boolean sslOnJava8OrLower = ssl && !Constants.JRE_IS_MINIMUM_JAVA9;
     HttpClientTransport transport;
-    if (builder.useHttp1_1 || sslOnJava8OrLower) {
-      if (sslOnJava8OrLower && !builder.useHttp1_1) {
-        log.warn("Create Http2SolrClient with HTTP/1.1 transport since Java 8 or lower versions does not support SSL + HTTP/2");
-      } else {
+    if (builder.useHttp1_1) {
+      if (log.isDebugEnabled()) {
         log.debug("Create Http2SolrClient with HTTP/1.1 transport");
       }
       transport = new HttpClientTransportOverHTTP(2);
-      httpClient = new HttpClient(transport, sslContextFactory);
+      httpClient = sslEnabled ? new HttpClient(transport, sslContextFactory) : new HttpClient(transport);
       if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     } else {
       log.debug("Create Http2SolrClient with HTTP/2 transport");
@@ -488,7 +483,7 @@ public class Http2SolrClient extends SolrClient {
 
   private String basicAuthCredentialsToAuthorizationString(String user, String pass) {
     String userPass = user + ":" + pass;
-    return "Basic " + Base64.byteArrayToBase64(userPass.getBytes(FALLBACK_CHARSET));
+    return "Basic " + Base64.getEncoder().encodeToString(userPass.getBytes(FALLBACK_CHARSET));
   }
 
   private Request makeRequest(SolrRequest<?> solrRequest, String collection)
@@ -725,14 +720,15 @@ public class Http2SolrClient extends SolrClient {
         String procMimeType = ContentType.parse(procCt).getMimeType().trim().toLowerCase(Locale.ROOT);
         if (!procMimeType.equals(mimeType)) {
           // unexpected mime type
-          String msg = "Expected mime type " + procMimeType + " but got " + mimeType + ".";
+          String prefix = "Expected mime type " + procMimeType + " but got " + mimeType + ". ";
           String exceptionEncoding = encoding != null? encoding : FALLBACK_CHARSET.name();
           try {
-            msg = msg + " " + IOUtils.toString(is, exceptionEncoding);
+            ByteArrayOutputStream body = new ByteArrayOutputStream();
+            is.transferTo(body);
+            throw new RemoteSolrException(serverBaseUrl, httpStatus, prefix + body.toString(exceptionEncoding), null);
           } catch (IOException e) {
             throw new RemoteSolrException(serverBaseUrl, httpStatus, "Could not parse response with encoding " + exceptionEncoding, e);
           }
-          throw new RemoteSolrException(serverBaseUrl, httpStatus, msg, null);
         }
       }
 

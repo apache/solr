@@ -18,6 +18,7 @@ package org.apache.solr.spelling;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -43,16 +44,16 @@ import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * Abstract base class for all Lucene-based spell checking implementations.
- * 
+ *
  * <p>
- * Refer to <a href="http://wiki.apache.org/solr/SpellCheckComponent">SpellCheckComponent</a>
+ * Refer to <a href="https://solr.apache.org/guide/spell-checking.html">https://solr.apache.org/guide/spell-checking.html</a>
  * for more details.
  * </p>
- * 
+ *
  * @since solr 1.3
  */
 public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
-  
+
   public static final String SPELLCHECKER_ARG_NAME = "spellchecker";
   public static final String LOCATION = "sourceLocation";
   public static final String INDEX_DIR = "spellcheckIndexDir";
@@ -130,14 +131,14 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     }
     return name;
   }
-  
+
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
     SpellingResult result = new SpellingResult(options.tokens);
     IndexReader reader = determineReader(options.reader);
     Term term = field != null ? new Term(field, "") : null;
     float theAccuracy = (options.accuracy == Float.MIN_VALUE) ? spellChecker.getAccuracy() : options.accuracy;
-    
+
     int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
     for (Token token : options.tokens) {
       String tokenText = new String(token.buffer(), 0, token.length());
@@ -223,7 +224,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
       // Windows causes problems because deleted files can't be opened.  It would be better for SpellChecker to hold a single IW instance,
       // and close it on close, but Solr never seems to close its spell checkers.  Wrapping as FilterDirectory prevents IndexWriter from
       // catching the pending deletions:
-      index = new FilterDirectory(FSDirectory.open(new File(indexDir).toPath())) {
+      index = new FilterDirectory(FSDirectory.open(Path.of(indexDir))) {
       };
     } else {
       index = new ByteBuffersDirectory();

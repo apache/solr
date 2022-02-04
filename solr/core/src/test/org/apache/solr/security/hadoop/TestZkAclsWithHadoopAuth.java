@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
@@ -55,7 +54,7 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    HdfsTestUtil.checkAssumptions();
+    HadoopTestUtil.checkAssumptions();
 
     System.setProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
         VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());

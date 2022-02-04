@@ -56,14 +56,14 @@ import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
 import static org.apache.solr.handler.admin.CoreAdminHandler.FAILED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE;
+import static org.apache.solr.handler.admin.CoreAdminHandler.OPERATION_RESPONSE;
 import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_MESSAGE;
 import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
 import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
 import static org.apache.solr.handler.admin.CoreAdminHandler.buildCoreParams;
 import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
-enum CoreAdminOperation implements CoreAdminOp {
+public enum CoreAdminOperation implements CoreAdminOp {
 
   CREATE_OP(CREATE, it -> {
     assert TestInjection.injectRandomDelayInCoreCreation();
@@ -185,10 +185,11 @@ enum CoreAdminOperation implements CoreAdminOp {
       it.rsp.add(RESPONSE_STATUS, RUNNING);
     } else if (it.handler.getRequestStatusMap(COMPLETED).containsKey(requestId)) {
       it.rsp.add(RESPONSE_STATUS, COMPLETED);
-      it.rsp.add(RESPONSE, it.handler.getRequestStatusMap(COMPLETED).get(requestId).getRspObject());
+      it.rsp.add(RESPONSE_MESSAGE, it.handler.getRequestStatusMap(COMPLETED).get(requestId).getRspObject());
+      it.rsp.add(OPERATION_RESPONSE, it.handler.getRequestStatusMap(COMPLETED).get(requestId).getOperationRspObject());
     } else if (it.handler.getRequestStatusMap(FAILED).containsKey(requestId)) {
       it.rsp.add(RESPONSE_STATUS, FAILED);
-      it.rsp.add(RESPONSE, it.handler.getRequestStatusMap(FAILED).get(requestId).getRspObject());
+      it.rsp.add(RESPONSE_MESSAGE, it.handler.getRequestStatusMap(FAILED).get(requestId).getRspObject());
     } else {
       it.rsp.add(RESPONSE_STATUS, "notfound");
       it.rsp.add(RESPONSE_MESSAGE, "No task found in running, completed or failed tasks");
@@ -235,7 +236,8 @@ enum CoreAdminOperation implements CoreAdminOp {
       }
 
       SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
-      NamedList<Object> result = new NamedList<>();
+      @SuppressWarnings({"rawtypes"})
+      NamedList result = new NamedList();
       for (String name : mgr.listSnapshots()) {
         Optional<SnapshotMetaData> metadata = mgr.getSnapshotMetaData(name);
         if ( metadata.isPresent() ) {
@@ -274,7 +276,8 @@ enum CoreAdminOperation implements CoreAdminOp {
    * @return - a named list of key/value pairs from the core.
    * @throws IOException - LukeRequestHandler can throw an I/O exception
    */
-  static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<>();
 
     if (cores.isCoreLoading(cname)) {

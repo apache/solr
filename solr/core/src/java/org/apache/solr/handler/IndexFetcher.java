@@ -300,7 +300,7 @@ public class IndexFetcher {
   /**
    * Gets the latest commit version and generation from the leader
    */
-  NamedList<Object> getLatestVersion() throws IOException {
+  public NamedList<Object> getLatestVersion() throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
     params.set(CommonParams.WT, JAVABIN);
@@ -1030,7 +1030,7 @@ public class IndexFetcher {
           }
           // A hard link here should survive the eventual directory move, and should be more space efficient as
           // compared to a file copy. TODO: Maybe we could do a move safely here?
-          Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
+          Files.createLink(Path.of(tmpIndexDirPath, filename), localFile.toPath());
           bytesSkippedCopying += localFile.length();
         } else {
           dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file,

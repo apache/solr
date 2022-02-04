@@ -153,10 +153,10 @@ This can be particularly useful when you have multiple levels of hierarchical do
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `10`
+|Optional |Default: `-1`
 |===
 +
-The maximum number of child documents to be returned per parent document.
+The maximum number of child documents to be returned underneath the document being augmented. The default is `-1` which means unlimited.
 
 `fl`::
 +

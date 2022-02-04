@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -69,6 +68,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -159,7 +159,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
     assertEquals("Should have received 401 code", "401", headers.get("code"));
     assertEquals("Bearer realm=\"my-solr-jwt\"", headers.get("WWW-Authenticate"));
-    String authData = new String(Base64.base64ToByteArray(headers.get("X-Solr-AuthData")), UTF_8);
+    String authData = new String(Base64.getDecoder().decode(headers.get("X-Solr-AuthData")), UTF_8);
     assertEquals("{\n" +
         "  \"scope\":\"solr:admin\",\n" +
         "  \"redirect_uris\":[],\n" +
@@ -177,7 +177,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
     assertEquals("Should have received 401 code", "401", headers.get("code"));
     assertEquals("Bearer realm=\"my-solr-jwt-blockunknown-false\"", headers.get("WWW-Authenticate"));
-    String authData = new String(Base64.base64ToByteArray(headers.get("X-Solr-AuthData")), UTF_8);
+    String authData = new String(Base64.getDecoder().decode(headers.get("X-Solr-AuthData")), UTF_8);
     assertEquals("{\n" +
         "  \"scope\":\"solr:admin\",\n" +
         "  \"redirect_uris\":[],\n" +
@@ -428,8 +428,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
    * Creates a security.json string which points to the MockOAuth server using it's well-known URL and trusting its SSL
    */
   private static String createMockOAuthSecurityJson(Path pemFilePath) throws IOException {
-    String wellKnown = mockOAuth2Server.wellKnownUrl("default").toString();
-    String pemCert = CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath)).replaceAll("\n", "\\\\n");
+    String wellKnown = mockOAuth2Server.wellKnownUrl("default").toString()
+        .replace(".localdomain", ""); // Use only 'localhost' to match our SSL cert
+    String pemCert = CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath))
+        .replaceAll("\n", "\\\\n"); // Use literal \n to play well with JSON
     return "{\n" +
         "  \"authentication\" : {\n" +
         "    \"class\": \"solr.JWTAuthPlugin\",\n" +

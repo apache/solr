@@ -17,14 +17,12 @@
 
 package org.apache.solr.client.solrj.request;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-
-import org.apache.commons.io.IOUtils;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /** A simple update request which streams content to the server
  */
@@ -52,12 +50,12 @@ public class StreamingUpdateRequest extends AbstractUpdateRequest {
     });
   }
 
-  public StreamingUpdateRequest(String path, File f, String contentType) {
+  public StreamingUpdateRequest(String path, Path data, String contentType) {
     this(path, new RequestWriter.ContentWriter() {
       @Override
       public void write(OutputStream os) throws IOException {
-        try (InputStream is = new FileInputStream(f)) {
-          IOUtils.copy(is, os);
+        try (InputStream is = Files.newInputStream(data)) {
+          is.transferTo(os);
         }
       }
 

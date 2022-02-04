@@ -105,7 +105,9 @@ bin/solr start -f -q
 
 Solr uses http://logging.apache.org/log4j/2.x/[Log4J version {ivy-log4j-version}] for logging which is configured using `server/resources/log4j2.xml`.
 Take a moment to inspect the contents of the `log4j2.xml` file so that you are familiar with its structure.
+
 By default, Solr log messages will be written to `SOLR_LOGS_DIR/solr.log`.
+The format of the log messages can be changed by https://logging.apache.org/log4j/2.x/manual/layouts.html#PatternLayout[modifying the pattern] used in the `<PatternLayout/>`, or by changing the layout implementation -- e.g., a https://logging.apache.org/log4j/2.x/manual/json-template-layout.html[`<JsonTemplateLayout/>`] can be used to configure JSON formatted log files.
 
 When you're ready to deploy Solr in production, set the variable `SOLR_LOGS_DIR` to the location where you want Solr to write log files, such as `/var/solr/logs`.
 You may also want to tweak `log4j2.xml`.
@@ -124,7 +126,6 @@ Also, in `log4j2.xml` if the default log rotation size threshold of 32MB is too 
 Java Garbage Collection logs are rotated by the JVM when size hits 20M, for a max of 9 generations.
 
 On every startup or restart of Solr, log4j2 performs log rotation.
-If you choose to use another log framework that does not support rotation on startup, you may enable `SOLR_LOG_PRESTART_ROTATION` in `bin/solr.in.sh` or `bin/solr.in.cmd` to let the start script rotate the logs on startup.
 
 == Logging Slow Queries
 
@@ -149,3 +150,10 @@ The log file under which you can find all these queries is called `solr_slow_req
 
 In addition to the logging options described above, it's possible to log only a selected list of request parameters (such as those sent with queries) with an additional request parameter called `logParamsList`.
 See the section on <<common-query-parameters.adoc#logparamslist-parameter,logParamsList Parameter>> for more information.
+
+== Request Logging
+
+Every incoming HTTP(s) request is by default logged in the standard https://en.wikipedia.org/wiki/Common_Log_Format[`NCSA format`]
+in files with name `$SOLR_LOG_DIR/<yyyy_mm_dd>.request.log`, rolled over daily. By default, 3 days worth of request logs are retained.
+You can disable request logging by setting `SOLR_REQUESTLOG_ENABLED=false` via environment variable or in `solr.in.sh`/`solr.in.cmd`.
+You can change the number of days to retain by system property `-Dsolr.log.requestlog.retaindays`.
