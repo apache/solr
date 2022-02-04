@@ -48,7 +48,7 @@ solrAdminApp.controller('QueryController',
         $scope.responseStatus = "success";
         delete success.$promise;
         delete success.$resolved;
-        $scope.paramsetList = Object.keys(success.response.params);
+        $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
       }
 
       function failure (failure) {
