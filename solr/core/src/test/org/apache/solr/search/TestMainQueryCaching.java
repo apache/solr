@@ -178,16 +178,38 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     String q = pickRandom(ALL_QUERIES);
     boolean includeScoreInSort = random().nextBoolean();
     String response = JQ(req("q", q, "indent", "true", "cursorMark", "*", "sort", includeScoreInSort ? "score desc,id asc" : "id asc"));
-    assertMetricCounts(response, MATCH_ALL_DOCS_QUERY.equals(q) && !includeScoreInSort,
-            !MATCH_ALL_DOCS_QUERY.equals(q) && !includeScoreInSort && USE_FILTER_FOR_SORTED_QUERY ? 1 : 0, 1, 0);
+    final boolean consultMatchAllDocs;
+    final boolean insertFilterCache;
+    if (includeScoreInSort) {
+      consultMatchAllDocs = false;
+      insertFilterCache = false;
+    } else if (MATCH_ALL_DOCS_QUERY.equals(q)) {
+      consultMatchAllDocs = true;
+      insertFilterCache = false;
+    } else {
+      consultMatchAllDocs = false;
+      insertFilterCache = USE_FILTER_FOR_SORTED_QUERY;
+    }
+    assertMetricCounts(response, consultMatchAllDocs, insertFilterCache ? 1 : 0, 1, 0);
   }
 
   @Test
   public void testCursorMarkZeroRows() throws Exception {
     String q = pickRandom(ALL_QUERIES);
     String response = JQ(req("q", q, "indent", "true", "cursorMark", "*", "rows", "0", "sort", random().nextBoolean() ? "id asc" : "score desc,id asc"));
-    assertMetricCounts(response, MATCH_ALL_DOCS_QUERY.equals(q), !MATCH_ALL_DOCS_QUERY.equals(q) && USE_FILTER_FOR_SORTED_QUERY ? 1 : 0,
-            MATCH_ALL_DOCS_QUERY.equals(q) || USE_FILTER_FOR_SORTED_QUERY ? 0 : 1, MATCH_ALL_DOCS_QUERY.equals(q) || USE_FILTER_FOR_SORTED_QUERY ? 1 : 0);
+    final boolean consultMatchAllDocs;
+    final boolean insertFilterCache;
+    final boolean skipSort;
+    if (MATCH_ALL_DOCS_QUERY.equals(q)) {
+      consultMatchAllDocs = true;
+      insertFilterCache = false;
+      skipSort = true;
+    } else {
+      consultMatchAllDocs = false;
+      insertFilterCache = USE_FILTER_FOR_SORTED_QUERY;
+      skipSort = USE_FILTER_FOR_SORTED_QUERY;
+    }
+    assertMetricCounts(response, consultMatchAllDocs, insertFilterCache ? 1 : 0, skipSort ? 0 : 1, skipSort ? 1 : 0);
   }
 
   private static void assertMetricCounts(String response, boolean matchAllDocs, int expectFilterCacheInsertCount, int expectFullSortCount, int expectSkipSortCount) {
