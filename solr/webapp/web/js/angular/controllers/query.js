@@ -16,8 +16,10 @@
 */
 
 solrAdminApp.controller('QueryController',
-  function($scope, $route, $routeParams, $location, Query, Constants){
+  function($scope, $route, $routeParams, $location, Query, Constants, ParamSet){
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
+
+    $scope.paramsetList = [];
 
     $scope._models = [];
     $scope.filters = [{fq:""}];
@@ -27,6 +29,32 @@ solrAdminApp.controller('QueryController',
     $scope.val['q.op'] = "OR";
     $scope.val['defType'] = "";
     $scope.val['indent'] = true;
+    $scope.paramsetList = [{useParams:""}];
+
+    getParamsets();
+
+    function getParamsets() {
+      $scope.refresh();
+
+      var params = {};
+      params.core = $routeParams.core;
+      params.wt = "json";
+
+      ParamSet.get(params, callback, failure);
+
+      ///////
+
+      function callback(success) {
+        $scope.responseStatus = "success";
+        delete success.$promise;
+        delete success.$resolved;
+        $scope.paramsetList = Object.keys(success.response.params);
+      }
+
+      function failure (failure) {
+        $scope.responseStatus = failure;
+      }
+    }
 
     // get list of ng-models that have a form element
     function setModels(argTagName){
@@ -67,8 +95,15 @@ solrAdminApp.controller('QueryController',
         }
         $scope.val[argKey] = argValue;
       } else if( $scope._models.map(function(field){return field.modelName}).indexOf(argKey) > -1 ) {
-        // parameters that will only be used to generate the admin link
-        $scope[argKey] = argValue;
+        var index = $scope._models.map(function(field){return field.modelName}).indexOf(argKey);
+        var field = $scope._models[index].element;
+        if(field.hasAttribute("multiple") && argValue) {
+          $scope[argKey] = argValue.split(",");
+        }
+        else {
+          // parameters that will only be used to generate the admin link
+          $scope[argKey] = argValue;
+        }
       } else {
         insertToRawParams(argKey, argValue);
       }
@@ -144,6 +179,9 @@ solrAdminApp.controller('QueryController',
       purgeParams(params, getDependentFields("facet"), $scope.val.facet !== true);
       purgeParams(params, getDependentFields("spatial"), $scope.val.spatial !== true);
       purgeParams(params, getDependentFields("spellcheck"), $scope.val.spellcheck !== true);
+      if ($scope.useParams && $scope.useParams.length > 0) {
+        set("useParams", $scope.useParams.join(","));
+      }
 
       var qt = $scope.qt ? $scope.qt : "/select";
 

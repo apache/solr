@@ -23,6 +23,19 @@ limitations under the License.
       </label>
       <input type="text" ng-model="qt" id="qt" placeholder="/select" value="/select" title="Request handler in solrconfig.xml.">
 
+      <div>
+        <label for="choose_paramset">Choose Paramset to Apply</label>
+        <!-- <select ng-model="selectedParams" ng-options="item for item in paramsetList"></select> -->
+        <select id="choose_paramset"
+                style="width:100%"
+                chosen
+                ng-options="item for item in paramsetList"
+                ng-model="useParams"
+                multiple
+                ng-multiple="true"
+                data-placeholder="Please select..."></select>
+      </div>
+
       <fieldset class="common">
         <legend>common</legend>
         <div class="fieldset">

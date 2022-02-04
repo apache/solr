@@ -29,6 +29,21 @@ limitations under the License.
     float: left;
     /*width: 21%;*/
 }
+#content #paramsets #form fieldset legend, #content #paramsets #form .optional.expanded legend {
+    display: block;
+    margin-left: 10px;
+    padding: 0px 5px;
+}
+
+legend {
+    display: block;
+    padding-inline-start: 2px;
+    padding-inline-end: 2px;
+    border-width: initial;
+    border-style: none;
+    border-color: initial;
+    border-image: initial;
+}
 
 #content #paramsets #form label
 {

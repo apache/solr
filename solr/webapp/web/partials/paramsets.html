@@ -26,30 +26,34 @@
                 </label>
                 <input ng-model="name" name="paramsetName" id="paramsetName" title="ParamSetName" placeholder="Name">
             </div>
-            <button type="submit" ng-click="getParamsets()" id="get-paramset">Get Paramset</button>
-            <hr>
-            <div id="paramsetContent-container">
-                <label for="paramset">
-                    <a rel="help">Paramset(s)</a>
-                </label>
-                <textarea ng-model="paramsetContent" name="paramsets" id="paramset" title="The Paramset" rows="10"
-                          cols="65" placeholder="{{placeholder}}"></textarea>
-            </div>
 
-            <div id="advanced">
-                <div id="attribs">
-                    <div id="general-attribs">
-                        <label for="commitWithin">
-                            <a rel="help">Commit Within</a>
-                        </label>
-                        <input type="text" ng-model="commitWithin" id="commitWithin" value="1000" title="Commit Within (ms)">
-                        <label for="overwrite">
-                            <a rel="help">Overwrite</a>
-                        </label>
-                        <input ng-model="overwrite" type="text" id="overwrite" value="true" title="Overwrite">
+            <button type="submit" ng-click="getParamsets()" id="get-paramset">Get Paramset</button>
+
+            <fieldset class="Update Paramset">
+                <legend>Update Paramset</legend>
+                <div class="fieldset" id="paramsetContent-container">
+                    <label for="paramset">
+                        <a rel="help">Paramset(s)</a>
+                    </label>
+                    <textarea ng-model="paramsetContent" name="paramsets" id="paramset" title="The Paramset" rows="10"
+                              cols="65" placeholder="{{placeholder}}"></textarea>
+                </div>
+
+                <div id="advanced">
+                    <div id="attribs">
+                        <div id="general-attribs">
+                            <label for="commitWithin">
+                                <a rel="help">Commit Within</a>
+                            </label>
+                            <input type="text" ng-model="commitWithin" id="commitWithin" value="1000" title="Commit Within (ms)">
+                            <label for="overwrite">
+                                <a rel="help">Overwrite</a>
+                            </label>
+                            <input ng-model="overwrite" type="text" id="overwrite" value="true" title="Overwrite">
+                        </div>
                     </div>
                 </div>
-            </div>
+            </fieldset>
 
             <button type="submit" ng-click="submit()" id="submit">Submit Paramset</button>
         </form>
