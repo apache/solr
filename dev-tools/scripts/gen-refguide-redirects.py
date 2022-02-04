@@ -17,6 +17,13 @@
 
 """
 Simple script that converts old refguide page names to new
+See sample input files in folder gen-refguide-redirects/
+
+The old-guide.txt is the plain .adoc names from an 'ls' in old ref-guide src folder
+The new-guide.txt is output from
+    find . | grep adoc | grep -v "/images" | grep -v "/ROOT" | sed 's/\/pages//g' | sed 's/^.\///g' >new-guide.txt
+The mappings.csv comes from the explicit page renamings sourced from spreadsheet
+  https://docs.google.com/spreadsheets/d/1mwxSpn5Ky7-P4DLFrJGel2h7Il4muTlHmAA-AuRY1rs/edit#gid=982988701
 """
 
 import os
