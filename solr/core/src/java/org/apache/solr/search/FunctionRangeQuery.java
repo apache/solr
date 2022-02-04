@@ -36,13 +36,11 @@ public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter 
 
   final ValueSourceRangeFilter rangeFilt;
   boolean cache = true; // cache by default
-  //int cost;
 
   public FunctionRangeQuery(ValueSourceRangeFilter filter) {
     super();
     this.rangeFilt = filter;
-    super.setCost(100);
-    //this.cost = 100; // default behavior should be PostFiltering
+    super.setCost(100); // default behavior should be PostFiltering
   }
 
   @Override

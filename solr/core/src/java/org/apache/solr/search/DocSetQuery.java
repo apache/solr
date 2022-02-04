@@ -64,7 +64,7 @@ public class DocSetQuery extends Query implements DocSetProducer{
 
     @Override
     public int hashCode() {
-        return classHash() * 31 + docSet.hashCode();
+        return classHash() * 31 + (docSet != null ? docSet.hashCode() : 0);
     }
 
     /**
@@ -78,7 +78,7 @@ public class DocSetQuery extends Query implements DocSetProducer{
 
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-        return new ConstantScoreWeight(this, 0) {
+        return new ConstantScoreWeight(this, boost) {
             @Override
             public Scorer scorer(LeafReaderContext context) throws IOException {
                 DocIdSetIterator disi = docSet.iterator(context);
