@@ -116,10 +116,14 @@ public class FacetBucket {
   }
 
   public Map<String, Object> getRefinement(FacetMerger.Context mcontext, Collection<String> refineTags) {
+    return getRefinement(mcontext, refineTags, null);
+  }
+
+  public Map<String, Object> getRefinement(FacetMerger.Context mcontext, Collection<String> refineTags, Map<String, Object> refinement) {
     if (subs == null) {
-      return null;
+      assert refinement == null;
+      return refinement;
     }
-    Map<String,Object> refinement = null;
     for (String tag : refineTags) {
       FacetMerger subMerger = subs.get(tag);
       if (subMerger != null) {

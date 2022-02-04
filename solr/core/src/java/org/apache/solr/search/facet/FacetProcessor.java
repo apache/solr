@@ -18,12 +18,16 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -439,6 +443,121 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
     }
   }
 
+  static final class AugmentEntries {
+    private final int leafEntries;
+    private final int partialEntries;
+    private final Map<Object, Object> entries;
+    private final Map<String, Object> origFacetInfo;
+    private Function<Object, Object> toNativeType;
+
+    private AugmentEntries(int leafEntries, int partialEntries, Map<Object, Object> entries, Map<String, Object> origFacetInfo) {
+      this.leafEntries = leafEntries;
+      this.partialEntries = partialEntries;
+      this.entries = entries;
+      this.origFacetInfo = origFacetInfo;
+    }
+
+    void transformKeysToNativeType(Function<Object, Object> toNativeType) {
+      this.toNativeType = toNativeType;
+      for (final Object key : entries.keySet().toArray()) {
+        final Object transformed = toNativeType.apply(key);
+        if (key.getClass() != transformed.getClass()) {
+          entries.put(transformed, entries.remove(key));
+        }
+      }
+    }
+
+    private Map<String, Object> getBulkPhasePartialFacetInfo() {
+      if (partialEntries == 0) {
+        return null;
+      }
+      // we only care about "augmented partial" facets here, because we need to make sure that enumerated vals for
+      // partial subs are propagated down, even if a val for a given sub is evaluted during the "bulk collection"
+      // phase of augmentation.
+      return Collections.singletonMap("_q", origFacetInfo.get("_q"));
+    }
+
+    private Map<String, Object> getFacetInfo() {
+      if (entries.size() == leafEntries + partialEntries) {
+        // nothing was removed; simply rename the keys
+        if (leafEntries != 0) {
+          origFacetInfo.put("_l", origFacetInfo.remove("_a"));
+        }
+        if (partialEntries != 0) {
+          origFacetInfo.put("_p", origFacetInfo.remove("_q"));
+        }
+        return origFacetInfo;
+      } else if (partialEntries == 0) {
+        // common case
+        return Collections.singletonMap("_l", Arrays.asList(entries.keySet().toArray()));
+      } else if (leafEntries == 0) {
+        // _far_ less common, but easy
+        final List<List<?>> partial = new ArrayList<>(entries.size());
+        for (Map.Entry<Object, Object> e : entries.entrySet()) {
+          partial.add(List.of(e.getKey(), e.getValue()));
+        }
+        return Collections.singletonMap("_p", partial);
+      } else {
+        final int maxSize = entries.size();
+        final List<Object> leaves = new ArrayList<>(Math.min(leafEntries, maxSize));
+        final List<List<?>> partial = new ArrayList<>(Math.min(partialEntries, maxSize));
+        for (Map.Entry<Object, Object> e : entries.entrySet()) {
+          final Object val = e.getValue();
+          if (val == null) {
+            leaves.add(e.getKey());
+          } else {
+            partial.add(List.of(e.getKey(), val));
+          }
+        }
+        Map<String, Object> ret = new HashMap<>(2);
+        ret.put("_l", leaves);
+        ret.put("_p", partial);
+        return ret;
+      }
+    }
+  }
+
+  @SuppressWarnings({"unchecked"})
+  private AugmentEntries getAugmentEntries(Map<String,Object> facetInfoSub) {
+    Object tmp;
+    final List<Object> augmentLeaf = (tmp = facetInfoSub.get("_a")) == null ? null : (List<Object>) tmp;
+    final List<List<Object>> augmentPartial;
+    if ((tmp = facetInfoSub.get("_q")) == null) {
+      if (augmentLeaf == null) {
+        return null;
+      }
+      augmentPartial = null;
+    } else {
+      augmentPartial = (List<List<Object>>) tmp;
+    }
+    Map<Object, Object> ret = null;
+    int leafSize = 0;
+    int partialSize = 0;
+    if (augmentLeaf != null) {
+      ret = new HashMap<>((leafSize = augmentLeaf.size()) + (augmentPartial == null ? 0 : (partialSize = augmentPartial.size())));
+      for (Object o : augmentLeaf) {
+        ret.put(o, null);
+      }
+    }
+    if (augmentPartial != null) {
+      if (ret == null) {
+        ret = new HashMap<>(partialSize = augmentPartial.size());
+      }
+      for (List<Object> o : augmentPartial) {
+        ret.put(o.get(0), o.get(1));
+      }
+    }
+    return new AugmentEntries(leafSize, partialSize, ret, facetInfoSub);
+  }
+
+  protected static boolean isRefining(Map<String,Object> facetInfo) {
+    return facetInfo != null && (facetInfo.size() != 1 || !facetInfo.containsKey("_q"));
+  }
+
+  protected Function<Object, Object> toNativeType() {
+    return (o) -> o;
+  }
+
   @SuppressWarnings({"unchecked"})
   void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain, boolean skip, Map<String,Object> facetInfo) throws IOException {
 
@@ -447,25 +566,40 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
     for (Map.Entry<String,FacetRequest> sub : freq.getSubFacets().entrySet()) {
       FacetRequest subRequest = sub.getValue();
 
-      // This includes a static check if a sub-facet can possibly produce something from
-      // an empty domain.  Should this be changed to a dynamic check as well?  That would
-      // probably require actually executing the facet anyway, and dropping it at the
-      // end if it was unproductive.
-      if (emptyDomain && !freq.processEmpty && !subRequest.canProduceFromEmpty()) {
-        continue;
-      }
-
-      Map<String,Object>facetInfoSub = null;
+      Map<String,Object> facetInfoSub = null;
       if (facetInfo != null) {
         facetInfoSub = (Map<String,Object>)facetInfo.get(sub.getKey());
       }
 
-      // If we're skipping this node, then we only need to process sub-facets that have facet info specified.
-      if (skip && facetInfoSub == null) continue;
+      // This includes a static check if a sub-facet can possibly produce something from
+      // an empty domain.  Should this be changed to a dynamic check as well?  That would
+      // probably require actually executing the facet anyway, and dropping it at the
+      // end if it was unproductive.
+      if (emptyDomain && !freq.processEmpty && !subRequest.canProduceFromEmpty(facetInfoSub != null)) {
+        continue;
+      }
+
+      final AugmentEntries augment;
+      if (facetInfoSub != null) {
+        if ((augment = getAugmentEntries(facetInfoSub)) != null) {
+          // augment
+          assert facetInfoSub.get("_s") == null && facetInfoSub.get("_p") == null && facetInfoSub.get("_l") == null;
+          facetInfoSub = augment.getBulkPhasePartialFacetInfo();
+        }
+      } else if (skip) {
+        // If we're skipping this node, then we only need to process sub-facets that have facet info specified.
+        continue;
+      } else if (subRequest.evaluateAsTopLevel() && fcontext.isShard()) {
+        // defer evaluateAtTopLevel requests until requested via augment ("_a") `facetInfoSub` under "skip" bucket
+        continue;
+      } else {
+        augment = null;
+      }
 
       // make a new context for each sub-facet since they can change the domain
       FacetContext subContext = fcontext.sub(filter, domain);
       subContext.facetInfo = facetInfoSub;
+      subContext.augment = augment;
       if (!skip) subContext.flags &= ~FacetContext.SKIP_FACET;  // turn off the skip flag if we're not skipping this bucket
 
       if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true
@@ -476,10 +610,50 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
 
       Object result = subRequest.process(subContext);
 
+      if (augment != null) {
+        // make sure that all buckets specifically enumerated are present in the response
+        // TODO: It would be more efficient if we could inline this with bulk collection in a single pass.
+        //  This should indeed be possible, at least for the "String field" case. The tricky (?) part would
+        //  be converting the specified values to something that can be efficiently checked for equality against
+        //  values during bulk collection.
+        final List<SimpleOrderedMap<?>> buckets = (List<SimpleOrderedMap<?>>) ((SimpleOrderedMap<Object>) result).get("buckets");
+
+        // TODO: circle back and figure out what's going on here. We should _not_ have to apply this `toNativeType`
+        //  on the vals returned from the response -- e.g.: why are we getting `Long` vals returned for `StrField` type?
+        //  Reproduce:
+        //  gradlew --console=plain :solr:core:test --tests "org.apache.solr.search.facet.TestCloudJSONFacetSKG.testRandom"
+        //            -Ptests.jvms=4 -Ptests.jvmargs=-XX:TieredStopAtLevel=1 -Ptests.seed=8B4038889D0A1CB1
+        //            -Ptests.file.encoding=US-ASCII
+        Object val = null;
+        final Function<Object, Object> toNativeType = augment.toNativeType;
+        for (SimpleOrderedMap<?> bucket : buckets) {
+          // prune any enumerated values that are already represented as a result of bulk collection
+          augment.entries.remove(val = toNativeType.apply(bucket.get("val")));
+        }
+        // this is just a sanity check to detect blatant incompatibility between types as specified for refinement
+        // request "augmentation", and types as returned from the initial "bulk collection" request. (we only check
+        // one value here -- the last one)
+        assert validateCompatibleTypes(val, augment);
+        if (!augment.entries.isEmpty()) {
+          // specifically collect any values not already represented.
+          subContext.facetInfo = augment.getFacetInfo();
+          Object augmentResult = subRequest.process(subContext);
+          buckets.addAll((List<SimpleOrderedMap<?>>)((SimpleOrderedMap<?>)augmentResult).get("buckets"));
+        }
+      }
+
       response.add( sub.getKey(), result);
     }
   }
 
+  private static boolean validateCompatibleTypes(Object fromResponse, AugmentEntries augment) {
+    if (fromResponse != null && !augment.entries.isEmpty()) {
+      final Class<?> fromResponseClass = fromResponse.getClass();
+      final Class<?> fromRequestClass = augment.entries.keySet().iterator().next().getClass();
+      assert fromResponseClass == fromRequestClass : "request "+fromRequestClass+" incompatible with response "+fromResponseClass;
+    }
+    return true;
+  }
   @SuppressWarnings("unused")
   static DocSet getFieldMissing(SolrIndexSearcher searcher, DocSet docs, String fieldName) throws IOException {
     SchemaField sf = searcher.getSchema().getField(fieldName);

@@ -52,6 +52,7 @@ import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
  */
 abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   SchemaField sf;
+  private final Function<Object, Object> toNativeType;
   SlotAcc indexOrderAcc;
   int effectiveMincount;
   final boolean singlePassSlotAccCollection;
@@ -75,6 +76,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   FacetFieldProcessor(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq);
     this.sf = sf;
+    this.toNativeType = toNativeType(sf);
     this.effectiveMincount = (int)(fcontext.isShard() ? Math.min(1 , freq.mincount) : freq.mincount);
     this.singlePassSlotAccCollection = (freq.limit == -1 && freq.subFacets.size() == 0);
 
@@ -468,11 +470,12 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
     List<SimpleOrderedMap<?>> bucketList = new ArrayList<>(sortedSlots.length);
 
+    final Map<Object, Map<String, Object>> augmentPartial = getAugmentPartial();
     for (Slot slot : sortedSlots) {
       SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
       bucket.add("val", slot.bucketVal);
 
-      fillBucketFromSlot(bucket, slot, resortAccForFill);
+      fillBucketFromSlot(bucket, slot, resortAccForFill, augmentPartial == null ? null : augmentPartial.get(slot.bucketVal));
 
       bucketList.add(bucket);
     }
@@ -491,6 +494,29 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     return res;
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<Object, Map<String, Object>> getAugmentPartial() {
+    if (fcontext.facetInfo == null) {
+      return null;
+    }
+    final Object tmp = fcontext.facetInfo.get("_q");
+    assert tmp != null && fcontext.facetInfo.size() == 1; // there should be exactly one entry: for "_q" (augmented partial)
+    List<List<Map<String, Object>>> enumerated = (List<List<Map<String, Object>>>) tmp;
+    final int size = enumerated.size();
+    switch (size) {
+      case 0:
+        throw new IllegalStateException("should not be empty");
+      case 1:
+        List<Map<String, Object>> entry = enumerated.get(0);
+        return Collections.singletonMap(entry.get(0), entry.get(1));
+    }
+    final Map<Object, Map<String, Object>> ret = new HashMap<>(size);
+    for (List<Map<String, Object>> entry : enumerated) {
+      ret.put(entry.get(0), entry.get(1));
+    }
+    return ret;
   }
 
   /**
@@ -534,7 +560,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
   /** Helper method used solely when looping over buckets to be returned in findTopSlots */
   private void fillBucketFromSlot(SimpleOrderedMap<Object> target, Slot slot,
-                                  SlotAcc resortAcc) throws IOException {
+                                  SlotAcc resortAcc, Map<String, Object> facetInfo) throws IOException {
     final int slotOrd = slot.slot;
     countAcc.setValues(target, slotOrd);
     if (countAcc.getCount(slotOrd) <= 0 && !freq.processEmpty) return;
@@ -570,7 +596,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
     }
 
-    processSubs(target, filter, subDomain, false, null);
+    processSubs(target, filter, subDomain, false, facetInfo);
   }
 
   /** 
@@ -959,6 +985,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     List leaves = asList(fcontext.facetInfo.get("_l"));        // We have not seen this bucket: do full faceting for this bucket, including all sub-facets
     List<List> skip = asList(fcontext.facetInfo.get("_s"));    // We have seen this bucket, so skip stats on it, and skip sub-facets except for the specified sub-facets that should calculate specified buckets.
     List<List> partial = asList(fcontext.facetInfo.get("_p")); // We have not seen this bucket, do full faceting for this bucket, and most sub-facets... but some sub-facets are partial and should only visit specified buckets.
+    assert fcontext.facetInfo.get("_a") == null && fcontext.facetInfo.get("_q") == null : "augmenting should be filtered off before pivot to subfacets";
 
     // For leaf refinements, we do full faceting for each leaf bucket.  Any sub-facets of these buckets will be fully evaluated.  Because of this, we should never
     // encounter leaf refinements that have sub-facets that return partial results.
@@ -1012,6 +1039,16 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     // the normal collection method may be best.
 
     return res;
+  }
+
+  private static Function<Object, Object> toNativeType(SchemaField sf) {
+    final FieldType ft = sf.getType();
+    return ft::toNativeType;  // refinement info passed in as JSON will cause int->long and float->double
+  }
+
+  @Override
+  protected Function<Object, Object> toNativeType() {
+    return toNativeType;
   }
 
   private SimpleOrderedMap<Object> refineBucket(Object bucketVal, boolean skip, Map<String,Object> facetInfo) throws IOException {

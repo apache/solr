@@ -20,11 +20,11 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
-
-import static org.apache.solr.search.facet.FacetRequest.RefineMethod.SIMPLE;
+import java.util.Set;
 
 
 public abstract class FacetMerger {
@@ -46,14 +46,21 @@ public abstract class FacetMerger {
     private final BitSet sawShard = new BitSet(); // [bucket0_shard0, bucket0_shard1, bucket0_shard2,  bucket1_shard0, bucket1_shard1, bucket1_shard2]
     private Map<String,Integer> shardmap = new HashMap<>();
 
-    public Context(int numShards) {
+    public Context(int numShards, FacetRequest rootReq) {
       this.numShards = numShards;
+      this.passLimit = 1 + getPassLimit(rootReq);
     }
 
     Object root;  // per-shard response
     int maxBucket;  // the current max bucket across all bucket types... incremented as we encounter more
     int shardNum = -1;  // TODO: keep same mapping across multiple phases...
     boolean bucketWasMissing;
+    private int pass = 0;
+    public enum PendingRefinement { NO, PENDING_RESULTS, ONGOING }
+    private PendingRefinement ancestorHasPendingRefinement = PendingRefinement.NO;
+    private boolean hasPendingTopLevel;
+    private boolean refinementComplete;
+    private final int passLimit;
 
     public void newShard(String shard) {
       Integer prev = shardmap.put(shard, ++shardNum);
@@ -92,6 +99,84 @@ public abstract class FacetMerger {
       return oldVal;
     }
 
+    public PendingRefinement ancestorHasPendingRefinement() {
+      return ancestorHasPendingRefinement;
+    }
+
+    public PendingRefinement updateAncestorHasPendingRefinement(PendingRefinement newVal) {
+      final PendingRefinement oldVal = ancestorHasPendingRefinement;
+      if (newVal.compareTo(oldVal) > 0) {
+        ancestorHasPendingRefinement = newVal;
+      }
+      return oldVal;
+    }
+
+    public void setAncestorHasPendingRefinement(PendingRefinement newVal) {
+      ancestorHasPendingRefinement = newVal;
+    }
+
+    public boolean shardFinished() {
+      return refinementComplete && !hasPendingTopLevel;
+    }
+
+    public PendingRefinement maybeIterativeRefinement(boolean currentPassRefinement, boolean initialPass) {
+      switch (ancestorHasPendingRefinement) {
+        case NO:
+          if (initialPass) {
+            // first pass should always be `ONGOING`
+            return PendingRefinement.ONGOING;
+          } else if (currentPassRefinement) {
+            return PendingRefinement.PENDING_RESULTS;
+          } else {
+            return PendingRefinement.NO;
+          }
+        case PENDING_RESULTS:
+        case ONGOING:
+          // even when parent refinement is PENDING_RESULTS, the previous pass may have introduced new values at
+          // this (child) level that have been integrated but not yet evaluated for possible further refinement;
+          // so we should consider refinement at this (child) level to be ONGOING.
+          refinementComplete = false;
+          return PendingRefinement.ONGOING;
+        default:
+          throw new IllegalStateException();
+      }
+    }
+
+    public void setHasPendingTopLevel() {
+      hasPendingTopLevel = true;
+    }
+
+    public int getPass() {
+      return pass;
+    }
+
+    public boolean resetPerPass() {
+      assert pass < passLimit;
+      resetPerShard();
+      pass++;
+      hasPendingTopLevel = false;
+      return pass < passLimit;
+    }
+
+    public Context resetPerShard() {
+      ancestorHasPendingRefinement = PendingRefinement.NO;
+      refinementComplete = true;
+      return this;
+    }
+
+    private static int getPassLimit(FacetRequest freq) {
+      final int baseLimit = freq.doRefine() ? 1 : 0;
+      int max = baseLimit;
+      for (FacetRequest sub : freq.subFacets.values()) {
+        if (sub.getRefineMethod() == FacetRequest.RefineMethod.ITERATIVE) {
+          max = Math.max(max, baseLimit + getPassLimit(sub) + (sub.evaluateAsTopLevel() ? 1 : 0));
+        } else {
+          max = Math.max(max, getPassLimit(sub) + (sub.evaluateAsTopLevel() ? 1 : 0));
+        }
+      }
+      return max;
+    }
+
     private Map<FacetRequest, Collection<String>> refineSubMap = new IdentityHashMap<>(4);
     public Collection<String> getSubsWithRefinement(FacetRequest freq) {
       if (freq.getSubFacets().isEmpty()) return Collections.emptyList();
@@ -100,7 +185,7 @@ public abstract class FacetMerger {
 
       for (Map.Entry<String,FacetRequest> entry : freq.subFacets.entrySet()) {
         Collection<String> childSubs = getSubsWithRefinement(entry.getValue());
-        if (childSubs.size() > 0 || entry.getValue().getRefineMethod() == SIMPLE) {
+        if (childSubs.size() > 0 || entry.getValue().doRefine()) {
           if (subs == null) {
             subs = new ArrayList<>(freq.getSubFacets().size());
           }
@@ -113,6 +198,49 @@ public abstract class FacetMerger {
       }
       refineSubMap.put(freq, subs);
       return subs;
+    }
+
+    protected enum TopLevelSub { NONE, DESCENDANT, CHILD }
+    protected static final Map<TopLevelSub, Collection<String>> NONE_ENTRY;
+    static {
+      Map<TopLevelSub, Collection<String>> tmp = new EnumMap<>(TopLevelSub.class);
+      tmp.put(TopLevelSub.NONE, null);
+      NONE_ENTRY = Collections.unmodifiableMap(tmp);
+    }
+
+    private Map<FacetRequest, Map<TopLevelSub, Collection<String>>> hasTopLevelSubs = new IdentityHashMap<>(4);
+    public Map<TopLevelSub, Collection<String>> hasTopLevelSubs(FacetRequest freq) {
+      if (freq.getSubFacets().isEmpty()) return NONE_ENTRY;
+      Map<TopLevelSub, Collection<String>> cached = hasTopLevelSubs.get(freq);
+      if (cached != null) {
+        return cached;
+      }
+
+      final Set<Map.Entry<String, FacetRequest>> children = freq.subFacets.entrySet();
+      Collection<String> topLevelChildren = new ArrayList<>(children.size());
+      Collection<String> childrenWithTopLevelDescendants = new ArrayList<>(children.size());
+      for (Map.Entry<String,FacetRequest> entry : children) {
+        final FacetRequest child = entry.getValue();
+        if (child.evaluateAsTopLevel()) {
+          topLevelChildren.add(entry.getKey());
+        } else if (hasTopLevelSubs(child) != NONE_ENTRY) {
+          childrenWithTopLevelDescendants.add(entry.getKey());
+        }
+      }
+      if (topLevelChildren.isEmpty() && childrenWithTopLevelDescendants.isEmpty()) {
+        // the common case
+        hasTopLevelSubs.put(freq, NONE_ENTRY);
+        return NONE_ENTRY;
+      }
+      Map<TopLevelSub, Collection<String>> ret = new EnumMap<>(TopLevelSub.class);
+      if (!topLevelChildren.isEmpty()) {
+        ret.put(TopLevelSub.CHILD, topLevelChildren);
+      }
+      if (!childrenWithTopLevelDescendants.isEmpty()) {
+        ret.put(TopLevelSub.DESCENDANT, childrenWithTopLevelDescendants);
+      }
+      hasTopLevelSubs.put(freq, ret);
+      return ret;
     }
 
 

@@ -38,8 +38,6 @@ import org.apache.solr.search.join.GraphQuery;
 import org.apache.solr.search.join.GraphQueryParser;
 import org.apache.solr.util.RTimer;
 
-import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
-
 /**
  * A request to do facets/stats that might itself be composed of sub-FacetRequests.
  * This is a cornerstone of the facet module.
@@ -111,21 +109,26 @@ public abstract class FacetRequest {
 
   public static enum RefineMethod {
     NONE,
-    SIMPLE;
+    SIMPLE,
+    ITERATIVE;
     // NONE is distinct from null since we may want to know if refinement was explicitly turned off.
     public static FacetRequest.RefineMethod fromObj(Object method) {
       if (method == null) return null;
       if (method instanceof  Boolean) {
-        return ((Boolean)method) ? SIMPLE : NONE;
+        return ((Boolean)method) ? DEFAULT_IMPL : NONE;
       }
       if ("simple".equals(method)) {
         return SIMPLE;
+      } else if ("iterative".equals(method)) {
+        return ITERATIVE;
       } else if ("none".equals(method)) {
         return NONE;
       } else {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown RefineMethod method " + method);
       }
     }
+    static RefineMethod DEFAULT_IMPL = SIMPLE;
+    static final RefineMethod[] VALID_DEFAULT_REFINE_IMPLS = new RefineMethod[] { SIMPLE, ITERATIVE };
   }
 
 
@@ -360,7 +363,7 @@ public abstract class FacetRequest {
   }
 
   public boolean doRefine() {
-    return !(getRefineMethod()==null || getRefineMethod()==NONE);
+    return !(getRefineMethod()==null || getRefineMethod()==RefineMethod.NONE);
   }
 
   /** Returns true if this facet can return just some of the facet buckets that match all the criteria.
@@ -372,12 +375,30 @@ public abstract class FacetRequest {
   }
 
   /** Returns true if this facet, or any sub-facets can produce results from an empty domain. */
-  public boolean canProduceFromEmpty() {
+  public boolean canProduceFromEmpty(boolean refining) {
+    if (refining && processEmpty) return true;
     if (domain != null && domain.canBecomeNonEmpty()) return true;
     for (FacetRequest freq : subFacets.values()) {
-      if (freq.canProduceFromEmpty()) return true;
+      if (freq.canProduceFromEmpty(refining)) return true;
     }
     return false;
+  }
+
+  /**
+   * If true, this facet should be evaluated as a "top-level" facet for only the exact parent buckets that
+   * are guaranteed to be returned to the client. This has the effect of deferring evaluation until parent
+   * facet refinement is complete. For non-distributed, and/or "actual" top-level facets, this setting
+   * inherently has no effect.
+   *
+   * NOTE: setting this to <code>true</code> will result in more shard-level requests, the negative performance impact
+   * of which may be offset by the exclusion of parental overrequest (and consequent reduction in the number of parent
+   * buckets for which the facet must be evaluated). In most cases, a user would set this value to <code>true</code>
+   * in order to increase the accuracy of faceting/refinement for this facet. See SOLR-15836.
+   */
+  boolean topLevel;
+
+  public final boolean evaluateAsTopLevel() {
+    return topLevel;
   }
 
   public void addStat(String key, AggValueSource stat) {
@@ -419,6 +440,9 @@ public abstract class FacetRequest {
   /** Process the request with the facet context settings, a parameter-object. */
   final Object process(FacetContext fcontext) throws IOException {
     FacetProcessor<?> facetProcessor = createFacetProcessor(fcontext);
+    if (fcontext.augment != null) {
+      fcontext.augment.transformKeysToNativeType(facetProcessor.toNativeType());
+    }
 
     FacetDebugInfo debugInfo = fcontext.getDebugInfo();
     if (debugInfo == null) {

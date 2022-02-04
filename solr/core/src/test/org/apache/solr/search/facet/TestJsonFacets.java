@@ -56,6 +56,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   private static SolrInstances servers;  // for distributed testing
   private static int origTableSize;
   private static FacetField.FacetMethod origDefaultFacetMethod;
+  private static FacetRequest.RefineMethod origDefaultRefineImpl;
 
   @SuppressWarnings("deprecation")
   @BeforeClass
@@ -69,6 +70,11 @@ public class TestJsonFacets extends SolrTestCaseHS {
     origDefaultFacetMethod = FacetField.FacetMethod.DEFAULT_METHOD;
     // instead of the following, see the constructor
     //FacetField.FacetMethod.DEFAULT_METHOD = rand(FacetField.FacetMethod.values());
+
+    // we vary RefineMethod.DEFAULT_IMPL the inelegant way, because combinatorial variation with default FacetMethod
+    // would be unwieldy/unwarranted.
+    origDefaultRefineImpl = FacetRequest.RefineMethod.DEFAULT_IMPL;
+    FacetRequest.RefineMethod.DEFAULT_IMPL = rand(FacetRequest.RefineMethod.VALID_DEFAULT_REFINE_IMPLS);
 
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
@@ -92,6 +98,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     JSONTestUtil.failRepeatedKeys = false;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
     FacetField.FacetMethod.DEFAULT_METHOD = origDefaultFacetMethod;
+    FacetRequest.RefineMethod.DEFAULT_IMPL = origDefaultRefineImpl;
     if (servers != null) {
       servers.stop();
       servers = null;
@@ -100,6 +107,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   // tip: when debugging failures, change this variable to DEFAULT_METHOD
   // (or if only one method is problematic, set to that explicitly)
+  // Test suite parameters can also be passed directly on command-line test invocation, e.g.:
+  // gradlew :solr:core:test --tests "org.apache.solr.search.facet.TestJsonFacets.* {p0=DV}"
   private static final FacetField.FacetMethod TEST_ONLY_ONE_FACET_METHOD
     = null; // FacetField.FacetMethod.DEFAULT_METHOD;
 

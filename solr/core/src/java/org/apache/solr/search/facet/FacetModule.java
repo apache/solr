@@ -169,13 +169,15 @@ public class FacetModule extends SearchComponent {
     FacetComponentState facetState = getFacetComponentState(rb);
     if (facetState == null) return ResponseBuilder.STAGE_DONE;
 
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS && rb.stage != ResponseBuilder.STAGE_REFINEMENT) {
+      facetState.done = true;
       return ResponseBuilder.STAGE_DONE;
     }
 
     // Check if there are any refinements possible
     if ((facetState.mcontext == null) || facetState.mcontext.getSubsWithRefinement(facetState.facetRequest).isEmpty()) {
       clearFaceting(rb.outgoing);
+      facetState.done = true;
       return ResponseBuilder.STAGE_DONE;
     }
 
@@ -187,12 +189,32 @@ public class FacetModule extends SearchComponent {
     // requests in the outgoing queue at once.
 
     assert rb.shards.length == facetState.mcontext.numShards;
+    if (!facetState.mcontext.resetPerPass()) {
+      // we've reached the max possible refinement pass iteration. Shortcircuit now for efficiency, but if
+      // we did _not_ shortcircuit here, it should be functionally equivalent (e.g., pass all tests, etc.).
+      facetState.done = true;
+      return ResponseBuilder.STAGE_DONE;
+    }
+    int ret = ResponseBuilder.STAGE_DONE;
     for (String shard : rb.shards) {
       facetState.mcontext.setShard(shard);
 
       // shard-specific refinement
-      Map<String, Object> refinement = facetState.merger.getRefinement(facetState.mcontext);
-      if (refinement == null) continue;
+      Map<String, Object> refinement = facetState.merger.getRefinement(facetState.mcontext.resetPerShard());
+      if (refinement == null) {
+        if (!facetState.mcontext.shardFinished()) {
+          // TODO: outside of this loop (i.e., as a subsequent loop), if we have pending topLevel pivots and
+          //  either no refinements at all, or no pending parent/ancestor refinements (wrt `topLevel` subs),
+          //  we should be able to issue first-pass `topLevel` pivots in the current pass.
+          //  NOTE: I think the outer loop (in `SearchHandler.handleRequestBody(...)` should be lean enough
+          //  that this is only _worth_ doing in the current pass for the more complex mixed/overlap case
+          //  (i.e., not "no refinements at all")
+          ret = ResponseBuilder.STAGE_REFINEMENT;
+        }
+        continue;
+      }
+
+      ret = Math.min(ret, facetState.mcontext.shardFinished() ? ResponseBuilder.STAGE_DONE : ResponseBuilder.STAGE_REFINEMENT);
 
       boolean newRequest = false;
       ShardRequest shardsRefineRequest = null;
@@ -253,7 +275,8 @@ public class FacetModule extends SearchComponent {
     }
 
     // clearFaceting(rb.outgoing);
-    return ResponseBuilder.STAGE_DONE;
+    facetState.done = ret == ResponseBuilder.STAGE_DONE;
+    return ret;
   }
 
   @Override
@@ -292,7 +315,7 @@ public class FacetModule extends SearchComponent {
       }
       if (facetState.merger == null) {
         facetState.merger = facetState.facetRequest.createFacetMerger(facet);
-        facetState.mcontext = new FacetMerger.Context(sreq.responses.size());
+        facetState.mcontext = new FacetMerger.Context(sreq.responses.size(), facetState.facetRequest);
       }
 
       if ((sreq.purpose & PURPOSE_REFINE_JSON_FACETS) != 0) {
@@ -313,10 +336,10 @@ public class FacetModule extends SearchComponent {
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) return;
+    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS && rb.stage != ResponseBuilder.STAGE_REFINEMENT) return;
 
     FacetComponentState facetState = getFacetComponentState(rb);
-    if (facetState == null) return;
+    if (facetState == null || !facetState.done) return;
 
     if (facetState.merger != null) {
       // TODO: merge any refinements
@@ -350,6 +373,7 @@ public class FacetModule extends SearchComponent {
     //
     FacetMerger merger;
     FacetMerger.Context mcontext;
+    boolean done;
   }
 
   // base class for facet functions that can be used in a sort

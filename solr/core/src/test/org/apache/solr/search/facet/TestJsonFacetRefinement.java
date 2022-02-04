@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.util.TestUtil;
 
 import org.apache.solr.JSONTestUtil;
@@ -40,6 +41,7 @@ import org.noggit.ObjectBuilder;
 public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing
+  private static FacetRequest.RefineMethod origDefaultRefineImpl;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -49,6 +51,10 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
+
+    origDefaultRefineImpl = FacetRequest.RefineMethod.DEFAULT_IMPL;
+    // instead of the following, see the constructor
+    // FacetRequest.RefineMethod.DEFAULT_IMPL = rand(FacetRequest.RefineMethod.VALID_DEFAULT_REFINE_IMPLS);
   }
 
   public static void initServers() throws Exception {
@@ -65,6 +71,30 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       servers = null;
     }
     systemClearPropertySolrDisableUrlAllowList();
+    FacetRequest.RefineMethod.DEFAULT_IMPL = origDefaultRefineImpl;
+  }
+
+  // tip: when debugging failures, change this variable to DEFAULT_IMPL
+  // (or if only one impl is problematic, set to that explicitly)
+  // Test suite parameters can also be passed directly on command-line test invocation, e.g.:
+  // gradlew :solr:core:test --tests "org.apache.solr.search.facet.TestJsonFacetRefinement.* {p0=ITERATIVE}"
+  private static final FacetRequest.RefineMethod TEST_ONLY_ONE_DEFAULT_REFINE_IMPL
+          = null; // FacetRequest.RefineMethod.DEFAULT_IMPL;
+
+  @ParametersFactory
+  public static Iterable<Object[]> parameters() {
+    if (null != TEST_ONLY_ONE_DEFAULT_REFINE_IMPL) {
+      return Arrays.<Object[]>asList(new Object[] { TEST_ONLY_ONE_DEFAULT_REFINE_IMPL });
+    }
+
+    // wrap each enum val in an Object[] and return as Iterable
+    return () -> Arrays.stream(FacetRequest.RefineMethod.VALID_DEFAULT_REFINE_IMPLS)
+            .map(it -> new Object[]{it}).iterator();
+  }
+
+  public TestJsonFacetRefinement(FacetRequest.RefineMethod defImpl) {
+    assert Arrays.asList(FacetRequest.RefineMethod.VALID_DEFAULT_REFINE_IMPLS).contains(defImpl);
+    FacetRequest.RefineMethod.DEFAULT_IMPL = defImpl; // note: the real default is restored in afterTests
   }
 
 
@@ -142,7 +172,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
       FacetRequest facetRequest = parser.parse(jsonFacet);
 
       FacetMerger merger = null;
-      FacetMerger.Context ctx = new FacetMerger.Context(nShards);
+      FacetMerger.Context ctx = new FacetMerger.Context(nShards, facetRequest);
       for (int i = 0; i < nShards; i++) {
         Object response = fromJSON(responsesAndTests[i]);
         if (i == 0) {
@@ -326,13 +356,25 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         null,
         null);
 
+    final String leafLabel;
+    switch (FacetRequest.RefineMethod.DEFAULT_IMPL) {
+      case SIMPLE:
+        leafLabel = "_l";
+        break;
+      case ITERATIVE:
+        leafLabel = "_a";
+        break;
+      default:
+        throw new IllegalStateException();
+    }
+
     // for testing partial _p, we need a partial facet within a partial facet
     doTestRefine("{top:{type:terms, field:Afield, refine:true, limit:1, facet:{x : {type:terms, field:X, limit:1, refine:true} } } }",
         "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}],more:true} } ],more:true } }",
         "{top: {buckets:[{val:'B', count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}],more:true} } ],more:true } }",
         null,
         "=={top: {" +
-            "_p:[  ['A' , {x:{_l:[x1]}} ]  ]" +
+            "_p:[  ['A' , {x:{" + leafLabel + ":[x1]}} ]  ]" +
             "    }  " +
             "}"
     );
@@ -422,6 +464,18 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                  "=={x:{_l:[x3]}}",
                  "=={x:{_l:[x1,x9]}}");
 
+    final String leafLabel;
+    switch (FacetRequest.RefineMethod.DEFAULT_IMPL) {
+      case SIMPLE:
+        leafLabel = "_l";
+        break;
+      case ITERATIVE:
+        leafLabel = "_a";
+        break;
+      default:
+        throw new IllegalStateException();
+    }
+
     // hueristic refinement of nested facets
     // limit=1 + 10% + 4 =~ 5 total (at each level)
     // -> x2 is fully populated and child buckets are consistent - no refinement needed at all
@@ -452,12 +506,12 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                  "    ], more:true } }",
                  // 
                  "=={x: {" +
-                 "        _p:[  ['x3' , {y:{_l:[y31,y32,y33,y34,y35]}} ]  ]," +
+                 "        _p:[  ['x3' , {y:{" + leafLabel + ":[y31,y32,y33,y34,y35]}} ]  ]," +
                  "        _s:[  ['x4' , {y:{_l:[y4b]}} ]  ]," +
                  "    } }",
                  "=={x: {" +
-                 "        _p:[  ['x1' , {y:{_l:[y11,y12]}} ],   " +
-                 "              ['x5' , {y:{_l:[y51,y52]}} ]  ]," +
+                 "        _p:[  ['x1' , {y:{" + leafLabel + ":[y11,y12]}} ],   " +
+                 "              ['x5' , {y:{" + leafLabel + ":[y51,y52]}} ]  ]," +
                  "        _s:[  ['x4' , {y:{_l:[y4a,y4d]}} ]  ]," +
                  "    } }");
                  
@@ -731,7 +785,12 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     //
     // NOTE: parent facet limit is 1, testing with various top level overrequest/refine params to see
     // how different refinement code paths of parent effect the child refinement
-    for (String top_refine : Arrays.asList("true", "false")) {
+    //
+    // NOTE: `iterative` refinement in combination with top-level refinement (of any kind) will result in the
+    // "intuitive" ("Z...") behavior, whereas `simple` refinement will result in the "counterintuitive" ("C...")
+    // behavior that this test is specifically designed to highlight.
+    boolean iter = FacetRequest.RefineMethod.DEFAULT_IMPL == FacetRequest.RefineMethod.ITERATIVE;
+    for (String top_refine : Arrays.asList("true", "simple", "false")) {
       // if our top level facet does *NO* overrequesting, then our shard1 will return "some" as it's
       // (only) top term, which will lose to "z_all" from shard0, and the (single pass) refinement
       // logic will have no choice but to choose & refine the child facet terms from shard0: A,B,C
@@ -751,12 +810,12 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                     + "    cat_count:{ buckets:[ "
                     + "                 {val:A,count:1},"
                     + "                 {val:B,count:1},"
-                    + "                 {val:C,count:6},"
+                    + "                 "+(iter && !"false".equals(top_refine) ? "{val:Z,count:2}" : "{val:C,count:6}")+","
                     + "    ] },"
                     + "    cat_price:{ buckets:[ "
                     + "                 {val:A,count:1,sum_p:1.0},"
                     + "                 {val:B,count:1,sum_p:1.0},"
-                    + "                 {val:C,count:6,sum_p:6.0},"
+                    + "                 "+(iter && !"false".equals(top_refine) ? "{val:Z,count:2,sum_p:2.0}" : "{val:C,count:6,sum_p:6.0}")+","
                     + "    ] }"
                     + "} ] } }"
                     );
@@ -967,7 +1026,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   }
   
   /** @see #testSortedSubFacetRefinementWhenParentOnlyReturnedByOneShard */
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12556")
   @Test
   public void testSortedSubFacetRefinementWhenParentOnlyReturnedByOneShardProcessEmpty() throws Exception {
     final int numDocs = initSomeDocsWhere1ShardHasOnlyParentFacetField();
@@ -993,10 +1051,11 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     //   - or at the very least, if the purpose of "_l" is to give other buckets a chance to "bubble up"
     //     in phase#2, then shouldn't a "_l" refinement requests still include the buckets choosen in
     //     phase#1, and request that the shard fill them in in addition to returning its own top buckets?
+    boolean ancestorsProcessEmpty = random().nextBoolean();
     client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
-                         + "processEmpty:true,"
+                         + "processEmpty:"+ancestorsProcessEmpty+","
                          + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, refine:true, facet:{"
-                         + "  processEmpty:true,"
+                         + "  processEmpty:"+ancestorsProcessEmpty+","
                          + "  debug:'debug(numShards)',"
                          + "  child:{ type:terms, field:child_s, limit:2, overrequest:0, refine: true,"
                          + "          facet:{ processEmpty:true, debug:'debug(numShards)' } }"
@@ -1004,22 +1063,224 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                   , "facets=={ count: "+numDocs+","
                   + "  parent:{ buckets:[ "
                   + "    { val:pY, count: 24,"
-                  + "      debug:"+numClients+", "
+                  + "      debug:"+(ancestorsProcessEmpty ? numClients : numClients - 1)+", "
                   + "      child:{ buckets:[ "
                   + "                   {val:c1,count:3, debug:"+numClients+"},"
                   + "                   {val:c0,count:1, debug:"+numClients+"},"
                   + "      ] } },"
                   + "    { val:pX, count: 13,"
-                  + "      debug:"+numClients+", "
+                  + "      debug:"+(ancestorsProcessEmpty ? numClients : numClients - 1)+", "
                   + "      child:{ buckets:[ "
                   + "                   {val:c0,count:2, debug:"+numClients+"},"
                   + "                   {val:c1,count:1, debug:"+numClients+"},"
                   + "      ] } },"
                   + "  ] } }"
                   );
+
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
+                    + "processEmpty:"+ancestorsProcessEmpty+","
+                    + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, refine:simple, facet:{"
+                    + "  processEmpty:"+ancestorsProcessEmpty+","
+                    + "  debug:'debug(numShards)',"
+                    + "  child:{ type:terms, field:child_s, limit:2, overrequest:0, refine:simple,"
+                    + "          facet:{ processEmpty:true, debug:'debug(numShards)' } }"
+                    + "} } }")
+            , "facets=={ count: "+numDocs+","
+                    + "  parent:{ buckets:[ "
+                    + "    { val:pY, count: 24,"
+                    + "      debug:"+(ancestorsProcessEmpty ? numClients : numClients - 1)+", "
+                    + "      child:{ buckets:[] } }," // for `refine:simple`, we expect all child stats to be incomplete
+                    + "    { val:pX, count: 13,"
+                    + "      debug:"+(ancestorsProcessEmpty ? numClients : numClients - 1)+", "
+                    + "      child:{ buckets:[] } }," // for `refine:simple`, we expect all child stats to be incomplete
+                    + "  ] } }"
+    );
   }
 
-  
+  @Test
+  public void testChildPhase1Exclusion() throws Exception {
+    initServers();
+    final Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set("shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()));
+
+    List<SolrClient> clients = client.getClientProvider().all();
+    final SolrClient c0 = clients.get(0);
+    final SolrClient c1 = clients.get(1);
+
+    client.deleteByQuery("*:*", null);
+    int id = 0;
+
+    for (int i = 0; i < 5; i++) {
+      c0.add(sdoc("id", id++, "parent_s", "A", "child_s", "X"+i));
+      c0.add(sdoc("id", id++, "parent_s", "C", "child_s", "Y"+i));
+
+      c1.add(sdoc("id", id++, "parent_s", "A", "child_s", "X"+i));
+      c1.add(sdoc("id", id++, "parent_s", "B", "child_s", "Y"+i));
+      c1.add(sdoc("id", id++, "parent_s", "C", "child_s", "Z"));
+    }
+
+    client.commit();
+
+    /*
+    quoting from the comment in `testSortedSubFacetRefinementWhenParentOnlyReturnedByOneShardProcessEmpty`:
+     */
+
+    //   - or at the very least, if the purpose of "_l" is to give other buckets a chance to "bubble up"
+    //     in phase#2, then shouldn't a "_l" refinement requests still include the buckets choosen in
+    //     phase#1, and request that the shard fill them in in addition to returning its own top buckets?
+    /*
+
+    This test transposes the above question into a more generic request (i.e., no `processEmpty`, etc.)
+    The essence of the problem is that `simple` refinement method has two main requirements:
+      1. there is at most _one_ refinement request issued to each shard, and
+      2. any buckets returned are guaranteed to have accurate counts (or perhaps more generally, stats?)
+      reflecting contributions from all shards.
+
+    The proposal in the above quoted comment would work iff the "own top buckets" returned in phase#2 did not
+    introduce any new/unseen values (and note, the only case in which returning "own top buckets" would
+    be significant _would_ be the case in which it would introduce new/unseen values). If new values
+    _were_ returned in phase#2, the only way to ensure that requirement2 is respected would be to violate
+    requirement1 (i.e., by issuing _another_ refinement request to determine whether any other shards have
+    anything to contribute to the previously unseen value).
+
+    The test below describes intuitive behavior, but the failure can't exactly be called a "bug", because
+    the intuitive behavior is fundamentally incompatible with the `simple` refinement method.
+     */
+
+    // the first "absent Z" case relies on `simple` refinement, so (hack) ensure that simple refinement is used.
+    final String childRefineSpec = FacetRequest.RefineMethod.DEFAULT_IMPL == FacetRequest.RefineMethod.SIMPLE ? "true" : "simple";
+
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
+                    + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, overrefine:1, refine:true, facet:{"
+                    + "  child:{ type:terms, field:child_s, limit:10, overrequest:10, refine:" + childRefineSpec + " }"
+                    + "} } }")
+            , "facets=={ count: 25,"
+                    + "  parent:{ buckets:[ "
+                    + "    { val:A, count: 10,"
+                    + "      child:{ buckets:[ "
+                    + "                   {val:X0,count:2},"
+                    + "                   {val:X1,count:2},"
+                    + "                   {val:X2,count:2},"
+                    + "                   {val:X3,count:2},"
+                    + "                   {val:X4,count:2}"
+                    + "      ] } },"
+                    + "    { val:C, count: 10,"
+                    + "      child:{ buckets:[ "
+                    //+ "                   {val:Z, count:5}," // without `topLevel`, entirely missing b/c val not seen in phase#1
+                    + "                   {val:Y0, count:1},"
+                    + "                   {val:Y1, count:1},"
+                    + "                   {val:Y2, count:1},"
+                    + "                   {val:Y3, count:1},"
+                    + "                   {val:Y4, count:1}"
+                    + "      ] } },"
+                    + "  ] } }"
+    );
+
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
+                    + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, overrefine:1, refine:true, facet:{"
+                    + "  child:{ type:terms, field:child_s, limit:10, overrequest:10, refine:true, topLevel:true }"
+                    + "} } }")
+            , "facets=={ count: 25,"
+                    + "  parent:{ buckets:[ "
+                    + "    { val:A, count: 10,"
+                    + "      child:{ buckets:[ "
+                    + "                   {val:X0,count:2},"
+                    + "                   {val:X1,count:2},"
+                    + "                   {val:X2,count:2},"
+                    + "                   {val:X3,count:2},"
+                    + "                   {val:X4,count:2}"
+                    + "      ] } },"
+                    + "    { val:C, count: 10,"
+                    + "      child:{ buckets:[ "
+                    + "                   {val:Z, count:5}," // `topLevel` child allows this value to be present now
+                    + "                   {val:Y0, count:1},"
+                    + "                   {val:Y1, count:1},"
+                    + "                   {val:Y2, count:1},"
+                    + "                   {val:Y3, count:1},"
+                    + "                   {val:Y4, count:1}"
+                    + "      ] } },"
+                    + "  ] } }"
+    );
+
+    // we should achieve the same result by using the `iterative` refinement method:
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
+                    + "parent:{ type:terms, field:parent_s, limit:2, overrequest:0, overrefine:1, refine:true, facet:{"
+                    + "  child:{ type:terms, field:child_s, limit:10, overrequest:10, refine:iterative }"
+                    + "} } }")
+            , "facets=={ count: 25,"
+                    + "  parent:{ buckets:[ "
+                    + "    { val:A, count: 10,"
+                    + "      child:{ buckets:[ "
+                    + "                   {val:X0,count:2},"
+                    + "                   {val:X1,count:2},"
+                    + "                   {val:X2,count:2},"
+                    + "                   {val:X3,count:2},"
+                    + "                   {val:X4,count:2}"
+                    + "      ] } },"
+                    + "    { val:C, count: 10,"
+                    + "      child:{ buckets:[ "
+                    + "                   {val:Z, count:5}," // `refine:iterative` child allows this value to be present
+                    + "                   {val:Y0, count:1},"
+                    + "                   {val:Y1, count:1},"
+                    + "                   {val:Y2, count:1},"
+                    + "                   {val:Y3, count:1},"
+                    + "                   {val:Y4, count:1}"
+                    + "      ] } },"
+                    + "  ] } }"
+    );
+  }
+
+  @Test
+  public void testDeepTopLevel() throws Exception {
+    initServers();
+    final Client client = servers.getClient(random().nextInt());
+    client.queryDefaults().set("shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()));
+
+    List<SolrClient> clients = client.getClientProvider().all();
+    final SolrClient c0 = clients.get(0);
+    final SolrClient c1 = clients.get(1);
+
+    client.deleteByQuery("*:*", null);
+    int id = 0;
+
+    for (int i = 0; i < 10; i++) {
+      c0.add(sdoc("id", id++, "parent_s", "A", "child_s", "B", "leaf_s", "C"+i));
+      c1.add(sdoc("id", id++, "parent_s", "A", "child_s", "B", "leaf_s", "C"+i));
+    }
+
+    client.commit();
+
+    // randomize topLevel to clarify the fact that in this case, we expect results to be equivalent regardless of
+    // the setting of `topLevel` -- this simply verifies that `topLevel` doesn't break.
+    final boolean topLevel = random().nextBoolean();
+
+    client.testJQ(params("q", "*:*", "rows", "0", "json.facet", "{"
+                    + "parent:{ type:terms, field:parent_s, limit:10, refine:false, facet:{"
+                    + "  child:{ type:terms, field:child_s, limit:10, refine:false, facet:{"
+                    + "    leaf:{ type:terms, field:leaf_s, limit:10, refine:true, topLevel:"+topLevel+" }"
+                    + "} } } } }")
+            , "facets=={ count: 20,"
+                    + "  parent:{ buckets:[ "
+                    + "    { val:A, count: 20,"
+                    + "      child:{ buckets:[ "
+                    + "        { val:B, count: 20,"
+                    + "          leaf:{ buckets:[ "
+                    + "                   {val:C0,count:2},"
+                    + "                   {val:C1,count:2},"
+                    + "                   {val:C2,count:2},"
+                    + "                   {val:C3,count:2},"
+                    + "                   {val:C4,count:2},"
+                    + "                   {val:C5,count:2},"
+                    + "                   {val:C6,count:2},"
+                    + "                   {val:C7,count:2},"
+                    + "                   {val:C8,count:2},"
+                    + "                   {val:C9,count:2},"
+                    + "          ] } },"
+                    + "      ] } },"
+                    + "  ] } }"
+    );
+  }
+
   @Test
   public void testBasicRefinement() throws Exception {
     ModifiableSolrParams p;
