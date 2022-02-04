@@ -153,35 +153,30 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     for (int i = 0; i < 4; i++) {
       h.reload();
       final String response;
-      final int expectInserts;
       final int expectSkipSortCount;
       final int expectFullSortCount;
       switch (i) {
         case 0:
           // plain request should consult cache, irrespective of `rows` requested
           response = JQ(req("q", q, "indent", "true"));
-          expectInserts = 1;
           expectFullSortCount = 0;
           expectSkipSortCount = 1;
           break;
         case 1:
           // explicitly requesting scores should unconditionally disable fq insert
           response = JQ(req("q", q, "indent", "true", "rows", "0", "fl", "id,score", "sort", (random().nextBoolean() ? "id asc" : "score desc")));
-          expectInserts = 0;
           expectFullSortCount = 1;
           expectSkipSortCount = 0;
           break;
         case 2:
           // plain request should _always_ consult cache and skip sort when `rows=0`
           response = JQ(req("q", q, "indent", "true", "rows", "0", "sort", "id asc"));
-          expectInserts = 1;
           expectFullSortCount = 0;
           expectSkipSortCount = 1;
           break;
         case 3:
           // plain request _with_ rows should consult cache, but not skip sort
           response = JQ(req("q", q, "indent", "true", "sort", "id asc"));
-          expectInserts = 1;
           expectFullSortCount = 1;
           expectSkipSortCount = 0;
           break;
@@ -190,7 +185,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
       }
       Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
       Map<?, ?> body = (Map<?, ?>) (res.get("response"));
-      assertEquals("Bad filterCache insert count", expectInserts, coreToInserts(h.getCore()));
+      assertEquals("MatchAllDocsQuery should bypass the actual filterCache", 0, coreToInserts(h.getCore()));
       assertEquals("Bad full sort count", expectFullSortCount, coreToSortCount(h.getCore(), "full"));
       assertEquals("Bad skip sort count", expectSkipSortCount, coreToSortCount(h.getCore(), "skip"));
       assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound"))); // sanity check

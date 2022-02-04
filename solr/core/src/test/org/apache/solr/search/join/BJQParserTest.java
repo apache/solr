@@ -306,19 +306,17 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         req("q", "{!parent which=\"" + parentFilter + "\"}"),
         "//*[@numFound='6']");
 
-    // NOTE: explicitly request score to prevent optimization consulting filterCache for MatchAllDocsQuery
     assertQ("filter by parent filter",
-        req("q", "*:*", "fq", "{!parent which=\"" + parentFilter + "\"}", "fl", "id,score"),
+        req("q", "*:*", "fq", "{!parent which=\"" + parentFilter + "\"}"),
         "//*[@numFound='6']");
 
     assertEquals("didn't hit fqCache yet ", 0L,
         delta("hits", filterCache.getValue(), filtersBefore));
 
-    // NOTE: explicitly request score to prevent optimization consulting filterCache for MatchAllDocsQuery
     assertQ(
         "filter by join",
         req("q", "*:*", "fq", "{!parent which=\"" + parentFilter
-            + "\"}child_s:l", "fl", "id,score"), "//*[@numFound='6']");
+            + "\"}child_s:l"), "//*[@numFound='6']");
 
     assertEquals("in cache mode every request lookups", 3,
         delta("lookups", parentFilterCache.getValue(), parentsBefore));

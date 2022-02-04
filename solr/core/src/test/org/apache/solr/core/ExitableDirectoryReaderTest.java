@@ -67,14 +67,10 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertJQ(req("q", q,  "timeAllowed", "1", "sleep", sleep), assertionString);
 
     // now do the same for the filter cache
-    // NOTE: explicitly request score to prevent optimization consulting filterCache for MatchAllDocsQuery
-    // added to prevent crosstalk-related failures in testCacheAssumptions()!
-    assertJQ(req("q","*:*", "fq",q, "timeAllowed", "1", "sleep", sleep, "fl", "id,score"), failureAssertionString);
+    assertJQ(req("q","*:*", "fq",q, "timeAllowed", "1", "sleep", sleep), failureAssertionString);
 
     // make sure that the result succeeds this time, and that a bad filter wasn't cached
-    // NOTE: explicitly request score to prevent optimization consulting filterCache for MatchAllDocsQuery
-    // added to prevent crosstalk-related failures in testCacheAssumptions()!
-    assertJQ(req("q","*:*", "fq",q, "timeAllowed", longTimeout, "fl", "id,score"), assertionString);
+    assertJQ(req("q","*:*", "fq",q, "timeAllowed", longTimeout), assertionString);
 
     // test that Long.MAX_VALUE works
     assertJQ(req("q","name:b*", "timeAllowed",Long.toString(Long.MAX_VALUE)), assertionString);
@@ -102,15 +98,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
 
     // This gets 0 docs back. Use 10000 instead of 1 for timeAllowed and it gets 100 back and the for loop below
     // succeeds.
-    // TODO: address crosstalk between test methods; failures here can be triggered by cache consultation
-    //  in other methods (e.g., testPrefixQuery()) -- specifically, if the "values of interest" that are
-    //  supposed to trigger cache additions in _this_ class have already been inserted into the cache as
-    //  a result of other, previously-executed test methods, we won't see the expected increment in _this_
-    //  test method where it's explicitly expected. So this is a _non-reproducing_ failure; but it should
-    //  be safe as long as the `fq`s are exclusive per-test-method. (That's why the _problem_ manifested in
-    //  the case of `*:*` being added to the `filterCache`: `*:*` is of course _not_ exclusive per-test-method).
-    // NOTE: explicitly request score to prevent optimization consulting filterCache for MatchAllDocsQuery
-    String response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", "1", "sleep", sleep, "fl", "id,score"));
+    String response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", "1", "sleep", sleep));
     Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
     Map<?, ?> body = (Map<?, ?>) (res.get("response"));
     assertTrue("Should have fewer docs than " + NUM_DOCS, (long) (body.get("numFound")) < NUM_DOCS);
@@ -119,22 +107,21 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertTrue("Should have partial results", (Boolean) (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)));
 
     assertEquals("Should NOT have inserted partial results in the cache!",
-        qrInserts, (long) queryCacheStats.getValue().get("inserts"));
+        (long) queryCacheStats.getValue().get("inserts"), qrInserts);
 
     assertEquals("Should NOT have another insert", fqInserts, (long) filterCacheStats.getValue().get("inserts"));
 
     // At the end of all this, we should have no hits in the queryResultCache.
-    // NOTE: explicitly request score to prevent optimization consulting filterCache for MatchAllDocsQuery
-    response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", longTimeout, "fl", "id,score"));
+    response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", longTimeout));
 
     // Check that we did insert this one.
-    assertEquals("Hits should still be 0", 0L, (long) filterCacheStats.getValue().get("hits"));
-    assertEquals("Inserts should be bumped", fqInserts + 1, (long) filterCacheStats.getValue().get("inserts"));
+    assertEquals("Hits should still be 0", (long) filterCacheStats.getValue().get("hits"), 0L);
+    assertEquals("Inserts should be bumped", (long) filterCacheStats.getValue().get("inserts"), fqInserts + 1);
 
     res = (Map<?, ?>) fromJSONString(response);
     body = (Map<?, ?>) (res.get("response"));
 
-    assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound")));
+    assertEquals("Should have exactly " + NUM_DOCS, (long) (body.get("numFound")), NUM_DOCS);
     header = (Map<?, ?>) (res.get("responseHeader"));
     assertTrue("Should NOT have partial results", header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null);
   }
