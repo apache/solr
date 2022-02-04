@@ -508,6 +508,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-15777: Forbid useDocValuesAsStored for ICUCollationField (warn for luceneMatchVersion < 9.0.0). (Michael Gibney)
 
+* SOLR-12901: Highlighting: hl.method=unified is the new default. (David Smiley)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
