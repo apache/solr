@@ -16,12 +16,12 @@
 # limitations under the License.
 
 """
-Simple script that converts old refguide page names to new
-See sample input files in folder gen-refguide-redirects/
+Simple script that converts old refguide page names as of 8.11.1 to the new Antora URLs from 9.0
+See input files in folder gen-refguide-redirects/
 
 The old-guide.txt is the plain .adoc names from an 'ls' in old ref-guide src folder
-The new-guide.txt is output from
-    find . | grep adoc | grep -v "/images" | grep -v "/ROOT" | sed 's/\/pages//g' | sed 's/^.\///g' >new-guide.txt
+The new-guide.txt is the output from this command from the new repo in the 'modules' folder:
+    find . | grep adoc | sed 's/\/pages//g' | sed 's/^.\///g'
 The mappings.csv comes from the explicit page renamings sourced from spreadsheet
   https://docs.google.com/spreadsheets/d/1mwxSpn5Ky7-P4DLFrJGel2h7Il4muTlHmAA-AuRY1rs/edit#gid=982988701
 """
