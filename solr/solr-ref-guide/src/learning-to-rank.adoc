@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-With the *Learning To Rank* (or *LTR* for short) contrib module you can configure and run machine learned ranking models in Solr.
+With the *Learning To Rank* (or *LTR* for short) module you can configure and run machine learned ranking models in Solr.
 
 The module also supports feature extraction inside Solr.
 The only thing you need to do outside Solr is train your own ranking model.
@@ -63,52 +63,52 @@ A normalizer can be used to translate arbitrary feature values into normalized v
 
 ==== Feature Engineering
 
-The LTR contrib module includes several feature classes as well as support for custom features.
+The LTR module includes several feature classes as well as support for custom features.
 Each feature class's javadocs contain an example to illustrate use of that class.
 The process of https://en.wikipedia.org/wiki/Feature_engineering[feature engineering] itself is then entirely up to your domain expertise and creativity.
 
 [cols=",,,",options="header",]
 |===
 |Feature |Class |Example parameters |<<External Feature Information>>
-|field length |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/FieldLengthFeature.html[FieldLengthFeature] |`{"field":"title"}` |not (yet) supported
-|field value |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/FieldValueFeature.html[FieldValueFeature] |`{"field":"hits"}` |not (yet) supported
-|original score |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/OriginalScoreFeature.html[OriginalScoreFeature] |`{}` |not applicable
-|solr query |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified)` `,3.16e-11,1,1)"}` |supported
-|solr filter query |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"fq":["{!terms f=category}book"]}` |supported
-|solr query + filter query |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified),` `3.16e-11,1,1)",` `"fq":["{!terms f=category}book"]}` |supported
-|value |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] |`{"value":"$\{userFromMobile}","required":true}` |supported
-|(custom) |(custom class extending {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/Feature.html[Feature]) | |
+|field length |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/feature/FieldLengthFeature.html[FieldLengthFeature] |`{"field":"title"}` |not (yet) supported
+|field value |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/feature/FieldValueFeature.html[FieldValueFeature] |`{"field":"hits"}` |not (yet) supported
+|original score |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/feature/OriginalScoreFeature.html[OriginalScoreFeature] |`{}` |not applicable
+|solr query |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified)` `,3.16e-11,1,1)"}` |supported
+|solr filter query |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"fq":["{!terms f=category}book"]}` |supported
+|solr query + filter query |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified),` `3.16e-11,1,1)",` `"fq":["{!terms f=category}book"]}` |supported
+|value |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] |`{"value":"$\{userFromMobile}","required":true}` |supported
+|(custom) |(custom class extending {solr-javadocs}/modules/ltr/org/apache/solr/ltr/feature/Feature.html[Feature]) | |
 |===
 
 [cols=",,",options="header",]
 |===
 |Normalizer |Class |Example parameters
-|Identity |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/IdentityNormalizer.html[IdentityNormalizer] |`{}`
-|MinMax |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/MinMaxNormalizer.html[MinMaxNormalizer] |`{"min":"0", "max":"50" }`
-|Standard |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/StandardNormalizer.html[StandardNormalizer] |`{"avg":"42","std":"6"}`
-|(custom) |(custom class extending {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer]) |
+|Identity |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/norm/IdentityNormalizer.html[IdentityNormalizer] |`{}`
+|MinMax |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/norm/MinMaxNormalizer.html[MinMaxNormalizer] |`{"min":"0", "max":"50" }`
+|Standard |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/norm/StandardNormalizer.html[StandardNormalizer] |`{"avg":"42","std":"6"}`
+|(custom) |(custom class extending {solr-javadocs}/modules/ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer]) |
 |===
 
 ==== Feature Extraction
 
-The ltr contrib module includes a <<document-transformers.adoc#,[features>> transformer] to support the calculation and return of feature values for https://en.wikipedia.org/wiki/Feature_extraction[feature extraction] purposes including and especially when you do not yet have an actual reranking model.
+The ltr module includes a <<document-transformers.adoc#,[features>> transformer] to support the calculation and return of feature values for https://en.wikipedia.org/wiki/Feature_extraction[feature extraction] purposes including and especially when you do not yet have an actual reranking model.
 
 ==== Feature Selection and Model Training
 
 Feature selection and model training take place offline and outside Solr.
-The ltr contrib module supports two generalized forms of models as well as custom models.
+The ltr module supports two generalized forms of models as well as custom models.
 Each model class's javadocs contain an example to illustrate configuration of that class.
 In the form of JSON files your trained model or models (e.g., different models for different customer geographies) can then be directly uploaded into Solr using provided REST APIs.
 
 [cols=",,",options="header",]
 |===
 |General form |Class |Specific examples
-|Linear |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/LinearModel.html[LinearModel] |RankSVM, Pranking
-|Multiple Additive Trees |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/MultipleAdditiveTreesModel.html[MultipleAdditiveTreesModel] |LambdaMART, Gradient Boosted Regression Trees (GBRT)
-|Neural Network |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/NeuralNetworkModel.html[NeuralNetworkModel] |RankNet
-|(wrapper) |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/DefaultWrapperModel.html[DefaultWrapperModel] |(not applicable)
-|(custom) |(custom class extending {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/AdapterModel.html[AdapterModel]) |(not applicable)
-|(custom) |(custom class extending {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel]) |(not applicable)
+|Linear |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/LinearModel.html[LinearModel] |RankSVM, Pranking
+|Multiple Additive Trees |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/MultipleAdditiveTreesModel.html[MultipleAdditiveTreesModel] |LambdaMART, Gradient Boosted Regression Trees (GBRT)
+|Neural Network |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/NeuralNetworkModel.html[NeuralNetworkModel] |RankNet
+|(wrapper) |{solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/DefaultWrapperModel.html[DefaultWrapperModel] |(not applicable)
+|(custom) |(custom class extending {solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/AdapterModel.html[AdapterModel]) |(not applicable)
+|(custom) |(custom class extending {solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel]) |(not applicable)
 |===
 
 == Quick Start with LTR
@@ -350,7 +350,7 @@ Currently the only (and default) algorithm supported is 'TeamDraft'.
 
 === External Feature Information
 
-The {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] and {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] classes support the use of external feature information, `efi` for short.
+The {solr-javadocs}/modules/ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] and {solr-javadocs}/modules/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] classes support the use of external feature information, `efi` for short.
 
 ==== Uploading Features
 
@@ -472,25 +472,25 @@ Read more about model evolution in the <<LTR Lifecycle>> section of this page.
 
 === Training Example
 
-Example training data and a demo `train_and_upload_demo_model.py` script can be found in the `solr/contrib/ltr/example` folder in the https://gitbox.apache.org/repos/asf?p=lucene-solr.git;a=tree;f=solr/contrib/ltr/example[Apache lucene-solr Git repository] (mirrored on https://github.com/apache/lucene-solr/tree/releases/lucene-solr/{solr-docs-version}.0/solr/contrib/ltr/example[github.com]).
+Example training data and a demo `train_and_upload_demo_model.py` script can be found in the `solr/modules/ltr/example` folder in the https://gitbox.apache.org/repos/asf?p=solr.git;a=tree;f=solr/modules/ltr/example[Apache lucene-solr Git repository] (mirrored on https://github.com/apache/lucene-solr/tree/releases/lucene-solr/{solr-full-version}/solr/modules/ltr/example[github.com]).
 This example folder is not shipped in the Solr binary release.
 
 == Installation of LTR
 
-The ltr contrib module requires the `dist/solr-ltr-*.jar` JARs.
+The ltr module requires the `modules/ltr/lib/solr-ltr-*.jar` JARs.
 
 == LTR Configuration
 
-Learning-To-Rank is a contrib module and therefore its plugins must be configured in `solrconfig.xml`.
+Learning-To-Rank is a module and therefore its plugins must be configured in `solrconfig.xml`.
 
 === Minimum Requirements
 
-* Include the required contrib JARs.
+* Include the required module JARs.
 Note that by default paths are relative to the Solr core so they may need adjustments to your configuration, or an explicit specification of the `$solr.install.dir`.
 +
 [source,xml]
 ----
-<lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" />
+<lib dir="${solr.install.dir:../../../..}/modules/ltr/lib/" regex=".*\.jar" />
 ----
 
 * Declaration of the `ltr` query parser.
@@ -533,13 +533,13 @@ Note that by default paths are relative to the Solr core so they may need adjust
 ==== LTRThreadModule
 
 A thread module can be configured for the query parser and/or the transformer to parallelize the creation of feature weights.
-For details, please refer to the {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/LTRThreadModule.html[LTRThreadModule] javadocs.
+For details, please refer to the {solr-javadocs}/modules/ltr/org/apache/solr/ltr/LTRThreadModule.html[LTRThreadModule] javadocs.
 
 ==== Feature Vector Customization
 
 The features transformer returns dense CSV values such as `featureA=0.1,featureB=0.2,featureC=0.3,featureD=0.0`.
 
-For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can customize the {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/response/transform/LTRFeatureLoggerTransformerFactory.html[feature logger transformer] declaration in `solrconfig.xml` as follows:
+For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can customize the {solr-javadocs}/modules/ltr/org/apache/solr/ltr/response/transform/LTRFeatureLoggerTransformerFactory.html[feature logger transformer] declaration in `solrconfig.xml` as follows:
 
 [source,xml]
 ----
@@ -554,16 +554,16 @@ For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can c
 ==== Implementation and Contributions
 
 How does Solr Learning-To-Rank work under the hood?::
-Please refer to the `ltr` {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/package-summary.html[javadocs] for an implementation overview.
+Please refer to the `ltr` {solr-javadocs}/modules/ltr/org/apache/solr/ltr/package-summary.html[javadocs] for an implementation overview.
 
 How could I write additional models and/or features?::
 Contributions for further models, features, normalizers and interleaving algorithms are welcome.
 Related links:
 +
-* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel javadocs]
-* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
-* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer javadocs]
-* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/interleaving/Interleaving.html[Interleaving javadocs]
+* {solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel javadocs]
+* {solr-javadocs}/modules/ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
+* {solr-javadocs}/modules/ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer javadocs]
+* {solr-javadocs}/modules/ltr/org/apache/solr/ltr/interleaving/Interleaving.html[Interleaving javadocs]
 * https://cwiki.apache.org/confluence/display/solr/HowToContribute
 * https://cwiki.apache.org/confluence/display/LUCENE/HowToContribute
 

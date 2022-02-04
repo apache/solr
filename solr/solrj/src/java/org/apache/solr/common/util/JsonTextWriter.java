@@ -65,6 +65,10 @@ public interface JsonTextWriter extends TextWriter {
     _writeChar(']');
   }
 
+  default void writeStrRaw(String name, String val) throws IOException {
+    _writeStr(val);
+  }
+
   default void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     // it might be more efficient to use a stringbuilder or write substrings
     // if writing chars to the stream is slow.
@@ -185,12 +189,12 @@ public interface JsonTextWriter extends TextWriter {
     _writeChar(':');
   }
 
-  default void writeJsonIter(Iterator<?> val) throws IOException {
+  default void writeJsonIter(Iterator<?> val, boolean raw) throws IOException {
     incLevel();
     boolean first = true;
     while (val.hasNext()) {
       if (!first) indent();
-      writeVal(null, val.next());
+      writeVal(null, val.next(), raw);
       if (val.hasNext()) {
         writeArraySeparator();
       }
@@ -264,15 +268,15 @@ public interface JsonTextWriter extends TextWriter {
   }
 
 
-  default void writeArray(String name, List<?> l) throws IOException {
+  default void writeArray(String name, List<?> l, boolean raw) throws IOException {
     writeArrayOpener(l.size());
-    writeJsonIter(l.iterator());
+    writeJsonIter(l.iterator(), raw);
     writeArrayCloser();
   }
 
-  default void writeArray(String name, Iterator<?> val) throws IOException {
+  default void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
     writeArrayOpener(-1); // no trivial way to determine array size
-    writeJsonIter(val);
+    writeJsonIter(val, raw);
     writeArrayCloser();
   }
 

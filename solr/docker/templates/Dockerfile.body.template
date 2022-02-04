@@ -26,17 +26,15 @@
 #-#
 #-#
 
-# remove what we don't want; ensure permissions are right
-#  TODO; arguably these permissions should have been set correctly previously in the TAR
+# add symlink to /opt/solr, remove what we don't want.
+# Remove the Dockerfile because it might not represent the dockerfile that was used to generate the image.
 RUN set -ex; \
   (cd /opt; ln -s solr-*/ solr); \
-  rm -Rf /opt/solr/docs /opt/solr/docker/Dockerfile* /opt/solr/dist/solr-solrj-*.jar /opt/solr/dist/solrj-lib /opt/solr/dist/solr-core-*.jar; \
-  find /opt/solr/ -type d -print0 | xargs -0 chmod 0755; \
-  find /opt/solr/ -type f -print0 | xargs -0 chmod 0644; \
-  chmod -R 0755 /opt/solr/docker/scripts /opt/solr/bin /opt/solr/contrib/prometheus-exporter/bin/solr-exporter /opt/solr/server/scripts/cloud-scripts
+  rm -Rf /opt/solr/docs /opt/solr/docker/Dockerfile;
 
-LABEL maintainer="The Apache Lucene/Solr Project"
-LABEL repository="https://github.com/apache/lucene-solr"
+LABEL maintainer="The Apache Solr Project"
+LABEL url="https://solr.apache.org"
+LABEL repository="https://github.com/apache/solr"
 
 RUN set -ex; \
     apt-get update; \
@@ -47,7 +45,7 @@ ENV SOLR_USER="solr" \
     SOLR_UID="8983" \
     SOLR_GROUP="solr" \
     SOLR_GID="8983" \
-    PATH="/opt/solr/bin:/opt/solr/docker/scripts:/opt/solr/contrib/prometheus-exporter/bin:$PATH" \
+    PATH="/opt/solr/bin:/opt/solr/docker/scripts:/opt/solr/prometheus-exporter/bin:$PATH" \
     SOLR_INCLUDE=/etc/default/solr.in.sh \
     SOLR_HOME=/var/solr/data \
     SOLR_PID_DIR=/var/solr \

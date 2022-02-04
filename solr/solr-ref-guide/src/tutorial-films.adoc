@@ -32,7 +32,7 @@ If you did, though, and need to restart Solr, issue these commands:
 `./bin/solr start -c -p 8983 -s example/cloud/node1/solr`
 
 This starts the first node.
-When it's done start the second node, and tell it how to connect to to ZooKeeper:
+When it's done start the second node, and tell it how to connect to ZooKeeper:
 
 `./bin/solr start -c -p 7574 -s example/cloud/node2/solr -z localhost:9983`
 
@@ -88,7 +88,7 @@ WARNING: Using _default configset. Data driven schema functionality is enabled b
 
 Connecting to ZooKeeper at localhost:9983 ...
 INFO  - 2017-07-27 15:07:46.191; org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider; Cluster at localhost:9983 ready
-Uploading /{solr-docs-version}.0/server/solr/configsets/_default/conf for config films to ZooKeeper at localhost:9983
+Uploading /{solr-full-version}/server/solr/configsets/_default/conf for config films to ZooKeeper at localhost:9983
 
 Creating new collection 'films' using command:
 http://localhost:7574/solr/admin/collections?action=CREATE&name=films&numShards=2&replicationFactor=2&collection.configName=films
@@ -210,7 +210,7 @@ Pick one of the formats and index it into the "films" collection (in each exampl
 ----
 bin/post -c films example/films/films.json
 
-C:\solr-{solr-docs-version}.0> java -jar -Dc=films -Dauto example\exampledocs\post.jar example\films\*.json
+C:\solr-{solr-full-version}> java -jar -Dc=films -Dauto example\exampledocs\post.jar example\films\*.json
 ----
 
 .To Index XML Format
@@ -218,7 +218,7 @@ C:\solr-{solr-docs-version}.0> java -jar -Dc=films -Dauto example\exampledocs\po
 ----
 bin/post -c films example/films/films.xml
 
-C:\solr-{solr-docs-version}.0> java -jar -Dc=films -Dauto example\exampledocs\post.jar example\films\*.xml
+C:\solr-{solr-full-version}> java -jar -Dc=films -Dauto example\exampledocs\post.jar example\films\*.xml
 ----
 
 .To Index CSV Format
@@ -226,7 +226,7 @@ C:\solr-{solr-docs-version}.0> java -jar -Dc=films -Dauto example\exampledocs\po
 ----
 bin/post -c films example/films/films.csv -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
 
-C:\solr-{solr-docs-version}.0> java -jar -Dc=films -Dparams=f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=| -Dauto example\exampledocs\post.jar example\films\*.csv
+C:\solr-{solr-full-version}> java -jar -Dc=films -Dparams=f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=| -Dauto example\exampledocs\post.jar example\films\*.csv
 ----
 
 Each command includes these main parameters:
@@ -244,7 +244,7 @@ Each command will produce output similar to the below seen while indexing JSON:
 [source,bash,subs="verbatim,attributes"]
 ----
 $ ./bin/post -c films example/films/films.json
-/bin/java -classpath /solr-{solr-docs-version}.0/dist/solr-core-{solr-docs-version}.0.jar -Dauto=yes -Dc=films -Ddata=files org.apache.solr.util.SimplePostTool example/films/films.json
+/bin/java -classpath /solr-{solr-full-version}/server/solr-webapp/webapp/WEB-INF/lib/solr-core-{solr-full-version}.jar -Dauto=yes -Dc=films -Ddata=files org.apache.solr.util.SimplePostTool example/films/films.json
 SimplePostTool version 5.0.0
 Posting files to [base] url http://localhost:8983/solr/films/update...
 Entering auto mode. File endings considered are xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
@@ -444,7 +444,7 @@ This results in the following response, which shows a facet for each category an
             {
               "field":"directed_by_str",
               "value":"Michael Winterbottom",
-              "count":4}}]}]}}}
+              "count":4}]}]}}}
 
 We've truncated this output as well - you will see a lot of genres and directors in your screen.
 

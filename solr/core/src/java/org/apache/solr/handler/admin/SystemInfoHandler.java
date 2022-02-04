@@ -29,6 +29,7 @@ import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
 import org.apache.solr.util.RTimer;
@@ -64,7 +65,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class SystemInfoHandler extends RequestHandlerBase 
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String PARAM_NODE = "node";
 
   public static String REDACT_STRING = RedactionUtils.getRedactString();
 
@@ -353,6 +353,7 @@ public class SystemInfoHandler extends RequestHandlerBase
         RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
         Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
         info.add("roles", roles);
+        info.add("permissions", rbap.getPermissionNamesForRoles(roles));
       }
     }
 
@@ -432,7 +433,11 @@ public class SystemInfoHandler extends RequestHandlerBase
   public Boolean registerV2() {
     return Boolean.TRUE;
   }
-  
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.CONFIG_READ_PERM;
+  }
 }
 
 

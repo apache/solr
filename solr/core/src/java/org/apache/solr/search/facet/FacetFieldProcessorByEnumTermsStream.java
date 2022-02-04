@@ -48,6 +48,7 @@ import org.apache.solr.search.facet.SlotAcc.SlotContext;
  * It's able to stream since no data needs to be accumulated so long as it's index order.
  */
 class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implements Closeable {
+  long effectiveLimit;
   long bucketsToSkip;
   long bucketsReturned;
 
@@ -143,6 +144,19 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
     countOnly = freq.facetStats.size() == 0 || freq.facetStats.values().iterator().next() instanceof CountAgg;
     hasSubFacets = freq.subFacets.size() > 0;
     bucketsToSkip = freq.offset;
+
+    effectiveLimit = freq.limit;
+    if (freq.overrequest < -1) {
+      // other negative values are not supported
+      throw new IllegalArgumentException("Illegal `overrequest` specified: " + freq.overrequest);
+    } else if (freq.overrequest > 0 && (fcontext.isShard() || null != resort)) {
+      // NOTE: "index sort" _never_ applies a default overrequest. In both the shard case and the resort case, the
+      // default overrequest is `0`. However, if `overrequest` is explicitly specified, we respect it except for
+      // non-distrib, no-resort request. Overrequest is relevant for the `resort` case; but it can also be relevant
+      // in some edge cases of the "shard" case, where it can affect the behavior of `isBucketComplete()`
+      // (see SOLR-14595).
+      effectiveLimit += freq.overrequest;
+    }
 
     createAccs(-1, 1);
 
@@ -324,7 +338,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
           continue;
         }
 
-        if (freq.limit >= 0 && ++bucketsReturned > freq.limit) {
+        if (effectiveLimit >= 0 && ++bucketsReturned > effectiveLimit) {
           shardHasMoreBuckets.set(true);
           return null;
         }

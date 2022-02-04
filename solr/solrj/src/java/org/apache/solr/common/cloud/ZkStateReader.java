@@ -102,6 +102,16 @@ public class ZkStateReader implements SolrCloseable {
   public static final String STATE_TIMESTAMP_PROP = "stateTimestamp";
   public static final String COLLECTIONS_ZKNODE = "/collections";
   public static final String LIVE_NODES_ZKNODE = "/live_nodes";
+
+  // TODO: Deprecate and remove support for roles.json in an upcoming release.
+  /**
+   * The following, node_roles and roles.json are for assigning roles to
+   * nodes. The node_roles is the preferred way (using -Dsolr.node.roles param),
+   * and roles.json is used by legacy ADDROLE API command.
+   */
+  public static final String NODE_ROLES = "/node_roles";
+  public static final String ROLES = "/roles.json";
+
   public static final String ALIASES = "/aliases.json";
   /**
    * This ZooKeeper file is no longer used starting with Solr 9 but keeping the name around to check if it
@@ -123,7 +133,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String TLOG_REPLICAS = "tlogReplicas";
   public static final String READ_ONLY = "readOnly";
 
-  public static final String ROLES = "/roles.json";
 
   public static final String CONFIGS_ZKNODE = "/configs";
   public final static String CONFIGNAME_PROP = "configName";

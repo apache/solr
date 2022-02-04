@@ -198,8 +198,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
       assertTrue(DirectoryFactory.LOCK_TYPE_SIMPLE.equals(lockType) ||
           DirectoryFactory.LOCK_TYPE_NATIVE.equals(lockType) ||
           DirectoryFactory.LOCK_TYPE_SINGLE.equals(lockType) ||
-          DirectoryFactory.LOCK_TYPE_NONE.equals(lockType) ||
-          DirectoryFactory.LOCK_TYPE_HDFS.equals(lockType));
+          DirectoryFactory.LOCK_TYPE_NONE.equals(lockType));
     }
 
     ++mSizeExpected; assertTrue(m.get("infoStreamEnabled") instanceof Boolean);

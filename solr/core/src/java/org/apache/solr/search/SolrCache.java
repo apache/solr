@@ -41,7 +41,6 @@ public interface SolrCache<K,V> extends SolrInfoBean {
   String MAX_IDLE_TIME_PARAM = "maxIdleTime";
   String INITIAL_SIZE_PARAM = "initialSize";
   String CLEANUP_THREAD_PARAM = "cleanupThread";
-  String SHOW_ITEMS_PARAM = "showItems";
   String ASYNC_PARAM = "async";
 
   /**

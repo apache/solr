@@ -270,7 +270,7 @@ else
 fi
 
 # Requestlog options
-if [ "$SOLR_REQUESTLOG_ENABLED" == "true" ]; then
+if [ "${SOLR_REQUESTLOG_ENABLED:-true}" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=requestlog")
 fi
 
@@ -2069,8 +2069,11 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
     CLOUD_MODE_OPTS+=('-Dbootstrap_confdir=./solr/collection1/conf' '-Dcollection.configName=myconf' '-DnumShards=1')
   fi
 
+  if [ "$SOLR_SOLRXML_REQUIRED" == "true" ]; then
+    CLOUD_MODE_OPTS+=("-Dsolr.solrxml.required=true")
+  fi
 else
-  if [ ! -e "$SOLR_HOME/solr.xml" ]; then
+  if [ ! -e "$SOLR_HOME/solr.xml" ] && [ "$SOLR_SOLRXML_REQUIRED" == "true" ]; then
     echo -e "\nSolr home directory $SOLR_HOME must contain a solr.xml file!\n"
     exit 1
   fi

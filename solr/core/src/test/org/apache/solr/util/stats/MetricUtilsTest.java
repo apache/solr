@@ -46,7 +46,7 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
     final Timer timer = new Timer();
     final int iterations = random().nextInt(100);
     for (int i = 0; i < iterations; ++i) {
-      timer.update(Math.abs(random().nextInt()) + 1, TimeUnit.NANOSECONDS);
+      timer.update(random().nextInt(Integer.MAX_VALUE - 1) + 1, TimeUnit.NANOSECONDS);
     }
     // obtain timer metrics
     Map<String,Object> map = new HashMap<>();

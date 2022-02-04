@@ -202,11 +202,11 @@ ssh -n $ZKSOLR1_HOST docker exec -i zksolr1 /opt/solr/bin/solr create_collection
 
 To load data, and see it was split over shards:
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
 docker exec -it --user=solr zksolr1 bin/post -c my_collection1 example/exampledocs/manufacturers.xml
-# /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -classpath /opt/solr/dist/solr-core-9.0.0.jar -Dauto=yes -Dc=my_collection1 -Ddata=files org.apache.solr.util.SimplePostTool example/exampledocs/manufacturers.xml
-# SimplePostTool version 9.0.0
+# /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -classpath /opt/solr/server/lib/ext/*:/opt/solr/server/solr-webapp/webapp/WEB-INF/lib/* -Dauto=yes -Dc=my_collection1 -Ddata=files org.apache.solr.util.SimplePostTool example/exampledocs/manufacturers.xml
+# SimplePostTool version {solr-full-version}
 # Posting files to [base] url http://localhost:8983/solr/my_collection1/update...
 # Entering auto mode. File endings considered are xml,json,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
 # POSTing file manufacturers.xml (application/xml) to [base]

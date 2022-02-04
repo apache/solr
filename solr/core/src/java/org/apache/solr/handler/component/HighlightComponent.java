@@ -34,7 +34,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
-import org.apache.solr.highlight.PostingsSolrHighlighter;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.highlight.UnifiedSolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -59,7 +58,6 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   public enum HighlightMethod {
     UNIFIED("unified"),
     FAST_VECTOR("fastVector"),
-    POSTINGS("postings"),
     ORIGINAL("original");
 
     private static final Map<String, HighlightMethod> METHODS = Collections.unmodifiableMap(Stream.of(values())
@@ -84,23 +82,8 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
   private PluginInfo info = PluginInfo.EMPTY_INFO;
 
-  @Deprecated // DWS: in 7.0 lets restructure the abstractions/relationships
+  // TODO lets restructure the abstractions/relationships
   private SolrHighlighter solrConfigHighlighter;
-
-  /**
-   * @deprecated instead depend on {@link #process(ResponseBuilder)} to choose the highlighter based on
-   * {@link HighlightParams#METHOD}
-   */
-  @Deprecated
-  public static SolrHighlighter getHighlighter(SolrCore core) {
-    HighlightComponent hl = (HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
-    return hl==null ? null: hl.getHighlighter();
-  }
-
-  @Deprecated
-  public SolrHighlighter getHighlighter() {
-    return solrConfigHighlighter;
-  }
 
   @Override
   public void init(PluginInfo info) {
@@ -182,7 +165,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     }
   }
 
-  protected SolrHighlighter getHighlighter(SolrParams params) {
+  public SolrHighlighter getHighlighter(SolrParams params) {
     HighlightMethod method = HighlightMethod.parse(params.get(HighlightParams.METHOD));
     if (method == null) {
       return solrConfigHighlighter;
@@ -194,11 +177,6 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
           return solrConfigHighlighter;
         }
         return new UnifiedSolrHighlighter(); // TODO cache one?
-      case POSTINGS:
-        if (solrConfigHighlighter instanceof PostingsSolrHighlighter) {
-          return solrConfigHighlighter;
-        }
-        return new PostingsSolrHighlighter(); // TODO cache one?
       case FAST_VECTOR: // fall-through
       case ORIGINAL:
         if (solrConfigHighlighter instanceof DefaultSolrHighlighter) {

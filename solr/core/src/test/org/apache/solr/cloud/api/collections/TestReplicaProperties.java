@@ -89,14 +89,12 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
 
     try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
-      try {
+      SolrException se = assertThrows(SolrException.class, () ->
         doPropertyAction(client,
             "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
-            "property", "preferredLeader");
-      } catch (SolrException se) {
-        assertTrue("Should have seen missing required parameter 'collection' error",
-            se.getMessage().contains("Missing required parameter: collection"));
-      }
+            "property", "preferredLeader"));
+      assertTrue("Should have seen missing required parameter 'collection' error",
+          se.getMessage().contains("Missing required parameter: collection"));
 
       doPropertyAction(client,
           "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
@@ -112,18 +110,16 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
           "shardUnique", "true");
       verifyUniqueAcrossCollection(client, COLLECTION_NAME, "property.newunique");
 
-      try {
+      se = assertThrows(SolrException.class, () ->
         doPropertyAction(client,
             "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
             "collection", COLLECTION_NAME,
             "property", "whatever",
-            "shardUnique", "false");
-        fail("Should have thrown an exception here.");
-      } catch (SolrException se) {
-        assertTrue("Should have gotten a specific error message here",
-            se.getMessage().contains("Balancing properties amongst replicas in a slice requires that the " +
-                "property be pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'"));
-      }
+            "shardUnique", "false"));
+      assertTrue("Should have gotten a specific error message here",
+          se.getMessage().contains("Balancing properties amongst replicas in a slice requires that the " +
+              "property be pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'"));
+
       // Should be able to set non-unique-per-slice values in several places.
       Map<String, Slice> slices = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
       List<String> sliceList = new ArrayList<>(slices.keySet());
@@ -148,18 +144,15 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
           "property", "property.bogus1",
           "property.value", "whatever");
 
-      try {
+      se = assertThrows(SolrException.class, () ->
         doPropertyAction(client,
             "action", CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
             "collection", COLLECTION_NAME,
             "property", "bogus1",
-            "shardUnique", "false");
-        fail("Should have thrown parameter error here");
-      } catch (SolrException se) {
-        assertTrue("Should have caught specific exception ",
-            se.getMessage().contains("Balancing properties amongst replicas in a slice requires that the property be " +
-                "pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'"));
-      }
+            "shardUnique", "false"));
+      assertTrue("Should have caught specific exception ",
+          se.getMessage().contains("Balancing properties amongst replicas in a slice requires that the property be " +
+              "pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'"));
 
       // Should have no effect despite the "shardUnique" param being set.
 

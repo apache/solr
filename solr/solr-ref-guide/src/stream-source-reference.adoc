@@ -214,7 +214,7 @@ This is incompatible with rows, offset and overfetch.
 This value is applied to each dimension.
 '-1' will fetch all the buckets.
 * `metrics`: List of metrics to compute for the buckets.
-Currently supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`, `per(col, 50)`.
+Currently supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`,`countDist(col)`, `std(col)`, `per(col, 50)`.
 The `per` metric calculates a percentile
 for a numeric column and can be specified multiple times in the same facet function.
 * `tiered`: (Default true) Flag governing whether the `facet` stream should parallelize JSON Facet requests to multiple Solr collections using a `plist` expression; this option only applies if the `collection` is an alias backed by multiple collections.
@@ -240,6 +240,7 @@ facet(collection1,
       max(a_f),
       avg(a_i),
       avg(a_f),
+      std(a_f),
       per(a_f, 50),
       per(a_f, 75),
       count(*))
@@ -265,6 +266,7 @@ facet(collection1,
       max(a_f),
       avg(a_i),
       avg(a_f),
+      std(a_f),
       per(a_f, 50),
       per(a_f, 75),
       count(*))
@@ -582,7 +584,7 @@ The stats function currently supports the following metrics: `count(*)`, `sum()`
 * `collection`: (Mandatory) Collection the stats will be aggregated from.
 * `q`: (Mandatory) The query to build the aggregations from.
 * `metrics`: (Mandatory) The metrics to include in the result tuple.
-Current supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`,  `per(col, 50)`.
+Current supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`, `countDist(col)`, `std(col)`,  `per(col, 50)`.
 The `per` metric calculates a percentile
 for a numeric column and can be specified multiple times in the same stats function.
 
@@ -601,6 +603,7 @@ stats(collection1,
       max(a_f),
       avg(a_i),
       avg(a_f),
+      std(a_f),
       per(a_f, 50),
       per(a_f, 75),
       count(*))
@@ -617,13 +620,15 @@ JSON Facet API as its high performance aggregation engine.
 * `collection`: (Mandatory) Collection the stats will be aggregated from.
 * `q`: (Mandatory) The query to build the aggregations from.
 * `field`: (Mandatory) The date field for the time series.
+* `split`: (Optional) A string field. Will produce separate time lines for each value in the field.
+* `limit`: (Optional) A limit on the number of values in the split field for each time bucket. Split values are in descending order by the first metric.
 * `start`: (Mandatory) The start of the time series expressed in Solr date or date math syntax.
 * `end`: (Mandatory) The end of the time series expressed in Solr date or date math syntax.
 * `gap`: (Mandatory) The time gap between time series aggregation points expressed in Solr date math syntax.
 * `format`: (Optional) Date template to format the date field in the output tuples.
 Formatting is performed by Java's SimpleDateFormat class.
 * `metrics`: (Mandatory) The metrics to include in the result tuple.
-Current supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`,  `per(col, 50)`.
+Current supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`, `countDist(col)`, `std(col)`, `per(col, 50)`.
 The `per` metric calculates a percentile
 for a numeric column and can be specified multiple times in the same timeseries function.
 
@@ -634,7 +639,9 @@ for a numeric column and can be specified multiple times in the same timeseries 
 ----
 timeseries(collection1,
            q=*:*,
-           field="rec_dt"
+           field="rec_dt",
+           split="customer_s",
+           limit="5",
            start="NOW-30DAYS",
            end="NOW",
            gap="+1DAY",
@@ -644,6 +651,7 @@ timeseries(collection1,
            max(a_f),
            avg(a_i),
            avg(a_f),
+           std(a_f),
            per(a_f, 50),
            per(a_f, 75),
            count(*))
