@@ -1300,6 +1300,41 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public static final int GET_DOCLIST = 0x02; // get the documents actually returned in a response
   public static final int GET_SCORES = 0x01;
 
+  private static boolean isConstantScoreQuery(Query q) {
+    if (q instanceof BoostQuery) {
+      // ConstantScoreQueries are often (always?) wrapped in BoostQuery to assign specific score
+      q = ((BoostQuery)q).getQuery();
+    }
+    return q instanceof ConstantScoreQuery;
+  }
+
+  private static boolean sortIncludesOtherThanScore(final Sort sort) {
+    if (sort == null) {
+      return false;
+    }
+    final SortField[] sortFields = sort.getSort();
+    return sortFields.length > 1 || sortFields[0].getType() != Type.SCORE;
+  }
+
+  private boolean useFilterCacheForDynamicScoreQuery(boolean needSort, QueryCommand cmd) {
+    if (!useFilterForSortedQuery) {
+      // under no circumstance use filterCache
+      return false;
+    } else if (!needSort) {
+      // if don't need to sort at all, doesn't matter whether score would be needed
+      return true;
+    } else {
+      // we _do_ need to sort; only use filterCache if `score` is not a factor for sort
+      final Sort sort = cmd.getSort();
+      if (sort == null) {
+        // defaults to sort-by-score, so can't use filterCache
+        return false;
+      } else {
+        return Arrays.stream(sort.getSort()).noneMatch((sf) -> sf.getType() == SortField.Type.SCORE);
+      }
+    }
+  }
+
   /**
    * getDocList version that uses+populates query and filter caches. In the event of a timeout, the cache is not
    * populated.
@@ -1390,20 +1425,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) != 0 || filterCache == null) {
       needSort = true; // this value should be irrelevant when `useFilterCache=false`
       useFilterCache = false;
+    } else if (q instanceof MatchAllDocsQuery // special-case MatchAllDocsQuery: implicit default useFilterForSortedQuery=true
+            || (useFilterForSortedQuery && isConstantScoreQuery(q))) { // default behavior should not risk filterCache thrashing
+      // We only need to sort if we're returning results AND sorting by something other than SCORE (sort by
+      // "score" alone is pointless for these constant score queries)
+      needSort = cmd.getLen() > 0 && sortIncludesOtherThanScore(cmd.getSort());
+      useFilterCache = true; // even if `sort:score` is specified, it will have no effect, so always use filterCache
     } else {
-      final Sort sort;
-      if (q instanceof  MatchAllDocsQuery // special-case MatchAllDocsQuery: implicit default useFilterForSortedQuery=true
-              || (useFilterForSortedQuery && q instanceof ConstantScoreQuery)) { // default behavior should not risk filterCache thrashing
-        final SortField[] sortFields;
-        // We only need to sort if we're returning results AND sorting by something other than SCORE (sort by
-        // "score" alone is pointless for these constant score queries)
-        needSort = cmd.getLen() > 0 && (sort = cmd.getSort()) != null && ((sortFields = sort.getSort()).length > 1 || sortFields[0].getType() != Type.SCORE);
-        useFilterCache = true; // even if `sort:score` is specified, it will have no effect, so always use filterCache
-      } else {
-        needSort = cmd.getLen() > 0; // for non-constant-score queries, must sort unless no docs requested
-        useFilterCache = useFilterForSortedQuery && (sort = cmd.getSort()) != null
-                && Arrays.stream(sort.getSort()).noneMatch((sf) -> sf.getType() == SortField.Type.SCORE);
-      }
+      needSort = cmd.getLen() > 0; // for non-constant-score queries, must sort unless no docs requested
+      useFilterCache = useFilterCacheForDynamicScoreQuery(needSort, cmd);
     }
 
     if (useFilterCache) {
