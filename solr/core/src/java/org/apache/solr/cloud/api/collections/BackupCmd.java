@@ -143,7 +143,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       if(backupProperties != null) {
         // It is safe to extract results here
         @SuppressWarnings("unchecked")
-        NamedList<Object> response = (NamedList<Object>)results.get("response");
+        NamedList<Object> response = (NamedList<Object>) results.get("response");
         response.add("endTime", backupProperties.getEndTime());
       }
       
