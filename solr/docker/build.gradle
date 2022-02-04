@@ -23,11 +23,11 @@ description = 'Solr Docker image'
 
 apply plugin: 'base'
 
-// Solr Docker inputs   (note: keep defaults in sync with gradle-help.txt)
+// Solr Docker inputs
 def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr")
 def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
 def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
-def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'azul/zulu-openjdk-alpine:17-jre-headless')
+def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
 def officialDockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}")
 
 def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId',''));
