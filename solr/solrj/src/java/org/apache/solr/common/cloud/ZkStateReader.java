@@ -144,6 +144,9 @@ public class ZkStateReader implements SolrCloseable {
   public static final String COLLECTION_DEF = "collectionDefaults";
 
   public static final String URL_SCHEME = "urlScheme";
+  public static final String HTTP = "http";
+  public static final String HTTPS = "https";
+  public static final String HTTPS_PORT_PROP = "solr.jetty.https.port";
 
   private static final String SOLR_ENVIRONMENT = "environment";
 

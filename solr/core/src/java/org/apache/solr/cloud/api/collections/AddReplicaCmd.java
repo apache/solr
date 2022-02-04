@@ -53,7 +53,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.util.UrlScheme;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -207,7 +206,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
           ZkStateReader.CORE_NAME_PROP, createReplica.coreName,
           ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
           ZkStateReader.NODE_NAME_PROP, createReplica.node,
-          ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(createReplica.node),
+          ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(createReplica.node),
           ZkStateReader.REPLICA_TYPE, createReplica.replicaType.name());
       if (createReplica.coreNodeName != null) {
         props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);

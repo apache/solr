@@ -2729,7 +2729,6 @@ public class SolrCLI implements CLIO {
 
     protected void runImpl(CommandLine cli) throws Exception {
       this.urlScheme = cli.getOptionValue("urlScheme", "http");
-      UrlScheme.INSTANCE.setUrlScheme(this.urlScheme);
 
       serverDir = new File(cli.getOptionValue("serverDir"));
       if (!serverDir.isDirectory())

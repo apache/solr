@@ -86,7 +86,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.UrlScheme;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -99,7 +98,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.util.UrlScheme.HTTP;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
@@ -913,10 +911,8 @@ public class ZkController implements Closeable {
       createClusterZkNodes(zkClient);
       zkStateReader.createClusterStateWatchersAndUpdate();
 
-      // Make the urlScheme globally accessible (on the server-side only)
       // note: Can't read cluster properties until createClusterState ^ is called
-      final String urlSchemeFromClusterProp = zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, HTTP);
-      UrlScheme.INSTANCE.setUrlScheme(urlSchemeFromClusterProp);
+      final String urlSchemeFromClusterProp = zkStateReader.getClusterProperty(ZkStateReader.URL_SCHEME, ZkStateReader.HTTP);
 
       // this must happen after zkStateReader has initialized the cluster props
       this.baseURL = Utils.getBaseUrlForNodeName(this.nodeName, urlSchemeFromClusterProp);
@@ -1446,7 +1442,7 @@ public class ZkController implements Closeable {
     // we only put a subset of props into the leader node
     props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-    props.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(getNodeName()));
+    props.put(ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(getNodeName()));
     props.put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
 
 
@@ -1546,7 +1542,7 @@ public class ZkController implements Closeable {
       props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
       props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
       props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-      props.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(getNodeName()));
+      props.put(ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(getNodeName()));
       props.put(ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId());
       props.put(ZkStateReader.COLLECTION_PROP, collection);
       props.put(ZkStateReader.REPLICA_TYPE, cd.getCloudDescriptor().getReplicaType().toString());
@@ -1680,7 +1676,7 @@ public class ZkController implements Closeable {
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
           ZkStateReader.CORE_NAME_PROP, coreName,
           ZkStateReader.NODE_NAME_PROP, getNodeName(),
-          ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(getNodeName()),
+          ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(getNodeName()),
           ZkStateReader.COLLECTION_PROP, cloudDescriptor.getCollectionName(),
           ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
       if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
@@ -2185,7 +2181,7 @@ public class ZkController implements Closeable {
       ElectionContext prevContext = electionContexts.get(contextKey);
       if (prevContext != null) prevContext.cancelElection();
 
-      String baseUrl = UrlScheme.INSTANCE.getBaseUrlForNodeName(getNodeName());
+      String baseUrl = zkStateReader.getBaseUrlForNodeName(getNodeName());
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
       ZkNodeProps zkProps = new ZkNodeProps(CORE_NAME_PROP, coreName, NODE_NAME_PROP, getNodeName(), CORE_NODE_NAME_PROP, coreNodeName, BASE_URL_PROP, baseUrl);
 

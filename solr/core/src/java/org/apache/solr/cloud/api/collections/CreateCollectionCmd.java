@@ -61,7 +61,6 @@ import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.util.TimeOut;
-import org.apache.solr.util.UrlScheme;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -249,7 +248,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             ZkStateReader.CORE_NAME_PROP, coreName,
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
             ZkStateReader.NODE_NAME_PROP, nodeName,
-            ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName),
+            ZkStateReader.BASE_URL_PROP, baseUrl,
             ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         if (isPRS) {
