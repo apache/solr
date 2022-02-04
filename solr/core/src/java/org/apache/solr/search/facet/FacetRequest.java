@@ -25,7 +25,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
