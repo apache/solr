@@ -1478,8 +1478,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             || (useFilterForSortedQuery && isConstantScoreQuery(q))) { // default behavior should not risk filterCache thrashing
       // We only need to sort if we're returning results AND sorting by something other than SCORE (sort by
       // "score" alone is pointless for these constant score queries)
-      needSort = cmd.getLen() > 0 && sortIncludesOtherThanScore(cmd.getSort());
-      useFilterCache = true; // even if `sort:score` is specified, it will have no effect, so always use filterCache
+      final Sort sort = cmd.getSort();
+      needSort = cmd.getLen() > 0 && sortIncludesOtherThanScore(sort);
+      if (!needSort) {
+        useFilterCache = true;
+      } else {
+        // NOTE: if `sort:score` is specified, it will have no effect, so we really _could_ in principle always
+        // use filterCache; but this would be a user request misconfiguration, and supporting it would require
+        // us to mess with user sort, or ignore the fact that sort expects `score` to be present ... so just
+        // make the optimization contingent on the absence of `score` in the requested sort.
+        useFilterCache = Arrays.stream(sort.getSort()).noneMatch((sf) -> sf.getType() == SortField.Type.SCORE);
+      }
     } else {
       needSort = cmd.getLen() > 0; // for non-constant-score queries, must sort unless no docs requested
       useFilterCache = useFilterCacheForDynamicScoreQuery(needSort, cmd);
