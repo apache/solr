@@ -22,7 +22,7 @@ These functions are designed to cut down the time spent on data preparation and 
 == Reading Files
 
 The `cat` function can be used to read files under the *userfiles* directory in
-`$SOLR_HOME`.
+`$SOLR_HOME`. This directory must be created by the user.
 The `cat` function takes two parameters.
 
 The first parameter is a comma-delimited list of paths.

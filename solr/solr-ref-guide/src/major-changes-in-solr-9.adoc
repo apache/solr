@@ -110,6 +110,8 @@ This is only applicable for users returning information in JSON format, which is
 * SOLR-14660: HDFS storage support has been moved to a module. Existing Solr configurations do not need any HDFS-related
 changes, however the module needs to be installed - see <<solr-on-hdfs.adoc#,Running Solr on HDFS>>.
 
+* SOLR-15950: The folder $SOLR_HOME/userfiles, used by the "cat" streaming expression, is no longer created automatically on startup. The user must create this folder.
+
 == New Features & Enhancements
 
 * Replica placement plugins
