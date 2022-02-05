@@ -237,7 +237,9 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
       final int myI = i;
       followup[i] = executor.submit(() -> {
         try {
-          String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "request_id", Integer.toString(myI)));
+          // NOTE: we use cursorMark=* here because it prevents consulting the queryResultCache, which can interfere
+          // with DocSet fetching (which is what we care about in this test).
+          String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "request_id", Integer.toString(myI), "cursorMark", "*", "sort", "id asc"));
           Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
           Map<?, ?> body = (Map<?, ?>) (res.get("response"));
           assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound"))); // sanity check
@@ -263,13 +265,12 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
             .getValue();
 
     // Here we indirectly test assertions internal to SolrIndexSearcher as well -- the init tracker must have been
-    // initialized to 0 exactly once. The first assertion below should be safe/definitely always true. The second
-    // relies on timing -- it's possible that init == 0 if matchAllDocs computation happened _very_ quickly, and/or
-    // if subsequent threads were delayed. If the second assertion proves troublesome, feel free to change it to
-    // `init >= 0` -- _that_ should be an absolute certainty.
+    // initialized to 0 exactly once. Ideally the last assertion will often actually be `init > 0` -- but that relies
+    // on timing, and in practice it happens that sometimes `init == 0` (e.g., if matchAllDocs computation happens
+    // _very_ quickly, and/or if subsequent threads were delayed).
     assertEquals(nThreads, coreToMatchAllDocsCacheConsultationCount(core));
     assertEquals(nThreads - 1, init + hit);
-    assertTrue("expected init > 0; found init=" + init, init > 0);
+    assertTrue("expected init >= 0; found init=" + init, init >= 0);
   }
 }
 
