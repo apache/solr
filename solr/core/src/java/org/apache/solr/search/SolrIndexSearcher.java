@@ -130,10 +130,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final AtomicLong skipSortCount = new AtomicLong();
   private final AtomicLong matchAllDocsCacheConsultationCount = new AtomicLong();
   private final AtomicLong matchAllDocsCacheHitCount = new AtomicLong();
-
-  /**
-   * Sanity-check concurrent requests against liveDocs computation.
-   */
   private final AtomicLong matchAllDocsCacheComputationTracker = new AtomicLong(Long.MIN_VALUE);
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
@@ -937,15 +933,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       matchAllDocsCacheHitCount.incrementAndGet();
     } else {
       if (matchAllDocsCacheComputationTracker.compareAndSet(Long.MIN_VALUE, 0)) {
-        // run the initial/only future inline
-        // first caller will block execution here
+        // run the initial/only/final future inline
+        // This thread will block execution here and `liveDocsFuture.get()` (below) should then return immediately
         liveDocsFuture.run();
       } else {
-        // another thread has already called `computeLiveDocs.run()`
-        assert matchAllDocsCacheComputationTracker.incrementAndGet() > 0;
+        // another thread has already called `computeLiveDocs.run()`; this thread will block on
+        // `liveDocsFuture.get()` (below)
+        if (matchAllDocsCacheComputationTracker.getAndIncrement() < 0) {
+          // This should be literally impossible with the code in its current state, so this could in
+          // principle be an assertion. But if code were to change in the future, and this assertion were
+          // to become invalid (not sure how that would happen, but still ...), it could lead to a
+          // thread leak (blocking indefinitely below on `liveDocsFuture.get()`), so we'll err on the
+          // cautious (and consistent) side and always check/fail fast.
+          throw new IllegalStateException();
+        }
       }
       try {
-        docs = liveDocsFuture.get(); // subsequent callers block here, waiting for initial/only execution to complete
+        docs = liveDocsFuture.get();
       } catch (InterruptedException | ExecutionException ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
