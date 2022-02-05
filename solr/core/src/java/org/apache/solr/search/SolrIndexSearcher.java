@@ -907,12 +907,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             // `LeafReader.getLiveDocs()` returns null if no deleted docs -- accordingly, set all bits in seg range
             bs.set(segDocBase, segDocBase + r.maxDoc());
           } else {
-            int segOrd = r.maxDoc() - 1;
-            do {
-              if (segLiveDocs.get(segOrd)) {
-                bs.set(segDocBase + segOrd);
+            int segOrd = r.maxDoc();
+            while (segOrd-- > 0 && !segLiveDocs.get(segOrd)) {
+              // consume high deleted range
+            }
+            while (segOrd >= 0) {
+              final int limit = segOrd + 1;
+              while (segOrd-- > 0 && segLiveDocs.get(segOrd)) {
+                // consume live range
               }
-            } while (segOrd-- > 0);
+              bs.set(segDocBase + segOrd + 1, segDocBase + limit);
+              while (segOrd-- > 0 && !segLiveDocs.get(segOrd)) {
+                // consume deleted range
+              }
+            }
           }
         }
         assert bs.cardinality() == numDocs();
