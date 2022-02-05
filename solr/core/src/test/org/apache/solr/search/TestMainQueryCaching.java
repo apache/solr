@@ -228,7 +228,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound"))); // sanity check
   }
 
-  @Nightly
+  @Test
   public void testConcurrentMatchAllDocsInitialization() throws Exception {
     final int nThreads = 20;
     final ExecutorService executor = ExecutorUtil.newMDCAwareFixedThreadPool(nThreads, new SolrNamedThreadFactory(getTestName()));
@@ -246,7 +246,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
         } catch (Exception ex) {
           throw new RuntimeException(ex);
         }
-      }, null);
+      });
     }
     try {
       for (Future<?> f : followup) {
