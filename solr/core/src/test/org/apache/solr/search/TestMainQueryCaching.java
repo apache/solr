@@ -17,8 +17,13 @@
 package org.apache.solr.search;
 
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -221,6 +226,50 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     assertEquals("Bad full sort count", expectFullSortCount, coreToSortCount(core, "full"));
     assertEquals("Bad skip sort count", expectSkipSortCount, coreToSortCount(core, "skip"));
     assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound"))); // sanity check
+  }
+
+  @Nightly
+  public void testConcurrentMatchAllDocsInitialization() throws Exception {
+    final int nThreads = 20;
+    final ExecutorService executor = ExecutorUtil.newMDCAwareFixedThreadPool(nThreads, new SolrNamedThreadFactory(getTestName()));
+    final Future<?>[] followup = new Future<?>[nThreads];
+    for (int i = 0; i < nThreads; i++) {
+      final int myI = i;
+      followup[i] = executor.submit(() -> {
+        try {
+          String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "request_id", Integer.toString(myI)));
+          Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
+          Map<?, ?> body = (Map<?, ?>) (res.get("response"));
+          assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound"))); // sanity check
+        } catch (Exception ex) {
+          throw new RuntimeException(ex);
+        }
+      }, null);
+    }
+    try {
+      for (Future<?> f : followup) {
+        f.get(); // to access exceptions/errors
+      }
+    } finally {
+      executor.shutdown();
+      assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS)); // tasks should already have completed
+    }
+    final SolrCore core = h.getCore();
+    long init = (long)((SolrMetricManager.GaugeWrapper<?>)core
+            .getCoreMetricManager().getRegistry().getMetrics().get("SEARCHER.searcher.matchAllDocsCacheComputationTracker")).getGauge()
+            .getValue();
+    long hit = (long)((SolrMetricManager.GaugeWrapper<?>)core
+            .getCoreMetricManager().getRegistry().getMetrics().get("SEARCHER.searcher.matchAllDocsCacheHitCount")).getGauge()
+            .getValue();
+
+    // Here we indirectly test assertions internal to SolrIndexSearcher as well -- the init tracker must have been
+    // initialized to 0 exactly once. The first assertion below should be safe/definitely always true. The second
+    // relies on timing -- it's possible that init == 0 if matchAllDocs computation happened _very_ quickly, and/or
+    // if subsequent threads were delayed. If the second assertion proves troublesome, feel free to change it to
+    // `init >= 0` -- _that_ should be an absolute certainty.
+    assertEquals(nThreads, coreToMatchAllDocsCacheConsultationCount(core));
+    assertEquals(nThreads - 1, init + hit);
+    assertTrue("expected init > 0; found init=" + init, init > 0);
   }
 }
 

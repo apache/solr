@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -124,9 +126,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final SolrCache<Query,DocSet> filterCache;
   private final SolrCache<QueryResultKey,DocList> queryResultCache;
   private final SolrCache<String,UnInvertedField> fieldValueCache;
-  private long fullSortCount = 0;
-  private long skipSortCount = 0;
-  private long matchAllDocsCacheConsultationCount = 0;
+  private final AtomicLong fullSortCount = new AtomicLong();
+  private final AtomicLong skipSortCount = new AtomicLong();
+  private final AtomicLong matchAllDocsCacheConsultationCount = new AtomicLong();
+  private final AtomicLong matchAllDocsCacheHitCount = new AtomicLong();
+
+  /**
+   * Sanity-check concurrent requests against liveDocs computation. This serves as a
+   * synchronization point, so it doesn't strictly _have_ to be an AtomicLong, but it's
+   * not expected to be heavily used in the SolrIndexSearcher lifecycle, and the
+   * semantics are convenient, so it's an AtomicLong anyway.
+   */
+  private final AtomicLong matchAllDocsCacheComputationTracker = new AtomicLong(Long.MIN_VALUE);
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final Map<String,SolrCache<?, ?>> cacheMap;
@@ -844,7 +855,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (query instanceof MatchAllDocsQuery) {
       // bypass the filterCache for MatchAllDocsQuery; we're "caching" it in `liveDocs` anyway
-      matchAllDocsCacheConsultationCount++;
+      matchAllDocsCacheConsultationCount.incrementAndGet();
       return getLiveDocSet();
     }
 
@@ -866,6 +877,48 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private static final Query MATCH_ALL_DOCS_QUERY = new MatchAllDocsQuery();
   private volatile BitDocSet liveDocs;
+  private FutureTask<BitDocSet> liveDocsFuture;
+
+  private BitDocSet computeLiveDocs() {
+    switch (leafContexts.size()) {
+      case 0:
+        assert numDocs() == 0;
+        return new BitDocSet(DocSet.empty().getFixedBitSet(), 0);
+      case 1:
+        final Bits onlySegLiveDocs = leafContexts.get(0).reader().getLiveDocs();
+        final FixedBitSet fbs;
+        if (onlySegLiveDocs == null) {
+          // `LeafReader.getLiveDocs()` returns null if no deleted docs -- accordingly, set all bits
+          final int onlySegMaxDoc = maxDoc();
+          fbs = new FixedBitSet(onlySegMaxDoc);
+          fbs.set(0, onlySegMaxDoc);
+        } else {
+          fbs = FixedBitSet.copyOf(onlySegLiveDocs);
+        }
+        assert fbs.cardinality() == numDocs();
+        return new BitDocSet(fbs, numDocs());
+      default:
+        final FixedBitSet bs = new FixedBitSet(maxDoc());
+        for (LeafReaderContext ctx : leafContexts) {
+          final LeafReader r = ctx.reader();
+          final Bits segLiveDocs = r.getLiveDocs();
+          final int segDocBase = ctx.docBase;
+          if (segLiveDocs == null) {
+            // `LeafReader.getLiveDocs()` returns null if no deleted docs -- accordingly, set all bits in seg range
+            bs.set(segDocBase, segDocBase + r.maxDoc());
+          } else {
+            int segOrd = r.maxDoc() - 1;
+            do {
+              if (segLiveDocs.get(segOrd)) {
+                bs.set(segDocBase + segOrd);
+              }
+            } while (segOrd-- > 0);
+          }
+        }
+        assert bs.cardinality() == numDocs();
+        return new BitDocSet(bs, numDocs());
+    }
+  }
 
   /**
    * Returns an efficient random-access {@link DocSet} of the live docs.  It's cached.  Never null.
@@ -875,49 +928,26 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // Going through the filter cache will provide thread safety here if we only had getLiveDocs,
     // but the addition of setLiveDocs means we needed to add volatile to "liveDocs".
     BitDocSet docs = liveDocs;
-    if (docs == null) {
-      switch (leafContexts.size()) {
-        case 0:
-          assert numDocs() == 0;
-          docs = new BitDocSet(BitDocSet.empty().getFixedBitSet(), 0);
-          break;
-        case 1:
-          final Bits onlySegLiveDocs = leafContexts.get(0).reader().getLiveDocs();
-          final FixedBitSet fbs;
-          if (onlySegLiveDocs == null) {
-            final int onlySegMaxDoc = maxDoc();
-            fbs = new FixedBitSet(onlySegMaxDoc);
-            fbs.set(0, onlySegMaxDoc);
-          } else {
-            fbs = FixedBitSet.copyOf(onlySegLiveDocs);
-          }
-          assert fbs.cardinality() == numDocs();
-          docs = new BitDocSet(fbs, numDocs());
-          break;
-        default:
-          final FixedBitSet bs = new FixedBitSet(maxDoc());
-          for (LeafReaderContext ctx : leafContexts) {
-            final LeafReader r = ctx.reader();
-            final Bits segLiveDocs = r.getLiveDocs();
-            final int segDocBase = ctx.docBase;
-            int segOrd = r.maxDoc() - 1;
-            if (segLiveDocs == null) {
-              do {
-                bs.set(segDocBase + segOrd);
-              } while (segOrd-- > 0);
-            } else {
-              do {
-                if (segLiveDocs.get(segOrd)) {
-                  bs.set(segDocBase + segOrd);
-                }
-              } while (segOrd-- > 0);
-            }
-          }
-          assert bs.cardinality() == numDocs();
-          docs = new BitDocSet(bs, numDocs());
-          break;
+    if (docs != null) {
+      matchAllDocsCacheHitCount.incrementAndGet();
+    } else {
+      synchronized (matchAllDocsCacheComputationTracker) {
+        if (liveDocsFuture != null) {
+          // use future if it already exists
+          assert matchAllDocsCacheComputationTracker.incrementAndGet() > 0;
+        } else {
+          // otherwise create the initial/only future, and run it inline
+          assert matchAllDocsCacheComputationTracker.getAndSet(0) == Long.MIN_VALUE;
+          liveDocsFuture = new FutureTask<>(this::computeLiveDocs);
+          liveDocsFuture.run(); // first caller will block execution here
+        }
       }
-      liveDocs = docs;
+      try {
+        docs = liveDocsFuture.get(); // subsequent callers block here, waiting for initial/only execution to complete
+      } catch (InterruptedException | ExecutionException ex) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, ex);
+      }
+      liveDocs = docs; // all `docs` will be identical (`==`); we don't care which one "wins"
     }
     assert docs.size() == numDocs();
     return docs;
@@ -1350,9 +1380,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public static final int GET_SCORES = 0x01;
 
   private static boolean isConstantScoreQuery(Query q) {
+    // only unwrap one layer -- that should be sufficient. Unwrapping BoostQuery is very important because
+    // in practice that's how most ConstantScoreQueries will arrive; unwrapping WrappedQuery can't hurt,
+    // (and could help) but is less important than BoostQuery.
     if (q instanceof BoostQuery) {
       // ConstantScoreQueries are often (always?) wrapped in BoostQuery to assign specific score
       q = ((BoostQuery)q).getQuery();
+    } else if (q instanceof WrappedQuery) {
+      assert ((WrappedQuery)q).getCache() : "`!ExtendedQuery.getCache()` should have set flags |= NO_CHECK_FILTERCACHE";
+      q = ((WrappedQuery)q).getWrappedQuery();
     }
     return q instanceof ConstantScoreQuery;
   }
@@ -1509,10 +1545,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // the filters instead of anding them first...
       // perhaps there should be a multi-docset-iterator
       if (needSort) {
-        fullSortCount++;
+        fullSortCount.incrementAndGet();
         sortDocSet(qr, cmd);
       } else {
-        skipSortCount++;
+        skipSortCount.incrementAndGet();
         // put unsorted list in place
         out.docList = constantScoreDocList(cmd.getOffset(), cmd.getLen(), out.docSet);
         if (0 == cmd.getSupersetMaxDoc()) {
@@ -1527,7 +1563,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
       }
     } else {
-      fullSortCount++;
+      fullSortCount.incrementAndGet();
       // do it the normal way...
       if ((flags & GET_DOCSET) != 0) {
         // this currently conflates returning the docset for the base query vs
@@ -2413,9 +2449,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     parentContext.gauge(() -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> fullSortCount, true, "fullSortCount", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> skipSortCount, true, "skipSortCount", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(() -> matchAllDocsCacheConsultationCount, true, "matchAllDocsCacheConsultationCount", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(fullSortCount::get, true, "fullSortCount", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(skipSortCount::get, true, "skipSortCount", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(matchAllDocsCacheConsultationCount::get, true, "matchAllDocsCacheConsultationCount", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(matchAllDocsCacheHitCount::get, true, "matchAllDocsCacheHitCount", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(matchAllDocsCacheComputationTracker::get, true, "matchAllDocsCacheComputationTracker", Category.SEARCHER.toString(), scope);
     // reader stats
     parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.numDocs()), true, "numDocs", Category.SEARCHER.toString(), scope);
     parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.maxDoc()), true, "maxDoc", Category.SEARCHER.toString(), scope);
