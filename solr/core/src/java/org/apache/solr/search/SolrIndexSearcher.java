@@ -132,10 +132,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final AtomicLong matchAllDocsCacheHitCount = new AtomicLong();
 
   /**
-   * Sanity-check concurrent requests against liveDocs computation. This serves as a
-   * synchronization point, so it doesn't strictly _have_ to be an AtomicLong, but it's
-   * not expected to be heavily used in the SolrIndexSearcher lifecycle, and the
-   * semantics are convenient, so it's an AtomicLong anyway.
+   * Sanity-check concurrent requests against liveDocs computation.
    */
   private final AtomicLong matchAllDocsCacheComputationTracker = new AtomicLong(Long.MIN_VALUE);
 
@@ -877,7 +874,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private static final Query MATCH_ALL_DOCS_QUERY = new MatchAllDocsQuery();
   private volatile BitDocSet liveDocs;
-  private FutureTask<BitDocSet> liveDocsFuture;
+  private final FutureTask<BitDocSet> liveDocsFuture = new FutureTask<>(this::computeLiveDocs);
 
   private BitDocSet computeLiveDocs() {
     switch (leafContexts.size()) {
@@ -939,16 +936,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (docs != null) {
       matchAllDocsCacheHitCount.incrementAndGet();
     } else {
-      synchronized (matchAllDocsCacheComputationTracker) {
-        if (liveDocsFuture != null) {
-          // use future if it already exists
-          assert matchAllDocsCacheComputationTracker.incrementAndGet() > 0;
-        } else {
-          // otherwise create the initial/only future, and run it inline
-          assert matchAllDocsCacheComputationTracker.getAndSet(0) == Long.MIN_VALUE;
-          liveDocsFuture = new FutureTask<>(this::computeLiveDocs);
-          liveDocsFuture.run(); // first caller will block execution here
-        }
+      if (matchAllDocsCacheComputationTracker.compareAndSet(Long.MIN_VALUE, 0)) {
+        // run the initial/only future inline
+        // first caller will block execution here
+        liveDocsFuture.run();
+      } else {
+        // another thread has already called `computeLiveDocs.run()`
+        assert matchAllDocsCacheComputationTracker.incrementAndGet() > 0;
       }
       try {
         docs = liveDocsFuture.get(); // subsequent callers block here, waiting for initial/only execution to complete
