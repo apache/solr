@@ -206,6 +206,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
           ZkStateReader.CORE_NAME_PROP, createReplica.coreName,
           ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
           ZkStateReader.NODE_NAME_PROP, createReplica.node,
+          ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(createReplica.node),
           ZkStateReader.REPLICA_TYPE, createReplica.replicaType.name());
       if (createReplica.coreNodeName != null) {
         props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
