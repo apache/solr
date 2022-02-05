@@ -35,7 +35,6 @@ import org.apache.solr.search.function.ValueSourceRangeFilter;
 public class FunctionRangeQuery extends ExtendedQueryBase implements PostFilter {
 
   final ValueSourceRangeFilter rangeFilt;
-  boolean cache = true; // cache by default
 
   public FunctionRangeQuery(ValueSourceRangeFilter filter) {
     super();

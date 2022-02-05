@@ -269,6 +269,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15884: Backup responses now use a map to return information instead of a list (Houston Putman, Christine Poerschke)
 
+* SOLR-14800: Filter default score should be the provided boost, instead of hardcoding to zero (Collins Abanda, Mike Drob, David Smiley)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
