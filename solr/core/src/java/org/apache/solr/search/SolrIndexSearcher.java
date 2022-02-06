@@ -900,25 +900,38 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             // `LeafReader.getLiveDocs()` returns null if no deleted docs -- accordingly, set all bits in seg range
             bs.set(segDocBase, segDocBase + r.maxDoc());
           } else {
-            int segOrd = r.maxDoc();
-            while (segOrd-- > 0 && !segLiveDocs.get(segOrd)) {
-              // consume high deleted range
-            }
-            while (segOrd >= 0) {
-              final int limit = segOrd + 1;
-              while (segOrd-- > 0 && segLiveDocs.get(segOrd)) {
-                // consume live range
-              }
-              bs.set(segDocBase + segOrd + 1, segDocBase + limit);
-              while (segOrd-- > 0 && !segLiveDocs.get(segOrd)) {
-                // consume deleted range
-              }
-            }
+            copyTo(segLiveDocs, r.maxDoc(), bs, segDocBase);
           }
         }
         assert bs.cardinality() == numDocs();
         return new BitDocSet(bs, numDocs());
     }
+  }
+
+  private static void copyTo(Bits segLiveDocs, int sourceMaxDoc, FixedBitSet bs, int segDocBase) {
+    // NOTE: `adjustedSegDocBase` +1 to compensate for the fact that `segOrd` always has to "read ahead" by 1.
+    // Adding 1 to set `adjustedSegDocBase` once allows us to use `segOrd` as-is (with no "pushback") for
+    // both `startIndex` and `endIndex` args to `bs.set(startIndex, endIndex)`
+    final int adjustedSegDocBase = segDocBase + 1;
+    int segOrd = sourceMaxDoc;
+    do {
+      // NOTE: we check deleted range before live range in the outer loop in order to not have
+      // to explicitly guard against `bs.set(maxDoc, maxDoc)` in the event that the global max doc is
+      // a delete (this case would trigger an bounds-checking AssertionError in
+      // `FixedBitSet.set(int, int)`).
+      do {
+        // consume deleted range
+        if (--segOrd < 0) {
+          // we're currently in a "deleted" run, so just return; no need to do anything further
+          return;
+        }
+      } while (!segLiveDocs.get(segOrd));
+      final int limit = segOrd; // set highest ord (inclusive) of live range
+      while (segOrd-- > 0 && segLiveDocs.get(segOrd)) {
+        // consume live range
+      }
+      bs.set(adjustedSegDocBase + segOrd, adjustedSegDocBase + limit);
+    } while (segOrd > 0);
   }
 
   /**
