@@ -101,7 +101,7 @@ def main():
 
     if conf.htaccess:
         for key in result:
-            print("RewriteRule /guide/%s /guide/%s [R=301,NE,L]" % (key, result[key]))
+            print("RewriteRule ^%s %s [R=301,NE,L]" % (key, result[key]))
         for key in failed:
             print("# %s: %s" % (key, failed[key]))
     else:
