@@ -246,27 +246,27 @@ RewriteRule ^working-with-dates.html indexing-guide/date-formatting-math.html [R
 RewriteRule ^working-with-enum-fields.html indexing-guide/enum-fields.html [R=301,NE,L]
 RewriteRule ^working-with-external-files-and-processes.html indexing-guide/external-files-processes.html [R=301,NE,L]
 RewriteRule ^zookeeper-access-control.html deployment-guide/zookeeper-access-control.html [R=301,NE,L]
-# blockjoin-faceting.html: Not found in new guide, mappings or old-pages
+# blockjoin-faceting.html: 404
 # configuration-apis.html: Not yet mapped, is in src/old-pages
-# copying-fields.html: Not found in new guide, mappings or old-pages
+# copying-fields.html: 404
 # deployment-and-operations.html: There was mapping to deployment-guide.html, but it does not exist in new guide
 # documents-fields-and-schema-design.html: There was mapping to fields-and-schema-design.html, but it does not exist in new guide
-# errata.html: Not found in new guide, mappings or old-pages
-# further-assistance.html: Not found in new guide, mappings or old-pages
+# errata.html: 404
+# further-assistance.html: 404
 # getting-started.html: Not yet mapped, is in src/old-pages
 # how-solrcloud-works.html: There was mapping to solrcloud.html, but it does not exist in new guide
-# how-to-contribute.html: Not found in new guide, mappings or old-pages
-# index.html: Not found in new guide, mappings or old-pages
+# how-to-contribute.html: 404
+# index.html: 404
 # indexing-and-basic-data-operations.html: There was mapping to indexing-data-operations.html, but it does not exist in new guide
-# introduction-to-scaling-and-distribution.html: Not found in new guide, mappings or old-pages
-# legacy-scaling-and-distribution.html: Not found in new guide, mappings or old-pages
+# introduction-to-scaling-and-distribution.html: 404
+# legacy-scaling-and-distribution.html: 404
 # monitoring-solr.html: Not yet mapped, is in src/old-pages
-# parameter-reference.html: Not found in new guide, mappings or old-pages
-# putting-the-pieces-together.html: Not found in new guide, mappings or old-pages
+# parameter-reference.html: 404
+# putting-the-pieces-together.html: 404
 # searching.html: There was mapping to query-guide.html, but it does not exist in new guide
-# solr-field-types.html: Not found in new guide, mappings or old-pages
-# solrcloud-configuration-and-parameters.html: Not found in new guide, mappings or old-pages
-# solrcloud-query-routing-and-read-tolerance.html: Not found in new guide, mappings or old-pages
-# solrcloud-resilience.html: Not found in new guide, mappings or old-pages
-# solrcloud.html: Not found in new guide, mappings or old-pages
-# the-well-configured-solr-instance.html: Not found in new guide, mappings or old-pages
+# solr-field-types.html: 404
+# solrcloud-configuration-and-parameters.html: 404
+# solrcloud-query-routing-and-read-tolerance.html: 404
+# solrcloud-resilience.html: 404
+# solrcloud.html: 404
+# the-well-configured-solr-instance.html: 404

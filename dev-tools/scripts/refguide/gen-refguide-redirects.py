@@ -97,7 +97,7 @@ def main():
         elif frm in old_pages:
             failed[frm] = "Not yet mapped, is in src/old-pages"
         else:
-            failed[frm] = "Not found in new guide, mappings or old-pages"
+            failed[frm] = "404"
 
     if conf.htaccess:
         for key in result:
