@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.ScoreMode;
@@ -29,12 +28,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.ltr.CSVFeatureLogger;
-import org.apache.solr.ltr.FeatureLogger;
-import org.apache.solr.ltr.LTRRescorer;
-import org.apache.solr.ltr.LTRScoringQuery;
-import org.apache.solr.ltr.LTRThreadModule;
-import org.apache.solr.ltr.SolrQueryRequestContextUtils;
+import org.apache.solr.ltr.*;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
 import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
@@ -216,7 +210,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       }
       leafContexts = searcher.getTopReaderContext().leaves();
       if (threadManager != null) {
-        threadManager.setExecutor(context.getRequest().getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
+        threadManager.setExecutor(context.getRequest().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
       }
 
       rerankingQueriesFromContext = SolrQueryRequestContextUtils.getScoringQueries(req);

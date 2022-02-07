@@ -18,14 +18,9 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -121,7 +116,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
   @Override
   public void validateRouteValue(AddUpdateCommand cmd) throws SolrException {
     if (this.aliases == null) {
-      updateParsedCollectionAliases(cmd.getReq().getCore().getCoreContainer().getZkController().zkStateReader, false);
+      updateParsedCollectionAliases(cmd.getReq().getCoreContainer().getZkController().zkStateReader, false);
     }
 
     Object fieldValue = cmd.getSolrInputDocument().getFieldValue(getRouteField());
@@ -225,7 +220,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
   public CandidateCollection findCandidateGivenValue(AddUpdateCommand cmd) {
     Object value = cmd.getSolrInputDocument().getFieldValue(getRouteField());
     String targetColName = buildCollectionNameFromValue(String.valueOf(value));
-    ZkStateReader zkStateReader = cmd.getReq().getCore().getCoreContainer().getZkController().zkStateReader;
+    ZkStateReader zkStateReader = cmd.getReq().getCoreContainer().getZkController().zkStateReader;
     updateParsedCollectionAliases(zkStateReader, true);
     List<String> collectionList = getCollectionList(this.aliases);
     if (collectionList.contains(targetColName)) {

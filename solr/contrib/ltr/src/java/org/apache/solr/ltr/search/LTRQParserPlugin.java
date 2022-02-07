@@ -20,21 +20,20 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
-import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
 import org.apache.solr.ltr.interleaving.Interleaving;
 import org.apache.solr.ltr.interleaving.LTRInterleavingQuery;
+import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
+import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
@@ -152,7 +151,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
     @Override
     public Query parse() throws SyntaxError {
       if (threadManager != null) {
-        threadManager.setExecutor(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
+        threadManager.setExecutor(req.getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
       }
       // ReRanking Model
       final String[] modelNames = localParams.getParams(LTRQParserPlugin.MODEL);

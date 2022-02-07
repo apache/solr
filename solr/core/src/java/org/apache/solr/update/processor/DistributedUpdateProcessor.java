@@ -16,13 +16,12 @@
  */
 package org.apache.solr.update.processor;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -36,11 +35,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
@@ -48,17 +43,9 @@ import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.DeleteUpdateCommand;
-import org.apache.solr.update.SolrCmdDistributor;
+import org.apache.solr.update.*;
 import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.apache.solr.update.SolrCmdDistributor.Node;
-import org.apache.solr.update.UpdateCommand;
-import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.UpdateShardHandler;
-import org.apache.solr.update.VersionBucket;
-import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
@@ -631,7 +618,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    */
   private UpdateCommand fetchFullUpdateFromLeader(AddUpdateCommand inplaceAdd, long versionOnUpdate) throws IOException {
     String id = inplaceAdd.getIndexedIdStr();
-    UpdateShardHandler updateShardHandler = inplaceAdd.getReq().getCore().getCoreContainer().getUpdateShardHandler();
+    UpdateShardHandler updateShardHandler = inplaceAdd.getReq().getCoreContainer().getUpdateShardHandler();
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB, false);
     params.set("getInputDocument", id);

@@ -17,6 +17,16 @@
 package org.apache.solr.handler.admin;
 
 import com.codahale.metrics.Gauge;
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.RuntimeMXBean;
+import java.net.InetAddress;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.*;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
@@ -36,22 +46,6 @@ import org.apache.solr.util.RedactionUtils;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.RuntimeMXBean;
-import java.net.InetAddress;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -135,14 +129,14 @@ public class SystemInfoHandler extends RequestHandlerBase
   {
     rsp.setHttpCaching(false);
     SolrCore core = req.getCore();
-    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req, core))) {
+    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req))) {
       return; // Request was proxied to other node
     }
     if (core != null) rsp.add( "core", getCoreInfo( core, req.getSchema() ) );
-    boolean solrCloudMode =  getCoreContainer(req, core).isZooKeeperAware();
+    boolean solrCloudMode =  getCoreContainer(req).isZooKeeperAware();
     rsp.add( "mode", solrCloudMode ? "solrcloud" : "std");
     if (solrCloudMode) {
-      rsp.add("zkHost", getCoreContainer(req, core).getZkController().getZkServerAddress());
+      rsp.add("zkHost", getCoreContainer(req).getZkController().getZkServerAddress());
     }
     if (cc != null) {
       rsp.add("solr_home", cc.getSolrHome());
@@ -154,10 +148,10 @@ public class SystemInfoHandler extends RequestHandlerBase
     rsp.add( "security", getSecurityInfo(req) );
     rsp.add( "system", getSystemInfo() );
     if (solrCloudMode) {
-      rsp.add("node", getCoreContainer(req, core).getZkController().getNodeName());
+      rsp.add("node", getCoreContainer(req).getZkController().getNodeName());
     }
     SolrEnvironment env = SolrEnvironment.getFromSyspropOrClusterprop(solrCloudMode ?
-        getCoreContainer(req, core).getZkController().zkStateReader : null);
+        getCoreContainer(req).getZkController().zkStateReader : null);
     if (env.isDefined()) {
       rsp.add("environment", env.getCode());
       if (env.getLabel() != null) {
@@ -169,14 +163,9 @@ public class SystemInfoHandler extends RequestHandlerBase
     }
   }
 
-  private CoreContainer getCoreContainer(SolrQueryRequest req, SolrCore core) {
-    CoreContainer coreContainer;
-    if (core != null) {
-       coreContainer = req.getCore().getCoreContainer();
-    } else {
-      coreContainer = cc;
-    }
-    return coreContainer;
+  private CoreContainer getCoreContainer(SolrQueryRequest req) {
+    CoreContainer coreContainer = req.getCoreContainer();
+    return coreContainer ==null? cc: coreContainer;
   }
   
   /**

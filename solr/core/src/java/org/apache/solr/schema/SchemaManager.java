@@ -16,6 +16,8 @@
  */
 package org.apache.solr.schema;
 
+import static java.util.Collections.*;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -26,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -43,15 +44,8 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
-import static org.apache.solr.schema.IndexSchema.DESTINATION;
-import static org.apache.solr.schema.IndexSchema.MAX_CHARS;
-import static org.apache.solr.schema.IndexSchema.NAME;
-import static org.apache.solr.schema.IndexSchema.SOURCE;
-import static org.apache.solr.schema.IndexSchema.TYPE;
+import static org.apache.solr.schema.IndexSchema.*;
 
 /**
  * A utility class to manipulate schema using the bulk mode.
@@ -129,7 +123,7 @@ public class SchemaManager {
             latestVersion = ZkController.persistConfigResourceToZooKeeper
                 (zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(),
                  sw.toString().getBytes(StandardCharsets.UTF_8), true);
-            req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
+            req.getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
             break;
           } catch (ZkController.ResourceModifiedInZkException e) {
             log.info("Schema was modified by another node. Retrying..");

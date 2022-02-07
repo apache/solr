@@ -20,29 +20,14 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.Part;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PushbackInputStream;
+
+import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.*;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
+import java.util.*;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
@@ -55,6 +40,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.RequestHandlers;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
@@ -245,6 +231,14 @@ public class SolrRequestParsers {
       public Principal getUserPrincipal() {
         return req == null ? null : req.getUserPrincipal();
       }
+
+      @Override
+      public CoreContainer getCoreContainer() {
+        return httpSolrCall != null ?
+                httpSolrCall.cores :
+                super.getCoreContainer();
+      }
+
 
       @Override
       public List<CommandOperation> getCommands(boolean validateInput) {

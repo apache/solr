@@ -16,18 +16,19 @@
  */
 package org.apache.solr.request;
 
-import java.security.Principal;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.noop.NoopSpan;
 import io.opentracing.util.GlobalTracer;
+import java.security.Principal;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -152,6 +153,15 @@ public interface SolrQueryRequest extends AutoCloseable {
    */
   default Span getSpan() {
     return NoopSpan.INSTANCE;
+  }
+
+  default CoreContainer getCoreContainer() {
+    SolrCore core = getCore();
+    return core == null ? null : core.getCoreContainer();
+  }
+
+  default CloudDescriptor getCloudDescriptor() {
+    return getCore().getCoreDescriptor().getCloudDescriptor();
   }
 }
 

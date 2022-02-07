@@ -19,39 +19,16 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.DistributedClusterStateUpdater;
-import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.ZkShardTerms;
+import org.apache.solr.cloud.*;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.CompositeIdRouter;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.RoutingRule;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -60,14 +37,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.DeleteUpdateCommand;
-import org.apache.solr.update.MergeIndexesCommand;
-import org.apache.solr.update.RollbackUpdateCommand;
-import org.apache.solr.update.SolrCmdDistributor;
-import org.apache.solr.update.SolrIndexSplitter;
-import org.apache.solr.update.UpdateCommand;
+import org.apache.solr.update.*;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -111,8 +81,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
                                       SolrQueryResponse rsp, UpdateRequestProcessor next) {
     super(req, rsp, next);
-    CoreContainer cc = req.getCore().getCoreContainer();
-    cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
+    CoreContainer cc = req.getCoreContainer();
+    cloudDesc = req.getCloudDescriptor();
     zkController = cc.getZkController();
     distributedClusterStateUpdater = zkController.getDistributedClusterStateUpdater();
     cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
@@ -1246,7 +1216,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // Streaming updates can delay shutdown and cause big update reorderings (new streams can't be
     // initiated, but existing streams carry on).  This is why we check if the CC is shutdown.
     // See SOLR-8203 and loop HdfsChaosMonkeyNothingIsSafeTest (and check for inconsistent shards) to test.
-    if (req.getCore().getCoreContainer().isShutDown()) {
+    if (req.getCoreContainer().isShutDown()) {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is shutting down.");
     }
 

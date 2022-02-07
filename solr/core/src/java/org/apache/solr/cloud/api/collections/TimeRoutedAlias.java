@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import com.google.common.base.MoreObjects;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.time.Instant;
@@ -27,20 +28,9 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import com.google.common.base.MoreObjects;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -58,9 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.ASYNC_PREEMPTIVE;
-import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.NONE;
-import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.SYNCHRONOUS;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.*;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonParams.TZ;
@@ -449,7 +437,7 @@ public class TimeRoutedAlias extends RoutedAlias {
   @Override
   public CandidateCollection findCandidateGivenValue(AddUpdateCommand cmd) {
     Object value = cmd.getSolrInputDocument().getFieldValue(getRouteField());
-    ZkStateReader zkStateReader = cmd.getReq().getCore().getCoreContainer().getZkController().zkStateReader;
+    ZkStateReader zkStateReader = cmd.getReq().getCoreContainer().getZkController().zkStateReader;
     String printableId = cmd.getPrintableId();
     updateParsedCollectionAliases(zkStateReader, true);
 

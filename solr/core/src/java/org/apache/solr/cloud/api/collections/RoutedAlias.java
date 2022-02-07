@@ -17,19 +17,11 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import com.google.common.collect.Sets;
 import java.lang.invoke.MethodHandles;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.Sets;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -324,7 +316,7 @@ public abstract class RoutedAlias {
 
     SolrQueryRequest req = cmd.getReq();
     SolrCore core = req.getCore();
-    CoreContainer coreContainer = core.getCoreContainer();
+    CoreContainer coreContainer = req.getCoreContainer();
     do {
       switch (targetCollectionDesc.getCreationType()) {
         case NONE:

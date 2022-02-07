@@ -17,6 +17,13 @@
 package org.apache.solr.handler.admin;
 
 import com.google.common.base.Strings;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.util.*;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -40,18 +47,6 @@ import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.http.MimeTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.lang.invoke.MethodHandles;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 
 /**
  * This handler uses the RawResponseWriter to give client access to
@@ -138,7 +133,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
       throws InterruptedException, KeeperException, IOException {
 
-    CoreContainer coreContainer = req.getCore().getCoreContainer();
+    CoreContainer coreContainer = req.getCoreContainer();
     if (coreContainer.isZooKeeperAware()) {
       showFromZooKeeper(req, rsp, coreContainer);
     } else {
@@ -377,7 +372,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       }
       // A leading slash is unnecessary but supported and interpreted as start of config dir
       Path filePath = configdir.toPath().resolve(fname.startsWith("/") ? fname.substring(1) : fname);
-      req.getCore().getCoreContainer().assertPathAllowed(filePath);
+      req.getCoreContainer().assertPathAllowed(filePath);
       adminFile = filePath.toFile();
     }
     return adminFile;

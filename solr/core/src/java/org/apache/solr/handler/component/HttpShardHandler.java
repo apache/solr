@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.propagation.Format;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,18 +26,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.propagation.Format;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -263,11 +262,11 @@ public class HttpShardHandler extends ShardHandler {
 
     CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
     CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
-    ZkController zkController = req.getCore().getCoreContainer().getZkController();
+    ZkController zkController = req.getCoreContainer().getZkController();
 
     final ReplicaListTransformer replicaListTransformer = httpShardHandlerFactory.getReplicaListTransformer(req);
 
-    AllowListUrlChecker urlChecker = req.getCore().getCoreContainer().getAllowListUrlChecker();
+    AllowListUrlChecker urlChecker = req.getCoreContainer().getAllowListUrlChecker();
     if (shards != null && zkController == null && urlChecker.isEnabled() && !urlChecker.hasExplicitAllowList()) {
       throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
               "solr.xml property '" + AllowListUrlChecker.URL_ALLOW_LIST

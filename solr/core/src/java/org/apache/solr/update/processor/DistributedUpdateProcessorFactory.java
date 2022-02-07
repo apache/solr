@@ -19,7 +19,6 @@ package org.apache.solr.update.processor;
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -50,7 +49,7 @@ public class DistributedUpdateProcessorFactory
   public UpdateRequestProcessor getInstance(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next) {
 
-    final boolean isZkAware = req.getCore().getCoreContainer().isZooKeeperAware();
+    final boolean isZkAware = req.getCoreContainer().isZooKeeperAware();
 
     DistributedUpdateProcessor distribUpdateProcessor =
         isZkAware ?

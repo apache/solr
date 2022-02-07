@@ -17,12 +17,11 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.lang.invoke.MethodHandles;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.cloud.ZkController;
@@ -34,14 +33,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.DeleteUpdateCommand;
-import org.apache.solr.update.MergeIndexesCommand;
-import org.apache.solr.update.RollbackUpdateCommand;
+import org.apache.solr.update.*;
 import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,7 +128,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     this.distribPhase = distribPhase;
     assert ! DistribPhase.FROMLEADER.equals(distribPhase);
     
-    this.zkController = this.req.getCore().getCoreContainer().getZkController();
+    this.zkController = this.req.getCoreContainer().getZkController();
     this.uniqueKeyField = this.req.getCore().getLatestSchema().getUniqueKeyField();
     assert null != uniqueKeyField : "Factory didn't enforce uniqueKey field?";
   }

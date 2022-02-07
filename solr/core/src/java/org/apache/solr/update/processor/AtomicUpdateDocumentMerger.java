@@ -18,24 +18,13 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -320,11 +309,10 @@ public class AtomicUpdateDocumentMerger {
 
   private static String getRouteField(AddUpdateCommand cmd) {
     String result = null;
-    SolrCore core = cmd.getReq().getCore();
-    CloudDescriptor cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
+    CloudDescriptor cloudDescriptor = cmd.getReq().getCloudDescriptor();
     if (cloudDescriptor != null) {
       String collectionName = cloudDescriptor.getCollectionName();
-      ZkController zkController = core.getCoreContainer().getZkController();
+      ZkController zkController = cmd.getReq().getCoreContainer().getZkController();
       DocCollection collection = zkController.getClusterState().getCollection(collectionName);
       result = collection.getRouter().getRouteField(collection);
     }

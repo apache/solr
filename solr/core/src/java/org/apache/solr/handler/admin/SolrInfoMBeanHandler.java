@@ -16,25 +16,24 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.io.StringReader;
+import java.text.NumberFormat;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
-
-import java.io.StringReader;
-import java.text.NumberFormat;
-import java.util.Locale;
-import java.util.Set;
-import java.util.Map;
-import java.util.HashSet;
 
 /**
  * A request handler that provides info about all 
@@ -131,7 +130,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       addMBean(req, cats, requestedKeys, entry.getKey(),entry.getValue());
     }
 
-    for (SolrInfoBean infoMBean : req.getCore().getCoreContainer().getResourceLoader().getInfoMBeans()) {
+    for (SolrInfoBean infoMBean : req.getCoreContainer().getResourceLoader().getInfoMBeans()) {
       addMBean(req,cats,requestedKeys,infoMBean.getName(),infoMBean);
     }
     return cats;

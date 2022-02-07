@@ -23,19 +23,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -96,7 +90,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
     if (cloudDescriptor != null) {
       String collectionName = cloudDescriptor.getCollectionName();
-      CoreContainer coreContainer = core.getCoreContainer();
+      CoreContainer coreContainer = req.getCoreContainer();
       ZkController zkController = coreContainer.getZkController();
       ZkStateReader zkStateReader = zkController.getZkStateReader();
       Map<String, String> collectionProperties = zkStateReader.getCollectionProperties(collectionName, CACHE_FOR_MILLIS);
@@ -127,7 +121,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private static Map<String, String> getAliasProps(SolrQueryRequest req, String aliasName) {
-    ZkController zkController = req.getCore().getCoreContainer().getZkController();
+    ZkController zkController = req.getCoreContainer().getZkController();
     final Map<String, String> aliasProperties = zkController.getZkStateReader().getAliases().getCollectionAliasProperties(aliasName);
     if (aliasProperties.isEmpty()) {
       throw RoutedAlias.newAliasMustExistException(aliasName); // if it did exist, we'd have a non-null map
@@ -141,8 +135,8 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     this.routedAlias = routedAlias;
     assert aliasDistribPhase == DistribPhase.NONE;
     final SolrCore core = req.getCore();
-    final CoreContainer cc = core.getCoreContainer();
-    this.thisCollection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+    final CoreContainer cc = req.getCoreContainer();
+    this.thisCollection = req.getCloudDescriptor().getCollectionName();
     this.req = req;
     this.zkController = cc.getZkController();
     this.cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());

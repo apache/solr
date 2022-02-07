@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-
 import org.apache.solr.analytics.AnalyticsDriver;
 import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.AnalyticsRequestParser;
@@ -109,7 +108,7 @@ public class AnalyticsComponent extends SearchComponent {
 
     // Send out a request to each shard and merge the responses into our AnalyticsRequestManager
     reqManager.shardStream.sendRequests(rb.req.getCore().getCoreDescriptor().getCollectionName(),
-        rb.req.getCore().getCoreContainer().getZkController().getZkServerAddress());
+        rb.req.getCoreContainer().getZkController().getZkServerAddress());
 
     reqManager.sendShards = false;
 
