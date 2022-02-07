@@ -79,11 +79,16 @@ def main():
     old_pages = ["configuration-apis.html", "configuration-guide.html", "controlling-results.html", "deployment-guide.html", "enhancing-queries.html", "field-types.html", "fields-and-schema-design.html", "getting-started.html", "indexing-data-operations.html", "installation-deployment.html", "monitoring-solr.html", "query-guide.html", "scaling-solr.html", "schema-indexing-guide.html", "solr-concepts.html", "solr-schema.html", "solrcloud-clusters.html", "user-managed-clusters.html"]
 
     result = {}
+    old_guide = []
     failed = {}
+    regex_new = {}
     out("Converting...")
     for frm in old:
         if frm in new:
-            result[frm] = new[frm]
+            (subpath, name) = new[frm].split("/")
+            if subpath not in regex_new:
+                regex_new[subpath] = []
+            regex_new[subpath].append(name.split(".html")[0])
         elif frm in name_map:
             new_name = name_map[frm]
             if new_name in new:
@@ -91,22 +96,33 @@ def main():
             elif new_name.startswith("/guide/"):
                 result[frm] = new_name[7:]
             elif new_name == "_8_11":
-                result[frm] = "8_11/%s" % frm
+                old_guide.append(frm.split(".html")[0])
             else:
-                failed[frm] = "There was mapping to %s, but it does not exist in new guide" % new_name
+                failed[frm] = "Mapped value %s not in new guide" % new_name
         elif frm in old_pages:
-            failed[frm] = "Not yet mapped, is in src/old-pages"
+            failed[frm] = "Not yet mapped (in src/old-pages)"
         else:
             failed[frm] = "404"
 
     if conf.htaccess:
+        print("# Existing pages moved to sub path")
+        for key in regex_new:
+            print("RedirectMatch ^/guide/(%s)\.html /guide/%s/$1.html" % ("|".join(regex_new[key]), key))
+        print("# Page renames in 9.0")
         for key in result:
-            print("RewriteRule ^%s %s [R=301,NE,L]" % (key, result[key]))
+            print("RewriteRule ^/guide/%s /guide/%s [R=301,NE,L]" % (key, result[key]))
+        print("# Removed pages redirected to latest 8.x guide")
+        print("RedirectMatch ^/guide/(%s)\.html /guide/8_11/$1.html" % "|".join(old_guide))
+        print("# Paths we could not map")
         for key in failed:
             print("# %s: %s" % (key, failed[key]))
     else:
-        out("Successful mappings:")
+        out("Regex mappings:")
+        pprint(regex_new)
+        out("Rename mappings:")
         pprint(result)
+        out("Old refGuide mappings:")
+        pprint(old_guide)
         out("Failed mappings:")
         pprint(failed)
 
