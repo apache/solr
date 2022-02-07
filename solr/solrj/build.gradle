@@ -28,22 +28,45 @@ dependencies {
 
   api 'org.eclipse.jetty.http2:http2-client'
   implementation 'org.eclipse.jetty.http2:http2-http-client-transport'
+  implementation 'org.eclipse.jetty:jetty-http'
   implementation 'org.eclipse.jetty:jetty-client'
+  implementation 'org.eclipse.jetty:jetty-util'
   runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-client'
 
   api('org.apache.httpcomponents:httpmime', {
     exclude group: "commons-codec", module: "commons-codec"
     exclude group: "commons-logging", module: "commons-logging"
   })
+  implementation 'org.apache.httpcomponents:httpclient'
+  implementation 'org.apache.httpcomponents:httpcore'
 
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
     exclude group: "log4j", module: "log4j"
     exclude group: "org.slf4j", module: "slf4j-log4j12"
   })
+  implementation ('org.apache.zookeeper:zookeeper-jute') {
+    exclude group: 'org.apache.yetus', module: 'audience-annotations'
+  }
 
   testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:core')
+  testImplementation project(':solr:solrj')
+
+  testImplementation 'org.apache.lucene:lucene-analysis-common'
+  testImplementation 'org.apache.lucene:lucene-core'
+  testImplementation 'org.apache.lucene:lucene-test-framework'
+
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  testImplementation 'junit:junit'
+  testImplementation 'org.hamcrest:hamcrest'
+
   testImplementation 'commons-io:commons-io'
+
+  testImplementation 'javax.servlet:javax.servlet-api'
+
+  testImplementation 'org.eclipse.jetty:jetty-server'
+  testImplementation 'org.eclipse.jetty:jetty-servlet'
   testImplementation 'org.eclipse.jetty:jetty-webapp'
   testRuntimeOnly ('org.eclipse.jetty:jetty-alpn-java-server', {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
@@ -57,4 +80,5 @@ dependencies {
   testRuntimeOnly "org.hsqldb:hsqldb" // runtime because via JDBC reflection
   testImplementation 'org.apache.commons:commons-lang3'
   testImplementation ('com.google.guava:guava') { transitive = false }
+  testImplementation 'io.dropwizard.metrics:metrics-core'
 }
