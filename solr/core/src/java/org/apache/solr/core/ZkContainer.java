@@ -16,10 +16,8 @@
  */
 package org.apache.solr.core;
 
-import static org.apache.solr.common.cloud.UrlScheme.HTTP;
-import static org.apache.solr.common.cloud.UrlScheme.HTTPS;
-import static org.apache.solr.common.cloud.UrlScheme.HTTPS_PORT_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
+import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
+import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +37,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -136,9 +133,6 @@ public class ZkContainer {
           if (StringUtils.isNotEmpty(System.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient()).setClusterProperty(ZkStateReader.URL_SCHEME, HTTPS);
-            UrlScheme.INSTANCE.setUrlScheme(HTTPS);
-          } else {
-            UrlScheme.INSTANCE.setUrlScheme(System.getProperty(URL_SCHEME, HTTP));
           }
         }
 
