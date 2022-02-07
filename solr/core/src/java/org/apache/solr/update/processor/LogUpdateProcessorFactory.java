@@ -105,20 +105,22 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       // call delegate first so we can log things like the version that get set later
       if (next != null) next.processAdd(cmd);
 
-      // Add a list of added id's to the response
-      if (adds == null) {
-        adds = new ArrayList<>();
-        toLog.add("add",adds);
-      }
+      synchronized (this) {
+        // Add a list of added id's to the response
+        if (adds == null) {
+          adds = new ArrayList<>();
+          toLog.add("add",adds);
+        }
 
-      if (adds.size() < maxNumToLog) {
-        long version = cmd.getVersion();
-        String msg = cmd.getPrintableId();
-        if (version != 0) msg = msg + " (" + version + ')';
-        adds.add(msg);
-      }
+        if (adds.size() < maxNumToLog) {
+          long version = cmd.getVersion();
+          String msg = cmd.getPrintableId();
+          if (version != 0) msg = msg + " (" + version + ')';
+          adds.add(msg);
+        }
 
-      numAdds++;
+        numAdds++;
+      }
     }
 
     @Override
@@ -128,26 +130,28 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       }
       if (next != null) next.processDelete(cmd);
 
-      if (cmd.isDeleteById()) {
-        if (deletes == null) {
-          deletes = new ArrayList<>();
-          toLog.add("delete",deletes);
+      synchronized (this) {
+        if (cmd.isDeleteById()) {
+          if (deletes == null) {
+            deletes = new ArrayList<>();
+            toLog.add("delete",deletes);
+          }
+          if (deletes.size() < maxNumToLog) {
+            long version = cmd.getVersion();
+            String msg = cmd.getId();
+            if (version != 0) msg = msg + " (" + version + ')';
+            deletes.add(msg);
+          }
+        } else {
+          if (toLog.size() < maxNumToLog) {
+            long version = cmd.getVersion();
+            String msg = cmd.query;
+            if (version != 0) msg = msg + " (" + version + ')';
+            toLog.add("deleteByQuery", msg);
+          }
         }
-        if (deletes.size() < maxNumToLog) {
-          long version = cmd.getVersion();
-          String msg = cmd.getId();
-          if (version != 0) msg = msg + " (" + version + ')';
-          deletes.add(msg);
-        }
-      } else {
-        if (toLog.size() < maxNumToLog) {
-          long version = cmd.getVersion();
-          String msg = cmd.query;
-          if (version != 0) msg = msg + " (" + version + ')';
-          toLog.add("deleteByQuery", msg);
-        }
+        numDeletes++;
       }
-      numDeletes++;
 
     }
 
@@ -158,7 +162,9 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       }
       if (next != null) next.processMergeIndexes(cmd);
 
-      toLog.add("mergeIndexes", cmd.toString());
+      synchronized (this) {
+        toLog.add("mergeIndexes", cmd.toString());
+      }
     }
 
     @Override
@@ -169,8 +175,10 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       if (next != null) next.processCommit(cmd);
 
 
-      final String msg = cmd.optimize ? "optimize" : "commit";
-      toLog.add(msg, "");
+      synchronized (this) {
+        final String msg = cmd.optimize ? "optimize" : "commit";
+        toLog.add(msg, "");
+      }
     }
 
     /**
@@ -183,7 +191,9 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       }
       if (next != null) next.processRollback(cmd);
 
-      toLog.add("rollback", "");
+      synchronized (this) {
+        toLog.add("rollback", "");
+      }
     }
 
 
@@ -211,18 +221,20 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
     private String getLogStringAndClearRspToLog() {
       StringBuilder sb = new StringBuilder(rsp.getToLogAsString());
 
-      rsp.getToLog().clear();   // make it so SolrCore.exec won't log this again
+      synchronized (this) {
+        rsp.getToLog().clear();   // make it so SolrCore.exec won't log this again
 
-      // if id lists were truncated, show how many more there were
-      if (adds != null && numAdds > maxNumToLog) {
-        adds.add("... (" + numAdds + " adds)");
-      }
-      if (deletes != null && numDeletes > maxNumToLog) {
-        deletes.add("... (" + numDeletes + " deletes)");
-      }
-      final long elapsed = (long) req.getRequestTimer().getTime();
+        // if id lists were truncated, show how many more there were
+        if (adds != null && numAdds > maxNumToLog) {
+          adds.add("... (" + numAdds + " adds)");
+        }
+        if (deletes != null && numDeletes > maxNumToLog) {
+          deletes.add("... (" + numDeletes + " deletes)");
+        }
+        final long elapsed = (long) req.getRequestTimer().getTime();
 
-      sb.append(toLog).append(" 0 ").append(elapsed);
+        sb.append(toLog).append(" 0 ").append(elapsed);
+      }
       return sb.toString();
     }
   }
