@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
 import com.codahale.metrics.Gauge;
@@ -136,9 +137,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final SolrCache<Query,DocSet> filterCache;
   private final SolrCache<QueryResultKey,DocList> queryResultCache;
   private final SolrCache<String,UnInvertedField> fieldValueCache;
-  private final AtomicLong fullSortCount = new AtomicLong();
-  private final AtomicLong skipSortCount = new AtomicLong();
-  private final AtomicLong liveDocsNaiveCacheHitCount = new AtomicLong();
+  private final LongAdder fullSortCount = new LongAdder();
+  private final LongAdder skipSortCount = new LongAdder();
+  private final LongAdder liveDocsNaiveCacheHitCount = new LongAdder();
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final Map<String,SolrCache<?, ?>> cacheMap;
@@ -895,7 +896,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public BitDocSet getLiveDocSet() throws IOException {
     BitDocSet docs = liveDocs;
     if (docs != null) {
-      liveDocsNaiveCacheHitCount.incrementAndGet();
+      liveDocsNaiveCacheHitCount.increment();
     } else {
       docs = liveDocsCache.computeIfAbsent(MATCH_ALL_DOCS_QUERY, computeLiveDocs);
       liveDocs = docs; // all `docs` will be identical (`==`); we don't care which one "wins"
@@ -925,7 +926,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     assert suppliedSize == numDocs();
     BitDocSet ret = liveDocs;
     if (ret != null) {
-      liveDocsNaiveCacheHitCount.incrementAndGet();
+      liveDocsNaiveCacheHitCount.increment();
       return ret;
     }
     try {
@@ -1496,10 +1497,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // the filters instead of anding them first...
       // perhaps there should be a multi-docset-iterator
       if (needSort) {
-        fullSortCount.incrementAndGet();
+        fullSortCount.increment();
         sortDocSet(qr, cmd);
       } else {
-        skipSortCount.incrementAndGet();
+        skipSortCount.increment();
         // put unsorted list in place
         out.docList = constantScoreDocList(cmd.getOffset(), cmd.getLen(), out.docSet);
         if (0 == cmd.getSupersetMaxDoc()) {
@@ -1514,7 +1515,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
       }
     } else {
-      fullSortCount.incrementAndGet();
+      fullSortCount.increment();
       // do it the normal way...
       if ((flags & GET_DOCSET) != 0) {
         // this currently conflates returning the docset for the base query vs
@@ -2400,9 +2401,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     parentContext.gauge(() -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(fullSortCount::get, true, "fullSortCount", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(skipSortCount::get, true, "skipSortCount", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(liveDocsNaiveCacheHitCount::get, true, "liveDocsNaiveCacheHitCount", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(fullSortCount::sum, true, "fullSortCount", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(skipSortCount::sum, true, "skipSortCount", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(liveDocsNaiveCacheHitCount::sum, true, "liveDocsNaiveCacheHitCount", Category.SEARCHER.toString(), scope);
     // reader stats
     parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.numDocs()), true, "numDocs", Category.SEARCHER.toString(), scope);
     parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.maxDoc()), true, "maxDoc", Category.SEARCHER.toString(), scope);
