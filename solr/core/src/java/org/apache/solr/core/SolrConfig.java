@@ -301,7 +301,6 @@ public class SolrConfig implements MapSerializable {
         args.put(NAME, "fieldValueCache");
         args.put("size", "10000");
         args.put("initialSize", "10");
-        args.put("showItems", "-1");
         conf = new CacheConfig(CaffeineCache.class, args, null);
       }
       fieldValueCacheConfig = conf;

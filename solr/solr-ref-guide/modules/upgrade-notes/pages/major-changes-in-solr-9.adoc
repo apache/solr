@@ -155,6 +155,8 @@ Currently this change should only effect compatibility of custom code overriding
 * SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the `numFound` value (exact vs approximation).
 Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
 
+* SOLR-15259: hl.fragAlignRatio now defaults to 0.33 to be faster and maybe looks nicer.
+
 * SOLR-9376: The response format for field values serialized as raw XML (via the `[xml]` raw value DocTransformer
 and `wt=xml`) has changed. Previously, values were dropped in directly as top-level child elements of each `<doc>`,
 obscuring associated field names and yielding inconsistent `<doc>` structure. As of version 9.0, raw values are
@@ -163,6 +165,9 @@ wrapped in a `<raw name="field_name">[...]</raw>` element at the top level of ea
 values serialized in this way will need to be updated accordingly.
 
 * SOLR-9575: Solr no longer requires a `solr.xml` in `$SOLR_HOME`. If one is not found, Solr will instead use the default one from `$SOLR_TIP/server/solr/solr.xml`. You can revert to the pre-9.0 behaviour by setting environment variable `SOLR_SOLRXML_REQUIRED=true` or system property `-Dsolr.solrxml.required=true`. Solr also does not require a `zoo.cfg` in `$SOLR_HOME` if started with embedded zookeeper.
+
+* SOLR-12901: Highlighting: hl.method=unified is the new default.  Use hl.method=original
+  to switch back if needed.
 
 === solr.xml maxBooleanClauses now enforced recursively
 

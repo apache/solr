@@ -17,12 +17,11 @@
 package org.apache.solr.highlight;
 
 import java.util.HashMap;
-
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.handler.component.HighlightComponent;
-import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -78,15 +77,13 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
     } else {
       args.put("hl.method", "fastVector"); // the new way
     }
-    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
-      "",0,200,args);
     
     assertU(adoc("tv_text", "basic fast vector highlighter test", 
                  "id", "1"));
     assertU(commit());
     assertU(optimize());
     assertQ("Basic summarization",
-            sumLRF.makeRequest("tv_text:vector"),
+        req(new MapSolrParams(args), "q", "tv_text:vector"),
             "//lst[@name='highlighting']/lst[@name='1']",
             "//lst[@name='1']/arr[@name='tv_text']/str[.='basic fast <fvpre>vector</em> highlighter test']"
             );
@@ -94,6 +91,6 @@ public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
 
   private static DefaultSolrHighlighter getHighlighter() {
     var hl = (HighlightComponent) h.getCore().getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
-    return (DefaultSolrHighlighter) hl.getHighlighter(new MapSolrParams(Map.of()));
+    return (DefaultSolrHighlighter) hl.getHighlighter(new MapSolrParams(Map.of(HighlightParams.METHOD, "fastVector")));
   }
 }

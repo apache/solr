@@ -18,12 +18,11 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -31,6 +30,8 @@ import java.util.regex.Pattern;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -43,6 +44,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.util.LogListener;
 import org.apache.solr.util.ReadOnlyCoresLocator;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -96,7 +98,18 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     NodeConfig cfg = NodeConfig.loadNodeConfig(solrHomeDirectory.toPath(), null);
     return createCoreContainer(cfg, testCores);
   }
-  
+
+  private CoreContainer initEmpty() throws IOException {
+    solrHomeDirectory = createTempDir().toFile();
+    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr.xml");
+    NodeConfig cfg = NodeConfig.loadNodeConfig(solrHomeDirectory.toPath(), null);
+    return createCoreContainer(cfg, new ReadOnlyCoresLocator() {
+      @Override
+      public List<CoreDescriptor> discover(CoreContainer cc) {
+        return Collections.emptyList();
+      }
+    });  }
+
   @Test
   public void testLazyLoad() throws Exception {
     CoreContainer cc = init();
@@ -212,27 +225,27 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       checkCoresNotLoaded(cc, "collection3", "collection4", "collection6", "collection7", "collection8", "collection9");
 
       // By putting these in non-alpha order, we're also checking that we're  not just seeing an artifact.
-      SolrCore core1 = cc.getCore("collection1");
-      SolrCore core3 = cc.getCore("collection3");
-      SolrCore core4 = cc.getCore("collection4");
-      SolrCore core2 = cc.getCore("collection2");
-      SolrCore core5 = cc.getCore("collection5");
+      getCoreAndPutBack(cc, "collection1");
+      getCoreAndPutBack(cc, "collection3");
+      getCoreAndPutBack(cc, "collection4");
+      getCoreAndPutBack(cc, "collection2");
+      getCoreAndPutBack(cc, "collection5");
 
       checkLoadedCores(cc, "collection1", "collection2", "collection3", "collection4", "collection5");
       checkCoresNotLoaded(cc, "collection6", "collection7", "collection8", "collection9");
 
       // map should be full up, add one more and verify
-      SolrCore core6 = cc.getCore("collection6");
+      getCoreAndPutBack(cc, "collection6");
       checkLoadedCores(cc, "collection1", "collection2", "collection3", "collection4", "collection5",
           "collection6");
       checkCoresNotLoaded(cc, "collection7", "collection8", "collection9");
 
-      SolrCore core7 = cc.getCore("collection7");
+      getCoreAndPutBack(cc, "collection7");
       checkLoadedCores(cc, "collection1", "collection2", "collection3", "collection4", "collection5",
           "collection6", "collection7");
       checkCoresNotLoaded(cc, "collection8", "collection9");
 
-      SolrCore core8 = cc.getCore("collection8");
+      getCoreAndPutBack(cc, "collection8");
       checkLoadedCores(cc, "collection1", "collection4", "collection5", "collection8");
       checkSomeLoadedCores(cc, TRANSIENT_CORE_CACHE_MAX_SIZE, "collection2", "collection3", "collection6",
           "collection7", "collection8");
@@ -240,7 +253,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       checkSomeCoresNotLoaded(cc, 5 - TRANSIENT_CORE_CACHE_MAX_SIZE, "collection2", "collection3",
           "collection6", "collection7");
 
-      SolrCore core9 = cc.getCore("collection9");
+      getCoreAndPutBack(cc, "collection9");
       checkLoadedCores(cc, "collection1", "collection4", "collection5", "collection9");
       checkSomeLoadedCores(cc, TRANSIENT_CORE_CACHE_MAX_SIZE, "collection2", "collection3", "collection6",
           "collection7", "collection8", "collection9");
@@ -248,7 +261,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
           "collection6", "collection7", "collection8");
 
       // verify that getting metrics from an unloaded core doesn't cause exceptions (SOLR-12541)
-      try (MetricsHandler handler = new MetricsHandler(h.getCoreContainer())) {
+      try (SolrCore core1 = cc.getCore("collection1");
+          MetricsHandler handler = new MetricsHandler(h.getCoreContainer())) {
 
         SolrQueryResponse resp = new SolrQueryResponse();
         handler.handleRequest(makeReq(core1, CommonParams.QT, "/admin/metrics"), resp);
@@ -261,21 +275,14 @@ public class TestLazyCores extends SolrTestCaseJ4 {
         assertNotNull(o);
       }
 
-
-      // Note decrementing the count when the core is removed from the lazyCores list is appropriate, since the
-      // refcount is 1 when constructed. anyone _else_ who's opened up one has to close it.
-      core1.close();
-      core2.close();
-      core3.close();
-      core4.close();
-      core5.close();
-      core6.close();
-      core7.close();
-      core8.close();
-      core9.close();
     } finally {
       cc.shutdown();
     }
+  }
+
+  private void getCoreAndPutBack(CoreContainer cc, String name) {
+    SolrCore core1 = cc.getCore(name);
+    core1.close(); // note: the core can't have a refCount > 1 to be an eviction candidate
   }
 
   // Test case for SOLR-4300
@@ -397,7 +404,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // Make sure that creating a transient core from the admin handler correctly respects the transient limits etc.
   @Test
   public void testCreateTransientFromAdmin() throws Exception {
-    final CoreContainer cc = init();
+    final CoreContainer cc = initEmpty();
     try {
       copyMinConf(new File(solrHomeDirectory, "core1"));
       copyMinConf(new File(solrHomeDirectory, "core2"));
@@ -411,18 +418,19 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       createViaAdmin(cc, "core4", true, false);
       createViaAdmin(cc, "core5", true, false);
 
+      final var coreNames = new String[]{"core1", "core2", "core3", "core4", "core5"};
+      checkSomeCoresNotLoaded(cc, coreNames.length - TRANSIENT_CORE_CACHE_MAX_SIZE, coreNames);
+
       final SolrCore c1 = cc.getCore("core1");
       final SolrCore c2 = cc.getCore("core2");
       final SolrCore c3 = cc.getCore("core3");
       final SolrCore c4 = cc.getCore("core4");
       final SolrCore c5 = cc.getCore("core5");
 
-      checkCoresNotLoaded(cc, "collection2", "collection3", "collection4", "collection6",
-          "collection7", "collection8", "collection9");
-      checkSomeCoresNotLoaded(cc, 5 - TRANSIENT_CORE_CACHE_MAX_SIZE, "core1", "core2", "core3", "core4", "core5");
+      // no cores should be unloaded because we have references to them
+      checkSomeCoresNotLoaded(cc, 0, coreNames);
 
-      checkLoadedCores(cc, "collection1", "collection5");
-      checkSomeLoadedCores(cc, TRANSIENT_CORE_CACHE_MAX_SIZE, "core1", "core2", "core3", "core4", "core5");
+      checkSomeLoadedCores(cc, 5, coreNames);
 
       // While we're at it, a test for SOLR-5366, unloading transient core that's been unloaded b/c it's
       // transient generates a "too many closes" error
@@ -748,21 +756,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     updater.addDoc(cmd);
   }
 
-  private LocalSolrQueryRequest makeReq(SolrCore core, String... q) {
-    if (q.length == 1) {
-      return new LocalSolrQueryRequest(core,
-          q[0], null, 0, 20, new HashMap<String, String>());
-    }
-    if (q.length % 2 != 0) {
-      throw new RuntimeException("The length of the string array (query arguments) needs to be even");
-    }
-    @SuppressWarnings("unchecked")
-    NamedList.NamedListEntry<String>[] entries = (NamedList.NamedListEntry<String>[])
-            Array.newInstance(NamedList.NamedListEntry.class, q.length / 2);
-    for (int i = 0; i < q.length; i += 2) {
-      entries[i / 2] = new NamedList.NamedListEntry<>(q[i], q[i + 1]);
-    }
-    return new LocalSolrQueryRequest(core, new NamedList<>(entries));
+  private LocalSolrQueryRequest makeReq(SolrCore core, String... paramPairs) {
+    return new LocalSolrQueryRequest(core, params(paramPairs));
   }
 
   private static final String makePath(String... args) {
@@ -841,26 +836,22 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     try {
       // First, go through all the transient cores and add some docs. DO NOT COMMIT!
       // The evicted core should commit the docs when it gets closed.
-      List<SolrCore> openCores = new ArrayList<>();
       for (String coreName : transientCoreNames) {
-        SolrCore core = cc.getCore(coreName);
-        openCores.add(core);
-        add10(core);
+        try (SolrCore core = cc.getCore(coreName)) {
+          add10(core);
+        }
       }
-      
+
       // Just proving that some cores have been evicted to respect transient core cache max size.
       checkSomeCoresNotLoaded(cc, transientCoreNames.length - TRANSIENT_CORE_CACHE_MAX_SIZE, transientCoreNames);
 
-      // Close our get of all cores above.
-      for (SolrCore core : openCores) core.close();
-      openCores.clear();
-      
       // We still should have 4 transient cores loaded, their reference counts have NOT dropped to zero
       checkLoadedCores(cc, "collection1", "collection5");
       checkSomeLoadedCores(cc, TRANSIENT_CORE_CACHE_MAX_SIZE, transientCoreNames);
 
       Collection<String> loadedCoreNames = cc.getLoadedCoreNames();
       int notLoadedCoreCount = 0;
+      List<SolrCore> openCores = new ArrayList<>();
       for (String coreName : transientCoreNames) {
         // The point of this test is to insure that when cores are evicted and re-opened
         // that the docs are there, so insure that the core we're testing is gone, gone, gone.
@@ -878,7 +869,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
         }
       }
       assertEquals(transientCoreNames.length - TRANSIENT_CORE_CACHE_MAX_SIZE, notLoadedCoreCount);
-      for (SolrCore core : openCores) core.close();
+      openCores.forEach(SolrCore::close);
     } finally {
       cc.shutdown();
     }
@@ -898,5 +889,68 @@ public class TestLazyCores extends SolrTestCaseJ4 {
         makeReq(core, "q", "*:*")
         , "//result[@numFound='10']"
     );
+  }
+
+  public void testDontEvictUsedCore() throws Exception {
+    // If a core is being used for a long time (say a long indexing batch) but nothing else for it,
+    // and if the transient cache has pressure and thus wants to unload a core, we should not
+    // unload it (yet).
+
+    CoreContainer cc = init();
+    String[] transientCoreNames = new String[]{
+        "collection2",
+        "collection3",
+        "collection6",
+        "collection7",
+        "collection8",
+        "collection9"
+    };
+
+    try (LogListener logs = LogListener.info(TransientSolrCoreCacheDefault.class.getName())
+        .substring("NOT evicting transient core [" + transientCoreNames[0] + "]")) {
+      cc.waitForLoadingCoresToFinish(1000);
+      var solr = new EmbeddedSolrServer(cc, null);
+      final var longReqTimeMs = 2000; // if lower too much, the test will fail on a slow/busy CI
+
+      // First, start a long request on the first transient core
+      var thread = new Thread(() -> {
+        try {
+          // TODO Solr ought to have a query test "latch" mechanism so we don't sleep arbitrarily
+          solr.query(transientCoreNames[0], params("q", "{!func}sleep(" + longReqTimeMs + ",1)"));
+        } catch (SolrServerException | IOException e) {
+          fail(e.toString());
+        }
+      }, "longRequest");
+      thread.start();
+
+      System.out.println("Inducing pressure on cache by querying many cores...");
+      // Now hammer on other transient cores to create transient cache pressure
+      for (int round = 0; round < 5 && logs.getCount() == 0; round++) {
+        // note: we skip over the first; we want the first to remain non-busy
+        for (int i = 1; i < transientCoreNames.length; i++) {
+          solr.query(transientCoreNames[i], params("q", "*:*"));
+        }
+      }
+      // Show that the cache logs that it was asked to evict but did not.
+      // To show the bug behavior, comment this out and also comment out the corresponding logic
+      // that fixes it at the spot this message is logged.
+      assertTrue(logs.getCount() > 0);
+
+      System.out.println("Done inducing pressure; now load first core");
+      assertTrue("long request should still be busy", thread.isAlive());
+      // Do another request on the first core
+      solr.query(transientCoreNames[0], params("q", "id:wakeUp"));
+
+      //thread.interrupt();
+      thread.join(longReqTimeMs);
+      assertFalse(thread.isAlive());
+
+      // Do another request on the first core
+      solr.query(transientCoreNames[0], params("q", "id:justCheckingAgain"));
+
+      logs.getQueue().clear();
+    } finally {
+      cc.shutdown();
+    }
   }
 }
