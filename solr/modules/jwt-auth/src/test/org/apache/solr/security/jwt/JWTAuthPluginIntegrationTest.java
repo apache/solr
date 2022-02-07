@@ -14,9 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.security.jwt.JWTAuthPluginTest.JWT_TEST_PATH;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -72,6 +73,7 @@ import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
+import org.jose4j.lang.JoseException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -100,11 +102,9 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     // Setup an OAuth2 mock server with SSL
-    Path p12Cert =
-        SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_certs.p12");
-    pemFilePath = SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
-    wrongPemFilePath =
-        SolrTestCaseJ4.TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
+    Path p12Cert = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_certs.p12");
+    pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
+    wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
 
     mockOAuth2Server = createMockOAuthServer(p12Cert, "secret");
     mockOAuth2Server.start();
@@ -215,13 +215,24 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     assertAuthMetricsMinimums(2, 1, 0, 0, 1, 0);
     executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: false}}", jws);
     verifySecurityStatus(
-        cl, baseUrl + authcPrefix, "authentication/blockUnknown", "false", 20, jws);
+        cl,
+        baseUrl + authcPrefix,
+        "authentication/blockUnknown",
+        "false",
+        20,
+        getBearerAuthHeader(jws));
     // Pass through
     verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
     // Now succeeds since blockUnknown=false
     get(baseUrl + "/" + COLLECTION + "/query?q=*:*", null);
     executeCommand(baseUrl + authcPrefix, cl, "{set-property : { blockUnknown: true}}", null);
-    verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/blockUnknown", "true", 20, jws);
+    verifySecurityStatus(
+        cl,
+        baseUrl + authcPrefix,
+        "authentication/blockUnknown",
+        "true",
+        20,
+        getBearerAuthHeader(jws));
 
     assertAuthMetricsMinimums(9, 4, 4, 0, 1, 0);
 
@@ -268,6 +279,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     HttpClientUtil.close(cl);
   }
 
+  static String getBearerAuthHeader(JsonWebSignature jws) throws JoseException {
+    return "Bearer " + jws.getCompactSerialization();
+  }
+
   /**
    * Configure solr cluster with a security.json talking to MockOAuth2 server
    *
@@ -282,13 +297,12 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     MiniSolrCloudCluster myCluster =
         configureCluster(numNodes) // nodes
             .addConfig(
-                "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+                "conf1",
+                JWT_TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
             .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
             .build();
     String securityJson = createMockOAuthSecurityJson(pemFilePath);
-    myCluster
-        .getZkClient()
-        .setData("/security.json", securityJson.getBytes(Charset.defaultCharset()), true);
+    myCluster.zkSetData("/security.json", securityJson.getBytes(Charset.defaultCharset()), true);
     RTimer timer = new RTimer();
     do { // Wait timeoutMs time for the security.json change to take effect
       Thread.sleep(200);
@@ -311,9 +325,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
       throws Exception {
     MiniSolrCloudCluster myCluster =
         configureCluster(2) // nodes
-            .withSecurityJson(TEST_PATH().resolve("security").resolve(securityJsonFilename))
+            .withSecurityJson(JWT_TEST_PATH().resolve("security").resolve(securityJsonFilename))
             .addConfig(
-                "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+                "conf1",
+                JWT_TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
             .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
             .build();
 

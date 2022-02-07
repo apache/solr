@@ -33,6 +33,7 @@ configure(rootProject) {
         ":solr:modules:extraction",
         ":solr:modules:gcs-repository",
         ":solr:modules:jaegertracer-configurator",
+        ":solr:modules:jwt-auth",
         ":solr:modules:langid",
         ":solr:modules:ltr",
         ":solr:modules:s3-repository",
