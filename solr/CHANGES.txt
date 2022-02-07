@@ -49,6 +49,8 @@ Bug Fixes
 ---------------------
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
+* SOLR-15964: Transient cores: don't evict a core when it's still being used. (David Smiley)
+
 Other Changes
 ---------------------
 * SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)

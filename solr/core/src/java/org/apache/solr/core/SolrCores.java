@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 class SolrCores {
 
-  private static Object modifyLock = new Object(); // for locking around manipulating any of the core maps.
+  private static final Object modifyLock = new Object(); // for locking around manipulating any of the core maps.
   private final Map<String, SolrCore> cores = new LinkedHashMap<>(); // For "permanent" cores
 
   // These descriptors, once loaded, will _not_ be unloaded, i.e. they are not "transient".
@@ -260,13 +260,6 @@ class SolrCores {
     }
   }
 
-  SolrCore getCore(String name) {
-
-    synchronized (modifyLock) {
-      return cores.get(name);
-    }
-  }
-
   protected void swap(String n0, String n1) {
 
     synchronized (modifyLock) {
@@ -374,6 +367,12 @@ class SolrCores {
         }
       }
       return new CoreDescriptor(cname, desc);
+    }
+  }
+
+  boolean hasPendingCoreOps(String name) {
+    synchronized (modifyLock) {
+      return pendingCoreOps.contains(name);
     }
   }
 
@@ -533,6 +532,7 @@ class SolrCores {
     return currentlyLoadingCores.contains(name);
   }
 
+  /** The core is currently loading, unloading, or reloading. */
   public void queueCoreToClose(SolrCore coreToClose) {
     synchronized (modifyLock) {
       pendingCloses.add(coreToClose); // Essentially just queue this core up for closing.
