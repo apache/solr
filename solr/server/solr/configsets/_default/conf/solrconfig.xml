@@ -428,7 +428,7 @@
     <!--
        <fieldValueCache size="512"
                         autowarmCount="128"
-                        showItems="32" />
+                        />
       -->
 
     <!-- Custom Cache
@@ -846,6 +846,8 @@
        https://solr.apache.org/guide/highlighting.html
     -->
   <searchComponent class="solr.HighlightComponent" name="highlight">
+    <!-- note: the hl.method=unified highlighter is not configured here; it's completely configured
+    via parameters.  The below configuration supports hl.method=original and fastVector. -->
     <highlighting>
       <!-- Configure the standard fragmenter -->
       <!-- This could most likely be commented out in the "default" case -->

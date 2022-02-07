@@ -116,7 +116,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -127,7 +126,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -667,32 +665,6 @@ public class CoreContainer {
   public void load() {
     if (log.isDebugEnabled()) {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
-    }
-
-    // Always add $SOLR_HOME/lib to the shared resource loader
-    Set<String> libDirs = new LinkedHashSet<>();
-    libDirs.add("lib");
-
-    if (!StringUtils.isBlank(cfg.getSharedLibDirectory())) {
-      List<String> sharedLibs = Arrays.asList(cfg.getSharedLibDirectory().split("\\s*,\\s*"));
-      libDirs.addAll(sharedLibs);
-    }
-
-    boolean modified = false;
-    // add the sharedLib to the shared resource loader before initializing cfg based plugins
-    for (String libDir : libDirs) {
-      Path libPath = Paths.get(getSolrHome()).resolve(libDir);
-      if (Files.exists(libPath)) {
-        try {
-          loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
-          modified = true;
-        } catch (IOException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't load libs: " + e, e);
-        }
-      }
-    }
-    if (modified) {
-      loader.reloadLuceneSPI();
     }
 
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
@@ -1714,7 +1686,6 @@ public class CoreContainer {
       // CoreDescriptor and we need to reload it from the disk files
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
       solrCores.addCoreDescriptor(cd);
-      Closeable oldCore = null;
       boolean success = false;
       try {
         solrCores.waitAddPendingCoreOps(cd.getName());

@@ -20,6 +20,8 @@
 
 <schema name="test" version="1.0">
 
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+
   <fieldType name="string" class="solr.StrField" omitNorms="true" positionIncrementGap="0"/>
 
   <!-- basic text field -->
@@ -31,7 +33,8 @@
   </fieldType>
 
   <fieldType name="sort_ar_t" class="solr.ICUCollationField" locale="ar"/>
-  <fieldType name="sort_de_t" class="solr.ICUCollationField" locale="de" strength="primary"/>
+  <fieldType name="sort_de_t" class="solr.ICUCollationField" locale="de" strength="primary"
+             useDocValuesAsStored="${tests.icu_collation_fieldType.udvas:false}"/>
   <fieldType name="sort_tr_canon_t" class="solr.ICUCollationField" locale="tr" strength="primary"
              decomposition="canonical"/>
   <fieldType name="sort_da_t" class="solr.ICUCollationField" locale="da" strength="primary"/>
@@ -40,7 +43,8 @@
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="sort_ar" type="sort_ar_t" indexed="false" stored="false" multiValued="false" docValues="true"/>
-  <field name="sort_de" type="sort_de_t" indexed="false" stored="false" multiValued="false" docValues="true"/>
+  <field name="sort_de" type="sort_de_t" indexed="false" stored="false" multiValued="false" docValues="true"
+         useDocValuesAsStored="${tests.icu_collation_field.udvas:false}"/>
   <field name="sort_tr_canon" type="sort_tr_canon_t" indexed="false" stored="false" multiValued="true"
          docValues="true"/>
   <field name="sort_da" type="sort_da_t" indexed="false" stored="false" multiValued="false" docValues="true"/>
