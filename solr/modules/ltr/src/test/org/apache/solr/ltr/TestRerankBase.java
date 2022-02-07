@@ -27,8 +27,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.util.Utils;
@@ -43,7 +41,6 @@ import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,7 +128,7 @@ public class TestRerankBase extends RestTestBase {
     }
   }
 
-  protected static SortedMap<ServletHolder,String>  setupTestInit(
+  protected static void setupTestInit(
       String solrconfig, String schema,
       boolean isPersistent) throws Exception {
     tmpSolrHome = createTempDir().toFile();
@@ -174,29 +171,25 @@ public class TestRerankBase extends RestTestBase {
     }
 
     System.setProperty("managed.schema.mutable", "true");
-    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    return extraServlets;
   }
 
   public static void setuptest(String solrconfig, String schema)
       throws Exception {
 
-    SortedMap<ServletHolder,String> extraServlets =
-        setupTestInit(solrconfig,schema,false);
+    setupTestInit(solrconfig,schema,false);
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
-        "/solr", true, extraServlets);
+        "/solr", true, null);
   }
 
   public static void setupPersistentTest(String solrconfig, String schema)
       throws Exception {
 
-    SortedMap<ServletHolder,String> extraServlets =
-        setupTestInit(solrconfig,schema,true);
+    setupTestInit(solrconfig,schema,true);
 
     createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
-        "/solr", true, extraServlets);
+        "/solr", true, null);
   }
 
   protected static void aftertest() throws Exception {

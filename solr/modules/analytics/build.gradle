@@ -21,7 +21,16 @@ description = 'Analytics Package'
 
 dependencies {
   implementation project(':solr:core')
+  implementation project(':solr:solrj')
+  
+  implementation 'org.apache.lucene:lucene-core'
+
+  implementation 'com.fasterxml.jackson.core:jackson-annotations'
+  implementation 'com.fasterxml.jackson.core:jackson-core'
   implementation 'com.fasterxml.jackson.core:jackson-databind'
   implementation ('com.google.guava:guava') { transitive = false }
+
   testImplementation project(':solr:test-framework')
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  testImplementation 'junit:junit'
 }
