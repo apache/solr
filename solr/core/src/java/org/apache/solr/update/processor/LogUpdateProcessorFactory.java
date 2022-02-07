@@ -108,9 +108,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       // Add a list of added id's to the response
       if (adds == null) {
         adds = new ArrayList<>();
-        synchronized (toLog) {
-          toLog.add("add",adds);
-        }
+        toLog.add("add",adds);
       }
 
       if (adds.size() < maxNumToLog) {
@@ -133,9 +131,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       if (cmd.isDeleteById()) {
         if (deletes == null) {
           deletes = new ArrayList<>();
-          synchronized (toLog) {
-            toLog.add("delete",deletes);
-          }
+          toLog.add("delete",deletes);
         }
         if (deletes.size() < maxNumToLog) {
           long version = cmd.getVersion();
@@ -144,13 +140,11 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
           deletes.add(msg);
         }
       } else {
-        synchronized (toLog) {
-          if (toLog.size() < maxNumToLog) {
-            long version = cmd.getVersion();
-            String msg = cmd.query;
-            if (version != 0) msg = msg + " (" + version + ')';
-            toLog.add("deleteByQuery", msg);
-          }
+        if (toLog.size() < maxNumToLog) {
+          long version = cmd.getVersion();
+          String msg = cmd.query;
+          if (version != 0) msg = msg + " (" + version + ')';
+          toLog.add("deleteByQuery", msg);
         }
       }
       numDeletes++;
@@ -164,9 +158,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       }
       if (next != null) next.processMergeIndexes(cmd);
 
-      synchronized (toLog) {
-        toLog.add("mergeIndexes", cmd.toString());
-      }
+      toLog.add("mergeIndexes", cmd.toString());
     }
 
     @Override
@@ -177,10 +169,8 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       if (next != null) next.processCommit(cmd);
 
 
-      synchronized (toLog) {
-        final String msg = cmd.optimize ? "optimize" : "commit";
-        toLog.add(msg, "");
-      }
+      final String msg = cmd.optimize ? "optimize" : "commit";
+      toLog.add(msg, "");
     }
 
     /**
@@ -193,9 +183,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       }
       if (next != null) next.processRollback(cmd);
 
-      synchronized (toLog) {
-        toLog.add("rollback", "");
-      }
+      toLog.add("rollback", "");
     }
 
 
@@ -234,9 +222,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       }
       final long elapsed = (long) req.getRequestTimer().getTime();
 
-      synchronized (toLog) {
-        sb.append(toLog).append(" 0 ").append(elapsed);
-      }
+      sb.append(toLog).append(" 0 ").append(elapsed);
       return sb.toString();
     }
   }
