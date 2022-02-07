@@ -111,7 +111,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
   }
 
-  private CoreContainer init() throws Exception {
+  private CoreContainer init() {
     final CoreContainer container = new CoreContainer(solrHomeDirectory, new Properties());
     try {
       container.load();
@@ -122,9 +122,9 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
     long status = container.getStatus();
 
-    assertTrue("Load complete flag should be set", 
+    assertTrue("Load complete flag should be set",
         (status & LOAD_COMPLETE) == LOAD_COMPLETE);
-    assertTrue("Core discovery should be complete", 
+    assertTrue("Core discovery should be complete",
         (status & CORE_DISCOVERY_COMPLETE) == CORE_DISCOVERY_COMPLETE);
     assertTrue("Initial core loading should be complete", 
         (status & INITIAL_CORE_LOAD_COMPLETE) == INITIAL_CORE_LOAD_COMPLETE);
@@ -324,9 +324,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       c5.close();
       c6.close();
     } finally {
-      if (cc != null) {
-        cc.shutdown();
-      }
+      cc.shutdown();
     }
   }
 
@@ -503,7 +501,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       cc = init();
     } catch (SolrException ex) {
       assertTrue("Core init doesn't report if solr home directory doesn't exist " + ex.getMessage(),
-          0 <= ex.getMessage().indexOf("solr.xml does not exist"));
+          ex.getMessage().contains("Error reading core root directory"));
     } finally {
       if (cc != null) {
         cc.shutdown();

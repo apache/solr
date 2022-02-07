@@ -33,6 +33,8 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1272,13 +1274,13 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    */
   @Test
   public void testUserAndTestDefaultConfigsetsAreSame() throws IOException {
-    final File extPath = new File(ExternalPaths.DEFAULT_CONFIGSET);
-    assertTrue("_default dir doesn't exist: " + ExternalPaths.DEFAULT_CONFIGSET, extPath.exists());
-    assertTrue("_default dir isn't a dir: " + ExternalPaths.DEFAULT_CONFIGSET, extPath.isDirectory());
+    final Path extPath = Path.of(ExternalPaths.DEFAULT_CONFIGSET);
+    assertTrue("_default dir doesn't exist: " + ExternalPaths.DEFAULT_CONFIGSET, Files.exists(extPath));
+    assertTrue("_default dir isn't a dir: " + ExternalPaths.DEFAULT_CONFIGSET, Files.isDirectory(extPath));
 
-    final String zkBootStrap = ConfigSetService.getDefaultConfigDirPath();
+    final Path zkBootStrap = ConfigSetService.getDefaultConfigDirPath();
     assertEquals("extPath _default configset dir vs zk bootstrap path",
-                 ExternalPaths.DEFAULT_CONFIGSET, zkBootStrap);
+                 extPath, zkBootStrap);
   }
 
   private StringBuilder getConfigSetProps(Map<String, String> map) {

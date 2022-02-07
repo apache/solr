@@ -89,15 +89,12 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     int ihCount = 0;
     {
       ++ihCount; assertEquals(pathToClassMap.get("/admin/file"), "solr.ShowFileRequestHandler");
-      ++ihCount; assertEquals(pathToClassMap.get("/admin/logging"), "solr.LoggingHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/luke"), "solr.LukeRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/mbeans"), "solr.SolrInfoMBeanHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/ping"), "solr.PingRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/plugins"), "solr.PluginInfoHandler");
-      ++ihCount; assertEquals(pathToClassMap.get("/admin/properties"), "solr.PropertiesRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/segments"), "solr.SegmentsInfoRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/system"), "solr.SystemInfoHandler");
-      ++ihCount; assertEquals(pathToClassMap.get("/admin/threads"), "solr.ThreadDumpHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/config"), "solr.SolrConfigHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/export"), "solr.ExportHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/terms"), "solr.SearchHandler");
@@ -343,9 +340,6 @@ class ClosingRequestHandler extends EmptyRequestHandler implements SolrCoreAware
       public void preClose(SolrCore core) {
         closed = true;
       }
-
-      @Override
-      public void postClose(SolrCore core) {}
     });
   }
 }

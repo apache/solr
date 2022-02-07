@@ -31,48 +31,38 @@ ext {
 }
 
 configurations {
-  distSolr {
-    transitive = false
-  }
-  distSolrj
-  contrib
+  modules
   example
+  prometheusExporter
   server
   docs
   docker
   solrTgz
   solrTgzSignature
-  solrZip
 }
 
 artifacts {
   solrTgz(distTar)
-  solrZip(distZip)
 }
 
 dependencies {
-  distSolrj project(":solr:solrj")
-
-  [":solr:contrib:analysis-extras",
-   ":solr:contrib:analytics",
-   ":solr:contrib:extraction",
-   ":solr:contrib:clustering",
-   ":solr:contrib:gcs-repository",
-   ":solr:contrib:jaegertracer-configurator",
-   ":solr:contrib:jwt-auth",
-   ":solr:contrib:langid",
-   ":solr:contrib:ltr",
-   ":solr:contrib:prometheus-exporter",
-   ":solr:contrib:s3-repository",
-   ":solr:contrib:scripting"
-  ].each { contribName ->
-    distSolr project(contribName)
-    contrib  project(path: contribName, configuration: "packaging")
+  [":solr:modules:analysis-extras",
+   ":solr:modules:analytics",
+   ":solr:modules:extraction",
+   ":solr:modules:clustering",
+   ":solr:modules:gcs-repository",
+   ":solr:modules:hdfs",
+   ":solr:modules:jaegertracer-configurator",
+   ":solr:modules:jwt-auth",
+   ":solr:modules:langid",
+   ":solr:modules:ltr",
+   ":solr:modules:s3-repository",
+   ":solr:modules:scripting"
+  ].each { moduleName ->
+    modules project(path: moduleName, configuration: "packaging")
   }
 
-  distSolr project(":solr:core")
-  distSolr project(":solr:server")
-  distSolr project(":solr:solrj")
+  prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
@@ -106,20 +96,16 @@ distributions {
         include "README.md"
       })
 
-      from(configurations.contrib, {
-        into "contrib"
-      })
-
-      from(configurations.distSolr, {
-        into "dist"
-      })
-
-      from(configurations.distSolrj - configurations.distSolr, {
-        into "dist/solrj-lib"
+      from(configurations.modules, {
+        into "modules"
       })
 
       from(configurations.example, {
         into "example"
+      })
+
+      from(configurations.prometheusExporter, {
+        into "prometheus-exporter"
       })
 
       from(configurations.server, {
@@ -170,5 +156,7 @@ task dev(type: Copy) {
 distTar {
   compression = Compression.GZIP
 }
+
+distZip.enabled = false
 
 assemble.dependsOn installDist

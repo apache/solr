@@ -142,7 +142,7 @@ solrAdminApp.controller('SecurityController', function ($scope, $timeout, $cooki
     return (!obj || (Array.isArray(obj) && obj.length === 0)) ? "null" : $scope.displayList(obj);
   };
 
-  // TODO: Read this list from Solr to avoid duplication
+  // TODO: Use new permissions.js
   $scope.predefinedPermissions = ["collection-admin-edit", "collection-admin-read", "core-admin-read", "core-admin-edit", "zk-read",
     "read", "update", "all", "config-edit", "config-read", "schema-read", "schema-edit", "security-edit", "security-read",
     "metrics-read", "health", "filestore-read", "filestore-write", "package-edit", "package-read"].sort();

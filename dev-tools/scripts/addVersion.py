@@ -137,7 +137,7 @@ def parse_properties_file(filename):
 
 def get_solr_init_changes():
   return dedent('''
-    Docker and contrib modules have separate CHANGES.md files.
+    Docker and modules have separate CHANGES.md files.
 
     ''')
   
@@ -165,7 +165,7 @@ def main():
     check_solr_version_class_tests()
     check_lucene_match_version_tests()
   else:
-    print('\nNot updating build.gradle, SolrVersion or solrconfig.xml since version added is not latest version' % newconf.version)
+    print('\nNot updating build.gradle, SolrVersion or solrconfig.xml since version added (%s) is not latest version' % newconf.version)
 
   print()
 

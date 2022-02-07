@@ -26,6 +26,7 @@ configurations.all {
   exclude group: 'org.slf4j', module: 'slf4j-log4j12'
   exclude group: 'org.apache.yetus', module: 'audience-annotations'
   exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
+  exclude group: "com.google.code.findbugs", module: "jsr305"
   // be conservative on what's added here.  Affects *all* configs, including internal ones.
 }
 
@@ -69,7 +70,6 @@ dependencies {
   implementation 'commons-io:commons-io'
   implementation 'com.carrotsearch:hppc'
   implementation 'org.apache.commons:commons-collections4'
-  runtimeOnly 'commons-collections:commons-collections' // for Hadoop and...?
 
   implementation('com.github.ben-manes.caffeine:caffeine') { transitive = false }
 
@@ -122,6 +122,7 @@ dependencies {
   // SQL Parser via Calcite
   implementation ('org.apache.calcite:calcite-core', {
     exclude group: 'org.apache.calcite.avatica', module: 'avatica-metrics'
+    exclude group: 'com.google.guava', module: 'guava' // TODO remove this to keep versions in sync
     exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-yaml'
     exclude group: 'com.google.uzaygezen', module: 'uzaygezen-core'
     exclude group: 'com.yahoo.datasketches', module: 'sketches-core'
@@ -133,27 +134,17 @@ dependencies {
   implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
   implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
 
-  // Hadoop; general stuff
-  implementation ('org.apache.hadoop:hadoop-common') { transitive = false } // too many to ignore
-  implementation ('org.apache.hadoop:hadoop-annotations')
-  runtimeOnly 'org.apache.htrace:htrace-core4' // note: removed in Hadoop 3.3.2
-  runtimeOnly "org.apache.commons:commons-configuration2"
-  testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
-  // Hadoop Test hacks for Java Security Manager -- SOLR-14033
-  testImplementation 'org.apache.commons:commons-compress'
-  testImplementation ('com.sun.jersey:jersey-servlet') { transitive = false }
-
-  // HDFS
-  implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
-  testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
-  testImplementation 'org.apache.logging.log4j:log4j-1.2-api'
-
   // Hadoop auth framework
+  implementation ('org.apache.hadoop:hadoop-annotations')
   implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
-  runtimeOnly 'com.google.re2j:re2j' // transitive of hadoop-common; used by Kerberos auth
-  runtimeOnly ('org.apache.kerby:kerb-core')
-  runtimeOnly ('org.apache.kerby:kerb-util')
+  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
+  // transitive of hadoop-common; used by Kerberos auth
+  runtimeOnly 'commons-collections:commons-collections'
+  runtimeOnly 'com.google.re2j:re2j'
+  runtimeOnly 'org.apache.commons:commons-configuration2'
+  runtimeOnly 'org.apache.htrace:htrace-core4' // note: removed in Hadoop 3.3.2
+  runtimeOnly 'org.apache.kerby:kerb-core'
+  runtimeOnly 'org.apache.kerby:kerb-util'
 
   // Hadoop MiniKdc Dependencies (for Kerberos auth tests)
   testImplementation ('org.apache.hadoop:hadoop-minikdc', {
@@ -163,7 +154,7 @@ dependencies {
 
   testImplementation "org.apache.lucene:lucene-analysis-icu"
 
-  testImplementation project(':solr:contrib:analysis-extras')
+  testImplementation project(':solr:modules:analysis-extras')
 
   testImplementation project(':solr:test-framework')
 
