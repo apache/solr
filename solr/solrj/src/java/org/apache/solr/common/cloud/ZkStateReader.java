@@ -67,7 +67,6 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySortedSet;
-import static org.apache.solr.common.cloud.UrlScheme.HTTP;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements SolrCloseable {
@@ -145,6 +144,9 @@ public class ZkStateReader implements SolrCloseable {
   public static final String COLLECTION_DEF = "collectionDefaults";
 
   public static final String URL_SCHEME = "urlScheme";
+  public static final String HTTP = "http";
+  public static final String HTTPS = "https";
+  public static final String HTTPS_PORT_PROP = "solr.jetty.https.port";
 
   private static final String SOLR_ENVIRONMENT = "environment";
 
@@ -984,9 +986,6 @@ public class ZkStateReader implements SolrCloseable {
           Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(data);
           this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat(properties);
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
-
-          // Make the urlScheme globally accessible
-          UrlScheme.INSTANCE.setUrlScheme(getClusterProperty(ZkStateReader.URL_SCHEME, HTTP));
 
           for (ClusterPropertiesListener listener : clusterPropertiesListeners) {
             listener.onChange(getClusterProperties());
