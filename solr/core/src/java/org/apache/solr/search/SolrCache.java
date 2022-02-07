@@ -31,6 +31,7 @@ public interface SolrCache<K,V> extends SolrInfoBean {
 
   String HIT_RATIO_PARAM = "hitratio";
   String HITS_PARAM = "hits";
+  String ASYNC_HITS_PARAM = "asyncHits";
   String INSERTS_PARAM = "inserts";
   String EVICTIONS_PARAM = "evictions";
   String LOOKUPS_PARAM = "lookups";

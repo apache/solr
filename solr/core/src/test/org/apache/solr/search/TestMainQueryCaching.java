@@ -292,16 +292,21 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     Map<String, Object> liveDocsCacheMetrics = coreToLiveDocsCacheMetrics(core);
     long inserts = (long) liveDocsCacheMetrics.get("inserts"); // the one and only liveDocs computation
     long hits = (long) liveDocsCacheMetrics.get("hits"); // hits during the initial phase
+    long asyncHits = (long) liveDocsCacheMetrics.get("asyncHits");
     long naiveHits = coreToLiveDocsNaiveCacheHitCount(core);
 
     assertEquals(1, inserts);
     assertEquals(nThreads - 1, hits + naiveHits);
+    assertTrue(asyncHits <= hits);
 
     // NOTE: The assertion below is commented out because, although it may _often_ be true, it is dependent
-    // on timing/thread scheduling; in practice it happens that not infrequently `init == 0` (e.g., if matchAllDocs
+    // on timing/thread scheduling; in practice it happens that not infrequently `asyncHits == 0` (e.g., if matchAllDocs
     // computation happens quickly, and/or if subsequent threads were delayed).
+    //
+    // It seems that the assertion below more frequently succeeds when this test is run in isolation; e.g.:
+    // `gradlew :solr:core:test --tests "org.apache.solr.search.TestMainQueryCaching.testConcurrentMatchAllDocsInitialization"`
 
-    //assertTrue("expected hits > 0; found init=" + hits, hits > 0);
+    //assertTrue("expected asyncHits > 0; found asyncHits=" + asyncHits, asyncHits > 0);
   }
 }
 

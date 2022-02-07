@@ -82,11 +82,17 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
   private CacheStats priorStats;
   private long priorHits;
+  private long priorAsyncHits;
   private long priorInserts;
   private long priorLookups;
 
   private String description = "Caffeine Cache";
   private LongAdder hits;
+  /**
+   * Approximately tracks count of the subset of "hits" that block on an actively executing cache entry. This
+   * can help indicate the practical impact of the `async` setting.
+   */
+  private LongAdder asyncHits;
   private LongAdder inserts;
   private LongAdder lookups;
   private Cache<K,V> cache;
@@ -141,6 +147,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
     cache = buildCache(null);
     hits = new LongAdder();
+    asyncHits = new LongAdder();
     inserts = new LongAdder();
     lookups = new LongAdder();
 
@@ -204,8 +211,11 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     CompletableFuture<V> result = asyncCache.asMap().putIfAbsent(key, future);
     lookups.increment();
     if (result != null) {
+      if (!result.isDone()) {
+        asyncHits.increment();
+      }
       try {
-        // Another thread is already working on this computation, wait for them to finish
+        // Another thread is already working on (or has completed) this computation, wait for them to finish
         V value = result.join();
         hits.increment();
         return value;
@@ -402,11 +412,13 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     }
 
     hits.reset();
+    asyncHits.reset();
     inserts.reset();
     lookups.reset();
     CacheStats oldStats = other.cache.stats();
     priorStats = oldStats.plus(other.priorStats);
     priorHits = oldStats.hitCount() + other.hits.sum() + other.priorHits;
+    priorAsyncHits = other.asyncHits.sum() + other.priorAsyncHits;
     priorInserts = other.inserts.sum() + other.priorInserts;
     priorLookups = oldStats.requestCount() + other.lookups.sum() + other.priorLookups;
     warmupTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
@@ -458,12 +470,14 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
       if (cache != null) {
         CacheStats stats = cache.stats();
         long hitCount = stats.hitCount() + hits.sum();
+        long asyncHitCount = asyncHits.sum();
         long insertCount = inserts.sum();
         long lookupCount = stats.requestCount() + lookups.sum();
 
         map.put(LOOKUPS_PARAM, lookupCount);
         map.put(HITS_PARAM, hitCount);
         map.put(HIT_RATIO_PARAM, hitRate(hitCount, lookupCount));
+        map.put(ASYNC_HITS_PARAM, asyncHitCount);
         map.put(INSERTS_PARAM, insertCount);
         map.put(EVICTIONS_PARAM, stats.evictionCount());
         map.put(SIZE_PARAM, cache.asMap().size());
@@ -474,9 +488,11 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
         CacheStats cumulativeStats = priorStats.plus(stats);
         long cumLookups = priorLookups + lookupCount;
         long cumHits = priorHits + hitCount;
+        long cumAsyncHits = priorAsyncHits + asyncHitCount;
         map.put("cumulative_lookups", cumLookups);
         map.put("cumulative_hits", cumHits);
         map.put("cumulative_hitratio", hitRate(cumHits, cumLookups));
+        map.put("cumulative_async_hits", cumAsyncHits);
         map.put("cumulative_inserts", priorInserts + insertCount);
         map.put("cumulative_evictions", cumulativeStats.evictionCount());
       }
