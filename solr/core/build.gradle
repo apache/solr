@@ -31,6 +31,13 @@ configurations.all {
 }
 
 dependencies {
+  compileOnly 'com.github.spotbugs:spotbugs-annotations'
+  testCompileOnly 'com.github.spotbugs:spotbugs-annotations'
+  // Exclude these from jar validation and license checks.
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
+
   // Export these dependencies so that they're imported transitively by
   // other modules.
 

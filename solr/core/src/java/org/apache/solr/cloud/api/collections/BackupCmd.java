@@ -45,7 +45,6 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -265,8 +264,8 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
   private NamedList<Object> aggregateResults(NamedList<Object> results,
                                              String collectionName,
                                              Collection<Slice> slices,
-                                             @Nullable BackupManager backupManager,
-                                             @Nullable BackupProperties backupProps) {
+                                             BackupManager backupManager,
+                                             BackupProperties backupProps) {
     NamedList<Object> aggRsp = new SimpleOrderedMap<>();
     aggRsp.add("collection", collectionName);
     aggRsp.add("numShards", slices.size());

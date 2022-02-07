@@ -193,7 +193,6 @@ apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
 
 apply from: file('gradle/hacks/gradle-archives.gradle')
-apply from: file('gradle/hacks/solr.findbugs.gradle')
 
 apply from: file('gradle/hacks/wipe-temp.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')

@@ -21,6 +21,12 @@ apply plugin: 'java-library'
 description = 'Solrj - Solr Java Client'
 
 dependencies {
+  compileOnly 'com.github.spotbugs:spotbugs-annotations'
+  // Exclude these from jar validation and license checks.
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
+
   implementation 'org.slf4j:slf4j-api'
   runtimeOnly 'org.slf4j:jcl-over-slf4j'
 

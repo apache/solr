@@ -9,6 +9,7 @@ com.esri.geometry:esri-geometry-api=2.2.0
 com.fasterxml.jackson*:*=2.12.3
 com.fasterxml.woodstox:woodstox-core=6.2.4
 com.github.ben-manes.caffeine:caffeine=3.0.5
+com.github.spotbugs:*=4.5.3
 com.github.virtuald:curvesapi=1.06
 com.github.zafarkhaja:java-semver=0.9.0
 com.google.api-client:google-api-client=1.32.1

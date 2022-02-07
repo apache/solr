@@ -26,7 +26,6 @@ dependencies {
   implementation('org.apache.zookeeper:zookeeper') { transitive = false } // ideally remove ZK dep
 
   implementation ('io.prometheus:simpleclient')
-  implementation ('io.prometheus:simpleclient_common')
   implementation ('io.prometheus:simpleclient_httpserver')
   implementation ('net.thisptr:jackson-jq', {
     exclude group: "org.jruby.joni", module: "joni"
@@ -49,6 +48,7 @@ dependencies {
   testImplementation 'junit:junit'
   testImplementation 'org.apache.httpcomponents:httpclient'
   testImplementation 'org.apache.httpcomponents:httpcore'
+  testImplementation 'org.eclipse.jetty:jetty-servlet'
 }
 
 ext {

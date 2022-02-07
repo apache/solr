@@ -20,6 +20,12 @@ apply plugin: 'java-library'
 description = 'Solr Test Framework'
 
 dependencies {
+  compileOnly 'com.github.spotbugs:spotbugs-annotations'
+  // Exclude these from jar validation and license checks.
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
+
   api project(':solr:core')
   api project(':solr:solrj')
 
@@ -60,4 +66,3 @@ dependencies {
   implementation 'junit:junit'
   implementation 'org.hamcrest:hamcrest'
 }
-

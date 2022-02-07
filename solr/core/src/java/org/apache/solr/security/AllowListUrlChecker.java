@@ -24,7 +24,6 @@ import org.apache.solr.core.NodeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -134,7 +133,7 @@ public class AllowListUrlChecker {
    * @throws SolrException If an URL is not present in the allow-list or in the provided {@link
    *     ClusterState}.
    */
-  public void checkAllowList(List<String> urls, @Nullable ClusterState clusterState)
+  public void checkAllowList(List<String> urls, ClusterState clusterState)
       throws MalformedURLException {
     Set<String> clusterHostAllowList =
         clusterState == null ? Collections.emptySet() : clusterState.getHostAllowList();
