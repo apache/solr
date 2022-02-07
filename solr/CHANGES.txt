@@ -24,6 +24,8 @@ Bug Fixes
 ---------------------
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
+* SOLR-15964: Transient cores: don't evict a core when it's still being used. (David Smiley)
+
 Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
