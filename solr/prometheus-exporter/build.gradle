@@ -36,6 +36,7 @@ dependencies {
   implementation ('net.sourceforge.argparse4j:argparse4j')
   implementation ('com.github.ben-manes.caffeine:caffeine') { transitive = false }
   implementation 'commons-io:commons-io'
+  implementation 'org.slf4j:slf4j-api'
 
   runtimeOnly 'org.apache.logging.log4j:log4j-api'
   runtimeOnly 'org.apache.logging.log4j:log4j-core'
