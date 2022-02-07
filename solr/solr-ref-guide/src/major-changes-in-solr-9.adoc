@@ -110,6 +110,9 @@ This is only applicable for users returning information in JSON format, which is
 * SOLR-14660: HDFS storage support has been moved to a module. Existing Solr configurations do not need any HDFS-related
 changes, however the module needs to be installed - see <<solr-on-hdfs.adoc#,Running Solr on HDFS>>.
 
+* SOLR-15097: JWTAuthPlugin has been moved to a module. Users need to add the module to classpath. The plugin has also
+  changed package name to `org.apache.solr.security.jwt`, but can still be loaded as shortform `class="solr.JWTAuthPlugin"`.
+
 == New Features & Enhancements
 
 * Replica placement plugins
