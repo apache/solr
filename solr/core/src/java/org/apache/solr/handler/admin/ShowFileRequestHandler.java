@@ -139,7 +139,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
       throws InterruptedException, KeeperException, IOException {
 
-    CoreContainer coreContainer = req.getCore().getCoreContainer();
+    CoreContainer coreContainer = req.getCoreContainer();
     if (coreContainer.isZooKeeperAware()) {
       showFromZooKeeper(req, rsp, coreContainer);
     } else {
@@ -379,7 +379,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     }
     // A leading slash is unnecessary but supported and interpreted as start of config dir
     Path filePath = configDir.resolve(fname.startsWith("/") ? fname.substring(1) : fname);
-    req.getCore().getCoreContainer().assertPathAllowed(filePath);
+    req.getCoreContainer().assertPathAllowed(filePath);
     return filePath;
   }
 

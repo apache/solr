@@ -172,7 +172,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   private CoreContainer getCoreContainer(SolrQueryRequest req, SolrCore core) {
     CoreContainer coreContainer;
     if (core != null) {
-       coreContainer = req.getCore().getCoreContainer();
+       coreContainer = req.getCoreContainer();
     } else {
       coreContainer = cc;
     }

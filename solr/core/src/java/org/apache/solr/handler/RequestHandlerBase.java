@@ -223,7 +223,7 @@ public abstract class RequestHandlerBase implements
       }
     } catch (Exception e) {
       if (req.getCore() != null) {
-        boolean isTragic = req.getCore().getCoreContainer().checkTragicException(req.getCore());
+        boolean isTragic = req.getCoreContainer().checkTragicException(req.getCore());
         if (isTragic) {
           if (e instanceof SolrException) {
             // Tragic exceptions should always throw a server error

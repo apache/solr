@@ -263,11 +263,11 @@ public class HttpShardHandler extends ShardHandler {
 
     CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
     CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
-    ZkController zkController = req.getCore().getCoreContainer().getZkController();
+    ZkController zkController = req.getCoreContainer().getZkController();
 
     final ReplicaListTransformer replicaListTransformer = httpShardHandlerFactory.getReplicaListTransformer(req);
 
-    AllowListUrlChecker urlChecker = req.getCore().getCoreContainer().getAllowListUrlChecker();
+    AllowListUrlChecker urlChecker = req.getCoreContainer().getAllowListUrlChecker();
     if (shards != null && zkController == null && urlChecker.isEnabled() && !urlChecker.hasExplicitAllowList()) {
       throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
               "solr.xml property '" + AllowListUrlChecker.URL_ALLOW_LIST

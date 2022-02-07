@@ -127,7 +127,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private static Map<String, String> getAliasProps(SolrQueryRequest req, String aliasName) {
-    ZkController zkController = req.getCore().getCoreContainer().getZkController();
+    ZkController zkController = req.getCoreContainer().getZkController();
     final Map<String, String> aliasProperties = zkController.getZkStateReader().getAliases().getCollectionAliasProperties(aliasName);
     if (aliasProperties.isEmpty()) {
       throw RoutedAlias.newAliasMustExistException(aliasName); // if it did exist, we'd have a non-null map
