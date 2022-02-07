@@ -39,6 +39,9 @@ dependencies {
   api "org.apache.lucene:lucene-analysis-common"
   api "org.apache.lucene:lucene-queries"
 
+  // We export logging api with dependencies, which is useful for all contribs
+  api 'org.slf4j:slf4j-api'
+
   api project(':solr:solrj')
   api project(':solr:server')
 
