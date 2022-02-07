@@ -30,6 +30,11 @@ dependencies {
   }
 
   implementation project(':solr:core')
+  implementation project(':solr:solrj')
+
+  implementation 'org.apache.lucene:lucene-core'
+
+  implementation 'org.slf4j:slf4j-api'
 
   // Hadoop dependencies
   implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
@@ -50,9 +55,10 @@ dependencies {
   // Caffeine cache to implement HDFS block caching  
   implementation ('com.github.ben-manes.caffeine:caffeine')
 
-  // Many HDFS tests are using/subclassing test framework classes
-  testImplementation project(':solr:solrj')
   testImplementation project(':solr:test-framework')
+  testImplementation 'org.apache.lucene:lucene-test-framework'
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  testImplementation 'junit:junit'
 
   // hadoop dependencies for tests
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
@@ -69,17 +75,22 @@ dependencies {
   // required for instantiating a Zookeeper server in tests or embedded
   runtimeOnly ('org.xerial.snappy:snappy-java')
 
-  // commons packages needed by test classes
-  testImplementation('commons-io:commons-io') { transitive = false }
-
   // used by the hadoop-specific test framework classes
+  testImplementation('commons-io:commons-io') { transitive = false }
   testImplementation ('org.apache.commons:commons-compress') { transitive = false }
   testImplementation ('org.apache.commons:commons-collections4') { transitive = false }
   testImplementation ('org.apache.commons:commons-lang3') { transitive = false }
   testImplementation ('com.sun.jersey:jersey-servlet') { transitive = false }
+  testImplementation 'io.dropwizard.metrics:metrics-core'
+  testImplementation 'javax.servlet:javax.servlet-api'
+  testImplementation 'org.eclipse.jetty:jetty-http'
+  testImplementation 'org.eclipse.jetty:jetty-server'
+  testImplementation 'org.eclipse.jetty:jetty-servlet'
+  testImplementation 'org.eclipse.jetty:jetty-util'
+  testImplementation 'org.eclipse.jetty:jetty-webapp'
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
-  implementation ('org.apache.zookeeper:zookeeper')
+  testImplementation 'org.apache.zookeeper:zookeeper'
 }
 
 

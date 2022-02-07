@@ -42,7 +42,13 @@ dependencies {
   runtimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
   runtimeOnly 'com.lmax:disruptor'
 
+  testImplementation project(':solr:core')
   testImplementation project(':solr:test-framework')
+  testImplementation 'org.apache.lucene:lucene-test-framework'
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  testImplementation 'junit:junit'
+  testImplementation 'org.apache.httpcomponents:httpclient'
+  testImplementation 'org.apache.httpcomponents:httpcore'
 }
 
 ext {

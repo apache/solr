@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 apply plugin: 'java-library'
 
 description = 'S3 Repository'
@@ -27,11 +26,15 @@ configurations.all {
 
 dependencies {
     api project(':solr:core')
+    implementation project(':solr:solrj')
+
+    implementation 'org.apache.lucene:lucene-core'
 
     implementation platform(group: 'software.amazon.awssdk', name: 'bom')
     implementation (group: 'software.amazon.awssdk', name: 'auth')
     implementation (group: 'software.amazon.awssdk', name: 'apache-client')
     implementation (group: 'software.amazon.awssdk', name: 'aws-core')
+    implementation (group: 'software.amazon.awssdk', name: 'regions')
     implementation (group: 'software.amazon.awssdk', name: 's3') {
         exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
     }
@@ -40,11 +43,24 @@ dependencies {
 
     implementation ('com.google.guava:guava') { transitive = false }
     implementation 'commons-io:commons-io'
+    implementation 'org.slf4j:slf4j-api'
 
     runtimeOnly (group: 'com.fasterxml.woodstox', name: 'woodstox-core')
     runtimeOnly (group: 'org.codehaus.woodstox', name: 'stax2-api')
 
-    testImplementation('com.adobe.testing:s3mock-junit4') {
+    testImplementation ('com.adobe.testing:s3mock-junit4') {
+        // Don't pull in separate versions of these libs, just use what Solr already has
+        exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
+        exclude group: 'ch.qos.logback', module: 'logback-classic'
+        exclude group: 'org.eclipse.jetty', module: '*'
+        exclude group: 'io.netty', module: '*'
+        exclude group: 'commons-io', module: 'commons-io'
+        exclude group: 'commons-codec', module: 'commons-codec'
+        exclude group: 'org.apache.commons', module: 'commons-lang3'
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+        exclude group: 'org.codehaus.woodstox', module: 'stax2-api'
+    }
+    testImplementation ('com.adobe.testing:s3mock-testsupport-common') {
         // Don't pull in separate versions of these libs, just use what Solr already has
         exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
         exclude group: 'ch.qos.logback', module: 'logback-classic'
@@ -58,6 +74,9 @@ dependencies {
     }
 
     testImplementation project(':solr:test-framework')
+    testImplementation 'org.apache.lucene:lucene-test-framework'
+    testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+    testImplementation 'junit:junit'
     testImplementation 'org.apache.commons:commons-lang3'
 }
 
