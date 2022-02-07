@@ -153,8 +153,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     // default to ACTIVE
     this.state = State.getState(String.valueOf(propMap.getOrDefault(ZkStateReader.STATE_PROP, State.ACTIVE.toString())));
     validate();
-
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   // clone constructor
@@ -173,7 +171,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     }
     readPrs();
     validate();
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   /**
@@ -197,7 +194,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     type = Replica.Type.valueOf(String.valueOf(propMap.getOrDefault(ZkStateReader.REPLICA_TYPE, "NRT")));
     if(state == null) state = State.getState(String.valueOf(propMap.getOrDefault(ZkStateReader.STATE_PROP, "active")));
     validate();
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   private void readPrs() {
@@ -219,6 +215,10 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Objects.requireNonNull(this.type, "'type' must not be null");
     Objects.requireNonNull(this.state, "'state' must not be null");
     Objects.requireNonNull(this.node, "'node' must not be null");
+
+    String baseUrl = (String)propMap.get(BASE_URL_PROP);
+    Objects.requireNonNull(baseUrl, "'base_url' must not be null");
+
     // make sure all declared props are in the propMap
     propMap.put(ZkStateReader.COLLECTION_PROP, collection);
     propMap.put(ZkStateReader.SHARD_ID_PROP, shard);
@@ -371,11 +371,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
       // propMap takes precedence because it's mutable and we can't control its
       // contents, so a third party may override some declared fields
       for (Map.Entry<String, Object> e : propMap.entrySet()) {
-        final String key = e.getKey();
-        // don't store the base_url as we can compute it from the node_name
-        if (!BASE_URL_PROP.equals(key)) {
-          writer.put(e.getKey(), e.getValue(), p);
-        }
+        writer.put(e.getKey(), e.getValue(), p);
       }
 
       writer.put(ZkStateReader.CORE_NAME_PROP, core, p)
