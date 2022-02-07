@@ -1920,7 +1920,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
-                execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate);
+                execute(cmd, executor, pendingTasks, processorChain.createProcessor(req, rsp), exceptionOnExecuteUpdate);
                 break;
               }
               case UpdateLog.DELETE: {
@@ -1931,7 +1931,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("delete {}", cmd);
-                execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate);
+                execute(cmd, executor, pendingTasks, processorChain.createProcessor(req, rsp), exceptionOnExecuteUpdate);
                 break;
               }
 
@@ -2065,6 +2065,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             } else {
               proc.processDelete((DeleteUpdateCommand) cmd);
             }
+            proc.finish();
           } catch (IOException e) {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: IOException reading log", e);
@@ -2077,6 +2078,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: IOException reading log", e);
           } finally {
+            IOUtils.closeQuietly(proc);
             pendingTasks.decrementAndGet();
           }
         });
