@@ -103,7 +103,7 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
       indent();
       writeKey(fname, true);
       Object val = doc.getFieldValue(fname);
-      writeVal(fname, val);
+      writeVal(fname, val, shouldWriteRaw(fname, returnFields));
     }
 
     if(doc.hasChildDocuments()) {

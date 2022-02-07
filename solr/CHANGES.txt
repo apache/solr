@@ -22,7 +22,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
+  halving the latency of synchronous commits (Michael Gibney)
 
 Other Changes
 ---------------------
@@ -46,11 +47,17 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
 Other Changes
 ---------------------
 * SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
+
+* SOLR-15923: Cue users in 404 message that Solr is running and the url is incorrect. (Eric Pugh, Mike Drob, Shawn Heisey)
+
+* SOLR-9529: Consistency in how dynamic fields are defined in sample schema.xml files (Eric Pugh, Trey Grainger)
+
+* SOLR-15886: Remove deprecated showItems configuration value from solrconfig.xml files (Andy Lester via Eric Pugh)
 
 ==================  9.0.0 ==================
 
@@ -93,6 +100,14 @@ New Features
 * SOLR-15694: Node roles (Ishan Chattopadhyaya, noble)
 
 * SOLR-15197: Support temporal graph queries with DAY and WEEKDAY windows (Joel Bernstein)
+
+* SOLR-15914: Official Solr modules (contribs) can now easily be added to shared class path by environment variable
+  'SOLR_MODULES' or system property 'solr.modules'. E.g: SOLR_MODULES=extracting,langid
+  (janhoy, David Smiley, Houston Putman)
+
+* SOLR-15880: Introduce support for k nearest neighbors search (Alessandro Benedetti, Elia Porciani)
+
+* SOLR-14660: Move HDFS support to a new HDFS module (Istvan Farkas, Kevin Risden)
 
 Improvements
 ----------------------
@@ -270,6 +285,17 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15884: Backup responses now use a map to return information instead of a list (Houston Putman, Christine Poerschke)
 
 * SOLR-14800: Filter default score should be the provided boost, instead of hardcoding to zero (Collins Abanda, Mike Drob, David Smiley)
+
+* SOLR-9376: Raw value DocTransformers (`[xml]`, `[json]`, `[geo w=GeoJSON]`) now work
+  in a distributed/SolrCloud context (Michael Gibney)
+
+* SOLR-15755: Parse collection, shard, core, replica info from newSearcher events in postlogs tool (Joel Bernstein)
+
+* SOLR-9575: Solr no longer requires a solr.xml to be present in $SOLR_HOME. If one is not found, Solr will load
+  the one in $SOLR_TIP/server/solr/solr.xml. Solr also does not require a zoo.cfg in $SOLR_HOME if started with
+  embedded zookeeper. (janhoy)
+
+* SOLR-11905: New Admin UI Query screen input boxes for JSON query and facet DSL (janhoy)
 
 Build
 ---------------------
@@ -518,6 +544,9 @@ Other Changes
 * SOLR-14858: Add the server WEB-INF/lib directory to the classpath for the solr-exporter script. Will allow the script
   to work when the dist/solrj-lib jars are missing in the Docker image. (Houston Putman)
 
+* SOLR-15124: Removed three core level admin API endpoints because they are already registered at the node level where they
+  really belong: /admin/threads, /admin/properties, /admin/logging (Nazerke Seidan, David Smiley)
+
 * SOLR-14142: Jetty's RequestLog is enabled by default. If you don't want these logs, you can disable
   via SOLR_REQUESTLOG_ENABLED=false.  (rmuir, janhoy)
 
@@ -525,10 +554,24 @@ Other Changes
 
 * SOLR-15934: CloseHook is now an interface with default method implementations instead of an abstract class. (Mike Drob)
 
+* SOLR-15953: Remove unused LTRThreadModule.preClose CloseHook logic. (Christine Poerschke)
+
 * SOLR-15916: Remove dist/ from the binary release. The solr-core and solrj jars will be included in the server WEB-INF/lib directory,
 and each individual module's jar will be included in its directory's lib/ folder. (Houston Putman)
 
 * SOLR-15917: "Contrib Modules" have been renamed to "Modules" and have been moved from "contrib/" to "modules/". (Houston Putman)
+
+* SOLR-15632: Upgrade to Caffeine Cache 3.0.5 (Mike Drob)
+
+* SOLR-15954: Move the Prometheus Exporter from "solr/modules/prometheus-exporter" to "solr/prometheus-exporter". (Houston Putman)
+
+* SOLR-15957: Add port and scraping information to Solr Prometheus startup logging. (Houston Putman)
+
+* SOLR-15936: Reduce unnecessary startup logging, such as SSL warnings when SSL not in use (janhoy)
+
+* SOLR-15777: Forbid useDocValuesAsStored for ICUCollationField (warn for luceneMatchVersion < 9.0.0). (Michael Gibney)
+
+* SOLR-12901: Highlighting: hl.method=unified is the new default. (David Smiley)
 
 Bug Fixes
 ---------------------
@@ -565,16 +608,32 @@ Bug Fixes
 
 * SOLR-15919: Replace File with Path for many ZK operations (Mike Drob)
 
+
+* SOLR-15259: hl.fragAlignRatio now defaults to 0.33 to be faster and maybe looks nicer. (David Smiley)
+
+* SOLR-13138: Removed deprecated hl.method=postings highlighter, deprecated in 7.0. (David Smiley)
+
 * SOLR-15944: The Tagger's JSON response format now always uses an object/map to represent each tag instead of an
   array, which didn't make sense. (David Smiley)
 
-* SOLR-15842: Async response for backups now correctly aggregates and returns information (Houston Putman, ijioio)
+* SOLR-15842: Async response for backups now correctly aggregates and returns information (Houston Putman, Artem Abeleshev, Christine Poerschke)
+
+* SOLR-14595: Consistent overrequest across different facet methods for `sort:index` JSON Facet field (Michael Gibney, hossman)
+
+* SOLR-15961: Fix bug in PKIAuthenticationPlugin that can cause a request to fail with 401 Unauthorized instead
+ of re-fetching expired remote keys from other nodes. (Tomás Fernández Löbbe)
+
+* SOLR-15968: Hide annoying WARN log from bin/solr zk command (janhoy, Mike Drob)
+
+* SOLR-15558: Don't wait for zombie processes to exit when stopping. (Colvin Cowie)
 
 ==================  8.11.2 ==================
 
 Bug Fixes
 ---------------------
 * SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
+
+* SOLR-15587: Don't use the UrlScheme singleton on the client-side to determine cluster's scheme, only get from ClusterState provider impl (Timothy Potter)
 
 ==================  8.11.1 ==================
 

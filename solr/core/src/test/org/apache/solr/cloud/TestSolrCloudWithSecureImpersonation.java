@@ -32,7 +32,7 @@ import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.cloud.hdfs.HdfsTestUtil;
+import org.apache.solr.security.hadoop.HadoopTestUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
@@ -93,7 +93,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startup() throws Exception {
-    HdfsTestUtil.checkAssumptions();
+    HadoopTestUtil.checkAssumptions();
     
     System.setProperty("authenticationPlugin", HttpParamDelegationTokenPlugin.class.getName());
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");

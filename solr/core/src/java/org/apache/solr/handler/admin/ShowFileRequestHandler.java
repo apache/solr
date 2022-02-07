@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.HashSet;
@@ -198,28 +199,29 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
 
   // Return the file indicated (or the directory listing) from the local file system.
   private void showFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp) {
-    File adminFile = getAdminFileFromFileSystem(req, rsp, hiddenFiles);
+    Path admin = getAdminFileFromFileSystem(req, rsp, hiddenFiles);
 
-    if (adminFile == null) { // exception already recorded
+    if (admin == null) { // exception already recorded
       return;
     }
 
+    File adminFile = admin.toFile();
     // Make sure the file exists, is readable and is not a hidden file
     if( !adminFile.exists() ) {
       log.error("Can not find: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath());
       rsp.setException(new SolrException
-                       ( ErrorCode.NOT_FOUND, "Can not find: "+adminFile.getName() 
+                       ( ErrorCode.NOT_FOUND, "Can not find: "+adminFile.getName()
                          + " ["+adminFile.getAbsolutePath()+"]" ));
       return;
     }
     if( !adminFile.canRead() || adminFile.isHidden() ) {
       log.error("Can not show: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath());
       rsp.setException(new SolrException
-                       ( ErrorCode.NOT_FOUND, "Can not show: "+adminFile.getName() 
+                       ( ErrorCode.NOT_FOUND, "Can not show: "+adminFile.getName()
                          + " ["+adminFile.getAbsolutePath()+"]" ));
       return;
     }
-    
+
     // Show a directory listing
     if( adminFile.isDirectory() ) {
       // it's really a directory, just go for it.
@@ -236,7 +238,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
         SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<>();
         files.add( path, fileInfo );
         if( f.isDirectory() ) {
-          fileInfo.add( "directory", true ); 
+          fileInfo.add( "directory", true );
         }
         else {
           // TODO? content type
@@ -350,15 +352,14 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
 
   // Find the file indicated by the "file=XXX" parameter or the root of the conf directory on the local
   // file system. Respects all the "interesting" stuff around what the resource loader does to find files.
-  public static File getAdminFileFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp,
+  public static Path getAdminFileFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp,
                                                 Set<String> hiddenFiles) {
-    File adminFile = null;
     final SolrResourceLoader loader = req.getCore().getResourceLoader();
-    File configdir = new File( loader.getConfigDir() );
-    if (!configdir.exists()) {
+    Path configDir = loader.getConfigPath();
+    if (!Files.exists(configDir)) {
       // TODO: maybe we should just open it this way to start with?
       try {
-        configdir = new File( loader.getClassLoader().getResource(loader.getConfigDir()).toURI() );
+        configDir = Path.of(loader.getClassLoader().getResource(loader.getConfigDir()).toURI());
       } catch (URISyntaxException e) {
         log.error("Can not access configuration directory!");
         rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access configuration directory!", e));
@@ -367,20 +368,19 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     }
     String fname = req.getParams().get("file", null);
     if( fname == null ) {
-      adminFile = configdir;
-    } else {
-      fname = fname.replace( '\\', '/' ); // normalize slashes
-      if( hiddenFiles.contains( fname.toUpperCase(Locale.ROOT) ) ) {
-        log.error("Can not access: {}", fname);
-        rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access: "+fname ));
-        return null;
-      }
-      // A leading slash is unnecessary but supported and interpreted as start of config dir
-      Path filePath = configdir.toPath().resolve(fname.startsWith("/") ? fname.substring(1) : fname);
-      req.getCore().getCoreContainer().assertPathAllowed(filePath);
-      adminFile = filePath.toFile();
+      return configDir;
     }
-    return adminFile;
+
+    fname = fname.replace( '\\', '/' ); // normalize slashes
+    if( hiddenFiles.contains( fname.toUpperCase(Locale.ROOT) ) ) {
+      log.error("Can not access: {}", fname);
+      rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access: "+fname ));
+      return null;
+    }
+    // A leading slash is unnecessary but supported and interpreted as start of config dir
+    Path filePath = configDir.resolve(fname.startsWith("/") ? fname.substring(1) : fname);
+    req.getCore().getCoreContainer().assertPathAllowed(filePath);
+    return filePath;
   }
 
   public final Set<String> getHiddenFiles() {

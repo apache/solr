@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.HighlightParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -371,26 +372,25 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     SolrQueryRequest req = null;
     SolrHighlighter highlighter = null;
     if (preferQueryContext) {
-      highlighter = ((HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME)).getHighlighter();
-      if (highlighter != null) {
-        Map<String, Object> args = new HashMap<>();
-        args.put(HighlightParams.FIELDS, fieldsToCluster);
-        args.put(HighlightParams.HIGHLIGHT, "true");
-        // We don't want any highlight marks.
-        args.put(HighlightParams.SIMPLE_PRE, "");
-        args.put(HighlightParams.SIMPLE_POST, "");
-        args.put(HighlightParams.FRAGSIZE, requestParameters.contextSize());
-        args.put(HighlightParams.SNIPPETS, requestParameters.contextCount());
-        req = new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args) {
-          @Override
-          public SolrIndexSearcher getSearcher() {
-            return indexSearcher;
-          }
-        };
-      } else {
-        log.warn("No highlighter configured, cannot produce summary");
-        preferQueryContext = false;
-      }
+      // TODO switch to hl.method=unified
+      highlighter = // never null
+          ((HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME))
+              .getHighlighter(new ModifiableSolrParams().add(HighlightParams.METHOD, "original"));
+      Map<String, Object> args = new HashMap<>();
+      args.put(HighlightParams.FIELDS, fieldsToCluster);
+      args.put(HighlightParams.HIGHLIGHT, "true");
+      // We don't want any highlight marks.
+      args.put(HighlightParams.SIMPLE_PRE, "");
+      args.put(HighlightParams.SIMPLE_POST, "");
+      args.put(HighlightParams.FRAGSIZE, requestParameters.contextSize());
+      args.put(HighlightParams.SNIPPETS, requestParameters.contextCount());
+      // TODO highlight all docs at once instead of 1-by-1
+      req = new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args) {
+        @Override
+        public SolrIndexSearcher getSearcher() {
+          return indexSearcher;
+        }
+      };
     }
 
     Map<String, Function<IndexableField, String>> fieldsToLoad = new LinkedHashMap<>();
