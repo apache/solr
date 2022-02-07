@@ -23,21 +23,41 @@ dependencies {
   api project(':solr:core')
   api project(':solr:solrj')
 
-  api "org.apache.lucene:lucene-test-framework"
-  api "org.apache.lucene:lucene-analysis-common"
+  api 'org.apache.lucene:lucene-test-framework'
+  api 'org.apache.lucene:lucene-analysis-common'
+  implementation 'org.apache.lucene:lucene-core'
+  implementation 'org.apache.lucene:lucene-queries'
 
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
     exclude group: "log4j", module: "log4j"
     exclude group: "org.slf4j", module: "slf4j-log4j12"
   })
+  implementation ('org.apache.zookeeper:zookeeper-jute') {
+    exclude group: 'org.apache.yetus', module: 'audience-annotations'
+  }
 
   implementation 'commons-io:commons-io'
+  implementation 'org.slf4j:slf4j-api'
+  implementation 'org.apache.logging.log4j:log4j-api'
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'io.opentracing:opentracing-noop'
   implementation 'io.opentracing:opentracing-util'
   implementation ('com.google.guava:guava') { transitive = false }
+  implementation 'io.dropwizard.metrics:metrics-core'
   implementation 'io.dropwizard.metrics:metrics-jetty9'
   implementation 'commons-cli:commons-cli'
+  implementation 'org.bitbucket.b_c:jose4j'
+  implementation 'org.apache.httpcomponents:httpclient'
+  implementation 'org.apache.httpcomponents:httpcore'
+
+  implementation 'javax.servlet:javax.servlet-api'
+  implementation 'org.eclipse.jetty:jetty-server'
+  implementation 'org.eclipse.jetty:jetty-servlet'
+  implementation 'org.eclipse.jetty:jetty-util'
+
+  implementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  implementation 'junit:junit'
+  implementation 'org.hamcrest:hamcrest'
 }
 

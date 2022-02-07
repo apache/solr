@@ -259,6 +259,8 @@ Build
 
 * SOLR-15670: Introduce Gradle parameter to skip ref-guide tasks (Houston Putman, Dawid Weiss)
 
+* SOLR-15984: Ensure all used dependencies are declared (Kevin Risden)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
