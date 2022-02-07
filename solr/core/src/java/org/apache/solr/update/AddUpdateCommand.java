@@ -28,10 +28,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -41,9 +38,6 @@ import org.apache.solr.schema.SchemaField;
  * may be involved in the event of nested documents.
  */
 public class AddUpdateCommand extends UpdateCommand {
-
-  /** In some limited circumstances of child docs, this holds the _route_ param. */
-  final String useRouteAsRoot; // lets hope this goes away in SOLR-15064
 
   /**
    * Higher level SolrInputDocument, normally used to construct the Lucene Document(s)
@@ -78,27 +72,6 @@ public class AddUpdateCommand extends UpdateCommand {
 
   public AddUpdateCommand(SolrQueryRequest req) {
     super(req);
-
-    // Populate useRouteParamAsIndexedId.
-    // This ought to be deprecated functionality that we remove in 9.0. SOLR-15064
-    String route = null;
-    if (req != null) { // some tests use no req
-      route = req.getParams().get(ShardParams._ROUTE_);
-      if (route == null || !req.getSchema().isUsableForChildDocs()) {
-        route = null;
-      } else {
-        // use route but there's one last exclusion: It's incompatible with SolrCloud implicit router.
-        String collectionName = req.getCore().getCoreDescriptor().getCollectionName();
-        if (collectionName != null) {
-          DocRouter router = req.getCore().getCoreContainer().getZkController().getClusterState()
-              .getCollection(collectionName).getRouter();
-          if (router instanceof ImplicitDocRouter) {
-            route = null;
-          }
-        }
-      }
-    }
-    useRouteAsRoot = route;
   }
 
   @Override
@@ -205,13 +178,10 @@ public class AddUpdateCommand extends UpdateCommand {
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + field);
         } else {
           this.childDocIdStr = field.getFirstValue().toString();
-          // the root might be in _root_ field or _route_ param.  If neither, then uniqueKeyField.
+          // the root might be in _root_ field; if not then uniqueKeyField.
           this.indexedIdStr = (String) solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME); // or here
           if (this.indexedIdStr == null) {
-            this.indexedIdStr = useRouteAsRoot;
-            if (this.indexedIdStr == null) {
-              this.indexedIdStr = childDocIdStr;
-            }
+            this.indexedIdStr = childDocIdStr;
           }
           indexedId = schema.indexableUniqueKey(indexedIdStr);
         }
