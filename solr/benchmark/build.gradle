@@ -56,6 +56,7 @@ dependencies {
   implementation 'org.jctools:jctools-core'
   implementation 'org.quicktheories:quicktheories'
   implementation 'org.openjdk.jmh:jmh-core'
+  implementation 'org.slf4j:slf4j-api'
   annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess'
   implementation 'org.slf4j:slf4j-api'
 }

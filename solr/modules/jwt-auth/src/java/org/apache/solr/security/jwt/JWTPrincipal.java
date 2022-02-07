@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
 import java.security.Principal;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.http.util.Args;
@@ -75,15 +76,7 @@ public class JWTPrincipal implements Principal {
 
   @Override
   public String toString() {
-    return "JWTPrincipal{"
-        + "username='"
-        + username
-        + '\''
-        + ", token='"
-        + "*****"
-        + '\''
-        + ", claims="
-        + claims
-        + '}';
+    return String.format(
+        Locale.ROOT, "JWTPrincipal{username='%s', token='*****', claims=%s}", username, claims);
   }
 }

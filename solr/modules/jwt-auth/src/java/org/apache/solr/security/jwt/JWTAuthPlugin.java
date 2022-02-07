@@ -14,9 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
-import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -58,7 +57,9 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
+import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.ConfigEditablePlugin;
+import org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
 import org.apache.solr.util.CryptoKeys;
 import org.eclipse.jetty.client.api.Request;
 import org.jose4j.jwa.AlgorithmConstraints;
@@ -103,7 +104,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   private static final String PARAM_ALG_WHITELIST = "algWhitelist";
 
   private static final Set<String> PROPS =
-      ImmutableSet.of(
+      Set.of(
           PARAM_BLOCK_UNKNOWN,
           PARAM_PRINCIPAL_CLAIM,
           PARAM_REQUIRE_EXPIRATIONTIME,
@@ -693,7 +694,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     jwtConsumer = null;
   }
 
@@ -781,7 +782,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   }
 
   /** Response for authentication attempt */
-  static class JWTAuthenticationResponse {
+  protected static class JWTAuthenticationResponse {
     private final Principal principal;
     private String errorMessage;
     private final AuthCode authCode;

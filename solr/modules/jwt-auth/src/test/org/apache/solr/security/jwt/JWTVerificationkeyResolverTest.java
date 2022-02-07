@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
 import static java.util.Arrays.asList;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
@@ -26,7 +25,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.security.JWTIssuerConfig.HttpsJwksFactory;
+import org.apache.solr.security.jwt.JWTIssuerConfig.HttpsJwksFactory;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
@@ -38,6 +37,7 @@ import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
@@ -85,7 +85,8 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
                 keysToReturnFromSecondJwk = refreshSequenceForSecondJwk.next();
               return keysToReturnFromSecondJwk;
             });
-    when(httpsJwksFactory.createList(anyList())).thenReturn(asList(firstJwkList, secondJwkList));
+    when(httpsJwksFactory.createList(ArgumentMatchers.anyList()))
+        .thenReturn(asList(firstJwkList, secondJwkList));
 
     JWTIssuerConfig issuerConfig =
         new JWTIssuerConfig("primary").setIss("foo").setJwksUrl(asList("url1", "url2"));
