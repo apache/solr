@@ -577,7 +577,7 @@ public class DistribPackageStore implements PackageStore {
     }
   }
 
-  public static Path getPackageStoreDirPath(Path solrHome) {
+  public static synchronized Path getPackageStoreDirPath(Path solrHome) {
     var path = solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
     if (!Files.exists(path)) {
       try {
