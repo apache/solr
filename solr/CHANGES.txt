@@ -49,6 +49,8 @@ Bug Fixes
 ---------------------
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
+* SOLR-15964: Transient cores: don't evict a core when it's still being used. (David Smiley)
+
 Other Changes
 ---------------------
 * SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
@@ -600,6 +602,9 @@ Bug Fixes
 
 * SOLR-15919: Replace File with Path for many ZK operations (Mike Drob)
 
+
+* SOLR-15259: hl.fragAlignRatio now defaults to 0.33 to be faster and maybe looks nicer. (David Smiley)
+
 * SOLR-13138: Removed deprecated hl.method=postings highlighter, deprecated in 7.0. (David Smiley)
 
 * SOLR-15944: The Tagger's JSON response format now always uses an object/map to represent each tag instead of an
@@ -621,6 +626,8 @@ Bug Fixes
 Bug Fixes
 ---------------------
 * SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
+
+* SOLR-15587: Don't use the UrlScheme singleton on the client-side to determine cluster's scheme, only get from ClusterState provider impl (Timothy Potter)
 
 ==================  8.11.1 ==================
 

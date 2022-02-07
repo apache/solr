@@ -359,12 +359,12 @@ The offset source can be explicitly configured to one of: `ANALYSIS`, `POSTINGS`
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `0.5`
+|Optional |Default: `0.33`
 |===
 +
 This parameter influences where the first match (i.e., highlighted text) in a passage is positioned.
 +
-The default value of `0.5` means to align the match to the middle.
+The default value of `0.33` means to align the match to the left third.
 A value of `0.0` means to align the match to the left, while `1.0` to align it to the right.
 This setting is a best-effort hint, as there are a variety of factors.
 When there's lots of text to be highlighted, lowering this number can help performance a lot.

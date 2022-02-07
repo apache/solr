@@ -2055,15 +2055,6 @@ public class CoreContainer {
     return solrCores.isLoaded(name);
   }
 
-  public boolean isLoadedNotPendingClose(String name) {
-    return solrCores.isLoadedNotPendingClose(name);
-  }
-
-  // Primarily for transient cores when a core is aged out.
-  public void queueCoreToClose(SolrCore coreToClose) {
-    solrCores.queueCoreToClose(coreToClose);
-  }
-
   /**
    * Gets a solr core descriptor for a core that is not loaded. Note that if the caller calls this on a
    * loaded core, the unloaded descriptor will be returned.
@@ -2255,8 +2246,10 @@ class CloserThread extends Thread {
 
       SolrCore core;
       while (!container.isShutDown() && (core = solrCores.getCoreToClose()) != null) {
+        assert core.getOpenCount() == 1;
         try {
-          core.close();
+          MDCLoggingContext.setCore(core);
+          core.close(); // will clear MDC
         } finally {
           solrCores.removeFromPendingOps(core.getName());
         }
