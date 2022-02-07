@@ -1336,20 +1336,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public static final int GET_DOCLIST = 0x02; // get the documents actually returned in a response
   public static final int GET_SCORES = 0x01;
 
-  private static boolean isConstantScoreQuery(Query q) {
-    // only unwrap one layer -- that should be sufficient. Unwrapping BoostQuery is very important because
-    // in practice that's how most ConstantScoreQueries will arrive; unwrapping WrappedQuery can't hurt,
-    // (and could help) but is less important than BoostQuery.
-    if (q instanceof BoostQuery) {
-      // ConstantScoreQueries are often (always?) wrapped in BoostQuery to assign specific score
-      q = ((BoostQuery)q).getQuery();
-    } else if (q instanceof WrappedQuery) {
-      assert ((WrappedQuery)q).getCache() : "`!ExtendedQuery.getCache()` should have set flags |= NO_CHECK_FILTERCACHE";
-      q = ((WrappedQuery)q).getWrappedQuery();
-    }
-    return q instanceof ConstantScoreQuery;
-  }
-
   private static boolean sortIncludesOtherThanScore(final Sort sort) {
     if (sort == null) {
       return false;
@@ -1468,7 +1454,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       needSort = true; // this value should be irrelevant when `useFilterCache=false`
       useFilterCache = false;
     } else if (q instanceof MatchAllDocsQuery // special-case MatchAllDocsQuery: implicit default useFilterForSortedQuery=true
-            || (useFilterForSortedQuery && isConstantScoreQuery(q))) { // default behavior should not risk filterCache thrashing
+            || (useFilterForSortedQuery && QueryUtils.isConstantScoreQuery(q))) { // default behavior should not risk filterCache thrashing
       // We only need to sort if we're returning results AND sorting by something other than SCORE (sort by
       // "score" alone is pointless for these constant score queries)
       final Sort sort = cmd.getSort();

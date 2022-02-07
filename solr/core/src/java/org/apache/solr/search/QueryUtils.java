@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 
 import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -25,6 +27,7 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 
@@ -43,6 +46,78 @@ public class QueryUtils {
       if (!clause.isProhibited()) return false;
     }
     return true;
+  }
+
+  /**
+   * Recursively unwraps the specified query to determine whether it is capable of producing a score
+   * that varies across different documents. Returns true if this query is not capable of producing a
+   * varying score (i.e., it is a constant score query).
+   */
+  public static boolean isConstantScoreQuery(Query q) {
+    return isConstantScoreQuery(q, null);
+  }
+
+  private static Map<Query, Void> lazyInitSeen(Map<Query, Void> seen, Query add) {
+    if (seen == null) {
+      seen = new IdentityHashMap<>();
+    }
+    seen.put(add, null);
+    return seen;
+  }
+
+  /**
+   * Returns true if the specified query is guaranteed to assign the same score to all docs; otherwise false
+   * @param q query to be evaluated
+   * @param seen used to detect possible loops in nested query input
+   */
+  private static boolean isConstantScoreQuery(Query q, Map<Query, Void> seen) {
+    for (;;) {
+      final Query unwrapped;
+      if (q instanceof BoostQuery) {
+        unwrapped = ((BoostQuery) q).getQuery();
+        // NOTE: BoostQuery class and its inner query are final, so there's no risk of direct loops
+      } else if (q instanceof WrappedQuery) {
+        unwrapped = ((WrappedQuery) q).getWrappedQuery();
+        // NOTE: Neither WrappedQuery class nor its inner query are final, so there is a risk of direct loops
+        // TODO: Only the queries we explicitly check for in this method are relevant wrt detecting loops, and
+        //  only `WrappedQuery` currently presents a risk in that respect; we may be able to avoid this risk
+        //  by more tightly restricting the `WrappedQuery` API (e.g., making the get/set methods `final`)?
+        if (unwrapped == q) {
+          throw new IllegalStateException("recursive query");
+        }
+      } else if (q instanceof ConstantScoreQuery) {
+        return true;
+      } else if (q instanceof MatchAllDocsQuery) {
+        return true;
+      } else if (q instanceof MatchNoDocsQuery) {
+        return true;
+      } else if (q instanceof Filter || q instanceof SolrConstantScoreQuery) {
+        // TODO: this clause will be replaced with `q instanceof DocSetQuery`, pending SOLR-12336
+        return true;
+      } else if (q instanceof BooleanQuery) {
+        // do actual method call recursion for BooleanQuery
+        boolean addedQ = false;
+        for (BooleanClause c : (BooleanQuery) q) {
+          if (c.isScoring()) {
+            // NOTE: there's no purpose to checking `q == c.getQuery()` because BooleanQuery is final, with
+            // a builder that prevents direct loops. But as long as it is in principle possible to have a
+            // query that at some level wraps its own ancestor, we have to add `q` in order to detect deeper
+            // loops here.
+            if (!isConstantScoreQuery(c.getQuery(), addedQ ? seen : lazyInitSeen(seen, q))) {
+              return false;
+            }
+            addedQ = true;
+          }
+        }
+        // BooleanQuery with no scoring clauses capable of producing a score is itself a constant-score query
+        return true;
+      } else {
+        return false;
+      }
+      // For wrapping queries that only wrap one query, we can use a loop instead of true recursion
+      lazyInitSeen(seen, q);
+      q = unwrapped;
+    }
   }
 
   /** Returns the original query if it was already a positive query, otherwise
