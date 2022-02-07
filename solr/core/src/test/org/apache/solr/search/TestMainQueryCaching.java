@@ -39,7 +39,8 @@ import static org.apache.solr.common.util.Utils.fromJSONString;
  */
 public class TestMainQueryCaching extends SolrTestCaseJ4 {
 
-  static int NUM_DOCS = 100;
+  private static final int MOST_DOCS = 100;
+  private static final int ALL_DOCS = MOST_DOCS + 1;
   private static final String TEST_UFFSQ_PROPNAME = "solr.test.useFilterForSortedQuery";
   static String RESTORE_UFFSQ_PROP;
   static boolean USE_FILTER_FOR_SORTED_QUERY;
@@ -65,14 +66,14 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   }
 
   public static void createIndex() {
-    for (int i = 0; i < NUM_DOCS; i++) {
+    for (int i = 0; i < MOST_DOCS; i++) {
       assertU(adoc("id", Integer.toString(i), "str", "d" + i));
-      if (random().nextInt(NUM_DOCS) == 0) {
+      if (random().nextInt(MOST_DOCS) == 0) {
         assertU(commit());  // sometimes make multiple segments
       }
     }
     // add an extra doc to distinguish scoring query from `*:*`
-    assertU(adoc("id", Integer.toString(NUM_DOCS), "str", "e" + NUM_DOCS));
+    assertU(adoc("id", Integer.toString(MOST_DOCS), "str", "e" + MOST_DOCS));
     assertU(commit());
   }
 
@@ -171,7 +172,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   @Test
   public void testConstantScoreMatchesAllDocsNonScoreSort() throws Exception {
     String response = JQ(req("q", CONSTANT_SCORE_QUERY + " OR (str:e*)^=4.0", "indent", "true", "sort", "id asc"));
-    assertMetricCounts(response, USE_FILTER_FOR_SORTED_QUERY, USE_FILTER_FOR_SORTED_QUERY ? 1 : 0, 1, 0, NUM_DOCS + 1);
+    assertMetricCounts(response, USE_FILTER_FOR_SORTED_QUERY, USE_FILTER_FOR_SORTED_QUERY ? 1 : 0, 1, 0, ALL_DOCS);
   }
 
   @Test
@@ -186,7 +187,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     // explicitly requesting scores should unconditionally disable all cache consultation and sort optimization
     String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true", "rows", "0", "fl", "id,score", "sort", (random().nextBoolean() ? "id asc" : "score desc")));
     // NOTE: pretend we're not MatchAllDocs ...
-    assertMetricCounts(response, false, 0, 1, 0, NUM_DOCS + 1);
+    assertMetricCounts(response, false, 0, 1, 0, ALL_DOCS);
   }
 
   @Test
@@ -208,7 +209,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     String q = pickRandom(ALL_QUERIES);
     boolean includeScoreInSort = random().nextBoolean();
     String response = JQ(req("q", q, "indent", "true", "cursorMark", "*", "sort", includeScoreInSort ? "score desc,id asc" : "id asc"));
-    final int expectNumFound = MATCH_ALL_DOCS_QUERY.equals(q) ? NUM_DOCS + 1 : NUM_DOCS;
+    final int expectNumFound = MATCH_ALL_DOCS_QUERY.equals(q) ? ALL_DOCS : MOST_DOCS;
     final boolean consultMatchAllDocs;
     final boolean insertFilterCache;
     if (includeScoreInSort) {
@@ -244,7 +245,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   }
 
   private static void assertMetricCounts(String response, boolean matchAllDocs, int expectFilterCacheInsertCount, int expectFullSortCount, int expectSkipSortCount) {
-    assertMetricCounts(response, matchAllDocs, expectFilterCacheInsertCount, expectFullSortCount, expectSkipSortCount, matchAllDocs ? NUM_DOCS + 1 : NUM_DOCS);
+    assertMetricCounts(response, matchAllDocs, expectFilterCacheInsertCount, expectFullSortCount, expectSkipSortCount, matchAllDocs ? ALL_DOCS : MOST_DOCS);
   }
 
   private static void assertMetricCounts(String response, boolean matchAllDocs, int expectFilterCacheInsertCount,
@@ -264,7 +265,6 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     final int nThreads = 20;
     final ExecutorService executor = ExecutorUtil.newMDCAwareFixedThreadPool(nThreads, new SolrNamedThreadFactory(getTestName()));
     final Future<?>[] followup = new Future<?>[nThreads];
-    final int expectNumFound = NUM_DOCS + 1;
     for (int i = 0; i < nThreads; i++) {
       final int myI = i;
       followup[i] = executor.submit(() -> {
@@ -274,7 +274,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
           String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "request_id", Integer.toString(myI), "cursorMark", "*", "sort", "id asc"));
           Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
           Map<?, ?> body = (Map<?, ?>) (res.get("response"));
-          assertEquals("Should have exactly " + expectNumFound, expectNumFound, (long) (body.get("numFound"))); // sanity check
+          assertEquals("Should have exactly " + ALL_DOCS, ALL_DOCS, (long) (body.get("numFound"))); // sanity check
         } catch (Exception ex) {
           throw new RuntimeException(ex);
         }
