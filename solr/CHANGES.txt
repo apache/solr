@@ -25,6 +25,8 @@ Bug Fixes
 * SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
   halving the latency of synchronous commits (Michael Gibney)
 
+* SOLR-15964: Transient cores: don't evict a core when it's still being used. (David Smiley)
+
 Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
