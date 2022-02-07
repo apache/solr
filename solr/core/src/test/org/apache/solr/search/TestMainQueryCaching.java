@@ -71,6 +71,8 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
         assertU(commit());  // sometimes make multiple segments
       }
     }
+    // add an extra doc to distinguish scoring query from `*:*`
+    assertU(adoc("id", Integer.toString(NUM_DOCS), "str", "e" + NUM_DOCS));
     assertU(commit());
   }
 
@@ -93,12 +95,20 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
             .getValue();
   }
 
-  private static long coreToMatchAllDocsCacheConsultationCount(SolrCore core) {
+  private static long coreToLiveDocsNaiveCacheHitCount(SolrCore core) {
     return (long)((SolrMetricManager.GaugeWrapper<?>)core
-            .getCoreMetricManager().getRegistry().getMetrics().get("SEARCHER.searcher.matchAllDocsCacheConsultationCount")).getGauge()
+            .getCoreMetricManager().getRegistry().getMetrics().get("SEARCHER.searcher.liveDocsNaiveCacheHitCount")).getGauge()
             .getValue();
   }
 
+  private static long coreToMatchAllDocsInsertCount(SolrCore core) {
+    return (long) coreToLiveDocsCacheMetrics(core).get("inserts");
+  }
+
+  private static Map<String, Object> coreToLiveDocsCacheMetrics(SolrCore core) {
+    return ((MetricsMap)((SolrMetricManager.GaugeWrapper<?>)core.getCoreMetricManager().getRegistry()
+            .getMetrics().get("CACHE.searcher.liveDocsCache")).getGauge()).getValue();
+  }
   private static final String SCORING_QUERY = "str:d*";
   private static final String CONSTANT_SCORE_QUERY = "(" + SCORING_QUERY + ")^=1.0"; // wrapped as a ConstantScoreQuery
   private static final String MATCH_ALL_DOCS_QUERY = "*:*";
@@ -149,6 +159,21 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     assertMetricCounts(response, false, USE_FILTER_FOR_SORTED_QUERY ? 1 : 0, 1, 0);
   }
 
+  /**
+   * As {@link #testConstantScoreNonScoreSort} (though an analogous test could be written corresponding to
+   * {@link #testConstantScoreSortByScore()}, etc...); but with an additional constant-score clause that causes
+   * the associated DocSet, (if {@link #USE_FILTER_FOR_SORTED_QUERY}==true) to be cached as equivalent to
+   * MatchAllDocsQuery/liveDocs, _in addition to_ in the filterCache.
+   *
+   * This is an edge case, but it's the behavior we want, and despite there being two entries, the actual DocSet
+   * will be the same (`==`) in both locations (liveDocs and filterCache)
+   */
+  @Test
+  public void testConstantScoreMatchesAllDocsNonScoreSort() throws Exception {
+    String response = JQ(req("q", CONSTANT_SCORE_QUERY + " OR (str:e*)^=4.0", "indent", "true", "sort", "id asc"));
+    assertMetricCounts(response, USE_FILTER_FOR_SORTED_QUERY, USE_FILTER_FOR_SORTED_QUERY ? 1 : 0, 1, 0, NUM_DOCS + 1);
+  }
+
   @Test
   public void testMatchAllDocsPlain() throws Exception {
     // plain request with "score" sort should skip sort even if `rows` requested
@@ -161,7 +186,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     // explicitly requesting scores should unconditionally disable all cache consultation and sort optimization
     String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true", "rows", "0", "fl", "id,score", "sort", (random().nextBoolean() ? "id asc" : "score desc")));
     // NOTE: pretend we're not MatchAllDocs ...
-    assertMetricCounts(response, false, 0, 1, 0);
+    assertMetricCounts(response, false, 0, 1, 0, NUM_DOCS + 1);
   }
 
   @Test
@@ -183,6 +208,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     String q = pickRandom(ALL_QUERIES);
     boolean includeScoreInSort = random().nextBoolean();
     String response = JQ(req("q", q, "indent", "true", "cursorMark", "*", "sort", includeScoreInSort ? "score desc,id asc" : "id asc"));
+    final int expectNumFound = MATCH_ALL_DOCS_QUERY.equals(q) ? NUM_DOCS + 1 : NUM_DOCS;
     final boolean consultMatchAllDocs;
     final boolean insertFilterCache;
     if (includeScoreInSort) {
@@ -195,7 +221,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
       consultMatchAllDocs = false;
       insertFilterCache = USE_FILTER_FOR_SORTED_QUERY;
     }
-    assertMetricCounts(response, consultMatchAllDocs, insertFilterCache ? 1 : 0, 1, 0);
+    assertMetricCounts(response, consultMatchAllDocs, insertFilterCache ? 1 : 0, 1, 0, expectNumFound);
   }
 
   @Test
@@ -218,14 +244,19 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   }
 
   private static void assertMetricCounts(String response, boolean matchAllDocs, int expectFilterCacheInsertCount, int expectFullSortCount, int expectSkipSortCount) {
+    assertMetricCounts(response, matchAllDocs, expectFilterCacheInsertCount, expectFullSortCount, expectSkipSortCount, matchAllDocs ? NUM_DOCS + 1 : NUM_DOCS);
+  }
+
+  private static void assertMetricCounts(String response, boolean matchAllDocs, int expectFilterCacheInsertCount,
+                                         int expectFullSortCount, int expectSkipSortCount, int expectNumFound) {
     Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
     Map<?, ?> body = (Map<?, ?>) (res.get("response"));
     SolrCore core = h.getCore();
-    assertEquals("Bad matchAllDocsCacheConsultation count", (matchAllDocs ? 1 : 0), coreToMatchAllDocsCacheConsultationCount(core));
+    assertEquals("Bad matchAllDocs insert count", (matchAllDocs ? 1 : 0), coreToMatchAllDocsInsertCount(core));
     assertEquals("Bad filterCache insert count", expectFilterCacheInsertCount, coreToInserts(core));
     assertEquals("Bad full sort count", expectFullSortCount, coreToSortCount(core, "full"));
     assertEquals("Bad skip sort count", expectSkipSortCount, coreToSortCount(core, "skip"));
-    assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound"))); // sanity check
+    assertEquals("Should have exactly " + expectNumFound, expectNumFound, (long) (body.get("numFound"))); // sanity check
   }
 
   @Test
@@ -233,6 +264,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     final int nThreads = 20;
     final ExecutorService executor = ExecutorUtil.newMDCAwareFixedThreadPool(nThreads, new SolrNamedThreadFactory(getTestName()));
     final Future<?>[] followup = new Future<?>[nThreads];
+    final int expectNumFound = NUM_DOCS + 1;
     for (int i = 0; i < nThreads; i++) {
       final int myI = i;
       followup[i] = executor.submit(() -> {
@@ -242,7 +274,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
           String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "request_id", Integer.toString(myI), "cursorMark", "*", "sort", "id asc"));
           Map<?, ?> res = (Map<?, ?>) fromJSONString(response);
           Map<?, ?> body = (Map<?, ?>) (res.get("response"));
-          assertEquals("Should have exactly " + NUM_DOCS, NUM_DOCS, (long) (body.get("numFound"))); // sanity check
+          assertEquals("Should have exactly " + expectNumFound, expectNumFound, (long) (body.get("numFound"))); // sanity check
         } catch (Exception ex) {
           throw new RuntimeException(ex);
         }
@@ -257,20 +289,19 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
       assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS)); // tasks should already have completed
     }
     final SolrCore core = h.getCore();
-    long init = (long)((SolrMetricManager.GaugeWrapper<?>)core
-            .getCoreMetricManager().getRegistry().getMetrics().get("SEARCHER.searcher.matchAllDocsCacheComputationTracker")).getGauge()
-            .getValue();
-    long hit = (long)((SolrMetricManager.GaugeWrapper<?>)core
-            .getCoreMetricManager().getRegistry().getMetrics().get("SEARCHER.searcher.matchAllDocsCacheHitCount")).getGauge()
-            .getValue();
+    Map<String, Object> liveDocsCacheMetrics = coreToLiveDocsCacheMetrics(core);
+    long inserts = (long) liveDocsCacheMetrics.get("inserts"); // the one and only liveDocs computation
+    long hits = (long) liveDocsCacheMetrics.get("hits"); // hits during the initial phase
+    long naiveHits = coreToLiveDocsNaiveCacheHitCount(core);
 
-    // Here we indirectly test assertions internal to SolrIndexSearcher as well -- the init tracker must have been
-    // initialized to 0 exactly once. Ideally the last assertion will often actually be `init > 0` -- but that relies
-    // on timing, and in practice it happens that sometimes `init == 0` (e.g., if matchAllDocs computation happens
-    // _very_ quickly, and/or if subsequent threads were delayed).
-    assertEquals(nThreads, coreToMatchAllDocsCacheConsultationCount(core));
-    assertEquals(nThreads - 1, init + hit);
-    assertTrue("expected init >= 0; found init=" + init, init >= 0);
+    assertEquals(1, inserts);
+    assertEquals(nThreads - 1, hits + naiveHits);
+
+    // NOTE: The assertion below is commented out because, although it may _often_ be true, it is dependent
+    // on timing/thread scheduling; in practice it happens that not infrequently `init == 0` (e.g., if matchAllDocs
+    // computation happens quickly, and/or if subsequent threads were delayed).
+
+    //assertTrue("expected hits > 0; found init=" + hits, hits > 0);
   }
 }
 

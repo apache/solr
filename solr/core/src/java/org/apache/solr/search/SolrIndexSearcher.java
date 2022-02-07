@@ -30,11 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import com.codahale.metrics.Gauge;
 import com.google.common.collect.Iterables;
@@ -106,6 +105,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static final Map<String,SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
   private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
 
+  private static final Map<String, String> LIVE_DOCS_CACHE_INIT_PARAMS = Map.of(
+          "name", "liveDocsCache",
+          SolrCache.SIZE_PARAM, "1",
+          SolrCache.INITIAL_SIZE_PARAM, "1"
+  );
+
   private final SolrCore core;
   private final IndexSchema schema;
   private final SolrDocumentFetcher docFetcher;
@@ -122,15 +127,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final int queryResultMaxDocsCached;
   private final boolean useFilterForSortedQuery;
 
+  /**
+   * Special-case cache to handle the lazy-init of {@link #liveDocs}.
+   */
+  private final SolrCache<MatchAllDocsQuery,BitDocSet> liveDocsCache;
+
   private final boolean cachingEnabled;
   private final SolrCache<Query,DocSet> filterCache;
   private final SolrCache<QueryResultKey,DocList> queryResultCache;
   private final SolrCache<String,UnInvertedField> fieldValueCache;
   private final AtomicLong fullSortCount = new AtomicLong();
   private final AtomicLong skipSortCount = new AtomicLong();
-  private final AtomicLong matchAllDocsCacheConsultationCount = new AtomicLong();
-  private final AtomicLong matchAllDocsCacheHitCount = new AtomicLong();
-  private final AtomicLong matchAllDocsCacheComputationTracker = new AtomicLong(Long.MIN_VALUE);
+  private final AtomicLong liveDocsNaiveCacheHitCount = new AtomicLong();
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final Map<String,SolrCache<?, ?>> cacheMap;
@@ -295,9 +303,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     this.docFetcher = new SolrDocumentFetcher(this, solrConfig, enableCache);
 
+    liveDocsCache = new CaffeineCache<>();
+    liveDocsCache.init(LIVE_DOCS_CACHE_INIT_PARAMS, null, null);
+
     this.cachingEnabled = enableCache;
     if (cachingEnabled) {
       final ArrayList<SolrCache> clist = new ArrayList<>();
+      clist.add(liveDocsCache);
       fieldValueCache = solrConfig.fieldValueCacheConfig == null ? null
           : solrConfig.fieldValueCacheConfig.newInstance();
       if (fieldValueCache != null) clist.add(fieldValueCache);
@@ -847,8 +859,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     assert filterCache != null : "must check for caching before calling this method";
 
     if (query instanceof MatchAllDocsQuery) {
-      // bypass the filterCache for MatchAllDocsQuery; we're "caching" it in `liveDocs` anyway
-      matchAllDocsCacheConsultationCount.incrementAndGet();
+      // bypass the filterCache for MatchAllDocsQuery
       return getLiveDocSet();
     }
 
@@ -868,42 +879,25 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return filterCache.computeIfAbsent(query, q -> getDocSetNC(q, null));
   }
 
-  private static final Query MATCH_ALL_DOCS_QUERY = new MatchAllDocsQuery();
-  private volatile BitDocSet liveDocs;
-  private final FutureTask<BitDocSet> liveDocsFuture = new FutureTask<>(() -> makeBitDocSet(getDocSetNC(MATCH_ALL_DOCS_QUERY, null)));
+  private static final MatchAllDocsQuery MATCH_ALL_DOCS_QUERY = new MatchAllDocsQuery();
+
+  /**
+   * A naively cached canonical `liveDocs` DocSet. This does not need to be volatile. It may be set multiple times,
+   * but should always be set to the same value, as all set values should pass through `liveDocsCache.computeIfAbsent`
+   */
+  private BitDocSet liveDocs;
+  private final IOFunction<MatchAllDocsQuery, BitDocSet> computeLiveDocs = q -> makeBitDocSet(getDocSetNC(MATCH_ALL_DOCS_QUERY, null));
 
   /**
    * Returns an efficient random-access {@link DocSet} of the live docs.  It's cached.  Never null.
    * @lucene.internal the type of DocSet returned may change in the future
    */
   public BitDocSet getLiveDocSet() throws IOException {
-    // Going through the filter cache will provide thread safety here if we only had getLiveDocs,
-    // but the addition of setLiveDocs means we needed to add volatile to "liveDocs".
     BitDocSet docs = liveDocs;
     if (docs != null) {
-      matchAllDocsCacheHitCount.incrementAndGet();
+      liveDocsNaiveCacheHitCount.incrementAndGet();
     } else {
-      if (matchAllDocsCacheComputationTracker.compareAndSet(Long.MIN_VALUE, 0)) {
-        // run the initial/only/final future inline
-        // This thread will block execution here and `liveDocsFuture.get()` (below) should then return immediately
-        liveDocsFuture.run();
-      } else {
-        // another thread has already called `computeLiveDocs.run()`; this thread will block on
-        // `liveDocsFuture.get()` (below)
-        if (matchAllDocsCacheComputationTracker.getAndIncrement() < 0) {
-          // This should be literally impossible with the code in its current state, so this could in
-          // principle be an assertion. But if code were to change in the future, and this assertion were
-          // to become invalid (not sure how that would happen, but still ...), it could lead to a
-          // thread leak (blocking indefinitely below on `liveDocsFuture.get()`), so we'll err on the
-          // cautious (and consistent) side and always check/fail fast.
-          throw new IllegalStateException();
-        }
-      }
-      try {
-        docs = liveDocsFuture.get();
-      } catch (InterruptedException | ExecutionException ex) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, ex);
-      }
+      docs = liveDocsCache.computeIfAbsent(MATCH_ALL_DOCS_QUERY, computeLiveDocs);
       liveDocs = docs; // all `docs` will be identical (`==`); we don't care which one "wins"
     }
     assert docs.size() == numDocs();
@@ -920,16 +914,30 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return getIndexReader().hasDeletions() ? getLiveDocSet().getBits() : null;
   }
 
-  /** @lucene.internal */
-  public boolean isLiveDocsInstantiated() {
-    return liveDocs != null;
-  }
-
-  /** @lucene.internal */
-  public void setLiveDocs(DocSet docs) {
-    // a few places currently expect BitDocSet
-    assert docs.size() == numDocs();
-    this.liveDocs = makeBitDocSet(docs);
+  /**
+   * If some process external to {@link SolrIndexSearcher} has produced a DocSet whose cardinality matches
+   * that of `liveDocs`, this method provides such caller the ability to offer its own DocSet to be cached
+   * in the searcher. The caller should then use the returned value (which may or may not be derived from
+   * the DocSet instance supplied), allowing more efficient memory use.
+   * @lucene.internal
+   */
+  public BitDocSet offerLiveDocs(Supplier<DocSet> docSetSupplier, int suppliedSize) {
+    assert suppliedSize == numDocs();
+    BitDocSet ret = liveDocs;
+    if (ret != null) {
+      liveDocsNaiveCacheHitCount.incrementAndGet();
+      return ret;
+    }
+    try {
+      // a few places currently expect BitDocSet
+      ret = liveDocsCache.computeIfAbsent(MATCH_ALL_DOCS_QUERY, q -> makeBitDocSet(docSetSupplier.get()));
+    } catch (IOException ex) {
+      // should be impossible... offered liveDocs already exists
+      // all we may need to do is wrap it, so no IO should be necessary
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
+    }
+    this.liveDocs = ret;
+    return ret;
   }
 
   private static Comparator<ExtendedQuery> sortByCost =
@@ -2394,9 +2402,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     parentContext.gauge(() -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
     parentContext.gauge(fullSortCount::get, true, "fullSortCount", Category.SEARCHER.toString(), scope);
     parentContext.gauge(skipSortCount::get, true, "skipSortCount", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(matchAllDocsCacheConsultationCount::get, true, "matchAllDocsCacheConsultationCount", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(matchAllDocsCacheHitCount::get, true, "matchAllDocsCacheHitCount", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(matchAllDocsCacheComputationTracker::get, true, "matchAllDocsCacheComputationTracker", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(liveDocsNaiveCacheHitCount::get, true, "liveDocsNaiveCacheHitCount", Category.SEARCHER.toString(), scope);
     // reader stats
     parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.numDocs()), true, "numDocs", Category.SEARCHER.toString(), scope);
     parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.maxDoc()), true, "maxDoc", Category.SEARCHER.toString(), scope);

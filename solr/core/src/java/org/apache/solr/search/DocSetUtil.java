@@ -37,7 +37,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.common.SolrException;
 
 /** @lucene.experimental */
 public class DocSetUtil {
@@ -77,16 +76,10 @@ public class DocSetUtil {
    * @lucene.experimental
    */
   public static DocSet getDocSet(DocSetCollector collector, SolrIndexSearcher searcher) {
-    if (collector.size() == searcher.numDocs()) {
-      if (!searcher.isLiveDocsInstantiated()) {
-        searcher.setLiveDocs( collector.getDocSet() );
-      }
-      try {
-        return searcher.getLiveDocSet();
-      } catch (IOException e) {
-        // should be impossible... liveDocs should exist, so no IO should be necessary
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
+    final int size = collector.size();
+    if (size == searcher.numDocs()) {
+      // see comment under similar block in `getDocSet(DocSet, SolrIndexSearcher)`
+      return searcher.offerLiveDocs(collector::getDocSet, size);
     }
 
     return collector.getDocSet();
@@ -98,18 +91,15 @@ public class DocSetUtil {
    * @lucene.experimental
    */
   public static DocSet getDocSet(DocSet docs, SolrIndexSearcher searcher) {
-    if (docs.size() == searcher.numDocs()) {
-      if (!searcher.isLiveDocsInstantiated()) {
-        searcher.setLiveDocs( docs );
-      }
-      try {
-        // if this docset has the same cardinality as liveDocs, return liveDocs instead
-        // so this set will be short lived garbage.
-        return searcher.getLiveDocSet();
-      } catch (IOException e) {
-        // should be impossible... liveDocs should exist, so no IO should be necessary
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
+    final int size = docs.size();
+    if (size == searcher.numDocs()) {
+      // if this docset has the same cardinality as liveDocs, return liveDocs instead
+      // so this set will be short lived garbage.
+      // This could be a very broad query, or some unusual way of running MatchAllDocsQuery?
+      // In any event, we already _have_ a viable `liveDocs` DocSet, so offer it to the
+      // SolrIndexSearcher, and use whatever canonical `liveDocs` instance the searcher returns
+      // (which may or may not be derived from the set that we offered)
+      return searcher.offerLiveDocs(() -> docs, size);
     }
 
     return docs;
