@@ -370,6 +370,7 @@ class SolrCores {
     }
   }
 
+  /** The core is currently loading, unloading, or reloading. */
   boolean hasPendingCoreOps(String name) {
     synchronized (modifyLock) {
       return pendingCoreOps.contains(name);
@@ -532,7 +533,6 @@ class SolrCores {
     return currentlyLoadingCores.contains(name);
   }
 
-  /** The core is currently loading, unloading, or reloading. */
   public void queueCoreToClose(SolrCore coreToClose) {
     synchronized (modifyLock) {
       pendingCloses.add(coreToClose); // Essentially just queue this core up for closing.
