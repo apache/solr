@@ -73,8 +73,6 @@ dependencies {
 
   implementation('com.github.ben-manes.caffeine:caffeine') { transitive = false }
 
-  implementation 'org.slf4j:slf4j-api'
-
   implementation 'commons-codec:commons-codec'
 
   implementation 'commons-cli:commons-cli'
@@ -117,9 +115,6 @@ dependencies {
   implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 
   testImplementation 'org.slf4j:jcl-over-slf4j'
-
-  // JWT Auth plugin
-  api 'org.bitbucket.b_c:jose4j'
 
   // For faster XML processing than the JDK
   implementation (group: 'com.fasterxml.woodstox', name: 'woodstox-core')
@@ -165,12 +160,6 @@ dependencies {
 
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
-  })
-
-  testImplementation('no.nav.security:mock-oauth2-server', {
-    exclude group: "ch.qos.logback", module: "logback-core"
-    exclude group: "io.netty", module: "netty-all"
-    exclude group: "ch.qos.logback", module: "logback-classic"
   })
 }
 

@@ -29,6 +29,5 @@ dependencies {
   implementation 'net.arnx:jsonic'
   implementation 'org.apache.opennlp:opennlp-tools'
 
-
   testImplementation project(':solr:test-framework')
 }
