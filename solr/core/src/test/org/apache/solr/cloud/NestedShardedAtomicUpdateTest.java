@@ -81,28 +81,26 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase { // used t
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
-    SolrInputDocument doc = sdoc("id", "1", "level_s", "root");
+    SolrInputDocument doc = sdoc("id", "1", "_root_", "1", "level_s", "root");
 
-    final SolrParams params = params("wt", "json", "_route_", "1");
-
-    int which = (params.get("_route_").hashCode() & 0x7fffffff) % clients.size();
+    int which = (doc.get("_root_").hashCode() & 0x7fffffff) % clients.size();
     SolrClient aClient = clients.get(which);
 
-    indexDoc(aClient, params, doc);
+    indexDoc(aClient, null, doc);
 
-    doc = sdoc("id", "1", "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
+    doc = sdoc("id", "1", "_root_", "1", "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
 
-    indexDoc(aClient, params, doc);
+    indexDoc(aClient, null, doc);
 
     for(int idIndex = 0; idIndex < ids.length; ++idIndex) {
 
-      doc = sdoc("id", "2", "grandChildren", map("add", sdocs(sdoc("id", ids[idIndex], "level_s", "grand_child"))));
+      doc = sdoc("id", "2", "_root_", "1", "grandChildren", map("add", sdocs(sdoc("id", ids[idIndex], "level_s", "grand_child"))));
 
-      indexDocAndRandomlyCommit(getRandomSolrClient(), params, doc);
+      indexDocAndRandomlyCommit(getRandomSolrClient(), null, doc);
 
-      doc = sdoc("id", "3", "inplace_updatable_int", map("inc", "1"));
+      doc = sdoc("id", "3", "_root_", "1", "inplace_updatable_int", map("inc", "1"));
 
-      indexDocAndRandomlyCommit(getRandomSolrClient(), params, doc);
+      indexDocAndRandomlyCommit(getRandomSolrClient(), null, doc);
 
       // assert RTG request respects _route_ param
       QueryResponse routeRsp = getRandomSolrClient().query(params("qt","/get", "id","2", "_route_", "1"));
@@ -141,22 +139,20 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase { // used t
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
-    SolrInputDocument doc = sdoc("id", "1", "level_s", "root");
+    SolrInputDocument doc = sdoc("id", "1", "_root_", "1", "level_s", "root");
 
-    final SolrParams params = params("wt", "json", "_route_", "1");
-
-    int which = (params.get("_route_").hashCode() & 0x7fffffff) % clients.size();
+    int which = (doc.get("_root_").hashCode() & 0x7fffffff) % clients.size();
     SolrClient aClient = clients.get(which);
 
-    indexDocAndRandomlyCommit(aClient, params, doc);
+    indexDocAndRandomlyCommit(aClient, null, doc);
 
-    doc = sdoc("id", "1", "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
+    doc = sdoc("id", "1", "_root_", "1", "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
 
-    indexDocAndRandomlyCommit(aClient, params, doc);
+    indexDocAndRandomlyCommit(aClient, null, doc);
 
-    doc = sdoc("id", "2", "grandChildren", map("add", sdocs(sdoc("id", ids[0], "level_s", "grand_child"))));
+    doc = sdoc("id", "2", "_root_", "1", "grandChildren", map("add", sdocs(sdoc("id", ids[0], "level_s", "grand_child"))));
 
-    indexDocAndRandomlyCommit(aClient, params, doc);
+    indexDocAndRandomlyCommit(aClient, null, doc);
 
     int id1InPlaceCounter = 0;
     int id2InPlaceCounter = 0;
@@ -167,21 +163,21 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase { // used t
         id1InPlaceCounter++;
         indexDoc(
             getRandomSolrClient(),
-            params,
-            sdoc("id", "1", "inplace_updatable_int", map("inc", "1")));
+            null,
+            sdoc("id", "1", "_root_", "1", "inplace_updatable_int", map("inc", "1")));
       }
       if (random().nextBoolean()) {
         id2InPlaceCounter++;
         indexDoc(
             getRandomSolrClient(),
-            params,
-            sdoc("id", "2", "inplace_updatable_int", map("inc", "1")));
+            null,
+            sdoc("id", "2", "_root_", "1", "inplace_updatable_int", map("inc", "1")));
       }
-      if (random().nextBoolean()) {
+      if (random().nextBoolean()) { // TODO consider removing this now-useless block?
         id3InPlaceCounter++;
         indexDoc(
             getRandomSolrClient(),
-            params, // add root merely to show it doesn't interfere
+            null,
             sdoc("id", "3", "_root_", "1", "inplace_updatable_int", map("inc", "1")));
       }
       if (random().nextBoolean()) {
@@ -240,28 +236,30 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase { // used t
 
     SolrInputDocument doc = sdoc("id", rootId, "level_s", "root");
 
-    final SolrParams wrongRootParams = params("wt", "json", "_route_", "c");
-    final SolrParams rightParams = params("wt", "json", "_route_", rootId);
+    final SolrParams wrongRouteParams = params("_route_", "c");
+    final SolrParams rightParams = params("_route_", rootId);
 
     int which = (rootId.hashCode() & 0x7fffffff) % clients.size();
     SolrClient aClient = clients.get(which);
 
-    indexDocAndRandomlyCommit(aClient, params("wt", "json", "_route_", rootId), doc);
+    indexDocAndRandomlyCommit(aClient, null, doc);
 
     final SolrInputDocument childDoc = sdoc("id", rootId, "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
 
     indexDocAndRandomlyCommit(aClient, rightParams, childDoc);
 
-    final SolrInputDocument grandChildDoc = sdoc("id", "2", "grandChildren",
+    final SolrInputDocument grandChildDoc = sdoc("id", "2", "_root_", rootId,
+        "grandChildren",
         map("add", sdocs(
             sdoc("id", "3", "level_s", "grandChild")
             )
         )
     );
 
+    System.out.println("Here it comes...");
     SolrException e = expectThrows(SolrException.class,
         "wrong \"_route_\" param should throw an exception",
-        () -> indexDocAndRandomlyCommit(aClient, wrongRootParams, grandChildDoc)
+        () -> indexDocAndRandomlyCommit(aClient, wrongRouteParams, grandChildDoc)
     );
     assertTrue(e.toString(), e.getMessage().contains("Document not found for update"));
   }
@@ -275,6 +273,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase { // used t
   }
 
   private void indexDoc(SolrClient client, SolrParams params, SolrInputDocument sdoc) throws IOException, SolrServerException {
+    params = SolrParams.wrapDefaults(params, params("wt", "json"));
     final UpdateRequest updateRequest = new UpdateRequest();
     updateRequest.add(sdoc);
     updateRequest.setParams(new ModifiableSolrParams(params));
