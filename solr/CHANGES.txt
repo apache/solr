@@ -316,6 +316,8 @@ Build
 
 * SOLR-15670: Introduce Gradle parameter to skip ref-guide tasks (Houston Putman, Dawid Weiss)
 
+* SOLR-15984: Ensure all used dependencies are declared (Kevin Risden)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -628,6 +630,9 @@ Bug Fixes
 * SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
 
 * SOLR-15587: Don't use the UrlScheme singleton on the client-side to determine cluster's scheme, only get from ClusterState provider impl (Timothy Potter)
+
+* SOLR-14569: Configuring a shardHandlerFactory on the /select requestHandler results in HTTP 401 when searching on alias
+  in secured Solr. (Isabelle Giguere, Jason Gerlowski, Anshum Gupta, Mark Mark Miller)
 
 ==================  8.11.1 ==================
 

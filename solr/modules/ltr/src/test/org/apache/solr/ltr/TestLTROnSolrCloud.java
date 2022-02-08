@@ -19,7 +19,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
-import java.util.SortedMap;
 import java.util.stream.IntStream;
 
 import org.apache.commons.io.FileUtils;
@@ -38,7 +37,6 @@ import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.util.RestTestHarness;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.Test;
 
@@ -51,12 +49,10 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   String solrconfig = "solrconfig-ltr.xml";
   String schema = "schema.xml";
 
-  SortedMap<ServletHolder,String> extraServlets = null;
-
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    extraServlets = setupTestInit(solrconfig, schema, true);
+    setupTestInit(solrconfig, schema, true);
     System.setProperty("enable.update.log", "true");
 
     int numberOfShards = random().nextInt(4)+1;
@@ -65,8 +61,6 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     int numberOfNodes = numberOfShards * numberOfReplicas;
 
     setupSolrCluster(numberOfShards, numberOfReplicas, numberOfNodes);
-
-
   }
 
 
@@ -222,7 +216,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
   private void setupSolrCluster(int numShards, int numReplicas, int numServers) throws Exception {
     JettyConfig jc = buildJettyConfig("/solr");
-    jc = JettyConfig.builder(jc).withServlets(extraServlets).build();
+    jc = JettyConfig.builder(jc).build();
     solrCluster = new MiniSolrCloudCluster(numServers, tmpSolrHome.toPath(), jc);
     File configDir = tmpSolrHome.toPath().resolve("collection1/conf").toFile();
     solrCluster.uploadConfigSet(configDir.toPath(), "conf1");
