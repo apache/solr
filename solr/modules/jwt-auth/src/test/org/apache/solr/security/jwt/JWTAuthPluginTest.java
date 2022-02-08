@@ -39,8 +39,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.VerifiedUserRoles;
-import org.apache.solr.security.jwt.JWTAuthPlugin;
-import org.apache.solr.security.jwt.JWTIssuerConfig;
 import org.apache.solr.util.CryptoKeys;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
@@ -193,9 +191,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(authConf);
 
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
-    assertEquals(
-        JWT_VALIDATION_EXCEPTION,
-        resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
     assertTrue(resp.getJwtException().getMessage().contains("Connection refused"));
   }
 
@@ -244,9 +240,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(minimalConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertFalse(resp.isAuthenticated());
-    assertEquals(
-        JWT_VALIDATION_EXCEPTION,
-        resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
 
     testConfig.put("principalClaim", "sub"); // testConfig has subject = solruser
     plugin.init(testConfig);
@@ -260,9 +254,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertFalse(resp.isAuthenticated());
-    assertEquals(
-        JWT_VALIDATION_EXCEPTION,
-        resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
 
     testConfig.put("iss", "IDServer");
     plugin.init(testConfig);
@@ -276,9 +268,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertFalse(resp.isAuthenticated());
-    assertEquals(
-        JWT_VALIDATION_EXCEPTION,
-        resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
 
     testConfig.put("aud", "Solr");
     plugin.init(testConfig);
@@ -297,8 +287,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     resp = plugin.authenticate(testHeader);
     assertFalse(resp.isAuthenticated());
-    assertEquals(
-        PRINCIPAL_MISSING, resp.getAuthCode());
+    assertEquals(PRINCIPAL_MISSING, resp.getAuthCode());
   }
 
   @Test
@@ -318,15 +307,13 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     shouldMatch.put("claim9", "NA");
     plugin.init(testConfig);
     resp = plugin.authenticate(testHeader);
-    assertEquals(
-        CLAIM_MISMATCH, resp.getAuthCode());
+    assertEquals(CLAIM_MISMATCH, resp.getAuthCode());
 
     // Required claim does not match regex
     shouldMatch.clear();
     shouldMatch.put("claim1", "NA");
     resp = plugin.authenticate(testHeader);
-    assertEquals(
-        CLAIM_MISMATCH, resp.getAuthCode());
+    assertEquals(CLAIM_MISMATCH, resp.getAuthCode());
   }
 
   @Test
@@ -341,18 +328,14 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("requireExp", true);
     plugin.init(testConfig);
     resp = plugin.authenticate(slimHeader);
-    assertEquals(
-        JWT_VALIDATION_EXCEPTION,
-        resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
     testConfig.put("requireExp", false);
 
     // Missing issuer claim
     testConfig.put("requireIss", true);
     plugin.init(testConfig);
     resp = plugin.authenticate(slimHeader);
-    assertEquals(
-        JWT_VALIDATION_EXCEPTION,
-        resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
   }
 
   @Test
@@ -360,9 +343,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("algAllowlist", Arrays.asList("PS384", "PS512"));
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
-    assertEquals(
-        JWT_VALIDATION_EXCEPTION,
-        resp.getAuthCode());
+    assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
     assertTrue(resp.getErrorMessage().contains("not a permitted algorithm"));
   }
 
@@ -630,8 +611,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void extractCertificate() throws IOException {
-    Path pemFilePath =
-        JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
+    Path pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
     String cert = CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath));
     assertEquals(
         2, CryptoKeys.parseX509Certs(IOUtils.toInputStream(cert, StandardCharsets.UTF_8)).size());

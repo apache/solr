@@ -100,11 +100,9 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     // Setup an OAuth2 mock server with SSL
-    Path p12Cert =
-        JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_certs.p12");
+    Path p12Cert = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_certs.p12");
     pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
-    wrongPemFilePath =
-        JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
+    wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
 
     mockOAuth2Server = createMockOAuthServer(p12Cert, "secret");
     mockOAuth2Server.start();
@@ -302,8 +300,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
             .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
             .build();
     String securityJson = createMockOAuthSecurityJson(pemFilePath);
-    myCluster
-        .zkSetData("/security.json", securityJson.getBytes(Charset.defaultCharset()), true);
+    myCluster.zkSetData("/security.json", securityJson.getBytes(Charset.defaultCharset()), true);
     RTimer timer = new RTimer();
     do { // Wait timeoutMs time for the security.json change to take effect
       Thread.sleep(200);

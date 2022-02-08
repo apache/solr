@@ -18,7 +18,6 @@
 package org.apache.solr.security.jwt;
 
 import static java.util.Arrays.asList;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
