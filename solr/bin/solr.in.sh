@@ -126,7 +126,7 @@
 #SOLR_LOGS_DIR=logs
 
 # Enables jetty request log for all requests
-#SOLR_REQUESTLOG_ENABLED=false
+#SOLR_REQUESTLOG_ENABLED=true
 
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT=8983
@@ -259,6 +259,13 @@
 #SOLR_HEAP_DUMP=true
 #SOLR_HEAP_DUMP_DIR=/var/log/dumps
 
+# Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
+# To restore the old behaviour, set the variable below to true
+#SOLR_SOLRXML_REQUIRED=false
+
 # Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
 # then enable the following setting to address CVE-2021-44228
 # SOLR_OPTS="$SOLR_OPTS -Dlog4j2.formatMsgNoLookups=true"
+
+# The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
+# SOLR_MODULES=extraction,ltr

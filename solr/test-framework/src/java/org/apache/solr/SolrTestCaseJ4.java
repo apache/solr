@@ -105,7 +105,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -169,6 +168,7 @@ import org.apache.commons.io.IOUtils;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
+import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
@@ -314,10 +314,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     if(isSSLMode()) {
       // SolrCloud tests should usually clear this
-      System.setProperty(URL_SCHEME, UrlScheme.HTTPS);
-      UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTPS);
-    } else {
-      UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
+      System.setProperty(URL_SCHEME, HTTPS);
     }
 
     resetGlobalTracer();
@@ -380,7 +377,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("enable.update.log");
       System.clearProperty("useCompoundFile");
       System.clearProperty(URL_SCHEME);
-      UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
       System.clearProperty(ZK_WHITELIST_PROPERTY);
@@ -2129,6 +2125,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public static Path TEST_PATH() { return getFile("solr/collection1").getParentFile().toPath(); }
+
+  public static Path TEST_COLL1_CONF() { return TEST_PATH().resolve("collection1").resolve("conf"); }
 
   public static Path configset(String name) {
     return TEST_PATH().resolve("configsets").resolve(name).resolve("conf");

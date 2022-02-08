@@ -61,6 +61,16 @@ In Solr 8, it's possible to add docValues to a schema without re-indexing via `U
 Due to changes in Lucene 9, that isn't possible any more; the component was removed.
 If re-indexing is too onerous, use this mechanism in Solr 8.
 
+=== Solr Binary Release `dist/` Directory
+
+The `dist/` directory in the Solr binary release has been removed as of Solr 9.0.
+
+* The `solr-core` and `solr-solrj` jars can be found under `server/solr-webapp/webapp/WEB-INF/lib/`.
+* The Solr module jars can be found in `modules/<module-name>/lib`, packaged individually for each module.
+* The `solrj-deps` (SolrJ Dependencies) are no longer separated out from the other Server jars.
+Please refer to the SolrJ Maven artifact to see the exact dependencies you need to include from `server/solr-webapp/webapp/WEB-INF/lib/` and `server/lib/ext/` if you are loading in SolrJ manually.
+If you plan on using SolrJ as a JDBC driver, please refer to the <<sql-query.adoc#generic-clients,JDBC documentation>>.
+
 == Solr 9.0 Raw Notes
 
 _(raw; not yet edited)_
@@ -83,6 +93,22 @@ All the usages are replaced by BaseHttpSolrClient.RemoteSolrException and BaseHt
 * SOLR-15809: Get rid of blacklist/whitelist terminology. JWTAuthPlugin parameter `algWhitelist` is now `algAllowlist`. The old parameter will still
   work in 9.x. Environment variables `SOLR_IP_WHITELIST` and `SOLR_IP_BLACKLIST` are no longer supported, but replaced with `SOLR_IP_ALLOWLIST` and `SOLR_IP_DENYLIST`.
 
+* SOLR-11623: Every request handler in Solr now implements PermissionNameProvider. Any custom or 3rd party request handler must also do this
+
+* SOLR-14142: Jetty low level request-logging in NCSA format is now enabled by default, with a retention of 3 days worth of logs.
+  This may require some more disk space for logs than was the case in 8.x. See Reference Guide chapter "Configuring Logging" for how to change this.
+
+* SOLR-15944: The Tagger's JSON response format now always uses an object/map to represent each tag instead of an array.
+
+* SOLR-15842: Async responses for backups now correctly aggregate and return information.
+In previous versions there was a field returned in async backup status responses, `Response`. This has now been renamed to `msg`, to better fit other collections API responses.
+The `response` field is now a map, containing information about the backup (`startTime`, `indexSizeMB`, `indexFileCount`, etc.).
+
+* SOLR-15884: In Backup request responses, the `response` key now uses a map to return information instead of a list.
+This is only applicable for users returning information in JSON format, which is the default behavior.
+
+* SOLR-14660: HDFS storage support has been moved to a module. Existing Solr configurations do not need any HDFS-related
+changes, however the module needs to be installed - see <<solr-on-hdfs.adoc#,Running Solr on HDFS>>.
 
 == New Features & Enhancements
 
@@ -129,11 +155,25 @@ Currently this change should only effect compatibility of custom code overriding
 * SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the `numFound` value (exact vs approximation).
 Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
 
+* SOLR-15259: hl.fragAlignRatio now defaults to 0.33 to be faster and maybe looks nicer.
+
+* SOLR-9376: The response format for field values serialized as raw XML (via the `[xml]` raw value DocTransformer
+and `wt=xml`) has changed. Previously, values were dropped in directly as top-level child elements of each `<doc>`,
+obscuring associated field names and yielding inconsistent `<doc>` structure. As of version 9.0, raw values are
+wrapped in a `<raw name="field_name">[...]</raw>` element at the top level of each `<doc>` (or within an enclosing
+`<arr name="field_name"><raw>[...]</raw></arr>` element for multi-valued fields). Existing clients that parse field
+values serialized in this way will need to be updated accordingly.
+
+* SOLR-9575: Solr no longer requires a `solr.xml` in `$SOLR_HOME`. If one is not found, Solr will instead use the default one from `$SOLR_TIP/server/solr/solr.xml`. You can revert to the pre-9.0 behaviour by setting environment variable `SOLR_SOLRXML_REQUIRED=true` or system property `-Dsolr.solrxml.required=true`. Solr also does not require a `zoo.cfg` in `$SOLR_HOME` if started with embedded zookeeper.
+
+* SOLR-12901: Highlighting: hl.method=unified is the new default.  Use hl.method=original
+  to switch back if needed.
+
 === solr.xml maxBooleanClauses now enforced recursively
 
 Lucene 9.0 has additional safety checks over previous versions that impact how the `solr.xml` global `<<configuring-solr-xml#global-maxbooleanclauses,maxBooleanClauses>>` option is enforced.
 
-In previous versios of Solr, this option was a hard limit on the number of clauses in any `BooleanQuery` object - but it was only enforced for the _direct_ clauses.
+In previous versions of Solr, this option was a hard limit on the number of clauses in any `BooleanQuery` object - but it was only enforced for the _direct_ clauses.
 Starting with Solr 9, this global limit is now also enforced against the total number of clauses in a _nested_ query structure.
 
 Users who upgrade from prior versions of Solr may find that some requests involving complex internal query structures (Example: long query strings using `edismax` with many `qf` and `pf` fields that include query time synonym expansion) which worked in the past now hit this limit and fail.
@@ -188,17 +228,32 @@ Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOS
 This embedded zookeeper should not be used in production.
 If you rely upon the previous behavior, then you can change the clientPortAddress in solr/server/solr/zoo.cfg
 
-=== Contrib Changes
+=== Module Changes
 
-* SOLR-14067: `StatelessScriptUpdateProcessorFactory` moved to `contrib/scripting` package instead of shipping as part of Solr, due to security concerns.
+* **SOLR-15917: "Contrib modules" have been renamed to "Modules", and have been moved from the `contrib/` to `modules/`.**
+Use of these modules remains the same, except for the changes listed below.
+
+* SOLR-15916: `dist/` is no longer provided in the binary release.
+All module jars are now provided under `modules/<name>/lib`, including the module jar and all dependency jars.
+Please update your `<lib>` entries in your `solrconfig.xml` to use this new location.
+More information can be found in the <<libs.adoc#lib-directives-in-solrconfig,Libs documentation>>.
+
+* SOLR-14067: `StatelessScriptUpdateProcessorFactory` moved to `modules/scripting` package instead of shipping as part of Solr, due to security concerns.
 Renamed to ScriptUpdateProcessorFactory for simpler name.
 
-* SOLR-15121: `XSLTResponseWriter` moved to `contrib/scripting` package instead
+* SOLR-15121: `XSLTResponseWriter` moved to `modules/scripting` package instead
 of shipping as part of Solr, due to security concerns.
 
-* SOLR-14926: `contrib/clustering` back and rewritten
+* SOLR-14926: `modules/clustering` back and rewritten
 
-* SOLR-14912: Cleaned up solr-extraction contrib to produce solr-extraction-* jar (instead of solr-cell-*). (Dawid Weiss)
+* SOLR-14912: Cleaned up solr-extraction module to produce solr-extraction-* jar (instead of solr-cell-*). (Dawid Weiss)
+
+* SOLR-15924: Extra lucene libraries used in modules are no longer packaged in `lucene-libs/` under module directories in the binary release.
+Instead, these libraries will be included with all other module dependencies in `lib/`.
+
+* SOLR-15954: The prometheus-exporter is no longer packaged as a Solr module. It can be found under `solr/prometheus-exporter/`.
+
+* SOLR-15914: Solr modules (formerly known as contribs) can now easily be enabled by an environment variable (e.g. in `solr.in.sh` or `solr.in.cmd`) or as a system property (e.g. in `SOLR_OPTS`). Example: `SOLR_MODULES=extraction,ltr`.
 
 == Deprecations & Removed Features
 
@@ -226,8 +281,6 @@ Users have to modify their existing configurations to use CaffeineCache instead.
 
 * CDCR
 
-* Storing indexes and backups in HDFS
-
 * Solr's blob store
 ** SOLR-14654: plugins cannot be loaded using "runtimeLib=true" option. Use the package manager to use and load plugins
 
@@ -249,3 +302,8 @@ Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Kh
 Example has been provided in `sample_techproducts_configs` to override content-type.
 
 * `min_rf` deprecated in 7.x
+
+* hl.method=postings highlighter, deprecated in 7.0
+
+* SOLR-15124: Removed three core level admin API endpoints because they are already registered at the node level
+where they really belong: /admin/threads, /admin/properties, /admin/logging

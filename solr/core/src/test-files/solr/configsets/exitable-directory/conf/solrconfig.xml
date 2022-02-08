@@ -18,7 +18,6 @@
 -->
 
 <config>
-  <jmx />
   <metrics/>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
@@ -33,9 +32,9 @@
   </directoryFactory>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
-  <indexReaderFactory name="IndexReaderFactory" 
+  <indexReaderFactory name="IndexReaderFactory"
        class="org.apache.solr.cloud.TrollingIndexReaderFactory"></indexReaderFactory >
-    
+
   <dataDir>${solr.data.dir:}</dataDir>
 
   <!-- an update processor the explicitly excludes distrib to test
@@ -69,18 +68,17 @@
                    initialSize="0"
                    autowarmCount="0"/>
          <fieldValueCache
-                size="0"
-                autowarmCount="0"
-                showItems="0" />         
+                 size="0"
+                 autowarmCount="0"/>
   </query>
-  
+
   <searchComponent name="delayingSearchComponent"
                    class="org.apache.solr.search.DelayingSearchComponent"/>
 
   <requestHandler name="/select" class="solr.SearchHandler">
     <arr name="first-components">
       <str>delayingSearchComponent</str>
-    </arr> 
+    </arr>
   </requestHandler>
 
 </config>

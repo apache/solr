@@ -401,9 +401,7 @@ An example configuration using this property can be found below.
 
 === HdfsBackupRepository
 
-Stores and retrieves backup files from HDFS directories.
-
-WARNING: HdfsBackupRepository is deprecated and may be removed or relocated in a subsequent version of Solr.
+Stores and retrieves backup files from HDFS directories. This plugin must first be <<solr-plugins.adoc#installing-plugins,installed>> before using.
 
 HdfsBackupRepository accepts the following configuration options:
 
@@ -485,7 +483,8 @@ If both values are absent, the value `solrBackupsBucket` will be used as a defau
 +
 A path on the local filesystem (accessible by Solr) to a https://cloud.google.com/iam/docs/creating-managing-service-account-keys[Google Cloud service account key] file.
 If not specified, GCSBackupRepository will use the value of the `GCS_CREDENTIAL_PATH` environment variable.
-If both values are absent, an error will be thrown as GCS requires credentials for most usage.
+If both values are absent and Solr is running inside GCP, the GCS client will attempt to authenticate using GCP's "Compute Engine Metadata Serve"r or https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity[Workload Identity] features.
+If both values are absent and Solr is running outside of GCP, it will be unable to authenticate and any backup or restore operations will fail.
 
 `location`::
 +

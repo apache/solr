@@ -193,8 +193,8 @@ The default behavior is not to indent.
 The XSLT Response Writer applies an XML stylesheet to output.
 It can be used for tasks such as formatting results for an RSS feed.
 
-This response writer is part of the <<script-update-processor.adoc#,scripting contrib>>.
-Since it is a contrib, it requires configuration before it can be used.
+This response writer is part of the <<script-update-processor.adoc#,scripting module>>.
+Since it is a module, it requires configuration before it can be used.
 
 The XSLT Response Writer accepts one parameter:
 
@@ -404,15 +404,14 @@ The Smile format is a JSON-compatible binary format, described in detail here: h
 Use this to get the response as a spreadsheet in the .xlsx (Microsoft Excel) format.
 It accepts parameters in the form `colwidth.<field-name>` and `colname.<field-name>` which helps you customize the column widths and column names.
 
-This response writer has been added as part of the extraction library, and will only work if the extraction contrib is present in the server classpath.
+This response writer has been added as part of the extraction library, and will only work if the extraction module is present in the server classpath.
 Defining the classpath with the `lib` directive is not sufficient.
 Instead, you will need to copy the necessary .jars to the Solr webapp's `lib` directory manually.
 You can run these commands from your `$SOLR_INSTALL` directory:
 
 [source,bash]
 ----
-cp contrib/extraction/lib/*.jar server/solr-webapp/webapp/WEB-INF/lib/
-cp dist/solr-extraction-*.jar server/solr-webapp/webapp/WEB-INF/lib/
+cp modules/extraction/lib/*.jar server/solr-webapp/webapp/WEB-INF/lib/
 ----
 
 Once the libraries are in place, you can add `wt=xlsx` to your request, and results will be returned as an XLSX sheet.

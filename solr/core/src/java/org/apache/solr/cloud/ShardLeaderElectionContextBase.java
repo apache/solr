@@ -165,10 +165,12 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       }
     }
     if (!isAlreadyLeader) {
+      String nodeName = leaderProps.getStr(ZkStateReader.NODE_NAME_PROP);
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
           ZkStateReader.SHARD_ID_PROP, shardId,
           ZkStateReader.COLLECTION_PROP, collection,
-          ZkStateReader.NODE_NAME_PROP, leaderProps.getStr(ZkStateReader.NODE_NAME_PROP),
+          ZkStateReader.NODE_NAME_PROP, nodeName,
+          ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(nodeName),
           ZkStateReader.CORE_NAME_PROP, leaderProps.getStr(ZkStateReader.CORE_NAME_PROP),
           ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
       assert zkController != null;

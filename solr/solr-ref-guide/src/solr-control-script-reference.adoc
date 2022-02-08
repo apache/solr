@@ -90,7 +90,7 @@ For more details, see the section <<SolrCloud Mode>> below.
 |Optional |Default: `server/`
 |===
 +
-Define a server directory, defaults to `server` (as in, `$SOLR_HOME/server`).
+Define a server directory, defaults to `server` (as in, `$SOLR_TIP/server`).
 It is uncommon to override this option.
 When running multiple instances of Solr on the same host, it is more common to use the same server directory for each instance and use a unique Solr home directory using the `-s` option.
 +
@@ -189,8 +189,6 @@ If this is not specified, `8983` will be used.
 Sets the `solr.solr.home` system property.
 Solr will create core directories under this directory.
 This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the `-d` parameter.
-+
-If set, the specified directory should contain a `solr.xml` file, unless `solr.xml` exists in ZooKeeper.
 +
 This parameter is ignored when running examples (`-e`), as the `solr.solr.home` depends on which example is run.
 +
@@ -317,23 +315,23 @@ The following examples are provided:
 * *cloud*: This example starts a 1-4 node SolrCloud cluster on a single machine.
 When chosen, an interactive session will start to guide you through options to select the initial configset to use, the number of nodes for your example cluster, the ports to use, and name of the collection to be created.
 +
-When using this example, you can choose from any of the available configsets found in `$SOLR_HOME/server/solr/configsets`.
+When using this example, you can choose from any of the available configsets found in `$SOLR_TIP/server/solr/configsets`.
 
 * *techproducts*: This example starts a single-node Solr instance with a schema designed for the sample documents included in the `$SOLR_HOME/example/exampledocs` directory.
 +
-The configset used can be found in `$SOLR_HOME/server/solr/configsets/sample_techproducts_configs`.
+The configset used can be found in `$SOLR_TIP/server/solr/configsets/sample_techproducts_configs`.
 +
 The data used can be found in `$SOLR_HOME/example/exampledocs/`.
 
 * *schemaless*: This example starts a single-node Solr instance using a managed schema, as described in the section <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>>, and provides a very minimal pre-defined schema.
 Solr will run in <<schemaless-mode.adoc#,Schemaless Mode>> with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.
 +
-The configset used can be found in `$SOLR_HOME/server/solr/configsets/_default`.
+The configset used can be found in `$SOLR_TIP/server/solr/configsets/_default`.
 
 * *films*: This example starts a single-node Solr instance using a managed schema, as described in the section <<schema-factory.adoc#,Schema Factory Definition in SolrConfig>>, and then uses the Schema API to create some custom fields.
 Solr will run in <<schemaless-mode.adoc#,Schemaless Mode>> with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents as well.  It then loads some sample film data.
 +
-The configset used can be found in `$SOLR_HOME/server/solr/configsets/_default`.
+The configset used can be found in `$SOLR_TIP/server/solr/configsets/_default`.
 +
 The film data used can be found in `$SOLR_HOME/example/films/films.json`.
 
@@ -655,7 +653,7 @@ The main decision you need to make is whether a configuration directory in ZooKe
 
 Let's work through a few examples to illustrate how configuration directories work in SolrCloud.
 
-First, if you don't provide the `-d` or `-n` options, then the default configuration (`$SOLR_HOME/server/solr/configsets/_default/conf`) is uploaded to ZooKeeper using the same name as the collection.
+First, if you don't provide the `-d` or `-n` options, then the default configuration (`$SOLR_TIP/server/solr/configsets/_default/conf`) is uploaded to ZooKeeper using the same name as the collection.
 
 For example, the following command will result in the `_default` configuration being uploaded to `/configs/contacts` in ZooKeeper: `bin/solr create -c contacts`.
 
@@ -786,7 +784,7 @@ The `security.json` file will look similar to:
 ----
 # The following lines added by ./solr for enabling BasicAuth
 SOLR_AUTH_TYPE="basic"
-SOLR_AUTHENTICATION_OPTS="-Dsolr.httpclient.config=/path/to/solr-{solr-docs-version}.0/server/solr/basicAuth.conf"
+SOLR_AUTHENTICATION_OPTS="-Dsolr.httpclient.config=/path/to/solr-{solr-full-version}/server/solr/basicAuth.conf"
 ----
 * Creates the file `server/solr/basicAuth.conf` to store the credential information that is used with `bin/solr` commands.
 
@@ -849,10 +847,10 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `$SOLR_HOME/server`
+|Optional |Default: `$SOLR_TIP/server`
 |===
 +
-Defines the Solr server directory, by default `$SOLR_HOME/server`.
+Defines the Solr server directory, by default `$SOLR_TIP/server`.
 It is not common to need to override the default, and is only needed if you have customized the `$SOLR_HOME` directory path.
 
 `-s`::
@@ -1021,7 +1019,7 @@ s|Required |Default: none
 The path of the configuration set to upload.
 It should have a `conf` directory immediately below it that in turn contains `solrconfig.xml` etc.
 +
-If just a name is supplied, `$SOLR_HOME/server/solr/configsets` will be checked for this name.
+If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be checked for this name.
 An absolute path may be supplied instead.
 +
 *Examples*:
@@ -1082,7 +1080,7 @@ s|Required |Default: none
 |===
 +
 The path to write the downloaded configuration set into.
-If just a name is supplied, `$SOLR_HOME/server/solr/configsets` will be the parent.
+If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be the parent.
 An absolute path may be supplied as well.
 +
 In either case, _pre-existing configurations at the destination will be overwritten_!

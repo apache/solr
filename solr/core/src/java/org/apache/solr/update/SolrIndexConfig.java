@@ -162,7 +162,7 @@ public class SolrIndexConfig implements MapSerializable {
         get("maxMergeDocs").isNull(),
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <mergeFactor> is no longer supported, configure it on the relevant <mergePolicyFactory> instead.",
-        get("maxMergeFactor").isNull(),
+        get("mergeFactor").isNull(),
         true);
 
     if (get("termIndexInterval").exists()) {
