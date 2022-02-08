@@ -20,24 +20,22 @@ package org.apache.solr.security;
 import java.security.Principal;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.http.util.Args;
 
-/**
- * Principal object that carries JWT token and claims for authenticated user.
- */
+/** Principal object that carries JWT token and claims for authenticated user. */
 public class JWTPrincipal implements Principal {
   final String username;
   String token;
-  Map<String,Object> claims;
+  Map<String, Object> claims;
 
   /**
    * User principal with user name as well as one or more roles that he/she belong to
+   *
    * @param username string with user name for user
    * @param token compact string representation of JWT token
    * @param claims list of verified JWT claims as a map
    */
-  public JWTPrincipal(final String username, String token, Map<String,Object> claims) {
+  public JWTPrincipal(final String username, String token, Map<String, Object> claims) {
     super();
     Args.notNull(username, "User name");
     Args.notNull(token, "JWT token");
@@ -65,9 +63,9 @@ public class JWTPrincipal implements Principal {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     JWTPrincipal that = (JWTPrincipal) o;
-    return Objects.equals(username, that.username) &&
-        Objects.equals(token, that.token) &&
-        Objects.equals(claims, that.claims);
+    return Objects.equals(username, that.username)
+        && Objects.equals(token, that.token)
+        && Objects.equals(claims, that.claims);
   }
 
   @Override
@@ -77,10 +75,15 @@ public class JWTPrincipal implements Principal {
 
   @Override
   public String toString() {
-    return "JWTPrincipal{" +
-        "username='" + username + '\'' +
-        ", token='" + "*****" + '\'' +
-        ", claims=" + claims +
-        '}';
+    return "JWTPrincipal{"
+        + "username='"
+        + username
+        + '\''
+        + ", token='"
+        + "*****"
+        + '\''
+        + ", claims="
+        + claims
+        + '}';
   }
 }
