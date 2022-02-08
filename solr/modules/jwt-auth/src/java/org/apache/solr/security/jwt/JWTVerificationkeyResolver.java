@@ -154,25 +154,20 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
         theChosenOne = verificationJwkSelector.select(jws, jsonWebKeys);
       }
     } catch (JoseException | IOException | InvalidJwtException | MalformedClaimException e) {
-      StringBuilder sb = new StringBuilder();
-      sb.append("Unable to find a suitable verification key for JWS w/ header ")
-          .append(jws.getHeaders().getFullHeaderAsJsonString());
-      sb.append(" due to an unexpected exception (")
-          .append(e)
-          .append(") while obtaining or using keys from source ");
-      sb.append(keysSource);
-      throw new UnresolvableKeyException(sb.toString(), e);
+      String msg =
+          String.format(
+              "Unable to find a suitable verification key for JWS w/ header %s due to an unexpected exception (%s) "
+                  + "while obtaining or using keys from source %s",
+              jws.getHeaders().getFullHeaderAsJsonString(), e, keysSource);
+      throw new UnresolvableKeyException(msg, e);
     }
 
     if (theChosenOne == null) {
-      StringBuilder sb = new StringBuilder();
-      sb.append("Unable to find a suitable verification key for JWS w/ header ")
-          .append(jws.getHeaders().getFullHeaderAsJsonString());
-      sb.append(" from ")
-          .append(jsonWebKeys.size())
-          .append(" keys from source ")
-          .append(keysSource);
-      throw new UnresolvableKeyException(sb.toString());
+      String msg =
+          String.format(
+              "Unable to find a suitable verification key for JWS w/ header %s from %d keys from source %s",
+              jws.getHeaders().getFullHeaderAsJsonString(), jsonWebKeys.size(), keysSource);
+      throw new UnresolvableKeyException(msg);
     }
 
     return theChosenOne.getKey();

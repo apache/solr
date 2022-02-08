@@ -75,15 +75,6 @@ public class JWTPrincipal implements Principal {
 
   @Override
   public String toString() {
-    return "JWTPrincipal{"
-        + "username='"
-        + username
-        + '\''
-        + ", token='"
-        + "*****"
-        + '\''
-        + ", claims="
-        + claims
-        + '}';
+    return String.format("JWTPrincipal{username='%s', token='*****', claims=%s}", username, claims);
   }
 }

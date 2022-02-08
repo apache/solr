@@ -59,17 +59,8 @@ public class JWTPrincipalWithUserRoles extends JWTPrincipal implements VerifiedU
 
   @Override
   public String toString() {
-    return "JWTPrincipalWithUserRoles{"
-        + "username='"
-        + username
-        + '\''
-        + ", token='"
-        + "*****"
-        + '\''
-        + ", claims="
-        + claims
-        + ", roles="
-        + roles
-        + '}';
+    return String.format(
+        "JWTPrincipalWithUserRoles{username='%s', token='*****', claims=%s, roles=%s}",
+        username, claims, roles);
   }
 }
