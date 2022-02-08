@@ -123,11 +123,12 @@ task buildLocalAntoraPlaybookYaml(type: Copy) {
 
     def props = [
         'site_url'           : "",
+        'redirect_facility'  : "static",
         'source_url'         : project.rootDir,
         'source_branches'    : "HEAD",
         'start_path'         : project.rootDir.relativePath(file(project.ext.siteStagingDir)),
         'supplemental_files' : "${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension/supplemental_ui",
-        'site_dir'           : file(project.ext.siteStagingDir).relativePath(file(project.ext.siteDir)),
+        'site_dir'           : "./" + file(project.ext.siteStagingDir).relativePath(file(project.ext.siteDir)),
     ]
 
     expand(props)
@@ -147,11 +148,12 @@ task buildOfficialAntoraPlaybookYaml(type: Copy) {
 
     def props = [
         'site_url'           : "https://solr.apache.org/guide",
+        'redirect_facility'  : "httpd",
         'source_url'         : "https://github.com/apache/solr.git",
         'source_branches'    : ["jira/solr-15556-antora"],
         'start_path'         : 'solr/solr-ref-guide',
         'supplemental_files' : "${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension/supplemental_ui",
-        'site_dir'           : projectDir.relativePath(file(project.ext.siteDir)),
+        'site_dir'           : "./" + file(project.ext.playbooksDir).relativePath(file(project.ext.siteDir)),
     ]
 
     expand(props)

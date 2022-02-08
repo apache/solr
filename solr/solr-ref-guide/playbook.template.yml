@@ -7,10 +7,10 @@ urls:
 # This does not work unless the redirect_facility below is set to
 # something other than the default 'static'
   latest_version_segment_strategy: redirect:from
-# This will create a .htaccess file with all redirects, including 'latest'
-# Default is 'static' which produces index.html at the root
+# If this is set to 'httpd', antora will create a .htaccess file with all redirects, including 'latest'.
+# Default is 'static' which produces index.html at the root.
 # See https://docs.antora.org/antora/latest/playbook/urls-redirect-facility/
-  redirect_facility: httpd
+  redirect_facility: ${redirect_facility}
 content:
   # The URL for "Edit this page" links will always go to 'main' in Github
   edit_url: '{web_url}/tree/main/{path}'
