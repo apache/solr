@@ -65,7 +65,8 @@ RUN set -ex; \
   chmod 0664 /etc/default/solr.in.sh; \
   mkdir -p -m0770 /var/solr; \
   chown -R "$SOLR_USER:0" /var/solr; \
-  ln -s /opt/solr/modules /opt/solr/contrib;
+  ln -s /opt/solr/modules /opt/solr/contrib; \
+  ln -s /opt/solr/prometheus-exporter /opt/solr/modules/prometheus-exporter;
 
 VOLUME /var/solr
 EXPOSE 8983
