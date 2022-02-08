@@ -107,12 +107,12 @@ def main():
     if conf.htaccess:
         print("# Existing pages moved to sub path")
         for key in regex_new:
-            print("RedirectMatch ^/guide/(%s)\.html /guide/solr/latest/%s/$1.html" % ("|".join(regex_new[key]), key))
+            print("RedirectMatch 301 ^/guide/(%s)\.html /guide/solr/latest/%s/$1.html" % ("|".join(regex_new[key]), key))
         print("# Page renames in 9.0")
         for key in result:
             print("RewriteRule ^/guide/%s /guide/solr/latest/%s [R=301,NE,L]" % (key, result[key]))
         print("# Removed pages redirected to latest 8.x guide")
-        print("RedirectMatch ^/guide/(%s)\.html /guide/8_11/$1.html" % "|".join(old_guide))
+        print("RedirectMatch 301 ^/guide/(%s)\.html /guide/8_11/$1.html" % "|".join(old_guide))
         print("# Paths we could not map")
         for key in failed:
             print("# %s: %s" % (key, failed[key]))
