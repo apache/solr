@@ -144,7 +144,7 @@ for information on contributing.
 
 - [Mailing Lists](https://solr.apache.org/community.html#mailing-lists-chat)
 - [Issue Tracker (JIRA)](https://issues.apache.org/jira/browse/SOLR)
-- IRC: `#solr` and `#solr-dev` on freenode.net  FIXME
+- IRC: `#solr` and `#solr-dev` on freenode.net
 - [Slack](https://solr.apache.org/community.html#slack)
 
 # Export control
