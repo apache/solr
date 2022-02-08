@@ -118,15 +118,6 @@ configure(project(":solr:modules:analysis-extras")) {
   }
 }
 
-configure(project(":solr:modules:jwt-auth")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.solr.security"
-    ]
-  }
-}
-
 configure(project(":solr:modules:analytics")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages
