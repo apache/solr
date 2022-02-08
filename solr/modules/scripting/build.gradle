@@ -27,7 +27,7 @@ dependencies {
 
   implementation 'org.slf4j:slf4j-api'
   implementation 'commons-io:commons-io'
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation 'com.google.guava:guava'
 
   testImplementation project(':solr:test-framework')
   testImplementation 'org.apache.lucene:lucene-test-framework'
