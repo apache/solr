@@ -22,4 +22,4 @@ for more information.
 
 User interface
 --------------
-A User interface for this contrib is part of Solr Core.
+A User interface for this module is part of Solr Core.
