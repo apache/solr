@@ -38,6 +38,7 @@ import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
@@ -85,7 +86,8 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
                 keysToReturnFromSecondJwk = refreshSequenceForSecondJwk.next();
               return keysToReturnFromSecondJwk;
             });
-    when(httpsJwksFactory.createList(anyList())).thenReturn(asList(firstJwkList, secondJwkList));
+    when(httpsJwksFactory.createList(ArgumentMatchers.anyList()))
+        .thenReturn(asList(firstJwkList, secondJwkList));
 
     JWTIssuerConfig issuerConfig =
         new JWTIssuerConfig("primary").setIss("foo").setJwksUrl(asList("url1", "url2"));

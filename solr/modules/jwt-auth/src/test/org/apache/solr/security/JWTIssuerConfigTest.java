@@ -17,7 +17,7 @@
 
 package org.apache.solr.security;
 
-import static org.apache.solr.SolrTestCaseJ4.TEST_PATH;
+import static org.apache.solr.security.JWTAuthPluginTest.JWT_TEST_PATH;
 import static org.apache.solr.security.JWTAuthPluginTest.testJwk;
 
 import java.io.IOException;
@@ -157,7 +157,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
 
   @Test
   public void wellKnownConfigFromInputstream() throws IOException {
-    Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
+    Path configJson = JWT_TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
     JWTIssuerConfig.WellKnownDiscoveryConfig config =
         JWTIssuerConfig.WellKnownDiscoveryConfig.parse(Files.newInputStream(configJson));
     assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());
@@ -165,7 +165,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
 
   @Test
   public void wellKnownConfigFromString() throws IOException {
-    Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
+    Path configJson = JWT_TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
     String configString = StringUtils.join(Files.readAllLines(configJson), "\n");
     JWTIssuerConfig.WellKnownDiscoveryConfig config =
         JWTIssuerConfig.WellKnownDiscoveryConfig.parse(configString, StandardCharsets.UTF_8);

@@ -16,7 +16,34 @@
  */
 package org.apache.solr.security;
 
-import com.google.common.collect.ImmutableSet;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.Principal;
+import java.security.cert.X509Certificate;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import javax.servlet.FilterChain;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -103,7 +130,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   private static final String PARAM_ALG_WHITELIST = "algWhitelist";
 
   private static final Set<String> PROPS =
-      ImmutableSet.of(
+      Set.of(
           PARAM_BLOCK_UNKNOWN,
           PARAM_PRINCIPAL_CLAIM,
           PARAM_REQUIRE_EXPIRATIONTIME,
@@ -691,7 +718,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     jwtConsumer = null;
   }
 
@@ -779,7 +806,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   }
 
   /** Response for authentication attempt */
-  static class JWTAuthenticationResponse {
+  protected static class JWTAuthenticationResponse {
     private final Principal principal;
     private String errorMessage;
     private final AuthCode authCode;

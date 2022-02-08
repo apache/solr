@@ -21,7 +21,6 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -48,7 +47,6 @@ import org.slf4j.LoggerFactory;
 
 /** Holds information about an IdP (issuer), such as issuer ID, JWK url(s), keys etc */
 public class JWTIssuerConfig {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final String PARAM_ISS_NAME = "name";
   static final String PARAM_JWKS_URL = "jwksUrl";
   static final String PARAM_JWK = "jwk";
@@ -378,8 +376,7 @@ public class JWTIssuerConfig {
     return this.trustedCerts;
   }
 
-  /** */
-  static class HttpsJwksFactory {
+  public static class HttpsJwksFactory {
     private final long jwkCacheDuration;
     private final long refreshReprieveThreshold;
     private Collection<X509Certificate> trustedCerts;
@@ -398,7 +395,7 @@ public class JWTIssuerConfig {
       this.trustedCerts = trustedCerts;
     }
 
-    /**
+    /*
      * While the class name is HttpsJwks, it actually works with plain http formatted url as well.
      *
      * @param url the Url to connect to for JWK details.
@@ -433,8 +430,9 @@ public class JWTIssuerConfig {
   }
 
   /**
-   * Config object for a OpenId Connect well-known config Typically exposed through
-   * /.well-known/openid-configuration endpoint
+   * Config object for a OpenId Connect well-known config.
+   *
+   * <p>Typically exposed through <code>/.well-known/openid-configuration endpoint</code>
    */
   public static class WellKnownDiscoveryConfig {
     private final Map<String, Object> securityConf;
