@@ -20,17 +20,17 @@ apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
 
-configurations.all {
-  exclude group: 'log4j', module: 'log4j'
-  exclude group: 'commons-logging', module: 'commons-logging'
-  exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-  exclude group: 'org.apache.yetus', module: 'audience-annotations'
-  exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
-  exclude group: "com.google.code.findbugs", module: "jsr305"
-  // be conservative on what's added here.  Affects *all* configs, including internal ones.
-}
-
 dependencies {
+  // Spotbugs Annotations are only needed for old findbugs
+  // annotation usage like in Zookeeper during compilation time.
+  // It is not included in the release so exclude from checks.
+  compileOnly 'com.github.spotbugs:spotbugs-annotations'
+  testCompileOnly 'com.github.spotbugs:spotbugs-annotations'
+  // Exclude these from jar validation and license checks.
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
+
   // Export these dependencies so that they're imported transitively by
   // other modules.
 
@@ -64,7 +64,7 @@ dependencies {
   implementation "org.apache.lucene:lucene-suggest"
 
   // Collections & lang utilities
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation 'com.google.guava:guava'
   implementation 'org.apache.commons:commons-lang3'
   implementation 'org.apache.commons:commons-math3'
   implementation 'commons-io:commons-io'
