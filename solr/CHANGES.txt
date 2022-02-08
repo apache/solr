@@ -263,6 +263,8 @@ Build
 
 * SOLR-15987: Upgrade slf4j to 1.7.35 and remove ant-compat/force-versions.gradle (Kevin Risden)
 
+* SOLR-15992: Globally forbid and exclude known bad dependencies (Kevin Risden)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
