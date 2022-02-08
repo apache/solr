@@ -41,4 +41,5 @@ dependencies {
     exclude group: "io.netty", module: "netty-all"
     exclude group: "ch.qos.logback", module: "logback-classic"
   })
+  testImplementation 'io.netty:netty-codec-http'
 }
