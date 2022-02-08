@@ -7,12 +7,12 @@ Solr can support [JSON Web Token](https://en.wikipedia.org/wiki/JSON_Web_Token) 
 Bearer authentication with the use of the JWTAuthPlugin.
 
 This allows Solr to assert that a user is already authenticated with an external 
-[Identity Provider](https://en.wikipedia.org/wiki/Identity_provider) by validating 
+[Identity Provider (IdP)](https://en.wikipedia.org/wiki/Identity_provider) by validating 
 that the JWT formatted [access token](https://en.wikipedia.org/wiki/Access_token) 
 is digitally signed by the Identity Provider.
 
 The typical use case is to integrate Solr with an [OpenID Connect](https://en.wikipedia.org/wiki/OpenID_Connect) 
-enabled IdP.
+enabled Identity Provider.
 
 
 Getting Started
