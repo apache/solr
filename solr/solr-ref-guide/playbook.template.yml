@@ -10,14 +10,14 @@ urls:
 # This will create a .htaccess file with all redirects, including 'latest'
 # Default is 'static' which produces index.html at the root
 # See https://docs.antora.org/antora/latest/playbook/urls-redirect-facility/
-#  redirect_facility: httpd
+  redirect_facility: httpd
 content:
   # The URL for "Edit this page" links will always go to 'main' in Github
   edit_url: '{web_url}/tree/main/{path}'
   sources:
   - url: "${source_url}"
     branches: ${source_branches}
-    start_path: solr/solr-ref-guide
+    start_path: "${start_path}"
 
 ui:
   bundle:
@@ -26,7 +26,7 @@ ui:
   supplemental_files: "${supplemental_files}"
 output:
   clean: true
-  dir: ./build/site
+  dir: "${site_dir}"
 asciidoc:
   attributes:
     stem:
