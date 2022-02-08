@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import javax.net.ssl.SSLHandshakeException;
 import org.apache.solr.common.SolrException;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
@@ -42,18 +42,18 @@ import org.jose4j.lang.UnresolvableKeyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLHandshakeException;
-
 /**
- * Resolves jws signature verification keys from a set of {@link JWTIssuerConfig} objects, which
- * may represent any valid configuration in Solr's security.json, i.e. static list of JWKs
- * or keys retrieved from HTTPs JWK endpoints.
+ * Resolves jws signature verification keys from a set of {@link JWTIssuerConfig} objects, which may
+ * represent any valid configuration in Solr's security.json, i.e. static list of JWKs or keys
+ * retrieved from HTTPs JWK endpoints.
  *
- * This implementation maintains a map of issuers, each with its own list of {@link JsonWebKey},
- * and resolves correct key from correct issuer similar to HttpsJwksVerificationKeyResolver.
- * If issuer claim is not required, we will select the first IssuerConfig if there is exactly one such config.
+ * <p>This implementation maintains a map of issuers, each with its own list of {@link JsonWebKey},
+ * and resolves correct key from correct issuer similar to HttpsJwksVerificationKeyResolver. If
+ * issuer claim is not required, we will select the first IssuerConfig if there is exactly one such
+ * config.
  *
- * If a key is not found, and issuer is backed by HTTPsJWKs, we attempt one cache refresh before failing.
+ * <p>If a key is not found, and issuer is backed by HTTPsJWKs, we attempt one cache refresh before
+ * failing.
  */
 public class JWTVerificationkeyResolver implements VerificationKeyResolver {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -65,18 +65,22 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
 
   /**
    * Resolves key from a JWKs from one or more IssuerConfigs
+   *
    * @param issuerConfigs Collection of configuration objects for the issuer(s)
    * @param requireIssuer if true, will require 'iss' claim on jws
    */
-  public JWTVerificationkeyResolver(Collection<JWTIssuerConfig> issuerConfigs, boolean requireIssuer) {
+  public JWTVerificationkeyResolver(
+      Collection<JWTIssuerConfig> issuerConfigs, boolean requireIssuer) {
     this.requireIssuer = requireIssuer;
-    issuerConfigs.forEach(ic -> {
-      this.issuerConfigs.put(ic.getIss(), ic);
-    });
+    issuerConfigs.forEach(
+        ic -> {
+          this.issuerConfigs.put(ic.getIss(), ic);
+        });
   }
 
   @Override
-  public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
+  public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
+      throws UnresolvableKeyException {
     JsonWebKey theChosenOne;
     List<JsonWebKey> jsonWebKeys = new ArrayList<>();
 
@@ -90,19 +94,23 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
         } else if (issuerConfigs.size() == 1) {
           issuerConfig = issuerConfigs.values().iterator().next();
         } else {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
               "Signature verifiction not supported for multiple issuers without 'iss' claim in token.");
         }
       } else {
         issuerConfig = issuerConfigs.get(tokenIssuer);
         if (issuerConfig == null) {
           if (issuerConfigs.size() > 1) {
-            throw new UnresolvableKeyException("No issuers configured for iss='" + tokenIssuer + "', cannot validate signature");
+            throw new UnresolvableKeyException(
+                "No issuers configured for iss='" + tokenIssuer + "', cannot validate signature");
           } else if (issuerConfigs.size() == 1) {
             issuerConfig = issuerConfigs.values().iterator().next();
-            log.debug("No issuer matching token's iss claim, but exactly one configured, selecting that one");
+            log.debug(
+                "No issuer matching token's iss claim, but exactly one configured, selecting that one");
           } else {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
                 "Signature verifiction failed due to no configured issuer with id " + tokenIssuer);
           }
         }
@@ -115,8 +123,12 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
           try {
             jsonWebKeys.addAll(hjwks.getJsonWebKeys());
           } catch (SSLHandshakeException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Failed to connect with " + hjwks.getLocation() + ", do you have the correct SSL certificate configured?", e);
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Failed to connect with "
+                    + hjwks.getLocation()
+                    + ", do you have the correct SSL certificate configured?",
+                e);
           }
         }
       } else {
@@ -127,8 +139,11 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
       theChosenOne = verificationJwkSelector.select(jws, jsonWebKeys);
       if (theChosenOne == null && issuerConfig.usesHttpsJwk()) {
         if (log.isDebugEnabled()) {
-          log.debug("Refreshing JWKs from all {} locations, as no suitable verification key for JWS w/ header {} was found in {}",
-              issuerConfig.getHttpsJwks().size(), jws.getHeaders().getFullHeaderAsJsonString(), jsonWebKeys);
+          log.debug(
+              "Refreshing JWKs from all {} locations, as no suitable verification key for JWS w/ header {} was found in {}",
+              issuerConfig.getHttpsJwks().size(),
+              jws.getHeaders().getFullHeaderAsJsonString(),
+              jsonWebKeys);
         }
 
         jsonWebKeys.clear();
@@ -140,16 +155,23 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
       }
     } catch (JoseException | IOException | InvalidJwtException | MalformedClaimException e) {
       StringBuilder sb = new StringBuilder();
-      sb.append("Unable to find a suitable verification key for JWS w/ header ").append(jws.getHeaders().getFullHeaderAsJsonString());
-      sb.append(" due to an unexpected exception (").append(e).append(") while obtaining or using keys from source ");
+      sb.append("Unable to find a suitable verification key for JWS w/ header ")
+          .append(jws.getHeaders().getFullHeaderAsJsonString());
+      sb.append(" due to an unexpected exception (")
+          .append(e)
+          .append(") while obtaining or using keys from source ");
       sb.append(keysSource);
       throw new UnresolvableKeyException(sb.toString(), e);
     }
 
     if (theChosenOne == null) {
       StringBuilder sb = new StringBuilder();
-      sb.append("Unable to find a suitable verification key for JWS w/ header ").append(jws.getHeaders().getFullHeaderAsJsonString());
-      sb.append(" from ").append(jsonWebKeys.size()).append(" keys from source ").append(keysSource);
+      sb.append("Unable to find a suitable verification key for JWS w/ header ")
+          .append(jws.getHeaders().getFullHeaderAsJsonString());
+      sb.append(" from ")
+          .append(jsonWebKeys.size())
+          .append(" keys from source ")
+          .append(keysSource);
       throw new UnresolvableKeyException(sb.toString());
     }
 
