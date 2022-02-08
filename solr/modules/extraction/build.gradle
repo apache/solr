@@ -21,6 +21,10 @@ description = 'Solr Integration with Tika for extracting content from binary fil
 
 dependencies {
   implementation project(':solr:core')
+  implementation project(':solr:solrj')
+
+  implementation 'org.apache.lucene:lucene-core'
+  implementation 'org.slf4j:slf4j-api'
 
   // We export tika because other modules depend on it (and its submodules)
   // and we don't want to duplicate the dependency across different modules.
@@ -73,4 +77,6 @@ dependencies {
   implementation ('com.ibm.icu:icu4j')
 
   testImplementation project(':solr:test-framework')
+  testImplementation 'org.apache.lucene:lucene-test-framework'
+  testImplementation 'junit:junit'
 }

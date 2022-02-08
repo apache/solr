@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-
 apply plugin: 'java-library'
 
 description = 'Language Identifier module for extracting language from a document being indexed'
 
 dependencies {
   implementation project(':solr:core')
+  implementation project(':solr:solrj')
 
   implementation ('org.apache.tika:tika-core') { transitive = false }
   implementation 'commons-io:commons-io'
   implementation 'com.cybozu.labs:langdetect'
   implementation 'net.arnx:jsonic'
   implementation 'org.apache.opennlp:opennlp-tools'
+  implementation 'org.slf4j:slf4j-api'
 
   testImplementation project(':solr:test-framework')
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  testImplementation 'junit:junit'
 }

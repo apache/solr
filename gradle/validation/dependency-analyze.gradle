@@ -15,21 +15,23 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
+// This adds gradle-dependency-analyze validation of project dependencies
+// https://github.com/gradle-dependency-analyze/gradle-dependency-analyze
 
-description = 'Scripting Package'
+allprojects { prj ->
+  plugins.withId("java", {
+    prj.apply plugin: 'ca.cutterslade.analyze'
 
-dependencies {
-  implementation project(':solr:core')
-  implementation project(':solr:solrj')
+    analyzeClassesDependencies {
+      warnUsedUndeclared = false // means fail build if UsedUndeclared found
+      warnUnusedDeclared = true // means only log warning if UnusedDeclared found
+      logDependencyInformationToFiles = true
+    }
 
-  implementation 'org.apache.lucene:lucene-core'
-
-  implementation 'org.slf4j:slf4j-api'
-  implementation 'commons-io:commons-io'
-  implementation ('com.google.guava:guava') { transitive = false }
-
-  testImplementation project(':solr:test-framework')
-  testImplementation 'org.apache.lucene:lucene-test-framework'
-  testImplementation 'junit:junit'
+    analyzeTestClassesDependencies {
+      warnUsedUndeclared = false // means fail build if UsedUndeclared found
+      warnUnusedDeclared = true // means only log warning if UnusedDeclared found
+      logDependencyInformationToFiles = true
+    }
+  })
 }
