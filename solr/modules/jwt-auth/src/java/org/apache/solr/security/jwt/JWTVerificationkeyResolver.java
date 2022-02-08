@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;

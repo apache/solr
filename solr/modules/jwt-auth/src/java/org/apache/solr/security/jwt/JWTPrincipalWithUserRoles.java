@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.http.util.Args;
+import org.apache.solr.security.VerifiedUserRoles;
 
 /**
  * JWT principal that contains username, token, claims and a list of roles the user has, so one can

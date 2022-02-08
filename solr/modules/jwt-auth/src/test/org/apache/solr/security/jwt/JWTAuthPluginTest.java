@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
-import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.*;
+import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +38,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.security.VerifiedUserRoles;
+import org.apache.solr.security.jwt.JWTAuthPlugin;
+import org.apache.solr.security.jwt.JWTIssuerConfig;
 import org.apache.solr.util.CryptoKeys;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
@@ -146,13 +149,13 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin = new JWTAuthPlugin();
 
     testConfig = new HashMap<>();
-    testConfig.put("class", "org.apache.solr.security.JWTAuthPlugin");
+    testConfig.put("class", "org.apache.solr.security.jwt.JWTAuthPlugin");
     testConfig.put("principalClaim", "customPrincipal");
     testConfig.put("jwk", testJwk);
     plugin.init(testConfig);
 
     minimalConfig = new HashMap<>();
-    minimalConfig.put("class", "org.apache.solr.security.JWTAuthPlugin");
+    minimalConfig.put("class", "org.apache.solr.security.jwt.JWTAuthPlugin");
   }
 
   @Override

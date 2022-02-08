@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
 import java.security.Principal;
 import java.util.Map;

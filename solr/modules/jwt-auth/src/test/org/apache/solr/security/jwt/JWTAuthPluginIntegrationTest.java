@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.security.JWTAuthPluginTest.JWT_TEST_PATH;
+import static org.apache.solr.security.jwt.JWTAuthPluginTest.JWT_TEST_PATH;
 
 import java.io.BufferedReader;
 import java.io.IOException;
