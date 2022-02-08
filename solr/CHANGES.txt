@@ -516,6 +516,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-12901: Highlighting: hl.method=unified is the new default. (David Smiley)
 
+* SOLR-15991: analysis-extras module tests shouldn't rely on log4j dependency (Kevin Risden)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
