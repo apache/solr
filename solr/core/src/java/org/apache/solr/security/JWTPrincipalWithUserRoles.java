@@ -20,27 +20,25 @@ package org.apache.solr.security;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import org.apache.http.util.Args;
 
 /**
- * JWT principal that contains username, token, claims and a list of roles the user has, 
- * so one can keep track of user-role mappings in an Identity Server external to Solr and 
- * pass the information to Solr in a signed JWT token. The role information can then be used to authorize
- * requests without the need to maintain or lookup what roles each user belongs to.
+ * JWT principal that contains username, token, claims and a list of roles the user has, so one can
+ * keep track of user-role mappings in an Identity Server external to Solr and pass the information
+ * to Solr in a signed JWT token. The role information can then be used to authorize requests
+ * without the need to maintain or lookup what roles each user belongs to.
  */
 public class JWTPrincipalWithUserRoles extends JWTPrincipal implements VerifiedUserRoles {
   private final Set<String> roles;
 
-  public JWTPrincipalWithUserRoles(final String username, String token, Map<String,Object> claims, Set<String> roles) {
+  public JWTPrincipalWithUserRoles(
+      final String username, String token, Map<String, Object> claims, Set<String> roles) {
     super(username, token, claims);
     Args.notNull(roles, "User roles");
     this.roles = roles;
   }
 
-  /**
-   * Gets the list of roles
-   */
+  /** Gets the list of roles */
   @Override
   public Set<String> getVerifiedRoles() {
     return roles;
@@ -48,8 +46,7 @@ public class JWTPrincipalWithUserRoles extends JWTPrincipal implements VerifiedU
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof JWTPrincipalWithUserRoles))
-      return false;
+    if (!(o instanceof JWTPrincipalWithUserRoles)) return false;
     JWTPrincipalWithUserRoles that = (JWTPrincipalWithUserRoles) o;
     return super.equals(o) && roles.equals(that.roles);
   }
@@ -61,11 +58,17 @@ public class JWTPrincipalWithUserRoles extends JWTPrincipal implements VerifiedU
 
   @Override
   public String toString() {
-    return "JWTPrincipalWithUserRoles{" +
-        "username='" + username + '\'' +
-        ", token='" + "*****" + '\'' +
-        ", claims=" + claims +
-        ", roles=" + roles +
-        '}';
+    return "JWTPrincipalWithUserRoles{"
+        + "username='"
+        + username
+        + '\''
+        + ", token='"
+        + "*****"
+        + '\''
+        + ", claims="
+        + claims
+        + ", roles="
+        + roles
+        + '}';
   }
 }
