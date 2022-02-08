@@ -66,7 +66,7 @@ task buildLocalAntoraYaml {
     group = 'Site - Local'
     description "Creates an local antora.yml with all variables populated. Note: This will change the antora.yml in the repo, not a build folder."
 
-    def templateYaml = "antora.yml.template"
+    def templateYaml = "antora.template.yml"
 
     inputs.file(templateYaml)
     outputs.file(project.ext.localAntoraYaml)
