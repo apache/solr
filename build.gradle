@@ -184,7 +184,6 @@ apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
 // of potential problems with the build conventions, dependencies, etc.
 apply from: file('gradle/ant-compat/misc.gradle')
 
-apply from: file('gradle/ant-compat/force-versions.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
 
 apply from: file('gradle/documentation/pull-lucene-javadocs.gradle')
