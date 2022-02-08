@@ -887,7 +887,72 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * but should always be set to the same value, as all set values should pass through `liveDocsCache.computeIfAbsent`
    */
   private BitDocSet liveDocs;
-  private final IOFunction<MatchAllDocsQuery, BitDocSet> computeLiveDocs = q -> DocSetUtil.computeLiveDocs(this);
+  private final IOFunction<MatchAllDocsQuery, BitDocSet> computeLiveDocs = this::computeLiveDocs;
+
+  private static final BitDocSet EMPTY = new BitDocSet(new FixedBitSet(0), 0);
+
+  private BitDocSet computeLiveDocs(Query q) {
+    assert q == MATCH_ALL_DOCS_QUERY;
+    switch (leafContexts.size()) {
+      case 0:
+        assert numDocs() == 0;
+        return EMPTY;
+      case 1:
+        final Bits onlySegLiveDocs = leafContexts.get(0).reader().getLiveDocs();
+        final FixedBitSet fbs;
+        if (onlySegLiveDocs == null) {
+          // `LeafReader.getLiveDocs()` returns null if no deleted docs -- accordingly, set all bits
+          final int onlySegMaxDoc = maxDoc();
+          fbs = new FixedBitSet(onlySegMaxDoc);
+          fbs.set(0, onlySegMaxDoc);
+        } else {
+          fbs = FixedBitSet.copyOf(onlySegLiveDocs);
+        }
+        assert fbs.cardinality() == numDocs();
+        return new BitDocSet(fbs, numDocs());
+      default:
+        final FixedBitSet bs = new FixedBitSet(maxDoc());
+        for (LeafReaderContext ctx : leafContexts) {
+          final LeafReader r = ctx.reader();
+          final Bits segLiveDocs = r.getLiveDocs();
+          final int segDocBase = ctx.docBase;
+          if (segLiveDocs == null) {
+            // `LeafReader.getLiveDocs()` returns null if no deleted docs -- accordingly, set all bits in seg range
+            bs.set(segDocBase, segDocBase + r.maxDoc());
+          } else {
+            copyTo(segLiveDocs, r.maxDoc(), bs, segDocBase);
+          }
+        }
+        assert bs.cardinality() == numDocs();
+        return new BitDocSet(bs, numDocs());
+    }
+  }
+
+  private static void copyTo(Bits segLiveDocs, int sourceMaxDoc, FixedBitSet bs, int segDocBase) {
+    // NOTE: `adjustedSegDocBase` +1 to compensate for the fact that `segOrd` always has to "read ahead" by 1.
+    // Adding 1 to set `adjustedSegDocBase` once allows us to use `segOrd` as-is (with no "pushback") for
+    // both `startIndex` and `endIndex` args to `bs.set(startIndex, endIndex)`
+    final int adjustedSegDocBase = segDocBase + 1;
+    int segOrd = sourceMaxDoc;
+    do {
+      // NOTE: we check deleted range before live range in the outer loop in order to not have
+      // to explicitly guard against `bs.set(maxDoc, maxDoc)` in the event that the global max doc is
+      // a delete (this case would trigger an bounds-checking AssertionError in
+      // `FixedBitSet.set(int, int)`).
+      do {
+        // consume deleted range
+        if (--segOrd < 0) {
+          // we're currently in a "deleted" run, so just return; no need to do anything further
+          return;
+        }
+      } while (!segLiveDocs.get(segOrd));
+      final int limit = segOrd; // set highest ord (inclusive) of live range
+      while (segOrd-- > 0 && segLiveDocs.get(segOrd)) {
+        // consume live range
+      }
+      bs.set(adjustedSegDocBase + segOrd, adjustedSegDocBase + limit);
+    } while (segOrd > 0);
+  }
 
   /**
    * Returns an efficient random-access {@link DocSet} of the live docs.  It's cached.  Never null.
