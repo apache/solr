@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayInputStream;

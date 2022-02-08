@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -85,7 +85,9 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
+import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.ConfigEditablePlugin;
+import org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
 import org.apache.solr.util.CryptoKeys;
 import org.eclipse.jetty.client.api.Request;
 import org.jose4j.jwa.AlgorithmConstraints;

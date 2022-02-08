@@ -87,7 +87,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private static final String[] packages = {
       "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
       "update.processor.", "util.", "spelling.", "handler.component.",
-      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin."
+      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin.",
+      "security.jwt."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
   public static final String SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM = "solr.allow.unsafe.resourceloading";

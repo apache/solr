@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
-import static org.apache.solr.security.JWTAuthPluginTest.JWT_TEST_PATH;
-import static org.apache.solr.security.JWTAuthPluginTest.testJwk;
+import static org.apache.solr.security.jwt.JWTAuthPluginTest.JWT_TEST_PATH;
+import static org.apache.solr.security.jwt.JWTAuthPluginTest.testJwk;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.security;
+package org.apache.solr.security.jwt;
 
 import static java.util.Arrays.asList;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.security.JWTIssuerConfig.HttpsJwksFactory;
+import org.apache.solr.security.jwt.JWTIssuerConfig.HttpsJwksFactory;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
