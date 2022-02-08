@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bats
+
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -14,12 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-function delete_all_collections() {
-  local collection_list="$(bin/solr zk ls /collections -z localhost:9983)"
-  for collection in $collection_list;
-  do
-    if [[ -n $collection ]]; then
-      bin/solr delete -c $collection
-    fi
-  done
+load bats_helper
+
+setup() {
+  common_setup
+}
+
+teardown() {
+  solr stop -all >/dev/null 2>&1
+}
+
+@test "SOLR-11740 check -f" {
+  run -0 solr start
+  run -0 solr start -p 7574
+  run bash -c 'solr stop -all 2>&1 | grep -i "forcefully killing"'
+  refute_output
 }

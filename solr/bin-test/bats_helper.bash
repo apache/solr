@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bats
+
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -14,26 +15,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+common_setup() {
+    TEST_BREW_PREFIX="$(brew --prefix)"
+    load "${TEST_BREW_PREFIX}/lib/bats-support/load.bash"
+    load "${TEST_BREW_PREFIX}/lib/bats-assert/load.bash"
 
-# All tests should start with solr_test
-
-function solr_suite_before() {
-  bin/solr stop -all > /dev/null 2>&1
+    # use $BATS_TEST_FILENAME instead of ${BASH_SOURCE[0]} or $0,
+    # as those will point to the bats executable's location or the preprocessed file respectively
+    DIR="$( cd "$( dirname "$BATS_TEST_FILENAME" )" >/dev/null 2>&1 && pwd )"
+    # add solr/solr/bin to the path for our tests
+    PATH="$DIR/../bin:$PATH"
 }
 
-function solr_suite_after() {
-  bin/solr stop -all > /dev/null 2>&1
-}
-
-function solr_test_11740_checks_f() {
-  # SOLR-11740
-  bin/solr start
-  bin/solr start -p 7574
-  bin/solr stop -all 2>&1 | grep -i "forcefully killing"
-  rcode=$?
-  if [[ $rcode -eq 0 ]]
-  then
-    echo "Unexpected forceful kill - please check."
-    return 2
-  fi
+delete_all_collections() {
+  local collection_list="$(solr zk ls /collections -z localhost:9983)"
+  for collection in $collection_list;
+  do
+    if [[ -n $collection ]]; then
+      solr delete -c $collection >/dev/null 2>&1
+    fi
+  done
 }
