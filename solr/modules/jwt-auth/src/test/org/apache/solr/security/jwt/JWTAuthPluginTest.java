@@ -39,8 +39,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.VerifiedUserRoles;
-import org.apache.solr.security.jwt.JWTAuthPlugin;
-import org.apache.solr.security.jwt.JWTIssuerConfig;
 import org.apache.solr.util.CryptoKeys;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
