@@ -176,14 +176,18 @@ public class SolrIndexWriter extends IndexWriter {
     }
   }
 
+  public static void setCommitData(IndexWriter iw, long commitCommandVersion) {
+    setCommitData(iw, commitCommandVersion, null);
+  }
+
   @SuppressForbidden(reason = "Need currentTimeMillis, commit time should be used only for debugging purposes, " +
       " but currently suspiciously used for replication as well")
-  public static void setCommitData(IndexWriter iw, long commitCommandVersion) {
-    log.debug("Calling setCommitData with IW:{} commitCommandVersion:{}", iw, commitCommandVersion);
-    final Map<String,String> commitData = new HashMap<>();
-    commitData.put(COMMIT_TIME_MSEC_KEY, String.valueOf(System.currentTimeMillis()));
-    commitData.put(COMMIT_COMMAND_VERSION, String.valueOf(commitCommandVersion));
-    iw.setLiveCommitData(commitData.entrySet());
+  public static void setCommitData(IndexWriter iw, long commitCommandVersion, Map<String, String> commitData) {
+    log.debug("Calling setCommitData with IW:{} commitCommandVersion:{} commitData:{}", iw, commitCommandVersion, commitData);
+    Map<String,String> finalCommitData = commitData == null ? new HashMap<>(4) : new HashMap<>(commitData);
+    finalCommitData.put(COMMIT_TIME_MSEC_KEY, String.valueOf(System.currentTimeMillis()));
+    finalCommitData.put(COMMIT_COMMAND_VERSION, String.valueOf(commitCommandVersion));
+    iw.setLiveCommitData(finalCommitData.entrySet());
   }
 
   private void setDirectoryFactory(DirectoryFactory factory) {

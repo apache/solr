@@ -18,6 +18,8 @@ package org.apache.solr.update;
 
 import org.apache.solr.request.SolrQueryRequest;
 
+import java.util.Map;
+
 /**
  *
  */
@@ -28,6 +30,7 @@ public class CommitUpdateCommand extends UpdateCommand {
   public boolean expungeDeletes = false;
   public boolean softCommit = false;
   public boolean prepareCommit = false;
+  public Map<String, String> commitData;
 
   /**
    * During optimize, optimize down to &lt;= this many segments.  Must be &gt;= 1
@@ -54,6 +57,7 @@ public class CommitUpdateCommand extends UpdateCommand {
             +",expungeDeletes="+expungeDeletes
             +",softCommit="+softCommit
             +",prepareCommit="+prepareCommit
+            +",commitData="+commitData
             +'}';
   }
 }
