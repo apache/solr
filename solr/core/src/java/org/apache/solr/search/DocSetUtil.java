@@ -181,7 +181,7 @@ public class DocSetUtil {
 
   private static final BitDocSet EMPTY = new BitDocSet(new FixedBitSet(0), 0);
 
-  private static BitDocSet computeLiveDocs(SolrIndexSearcher searcher) {
+  static BitDocSet computeLiveDocs(SolrIndexSearcher searcher) {
     final List<LeafReaderContext> leafContexts = searcher.getLeafContexts();
     switch (leafContexts.size()) {
       case 0:

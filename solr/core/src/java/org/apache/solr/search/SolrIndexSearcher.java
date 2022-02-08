@@ -887,7 +887,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * but should always be set to the same value, as all set values should pass through `liveDocsCache.computeIfAbsent`
    */
   private BitDocSet liveDocs;
-  private final IOFunction<MatchAllDocsQuery, BitDocSet> computeLiveDocs = q -> makeBitDocSet(getDocSetNC(MATCH_ALL_DOCS_QUERY, null));
+  private final IOFunction<MatchAllDocsQuery, BitDocSet> computeLiveDocs = q -> DocSetUtil.computeLiveDocs(this);
 
   /**
    * Returns an efficient random-access {@link DocSet} of the live docs.  It's cached.  Never null.
@@ -899,6 +899,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       liveDocsNaiveCacheHitCount.increment();
     } else {
       docs = liveDocsCache.computeIfAbsent(MATCH_ALL_DOCS_QUERY, computeLiveDocs);
+      // assert DocSetUtil.equals(docs, DocSetUtil.createDocSetGeneric(this, MATCH_ALL_DOCS_QUERY));
       liveDocs = docs; // all `docs` will be identical (`==`); we don't care which one "wins"
     }
     assert docs.size() == numDocs();
