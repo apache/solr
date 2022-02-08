@@ -17,10 +17,13 @@
 
 package org.apache.solr.security;
 
+import static java.util.Arrays.asList;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.when;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.security.JWTIssuerConfig.HttpsJwksFactory;
 import org.jose4j.jwk.HttpsJwks;
@@ -34,30 +37,20 @@ import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-import static java.util.Arrays.asList;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
-
-/**
- * Tests the multi jwks resolver that can fetch keys from multiple JWKs
- */
+/** Tests the multi jwks resolver that can fetch keys from multiple JWKs */
 public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
   private JWTVerificationkeyResolver resolver;
 
-  @Rule
-  public MockitoRule mockitoRule = MockitoJUnit.rule();
+  @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
-  @Mock
-  private HttpsJwks firstJwkList;
-  @Mock
-  private HttpsJwks secondJwkList;
-  @Mock
-  private HttpsJwksFactory httpsJwksFactory;
+  @Mock private HttpsJwks firstJwkList;
+  @Mock private HttpsJwks secondJwkList;
+  @Mock private HttpsJwksFactory httpsJwksFactory;
 
   private KeyHolder k1;
   private KeyHolder k2;
@@ -77,19 +70,26 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     k5 = new KeyHolder("k5");
 
     when(firstJwkList.getJsonWebKeys()).thenReturn(asList(k1.getJwk(), k2.getJwk()));
-    doAnswer(invocation -> {
-      keysToReturnFromSecondJwk = refreshSequenceForSecondJwk.next();
-      System.out.println("Refresh called, next to return is " + keysToReturnFromSecondJwk);
-      return null;
-    }).when(secondJwkList).refresh();
-    when(secondJwkList.getJsonWebKeys()).then(inv -> {
-      if (keysToReturnFromSecondJwk == null)
-        keysToReturnFromSecondJwk = refreshSequenceForSecondJwk.next();
-      return keysToReturnFromSecondJwk;
-    });
-    when(httpsJwksFactory.createList(anyList())).thenReturn(asList(firstJwkList, secondJwkList));
+    doAnswer(
+            invocation -> {
+              keysToReturnFromSecondJwk = refreshSequenceForSecondJwk.next();
+              System.out.println("Refresh called, next to return is " + keysToReturnFromSecondJwk);
+              return null;
+            })
+        .when(secondJwkList)
+        .refresh();
+    when(secondJwkList.getJsonWebKeys())
+        .then(
+            inv -> {
+              if (keysToReturnFromSecondJwk == null)
+                keysToReturnFromSecondJwk = refreshSequenceForSecondJwk.next();
+              return keysToReturnFromSecondJwk;
+            });
+    when(httpsJwksFactory.createList(ArgumentMatchers.anyList()))
+        .thenReturn(asList(firstJwkList, secondJwkList));
 
-    JWTIssuerConfig issuerConfig = new JWTIssuerConfig("primary").setIss("foo").setJwksUrl(asList("url1", "url2"));
+    JWTIssuerConfig issuerConfig =
+        new JWTIssuerConfig("primary").setIss("foo").setJwksUrl(asList("url1", "url2"));
     JWTIssuerConfig.setHttpsJwksFactory(httpsJwksFactory);
     resolver = new JWTVerificationkeyResolver(Arrays.asList(issuerConfig), true);
 
@@ -98,9 +98,8 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
 
   @Test
   public void findKeyFromFirstList() throws JoseException {
-    refreshSequenceForSecondJwk = asList(
-        asList(k3.getJwk(), k4.getJwk()),
-        asList(k5.getJwk())).iterator();
+    refreshSequenceForSecondJwk =
+        asList(asList(k3.getJwk(), k4.getJwk()), asList(k5.getJwk())).iterator();
     resolver.resolveKey(k1.getJws(), null);
     resolver.resolveKey(k2.getJws(), null);
     resolver.resolveKey(k3.getJws(), null);
@@ -111,10 +110,8 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
 
   @Test(expected = UnresolvableKeyException.class)
   public void notFoundKey() throws JoseException {
-    refreshSequenceForSecondJwk = asList(
-        asList(k3.getJwk()),
-        asList(k4.getJwk()),
-        asList(k5.getJwk())).iterator();
+    refreshSequenceForSecondJwk =
+        asList(asList(k3.getJwk()), asList(k4.getJwk()), asList(k5.getJwk())).iterator();
     // Will not find key since first refresh returns k4, and we only try one refresh.
     resolver.resolveKey(k5.getJws(), null);
   }

@@ -18,22 +18,9 @@
 package org.apache.solr.security;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.Utils;
-import org.jose4j.http.Get;
-import org.jose4j.http.SimpleResponse;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.JsonWebKeySet;
-import org.jose4j.lang.JoseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -46,12 +33,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
+import org.jose4j.http.Get;
+import org.jose4j.http.SimpleResponse;
+import org.jose4j.jwk.HttpsJwks;
+import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.JsonWebKeySet;
+import org.jose4j.lang.JoseException;
 
-/**
- * Holds information about an IdP (issuer), such as issuer ID, JWK url(s), keys etc
- */
+/** Holds information about an IdP (issuer), such as issuer ID, JWK url(s), keys etc */
 public class JWTIssuerConfig {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final String PARAM_ISS_NAME = "name";
   static final String PARAM_JWKS_URL = "jwksUrl";
   static final String PARAM_JWK = "jwk";
@@ -61,8 +54,7 @@ public class JWTIssuerConfig {
   static final String PARAM_AUTHORIZATION_ENDPOINT = "authorizationEndpoint";
   static final String PARAM_CLIENT_ID = "clientId";
 
-  private static HttpsJwksFactory httpsJwksFactory =
-      new HttpsJwksFactory(3600, 5000);
+  private static HttpsJwksFactory httpsJwksFactory = new HttpsJwksFactory(3600, 5000);
   private String iss;
   private String aud;
   private JsonWebKeySet jsonWebKeySet;
@@ -75,12 +67,14 @@ public class JWTIssuerConfig {
   private String authorizationEndpoint;
   private Collection<X509Certificate> trustedCerts;
 
-  public static boolean ALLOW_OUTBOUND_HTTP = Boolean.parseBoolean(System.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
-  public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG = "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.";
+  public static boolean ALLOW_OUTBOUND_HTTP =
+      Boolean.parseBoolean(System.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
+  public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG =
+      "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.";
 
   /**
-   * Create config for further configuration with setters, builder style.
-   * Once all values are set, call {@link #init()} before further use
+   * Create config for further configuration with setters, builder style. Once all values are set,
+   * call {@link #init()} before further use
    *
    * @param name a unique name for this issuer
    */
@@ -98,8 +92,9 @@ public class JWTIssuerConfig {
   }
 
   /**
-   * Call this to validate and initialize an object which is populated with setters.
-   * Init will fetch wellKnownUrl if relevant
+   * Call this to validate and initialize an object which is populated with setters. Init will fetch
+   * wellKnownUrl if relevant
+   *
    * @throws SolrException if issuer is missing
    */
   public void init() {
@@ -110,7 +105,9 @@ public class JWTIssuerConfig {
       try {
         wellKnownDiscoveryConfig = fetchWellKnown(new URL(wellKnownUrl));
       } catch (MalformedURLException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Wrong URL given for well-known endpoint " + wellKnownUrl);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Wrong URL given for well-known endpoint " + wellKnownUrl);
       }
       if (iss == null) {
         iss = wellKnownDiscoveryConfig.getIssuer();
@@ -123,12 +120,15 @@ public class JWTIssuerConfig {
       }
     }
     if (iss == null && usesHttpsJwk() && !JWTAuthPlugin.PRIMARY_ISSUER.equals(name)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing required config 'iss' for issuer " + getName());
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Missing required config 'iss' for issuer " + getName());
     }
   }
 
   /**
    * Parses configuration for one IssuerConfig and sets all variables found
+   *
    * @throws SolrException if unknown parameter names found in config
    */
   protected void parseConfigMap(Map<String, Object> configMap) {
@@ -153,12 +153,15 @@ public class JWTIssuerConfig {
     conf.remove(PARAM_AUTHORIZATION_ENDPOINT);
 
     if (!conf.isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration key " + conf.keySet() + " for issuer " + name);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Unknown configuration key " + conf.keySet() + " for issuer " + name);
     }
   }
 
   /**
    * Setter that takes a jwk config object, parses it into a {@link JsonWebKeySet} and sets it
+   *
    * @param jwksObject the config object to parse
    */
   @SuppressWarnings("unchecked")
@@ -168,7 +171,10 @@ public class JWTIssuerConfig {
         jsonWebKeySet = parseJwkSet((Map<String, Object>) jwksObject);
       }
     } catch (JoseException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed parsing parameter 'jwk' for issuer " + getName(), e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Failed parsing parameter 'jwk' for issuer " + getName(),
+          e);
     }
   }
 
@@ -228,6 +234,7 @@ public class JWTIssuerConfig {
 
   /**
    * Setter that converts from String or List into a list
+   *
    * @param jwksUrlListOrString object that should be either string or list
    * @return this for builder pattern
    * @throws SolrException if wrong type
@@ -236,10 +243,11 @@ public class JWTIssuerConfig {
   public JWTIssuerConfig setJwksUrl(Object jwksUrlListOrString) {
     if (jwksUrlListOrString instanceof String)
       this.jwksUrl = Collections.singletonList((String) jwksUrlListOrString);
-    else if (jwksUrlListOrString instanceof List)
-      this.jwksUrl = (List<String>) jwksUrlListOrString;
+    else if (jwksUrlListOrString instanceof List) this.jwksUrl = (List<String>) jwksUrlListOrString;
     else if (jwksUrlListOrString != null)
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parameter " + PARAM_JWKS_URL + " must be either List or String");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Parameter " + PARAM_JWKS_URL + " must be either List or String");
     return this;
   }
 
@@ -252,6 +260,7 @@ public class JWTIssuerConfig {
 
   /**
    * Set the factory to use when creating HttpsJwks objects
+   *
    * @param httpsJwksFactory factory with custom settings
    */
   public static void setHttpsJwksFactory(HttpsJwksFactory httpsJwksFactory) {
@@ -269,6 +278,7 @@ public class JWTIssuerConfig {
 
   /**
    * Check if the issuer is backed by HttpsJwk url(s)
+   *
    * @return true if keys are fetched over https
    */
   public boolean usesHttpsJwk() {
@@ -306,8 +316,8 @@ public class JWTIssuerConfig {
     return this;
   }
 
-  public Map<String,Object> asConfig() {
-    HashMap<String,Object> config = new HashMap<>();
+  public Map<String, Object> asConfig() {
+    HashMap<String, Object> config = new HashMap<>();
     putIfNotNull(config, PARAM_ISS_NAME, name);
     putIfNotNull(config, PARAM_ISSUER, iss);
     putIfNotNull(config, PARAM_AUDIENCE, aud);
@@ -329,6 +339,7 @@ public class JWTIssuerConfig {
 
   /**
    * Validates that this config has a name and either jwksUrl, wellkKownUrl or jwk
+   *
    * @return true if a configuration is found and is valid, otherwise false
    * @throws SolrException if configuration is present but wrong
    */
@@ -337,11 +348,18 @@ public class JWTIssuerConfig {
     jwkConfigured += jwksUrl != null ? 2 : 0;
     jwkConfigured += jsonWebKeySet != null ? 2 : 0;
     if (jwkConfigured > 3) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuthPlugin needs to configure exactly one of " +
-          PARAM_WELL_KNOWN_URL + ", " + PARAM_JWKS_URL + " and " + PARAM_JWK);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "JWTAuthPlugin needs to configure exactly one of "
+              + PARAM_WELL_KNOWN_URL
+              + ", "
+              + PARAM_JWKS_URL
+              + " and "
+              + PARAM_JWK);
     }
     if (jwkConfigured > 0 && name == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
           "Parameter 'name' is required for issuer configurations");
     }
     return jwkConfigured > 0;
@@ -356,10 +374,7 @@ public class JWTIssuerConfig {
     return this.trustedCerts;
   }
 
-  /**
-   *
-   */
-  static class HttpsJwksFactory {
+  public static class HttpsJwksFactory {
     private final long jwkCacheDuration;
     private final long refreshReprieveThreshold;
     private Collection<X509Certificate> trustedCerts;
@@ -369,13 +384,16 @@ public class JWTIssuerConfig {
       this.refreshReprieveThreshold = refreshReprieveThreshold;
     }
 
-    public HttpsJwksFactory(long jwkCacheDuration, long refreshReprieveThreshold, Collection<X509Certificate> trustedCerts) {
+    public HttpsJwksFactory(
+        long jwkCacheDuration,
+        long refreshReprieveThreshold,
+        Collection<X509Certificate> trustedCerts) {
       this.jwkCacheDuration = jwkCacheDuration;
       this.refreshReprieveThreshold = refreshReprieveThreshold;
       this.trustedCerts = trustedCerts;
     }
 
-    /**
+    /*
      * While the class name is HttpsJwks, it actually works with plain http formatted url as well.
      *
      * @param url the Url to connect to for JWK details.
@@ -386,7 +404,9 @@ public class JWTIssuerConfig {
         jwksUrl = new URL(url);
         checkAllowOutboundHttpConnections(PARAM_JWKS_URL, jwksUrl);
       } catch (MalformedURLException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Url " + url + " configured in " + PARAM_JWKS_URL + " is not a valid URL");
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Url " + url + " configured in " + PARAM_JWKS_URL + " is not a valid URL");
       }
       HttpsJwks httpsJkws = new HttpsJwks(url);
       httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
@@ -408,8 +428,9 @@ public class JWTIssuerConfig {
   }
 
   /**
-   * Config object for a OpenId Connect well-known config
-   * Typically exposed through /.well-known/openid-configuration endpoint
+   * Config object for a OpenId Connect well-known config.
+   *
+   * <p>Typically exposed through <code>/.well-known/openid-configuration endpoint</code>
    */
   public static class WellKnownDiscoveryConfig {
     private final Map<String, Object> securityConf;
@@ -424,14 +445,19 @@ public class JWTIssuerConfig {
 
     /**
      * Fetch well-known config from a URL, with optional list of trusted certificates
+     *
      * @param url the url to fetch
-     * @param trustedCerts optional list of trusted SSL certs. May be null to fall-back to Java's defaults
+     * @param trustedCerts optional list of trusted SSL certs. May be null to fall-back to Java's
+     *     defaults
      * @return an instance of WellKnownDiscoveryConfig object
      */
-    public static WellKnownDiscoveryConfig parse(URL url, Collection<X509Certificate> trustedCerts) {
+    public static WellKnownDiscoveryConfig parse(
+        URL url, Collection<X509Certificate> trustedCerts) {
       try {
         if (!Arrays.asList("https", "file", "http").contains(url.getProtocol())) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Well-known config URL must be one of HTTPS or HTTP or file");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Well-known config URL must be one of HTTPS or HTTP or file");
         }
         checkAllowOutboundHttpConnections(PARAM_WELL_KNOWN_URL, url);
 
@@ -449,7 +475,10 @@ public class JWTIssuerConfig {
           return parse(IOUtils.toInputStream(resp.getBody(), StandardCharsets.UTF_8));
         }
       } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config could not be read from url " + url, e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Well-known config could not be read from url " + url,
+            e);
       }
     }
 
@@ -462,7 +491,6 @@ public class JWTIssuerConfig {
     public static WellKnownDiscoveryConfig parse(InputStream configStream) {
       return new WellKnownDiscoveryConfig((Map<String, Object>) Utils.fromJSON(configStream));
     }
-
 
     public String getJwksUrl() {
       return (String) securityConf.get("jwks_uri");
@@ -498,9 +526,10 @@ public class JWTIssuerConfig {
   public static void checkAllowOutboundHttpConnections(String parameterName, URL url) {
     if ("http".equalsIgnoreCase(url.getProtocol())) {
       if (!ALLOW_OUTBOUND_HTTP) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, parameterName + " is using http protocol. " + ALLOW_OUTBOUND_HTTP_ERR_MSG);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            parameterName + " is using http protocol. " + ALLOW_OUTBOUND_HTTP_ERR_MSG);
       }
     }
   }
- 
 }

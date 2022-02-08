@@ -17,7 +17,7 @@
 
 package org.apache.solr.security;
 
-import static org.apache.solr.SolrTestCaseJ4.TEST_PATH;
+import static org.apache.solr.security.JWTAuthPluginTest.JWT_TEST_PATH;
 import static org.apache.solr.security.JWTAuthPluginTest.testJwk;
 
 import java.io.IOException;
@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
@@ -47,31 +46,33 @@ public class JWTIssuerConfigTest extends SolrTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    testIssuer = new JWTIssuerConfig("name")
-        .setJwksUrl("https://issuer/path")
-        .setIss("issuer")
-        .setAud("audience")
-        .setClientId("clientid")
-        .setWellKnownUrl("wellknown")
-        .setAuthorizationEndpoint("https://issuer/authz");
+    testIssuer =
+        new JWTIssuerConfig("name")
+            .setJwksUrl("https://issuer/path")
+            .setIss("issuer")
+            .setAud("audience")
+            .setClientId("clientid")
+            .setWellKnownUrl("wellknown")
+            .setAuthorizationEndpoint("https://issuer/authz");
 
     testIssuerConfigMap = testIssuer.asConfig();
 
-    testIssuerJson = "{\n" +
-        "  \"aud\":\"audience\",\n" +
-        "  \"wellKnownUrl\":\"wellknown\",\n" +
-        "  \"clientId\":\"clientid\",\n" +
-        "  \"jwksUrl\":[\"https://issuer/path\"],\n" +
-        "  \"name\":\"name\",\n" +
-        "  \"iss\":\"issuer\",\n" +
-        "  \"authorizationEndpoint\":\"https://issuer/authz\"}";
+    testIssuerJson =
+        "{\n"
+            + "  \"aud\":\"audience\",\n"
+            + "  \"wellKnownUrl\":\"wellknown\",\n"
+            + "  \"clientId\":\"clientid\",\n"
+            + "  \"jwksUrl\":[\"https://issuer/path\"],\n"
+            + "  \"name\":\"name\",\n"
+            + "  \"iss\":\"issuer\",\n"
+            + "  \"authorizationEndpoint\":\"https://issuer/authz\"}";
   }
-  
+
   @After
   public void tearDown() throws Exception {
     super.tearDown();
     JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = false;
-  }  
+  }
 
   @Test
   public void parseConfigMap() {
@@ -134,61 +135,99 @@ public class JWTIssuerConfigTest extends SolrTestCase {
 
   @Test
   public void jwksUrlwithHttpBehaviors() {
-    
+
     HashMap<String, Object> issuerConfigMap = new HashMap<>();
     issuerConfigMap.put("name", "myName");
     issuerConfigMap.put("iss", "myIss");
     issuerConfigMap.put("jwksUrl", "http://host/jwk");
 
     JWTIssuerConfig issuerConfig = new JWTIssuerConfig(issuerConfigMap);
-    
+
     SolrException e = expectThrows(SolrException.class, () -> issuerConfig.getHttpsJwks());
     assertEquals(400, e.code());
-    assertEquals("jwksUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.", e.getMessage());
-    
+    assertEquals(
+        "jwksUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.",
+        e.getMessage());
+
     JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = true;
 
     assertEquals(1, issuerConfig.getHttpsJwks().size());
-    assertEquals("http://host/jwk", issuerConfig.getHttpsJwks().get(0).getLocation());    
+    assertEquals("http://host/jwk", issuerConfig.getHttpsJwks().get(0).getLocation());
   }
-  
+
   @Test
   public void wellKnownConfigFromInputstream() throws IOException {
-    Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
-    JWTIssuerConfig.WellKnownDiscoveryConfig config = JWTIssuerConfig.WellKnownDiscoveryConfig.parse(Files.newInputStream(configJson));
+    Path configJson = JWT_TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
+    JWTIssuerConfig.WellKnownDiscoveryConfig config =
+        JWTIssuerConfig.WellKnownDiscoveryConfig.parse(Files.newInputStream(configJson));
     assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());
   }
 
   @Test
   public void wellKnownConfigFromString() throws IOException {
-    Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
+    Path configJson = JWT_TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
     String configString = StringUtils.join(Files.readAllLines(configJson), "\n");
-    JWTIssuerConfig.WellKnownDiscoveryConfig config = JWTIssuerConfig.WellKnownDiscoveryConfig.parse(configString, StandardCharsets.UTF_8);
+    JWTIssuerConfig.WellKnownDiscoveryConfig config =
+        JWTIssuerConfig.WellKnownDiscoveryConfig.parse(configString, StandardCharsets.UTF_8);
     assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());
     assertEquals("http://acmepaymentscorp", config.getIssuer());
     assertEquals("http://acmepaymentscorp/oauth/auz/authorize", config.getAuthorizationEndpoint());
-    assertEquals(Arrays.asList("READ", "WRITE", "DELETE", "openid", "scope", "profile", "email", "address", "phone"), config.getScopesSupported());
-    assertEquals(Arrays.asList("code", "code id_token", "code token", "code id_token token", "token", "id_token", "id_token token"), config.getResponseTypesSupported());
+    assertEquals(
+        Arrays.asList(
+            "READ", "WRITE", "DELETE", "openid", "scope", "profile", "email", "address", "phone"),
+        config.getScopesSupported());
+    assertEquals(
+        Arrays.asList(
+            "code",
+            "code id_token",
+            "code token",
+            "code id_token token",
+            "token",
+            "id_token",
+            "id_token token"),
+        config.getResponseTypesSupported());
   }
 
   @Test
   public void wellKnownConfigWithHttpBehaviors() {
-    SolrException e = expectThrows(SolrException.class, () -> JWTIssuerConfig.WellKnownDiscoveryConfig.parse("http://127.0.0.1:45678/.well-known/config"));
+    SolrException e =
+        expectThrows(
+            SolrException.class,
+            () ->
+                JWTIssuerConfig.WellKnownDiscoveryConfig.parse(
+                    "http://127.0.0.1:45678/.well-known/config"));
     assertEquals(400, e.code());
-    assertEquals("wellKnownUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.", e.getMessage());
-    
+    assertEquals(
+        "wellKnownUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.",
+        e.getMessage());
+
     JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = true;
-    
-    e = expectThrows(SolrException.class, () -> JWTIssuerConfig.WellKnownDiscoveryConfig.parse("http://127.0.0.1:45678/.well-known/config"));
+
+    e =
+        expectThrows(
+            SolrException.class,
+            () ->
+                JWTIssuerConfig.WellKnownDiscoveryConfig.parse(
+                    "http://127.0.0.1:45678/.well-known/config"));
     assertEquals(500, e.code());
-    // We open a connection in the code path to a server that doesn't exist, which causes this.  Should really be mocked.
-    assertEquals("Well-known config could not be read from url http://127.0.0.1:45678/.well-known/config", e.getMessage());
+    // We open a connection in the code path to a server that doesn't exist, which causes this.
+    // Should really be mocked.
+    assertEquals(
+        "Well-known config could not be read from url http://127.0.0.1:45678/.well-known/config",
+        e.getMessage());
   }
-  
+
   @Test
   public void wellKnownConfigNotReachable() {
-    SolrException e = expectThrows(SolrException.class, () -> JWTIssuerConfig.WellKnownDiscoveryConfig.parse("https://127.0.0.1:45678/.well-known/config"));
+    SolrException e =
+        expectThrows(
+            SolrException.class,
+            () ->
+                JWTIssuerConfig.WellKnownDiscoveryConfig.parse(
+                    "https://127.0.0.1:45678/.well-known/config"));
     assertEquals(500, e.code());
-    assertEquals("Well-known config could not be read from url https://127.0.0.1:45678/.well-known/config", e.getMessage());
+    assertEquals(
+        "Well-known config could not be read from url https://127.0.0.1:45678/.well-known/config",
+        e.getMessage());
   }
 }
