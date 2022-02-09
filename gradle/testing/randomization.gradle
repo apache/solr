@@ -30,7 +30,7 @@ buildscript {
   }
 
   dependencies {
-    classpath 'com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.7.2'
+    classpath 'com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.7.9'
   }
 }
 
