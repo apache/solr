@@ -2271,7 +2271,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               try {
                 SolrIndexSearcher searcher = ref.get();
                 String servingVersion = searcher.getIndexReader().getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
-                if (Long.parseLong(servingVersion) == replicaIndexVersion) {
+                if (servingVersion != null && Long.parseLong(servingVersion) == replicaIndexVersion) {
                   break;
                 } else {
                   if (log.isInfoEnabled()) {
