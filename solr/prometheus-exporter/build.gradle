@@ -22,7 +22,6 @@ description = 'Prometheus exporter for exposing metrics from Solr using Metrics 
 
 dependencies {
   implementation project(':solr:solrj')
-  implementation 'org.slf4j:slf4j-api'
   implementation('org.apache.zookeeper:zookeeper') { transitive = false } // ideally remove ZK dep
 
   implementation ('io.prometheus:simpleclient')
@@ -36,6 +35,7 @@ dependencies {
   implementation ('net.sourceforge.argparse4j:argparse4j')
   implementation ('com.github.ben-manes.caffeine:caffeine') { transitive = false }
   implementation 'commons-io:commons-io'
+  implementation 'org.slf4j:slf4j-api'
 
   runtimeOnly 'org.apache.logging.log4j:log4j-api'
   runtimeOnly 'org.apache.logging.log4j:log4j-core'

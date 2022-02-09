@@ -20,15 +20,6 @@ apply plugin: 'java-library'
 description = 'HDFS Contrib Module'
 
 dependencies {
-  configurations.all {
-    exclude group: 'log4j', module: 'log4j'
-    exclude group: 'commons-logging', module: 'commons-logging'
-    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    exclude group: 'org.apache.yetus', module: 'audience-annotations'
-    exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
-   // be conservative on what's added here.  Affects *all* configs, including internal ones.
-  }
-
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
@@ -50,7 +41,7 @@ dependencies {
   implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
 
   // Guava implements the VisibleForTesting annotations
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation 'com.google.guava:guava'
 
   // Caffeine cache to implement HDFS block caching  
   implementation ('com.github.ben-manes.caffeine:caffeine')

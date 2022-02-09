@@ -21,6 +21,11 @@ Solr can support https://en.wikipedia.org/wiki/JSON_Web_Token[JSON Web Token] (J
 This allows Solr to assert that a user is already authenticated with an external https://en.wikipedia.org/wiki/Identity_provider[Identity Provider] by validating that the JWT formatted https://en.wikipedia.org/wiki/Access_token[access token] is digitally signed by the Identity Provider.
 The typical use case is to integrate Solr with an https://en.wikipedia.org/wiki/OpenID_Connect[OpenID Connect] enabled IdP.
 
+== Module
+
+This is provided via a Solr Module that needs to be added to the classpath before use. Since this is a node-level
+plugin it must go in `sharedLib`, see <<configuring-solr-xml.adoc#,Configuring solr.xml>> for details.
+
 == Enable JWT Authentication
 
 To use JWT Bearer authentication, the `security.json` file must have an `authentication` part which defines the class being used for authentication along with configuration parameters.

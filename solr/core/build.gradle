@@ -20,17 +20,17 @@ apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
 
-configurations.all {
-  exclude group: 'log4j', module: 'log4j'
-  exclude group: 'commons-logging', module: 'commons-logging'
-  exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-  exclude group: 'org.apache.yetus', module: 'audience-annotations'
-  exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
-  exclude group: "com.google.code.findbugs", module: "jsr305"
-  // be conservative on what's added here.  Affects *all* configs, including internal ones.
-}
-
 dependencies {
+  // Spotbugs Annotations are only needed for old findbugs
+  // annotation usage like in Zookeeper during compilation time.
+  // It is not included in the release so exclude from checks.
+  compileOnly 'com.github.spotbugs:spotbugs-annotations'
+  testCompileOnly 'com.github.spotbugs:spotbugs-annotations'
+  // Exclude these from jar validation and license checks.
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
+
   // Export these dependencies so that they're imported transitively by
   // other modules.
 
@@ -38,6 +38,9 @@ dependencies {
   api "org.apache.lucene:lucene-core"
   api "org.apache.lucene:lucene-analysis-common"
   api "org.apache.lucene:lucene-queries"
+
+  // We export logging api with dependencies, which is useful for all modules
+  api 'org.slf4j:slf4j-api'
 
   api project(':solr:solrj')
   api project(':solr:server')
@@ -61,7 +64,7 @@ dependencies {
   implementation "org.apache.lucene:lucene-suggest"
 
   // Collections & lang utilities
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation 'com.google.guava:guava'
   implementation 'org.apache.commons:commons-lang3'
   implementation 'org.apache.commons:commons-math3'
   implementation 'commons-io:commons-io'
@@ -69,8 +72,6 @@ dependencies {
   implementation 'org.apache.commons:commons-collections4'
 
   implementation('com.github.ben-manes.caffeine:caffeine') { transitive = false }
-
-  implementation 'org.slf4j:slf4j-api'
 
   implementation 'commons-codec:commons-codec'
 
@@ -148,9 +149,6 @@ dependencies {
 
   testImplementation 'org.slf4j:jcl-over-slf4j'
 
-  // JWT Auth plugin
-  api 'org.bitbucket.b_c:jose4j'
-
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
@@ -204,16 +202,6 @@ dependencies {
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
-
-  testImplementation('no.nav.security:mock-oauth2-server', {
-    exclude group: "ch.qos.logback", module: "logback-core"
-    exclude group: "io.netty", module: "netty-all"
-    exclude group: "ch.qos.logback", module: "logback-classic"
-  })
-  
-  testImplementation 'com.nimbusds:nimbus-jose-jwt'
-  testImplementation 'com.squareup.okhttp3:mockwebserver'
-  testImplementation 'com.squareup.okhttp3:okhttp'
 }
 
 
