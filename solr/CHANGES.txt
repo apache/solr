@@ -284,8 +284,6 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15884: Backup responses now use a map to return information instead of a list (Houston Putman, Christine Poerschke)
 
-* SOLR-14800: FilterQuery default score should be the provided boost, instead of hardcoding to zero (Collins Abanda, David Smiley)
-
 * SOLR-9376: Raw value DocTransformers (`[xml]`, `[json]`, `[geo w=GeoJSON]`) now work
   in a distributed/SolrCloud context (Michael Gibney)
 
