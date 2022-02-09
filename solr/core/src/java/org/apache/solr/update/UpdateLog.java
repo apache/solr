@@ -1920,7 +1920,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
-                execute(cmd, executor, pendingTasks, processorChain.createProcessor(req, rsp), exceptionOnExecuteUpdate);
+                execute(cmd, executor, pendingTasks, executor != null ? processorChain.createProcessor(req, rsp) : proc, exceptionOnExecuteUpdate);
                 break;
               }
               case UpdateLog.DELETE: {
@@ -1931,7 +1931,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("delete {}", cmd);
-                execute(cmd, executor, pendingTasks, processorChain.createProcessor(req, rsp), exceptionOnExecuteUpdate);
+                execute(cmd, executor, pendingTasks, executor != null ? processorChain.createProcessor(req, rsp) : proc, exceptionOnExecuteUpdate);
                 break;
               }
 
