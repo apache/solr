@@ -32,7 +32,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +45,6 @@ import no.nav.security.mock.oauth2.MockOAuth2Server;
 import no.nav.security.mock.oauth2.OAuth2Config;
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper;
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback;
-import no.nav.security.mock.oauth2.token.OAuth2TokenProvider;
 import okhttp3.mockwebserver.MockWebServer;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
@@ -533,9 +531,9 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
       SSLSocketFactory sf = sslContext.getSocketFactory();
       mockWebServer.useHttps(sf, false);
 
-      OAuth2Config config =
-          new OAuth2Config(
-              false, new OAuth2TokenProvider(), Collections.emptySet(), mockWebServerWrapper);
+      OAuth2Config config = new OAuth2Config();
+      ((MockWebServerWrapper) config.getHttpServer()).getMockWebServer().useHttps(sf, false);
+
       return new MockOAuth2Server(config);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed initializing SSL", e);
