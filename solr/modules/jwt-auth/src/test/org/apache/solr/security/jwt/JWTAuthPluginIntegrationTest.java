@@ -482,11 +482,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
    * and trusting its SSL
    */
   private static String createMockOAuthSecurityJson(Path pemFilePath) throws IOException {
-    String wellKnown =
-        mockOAuth2Server
-            .wellKnownUrl("default")
-            .toString();
-    String pemCert = CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath)).replaceAll("\n", "\\\\n");
+    String wellKnown = mockOAuth2Server.wellKnownUrl("default").toString();
+    String pemCert =
+        CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath))
+            .replaceAll("\n", "\\\\n");
     return "{\n"
         + "  \"authentication\" : {\n"
         + "    \"class\": \"solr.JWTAuthPlugin\",\n"
