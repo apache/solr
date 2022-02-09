@@ -20,7 +20,7 @@ load bats_helper
 setup() {
   common_setup
 
-  solr auth disable > /dev/null 2>&1
+  run solr auth disable
 }
 
 @test "auth rejects blockUnknown option with invalid boolean" {
