@@ -15,12 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load bats_helper
+
 setup_file() {
-  solr start -c > /dev/null 2>&1
+  common_setup
+  run solr start -c
 }
 
 teardown_file() {
-  solr stop -all > /dev/null 2>&1
+  common_setup
+  run solr stop -all
 }
 
 setup() {
@@ -32,33 +36,33 @@ teardown() {
 }
 
 @test "can delete collections" {
-  solr create_collection -c COLL_NAME
-  # assert_collection_exists "COLL_NAME" || return 1
+  solr create_collection -c "COLL_NAME"
+  assert collection_exists "COLL_NAME"
 
   solr delete -c "COLL_NAME"
-  # assert_collection_doesnt_exist "COLL_NAME" || return 1
+  refute collection_exists "COLL_NAME"
 }
 
 @test "collection delete also deletes zk config" {
   solr create_collection -c "COLL_NAME"
-  # assert_config_exists "COLL_NAME" || return 1
+  assert config_exists "COLL_NAME"
 
   solr delete -c "COLL_NAME"
-  # assert_config_doesnt_exist "COLL_NAME" || return 1
+  refute config_exists "COLL_NAME"
 }
 
 @test "deletes accompanying zk config with nondefault name" {
   solr create_collection -c "COLL_NAME" -n "NONDEFAULT_CONFIG_NAME"
-  # assert_config_exists "NONDEFAULT_CONFIG_NAME" || return 1
+  assert config_exists "NONDEFAULT_CONFIG_NAME"
 
   solr delete -c "COLL_NAME"
-  # assert_config_doesnt_exist "NONDEFAULT_CONFIG_NAME"
+  refute config_exists "NONDEFAULT_CONFIG_NAME"
 }
 
 @test "deleteConfig option can opt to leave config in zk" {
   solr create_collection -c "COLL_NAME"
-  # assert_config_exists "COLL_NAME"
+  assert config_exists "COLL_NAME"
 
   solr delete -c "COLL_NAME" -deleteConfig false
-  # assert_config_exists "COLL_NAME"
+  assert config_exists "COLL_NAME"
 }

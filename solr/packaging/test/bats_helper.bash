@@ -23,8 +23,8 @@ common_setup() {
     # use $BATS_TEST_FILENAME instead of ${BASH_SOURCE[0]} or $0,
     # as those will point to the bats executable's location or the preprocessed file respectively
     DIR="$( cd "$( dirname "$BATS_TEST_FILENAME" )" >/dev/null 2>&1 && pwd )"
-    # add solr/solr/bin to the path for our tests
-    SOLR_HOME="$DIR/../build/solr-10.0.0-SNAPSHOT"
+    # add solr/bin to the path for our tests
+    SOLR_HOME="$DIR/../build/solr-10.0.0-SNAPSHOT" # currently hard coded, should fix
     PATH="$SOLR_HOME/bin:$PATH"
 }
 
@@ -36,4 +36,30 @@ delete_all_collections() {
       solr delete -c $collection >/dev/null 2>&1
     fi
   done
+}
+
+config_exists() {
+  local config_name=$1
+  local config_list=$(solr zk ls /configs -z localhost:9983)
+
+  for config in $config_list; do
+    if [[ $(echo $config | tr -d " ") == $config_name ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+collection_exists() {
+  local coll_name=$1
+  local coll_list=$(solr zk ls /collections -z localhost:9983)
+
+  for coll in $coll_list; do
+    if [[ $(echo $coll | tr -d " ") == $coll_name ]]; then
+      return 0
+    fi
+  done
+
+  return 1
 }

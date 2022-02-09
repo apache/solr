@@ -18,17 +18,16 @@
 load bats_helper
 
 setup_file() {
-  solr start -c > /dev/null 2>&1
+  common_setup
+  run solr start -c
 
-  ## TODO correct directory
-  local source_configset_dir="server/solr/configsets/sample_techproducts_configs"
-  TMP_CONFIGSET_DIR=$(mktemp -d)
-  cp -r $source_configset_dir $TMP_CONFIGSET_DIR
+  local source_configset_dir="$SOLR_HOME/server/solr/configsets/sample_techproducts_configs"
+  cp -r $source_configset_dir "$BATS_TMPDIR/config"
 }
 
 teardown_file() {
-  solr stop -all > /dev/null 2>&1
-  rm -rf $TMP_CONFIGSET_DIR
+  common_setup
+  run solr stop -all
 }
 
 setup() {
@@ -55,7 +54,7 @@ teardown() {
 }
 
 @test "accept -d option with explicit path to config" {
-  run solr create_collection -c COLL_NAME -d $TMP_CONFIGSET_DIR
+  run solr create_collection -c COLL_NAME -d "$BATS_TMPDIR/config"
   assert_output --partial "Created collection 'COLL_NAME'"
 }
 
@@ -68,11 +67,11 @@ teardown() {
 @test "allow config reuse when -n option specifies same config" {
   run -0 solr create_collection -c COLL_NAME_1 -n shared_config
   assert_output --partial "Created collection 'COLL_NAME_1'"
-  assert_output --partial "config-set 'other_conf_name'"
+  assert_output --partial "config-set 'shared_config'"
 
   run -0 solr create_collection -c COLL_NAME_2 -n shared_config
   assert_output --partial "Created collection 'COLL_NAME_2'"
-  assert_output --partial "config-set 'other_conf_name'"
+  assert_output --partial "config-set 'shared_config'"
 }
 
 @test "create multisharded collections when -s provided" {
