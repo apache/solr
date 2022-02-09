@@ -135,14 +135,14 @@ public class SystemInfoHandler extends RequestHandlerBase
   {
     rsp.setHttpCaching(false);
     SolrCore core = req.getCore();
-    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req, core))) {
+    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req))) {
       return; // Request was proxied to other node
     }
     if (core != null) rsp.add( "core", getCoreInfo( core, req.getSchema() ) );
-    boolean solrCloudMode =  getCoreContainer(req, core).isZooKeeperAware();
+    boolean solrCloudMode =  getCoreContainer(req).isZooKeeperAware();
     rsp.add( "mode", solrCloudMode ? "solrcloud" : "std");
     if (solrCloudMode) {
-      rsp.add("zkHost", getCoreContainer(req, core).getZkController().getZkServerAddress());
+      rsp.add("zkHost", getCoreContainer(req).getZkController().getZkServerAddress());
     }
     if (cc != null) {
       rsp.add("solr_home", cc.getSolrHome());
@@ -154,10 +154,10 @@ public class SystemInfoHandler extends RequestHandlerBase
     rsp.add( "security", getSecurityInfo(req) );
     rsp.add( "system", getSystemInfo() );
     if (solrCloudMode) {
-      rsp.add("node", getCoreContainer(req, core).getZkController().getNodeName());
+      rsp.add("node", getCoreContainer(req).getZkController().getNodeName());
     }
     SolrEnvironment env = SolrEnvironment.getFromSyspropOrClusterprop(solrCloudMode ?
-        getCoreContainer(req, core).getZkController().zkStateReader : null);
+        getCoreContainer(req).getZkController().zkStateReader : null);
     if (env.isDefined()) {
       rsp.add("environment", env.getCode());
       if (env.getLabel() != null) {
@@ -169,14 +169,9 @@ public class SystemInfoHandler extends RequestHandlerBase
     }
   }
 
-  private CoreContainer getCoreContainer(SolrQueryRequest req, SolrCore core) {
-    CoreContainer coreContainer;
-    if (core != null) {
-       coreContainer = req.getCoreContainer();
-    } else {
-      coreContainer = cc;
-    }
-    return coreContainer;
+  private CoreContainer getCoreContainer(SolrQueryRequest req) {
+    CoreContainer coreContainer = req.getCoreContainer();
+    return coreContainer == null ? cc : coreContainer;
   }
   
   /**
