@@ -62,7 +62,7 @@ ext {
 task run(type: JavaExec) {
   group = 'application'
   description = 'Run the main class with JavaExecTask'
-  main = project.ext.mainClass
+  mainClass = project.ext.mainClass
   classpath = sourceSets.main.runtimeClasspath
   systemProperties = ["log4j.configurationFile":"file:conf/log4j2.xml"]
   args = ["-f", "conf/solr-exporter-config.xml"]
