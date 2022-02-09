@@ -17,8 +17,6 @@
 package org.apache.solr.search;
 
 import java.util.Collection;
-import java.util.IdentityHashMap;
-import java.util.Map;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
