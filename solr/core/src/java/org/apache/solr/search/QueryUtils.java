@@ -54,21 +54,11 @@ public class QueryUtils {
    * varying score (i.e., it is a constant score query).
    */
   public static boolean isConstantScoreQuery(Query q) {
-    Map<Query, Boolean> seen = null; // lazy-init; this will be unnecessary in many cases
     for (;;) {
-      final Query unwrapped;
       if (q instanceof BoostQuery) {
-        unwrapped = ((BoostQuery) q).getQuery();
-        // NOTE: BoostQuery class and its inner query are final, so there's no risk of direct loops
+        q = ((BoostQuery) q).getQuery();
       } else if (q instanceof WrappedQuery) {
-        unwrapped = ((WrappedQuery) q).getWrappedQuery();
-        // NOTE: Neither WrappedQuery class nor its inner query are final, so there is a risk of direct loops
-        // TODO: Only the queries we explicitly check for in this method are relevant wrt detecting loops, and
-        //  only `WrappedQuery` currently presents a risk in that respect; we may be able to avoid this risk
-        //  by more tightly restricting the `WrappedQuery` API (e.g., making the get/set methods `final`)?
-        if (unwrapped == q) {
-          throw new IllegalStateException("recursive query");
-        }
+        q = ((WrappedQuery) q).getWrappedQuery();
       } else if (q instanceof ConstantScoreQuery) {
         return true;
       } else if (q instanceof MatchAllDocsQuery) {
@@ -88,13 +78,6 @@ public class QueryUtils {
       } else {
         return false;
       }
-      if (seen == null) {
-        seen = new IdentityHashMap<>();
-      }
-      if (seen.put(q, Boolean.TRUE) == Boolean.TRUE) {
-        throw new IllegalStateException("query loop detected");
-      }
-      q = unwrapped;
     }
   }
 
