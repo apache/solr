@@ -23,8 +23,8 @@ The typical use case is to integrate Solr with an https://en.wikipedia.org/wiki/
 
 == Module
 
-This is provided via a Solr Module that needs to be added to the classpath before use. Since this is a node-level
-plugin it must go in `sharedLib`, see <<configuring-solr-xml.adoc#,Configuring solr.xml>> for details.
+This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be added to the classpath before use. Since this is a node-level
+plugin it must go in `sharedLib`, see xref:configuration-guide:configuring-solr-xml.adoc[] for details.
 
 == Enable JWT Authentication
 
