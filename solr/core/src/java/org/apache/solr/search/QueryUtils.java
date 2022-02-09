@@ -206,6 +206,8 @@ public class QueryUtils {
     if (scoreQuery == null || scoreQuery instanceof MatchAllDocsQuery) {
       if (filterQuery == null) {
         return new MatchAllDocsQuery(); // default if nothing -- match everything
+      } else if (isConstantScoreQuery(filterQuery)) {
+        return filterQuery;
       } else {
         return new ConstantScoreQuery(filterQuery);
       }
