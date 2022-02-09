@@ -161,12 +161,25 @@ distZip.enabled = false
 
 assemble.dependsOn installDist
 
+task runBats(dependsOn: installDist, type: Exec) {
+  doFirst {
+    if ("type bats".execute().waitFor() > 0) {
+      throw new StopExecutionException("No BATS binary detected.")
+    }
+  }
+
+  environment SOLR_HOME: distDir.toString()
+  environment TEST_BREW_PREFIX: "brew --prefix".execute().text.trim()
+  executable 'bats'
+  args 'test'
+}
+
 // This appears to be macOS only for now, we need to expand this in the future but for now it's a start
 bats {
   sources = files('test')
   useDocker = false
   batsBinary = '/usr/local/bin/bats'
-  installer = 'brew'
+  installer = '' // Don't install bats for people it would be surprising
 }
 tasks.bats {
   doFirst {
