@@ -54,23 +54,7 @@ public class QueryUtils {
    * varying score (i.e., it is a constant score query).
    */
   public static boolean isConstantScoreQuery(Query q) {
-    return isConstantScoreQuery(q, null);
-  }
-
-  private static Map<Query, Void> lazyInitSeen(Map<Query, Void> seen, Query add) {
-    if (seen == null) {
-      seen = new IdentityHashMap<>();
-    }
-    seen.put(add, null);
-    return seen;
-  }
-
-  /**
-   * Returns true if the specified query is guaranteed to assign the same score to all docs; otherwise false
-   * @param q query to be evaluated
-   * @param seen used to detect possible loops in nested query input
-   */
-  private static boolean isConstantScoreQuery(Query q, Map<Query, Void> seen) {
+    Map<Query, Void> seen = null; // lazy-init; this will be unnecessary in many cases
     for (;;) {
       final Query unwrapped;
       if (q instanceof BoostQuery) {
@@ -95,27 +79,19 @@ public class QueryUtils {
         // TODO: this clause will be replaced with `q instanceof DocSetQuery`, pending SOLR-12336
         return true;
       } else if (q instanceof BooleanQuery) {
-        // do actual method call recursion for BooleanQuery
-        boolean addedQ = false;
-        for (BooleanClause c : (BooleanQuery) q) {
-          if (c.isScoring()) {
-            // NOTE: there's no purpose to checking `q == c.getQuery()` because BooleanQuery is final, with
-            // a builder that prevents direct loops. But as long as it is in principle possible to have a
-            // query that at some level wraps its own ancestor, we have to add `q` in order to detect deeper
-            // loops here.
-            if (!isConstantScoreQuery(c.getQuery(), addedQ ? seen : lazyInitSeen(seen, q))) {
-              return false;
-            }
-            addedQ = true;
-          }
-        }
-        // BooleanQuery with no scoring clauses capable of producing a score is itself a constant-score query
-        return true;
+        // NOTE: this check can be very simple because:
+        //  1. there's no need to check `q == clause.getQuery()` because BooleanQuery is final, with
+        //     a builder that prevents direct loops.
+        //  2. we don't bother recursing to second-guess a nominally "scoring" clause that actually wraps
+        //     a constant-score query.
+        return ((BooleanQuery) q).clauses().stream().noneMatch(BooleanClause::isScoring);
       } else {
         return false;
       }
-      // For wrapping queries that only wrap one query, we can use a loop instead of true recursion
-      lazyInitSeen(seen, q);
+      if (seen == null) {
+        seen = new IdentityHashMap<>();
+      }
+      seen.put(q, null);
       q = unwrapped;
     }
   }
