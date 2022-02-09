@@ -623,6 +623,18 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
     assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
+    // test the score for a filter, and that default score is 0
+    assertJQ(req("q", "+filter(*:*) +filter(id:1)", "fl", "id,score", "sort", "id asc")
+        , "/response/docs/[0]/score==0.0"
+    );
+
+    assertJQ(req("q", "+filter(*:*)^=10 +filter(id:1)", "fl", "id,score", "sort", "id asc")
+        , "/response/docs/[0]/score==10.0"
+    );
+
+    assertU(adoc("id", "40", "wdf_nocase", "just some text, don't want NPE"));
+    assertU(commit());
+
     // See SOLR-11555. If wdff removes all the characters, an NPE occurs.
     // try q and fq
     assertJQ(req("q", "filter(wdf_nocase:&)", "fl", "id", "debug", "query")

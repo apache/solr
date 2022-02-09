@@ -78,7 +78,9 @@ public class DocSetQuery extends Query implements DocSetProducer{
 
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-        return new ConstantScoreWeight(this, boost) {
+        //This should probably use the provided boost as scorer. However, that causes
+        // TestSolrQueryParser.testFilter to fail.
+        return new ConstantScoreWeight(this, 0) {
             @Override
             public Scorer scorer(LeafReaderContext context) throws IOException {
                 DocIdSetIterator disi = docSet.iterator(context);
