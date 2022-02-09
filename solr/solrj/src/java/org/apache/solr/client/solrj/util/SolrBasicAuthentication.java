@@ -24,7 +24,7 @@ import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.B64Code;
+import java.util.Base64;
 
 /** BasicAuthentication that does not care about uri and realm */
 public class SolrBasicAuthentication implements Authentication {
@@ -32,7 +32,7 @@ public class SolrBasicAuthentication implements Authentication {
   private final String value;
 
   public SolrBasicAuthentication(String user, String password) {
-    this.value = "Basic " + B64Code.encode(user + ":" + password, StandardCharsets.ISO_8859_1);
+    this.value = "Basic " + Base64.getEncoder().encodeToString((user + ":" + password + "").getBytes(StandardCharsets.ISO_8859_1));
   }
 
   @Override

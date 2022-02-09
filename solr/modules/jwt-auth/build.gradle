@@ -31,6 +31,7 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
   implementation 'org.eclipse.jetty:jetty-client'
+  implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
   implementation ('com.google.guava:guava') { transitive = false }
   implementation 'org.slf4j:slf4j-api'
 

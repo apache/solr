@@ -96,9 +96,8 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
     }
 
     HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
-    authenticationStore.addAuthentication(
-        new SolrBasicAuthentication(basicAuthUser, basicAuthPass));
-    client.getHttpClient().setAuthenticationStore(authenticationStore);
+    authenticationStore.addAuthentication(new SolrBasicAuthentication(basicAuthUser, basicAuthPass));
+    client.setAuthenticationStore(authenticationStore);
     client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(client.getHttpClient()));
     client
         .getProtocolHandlers()

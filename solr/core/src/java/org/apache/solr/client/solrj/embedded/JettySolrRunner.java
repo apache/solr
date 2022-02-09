@@ -304,7 +304,11 @@ public class JettySolrRunner {
       ServerConnector connector;
       if (sslcontext != null) {
         configuration.setSecureScheme("https");
-        configuration.addCustomizer(new SecureRequestCustomizer());
+        SecureRequestCustomizer customizer = new SecureRequestCustomizer(false);
+        sslcontext.setSniRequired(false);
+        customizer.setSniHostCheck(false);
+       
+        configuration.addCustomizer(customizer);
         HttpConnectionFactory http1ConnectionFactory = new HttpConnectionFactory(configuration);
 
         if (config.onlyHttp1 || !Constants.JRE_IS_MINIMUM_JAVA9) {
@@ -367,12 +371,11 @@ public class JettySolrRunner {
 
     HandlerWrapper chain;
     {
-      // Initialize the servlets
-      final ServletContextHandler root =
-          new ServletContextHandler(server, config.context, ServletContextHandler.SESSIONS);
+    // Initialize the servlets
+    final ServletContextHandler root = new ServletContextHandler(server, config.context, ServletContextHandler.SESSIONS);
+    root.setResourceBase(".");
 
-      server.addLifeCycleListener(
-          new LifeCycle.Listener() {
+    server.addEventListener(new LifeCycle.Listener() {
 
             @Override
             public void lifeCycleStopping(LifeCycle arg0) {}
@@ -452,9 +455,6 @@ public class JettySolrRunner {
     gzipHandler.setHandler(chain);
 
     gzipHandler.setMinGzipSize(23); // https://github.com/eclipse/jetty.project/issues/4191
-    gzipHandler.setCheckGzExists(false);
-    gzipHandler.setCompressionLevel(-1);
-    gzipHandler.setExcludedAgentPatterns(".*MSIE.6\\.0.*");
     gzipHandler.setIncludedMethods("GET");
 
     server.setHandler(gzipHandler);

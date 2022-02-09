@@ -36,7 +36,6 @@ configurations {
 }
 
 dependencies {
-  serverLib 'org.eclipse.jetty:jetty-continuation'
   serverLib 'org.eclipse.jetty:jetty-deploy'
   serverLib 'org.eclipse.jetty:jetty-http'
   serverLib 'org.eclipse.jetty:jetty-io'

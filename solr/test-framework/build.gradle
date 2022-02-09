@@ -58,6 +58,7 @@ dependencies {
   implementation 'com.google.guava:guava'
   implementation 'io.dropwizard.metrics:metrics-core'
   implementation 'io.dropwizard.metrics:metrics-jetty9'
+  implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
   implementation 'commons-cli:commons-cli'
   permitUnusedDeclared 'commons-cli:commons-cli'
   implementation 'org.apache.httpcomponents:httpclient'

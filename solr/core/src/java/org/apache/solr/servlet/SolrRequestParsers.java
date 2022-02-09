@@ -63,8 +63,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.RTimerTree;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -624,9 +622,8 @@ public class SolrRequestParsers {
         throw new SolrException(
             ErrorCode.BAD_REQUEST, "Not multipart content! " + req.getContentType());
       }
-      // Magic way to tell Jetty dynamically we want multi-part processing.  "Request" here is a
-      // Jetty class
-      req.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, multipartConfigElement);
+      // Magic way to tell Jetty dynamically we want multi-part processing.  "Request" here is a Jetty class
+      req.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, multipartConfigElement);
 
       MultiMapSolrParams params = parseQueryString(req.getQueryString());
 
@@ -647,8 +644,8 @@ public class SolrRequestParsers {
 
     static boolean isMultipart(HttpServletRequest req) {
       // Jetty utilities
-      return MimeTypes.Type.MULTIPART_FORM_DATA.is(
-          HttpFields.valueParameters(req.getContentType(), null));
+      String ct = req.getContentType();
+      return ct != null && ct.startsWith("multipart/form-data");
     }
 
     /** Wrap a MultiPart-{@link Part} as a {@link ContentStream} */
@@ -668,6 +665,12 @@ public class SolrRequestParsers {
         return part.getInputStream();
       }
     }
+  }
+
+  static boolean isMultipart(HttpServletRequest req) {
+    // Jetty utilities
+    String ct = req.getContentType();
+    return ct != null && ct.startsWith("multipart/form-data");
   }
 
   /** Clean up any files created by MultiPartInputStream. */

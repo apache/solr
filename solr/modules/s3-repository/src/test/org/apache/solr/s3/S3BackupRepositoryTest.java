@@ -19,14 +19,25 @@ package org.apache.solr.s3;
 import static org.apache.solr.s3.S3BackupRepository.S3_SCHEME;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
+import com.amazonaws.ClientConfiguration;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509ExtendedTrustManager;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
@@ -42,10 +53,15 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.utils.AttributeMap;
 
+@SuppressWarnings("unchecked")
 public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   private static final String BUCKET_NAME = S3BackupRepositoryTest.class.getSimpleName();
@@ -54,7 +70,11 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   @ClassRule
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder().silent().withInitialBuckets(BUCKET_NAME).build();
+      S3MockRule.builder()
+          .silent()
+          .withInitialBuckets(BUCKET_NAME)
+          .withSecureConnection(false)
+          .build();
 
   /**
    * Sent by {@link org.apache.solr.handler.ReplicationHandler}, ensure we don't choke on the bare
@@ -246,7 +266,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
 
     try (S3BackupRepository repo = getRepository()) {
       // Open an index input on a file
-      pushObject("/my-repo/content", content);
+      pushObject("my-repo/content", content);
       IndexInput input = repo.openInput(new URI("s3://my-repo"), "content", IOContext.DEFAULT);
 
       byte[] buffer = new byte[100];
@@ -278,7 +298,7 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
       String blank = " ".repeat(5 * BufferedIndexInput.BUFFER_SIZE);
       String content = "This is the file " + blank + "content";
 
-      pushObject("/content", content);
+      pushObject("content", content);
       IndexInput input = repo.openInput(new URI("s3:///"), "content", IOContext.DEFAULT);
 
       // Read twice the size of the internal buffer, so first bytes are not in the buffer anymore
@@ -320,17 +340,113 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   }
 
   private void pushObject(String path, String content) {
-    try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
+    try (S3Client s3 = createS3ClientV2()) {
       s3.putObject(b -> b.bucket(BUCKET_NAME).key(path), RequestBody.fromString(content));
     }
   }
 
   private File pullObject(String path) throws IOException {
-    try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
+    try (S3Client s3 = createS3ClientV2()) {
       File file = temporaryFolder.newFile();
       InputStream input = s3.getObject(b -> b.bucket(BUCKET_NAME).key(path));
       FileUtils.copyInputStreamToFile(input, file);
       return file;
     }
+  }
+
+  public S3Client createS3ClientV2() {
+    return S3Client.builder()
+        .region(Region.of("us-east-1"))
+        .credentialsProvider(
+            StaticCredentialsProvider.create(AwsBasicCredentials.create("foo", "bar")))
+        .endpointOverride(URI.create(S3_MOCK_RULE.getServiceEndpoint()))
+        .httpClient(
+            UrlConnectionHttpClient.builder()
+                .buildWithDefaults(
+                    AttributeMap.builder()
+                        .put(
+                            new HttpConfigurationOption("secureConnection", Boolean.class),
+                            Boolean.FALSE)
+                        .build()))
+        .build();
+  }
+
+  public ClientConfiguration configureClientToIgnoreInvalidSslCertificates(
+      final ClientConfiguration clientConfiguration) {
+
+    clientConfiguration
+        .getApacheHttpClientConfig()
+        .withSslSocketFactory(
+            new SSLConnectionSocketFactory(
+                createBlindlyTrustingSslContext(), NoopHostnameVerifier.INSTANCE));
+
+    return clientConfiguration;
+  }
+
+  private SSLContext createBlindlyTrustingSslContext() {
+    try {
+      final SSLContext sc = SSLContext.getInstance("TLS");
+
+      sc.init(
+          null,
+          new TrustManager[] {
+            new X509ExtendedTrustManager() {
+              @Override
+              public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                return null;
+              }
+
+              @Override
+              public void checkClientTrusted(
+                  final X509Certificate[] arg0, final String arg1, final Socket arg2) {
+                // no-op
+              }
+
+              @Override
+              public void checkClientTrusted(
+                  final X509Certificate[] arg0, final String arg1, final SSLEngine arg2) {
+                // no-op
+              }
+
+              @Override
+              public void checkClientTrusted(final X509Certificate[] certs, final String authType) {
+                // no-op
+              }
+
+              @Override
+              public void checkServerTrusted(final X509Certificate[] certs, final String authType) {
+                // no-op
+              }
+
+              @Override
+              public void checkServerTrusted(
+                  final X509Certificate[] arg0, final String arg1, final Socket arg2) {
+                // no-op
+              }
+
+              @Override
+              public void checkServerTrusted(
+                  final X509Certificate[] arg0, final String arg1, final SSLEngine arg2) {
+                // no-op
+              }
+            }
+          },
+          new java.security.SecureRandom());
+
+      return sc;
+    } catch (final NoSuchAlgorithmException | KeyManagementException e) {
+      throw new RuntimeException("Unexpected exception", e);
+    }
+  }
+}
+
+@SuppressWarnings({"RedundantCast", "rawtypes", "unchecked"})
+final class HttpConfigurationOption extends AttributeMap.Key {
+
+  private final String name;
+
+  public HttpConfigurationOption(String secureConnection, Class<Boolean> booleanClass) {
+    super(booleanClass);
+    this.name = secureConnection;
   }
 }
