@@ -54,7 +54,7 @@ public class QueryUtils {
    * varying score (i.e., it is a constant score query).
    */
   public static boolean isConstantScoreQuery(Query q) {
-    Map<Query, Void> seen = null; // lazy-init; this will be unnecessary in many cases
+    Map<Query, Boolean> seen = null; // lazy-init; this will be unnecessary in many cases
     for (;;) {
       final Query unwrapped;
       if (q instanceof BoostQuery) {
@@ -91,7 +91,9 @@ public class QueryUtils {
       if (seen == null) {
         seen = new IdentityHashMap<>();
       }
-      seen.put(q, null);
+      if (seen.put(q, Boolean.TRUE) == Boolean.TRUE) {
+        throw new IllegalStateException("query loop detected");
+      }
       q = unwrapped;
     }
   }
