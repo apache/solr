@@ -21,6 +21,7 @@
 plugins {
   id 'base'
   id 'distribution'
+  id("com.felipefzdz.gradle.bats") version "0.0.1"
 }
 
 description = 'Solr distribution packaging'
@@ -159,3 +160,19 @@ distTar {
 distZip.enabled = false
 
 assemble.dependsOn installDist
+
+// This appears to be macOS only for now, we need to expand this in the future but for now it's a start
+bats {
+  sources = files('test')
+  useDocker = false
+  batsBinary = '/usr/local/bin/bats'
+  installer = 'brew'
+}
+tasks.bats {
+  doFirst {
+    if (file(bats.batsBinary).canExecute() == false) {
+      throw new StopExecutionException("No BATS binary detected.")
+    }
+  }
+  dependsOn installDist
+}
