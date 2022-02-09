@@ -219,6 +219,14 @@ task downloadAntoraLunrExtension(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension")
 }
 
+task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
+    group = 'Build Dependency Download'
+    args = ["install", "@djencks/asciidoctor-mathjax"]
+
+    inputs.files("${project.ext.nodeProjectDir}/package.json")
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@djencks/asciidoctor-mathjax")
+}
+
 task downloadAntora {
     group = 'Build Dependency Download'
     description "Download all Antora build dependencies for site generation."
@@ -226,6 +234,7 @@ task downloadAntora {
     dependsOn tasks.downloadAntoraCli
     dependsOn tasks.downloadAntoraSiteGenerator
     dependsOn tasks.downloadAntoraLunrExtension
+    dependsOn tasks.downloadAsciidoctorMathjaxExtension
 }
 
 task downloadLinkValidator(type: NpmTask) {
@@ -375,6 +384,7 @@ task buildLocalSite(type: NpxTask) {
 
     args = [
         "${project.ext.siteStagingDir}/playbook.yml",
+        "--fetch"
     ] + extraArgs
 
     environment = ["SITE_SEARCH_ENABLED": "true"]

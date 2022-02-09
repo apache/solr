@@ -30,6 +30,9 @@ output:
 asciidoc:
   attributes:
     stem:
+  extensions:
+    - '@djencks/asciidoctor-mathjax'
+
 runtime:
   fetch: true
 antora:
