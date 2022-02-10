@@ -16,17 +16,12 @@
  */
 package org.apache.solr.search;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.search.join.FiltersQParser;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
