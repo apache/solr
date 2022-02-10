@@ -67,7 +67,7 @@ Interpreter : jdbc
 default.url : jdbc:solr://SOLR_ZK_CONNECTION_STRING?collection=<collection_name>
 default.driver : org.apache.solr.client.solrj.io.sql.DriverImpl
 default.user : solr
-dependency : org.apache.solr:solr-solrj:{solr-docs-version}.0
+dependency : org.apache.solr:solr-solrj:{solr-full-version}
 ----
 
 == Query with the Notebook

@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -64,6 +65,7 @@ import java.util.Map;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 @SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test
+@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 @ThreadLeakLingering(linger = 40)
 public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
   public static final String HDFS_REPO_SOLR_XML = "<solr>\n" +

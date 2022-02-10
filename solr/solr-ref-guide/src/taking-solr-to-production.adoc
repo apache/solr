@@ -35,12 +35,12 @@ We recommend separating your live Solr files, such as logs and index files, from
 By default, the service installation script will extract the distribution archive into `/opt`.
 You can change this location using the `-i` option when running the installation script.
 The script will also create a symbolic link to the versioned directory of Solr.
-For instance, if you run the installation script for Solr {solr-docs-version}.0, then the following directory structure will be used:
+For instance, if you run the installation script for Solr {solr-full-version}, then the following directory structure will be used:
 
 [source,plain,subs="attributes"]
 ----
-/opt/solr-{solr-docs-version}.0
-/opt/solr -> /opt/solr-{solr-docs-version}.0
+/opt/solr-{solr-full-version}
+/opt/solr -> /opt/solr-{solr-full-version}
 ----
 
 Using a symbolic link insulates any scripts from being dependent on the specific Solr version.
@@ -68,7 +68,7 @@ To run the script, you'll need to download the latest Solr distribution archive 
 
 [source,bash,subs="attributes"]
 ----
-tar xzf solr-{solr-docs-version}.0.tgz solr-{solr-docs-version}.0/bin/install_solr_service.sh --strip-components=2
+tar xzf solr-{solr-full-version}.tgz solr-{solr-full-version}/bin/install_solr_service.sh --strip-components=2
 ----
 
 The previous command extracts the `install_solr_service.sh` script from the archive into the current directory.
@@ -77,7 +77,7 @@ The installation script must be run as root:
 
 [source,bash,subs="attributes"]
 ----
-sudo bash ./install_solr_service.sh solr-{solr-docs-version}.0.tgz
+sudo bash ./install_solr_service.sh solr-{solr-full-version}.tgz
 ----
 
 By default, the script extracts the distribution archive into `/opt`, configures Solr to write files into `/var/solr`, and runs Solr as the `solr` user.
@@ -85,7 +85,7 @@ Consequently, the following command produces the same result as the previous com
 
 [source,bash,subs="attributes"]
 ----
-sudo bash ./install_solr_service.sh solr-{solr-docs-version}.0.tgz -i /opt -d /var/solr -u solr -s solr -p 8983
+sudo bash ./install_solr_service.sh solr-{solr-full-version}.tgz -i /opt -d /var/solr -u solr -s solr -p 8983
 ----
 
 You can customize the service name, installation directories, port, and owner using options passed to the installation script.
@@ -464,7 +464,7 @@ The easiest approach is to use the service installation script to add multiple s
 
 [source,bash,subs="attributes"]
 ----
-sudo bash ./install_solr_service.sh solr-{solr-docs-version}.0.tgz -s solr2 -p 8984
+sudo bash ./install_solr_service.sh solr-{solr-full-version}.tgz -s solr2 -p 8984
 ----
 
 The command shown above will add a service named `solr2` running on port 8984 using `/var/solr2` for writable (aka "live") files; the second server will still be owned and run by the `solr` user and will use the Solr distribution files in `/opt`.

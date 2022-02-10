@@ -46,10 +46,10 @@ If you want to use highlighting, you must set this to `true`.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `orignal`
+|Optional |Default: `unified`
 |===
 +
-The highlighting implementation to use.
+The highlighting implementation/engine to use.
 Acceptable values are: `unified`, `original`, `fastVector`.
 +
 See the <<Choosing a Highlighter>> section below for more details on the differences between the available highlighters.
@@ -248,18 +248,18 @@ When there is a match to the query term in that field, it will be included for e
 == Choosing a Highlighter
 
 Solr provides a `HighlightComponent` (a <<requesthandlers-searchcomponents.adoc#defining-search-components,`SearchComponent`>>) and it's in the default list of components for search handlers.
-It offers a somewhat unified API over multiple actual highlighting implementations (or simply "highlighters") that do the business of highlighting.
+It offers a somewhat unified API over multiple actual highlighting implementations / engines (or simply "highlighters") that do the business of highlighting.
 
 There are many parameters supported by more than one highlighter, and sometimes the implementation details and semantics will be a bit different, so don't expect identical results when switching highlighters.
-You should use the `hl.method` parameter to choose a highlighter but it's also possible to explicitly configure an implementation by class name in `solrconfig.xml`.
+You should use the `hl.method` parameter to choose a highlighter.
 
-There are four highlighters available that can be chosen at runtime with the `hl.method` parameter, in order of general recommendation:
+There are three highlighters available that can be chosen at runtime with the `hl.method` parameter, in order of general recommendation:
 
 <<Unified Highlighter>>:: (`hl.method=unified`)
 +
 The Unified Highlighter is the newest highlighter (as of Solr 6.4), which stands out as the most performant and accurate of the options.
 It can handle typical requirements and others possibly via plugins/extension.
-We recommend that you try this highlighter even though it isn't the default (yet).
+We recommend that you use this highlighter as a first choice.
 +
 The UH highlights a query very _accurately_ and thus is true to what the underlying Lucene query actually matches.
 Other highlighters highlight terms more liberally (over-highlight).
@@ -274,7 +274,7 @@ Passage scoring does not consider boosts in the query.
 Some users want more/better passage breaking flexibility.
 The "alternate" fallback options are more primitive.
 
-<<Original Highlighter>>:: (`hl.method=original`, the default)
+<<Original Highlighter>>:: (`hl.method=original`)
 +
 The Original Highlighter, sometimes called the "Standard Highlighter" or "Default Highlighter", is Lucene's original highlighter – a venerable option with a high degree of customization options.
 Its query accuracy is good enough for most needs, although it's not quite as good/perfect as the Unified Highlighter.
@@ -298,7 +298,6 @@ This highlighter's query-representation is less advanced than the Original or Un
 
 Both the FastVector and Original Highlighters can be used in conjunction in a search request to highlight some fields with one and some the other.
 In contrast, the Unified Highlighter can only be chosen exclusively.
-
 
 The Unified Highlighter is exclusively configured via search parameters.
 In contrast, some settings for the Original and FastVector Highlighters are set in `solrconfig.xml`.
@@ -360,12 +359,12 @@ The offset source can be explicitly configured to one of: `ANALYSIS`, `POSTINGS`
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `0.5`
+|Optional |Default: `0.33`
 |===
 +
 This parameter influences where the first match (i.e., highlighted text) in a passage is positioned.
 +
-The default value of `0.5` means to align the match to the middle.
+The default value of `0.33` means to align the match to the left third.
 A value of `0.0` means to align the match to the left, while `1.0` to align it to the right.
 This setting is a best-effort hint, as there are a variety of factors.
 When there's lots of text to be highlighted, lowering this number can help performance a lot.
@@ -491,7 +490,7 @@ This character will still appear in the text as the last character of a passage.
 +
 Tells the UH to use Lucene's "Weight Matches" API instead of doing `SpanQuery` conversion.
 This is the most accurate highlighting mode reflecting the query.
-Furthermore, phrases will be highlighted as a whole instead of word by word.
+Furthermore, phrases will be highlighted as a whole instead of word by word.  Currently, this setting slows down the unified highlighter a lot when many fields are highlighted.
 +
 If either `hl.usePhraseHighlighter` or `hl.multiTermQuery` are set to `false`, then this setting is effectively `false` no matter what you set it to.
 

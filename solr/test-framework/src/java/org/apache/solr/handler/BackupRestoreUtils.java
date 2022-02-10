@@ -57,6 +57,7 @@ public class BackupRestoreUtils extends SolrTestCase {
     }
     leaderClient.add(collectionName, docs);
     leaderClient.commit(collectionName);
+    verifyDocs(nDocs, leaderClient, collectionName);
     return nDocs;
   }
 

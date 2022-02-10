@@ -111,7 +111,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   public DistributedZkUpdateProcessor(SolrQueryRequest req,
                                       SolrQueryResponse rsp, UpdateRequestProcessor next) {
     super(req, rsp, next);
-    CoreContainer cc = req.getCore().getCoreContainer();
+    CoreContainer cc = req.getCoreContainer();
     cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
     zkController = cc.getZkController();
     distributedClusterStateUpdater = zkController.getDistributedClusterStateUpdater();
@@ -1260,7 +1260,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // Streaming updates can delay shutdown and cause big update reorderings (new streams can't be
     // initiated, but existing streams carry on).  This is why we check if the CC is shutdown.
     // See SOLR-8203 and loop HdfsChaosMonkeyNothingIsSafeTest (and check for inconsistent shards) to test.
-    if (req.getCore().getCoreContainer().isShutDown()) {
+    if (req.getCoreContainer().isShutDown()) {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is shutting down.");
     }
 

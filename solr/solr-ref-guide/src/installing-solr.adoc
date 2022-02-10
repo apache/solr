@@ -62,7 +62,7 @@ To keep things simple for now, extract the Solr distribution archive to your loc
 [source,bash,subs="attributes"]
 ----
 cd ~/
-tar zxf solr-{solr-docs-version}.0.tgz
+tar zxf solr-{solr-full-version}.tgz
 ----
 
 Once extracted, you are now ready to run Solr using the instructions provided in the <<Starting Solr>> section below.

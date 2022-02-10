@@ -28,7 +28,7 @@ This command has an option to run without prompting you for input (`-noprompt`),
 
 [source,subs="verbatim,attributes+"]
 ----
-solr-{solr-docs-version}.0:$ ./bin/solr start -e cloud
+solr-{solr-full-version}:$ ./bin/solr start -e cloud
 
 Welcome to the SolrCloud example!
 
@@ -63,9 +63,9 @@ The script will print the commands it uses for your reference.
 ----
 Starting up 2 Solr nodes for your example SolrCloud cluster.
 
-Creating Solr home directory /solr-{solr-docs-version}.0/example/cloud/node1/solr
-Cloning /solr-{solr-docs-version}.0/example/cloud/node1 into
-   /solr-{solr-docs-version}.0/example/cloud/node2
+Creating Solr home directory /solr-{solr-full-version}/example/cloud/node1/solr
+Cloning /solr-{solr-full-version}/example/cloud/node1 into
+   /solr-{solr-full-version}/example/cloud/node2
 
 Starting up Solr on port 8983 using command:
 "bin/solr" start -cloud -p 8983 -s "example/cloud/node1/solr"
@@ -134,11 +134,11 @@ At this point, Solr will create the collection and again output to the screen th
 
 [source,subs="verbatim,attributes+"]
 ----
-Uploading /solr-{solr-docs-version}.0/server/solr/configsets/_default/conf for config techproducts to ZooKeeper at localhost:9983
+Uploading /solr-{solr-full-version}/server/solr/configsets/_default/conf for config techproducts to ZooKeeper at localhost:9983
 
 Connecting to ZooKeeper at localhost:9983 ...
 INFO  - 2017-07-27 12:48:59.289; org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider; Cluster at localhost:9983 ready
-Uploading /solr-{solr-docs-version}.0/server/solr/configsets/sample_techproducts_configs/conf for config techproducts to ZooKeeper at localhost:9983
+Uploading /solr-{solr-full-version}/server/solr/configsets/sample_techproducts_configs/conf for config techproducts to ZooKeeper at localhost:9983
 
 Creating new collection 'techproducts' using command:
 http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts&numShards=2&replicationFactor=2&collection.configName=techproducts
@@ -199,13 +199,13 @@ The documents are in a mix of document formats (JSON, CSV, etc.), and fortunatel
 .Linux/Mac
 [source,subs="verbatim,attributes+"]
 ----
-solr-{solr-docs-version}.0:$ bin/post -c techproducts example/exampledocs/*
+solr-{solr-full-version}:$ bin/post -c techproducts example/exampledocs/*
 ----
 
 .Windows
 [source,subs="verbatim,attributes+"]
 ----
-C:\solr-{solr-docs-version}.0> java -jar -Dc=techproducts -Dauto example\exampledocs\post.jar example\exampledocs\*
+C:\solr-{solr-full-version}> java -jar -Dc=techproducts -Dauto example\exampledocs\post.jar example\exampledocs\*
 ----
 
 You should see output similar to the following:

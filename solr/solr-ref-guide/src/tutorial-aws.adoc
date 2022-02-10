@@ -140,14 +140,14 @@ $ java -version
 +
 [source,bash,subs="verbatim,attributes+"]
 # download desired version of Solr
-$ wget http://archive.apache.org/dist/lucene/solr/{solr-docs-version}.0/solr-{solr-docs-version}.0.tgz
+$ wget http://archive.apache.org/dist/lucene/solr/{solr-full-version}/solr-{solr-full-version}.tgz
 # untar
-$ tar -zxvf solr-{solr-docs-version}.0.tgz
+$ tar -zxvf solr-{solr-full-version}.tgz
 # set SOLR_HOME
-$ export SOLR_HOME=$PWD/solr-{solr-docs-version}.0
+$ export SOLR_HOME=$PWD/solr-{solr-full-version}
 # put the env variable in .bashrc
 # vim ~/.bashrc
-export SOLR_HOME=/home/ec2-user/solr-{solr-docs-version}.0
+export SOLR_HOME=/home/ec2-user/solr-{solr-full-version}
 
 . Resolve the Public DNS to simpler hostnames.
 +
