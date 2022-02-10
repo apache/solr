@@ -84,8 +84,8 @@ Solr has official support for running on Kubernetes, in the official Docker imag
 Please refer to the [Solr Operator](https://solr.apache.org/operator) home for details, tutorials and instructions.
 
 ## Building Solr from Source
-FIXME --> is this where we get JDK from??   What about OpenJDK?
-Download the Java 11 JDK (Java Development Kit) or later from https://jdk.java.net/
+Download the Java 11 JDK (Java Development Kit) or later.  We recommend the OpenJDK
+distribution Eclipse Temurin available from https://adoptium.net/.
 You will need the JDK installed, and the $JAVA_HOME/bin (Windows: %JAVA_HOME%\bin)
 folder included on your command path. To test this, issue a "java -version" command
 from your shell (command prompt) and verify that the Java version is 11 or later.
