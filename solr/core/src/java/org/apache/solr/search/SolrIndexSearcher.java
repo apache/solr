@@ -70,6 +70,7 @@ import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -815,6 +816,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       if (query instanceof WrappedQuery) {
         query = ((WrappedQuery) query).getWrappedQuery();
+      } else if (query instanceof FilterQuery) {
+        doCache = false;
+        // Paradoxically, this _is_ what we want. See related comment in `getDocSet(Query, DocSet)`
       }
     }
 
@@ -1201,6 +1205,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       if (query instanceof WrappedQuery) {
         query = ((WrappedQuery) query).getWrappedQuery();
+      } else if (query instanceof FilterQuery) {
+        doCache = false;
+        // Paradoxically, this _is_ what we want. The FilterQuery wrapper is designed to ensure that its
+        // inner query always consults the filterCache, regardless of the context in which it's called.
+        // FilterQuery internally calls SolrIndexSearcher.getDocSet with its _wrapped_ query, so the caching
+        // happens at that level, and we want _not_ to consult the filterCache with the FilterQuery wrapper
+        // per se. Allowing `doCache=true` here can result in double-entry in the filterCache (e.g. when
+        // using `fq=filter({!term f=field v=term})`, or caching separate clauses of a BooleanQuery via
+        // `fq={!bool should='filter($q1)' should='filter($q2)'}`).
+        // Other solutions, e.g., having FilterQuery internally get `getDocSet` with _itself_ (as
+        // opposed to its wrapped query), unwrapping the FilterQuery here, or any attempt to modify
+        // `.equals(...)` and `.hashCode()` to recognize FilterQuery as equivalent to its inner query,
+        // would result in deadlock against an async cache like CaffeineCache in its default configuration.
       }
     }
 
