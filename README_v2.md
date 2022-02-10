@@ -144,11 +144,11 @@ for information on contributing.
 
 - [Mailing Lists](https://solr.apache.org/community.html#mailing-lists-chat)
 - [Issue Tracker (JIRA)](https://issues.apache.org/jira/browse/SOLR)
-- IRC: `#solr` and `#solr-dev` on freenode.net
+- IRC: `#solr` and `#solr-dev` on libera.chat
 - [Slack](https://solr.apache.org/community.html#slack)
 
-# Export control
--------------------------------------------------
+## Export control
+
 This distribution includes cryptographic software.  The country in
 which you currently reside may have restrictions on the import,
 possession, use, and/or re-export to another country, of
