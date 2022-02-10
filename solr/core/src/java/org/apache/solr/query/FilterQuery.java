@@ -27,6 +27,7 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.DocSetProducer;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -35,7 +36,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * org.apache.lucene.search.BooleanClause.Occur#FILTER} -- it scores as 0. Moreover, it will use
  * Solr's filter cache.
  */
-public class FilterQuery extends ExtendedQueryBase {
+public class FilterQuery extends ExtendedQueryBase implements DocSetProducer {
   protected final Query q;
 
   public FilterQuery(Query q) {
@@ -125,11 +126,24 @@ public class FilterQuery extends ExtendedQueryBase {
       return new ConstantScoreQuery(q).createWeight(searcher, scoreMode, 0f);
     }
 
-    SolrIndexSearcher solrSearcher = (SolrIndexSearcher) searcher;
-    DocSet docs = solrSearcher.getDocSet(q);
+    DocSet docs = createDocSet((SolrIndexSearcher) searcher);
     // reqInfo.addCloseHook(docs);  // needed for off-heap refcounting
 
     // note: DocSet.makeQuery is basically a CSQ
     return docs.makeQuery().createWeight(searcher, scoreMode, 0f);
+  }
+
+  @Override
+  public DocSet createDocSet(SolrIndexSearcher searcher) throws IOException {
+    /*
+    There is a substantial practical reason for FilterQuery to implement DocSetProducer:
+    the way FilterQuery works, it only consults the cache internally for the backing
+    query; the cache is never directly consulted for the FilterQuery _per se_. As
+    a consequence, when FilterQuery is used in a context that wants a DocSet, without
+    implementing DocSetProducer, a full clone of the cached DocSet must always be
+    built via the Weight returned by FilterQuery.createWeight(). Implementing
+    DocSetProducer allows to avoid superfluous DocSet creation.
+     */
+    return searcher.getDocSet(q);
   }
 }
