@@ -1,0 +1,213 @@
+= Block Join Query Parser
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License
+
+There are two query parsers that support block joins.
+These parsers allow indexing and searching for relational content that has been xref:indexing-guide:indexing-nested-documents.adoc[indexed as Nested Documents].
+
+The example usage of the query parsers below assumes the following documents have been indexed:
+
+[source,xml]
+----
+<add>
+  <doc>
+    <field name="id">1</field>
+    <field name="content_type">parent</field>
+    <field name="title">Solr has block join support</field>
+    <doc>
+      <field name="id">2</field>
+      <field name="content_type">child</field>
+      <field name="comments">SolrCloud supports it too!</field>
+    </doc>
+  </doc>
+  <doc>
+    <field name="id">3</field>
+    <field name="content_type">parent</field>
+    <field name="title">New Lucene and Solr release</field>
+    <doc>
+      <field name="id">4</field>
+      <field name="content_type">child</field>
+      <field name="comments">Lots of new features</field>
+    </doc>
+  </doc>
+</add>
+----
+
+== Block Join Children Query Parser
+
+This parser wraps a query that matches some parent documents and returns the children of those documents.
+
+The syntax for this parser is: `q={!child of=<blockMask>}<someParents>`.
+
+* The inner subordinate query string (`someParents`) must be a query that will match some parent documents
+* The `of` parameter must be a query string to use as a <<block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents
+
+The resulting query will match all documents which do _not_ match the `<blockMask>` query and are children (or descendents) of the documents matched by `<someParents>`.
+
+Using the example documents above, we can construct a query such as `q={!child of="content_type:parent"}title:lucene`.
+We only get one document in response:
+
+[source,xml]
+----
+<result name="response" numFound="1" start="0">
+  <doc>
+    <str name="id">4</str>
+    <arr name="content_type"><str>child</str></arr>
+    <str name="comments">Lots of new features</str>
+  </doc>
+</result>
+----
+
+[CAUTION]
+====
+The query for `someParents` *MUST* match a strict subset of the documents matched by the <<block-mask,Block Mask>> or your query may result in an Error:
+
+[literal]
+Parent query must not match any docs besides parent filter.
+Combine them as must (+) and must-not (-) clauses to find a problem doc.
+
+You can search for `q=+(someParents) -(blockMask)` to find a cause if you encounter this type of error.
+====
+
+=== Filtering and Tagging
+
+`{!child}` also supports `filters` and `excludeTags` local params like the following:
+
+[source,text]
+?q={!child of=<blockMask> filters=$parentfq excludeTags=certain}<someParents>
+&parentfq=BRAND:Foo
+&parentfq=NAME:Bar
+&parentfq={!tag=certain}CATEGORY:Baz
+
+This is equivalent to:
+
+[source,text]
+q={!child of=<blockMask>}+<someParents> +BRAND:Foo +NAME:Bar
+
+Notice "$" syntax in `filters` for referencing queries; comma-separated tags `excludeTags` allows to exclude certain queries by tagging.
+Overall the idea is similar to xref:faceting.adoc#tagging-and-excluding-filters[excluding `fq` in facets].
+Note, that filtering is applied to the subordinate clause (`<someParents>`), and the intersection result is joined to the children.
+
+=== All Children Syntax
+
+When subordinate clause (`<someParents>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for children documents.
+More precisely, `q={!child of=<blockMask>}` is equivalent to `q=\*:* -<blockMask>`.
+
+== Block Join Parent Query Parser
+
+This parser takes a query that matches child documents and returns their parents.
+
+The syntax for this parser is similar to the `child` parser: `q={!parent which=<blockMask>}<someChildren>`.
+
+* The inner subordinate query string (`someChildren`) must be a query that will match some child documents
+* The `which` parameter must be a query string to use as a <<block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents
+
+The resulting query will match all documents which _do_ match the `<blockMask>` query and are parents (or ancestors) of the documents matched by `<someChildren>`.
+
+Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parent"}comments:SolrCloud`.
+We get this document in response:
+
+[source,xml]
+----
+<result name="response" numFound="1" start="0">
+  <doc>
+    <str name="id">1</str>
+    <arr name="content_type"><str>parent</str></arr>
+    <arr name="title"><str>Solr has block join support</str></arr>
+  </doc>
+</result>
+----
+
+
+[CAUTION]
+====
+The query for `someChildren` *MUST NOT* match any documents matched by the <<block-mask,Block Mask>> or your query may result in an Error:
+
+[literal]
+Child query must not match same docs with parent filter.
+Combine them as must clauses (+) to find a problem doc.
+
+You can search for `q=+(blockMask) +(someChildren)` to find a cause.
+====
+
+
+=== Filtering and Tagging
+
+The `{!parent}` query supports `filters` and `excludeTags` local params like the following:
+
+[source,text]
+?q={!parent which=<blockMask> filters=$childfq excludeTags=certain}<someChildren>
+&childfq=COLOR:Red
+&childfq=SIZE:XL
+&childfq={!tag=certain}PRINT:Hatched
+
+This is equivalent to:
+
+[source,text]
+q={!parent which=<blockMask>}+<someChildren> +COLOR:Red +SIZE:XL
+
+Notice the "$" syntax in `filters` for referencing queries.
+Comma-separated tags in `excludeTags` allow excluding certain queries by tagging.
+Overall the idea is similar to xref:faceting.adoc#tagging-and-excluding-filters[excluding `fq` in facets].
+Note that filtering is applied to the subordinate clause (`<someChildren>`) first, and the intersection result is joined to the parents.
+
+=== Scoring with the Block Join Parent Query Parser
+
+You can optionally use the `score` local parameter to return scores of the subordinate query.
+The values to use for this parameter define the type of aggregation, which are `avg` (average), `max` (maximum), `min` (minimum), `total (sum)`.
+Implicit default is `none` which returns `0.0`.
+
+=== All Parents Syntax
+
+When subordinate clause (`<someChildren>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for all parent documents, or more precisely `q={!parent which=<blockMask>}` is equivalent to `q=<blockMask>`.
+
+[#block-mask]
+== Block Masks: The `of` and `which` local params
+
+The purpose of the "Block Mask" query specified as either an `of` or `which` param (depending on the parser used) is to identy the set of all documents in the index which should be treated as "parents" _(or their ancestors)_ and which documents should be treated as "children".
+This is important because in the "on disk" index, the relationships are flattened into "blocks" of documents, so the `of` / `which` params are needed to serve as a "mask" against the flat document blocks to identify the boundaries of every hierarchical relationship.
+
+In the example queries above, we were able to use a very simple Block Mask of `doc_type:parent` because our data is very simple: every document is either a `parent` or a `child`.
+So this query string easily distinguishes _all_ of our documents.
+
+A common mistake is to try and use a `which` parameter that is more restrictive then the set of all parent documents, in order to filter the parents that are matched, as in this bad example:
+
+----
+// BAD! DO NOT USE!
+q={!parent which="title:join"}comments:support
+----
+
+This type of query will frequently not work the way you might expect.
+Since the `which` param only identifies _some_ of the "parent" documents, the resulting query can match "parent" documents it should not, because it will mistakenly identify all documents which do _not_ match the `which="title:join"` Block Mask as children of the next "parent" document in the index (that does match this Mask).
+
+A similar problematic situation can arise when mixing parent/child documents with "simple" documents that have no children _and do not match the query used to identify 'parent' documents_.  For example, if we add the following document to our existing parent/child example documents:
+
+[source,xml]
+----
+<add>
+  <doc>
+    <field name="id">0</field>
+    <field name="content_type">plain</field>
+    <field name="title">Lucene and Solr are cool</field>
+  </doc>
+</add>
+----
+
+...then our simple `doc_type:parent` Block Mask would no longer be adequate.
+ We would instead need to use `\*:* -doc_type:child` or `doc_type:(simple parent)` to prevent our "simple" document from mistakenly being treated as a "child" of an adjacent "parent" document.
+
+The xref:query-guide:searching-nested-documents.adoc[] section contains more detailed examples of specifying Block Mask queries with non trivial hierarchies of documents.

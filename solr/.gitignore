@@ -25,3 +25,5 @@
 
 lib/
 test-lib/
+
+/solr-ref-guide/node_modules/
