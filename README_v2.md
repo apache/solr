@@ -97,7 +97,7 @@ directly from the Git repository:
 
 <https://solr.apache.org/community.html#version-control>
 
-As of 9.0, Solr uses [Gradle](https://gradle.org/) as the build
+Solr uses [Gradle](https://gradle.org/) as the build
 system.  Navigate to the root of your source tree folder and issue the `./gradlew tasks`
 command to see the available options for building, testing, and packaging Solr.
 
