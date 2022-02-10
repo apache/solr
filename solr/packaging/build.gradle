@@ -1,5 +1,3 @@
-import org.apache.tools.ant.util.TeeOutputStream
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ import org.apache.tools.ant.util.TeeOutputStream
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import org.apache.tools.ant.util.TeeOutputStream
 
 // This project puts together a "distribution", assembling dependencies from
 // various other projects.

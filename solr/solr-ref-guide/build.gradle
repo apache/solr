@@ -17,7 +17,7 @@
 
 import org.apache.tools.ant.util.TeeOutputStream
 
-apply plugin: "com.github.node-gradle.node"
+apply from: file("$rootDir/gradle/node.gradle")
 
 description = 'Solr Reference Guide'
 
