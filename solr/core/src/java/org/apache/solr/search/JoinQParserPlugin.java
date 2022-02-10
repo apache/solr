@@ -199,28 +199,34 @@ public class JoinQParserPlugin extends QParserPlugin {
         // make cross core joins time-agnostic
         // it should be ruled by param probably
         boolean crossCoreCache = false;
-        if (query instanceof  JoinQuery) {
-          if (((JoinQuery) query).fromCoreOpenTime != 0L) {
-            ((JoinQuery) query).fromCoreOpenTime = Long.MIN_VALUE;
-            crossCoreCache = true;
-          }
-        } else {
-          if (query instanceof ScoreJoinQParserPlugin.OtherCoreJoinQuery){
-            if (((ScoreJoinQParserPlugin.OtherCoreJoinQuery) query).fromCoreOpenTime!=0) {
-              ((ScoreJoinQParserPlugin.OtherCoreJoinQuery) query).fromCoreOpenTime = Long.MIN_VALUE;
+        if(localParams.getBool("cacheEventually", false)) {
+          if (query instanceof  JoinQuery) {
+            if (((JoinQuery) query).fromCoreOpenTime != 0L) {
+              ((JoinQuery) query).fromCoreOpenTime = Long.MIN_VALUE;
               crossCoreCache = true;
+            }
+          } else {
+            if (query instanceof ScoreJoinQParserPlugin.OtherCoreJoinQuery){
+              if (((ScoreJoinQParserPlugin.OtherCoreJoinQuery) query).fromCoreOpenTime!=0) {
+                ((ScoreJoinQParserPlugin.OtherCoreJoinQuery) query).fromCoreOpenTime = Long.MIN_VALUE;
+                crossCoreCache = true;
+              }
             }
           }
         }
         if (crossCoreCache) {
           String fromIndex = localParams.get("fromIndex");// TODO in might be a single sharded collection
-          WrappedQuery wrap = new WrappedQuery(query);
-          wrap.setCache(false);
-          DocSet docset = null;
+
+          DocSet docset;
           try {
-            docset = (DocSet) req.getSearcher().getCache(fromIndex).computeIfAbsent(wrap, k -> req.getSearcher().getDocSet((Query) k));
+            WrappedQuery wrap = new WrappedQuery(query);
+            wrap.setCache(false); //bypassing searcher cache
+            @SuppressWarnings("unchecked")
+            final SolrCache<Query,DocSet> rightSideCache = (SolrCache<Query,DocSet>) req.getSearcher().getCache(fromIndex);
+            docset = rightSideCache.computeIfAbsent(wrap, k -> req.getSearcher().getDocSet(k));
           } catch (IOException e) {
-            throw new SolrException();
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                    "Exception on caching " + query, e);
           }
           WrappedQuery wrappedCache = new WrappedQuery(docset.getTopFilter());
           wrappedCache.setCache(false);
