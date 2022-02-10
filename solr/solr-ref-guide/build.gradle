@@ -23,6 +23,8 @@ plugins {
 
 description = 'Solr Reference Guide'
 
+def officialSiteIncludePrerelease = propertyOrEnvOrDefault("refguide.official.includePrereleaseVersions", "SOLR_REF_GUIDE_OFFICIAL_INCLUDE_PRERELEASE", "false").toBoolean()
+
 def buildLocalUI = propertyOrEnvOrDefault("refguide.buildLocalUI", "SOLR_REF_GUIDE_BUILD_LOCAL_UI", "false").toBoolean()
 
 // Attach building the ref guide to standard convention tasks. This
@@ -36,11 +38,12 @@ configurations {
     refGuide
     officialPlaybook
     localPlaybook
+    localJavadocs
 }
 
 dependencies {
-    localPlaybook project(path: ":solr:documentation", configuration: 'javadocs')
-    localPlaybook project(path: ":solr:documentation", configuration: 'site')
+    localJavadocs project(path: ":solr:documentation", configuration: 'javadocs')
+    localJavadocs project(path: ":solr:documentation", configuration: 'site')
 }
 
 ext {
@@ -71,14 +74,19 @@ task buildLocalAntoraYaml {
     inputs.file(templateYaml)
     outputs.file(project.ext.localAntoraYaml)
 
+    def splitVersion = version.toString().split("\\p{Punct}")
+    def props = [
+        solr_version       : "${splitVersion[0]}.${splitVersion[1]}.${splitVersion[2]}",
+        solr_version_major : splitVersion[0],
+        solr_version_minor : splitVersion[1],
+        solr_version_patch : splitVersion[2],
+    ]
+    props.putAll([
+        solr_javadocs_link : "https://solr.apache.org/docs/${props.solr_version.replaceAll("\\.", "_")}",
+        lucene_javadocs_link :  project(':solr:documentation').luceneDocUrl,
+    ])
+
     doLast {
-        def splitVersion = version.toString().split("\\p{Punct}")
-        def props = [
-            solr_version       : "${splitVersion[0]}.${splitVersion[1]}.${splitVersion[2]}",
-            solr_version_major : splitVersion[0],
-            solr_version_minor : splitVersion[1],
-            solr_version_patch : splitVersion[2],
-        ]
         // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
         // These variable names must use underscores, not dashes or periods
         props.putAll([
@@ -92,10 +100,6 @@ task buildLocalAntoraYaml {
             ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
         ].collectEntries { propKey, depGroup, depId -> [propKey, "${-> project.getVersion(depGroup, depId)}"] })
 
-        props.putAll([
-            solr_javadocs_link : "https://solr.apache.org/docs/${props.solr_version.replaceAll("\\.", "_")}",
-            lucene_javadocs_link :  project(':solr:documentation').luceneDocUrl,
-        ])
 
         copy {
             from(templateYaml) {
@@ -108,6 +112,7 @@ task buildLocalAntoraYaml {
             expand(props)
         }
     }
+    inputs.properties(props)
 }
 
 task buildLocalAntoraPlaybookYaml(type: Copy) {
@@ -146,11 +151,18 @@ task buildOfficialAntoraPlaybookYaml(type: Copy) {
     }
     into project.ext.playbooksDir
 
+    def branches = ["branch_*"]
+    if (officialSiteIncludePrerelease) {
+        branches.add("main")
+    } else {
+        branches.add("\"!branch_*x\"")
+    }
+
     def props = [
         'site_url'           : "https://solr.apache.org/guide",
         'redirect_facility'  : "httpd",
         'source_url'         : "https://github.com/apache/solr.git",
-        'source_branches'    : ["jira/solr-15556-antora"],
+        'source_branches'    : branches,
         'start_path'         : 'solr/solr-ref-guide',
         'supplemental_files' : "${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension/supplemental_ui",
         'site_dir'           : "./" + file(project.ext.playbooksDir).relativePath(file(project.ext.siteDir)),
@@ -356,7 +368,7 @@ task setupLocalSiteStagingDir(type: Sync) {
     into project.ext.siteStagingDir
 }
 
-task buildLocalSite(type: NpxTask) {
+task buildLocalAntoraSite(type: NpxTask) {
     group = 'Site - Local'
     description "Creates a local build of the ref-guide."
 
@@ -392,10 +404,18 @@ task buildLocalSite(type: NpxTask) {
     inputs.files(fileTree(project.ext.siteStagingDir))
     inputs.property("Antora version", project.ext.antoraVersion)
     outputs.dir(project.ext.siteDir)
+}
+
+task buildLocalSite {
+    group = 'Site - Local'
+    description "Creates a local build of the ref-guide, with local javadocs to link to."
+
+    dependsOn tasks.buildLocalAntoraSite
+    dependsOn configurations.localJavadocs
 
     doLast {
         project.logger.lifecycle("The generated local ref-guide can be found at:")
-        project.logger.lifecycle("\t${project.ext.siteDir}")
+        project.logger.lifecycle("\t${project.ext.siteDir}/index.html")
     }
 }
 
