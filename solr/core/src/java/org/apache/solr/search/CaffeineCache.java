@@ -20,8 +20,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
-import java.util.*;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -366,11 +370,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
         cache.cleanUp();
       }
     }
-  }
-
-  public Collection<K> getKeys() {
-    final Map<K, V> allPresent = cache.asMap();
-    return new ArrayList<>(allPresent.keySet());
   }
 
   @Override

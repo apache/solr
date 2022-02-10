@@ -28,10 +28,7 @@ public class TestBackgroundJoinWarmer extends SolrTestCaseJ4 {
     public static void beforeTests() throws Exception {
         System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
         System.setProperty("solr.filterCache.async", "true");
-//    initCore("solrconfig.xml","schema12.xml");
 
-        // File testHome = createTempDir().toFile();
-        // FileUtils.copyDirectory(getFile("solrj/solr"), testHome);
         initCore("solrconfig-crosscore-join-cache.xml", "schema12.xml", TEST_HOME(), "collection1");
         final CoreContainer coreContainer = h.getCoreContainer();
 
@@ -64,29 +61,8 @@ public class TestBackgroundJoinWarmer extends SolrTestCaseJ4 {
     }
 
     @Test
-    public void testJoin() throws Exception {
-        doTestJoin("{!join score=none");
-    }
-
-    @SuppressWarnings("unchecked")
-    private void refreshRightSideCaches(SolrCore rightSideCore) {
-        final List<String> loadedCoreNames = rightSideCore.getCoreContainer().getLoadedCoreNames();
-        for (String leftCoreName: loadedCoreNames){
-            if (!leftCoreName.equals(rightSideCore.getName())) {
-                final SolrCore core = rightSideCore.getCoreContainer().getCore(leftCoreName);
-                final RefCounted<SolrIndexSearcher> refSearcher = core.getSearcher();
-                try {
-                    @SuppressWarnings("rawtypes")
-                    final SolrCache joinCache = refSearcher.get().getCache(rightSideCore.getName());
-                    if (joinCache != null) {
-                        joinCache.warm(refSearcher.get(), joinCache);
-                    }
-                } finally {
-                    refSearcher.decref();
-                    core.close();
-                }
-            }
-        }
+    public void testScoreJoin() throws Exception {
+        doTestJoin("{!join "+(random().nextBoolean() ? "score=none" : ""));
     }
 
     void doTestJoin(String joinPrefix) throws Exception {
