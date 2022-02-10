@@ -23,21 +23,28 @@ All tests in this project use the [BATS](https://bats-core.readthedocs.io/en/sta
 
 ## Running Tests
 
-Rough draft version - install BATS using their guide. We require the following BATS modules:
-* bats-core
-* bats-support
-* bats-assert
+Tests can be run via `./gradlew bats`.
+ This will download the necessary BATS libraries to your `.gradle` directory,
+ assemble the binary distribution, and run the full test suite.
 
-From the project root, run `./gradlew assemble` - this will build all of the jars and assemble the binary distribution.
-
-Run `bats solr/packaging/test` to run the whole suite, or refer to a single file to run only that test suite. Refer to the BATS documentation for additional flags and debugging advice.
+Individual test files can be run by specifying the `-P bats.tests=[test_file.bats]` property.
 
 ## Writing Tests
 
 Our tests should all `load bats_helper` which provides a `common_setup` function that test files can
 call from their own `setup()` function.
 
-Some tests will start clusters or create collections, please take care to delete any resources that you create. They will not be cleaned for you automatically.
+Test are defined as `@test "description of the test" { ... }`
+ with statements in the function body. Test names can include
+ letters, number, and spaces. They cannot include special
+ characters like dashes or underscores, so JIRA issue numbers
+ and command line flags are not valid test names. For more detail
+ about BATS features, please consult 
+ special features of BATS, please consult 
+
+Some tests will start clusters or create collections,
+ please take care to delete any resources that you create.
+ They will not be cleaned for you automatically.
 
 It is recommended that you install and run `shellcheck` to verify your test scripts and catch common mistakes before committing your changes.
 

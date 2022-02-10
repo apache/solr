@@ -55,13 +55,13 @@ setup() {
   refute_output --partial 'ERROR'
 }
 
-@test "create_core help flag prints help" {
+@test "createcore help flag prints help" {
   run solr create_core -help
   assert_output --partial 'Usage: solr create_core'
   refute_output --partial 'ERROR'
 }
 
-@test "create_collection help flag prints help" {
+@test "createcollection help flag prints help" {
   run solr create_collection -help
   assert_output --partial 'Usage: solr create_collection'
   refute_output --partial 'ERROR'

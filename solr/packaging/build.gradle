@@ -21,7 +21,7 @@
 plugins {
   id 'base'
   id 'distribution'
-  id("com.felipefzdz.gradle.bats") version "0.0.1"
+  id "com.github.node-gradle.node" version "3.1.1"
 }
 
 description = 'Solr distribution packaging'
@@ -29,6 +29,8 @@ description = 'Solr distribution packaging'
 ext {
   distDir = file("$buildDir/solr-${version}")
   devDir = file("$buildDir/dev")
+  rootNodeDir = "${project.rootDir}/.gradle/node"
+  nodeProjectDir = file("${project.ext.rootNodeDir}/packaging-project")
 }
 
 configurations {
@@ -161,31 +163,45 @@ distZip.enabled = false
 
 assemble.dependsOn installDist
 
-task runBats(dependsOn: installDist, type: Exec) {
-  doFirst {
-    if ("type bats".execute().waitFor() > 0) {
-      throw new StopExecutionException("No BATS binary detected.")
-    }
-  }
+
+// We use Node to install BATS
+node {
+  download = true
+  version = "16.13.2" // LTS
+
+  // The directory where Node.js is unpacked (when download is true)
+  workDir = file("${project.ext.rootNodeDir}/nodejs")
+
+  // The directory where npm is installed (when a specific version is defined)
+  npmWorkDir = file("${project.ext.rootNodeDir}/npm")
+
+  // The Node.js project directory location
+  // This is where the package.json file and node_modules directory are located
+  // By default it is at the root of the current project
+  nodeProjectDir = project.ext.nodeProjectDir
+}
+
+task downloadBats(type: NpmTask) {
+  group = 'Build Dependency Download'
+  args = ["install", "bats",
+          "https://github.com/ztombol/bats-support",
+          "https://github.com/ztombol/bats-assert",
+  ]
+}
+
+// Should this be an NpxTask, would that get us easier access to the binaries?
+task bats(type: Exec) {
+  dependsOn installDist
+  dependsOn downloadBats
 
   environment SOLR_HOME: distDir.toString()
-  environment TEST_BREW_PREFIX: "brew --prefix".execute().text.trim()
-  executable 'bats'
-  args 'test'
-}
+  environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
 
-// This appears to be macOS only for now, we need to expand this in the future but for now it's a start
-bats {
-  sources = files('test')
-  useDocker = false
-  batsBinary = '/usr/local/bin/bats'
-  installer = '' // Don't install bats for people it would be surprising
-}
-tasks.bats {
-  doFirst {
-    if (file(bats.batsBinary).canExecute() == false) {
-      throw new StopExecutionException("No BATS binary detected.")
-    }
-  }
-  dependsOn installDist
+  executable "$nodeProjectDir/node_modules/bats/bin/bats"
+
+  // TODO automatically look in the test directory
+  // TODO allow specifying multiple files?
+  args '--print-output-on-failure', propertyOrDefault('bats.tests', 'test')
+
+  // TODO check for verbose?
 }

@@ -16,16 +16,28 @@
 # limitations under the License.
 
 common_setup() {
-    TEST_BREW_PREFIX="$(brew --prefix)"
-    load "${TEST_BREW_PREFIX}/lib/bats-support/load.bash"
-    load "${TEST_BREW_PREFIX}/lib/bats-assert/load.bash"
+    if [ -z ${BATS_LIB_PREFIX:-} ]; then
+        # Try to figure out where bats is installed from
+        if brew list bats-core; then
+            BATS_LIB_PREFIX="$(brew --prefix)/lib";
+        fi
+    fi
 
-    # use $BATS_TEST_FILENAME instead of ${BASH_SOURCE[0]} or $0,
-    # as those will point to the bats executable's location or the preprocessed file respectively
-    DIR="$( cd "$( dirname "$BATS_TEST_FILENAME" )" >/dev/null 2>&1 && pwd )"
-    # add solr/bin to the path for our tests
-    SOLR_HOME="$DIR/../build/solr-10.0.0-SNAPSHOT" # currently hard coded, should fix
-    PATH="$SOLR_HOME/bin:$PATH"
+    load "${BATS_LIB_PREFIX}/bats-support/load.bash"
+    load "${BATS_LIB_PREFIX}/bats-assert/load.bash"
+
+    if ! type solr ; then
+        # solr not on our path, figure out how to add it
+        if [ -x "${SOLR_HOME:-.}/bin/solr" ]; then
+            PATH="${SOLR_HOME:-.}/bin:$PATH"
+        else
+            # use $BATS_TEST_FILENAME instead of ${BASH_SOURCE[0]} or $0,
+            # as those will point to the bats executable's location or the preprocessed file respectively
+            DIR="$( cd "$( dirname "$BATS_TEST_FILENAME" )" >/dev/null 2>&1 && pwd )"
+            SOLR_HOME="$DIR/../build/solr-10.0.0-SNAPSHOT" # currently hard coded, should fix
+            PATH="$SOLR_HOME/bin:$PATH"
+        fi
+    fi
 }
 
 delete_all_collections() {
