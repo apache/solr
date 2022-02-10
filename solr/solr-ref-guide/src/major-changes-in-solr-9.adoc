@@ -271,3 +271,5 @@ Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Kh
 Example has been provided in `sample_techproducts_configs` to override content-type.
 
 * `min_rf` deprecated in 7.x
+
+* SOLR-15949: Docker: the official image now uses Java 17 provided by Eclipse Temurin.  Formerly it was Java 11 from OpenJDK.
