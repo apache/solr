@@ -17,7 +17,7 @@
 
 common_setup() {
     if [ -z ${BATS_LIB_PREFIX:-} ]; then
-        # Try to figure out where bats is installed from
+        # Debugging help, if you want to run bats directly, try to detect where libraries might be
         if brew list bats-core; then
             BATS_LIB_PREFIX="$(brew --prefix)/lib";
         fi
@@ -26,24 +26,12 @@ common_setup() {
     load "${BATS_LIB_PREFIX}/bats-support/load.bash"
     load "${BATS_LIB_PREFIX}/bats-assert/load.bash"
 
-    if ! type solr ; then
-        # solr not on our path, figure out how to add it
-        if [ -x "${SOLR_HOME:-.}/bin/solr" ]; then
-            PATH="${SOLR_HOME:-.}/bin:$PATH"
-        else
-            # use $BATS_TEST_FILENAME instead of ${BASH_SOURCE[0]} or $0,
-            # as those will point to the bats executable's location or the preprocessed file respectively
-            DIR="$( cd "$( dirname "$BATS_TEST_FILENAME" )" >/dev/null 2>&1 && pwd )"
-            SOLR_HOME="$DIR/../build/solr-10.0.0-SNAPSHOT" # currently hard coded, should fix
-            PATH="$SOLR_HOME/bin:$PATH"
-        fi
-    fi
+    PATH="${SOLR_TIP:-.}/bin:$PATH"
 }
 
 delete_all_collections() {
   local collection_list="$(solr zk ls /collections -z localhost:9983)"
-  for collection in $collection_list;
-  do
+  for collection in $collection_list; do
     if [[ -n $collection ]]; then
       solr delete -c $collection >/dev/null 2>&1
     fi

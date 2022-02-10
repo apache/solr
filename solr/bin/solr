@@ -51,7 +51,7 @@ verbose=false
 THIS_OS=`uname -s`
 
 # What version of Java is required to run this version of Solr.
-JAVA_VER_REQ="8"
+JAVA_VER_REQ=11
 
 stop_all=false
 
@@ -108,7 +108,7 @@ fi
 if [ -n "${SOLR_JAVA_HOME:-}" ]; then
   JAVA="$SOLR_JAVA_HOME/bin/java"
   JSTACK="$SOLR_JAVA_HOME/bin/jstack"
-elif [ -n "${JAVA_HOME:-}" ]; then
+elif [ -v JAVA_HOME ]; then
   for java in "$JAVA_HOME"/bin/amd64 "$JAVA_HOME"/bin; do
     if [ -x "$java/java" ]; then
       JAVA="$java/java"
@@ -1800,7 +1800,7 @@ if [ ! -e "$SOLR_SERVER_DIR" ]; then
   exit 1
 fi
 
-if [[ "$FG" == 'true' && -z "${EXAMPLE:-}" ]]; then
+if [[ "$FG" == 'true' && -n "${EXAMPLE:-}" ]]; then
   FG='false'
   echo -e "\nWARNING: Foreground mode (-f) not supported when running examples.\n"
 fi
@@ -1950,6 +1950,7 @@ fi
 # so that we can write logs for examples to $SOLR_HOME/../logs
 : ${SOLR_LOGS_DIR:="$SOLR_SERVER_DIR/logs"}
 EXAMPLE_DIR="$SOLR_TIP/example"
+# if SOLR_HOME is inside of EXAMPLE_DIR
 if [ "${SOLR_HOME:0:${#EXAMPLE_DIR}}" = "$EXAMPLE_DIR" ]; then
   LOG4J_PROPS="$DEFAULT_SERVER_DIR/resources/log4j2.xml"
   SOLR_LOGS_DIR="$SOLR_HOME/../logs"
@@ -2050,7 +2051,7 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
     CLOUD_MODE_OPTS+=("-Dsolr.solrxml.required=true")
   fi
 else
-  if [ ! -e "$SOLR_HOME/solr.xml" ] && [ "$SOLR_SOLRXML_REQUIRED" == "true" ]; then
+  if [ ! -e "$SOLR_HOME/solr.xml" ] && [ "${SOLR_SOLRXML_REQUIRED:-}" == "true" ]; then
     echo -e "\nSolr home directory $SOLR_HOME must contain a solr.xml file!\n"
     exit 1
   fi

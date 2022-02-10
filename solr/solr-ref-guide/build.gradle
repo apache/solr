@@ -17,9 +17,7 @@
 
 import org.apache.tools.ant.util.TeeOutputStream
 
-plugins {
-    id "com.github.node-gradle.node" version "3.1.1"
-}
+apply plugin: "com.github.node-gradle.node"
 
 description = 'Solr Reference Guide'
 
@@ -175,15 +173,6 @@ dependencies {
 
 // We use Node to install and run Antora
 node {
-    download = true
-    version = "16.13.2" // LTS
-
-    // The directory where Node.js is unpacked (when download is true)
-    workDir = file("${project.ext.rootNodeDir}/nodejs")
-
-    // The directory where npm is installed (when a specific version is defined)
-    npmWorkDir = file("${project.ext.rootNodeDir}/npm")
-
     // The directory where yarn is installed (when a Yarn task is used)
     yarnWorkDir = file("${project.ext.rootNodeDir}/yarn")
 

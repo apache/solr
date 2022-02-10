@@ -21,7 +21,8 @@ setup_file() {
   common_setup
   run solr start -c
 
-  local source_configset_dir="$SOLR_HOME/server/solr/configsets/sample_techproducts_configs"
+  local source_configset_dir="$SOLR_TIP/server/solr/configsets/sample_techproducts_configs"
+  test -d $source_configset_dir
   cp -r $source_configset_dir "$BATS_TMPDIR/config"
 }
 

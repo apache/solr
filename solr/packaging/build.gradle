@@ -1,3 +1,5 @@
+import org.apache.tools.ant.util.TeeOutputStream
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,15 +23,15 @@
 plugins {
   id 'base'
   id 'distribution'
-  id "com.github.node-gradle.node" version "3.1.1"
 }
+
+apply from: file("$rootDir/gradle/node.gradle")
 
 description = 'Solr distribution packaging'
 
 ext {
   distDir = file("$buildDir/solr-${version}")
   devDir = file("$buildDir/dev")
-  rootNodeDir = "${project.rootDir}/.gradle/node"
   nodeProjectDir = file("${project.ext.rootNodeDir}/packaging-project")
 }
 
@@ -167,15 +169,6 @@ assemble.dependsOn installDist
 
 // We use Node to install BATS
 node {
-  download = true
-  version = "16.13.2" // LTS
-
-  // The directory where Node.js is unpacked (when download is true)
-  workDir = file("${project.ext.rootNodeDir}/nodejs")
-
-  // The directory where npm is installed (when a specific version is defined)
-  npmWorkDir = file("${project.ext.rootNodeDir}/npm")
-
   // The Node.js project directory location
   // This is where the package.json file and node_modules directory are located
   // By default it is at the root of the current project
@@ -185,24 +178,42 @@ node {
 task downloadBats(type: NpmTask) {
   group = 'Build Dependency Download'
   args = ["install", "bats",
-          "https://github.com/ztombol/bats-support",
-          "https://github.com/ztombol/bats-assert",
+                     "ztombol/bats-support",
+                     "ztombol/bats-assert",
   ]
+
+  inputs.files("${project.ext.nodeProjectDir}/package.json")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-support")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-assert")
 }
 
-// Should this be an NpxTask, would that get us easier access to the binaries?
 task bats(type: Exec) {
   dependsOn installDist
   dependsOn downloadBats
 
-  environment SOLR_HOME: distDir.toString()
+  def testOutput = "$buildDir/bats-output"
+  def solrHome = "$testOutput/solr-home-" + Instant.now().toEpochMilli()
+
+  inputs.files(fileTree('test'))
+  def outputFile = "$testOutput/test-output.txt"
+  outputs.file(outputFile)
+
+  doFirst {
+    // TODO - if quiet then don't tee
+    standardOutput = new TeeOutputStream(System.out, new FileOutputStream(outputFile))
+
+    mkdir(testOutput)
+    mkdir(solrHome)
+  }
+
+  environment SOLR_TIP: distDir.toString()
+  environment SOLR_HOME: solrHome
+  environment SOLR_LOGS_DIR: "$solrHome/logs"
   environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
 
   executable "$nodeProjectDir/node_modules/bats/bin/bats"
 
-  // TODO automatically look in the test directory
   // TODO allow specifying multiple files?
-  args '--print-output-on-failure', propertyOrDefault('bats.tests', 'test')
-
-  // TODO check for verbose?
+  args '--print-output-on-failure', 'test/' + propertyOrDefault('bats.tests', '')
 }
