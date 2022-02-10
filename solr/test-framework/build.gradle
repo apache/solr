@@ -20,6 +20,15 @@ apply plugin: 'java-library'
 description = 'Solr Test Framework'
 
 dependencies {
+  // Spotbugs Annotations are only needed for old findbugs
+  // annotation usage like in Zookeeper during compilation time.
+  // It is not included in the release so exclude from checks.
+  compileOnly 'com.github.spotbugs:spotbugs-annotations'
+  // Exclude these from jar validation and license checks.
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
+
   api project(':solr:core')
   api project(':solr:solrj')
 
@@ -43,7 +52,7 @@ dependencies {
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'io.opentracing:opentracing-noop'
   implementation 'io.opentracing:opentracing-util'
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation 'com.google.guava:guava'
   implementation 'io.dropwizard.metrics:metrics-core'
   implementation 'io.dropwizard.metrics:metrics-jetty9'
   implementation 'commons-cli:commons-cli'
@@ -60,4 +69,3 @@ dependencies {
   implementation 'junit:junit'
   implementation 'org.hamcrest:hamcrest'
 }
-

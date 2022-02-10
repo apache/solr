@@ -1,0 +1,72 @@
+= Query Syntax and Parsers
+:page-children: common-query-parameters, \
+    standard-query-parser, \
+    dismax-query-parser, \
+    edismax-query-parser, \
+    function-queries, \
+    local-params, \
+    json-request-api, \
+    searching-nested-documents, \
+    block-join-query-parser, \
+    join-query-parser, \
+    spatial-search, \
+    dense-vector-search, \
+    other-parsers, \
+    sql-query, \
+    query-screen, \
+    sql-screen
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[.lead]
+A _query parser_ converts a user's search terms into a Lucene query to find appropriately matching documents.
+
+Solr supports several query parsers, offering search application designers great flexibility in controlling how queries are parsed.
+
+This section explains how to specify a query parser and describes the syntax and features supported by several parsers available in Solr.
+
+There are some query parameters common to all Solr parsers; these are discussed in the section xref:common-query-parameters.adoc[].
+
+Query parsers are also called `QParserPlugins`.
+They are all subclasses of {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin].
+If you have custom parsing needs, you may want to extend that class to create your own query parser.
+
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::parser-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| xref:common-query-parameters.adoc[]: Query parameters that can be used with all query parsers.
+| xref:standard-query-parser.adoc[]: The standard Lucene query parser.
+| xref:dismax-query-parser.adoc[]: The DisMax query parser.
+| xref:edismax-query-parser.adoc[]: The Extended DisMax (eDisMax) Query Parser.
+| xref:function-queries.adoc[]: Parameters for generating relevancy scores using values from one or more numeric fields.
+| xref:local-params.adoc[]: How to add local arguments to queries.
+| xref:json-request-api.adoc[]: Solr's JSON Request API.
+| xref:searching-nested-documents.adoc[]: Constructing nested and hierarchical queries.
+| xref:block-join-query-parser.adoc[]: Query parser dedicated to searching nested documents.
+| xref:join-query-parser.adoc[]: Query parser to facilitate joins.
+| xref:spatial-search.adoc[]: Solr's spatial search capabilities.
+| xref:dense-vector-search.adoc[]: Solr's dense retrieval capabilities.
+| xref:other-parsers.adoc[]: More parsers designed for use in specific situations.
+| xref:sql-query.adoc[]: SQL language support for Solr.
+| xref:query-screen.adoc[]: Form-based query builder.
+| xref:sql-screen.adoc[]: SQL query runner with tabular results.
+|
+|===
+// end::parser-sections[]
+****

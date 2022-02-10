@@ -19,11 +19,6 @@ apply plugin: 'java-library'
 
 description = 'S3 Repository'
 
-configurations.all {
-  exclude group: "javax.annotation", module: "javax.annotation-api"
-  exclude group: "com.google.code.findbugs", module: "jsr305"
-}
-
 dependencies {
     api project(':solr:core')
     implementation project(':solr:solrj')
@@ -41,7 +36,7 @@ dependencies {
     implementation (group: 'software.amazon.awssdk', name: 'sdk-core')
     implementation (group: 'software.amazon.awssdk', name: 'protocol-core')
 
-    implementation ('com.google.guava:guava') { transitive = false }
+    implementation 'com.google.guava:guava'
     implementation 'commons-io:commons-io'
     implementation 'org.slf4j:slf4j-api'
 

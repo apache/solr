@@ -42,6 +42,4 @@ dependencies {
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
-  testImplementation 'org.apache.logging.log4j:log4j-api'
-  testImplementation 'org.apache.logging.log4j:log4j-core'
 }
