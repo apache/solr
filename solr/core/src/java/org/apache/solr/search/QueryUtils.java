@@ -189,9 +189,12 @@ public class QueryUtils {
     if (scoreQuery == null || scoreQuery instanceof MatchAllDocsQuery) {
       if (filterQuery == null) {
         return new MatchAllDocsQuery(); // default if nothing -- match everything
-      } else if (isConstantScoreQuery(filterQuery)) {
-        return filterQuery;
       } else {
+        // NOTE: we _must_ wrap filter in a ConstantScoreQuery (default score `1f`) in order to guarantee score
+        // parity with the actual user-specified scoreQuery (i.e., MatchAllDocsQuery). This should only matter
+        // if score is _explicitly_ requested to be returned, but we don't know that here, and it's probably not
+        // worth jumping through the necessary hoops simply to avoid wrapping in the case where
+        // `isConstantScoreQuery(filterQuery)`
         return new ConstantScoreQuery(filterQuery);
       }
     } else {
