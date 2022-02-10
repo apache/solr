@@ -39,7 +39,6 @@ Solr includes a few examples to help you get started. To run a specific example,
 
 ```
   bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
-    FIXME the labels in the README do NOT match what is in the bin/solr start -help, and are better!
     cloud:         SolrCloud example
     techproducts:  Comprehensive example illustrating many of Solr's core capabilities
     schemaless:    Schema-less example (schema is inferred from data during indexing)
