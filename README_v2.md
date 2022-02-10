@@ -33,6 +33,136 @@ visit the [Solr Reference Guide](https://solr.apache.org/guide/).
 ## Getting Started
 FIXME maybe put the tutorial that Noble or Ishan wrote???   Then at the end put the examples?
 
+### Starting Solr
+
+Start a Solr node in cluster mode (SolrCloud mode)
+
+```
+bin/solr -c
+```
+
+To start another Solr node and have it join the cluster alongside the first node,
+
+```
+bin/solr -c -z localhost:9983 -p 8984
+```
+
+An instance of the cluster coordination service, i.e. Zookeeper, was started on port 9983 when the first node was started. To start Zookeeper separately, please refer to XXXX.
+
+### Creating a collection
+
+Like a database system holds data in tables, Solr holds data in collections. A collection can be created as follows:
+
+```
+curl --request POST \
+--url http://localhost:8983/api/collections \
+--header 'Content-Type: application/json' \
+--data '{
+"create": {
+	"name": "techproducts",
+	"numShards": 1,
+	"replicationFactor": 1
+}
+}'
+```
+
+### Defining a schema
+
+Let us define some of the fields that our documents will contain.
+
+```
+curl --request POST \
+  --url http://localhost:8983/api/collections/techproducts/schema \
+  --header 'Content-Type: application/json' \
+  --data '{
+	"add-field": [
+		{"name": "name", "type": "text_general", "multiValued": false},
+		{"name": "cat", "type": "string", "multiValued": true},
+		{"name": "manu", "type": "string"},
+		{"name": "features", "type": "text_general", "multiValued": true},
+		{"name": "weight", "type": "pfloat"},
+		{"name": "price", "type": "pfloat"},
+		{"name": "popularity", "type": "pint"},
+		{"name": "inStock", "type": "boolean", "stored": true},
+		{"name": "store", "type": "location"}
+	]
+}'
+```
+
+### Indexing documents
+
+A single document can be indexed as:
+
+```
+curl --request POST \
+--url 'http://localhost:8983/api/collections/techproducts/update' \
+  --header 'Content-Type: application/json' \
+  --data '  {
+    "id" : "978-0641723445",
+    "cat" : ["book","hardcover"],
+    "name" : "The Lightning Thief",
+    "author" : "Rick Riordan",
+    "series_t" : "Percy Jackson and the Olympians",
+    "sequence_i" : 1,
+    "genre_s" : "fantasy",
+    "inStock" : true,
+    "price" : 12.50,
+    "pages_i" : 384
+  }'
+```
+
+Multiple documents can be indexed in the same request:
+```
+curl --request POST \
+  --url 'http://localhost:8983/api/collections/techproducts/update' \
+  --header 'Content-Type: application/json' \
+  --data '  [
+  {
+    "id" : "978-0641723445",
+    "cat" : ["book","hardcover"],
+    "name" : "The Lightning Thief",
+    "author" : "Rick Riordan",
+    "series_t" : "Percy Jackson and the Olympians",
+    "sequence_i" : 1,
+    "genre_s" : "fantasy",
+    "inStock" : true,
+    "price" : 12.50,
+    "pages_i" : 384
+  }
+,
+  {
+    "id" : "978-1423103349",
+    "cat" : ["book","paperback"],
+    "name" : "The Sea of Monsters",
+    "author" : "Rick Riordan",
+    "series_t" : "Percy Jackson and the Olympians",
+    "sequence_i" : 2,
+    "genre_s" : "fantasy",
+    "inStock" : true,
+    "price" : 6.49,
+    "pages_i" : 304
+  }
+]'
+```
+
+A file containing the documents can be indexed as follows:
+```
+curl -H "Content-Type: application/json" \
+       -X POST \
+       -d @example/products.json \
+       --url 'http://localhost:8983/api/collections/techproducts/update?commit=true'
+```
+
+### Commit
+After documents are indexed into a collection, they are not immediately available for searching. In order to have them searchable, a commit operation (also called `refresh` in other search engines like OpenSearch etc.) is needed. Commits can be scheduled at periodic intervals using auto-commits as follows.
+
+```
+curl -X POST -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}' http://localhost:8983/api/collections/techproducts/config
+```  
+
+### Basic search queries
+FIXME
+
 ### Solr Examples
 
 Solr includes a few examples to help you get started. To run a specific example, enter:
@@ -45,10 +175,10 @@ Solr includes a few examples to help you get started. To run a specific example,
     films:         Example of starting with _default configset and adding explicit fields dynamically    
 ```
 
-For instance, if you want to run the SolrCloud example, enter:
+For instance, if you want to run the techproducts example, enter:
 
 ```
-  bin/solr -e cloud
+  bin/solr -e techproducts
 ```
 
 ### Running Solr in Docker
