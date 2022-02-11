@@ -23,7 +23,6 @@ import java.util.Map;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,23 +59,22 @@ public class HighlighterConfigTest extends SolrTestCaseJ4 {
     // check to see that doHighlight is called from the DummyHighlighter
     HashMap<String,String> args = new HashMap<>();
     args.put("hl", "true");
+    args.put("hl.method", "original");
     args.put("df", "t_text");
     args.put("hl.fl", "");
-    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
-      "", 0, 200, args);
 
     assertU(adoc("t_text", "a long day's night", "id", "1"));
     assertU(commit());
     assertU(optimize());
     assertQ("Basic summarization",
-            sumLRF.makeRequest("long"),
+            req(new MapSolrParams(args), "q", "long"),
             "//lst[@name='highlighting']/str[@name='dummy']"
             );
   }
 
   private static SolrHighlighter getHighlighter() {
     var hl = (HighlightComponent) h.getCore().getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
-    return hl.getHighlighter(new MapSolrParams(Map.of()));
+    return hl.getHighlighter(new MapSolrParams(Map.of("hl.method", "original")));
   }
 }
 

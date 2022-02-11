@@ -172,7 +172,7 @@ public class RealTimeGetComponent extends SearchComponent
           try {
             if (log.isDebugEnabled()) {
               log.debug("{} min count to sync to (from most recent searcher view) {}"
-                  , req.getCore().getCoreContainer().getZkController().getNodeName()
+                  , req.getCoreContainer().getZkController().getNodeName()
                   , searcher.count(new MatchAllDocsQuery()));
             }
           } finally {
@@ -976,7 +976,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: handle collection=...?
 
-    ZkController zkController = rb.req.getCore().getCoreContainer().getZkController();
+    ZkController zkController = rb.req.getCoreContainer().getZkController();
 
     // if shards=... then use that
     if (zkController != null && params.get(ShardParams.SHARDS) == null) {
