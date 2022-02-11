@@ -62,7 +62,7 @@ spec:
         impact: collection health
     - alert: SolrReplicaLost
       annotations:
-        description: Replica {{ $labels.replica }} for {{ $labels.shard }} for collection {{ $labels.collection }} is not active
+        description: Replica {{ $labels.replica }} for {{ $labels.shard }} for collection {{ $labels.collection }} on node {{ $labels.base_url }} was lost! 
         runbook_url: link_to_runbook_for_this_problem
       expr: count(solr_collections_replica_state{state="active"} offset 10m) by (namespace, collection, shard, replica, base_url) unless count(solr_collections_replica_state{state="active"}) by (namespace, collection, shard, replica, base_url)
       for: 10m
