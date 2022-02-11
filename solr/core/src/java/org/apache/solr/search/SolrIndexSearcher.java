@@ -958,7 +958,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (queries == null || queries.size() == 0) {
       if (setFilter != null) {
         pf.answer = setFilter;
-        pf.filter = setFilter.getTopFilter();
+        pf.filter = setFilter.makeQuery();
       }
       return pf;
     }
@@ -1052,7 +1052,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // "answer" is the only part of the filter, so set it.
       if (answer != null) {
         pf.answer = answer;
-        pf.filter = answer.getTopFilter();
+        pf.filter = answer.makeQuery();
       }
       return pf;
     }
@@ -1061,13 +1061,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // Set pf.filter based on combining "answer" and "notCached"
     if (notCached == null) {
       if (answer != null) {
-        pf.filter = answer.getTopFilter();
+        pf.filter = answer.makeQuery();
       }
     } else {
       notCached.sort(sortByCost); // pointless?
       final BooleanQuery.Builder builder = new BooleanQuery.Builder();
       if (answer != null) {
-        builder.add(answer.getTopFilter(), Occur.FILTER);
+        builder.add(answer.makeQuery(), Occur.FILTER);
       }
       for (ExtendedQuery eq : notCached) {
         Query q = eq.getCostAppliedQuery();
@@ -2080,7 +2080,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       TotalHitCountCollector collector = new TotalHitCountCollector();
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(QueryUtils.makeQueryable(a), Occur.MUST);
-      bq.add(new ConstantScoreQuery(b.getTopFilter()), Occur.MUST);
+      bq.add(new ConstantScoreQuery(b.makeQuery()), Occur.MUST);
       super.search(bq.build(), collector);
       return collector.getTotalHits();
     }

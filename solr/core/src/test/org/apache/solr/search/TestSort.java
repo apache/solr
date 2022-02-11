@@ -35,20 +35,25 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterCollector;
 import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitDocIdSet;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -182,7 +187,6 @@ public class TestSort extends SolrTestCaseJ4 {
   }
 
 
-
   public void testSort() throws Exception {
     Directory dir = new ByteBuffersDirectory();
     Field f = new StringField("f", "0", Field.Store.NO);
@@ -236,15 +240,35 @@ public class TestSort extends SolrTestCaseJ4 {
       assertTrue(reader.leaves().size() > 1);
 
       for (int i=0; i<qiter; i++) {
-        Filter filt = new Filter() {
+        Query query = new Query() {
           @Override
-          public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
-            return BitsFilteredDocIdSet.wrap(randSet(context.reader().maxDoc()), acceptDocs);
+          public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
+            return new Weight(this) {
+
+              @Override
+              public Explanation explain(LeafReaderContext context, int doc) {
+                  return Explanation.match(0f, "No match on id " + doc);
+              }
+
+              @Override
+              public Scorer scorer(LeafReaderContext leafReaderContext) {
+                return null;
+              }
+
+              @Override
+              public boolean isCacheable(LeafReaderContext ctx) {
+                return false;
+              }
+            };
           }
+
           @Override
           public String toString(String field) {
             return "TestSortFilter";
           }
+
+          @Override
+          public void visit(QueryVisitor queryVisitor) { queryVisitor.visitLeaf(this); }
 
           @Override
           public boolean equals(Object other) {
@@ -302,10 +326,9 @@ public class TestSort extends SolrTestCaseJ4 {
               }
             };
           }
-
         };
 
-        searcher.search(filt, myCollector);
+        searcher.search(query, myCollector);
 
         Collections.sort(collectedDocs, (o1, o2) -> {
           String v1 = o1.val == null ? nullRep : o1.val;
@@ -341,7 +364,6 @@ public class TestSort extends SolrTestCaseJ4 {
       reader.close();
     }
     dir.close();
-
   }
 
   public DocIdSet randSet(int sz) {
