@@ -55,6 +55,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.RequestHandlers;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
@@ -245,6 +246,14 @@ public class SolrRequestParsers {
       public Principal getUserPrincipal() {
         return req == null ? null : req.getUserPrincipal();
       }
+
+      @Override
+      public CoreContainer getCoreContainer() {
+        return httpSolrCall != null ?
+                httpSolrCall.cores :
+                super.getCoreContainer();
+      }
+
 
       @Override
       public List<CommandOperation> getCommands(boolean validateInput) {

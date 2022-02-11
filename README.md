@@ -153,5 +153,5 @@ contributing.
 
 - [Mailing Lists](https://solr.apache.org/community.html#mailing-lists-chat)
 - [Issue Tracker (JIRA)](https://issues.apache.org/jira/browse/SOLR)
-- IRC: `#solr` and `#solr-dev` on freenode.net
+- IRC: `#solr` and `#solr-dev` on libera.chat
 - [Slack](https://solr.apache.org/community.html#slack) 

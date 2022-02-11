@@ -449,7 +449,7 @@ public class TimeRoutedAlias extends RoutedAlias {
   @Override
   public CandidateCollection findCandidateGivenValue(AddUpdateCommand cmd) {
     Object value = cmd.getSolrInputDocument().getFieldValue(getRouteField());
-    ZkStateReader zkStateReader = cmd.getReq().getCore().getCoreContainer().getZkController().zkStateReader;
+    ZkStateReader zkStateReader = cmd.getReq().getCoreContainer().getZkController().zkStateReader;
     String printableId = cmd.getPrintableId();
     updateParsedCollectionAliases(zkStateReader, true);
 
