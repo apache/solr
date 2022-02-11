@@ -217,7 +217,10 @@ When a node receives a request with this special header, it will verify to messa
 Message validation is only attempted for incoming traffic from other Solr nodes registered in ZooKeeper.
 If the request passes PKI validation and the timestamp is less than 5 seconds old, then the request will be trusted.
 
-Note: This assumes that the clocks of different nodes in the cluster are synchronized.
+[NOTE]
+====
+Note: Because the PKI Authentication Plugin relies on relatively short timestamp expiration to validate requests, the clocks on separate nodes in the cluster must be synchronized.
+====
 
 Version 2 of the protocol is the default version. In this version, the `SolrAuthV2` header contains: the source node name, user principal, request timestamp, and a base64-encoded RSA signature. All nodes will attempt to validate this header first.
 
@@ -228,4 +231,4 @@ If the `SolrAuthV2` header is present but fails validation, then Solr will not f
 Unkown values for `solr.pki.acceptVersion` will emit a warning log message but will not cause errors to more smoothly support future protocol revisions.
 
 The timeout is configurable through a system property called `pkiauth.ttl`.
-For example, if you wish to increase the time-to-live to 10 seconds (10000 milliseconds), start each node with a property `'-Dpkiauth.ttl=10000'`.
+For example, if you wish to increase the time-to-live to 10 seconds (10,000 milliseconds), start each node with a property `'-Dpkiauth.ttl=10000'`.
