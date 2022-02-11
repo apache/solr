@@ -17,16 +17,18 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.queries.function.ValueSourceScorer;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
-import org.apache.solr.search.BitsFilteredDocIdSet;
-import org.apache.solr.search.SolrFilter;
 
 import java.io.IOException;
 import java.util.Map;
@@ -35,7 +37,7 @@ import java.util.Map;
 /**
  * RangeFilter over a ValueSource.
  */
-public class ValueSourceRangeFilter extends SolrFilter {
+public class ValueSourceRangeFilter extends Query {
   private final ValueSource valueSource;
   private final String lowerVal;
   private final String upperVal;
@@ -76,33 +78,45 @@ public class ValueSourceRangeFilter extends SolrFilter {
     return includeUpper;
   }
 
-
   @Override
-  public DocIdSet getDocIdSet(final Map<Object, Object> context, final LeafReaderContext readerContext, Bits acceptDocs) throws IOException {
-    // NB the IndexSearcher parameter here can be null because Filter Weights don't
-    // actually use it.
-    Weight weight = createWeight(null, ScoreMode.COMPLETE, 1);
-    return BitsFilteredDocIdSet.wrap(new DocIdSet() {
-       @Override
-       public DocIdSetIterator iterator() throws IOException {
-         Scorer scorer = valueSource.getValues(context, readerContext).getRangeScorer(weight, readerContext, lowerVal, upperVal, includeLower, includeUpper);
-         return scorer == null ? null : scorer.iterator();
-       }
-       @Override
-       public Bits bits() {
-         return null;  // don't use random access
-       }
-
-       @Override
-       public long ramBytesUsed() {
-         return 0L;
-       }
-     }, acceptDocs);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    return new FunctionRangeWeight(searcher, scoreMode, boost);
   }
 
-  @Override
-  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
-    valueSource.createWeight(context, searcher);
+  private class FunctionRangeWeight extends ConstantScoreWeight {
+    private final Map<Object, Object> vsContext;
+    private final ScoreMode scoreMode;
+
+    public FunctionRangeWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+      super(ValueSourceRangeFilter.this, boost);
+      this.scoreMode = scoreMode;
+      vsContext = ValueSource.newContext(searcher);
+      valueSource.createWeight(vsContext, searcher); // callback on valueSource tree
+    }
+
+    @Override
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+      FunctionValues functionValues = valueSource.getValues(vsContext, context);
+      ValueSourceScorer scorer = functionValues.getRangeScorer(this, context, lowerVal, upperVal, includeLower, includeUpper);
+      if (scorer.matches(doc)) {
+        scorer.iterator().advance(doc);
+        return Explanation.match(scorer.score(), ValueSourceRangeFilter.this.toString(), functionValues.explain(doc));
+      } else {
+        return Explanation.noMatch(ValueSourceRangeFilter.this.toString(), functionValues.explain(doc));
+      }
+    }
+
+    @Override
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      ValueSourceScorer scorer = valueSource.getValues(vsContext, context)
+              .getRangeScorer(this, context, lowerVal, upperVal, includeLower, includeUpper);
+      return new ConstantScoreScorer(this, score(), scoreMode, scorer.iterator());
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
   }
 
   @Override
@@ -118,6 +132,12 @@ public class ValueSourceRangeFilter extends SolrFilter {
     sb.append(includeUpper ? ']' : '}');
     return sb.toString();
   }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
+  }
+
 
   @Override
   public boolean equals(Object o) {
