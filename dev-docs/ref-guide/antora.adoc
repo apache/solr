@@ -1,0 +1,70 @@
+= Working with HTML Templates
+:toc:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Solr Ref Guide uses Antora to build the HTML version of the site.
+
+== What is Antora?
+
+Antora is a static site generator, meaning that it takes some set of documents and produces HTML pages.
+It allows for templating of the pages, so each page has the same look and feel without having to code headers, footers, logos, etc., into every page.
+
+Antora is an open source project, online at https://antora.org/.
+
+== How We Use Antora
+
+The following sections describe the main features of Antora that you will encounter while working with the Solr Ref Guide.
+
+=== Asciidoctor
+Antora uses Asciidoctor.js by default as it's content markup language.
+
+Read more on the Solr xref:asciidoc-syntax.adoc[AsciiDoc Syntax] page, or on Antora's guide: https://docs.antora.org/antora/latest/asciidoc/asciidoc/
+
+=== playbook.yml
+
+The `playbook.yml` is a global configuration file that drives many of the options used when building the site.
+
+We have template-ized `playbook.template.yml`, instead of a hardcoded `playbook.yml`.
+Each gradle task that requires a `playbook.yml`, such as `gradlew buildLocalSite` or `gradlew buildOfficialSite`, will generate the `playbook.yml` that is needed based off of this template.
+
+It is unlikely that you will manually need to edit this very often.
+
+=== antora.yml
+
+The `antora.yml` is a configuration file for a specific version of a component in the Antora build.
+Therefore every version we release for the Solr ref-guide, or the Solr Operator ref-guide will have a separate `antora.yml`.
+
+This is also where version-specific variables are configured, such as dependency versions (lucene, zookeeper, etc.), Solr version, and javadocs location.
+
+The `antora.yml` that is used when building a local version of the site is not the version checked-into the repository.
+Instead a local `antora.yml` is built in the `build/` directory.
+The checked-in `antora.yml` is used when the official ref-guide is built.
+Antora will checkout all specified branches/tags and use the antora.yml to build the ref-guide for that branch's version.
+
+In order to test changes to the `antora.yml`, do not change this file directly.
+Instead, update `antora.template.yaml`, and `gradlew buildLocalSite` will build a site with the changes.
+
+The only reason you will likely need to change the `antora.template.yml` is if you are introducing new variables for dependency versions.
+
+== Building the HTML Site
+
+A Gradle target `gradlew buildLocalSite` will build the full HTML site (found in `solr/solr-ref-guide/build/site`).
+
+This target builds the navigation for the left-hand menu, and converts all `.adoc` files to `.html`, including navigation and inter-document links.
+
+The `checkSiteLinks` target also checks that all inter-doc and javadocs references are correct and resolvable.

@@ -44,8 +44,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.lang.JoseException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -195,15 +193,9 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     verifySecurityStatus(cl, url, objPath, expected, count, makeBasicAuthHeader(user, pwd));
   }
 
-  protected void verifySecurityStatus(HttpClient cl, String url, String objPath,
-                                      Object expected, int count, JsonWebSignature jws) throws Exception {
-    verifySecurityStatus(cl, url, objPath, expected, count, getBearerAuthHeader(jws));
-  }
-
-
   @SuppressWarnings({"unchecked"})
-  private static void verifySecurityStatus(HttpClient cl, String url, String objPath,
-                                            Object expected, int count, String authHeader) throws IOException, InterruptedException {
+  protected static void verifySecurityStatus(HttpClient cl, String url, String objPath,
+                                             Object expected, int count, String authHeader) throws IOException, InterruptedException {
     boolean success = false;
     String s = null;
     List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
@@ -242,10 +234,6 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
     return "Basic " + Base64.getEncoder().encodeToString(userPass.getBytes(UTF_8));
   }
 
-  static String getBearerAuthHeader(JsonWebSignature jws) throws JoseException {
-    return "Bearer " + jws.getCompactSerialization();
-  }
-  
   public static void setAuthorizationHeader(AbstractHttpMessage httpMsg, String headerString) {
     httpMsg.setHeader(new BasicHeader("Authorization", headerString));
     log.info("Added Authorization Header {}", headerString);
