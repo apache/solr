@@ -273,10 +273,10 @@ public class SnapShooter {
         solrCore.getDirectoryFactory().release(dir);
       }
 
-      details.add("fileCount", files.size()); // TODO: for removal, replaced with indexFileCount
+      details.add("fileCount", files.size()); // DEPRECATED: for removal, replaced with indexFileCount
       details.add("indexFileCount", files.size());
       details.add("status", "success");
-      details.add("snapshotCompletedAt", Instant.now().toString()); // TODO: for removal, replaced with endTime
+      details.add("snapshotCompletedAt", Instant.now().toString()); // DEPRECATED: for removal, replaced with endTime
       details.add("endTime", Instant.now().toString());
       details.add("snapshotName", snapshotName);
       details.add("directoryName", directoryName);
