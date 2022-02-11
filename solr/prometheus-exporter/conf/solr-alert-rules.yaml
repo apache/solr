@@ -28,9 +28,6 @@ metadata:
     prometheus: k8s
     role: alert-rules
   name: solr-alert-rules
-# TODO:
-# tls expiration
-# cache sizes
 spec:
   groups:
   - name: SolrQuery
@@ -39,7 +36,7 @@ spec:
       annotations:
         description: High latency (p95 > {{ $value }}ms) for collection {{ $labels.collection }}
         runbook_url: link_to_runbook_for_this_problem
-      expr: max by (collection) (solr_metrics_core_query_p95_ms) > 100
+      expr: max by (namespace,collection) (solr_metrics_core_query_p95_ms) > 100
       for: 5m
       labels:
         severity: major
@@ -48,16 +45,26 @@ spec:
       annotations:
         description: QPS (1-min rate) for {{ $labels.core }} in {{ $labels.shard }} for collection {{ $labels.collection }} is {{ $value }}
         runbook_url: link_to_runbook_for_this_problem
-      expr: max by (collection,shard,core) (solr_metrics_core_query_1minRate) > 50
+      expr: max by (namespace,collection,shard,core) (solr_metrics_core_query_1minRate) > 50
       for: 5m
       labels:
         severity: major
         impact: query performance
+        workflow: solr-handle-qps
     - alert: SolrReplicaNotActive
       annotations:
         description: Replica {{ $labels.replica }} for {{ $labels.shard }} for collection {{ $labels.collection }} is not active
         runbook_url: link_to_runbook_for_this_problem
-      expr: count by (collection, shard, replica) (solr_collections_replica_state{state!="active"}) > 0
+      expr: count by (namespace, collection, shard, replica) (solr_collections_replica_state{state!="active"}) > 0
+      for: 10m
+      labels:
+        severity: major
+        impact: collection health
+    - alert: SolrReplicaLost
+      annotations:
+        description: Replica {{ $labels.replica }} for {{ $labels.shard }} for collection {{ $labels.collection }} is not active
+        runbook_url: link_to_runbook_for_this_problem
+      expr: count(solr_collections_replica_state{state="active"} offset 10m) by (namespace, collection, shard, replica, base_url) unless count(solr_collections_replica_state{state="active"}) by (namespace, collection, shard, replica, base_url)
       for: 10m
       labels:
         severity: major
@@ -66,7 +73,7 @@ spec:
       annotations:
         description: No active replicas for {{ $labels.shard }} for collection {{ $labels.collection }}
         runbook_url: link_to_runbook_for_this_problem
-      expr: count by (collection, shard) (solr_collections_replica_state{state="active"}) < 1
+      expr: count by (namespace, collection, shard) (solr_collections_replica_state{state="active"}) < 1
       for: 5m
       labels:
         severity: critical
@@ -75,7 +82,7 @@ spec:
       annotations:
         description: Too many errors from {{ $labels.core }} in {{ $labels.shard }} for collection {{ $labels.collection }}
         runbook_url: link_to_runbook_for_this_problem
-      expr: max by (collection,shard,core) (solr_metrics_core_query_errors_1minRate{searchHandler="/select"}) > 10
+      expr: max by (namespace,collection,shard,core) (solr_metrics_core_query_errors_1minRate{searchHandler="/select"}) > 10
       for: 5m
       labels:
         severity: warning
@@ -84,7 +91,7 @@ spec:
       annotations:
         description: Unbalanced query load ({{ $value }}% of total requests) sent to Solr pod {{ $labels.base_url }}
         runbook_url: link_to_runbook_for_this_problem
-      expr: 100 * (sum by(base_url) (solr_metrics_core_query_1minRate) / ignoring(base_url) group_left() sum(solr_metrics_core_query_1minRate) > ignoring(base_url) group_left() max(1 / solr_collections_live_nodes) + 0.1)
+      expr: 100 * (sum by(namespace,base_url) (solr_metrics_core_query_1minRate) / ignoring(namespace,base_url) group_left() sum(solr_metrics_core_query_1minRate) > ignoring(namespace,base_url) group_left() max(1 / solr_collections_live_nodes) + 0.1)
       for: 10m
       labels:
         severity: warning
@@ -96,7 +103,7 @@ spec:
       annotations:
         description: No leader for {{ $labels.shard }} for collection {{ $labels.collection }}
         runbook_url: link_to_runbook_for_this_problem
-      expr: max by (collection, shard) (solr_collections_shard_leader) < 1
+      expr: max by (namespace,collection, shard) (solr_collections_shard_leader) < 1
       for: 2m
       labels:
         severity: critical
@@ -105,7 +112,7 @@ spec:
       annotations:
         description: Slow recovery for replica {{ $labels.replica }} for {{ $labels.shard }} for collection {{ $labels.collection }}
         runbook_url: link_to_runbook_for_this_problem
-      expr: count by (collection, shard, replica) (solr_collections_replica_state{state="recovering"}) > 0
+      expr: count by (namespace,collection, shard, replica) (solr_collections_replica_state{state="recovering"}) > 0
       for: 15m
       labels:
         severity: major
@@ -114,7 +121,7 @@ spec:
       annotations:
         description: High commit rate for collection {{ $labels.collection }}
         runbook_url: link_to_runbook_for_this_problem
-      expr: max by (collection) (rate(solr_metrics_core_update_handler_commits_total[1m])) > 3
+      expr: max by (namespace,collection) (rate(solr_metrics_core_update_handler_commits_total[1m])) > 3
       for: 5m
       labels:
         severity: major
@@ -123,7 +130,7 @@ spec:
       annotations:
         description: High update error rate (1-minute window) for collection {{ $labels.collection }}
         runbook_url: link_to_runbook_for_this_problem
-      expr: max by (collection) (rate(solr_metrics_core_update_handler_errors_total[1m])) >= 20
+      expr: max by (namespace,collection) (rate(solr_metrics_core_update_handler_errors_total[1m])) >= 20
       for: 5m
       labels:
         severity: major
@@ -132,7 +139,7 @@ spec:
       annotations:
         description: Slow {{ $labels.type }} warm-up time for core {{ $labels.core }} in {{ $labels.shard }} in {{ $labels.collection }}
         runbook_url: link_to_runbook_for_this_problem
-      expr: max by (collection, shard, core, type) (solr_metrics_core_searcher_warmup_time_seconds{item="warmupTime"}) > 10
+      expr: max by (namespace,collection, shard, core, type) (solr_metrics_core_searcher_warmup_time_seconds{item="warmupTime"}) > 10
       for: 5m
       labels:
         severity: major
@@ -141,7 +148,7 @@ spec:
   - name: SolrNodeHealth
     rules:
     - alert: SolrAvailableDiskVeryLow
-      expr: min by (base_url) (solr_metrics_core_fs_bytes{item="usableSpace"}) / max by (base_url) (solr_metrics_core_fs_bytes{item="totalSpace"}) <= 0.1
+      expr: min by (namespace,base_url) (solr_metrics_core_fs_bytes{item="usableSpace"}) / max by (namespace,base_url) (solr_metrics_core_fs_bytes{item="totalSpace"}) <= 0.1
       for: 10m
       labels:
         severity: major
@@ -150,7 +157,7 @@ spec:
         description: Available disk on Solr pod {{ $labels.base_url }} is very low; only {{ $value }}% of total disk is available
         runbook_url: link_to_runbook_for_this_problem
     - alert: SolrAvailableDiskLow
-      expr: min by (base_url) (solr_metrics_core_fs_bytes{item="usableSpace"}) / max by (base_url) (solr_metrics_core_fs_bytes{item="totalSpace"}) <= 0.2
+      expr: min by (namespace,base_url) (solr_metrics_core_fs_bytes{item="usableSpace"}) / max by (namespace,base_url) (solr_metrics_core_fs_bytes{item="totalSpace"}) <= 0.2
       for: 10m
       labels:
         severity: warning
@@ -159,7 +166,7 @@ spec:
         description: Available disk on Solr pod {{ $labels.base_url }} is low; only {{ $value }}% of total disk is available
         runbook_url: link_to_runbook_for_this_problem
     - alert: SolrHighHeapUsage
-      expr: sum by (base_url) (solr_metrics_jvm_memory_heap_bytes{item="used"}) / sum by (base_url) (solr_metrics_jvm_memory_heap_bytes{item="max"}) > 0.9
+      expr: sum by (namespace,base_url) (solr_metrics_jvm_memory_heap_bytes{item="used"}) / sum by (namespace,base_url) (solr_metrics_jvm_memory_heap_bytes{item="max"}) > 0.9
       for: 5m
       labels:
         severity: major
@@ -168,7 +175,7 @@ spec:
         description: Solr pod {{ $labels.base_url }} high heap usage at {{ $value }}%
         runbook_url: link_to_runbook_for_this_problem
     - alert: SolrHighCPU
-      expr: max by (base_url) (solr_metrics_jvm_os_cpu_load{item="systemCpuLoad"}) > 20
+      expr: max by (namespace,base_url) (solr_metrics_jvm_os_cpu_load{item="systemCpuLoad"}) > 20
       for: 10m
       labels:
         severity: major
@@ -177,7 +184,7 @@ spec:
         description: Solr pod {{ $labels.base_url }} high system CPU usage {{ $value }}%
         runbook_url: link_to_runbook_for_this_problem
     - alert: SolrHighCPULoadAvg
-      expr: max by (base_url) (solr_metrics_jvm_os_load_average) > 20
+      expr: max by (namespace,base_url) (solr_metrics_jvm_os_load_average) > 20
       for: 10m
       labels:
         severity: major
@@ -186,7 +193,7 @@ spec:
         description: Solr pod {{ $labels.base_url }} high system CPU load {{ $value }}%
         runbook_url: link_to_runbook_for_this_problem
     - alert: SolrBlockedOrDeadlockedThreads
-      expr: max by (base_url) (solr_metrics_jvm_threads{item=~"blocked|deadlock"}) > 0
+      expr: max by (namespace,base_url) (solr_metrics_jvm_threads{item=~"blocked|deadlock"}) > 0
       for: 2m
       labels:
         severity: critical
@@ -196,7 +203,7 @@ spec:
         runbook_url: link_to_runbook_for_this_problem
     - alert: SolrUnbalancedLoad
       # compares the number of requests per base_url to the expected balanced load 1/N (+10% for flexibility)
-      expr: 100 * (sum by(base_url) (solr_metrics_jetty_requests_total) / ignoring(base_url) group_left() sum(solr_metrics_jetty_requests_total) > ignoring(base_url) group_left() max(1 / solr_collections_live_nodes) + 0.1)
+      expr: 100 * (sum by(namespace,base_url) (solr_metrics_jetty_requests_total) / ignoring(namespace,base_url) group_left() sum(solr_metrics_jetty_requests_total) > ignoring(namespace,base_url) group_left() max(1 / solr_collections_live_nodes) + 0.1)
       for: 15m
       labels:
         severity: major
