@@ -322,6 +322,8 @@ Build
 
 * SOLR-15987: Upgrade slf4j to 1.7.35 and remove ant-compat/force-versions.gradle (Kevin Risden)
 
+* SOLR-15992: Globally forbid and exclude known bad dependencies (Kevin Risden)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -574,6 +576,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 * SOLR-15777: Forbid useDocValuesAsStored for ICUCollationField (warn for luceneMatchVersion < 9.0.0). (Michael Gibney)
 
 * SOLR-12901: Highlighting: hl.method=unified is the new default. (David Smiley)
+
+* SOLR-15991: analysis-extras module tests shouldn't rely on log4j dependency (Kevin Risden)
 
 Bug Fixes
 ---------------------
