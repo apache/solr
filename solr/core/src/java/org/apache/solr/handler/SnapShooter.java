@@ -330,7 +330,7 @@ public class SnapShooter {
       backupRepo.deleteDirectory(path);
 
       details.add("status", "success");
-      details.add("snapshotDeletedAt", new Date().toString());
+      details.add("snapshotDeletedAt", Instant.now().toString());
 
     } catch (IOException e) {
       details.add("status", "Unable to delete snapshot: " + snapshotName);
