@@ -245,21 +245,48 @@ public class TermsQParserPlugin extends QParserPlugin {
 
       return new ConstantScoreWeight(this, boost) {
         public Scorer scorer(LeafReaderContext context) throws IOException {
-          SortedSetDocValues segmentDocValues;
-          if (!matchesAtLeastOneTerm || (segmentDocValues = DocValues.getSortedSet(context.reader(), fieldName)) == null) {
+          final SortedDocValues singleDv;
+          final SortedSetDocValues multiDv;
+          if (!matchesAtLeastOneTerm) {
             return null;
+          } else if (multiValuedField) {
+            multiDv = context.reader().getSortedSetDocValues(fieldName);
+            if (multiDv == null) {
+              return null;
+            }
+            // multiValued fields that are single-valued in practice for a given segment may be optimized
+            singleDv = DocValues.unwrapSingleton(multiDv);
+          } else {
+            multiDv = null;
+            singleDv = context.reader().getSortedDocValues(fieldName);
+            if (singleDv == null) {
+              return null;
+            }
           }
 
           final LongValues toGlobal = ordinalMap == null ? null : ordinalMap.getGlobalOrds(context.ord);
 
-          return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(segmentDocValues) {
+          if (singleDv != null) {
+            return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(singleDv) {
+              public boolean matches() throws IOException {
+                final long ord = singleDv.ordValue();
+                return topLevelTermOrdinals.get(toGlobal == null ? ord : toGlobal.get(ord));
+              }
+
+              public float matchCost() {
+                return 10.0F;
+              }
+            });
+          }
+
+          return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(multiDv) {
             public boolean matches() throws IOException {
-              long ord = segmentDocValues.nextOrd();
+              long ord = multiDv.nextOrd();
               do {
                 if (topLevelTermOrdinals.get(toGlobal == null ? ord : toGlobal.get(ord))) {
                   return true;
                 }
-              } while ((ord = segmentDocValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS);
+              } while ((ord = multiDv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS);
 
               return false;
             }
