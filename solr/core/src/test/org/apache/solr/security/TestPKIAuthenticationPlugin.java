@@ -55,8 +55,8 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
     final PublicKey myKey;
 
-    public MockPKIAuthenticationPlugin(CoreContainer cores, String node) {
-      super(cores, node, new PublicKeyHandler());
+    public MockPKIAuthenticationPlugin(String node) {
+      super(null, node, new PublicKeyHandler());
       myKey = CryptoKeys.deserializeX509PublicKey(getPublicKey());
     }
 
@@ -117,7 +117,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     }
 
     mockReq = createMockRequest(header);
-    mock = new MockPKIAuthenticationPlugin(null, nodeName);
+    mock = new MockPKIAuthenticationPlugin(nodeName);
     request = new BasicHttpRequest("GET", "http://localhost:56565");
   }
 
@@ -147,7 +147,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   public void testSuperUser() throws Exception {
     // Simulate the restart of a node, this will return a different key on subsequent invocations.
     // Create it in advance because it can take some time and should be done before header is set
-    MockPKIAuthenticationPlugin mock1 = new MockPKIAuthenticationPlugin(null, nodeName) {
+    MockPKIAuthenticationPlugin mock1 = new MockPKIAuthenticationPlugin(nodeName) {
       boolean firstCall = true;
 
       @Override
@@ -182,7 +182,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
   public void testProtocolMismatch() throws Exception {
     System.setProperty(PKIAuthenticationPlugin.SEND_VERSION, "v1");
     System.setProperty(PKIAuthenticationPlugin.ACCEPT_VERSIONS, "v2");
-    mock = new MockPKIAuthenticationPlugin(null, nodeName);
+    mock = new MockPKIAuthenticationPlugin(nodeName);
 
     principal.set(new BasicUserPrincipal("solr"));
     mock.solrRequestInfo = new SolrRequestInfo(localSolrQueryRequest, new SolrQueryResponse());
