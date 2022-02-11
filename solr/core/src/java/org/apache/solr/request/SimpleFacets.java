@@ -268,7 +268,7 @@ public class SimpleFacets {
         return base;
       }
       AllGroupHeadsCollector<?> allGroupHeadsCollector = grouping.getCommands().get(0).createAllGroupCollector();
-      searcher.search(base.getTopFilter(), allGroupHeadsCollector);
+      searcher.search(base.makeQuery(), allGroupHeadsCollector);
       return new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));
     } else {
       return base;
@@ -334,7 +334,7 @@ public class SimpleFacets {
     }
 
     AllGroupsCollector<?> collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
-    searcher.search(QueryUtils.combineQueryAndFilter(facetQuery, docSet.getTopFilter()), collector);
+    searcher.search(QueryUtils.combineQueryAndFilter(facetQuery, docSet.makeQuery()), collector);
     return collector.getGroupCount();
   }
 
@@ -721,7 +721,7 @@ public class SimpleFacets {
     Collector groupWrapper = getNumericHidingWrapper(groupField, collector);
     Collector fieldWrapper = getNumericHidingWrapper(field, groupWrapper);
     // When GroupFacetCollector can handle numerics we can remove the wrapped collectors
-    searcher.search(base.getTopFilter(), fieldWrapper);
+    searcher.search(base.makeQuery(), fieldWrapper);
     
     boolean orderByCount = sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY);
     TermGroupFacetCollector.GroupedFacetResult result 
