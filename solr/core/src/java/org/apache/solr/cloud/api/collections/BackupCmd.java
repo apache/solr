@@ -294,10 +294,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       NamedList<?> shardResp = (NamedList<?>)((NamedList<?>)shards.getVal(i)).get("response");
       if (shardResp == null)
         continue;
-      // indexFileCount is expected to be found in case of incremental backups
-      // fileCount is expected to be found in case of snapshot backups
-      Integer shardIndexFileCount = (Integer) Optional.<Object> ofNullable(shardResp.get("indexFileCount"))
-          .orElse(shardResp.get("fileCount"));
+      Integer shardIndexFileCount = (Integer) shardResp.get("indexFileCount");
       if (shardIndexFileCount != null) {
         indexFileCount = Optional.of(indexFileCount.orElse(0) + shardIndexFileCount);
       }
