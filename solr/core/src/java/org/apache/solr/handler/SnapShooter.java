@@ -323,6 +323,7 @@ public class SnapShooter {
     log.info("Deleting snapshot: {}", snapshotName);
 
     NamedList<Object> details = new NamedList<>();
+    details.add("startTime", Instant.now().toString());
     details.add("snapshotName", snapshotName);
       
     try {
@@ -330,7 +331,8 @@ public class SnapShooter {
       backupRepo.deleteDirectory(path);
 
       details.add("status", "success");
-      details.add("snapshotDeletedAt", Instant.now().toString());
+      details.add("snapshotDeletedAt", Instant.now().toString()); // DEPRECATED: for removal, replaced with endTime
+      details.add("endTime", Instant.now().toString());
 
     } catch (IOException e) {
       details.add("status", "Unable to delete snapshot: " + snapshotName);
