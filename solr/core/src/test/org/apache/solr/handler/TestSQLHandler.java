@@ -1494,6 +1494,14 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertTrue(maxf == null);
     assertTrue(avgf == null);
 
+    // test bunch of where predicates
+    sParams = mapParams(CommonParams.QT, "/sql",
+        "stmt", "select count(*), sum(a_i), min(a_i), max(a_i), cast(avg(1.0 * a_i) as float), sum(a_f), " +
+            "min(a_f), max(a_f), avg(a_f) from collection1 where id = 2 AND a_s='hello0' AND a_i=2 AND a_f=2");
+
+
+    tuples = getTuples(sParams, baseUrl);
+    assert (tuples.size() == 1);
   }
 
   @Test
@@ -2502,9 +2510,11 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "4", "a_s", "world-4", "b_s", "foo", "a_i", "3", "d_s", "b")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
+    expectResults("SELECT COUNT(*) as QUERY_COUNT FROM $ALIAS WHERE (id='1')", 1);
+    expectResults("SELECT COUNT(*) as QUERY_COUNT FROM $ALIAS WHERE (d_s='x') AND (id='1')", 1);
     expectResults("SELECT COUNT(*) as QUERY_COUNT FROM $ALIAS WHERE (d_s='x') AND (id='1') AND (b_s='foo')", 1);
     expectResults("SELECT COUNT(1) as QUERY_COUNT FROM $ALIAS WHERE (d_s='x') AND (id='1') AND (b_s='foo')", 1);
-    expectResults("SELECT COUNT(1) as QUERY_COUNT FROM $ALIAS WHERE (d_s='x') AND (id='1') AND (b_s='foo') AND (d_s='x')", 1);
+    expectResults("SELECT COUNT(1) as QUERY_COUNT FROM $ALIAS WHERE (d_s='x') AND (id='1') AND (b_s='foo') AND (a_s='hello-1')", 1);
     expectResults("SELECT COUNT(*) as QUERY_COUNT, max(id) as max_id FROM $ALIAS WHERE (d_s='x') AND (id='1') AND (b_s='foo')", 1);
     expectResults("SELECT COUNT(*) as QUERY_COUNT FROM $ALIAS WHERE (d_s='x') AND (id='1') AND (b_s='foo') HAVING COUNT(*) > 0", 1);
   }
