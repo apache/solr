@@ -264,7 +264,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     //Aggregating result from different shards
-    NamedList<Object> aggRsp = aggregateResults(results, collectionName, slices, backupManager, backupProperties);
+    NamedList<Object> aggRsp = aggregateResults(results, collectionName, slices, backupManager, backupProperties, true);
     results.add("response", aggRsp);
   }
 
@@ -272,11 +272,14 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
                                              String collectionName,
                                              Collection<Slice> slices,
                                              BackupManager backupManager,
-                                             BackupProperties backupProps) {
+                                             BackupProperties backupProps,
+                                             boolean incremental) {
     NamedList<Object> aggRsp = new SimpleOrderedMap<>();
     aggRsp.add("collection", collectionName);
     aggRsp.add("numShards", slices.size());
-    aggRsp.add("backupId", backupManager.getBackupId().id);
+    if(incremental) {
+      aggRsp.add("backupId", backupManager.getBackupId().id);
+    }
     aggRsp.add("indexVersion", backupProps.getIndexVersion());
     aggRsp.add("startTime", backupProps.getStartTime());
 
@@ -291,13 +294,14 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       NamedList<?> shardResp = (NamedList<?>)((NamedList<?>)shards.getVal(i)).get("response");
       if (shardResp == null)
         continue;
+      // indexFileCount is expected to be found in case of incremental backups
+      // fileCount is expected to be found in case of snapshot backups
       Integer shardIndexFileCount = (Integer) Optional.<Object> ofNullable(shardResp.get("indexFileCount"))
           .orElse(shardResp.get("fileCount"));
       if (shardIndexFileCount != null) {
         indexFileCount = Optional.of(indexFileCount.orElse(0) + shardIndexFileCount);
       }
-      Integer shardUploadedIndexFileCount = (Integer) Optional
-          .<Object> ofNullable(shardResp.get("uploadedIndexFileCount")).orElse(shardResp.get("fileCount"));
+      Integer shardUploadedIndexFileCount = (Integer) shardResp.get("uploadedIndexFileCount");
       if (shardUploadedIndexFileCount != null) {
         uploadedIndexFileCount = Optional.of(uploadedIndexFileCount.orElse(0) + shardUploadedIndexFileCount);
       }
@@ -401,7 +405,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     shardRequestTracker.processResponses(results, shardHandler, true, "Could not backup all shards");
 
     //Aggregating result from different shards
-    NamedList<Object> aggRsp = aggregateResults(results, collectionName, slices, backupManager, backupProperties);
+    NamedList<Object> aggRsp = aggregateResults(results, collectionName, slices, backupManager, backupProperties, false);
     results.add("response", aggRsp);
   }
 }
