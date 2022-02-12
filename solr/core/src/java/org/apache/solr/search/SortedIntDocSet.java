@@ -25,7 +25,6 @@ import com.carrotsearch.hppc.IntHashSet;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
@@ -761,50 +760,8 @@ public class SortedIntDocSet extends DocSet {
   }
 
   @Override
-  public Filter getTopFilter() {
-    return new Filter() {
-
-      @Override
-      public DocIdSet getDocIdSet(final LeafReaderContext context, final Bits acceptDocs) {
-        // all Solr DocSets that are used as filters only include live docs
-        final Bits acceptDocs2 = acceptDocs == null ? null : (context.reader().getLiveDocs() == acceptDocs ? null : acceptDocs);
-
-        return BitsFilteredDocIdSet.wrap(new DocIdSet() {
-          @Override
-          public DocIdSetIterator iterator() {
-            return SortedIntDocSet.this.iterator(context);
-          }
-
-          @Override
-          public long ramBytesUsed() {
-            return RamUsageEstimator.sizeOf(docs);
-          }
-          
-          @Override
-          public Bits bits() {
-            // random access is expensive for this set
-            return null;
-          }
-
-        }, acceptDocs2);
-      }
-      @Override
-      public String toString(String field) {
-        return "SortedIntDocSetTopFilter";
-      }
-
-      // Equivalence should/could be based on docs here? How did it work previously?
-
-      @Override
-      public boolean equals(Object other) {
-        return other == this;
-      }
-
-      @Override
-      public int hashCode() {
-        return System.identityHashCode(this);
-      }
-    };
+  public DocSetQuery makeQuery() {
+    return new DocSetQuery(this);
   }
 
   @Override

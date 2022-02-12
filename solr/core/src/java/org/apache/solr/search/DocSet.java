@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -117,11 +118,12 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
   }
 
   /**
-   * Returns a Filter for use in Lucene search methods, assuming this DocSet
+   * Returns a constant scoring Query for use in Lucene search methods, assuming this DocSet
    * was generated from the top-level MultiReader that the Lucene search
-   * methods will be invoked with.
+   * methods will be invoked with. DocSets, and thus this query, do not
+   * match deleted docs.
    */
-  public abstract Filter getTopFilter();
+  public abstract Query makeQuery();
 
   /**
    * Adds all the docs from this set to the target. The target should be

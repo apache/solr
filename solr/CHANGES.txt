@@ -49,6 +49,8 @@ Bug Fixes
 ---------------------
 * SOLR-15918: Skip repetitive parent znode creation on config set upload (Mike Drob)
 
+* SOLR-15964: Transient cores: don't evict a core when it's still being used. (David Smiley)
+
 Other Changes
 ---------------------
 * SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
@@ -271,6 +273,12 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15209: The old LegacyAssignStrategy has been refactored into the SimplePlacementPlugin. This is still the default
   placement policy for Solr. (Houston Putman, Ilan Ginzburg)
 
+* SOLR-15257: Replace DocSet.getTopFilter with DocSet.makeQuery. Create DocSetQuery which is a Query
+  and DocSetProducer. (Collins Abanda, Mike Drob, Tim Potter, David Smiley, Michael Gibney)
+
+* SOLR-12336: Remove Filter, SolrFilter and SolrConstantScoreQuery. Filter no longer has a need to exist due to multiple JIRA issues,
+  implemented by a number of issues. With Filter going away, there is no longer need for SolrConstantScoreQuery. (Collins Abanda, Mike Drob, Tim Potter, David Smiley, Michael Gibney)
+
 * SOLR-14916: Add split parameter to timeseries Streaming Expression (Joel Bernstein)
 
 * SOLR-14686: Logs: Removed the "[corename]" prefix of some SolrCore logs that has become redundant
@@ -288,6 +296,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
   embedded zookeeper. (janhoy)
 
 * SOLR-11905: New Admin UI Query screen input boxes for JSON query and facet DSL (janhoy)
+
+* SOLR-15556: Migrate the Ref Guide to be built with Antora, enabling many new features (Cassandra Targett, Houston Putman, Mike Drob)
 
 Build
 ---------------------
@@ -313,6 +323,12 @@ Build
 * SOLR-15603: Add an option to activate Gradle build cache, build task cleanups (Alexis Tual, Dawid Weiss)
 
 * SOLR-15670: Introduce Gradle parameter to skip ref-guide tasks (Houston Putman, Dawid Weiss)
+
+* SOLR-15984: Ensure all used dependencies are declared (Kevin Risden)
+
+* SOLR-15987: Upgrade slf4j to 1.7.35 and remove ant-compat/force-versions.gradle (Kevin Risden)
+
+* SOLR-15992: Globally forbid and exclude known bad dependencies (Kevin Risden)
 
 Other Changes
 ----------------------
@@ -531,6 +547,8 @@ Other Changes
 
 * SOLR-15807: New LogListener class for tests to use to make assertions about what Log messages should or should not be produced by a test (hossman)
 
+* SOLR-15907: Move JWT Authenticaion plugin to module 'jwt-auth' (janhoy)
+
 * SOLR-15845: Add a new SolrVersion class to manage Solr's version independently from the Lucene version we consume (janhoy)
 
 * SOLR-14858: Add the server WEB-INF/lib directory to the classpath for the solr-exporter script. Will allow the script
@@ -564,6 +582,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 * SOLR-15777: Forbid useDocValuesAsStored for ICUCollationField (warn for luceneMatchVersion < 9.0.0). (Michael Gibney)
 
 * SOLR-12901: Highlighting: hl.method=unified is the new default. (David Smiley)
+
+* SOLR-15991: analysis-extras module tests shouldn't rely on log4j dependency (Kevin Risden)
 
 * SOLR-15064: Atomic/partial updates to nested documents now _require_ the `\_root_` field to
   clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.
@@ -630,6 +650,11 @@ Bug Fixes
 * SOLR-15871: Update Log4J to 2.17.1 (weidongkl via janhoy)
 
 * SOLR-15587: Don't use the UrlScheme singleton on the client-side to determine cluster's scheme, only get from ClusterState provider impl (Timothy Potter)
+
+* SOLR-14569: Configuring a shardHandlerFactory on the /select requestHandler results in HTTP 401 when searching on alias
+  in secured Solr. (Isabelle Giguere, Jason Gerlowski, Anshum Gupta, Mark Mark Miller)
+
+* SOLR-15974: Remove Calcite's ENUMERABLE_AGGREGATE_RULE as Solr only supports push-down for LogicalAggregate (Timothy Potter, Kiran Chitturi)
 
 ==================  8.11.1 ==================
 
