@@ -103,7 +103,8 @@ public class TestBackgroundJoinWarmer extends SolrTestCaseJ4 {
         } else { // commit into main index refreshes cache as well
             assertU(add(doc("id", "99999999")));
             assertU(commit()); // TODO this causes an error.
-            // cached join
+            // cached join leaks as query result key,
+            // but then it's warmed on new searcher, and hits the bummer
         }
 
         // fromCore change become visible
