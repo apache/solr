@@ -1,6 +1,7 @@
 package org.apache.solr.search.join;
 
 import org.apache.lucene.search.Query;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.*;
 
 import java.io.IOException;

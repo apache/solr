@@ -88,18 +88,24 @@ public class TestBackgroundJoinWarmer extends SolrTestCaseJ4 {
                 "debugQuery", random().nextBoolean() ? "true" : "false"))
                 , "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
         );
-        // nothing have changed ... but why
+        // nothing have changed ...
         assertUserCacheStats("fromCore", "size", 1,
                 "hits", 2L, "cumulative_hits", 2L, // inc from the last check
                 "inserts", 1L , "cumulative_inserts", 1L);
 
-        update(fromCore, commit(), new MapSolrParams(Map.of("post-processor","refresh-join-caches")));
+        if (true) {
+            update(fromCore, commit(), new MapSolrParams(Map.of("post-processor", "refresh-join-caches")));
+            assertUserCacheStats("fromCore", "size", 1,
+                    "hits", 0L,
+                    "cumulative_hits", 0L, // that's because it warms itself
+                    "inserts", 0L ,
+                    "cumulative_inserts", 0L); // that's because it warms itself
+        } else { // commit into main index refreshes cache as well
+            assertU(add(doc("id", "99999999")));
+            assertU(commit()); // TODO this causes an error.
+            // cached join
+        }
 
-        assertUserCacheStats("fromCore", "size", 1,
-                "hits", 0L,
-                "cumulative_hits", 0L, // that's because it warms itself
-                "inserts", 0L ,
-                "cumulative_inserts", 0L); // that's because it warms itself
         // fromCore change become visible
         for(long hits=1L; hits<=3L; hits++) {
             assertJQ(req(qOrFq(joinPrefix + " from=dept_id_s to=dept_s cacheEventually=true fromIndex=fromCore}cat:dev", "fl", "id",
@@ -141,7 +147,6 @@ public class TestBackgroundJoinWarmer extends SolrTestCaseJ4 {
 
     @AfterClass
     public static void nukeAll() {
-        fromCore.closeAndWait();
         fromCore = null;
     }
 
@@ -152,7 +157,7 @@ public class TestBackgroundJoinWarmer extends SolrTestCaseJ4 {
                 for(int i=0; i<nameVals.length-1; i+=2) {
                     String name = (String) nameVals[i];
                     Object expected = nameVals[i + 1];
-                    assertEquals(expected, metricsMap.getAttribute(name));
+                    assertEquals(metricsMap.toString(), expected, metricsMap.getAttribute(name));
                 }
                 return (Void)null;
             } catch (Exception e) {

@@ -1,16 +1,24 @@
 package org.apache.solr.search;
 
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
 
 import java.io.IOException;
+import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 public class RefreshCrossCoreJoinCacheFactory extends UpdateRequestProcessorFactory {
     @Override
@@ -33,7 +41,18 @@ public class RefreshCrossCoreJoinCacheFactory extends UpdateRequestProcessorFact
                             @SuppressWarnings("rawtypes")
                             final SolrCache joinCache = leftSearcher.get().getCache(rightSideCore);
                             if (joinCache != null) {
-                                joinCache.warm(leftSearcher.get(), joinCache);
+                                // this is necessary for classic join query, which checks SRI, i don't know why.
+                                SolrQueryRequest leftReq = new LocalSolrQueryRequest(core,req.getParams()) {
+                                    @Override public SolrIndexSearcher getSearcher() { return leftSearcher.get(); }
+                                    @Override public void close() { }
+                                };
+                                SolrQueryResponse rsp = new SolrQueryResponse();
+                                SolrRequestInfo.setRequestInfo(new SolrRequestInfo(leftReq, rsp));
+                                try {
+                                    joinCache.warm(leftSearcher.get(), joinCache);
+                                } finally {
+                                    SolrRequestInfo.clearRequestInfo();
+                                }
                             }
                         } finally {
                             leftSearcher.decref();

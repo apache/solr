@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -228,7 +229,9 @@ public class JoinQParserPlugin extends QParserPlugin {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                     "Exception on caching " + query, e);
           }
-          WrappedQuery wrappedCache = new WrappedQuery(docset.getTopFilter());
+          final Filter topFilter = docset.getTopFilter();
+
+          WrappedQuery wrappedCache = new WrappedQuery(topFilter);
           wrappedCache.setCache(false);
           return wrappedCache;
         }
