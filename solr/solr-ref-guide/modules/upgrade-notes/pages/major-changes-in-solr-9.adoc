@@ -104,6 +104,44 @@ All the usages are replaced by BaseHttpSolrClient.RemoteSolrException and BaseHt
 In previous versions there was a field returned in async backup status responses, `Response`. This has now been renamed to `msg`, to better fit other collections API responses.
 The `response` field is now a map, containing information about the backup (`startTime`, `indexSizeMB`, `indexFileCount`, etc.).
 
+* SOLR-15982: For collection's snapshot backup request responses additional fields `indexVersion`, `indexFileCount`, etc. were added similar to incremental backup request responses. Also, both snapshot and incremental backup request responses will now contain `starTime` and `endTime`. Here is an example of how collection's snapshot backup request responses will looks like:
+
+Incremental:
+
+```json
+"response": {
+    "collection": "techproducts",
+    "numShards": 2,
+    "backupId": 0,
+    "indexVersion": "9.0.0",
+    "startTime": "2022-02-11T17:20:44.157305500Z",
+    "indexFileCount": 22,
+    "uploadedIndexFileCount": 22,
+    "indexSizeMB": 0.007,
+    "uploadedIndexFileMB": 0.007,
+    "shardBackupIds": [
+        "md_shard2_0",
+        "md_shard1_0"
+    ],
+    "endTime": "2022-02-11T17:20:45.245534400Z"
+}
+```
+
+Snapshot:
+
+```json
+"response": {
+    "collection": "techproducts",
+    "numShards": 2,
+    "indexVersion": "9.0.0",
+    "startTime": "2022-02-11T17:19:33.271461700Z",
+    "indexFileCount": 22,
+    "endTime": "2022-02-11T17:19:34.363859100Z"
+}
+```
+
+Snapshot backup shard's response were updated to add fields `indexFileCount` and `endTime`, snapshot delete shard's response were updated to add fields `startTime` and `endTime`. Previous fields `fileCount`, `snapshotCompletedAt` and `snapshotDeletedAt` of backup and delete shard's responses are now deprecated and will be removed in future releases. All date/time fields of backup and delete related shard's responses have been updated to use `Instance` instead of `Date`.
+
 * SOLR-15884: In Backup request responses, the `response` key now uses a map to return information instead of a list.
 This is only applicable for users returning information in JSON format, which is the default behavior.
 
