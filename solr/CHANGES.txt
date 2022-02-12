@@ -51,6 +51,8 @@ Bug Fixes
 
 * SOLR-15964: Transient cores: don't evict a core when it's still being used. (David Smiley)
 
+* SOLR-15116: Support a HEAD request for managed resources. (Eric Pugh)
+
 Other Changes
 ---------------------
 * SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
