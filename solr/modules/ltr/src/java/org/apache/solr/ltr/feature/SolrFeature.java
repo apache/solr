@@ -175,7 +175,7 @@ public class SolrFeature extends Feature {
 
           DocSet filtersDocSet = searcher.getDocSet(filterQueries); // execute
           if (filtersDocSet != searcher.getLiveDocSet()) {
-            filterDocSetQuery = filtersDocSet.getTopFilter();
+            filterDocSetQuery = filtersDocSet.makeQuery();
           }
         }
 

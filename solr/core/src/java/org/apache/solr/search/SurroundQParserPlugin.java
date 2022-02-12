@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.io.IOException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -99,20 +98,6 @@ public class SurroundQParserPlugin extends QParserPlugin {
       String defaultField = getParam(CommonParams.DF);
       Query lquery = sq.makeLuceneQueryField(defaultField, bqFactory);
       return lquery;
-    }
-
-    @Override
-    public Query getHighlightQuery() throws SyntaxError {
-      // Some highlighters (certainly UnifiedHighlighter) doesn't support highlighting these
-      //  queries in some modes because this special query doesn't implement visit() properly.
-      //  By rewriting, we get a SpanQuery, which does.  Sometimes this can be expensive like for
-      //  some MultiTermQueries (MTQ) (e.g. a wildcard) but we don't expect it to be here.
-      try {
-        return getQuery().rewrite(req.getSearcher().getIndexReader());
-      } catch (IOException e) {
-        log.warn("Couldn't get rewritten query for highlighting", e);
-        return getQuery();
-      }
     }
   }
 }

@@ -31,8 +31,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
 
-import javax.annotation.Nonnull;
-
 /**
  * <p>The implementation of the cluster abstractions from {@link org.apache.solr.cluster} as static inner classes of this
  * one are a very straightforward approach
@@ -82,7 +80,6 @@ class SimpleClusterAbstractionsImpl {
     }
 
     @Override
-    @Nonnull
     public Iterator<SolrCollection> iterator() {
       return clusterState.getCollectionsMap().values().stream().map(SolrCollectionImpl::fromDocCollection).collect(Collectors.toSet()).iterator();
     }
@@ -176,7 +173,6 @@ class SimpleClusterAbstractionsImpl {
     }
 
     @Override
-    @Nonnull
     public Iterator<Shard> iterator() {
       return shards.values().iterator();
     }
@@ -272,7 +268,6 @@ class SimpleClusterAbstractionsImpl {
     }
 
     @Override
-    @Nonnull
     public Iterator<Replica> iterator() {
       return replicas.values().iterator();
     }

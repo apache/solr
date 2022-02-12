@@ -20,15 +20,14 @@ apply plugin: 'java-library'
 
 description = 'GCS Backup Repository'
 
-configurations.all {
-  exclude group: "javax.annotation", module: "javax.annotation-api"
-  exclude group: "com.google.code.findbugs", module: "jsr305"
-}
-
 dependencies {
     api project(':solr:core')
+    implementation project(':solr:solrj')
+    
+    implementation 'org.apache.lucene:lucene-core'
+    implementation 'org.slf4j:slf4j-api'
 
-    implementation ('com.google.guava:guava') { transitive = false }
+    implementation 'com.google.guava:guava'
     implementation ('com.google.api:api-common') { exclude group: 'com.google.guava', module: 'guava' }
     implementation ('com.google.api:gax') { exclude group: 'com.google.guava', module: 'guava' }
     implementation ('com.google.api:gax-httpjson') { transitive = false }
@@ -55,6 +54,9 @@ dependencies {
     implementation('io.opencensus:opencensus-api') { transitive = false }
     implementation('io.opencensus:opencensus-contrib-http-util') { exclude group: 'com.google.guava', module: 'guava' }
 
-    testImplementation("com.google.cloud:google-cloud-nio") { exclude group: 'com.google.guava', module: 'guava' }
     testImplementation project(':solr:test-framework')
+    testImplementation 'org.apache.lucene:lucene-test-framework'
+    testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+    testImplementation 'junit:junit'
+    testImplementation("com.google.cloud:google-cloud-nio") { exclude group: 'com.google.guava', module: 'guava' }
 }
