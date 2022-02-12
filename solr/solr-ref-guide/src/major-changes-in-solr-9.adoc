@@ -307,3 +307,5 @@ Example has been provided in `sample_techproducts_configs` to override content-t
 
 * SOLR-15124: Removed three core level admin API endpoints because they are already registered at the node level
 where they really belong: /admin/threads, /admin/properties, /admin/logging
+
+* Atomic/partial updates to nested documents now _require_ the `\_root_` field to clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.
