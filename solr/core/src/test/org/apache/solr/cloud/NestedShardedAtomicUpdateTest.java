@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -256,12 +255,12 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase { // used t
         )
     );
 
-    System.out.println("Here it comes...");
-    SolrException e = expectThrows(SolrException.class,
-        "wrong \"_route_\" param should throw an exception",
-        () -> indexDocAndRandomlyCommit(aClient, wrongRouteParams, grandChildDoc)
-    );
-    assertTrue(e.toString(), e.getMessage().contains("Document not found for update"));
+    // despite the wrong param, it'll be routed correctly; we can find the doc after.
+    //   An error would have been okay too but routing correctly is also fine.
+    indexDoc(aClient, wrongRouteParams, grandChildDoc);
+    aClient.commit();
+
+    assertEquals(1, aClient.query(params("_route_", rootId, "q", "id:3")).getResults().getNumFound());
   }
 
   private void indexDocAndRandomlyCommit(SolrClient client, SolrParams params, SolrInputDocument sdoc) throws IOException, SolrServerException {
@@ -273,7 +272,6 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase { // used t
   }
 
   private void indexDoc(SolrClient client, SolrParams params, SolrInputDocument sdoc) throws IOException, SolrServerException {
-    params = SolrParams.wrapDefaults(params, params("wt", "json"));
     final UpdateRequest updateRequest = new UpdateRequest();
     updateRequest.add(sdoc);
     updateRequest.setParams(new ModifiableSolrParams(params));
