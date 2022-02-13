@@ -389,7 +389,7 @@ task buildLocalAntoraSite(type: NpxTask) {
     def extraArgs = [
         // This attribute should not include ":link", the other 2 should
         // This attribute should also not be relative, because it is used in multiple path directories in the site
-        "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toPath()}",
+        "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toURI().toASCIIString()}",
         "--attribute", "solr-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}",
         "--attribute", "lucene-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').luceneDocsDir)}"
     ]
