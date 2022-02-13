@@ -34,16 +34,16 @@ All the following commands are entered from the "solr" directory which should be
 To start Solr for the first time after installation, simply enter:
 
 ```
-  bin/solr start
-```
-
-This will launch a standalone Solr server in the background of your shell,
-listening on port 8983. Alternatively, you can launch Solr in "cloud" mode,
-which allows you to scale out using sharding and replication. To launch Solr
-in cloud mode, enter:
-
-```
   bin/solr start -cloud
+```
+
+This will launch Solr in "cloud" mode, which allows you to scale out using 
+sharding and replication. Alternatively, you can launch a standalone Solr server
+in the background of your shell, listening on port 8983.  To launch Solr
+in standalone mode, enter:
+
+```
+  bin/solr start
 ```
 
 To see all available options for starting Solr, please enter:
