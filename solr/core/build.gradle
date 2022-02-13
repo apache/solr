@@ -87,6 +87,8 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
+  implementation 'javax.servlet:javax.servlet-api'
+
   implementation 'org.eclipse.jetty:jetty-client'
 
   implementation 'org.eclipse.jetty.http2:http2-common'
