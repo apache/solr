@@ -17,10 +17,9 @@
 
 package org.apache.solr.pkg;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -37,7 +36,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -49,17 +50,27 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 /**
  * The class that holds a mapping of various packages and classloaders
  */
-public class PackageLoader implements Closeable {
+public class PackageLoader implements Closeable, MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String LATEST = "$LATEST";
+  public static final String LOCAL_PKGS_DIR_PROP = "solr.packages.local.dir";
+  public static final String ENABLED_LOCAL_PKGS_PROP = "solr.enabled.local.packages";
+  public static final String LOCAL_PACKAGES_JSON = "local_packages.json";
+  public static final String ENABLE_PACKAGES_REPO_PROP = "enable.packages";
+  public static final String ENABLE_PACKAGES_REPO_PROP_NEW = "solr.enable.pkgs.repo";
 
+  public final String localPkgsDir = System.getProperty(LOCAL_PKGS_DIR_PROP);
+  public final String enabledLocalPkgsList = System.getProperty(ENABLED_LOCAL_PKGS_PROP, "");
+  public final boolean repoPackagesEnabled = Boolean.parseBoolean(System.getProperty(ENABLE_PACKAGES_REPO_PROP,
+          System.getProperty(ENABLE_PACKAGES_REPO_PROP_NEW, "false")));
 
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
+  public  PackageAPI.Packages localPackages;
 
   private PackageAPI.Packages myCopy =  new PackageAPI.Packages();
 
-  private PackageAPI packageAPI;
+  private final PackageAPI packageAPI;
 
 
   public Optional<Package.Version> getPackageVersion(String pkg, String version) {
@@ -70,9 +81,92 @@ public class PackageLoader implements Closeable {
 
   public PackageLoader(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    packageAPI = new PackageAPI(coreContainer, this);
-    refreshPackageConf();
 
+    List<String> enabledPackages = StrUtils.splitSmart(enabledLocalPkgsList, ',');
+    packageAPI = new PackageAPI(coreContainer, this);
+
+    if (localPkgsDir != null && !enabledPackages.isEmpty()) {
+      loadLocalPackages(localPkgsDir, enabledPackages);
+    }
+    if (repoPackagesEnabled) {
+      refreshPackageConf();
+    }
+  }
+
+  private void loadLocalPackages(String localPkgsDir,  List<String> enabledPackages) {
+    final Path packagesPath = localPkgsDir.charAt(0) == File.separatorChar ?
+            Paths.get(localPkgsDir) :
+            Paths.get(coreContainer.getSolrHome()).resolve(localPkgsDir);
+    log.info("Packages to be loaded from directory: {}", packagesPath);
+
+    if (!Files.exists(packagesPath)) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No such directory: " + packagesPath);
+    }
+    Path packagesJsonPath = packagesPath.resolve(LOCAL_PACKAGES_JSON);
+    if (Files.exists(packagesJsonPath)) {
+      try {
+        try (InputStream in = Files.newInputStream(packagesJsonPath)) {
+          localPackages = PackageAPI.mapper.readValue(in, PackageAPI.Packages.class);
+        }
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading local_packages.json", e);
+      }
+    } else {
+      // the no local_packages.json
+      // we will look for each subdirectory and consider them as a package
+      log.warn("No local_packages.json found. Solr will look for each subdirectory and consider them as a package.");
+      localPackages = readDirAsPackages(packagesPath);
+    }
+
+    if (localPackages != null) {
+      localPackages.packages.forEach((s, versions) -> versions.forEach(v -> {
+        v.local = Boolean.TRUE;
+      }));
+      for (Map.Entry<String, List<PackageAPI.PkgVersion>> e : localPackages.packages.entrySet()) {
+        if (!enabledPackages.contains(e.getKey())) continue;
+        Package p = new Package(e.getKey(), e.getValue());
+        p.updateVersions(e.getValue(), packagesPath);
+        packageClassLoaders.put(e.getKey(), p);
+      }
+    }
+  }
+
+  /**
+   * If a directory with no local_packages.json is provided,
+   * each sub directory that contains one or more jar files
+   * will be treated as a package and each jar file in that
+   * directory is added to the package classpath
+   */
+  private PackageAPI.Packages readDirAsPackages(Path packagesPath) {
+    PackageAPI.Packages localDirAsPackages = new PackageAPI.Packages();
+    try {
+      Files.list(packagesPath).forEach(subDir -> {
+        if (Files.isDirectory(subDir)) {
+          PackageAPI.PkgVersion version = new PackageAPI.PkgVersion();
+          version.pkg = subDir.getFileName().toString();
+          version.version = "0";
+          version.files = new ArrayList<>();
+          try {
+            Files.list(subDir).forEach(file -> {
+              String fName = file.getFileName().toString();
+              if (Files.isRegularFile(file) && fName.endsWith(".jar")) {
+                version.files.add(version.pkg + File.separator + fName);
+              }
+            });
+          } catch (IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "error reading local package directory", e);
+          }
+
+          if (!version.files.isEmpty()) {
+            //there are jar files in the dir. So, this is a package
+            localDirAsPackages.packages.put(version.pkg, Collections.singletonList(version));
+          }
+        }
+      });
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "error reading local package directory", e);
+    }
+    return localDirAsPackages;
   }
 
   public PackageAPI getPackageAPI() {
@@ -97,9 +191,9 @@ public class PackageLoader implements Closeable {
       if (e.getValue() != null) {
         Package p = packageClassLoaders.get(e.getKey());
         if (e.getValue() != null && p == null) {
-          packageClassLoaders.put(e.getKey(), p = new Package(e.getKey()));
+          packageClassLoaders.put(e.getKey(), p = new Package(e.getKey(), e.getValue()));
         }
-        p.updateVersions(e.getValue());
+        p.updateVersions(e.getValue(), null);
         updated.add(p);
       } else {
         Package p = packageClassLoaders.remove(e.getKey());
@@ -160,16 +254,22 @@ public class PackageLoader implements Closeable {
   /**
    * represents a package definition in the packages.json
    */
-  public class Package implements Closeable {
+  public class Package implements Closeable, MapWriter {
     final String name;
+    final List<PackageAPI.PkgVersion> versions;
     final Map<String, Version> myVersions = new ConcurrentHashMap<>();
     private List<String> sortedVersions = new CopyOnWriteArrayList<>();
     String latest;
     private boolean deleted;
 
-
-    Package(String name) {
+    Package(String name, List<PackageAPI.PkgVersion> versions) {
       this.name = name;
+      this.versions = versions;
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.put(name, versions);
     }
 
     public boolean isDeleted() {
@@ -181,14 +281,16 @@ public class PackageLoader implements Closeable {
     }
 
 
-    private synchronized void updateVersions(List<PackageAPI.PkgVersion> modified) {
+    private synchronized void updateVersions(List<PackageAPI.PkgVersion> modified, Path localpkgDir) {
       for (PackageAPI.PkgVersion v : modified) {
         Version version = myVersions.get(v.version);
         if (version == null) {
           log.info("A new version: {} added for package: {} with artifacts {}", v.version, this.name, v.files);
           Version ver = null;
           try {
-            ver = new Version(this, v);
+            ver = v.local == Boolean.TRUE ?
+                    new LocalPkgVersion(this, v, localpkgDir) :
+                    new Version(this, v, null);
           } catch (Exception e) {
             log.error("package could not be loaded {}", ver, e);
             continue;
@@ -262,11 +364,33 @@ public class PackageLoader implements Closeable {
       for (Version v : myVersions.values()) v.close();
     }
 
+    /**
+     * The class that loads jars from local packages
+     */
+    public class LocalPkgVersion  extends Version {
+
+      LocalPkgVersion(Package parent, PackageAPI.PkgVersion v, Path localPkgDir) {
+        super(parent, v, localPkgDir);
+      }
+
+
+      @Override
+      List<Path>  resolveFilePaths() {
+        List<Path> paths =  new ArrayList<>();
+        for (String file : version.files) {
+          if(file.charAt(0)== '/') file =file.substring(1);
+          paths.add( localPkgDir.resolve(file).toAbsolutePath()) ;
+        }
+        return paths;
+      }
+    }
+
     public class Version implements MapWriter, Closeable {
       private final Package parent;
       private SolrResourceLoader loader;
+      final PackageAPI.PkgVersion version;
+      Path localPkgDir;
 
-      private final PackageAPI.PkgVersion version;
 
       @Override
       public void writeMap(EntryWriter ew) throws IOException {
@@ -274,26 +398,30 @@ public class PackageLoader implements Closeable {
         version.writeMap(ew);
       }
 
-      Version(Package parent, PackageAPI.PkgVersion v) {
+      Version(Package parent, PackageAPI.PkgVersion v,Path localPkgDir) {
         this.parent = parent;
         this.version = v;
-        List<Path> paths = new ArrayList<>();
+        this.localPkgDir = localPkgDir;
+        loader = new PackageResourceLoader(
+            "PACKAGE_LOADER: " + this.parent.name() + ":" + version,
+            resolveFilePaths(),
+            Paths.get(coreContainer.getSolrHome()),
+            coreContainer.getResourceLoader().getClassLoader());
+      }
 
+      List<Path>  resolveFilePaths() {
+        List<Path> paths =  new ArrayList<>();
         List<String> errs = new ArrayList<>();
-        coreContainer.getPackageStoreAPI().validateFiles(version.files, true, s -> errs.add(s));
+        coreContainer.getPackageStoreAPI().validateFiles(version.files, true, errs::add);
         if(!errs.isEmpty()) {
           throw new RuntimeException("Cannot load package: " +errs);
         }
         for (String file : version.files) {
           paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
         }
-
-        loader = new PackageResourceLoader(
-            "PACKAGE_LOADER: " + parent.name() + ":" + version,
-            paths,
-            Paths.get(coreContainer.getSolrHome()),
-            coreContainer.getResourceLoader().getClassLoader());
+        return paths;
       }
+
 
       public String getVersion() {
         return version.version;
@@ -374,5 +502,11 @@ public class PackageLoader implements Closeable {
   @Override
   public void close()  {
     for (Package p : packageClassLoaders.values()) closeWhileHandlingException(p);
+  }
+
+  @Override
+  public void writeMap(EntryWriter ew) {
+    packageClassLoaders.forEach((s, p) -> ew.putNoEx(p.name, p.versions));
+
   }
 }

@@ -82,11 +82,12 @@ import static org.apache.solr.filestore.TestDistribPackageStore.*;
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
 public class TestPackages extends SolrCloudTestCase {
 
+
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("enable.packages", "true");
+    System.setProperty(PackageLoader.ENABLE_PACKAGES_REPO_PROP, "true");
     configureCluster(4)
         .withJettyConfig(jetty -> jetty.enableV2(true))
         .addConfig("conf", configset("conf2"))
@@ -100,7 +101,7 @@ public class TestPackages extends SolrCloudTestCase {
     if (cluster != null) {
       cluster.shutdown();
     }
-    System.clearProperty("enable.packages");
+    System.clearProperty(PackageLoader.ENABLE_PACKAGES_REPO_PROP);
 
     super.tearDown();
   }
@@ -112,6 +113,7 @@ public class TestPackages extends SolrCloudTestCase {
     @JsonProperty("class")
     public String klass;
   }
+
 
 
   @Test
@@ -517,7 +519,7 @@ public class TestPackages extends SolrCloudTestCase {
     }
   }
 
-  private void verifyComponent(SolrClient client, String COLLECTION_NAME,
+  static void verifyComponent(SolrClient client, String COLLECTION_NAME,
                                String componentType, String componentName, String pkg, String version) throws Exception {
     SolrParams params = new MapSolrParams(Map.of("collection", COLLECTION_NAME,
         WT, JAVABIN,

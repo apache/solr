@@ -29,6 +29,7 @@ import org.apache.solr.cluster.events.impl.DefaultClusterEventProducer;
 import org.apache.solr.cluster.events.impl.DelegatingClusterEventProducer;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
@@ -70,7 +71,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
   @Before
   public void setUp() throws Exception  {
-    System.setProperty("enable.packages", "true");
+    System.setProperty(PackageLoader.ENABLE_PACKAGES_REPO_PROP, "true");
     super.setUp();
     cluster.deleteAllCollections();
     eventsListener = new AllEventsListener();
@@ -85,7 +86,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
   @After
   public void teardown() throws Exception {
-    System.clearProperty("enable.packages");
+    System.clearProperty(PackageLoader.ENABLE_PACKAGES_REPO_PROP);
     if (eventsListener != null) {
       cluster.getOpenOverseer().getCoreContainer().getClusterEventProducer().unregisterListener(eventsListener);
       eventsListener.events.clear();

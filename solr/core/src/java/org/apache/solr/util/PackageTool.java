@@ -16,19 +16,30 @@
  */
 package org.apache.solr.util;
 
+import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.vandermeer.asciitable.AsciiTable;
+import de.vandermeer.skb.interfaces.document.TableRowStyle;
+import de.vandermeer.skb.interfaces.transformers.textformat.TextAlignment;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
@@ -45,15 +56,18 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.packagemanager.PackageUtils.print;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
-public class PackageTool extends SolrCLI.ToolBase {
+public class PackageTool extends SolrCLI.SolrCloudTool {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @SuppressForbidden(reason = "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")
   public PackageTool() {
+    this(CLIO.getOutStream());
     // Need a logging free, clean output going through to the user.
     Configurator.setRootLevel(Level.OFF);
   }
+  public PackageTool(PrintStream stdout) { super(stdout); }
+
 
   @Override
   public String getName() {
@@ -69,7 +83,8 @@ public class PackageTool extends SolrCLI.ToolBase {
   @SuppressForbidden(reason = "We really need to print the stacktrace here, otherwise "
       + "there shall be little else information to debug problems. Other SolrCLI tools "
       + "don't print stack traces, hence special treatment is needed here.")
-  protected void runImpl(CommandLine cli) throws Exception {
+  @SuppressWarnings("unchecked")
+  protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
     try {
       solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length-1];
       solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
@@ -105,12 +120,38 @@ public class PackageTool extends SolrCLI.ToolBase {
                 break;
               case "list-available":
                 PackageUtils.printGreen("Available packages:\n-----");
-                for (SolrPackage pkg: repositoryManager.getPackages()) {
-                  PackageUtils.printGreen(pkg.name + " \t\t"+pkg.description);
-                  for (SolrPackageRelease version: pkg.versions) {
-                    PackageUtils.printGreen("\tVersion: "+version.version);
+
+
+                AsciiTable table = new AsciiTable();
+                table.addRule();
+                table.addRow("Name", "Description", "Versions", "Repository");
+                table.addRule();
+
+                SolrResponse resp = new V2Request.Builder("/node/packages")
+                        .withMethod(SolrRequest.METHOD.GET)
+                        .build().process(cloudSolrClient);
+                Map<String, Object> local = (Map<String, Object>) new ObjectMapper().readValue(resp.jsonStr(), Map.class);
+                local = (Map<String, Object>) local.get("packages");
+                for (String pkg: local.keySet()) {
+                  String versions = "";
+                  for (Map<String, Object> version: ((List<Map<String, Object>>) ((Map<String, Object>) local.get(pkg)).get("versions"))) {
+                    versions += version.get("version") + "\n";
                   }
+                  table.addRow(Arrays.asList(pkg, "", versions.substring(0, versions.length() - 1), "local"));
+                  table.addRule();
                 }
+
+                for (SolrPackage pkg: repositoryManager.getPackages()) {
+                  String versions = "";
+                  for (SolrPackageRelease version: pkg.versions) {
+                    versions = versions + version.version + "\n";
+                  }
+                  table.addRow(Arrays.asList(pkg.name, pkg.description, versions.substring(0, versions.length() - 1), pkg.getRepository()));
+                  table.addRule();
+                }
+
+                table.setTextAlignment(TextAlignment.LEFT);
+                PackageUtils.printGreen(table.render());
                 break;
               case "list-deployed":
                 if (cli.hasOption('c')) {

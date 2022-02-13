@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.PackageStoreAPI;
@@ -60,13 +61,12 @@ import static org.apache.solr.security.PermissionNameProvider.Name.PACKAGE_READ_
  *
  */
 public class PackageAPI {
-  public final boolean enablePackages = Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ERR_MSG = "Package loading is not enabled , Start your nodes with -Denable.packages=true";
 
   final CoreContainer coreContainer;
-  private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
+  public static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private final PackageLoader packageLoader;
   Packages pkgs;
 
@@ -81,6 +81,7 @@ public class PackageAPI {
     this.coreContainer = coreContainer;
     this.packageLoader = loader;
     pkgs = new Packages();
+    if(!loader.repoPackagesEnabled) return;
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
     try {
       pkgs = readPkgsFromZk(null, null);
@@ -166,7 +167,6 @@ public class PackageAPI {
     @JsonProperty
     public Map<String, List<PkgVersion>> packages = new LinkedHashMap<>();
 
-
     public Packages copy() {
       Packages p = new Packages();
       p.znodeVersion = this.znodeVersion;
@@ -193,6 +193,9 @@ public class PackageAPI {
 
     @JsonProperty
     public String manifestSHA512;
+
+    @JsonProperty
+    public Boolean local;
 
     public PkgVersion() {
     }
@@ -360,11 +363,11 @@ public class PackageAPI {
   }
 
   public boolean isEnabled() {
-    return enablePackages;
+    return packageLoader.repoPackagesEnabled;
   }
 
   private boolean checkEnabled(CommandOperation payload) {
-    if (!enablePackages) {
+    if (!packageLoader.repoPackagesEnabled) {
       payload.addError(ERR_MSG);
       return false;
     }
@@ -394,6 +397,23 @@ public class PackageAPI {
         rsp.add("result", pkgs);
       } else {
         rsp.add("result", Collections.singletonMap(name, pkgs.packages.get(name)));
+      }
+    }
+
+    @EndPoint(
+            method = SolrRequest.METHOD.GET,
+            path = {"/node/packages/"},
+            permission = PACKAGE_READ_PERM
+    )
+    public void getLocalPackages(SolrQueryRequest req, SolrQueryResponse rsp) {
+      String name = req.getPathTemplateValues().get("name");
+      if (name == null) {
+        Map<String, Object> localPackages = new LinkedHashMap<>();
+        for (String packageName: packageLoader.localPackages.packages.keySet()) {
+          boolean enabled = StrUtils.splitSmart(packageLoader.enabledLocalPkgsList, ',').contains(packageName);
+          localPackages.put(packageName, Map.of("enabled", enabled, "versions", packageLoader.localPackages.packages.get(packageName)));
+        }
+        rsp.add("packages", localPackages);
       }
     }
 

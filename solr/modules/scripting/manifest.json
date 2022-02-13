@@ -1,0 +1,22 @@
+{
+    "version-constraint": "10",
+    "plugins": [
+      {
+        "name": "scripting",
+        "setup-command": {
+          "path": "/api/collections/${collection}/config",
+          "payload": {"add-updateprocessor": {"name": "${NAME}", "class": "solr-scripting:org.apache.solr.scripting.update.ScriptUpdateProcessorFactory", "script": "${SCRIPT}"}},
+          "method": "POST"
+        },
+        "uninstall-command": {
+          "path": "/api/collections/${collection}/config",
+          "payload": {"delete-updateprocessor": "${NAME}"},
+          "method": "POST"
+        }
+      }
+    ],
+    "parameter-defaults": {
+      "NAME": "scripting",
+      "SCRIPT": "update-script.js"
+    }
+  }

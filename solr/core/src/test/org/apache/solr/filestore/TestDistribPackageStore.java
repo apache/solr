@@ -36,6 +36,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.packagemanager.PackageUtils;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.junit.After;
@@ -63,12 +64,12 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
 
   @Before
   public void setup() {
-    System.setProperty("enable.packages", "true");
+    System.setProperty(PackageLoader.ENABLE_PACKAGES_REPO_PROP, "true");
   }
 
   @After
   public void teardown() {
-    System.clearProperty("enable.packages");
+    System.clearProperty(PackageLoader.ENABLE_PACKAGES_REPO_PROP);
   }
   
   @Test

@@ -52,6 +52,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.filestore.TestDistribPackageStore.Fetcher;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.pkg.TestPackages;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -71,13 +72,13 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   @Before
   public void setup() {
-    System.setProperty("enable.packages", "true");
+    System.setProperty(PackageLoader.ENABLE_PACKAGES_REPO_PROP, "true");
     phaser = new Phaser();
   }
 
   @After
   public void teardown() {
-    System.clearProperty("enable.packages");
+    System.clearProperty(PackageLoader.ENABLE_PACKAGES_REPO_PROP);
   }
 
   @Test

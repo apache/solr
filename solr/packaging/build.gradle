@@ -46,7 +46,8 @@ artifacts {
 }
 
 dependencies {
-  [":solr:modules:analysis-extras",
+  [":solr:modules",
+   ":solr:modules:analysis-extras",
    ":solr:modules:analytics",
    ":solr:modules:extraction",
    ":solr:modules:clustering",
@@ -94,6 +95,7 @@ distributions {
         exclude "licenses/README.committers.txt"
         include "CHANGES.txt"
         include "README.md"
+        include "manifest.json"
       })
 
       from(configurations.modules, {
