@@ -98,7 +98,7 @@ To run Solr in a container and expose the Solr port, run:
 
 `docker run -p 8983:8983 solr`
 
-In order to start Solr in cloud mode, run the following.
+In order to start Solr in clustered mode, run the following.
 
 `docker run -p 8983:8983 solr solr-fg -c`
 
