@@ -27,6 +27,14 @@ def officialSiteIncludePrerelease = propertyOrEnvOrDefault("refguide.official.in
 
 def buildLocalUI = propertyOrEnvOrDefault("refguide.buildLocalUI", "SOLR_REF_GUIDE_BUILD_LOCAL_UI", "false").toBoolean()
 
+// This escapes strings inside YAML templates
+// WARNING: Strings in YAML must use single quotes for this to work correctly!
+// Double quotes in YAML can't be used as this requires more complicated
+// escaping, see spec: https://yaml.org/spec/1.2.2/#732-single-quoted-style
+def escapeYamlSingleQuotesString(props) {
+  return props.collectEntries{k, v -> [k, v.toString().replace("'","''")]}
+}
+
 // Attach building the ref guide to standard convention tasks. This
 // can be optionally turned off (see SOLR-15670).
 if (propertyOrEnvOrDefault('refguide.include', 'SOLR_REF_GUIDE_INCLUDE', "true").toBoolean()) {
@@ -109,7 +117,7 @@ task buildLocalAntoraYaml {
             }
             into project.ext.antoraConfigBuildDir
 
-            expand(props)
+            expand(escapeYamlSingleQuotesString(props))
         }
     }
     inputs.properties(props)
@@ -136,7 +144,7 @@ task buildLocalAntoraPlaybookYaml(type: Copy) {
         'site_dir'           : "./" + file(project.ext.siteStagingDir).relativePath(file(project.ext.siteDir)),
     ]
 
-    expand(props)
+    expand(escapeYamlSingleQuotesString(props))
     inputs.properties(props)
 }
 
@@ -168,7 +176,7 @@ task buildOfficialAntoraPlaybookYaml(type: Copy) {
         'site_dir'           : "./" + file(project.ext.playbooksDir).relativePath(file(project.ext.siteDir)),
     ]
 
-    expand(props)
+    expand(escapeYamlSingleQuotesString(props))
     inputs.properties(props)
 }
 
@@ -381,7 +389,7 @@ task buildLocalAntoraSite(type: NpxTask) {
     def extraArgs = [
         // This attribute should not include ":link", the other 2 should
         // This attribute should also not be relative, because it is used in multiple path directories in the site
-        "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toPath()}",
+        "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toURI().toASCIIString()}",
         "--attribute", "solr-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}",
         "--attribute", "lucene-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').luceneDocsDir)}"
     ]
