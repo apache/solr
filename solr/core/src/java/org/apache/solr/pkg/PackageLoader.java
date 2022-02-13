@@ -54,7 +54,7 @@ public class PackageLoader implements Closeable, MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String LATEST = "$LATEST";
   public static final String LOCAL_PKGS_DIR_PROP = "solr.packages.local.dir";
-  public static final String ENABLED_LOCAL_PKGS_PROP = "solr.enabled.local.pkgs";
+  public static final String ENABLED_LOCAL_PKGS_PROP = "solr.enabled.local.packages";
   public static final String LOCAL_PACKAGES_JSON = "local_packages.json";
   public static final String ENABLE_PACKAGES_REPO_PROP = "enable.packages";
   public static final String ENABLE_PACKAGES_REPO_PROP_NEW = "solr.enable.pkgs.repo";
@@ -103,9 +103,8 @@ public class PackageLoader implements Closeable, MapWriter {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No such directory: " + packagesPath);
     }
     Path packagesJsonPath = packagesPath.resolve(LOCAL_PACKAGES_JSON);
-    if(Files.exists(packagesJsonPath)) {
+    if (Files.exists(packagesJsonPath)) {
       try {
-
         try (InputStream in = Files.newInputStream(packagesJsonPath)) {
           localPackages = PackageAPI.mapper.readValue(in, PackageAPI.Packages.class);
         }
@@ -113,17 +112,18 @@ public class PackageLoader implements Closeable, MapWriter {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading local_packages.json", e);
       }
     } else {
-      //the no local_packages.json
-      //we will look for each subdirectory and consider them as a package
-      localPackages =  readDirAsPackages(packagesPath);
+      // the no local_packages.json
+      // we will look for each subdirectory and consider them as a package
+      log.warn("No local_packages.json found. Solr will look for each subdirectory and consider them as a package.");
+      localPackages = readDirAsPackages(packagesPath);
     }
 
-    if(localPackages != null) {
+    if (localPackages != null) {
       localPackages.packages.forEach((s, versions) -> versions.forEach(v -> {
         v.local = Boolean.TRUE;
       }));
       for (Map.Entry<String, List<PackageAPI.PkgVersion>> e : localPackages.packages.entrySet()) {
-        if(!enabledPackages.contains(e.getKey())) continue;
+        if (!enabledPackages.contains(e.getKey())) continue;
         Package p = new Package(e.getKey(), e.getValue());
         p.updateVersions(e.getValue(), packagesPath);
         packageClassLoaders.put(e.getKey(), p);

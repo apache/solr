@@ -91,7 +91,7 @@ dependencies {
 
   // For Package Manager
   implementation 'com.github.zafarkhaja:java-semver'
-
+  implementation 'de.vandermeer:asciitable:0.3.2'
   implementation('com.jayway.jsonpath:json-path', {
     exclude group: "net.minidev", module: "json-smart"
   })

@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.PackageStoreAPI;
@@ -165,7 +166,6 @@ public class PackageAPI {
 
     @JsonProperty
     public Map<String, List<PkgVersion>> packages = new LinkedHashMap<>();
-
 
     public Packages copy() {
       Packages p = new Packages();
@@ -397,6 +397,23 @@ public class PackageAPI {
         rsp.add("result", pkgs);
       } else {
         rsp.add("result", Collections.singletonMap(name, pkgs.packages.get(name)));
+      }
+    }
+
+    @EndPoint(
+            method = SolrRequest.METHOD.GET,
+            path = {"/node/packages/"},
+            permission = PACKAGE_READ_PERM
+    )
+    public void getLocalPackages(SolrQueryRequest req, SolrQueryResponse rsp) {
+      String name = req.getPathTemplateValues().get("name");
+      if (name == null) {
+        Map<String, Object> localPackages = new LinkedHashMap<>();
+        for (String packageName: packageLoader.localPackages.packages.keySet()) {
+          boolean enabled = StrUtils.splitSmart(packageLoader.enabledLocalPkgsList, ',').contains(packageName);
+          localPackages.put(packageName, Map.of("enabled", enabled, "versions", packageLoader.localPackages.packages.get(packageName)));
+        }
+        rsp.add("packages", localPackages);
       }
     }
 

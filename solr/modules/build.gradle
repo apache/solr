@@ -49,10 +49,10 @@ task createLocalPackagesJson {
         packages: [:]
     ]
     configurations.modulePackages.each { depPath ->
-      def moduleName = depPath.parentFile.parentFile.name
+      def moduleName = "solr-" + depPath.parentFile.parentFile.name
       def module = [
           version: version,
-          moduleFiles: [],
+          files: [],
           manifest: "",
       ]
       fileTree(depPath).filter { it.isFile() }.files.each {pkgFile ->
@@ -60,10 +60,10 @@ task createLocalPackagesJson {
         if (filePath.endsWith("manifest.json")) {
           module.manifest = filePath
         } else if (filePath.contains("/lib/")) {
-          module.moduleFiles.add(filePath)
+          module.files.add(filePath)
         }
       }
-      packagesJson.packages[moduleName] = module
+      packagesJson.packages[moduleName] = [module]
     }
     mkdir packagingDir
     new File(localPackagesFile).text = JsonOutput.prettyPrint(JsonOutput.toJson(packagesJson))
