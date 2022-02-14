@@ -53,15 +53,15 @@ The first time you run Gradle, it will create a file "gradle.properties" that
 contains machine-specific settings. Normally you can use this file as-is, but it
 can be modified if necessary.
 
-The command above packages a full distribution of Solr server; the 
+The command above packages a full distribution of Solr server; the
 package can be located at:
 
 `solr/packaging/build/solr-*`
 
 Note that the gradle build does not create or copy binaries throughout the
 source repository so you need to switch to the packaging output folder above;
-the rest of the instructions below remain identical. The packaging directory 
-is rewritten on each build. 
+the rest of the instructions below remain identical. The packaging directory
+is rewritten on each build.
 
 For development, especially when you have created test indexes etc, use
 the `./gradlew dev` task which will copy binaries to `./solr/packaging/build/dev`
@@ -73,14 +73,14 @@ If you want to build the documentation, type `./gradlew -p solr documentation`.
 
 After building Solr, the server can be started using
 the `bin/solr` control scripts.  Solr can be run in either standalone or
-distributed (SolrCloud mode).
+clustered (SolrCloud mode).
 
 To run Solr in standalone mode, run the following command from the `solr/`
 directory:
 
 `bin/solr start`
 
-To run Solr in SolrCloud mode, run the following command from the `solr/`
+To run Solr in clustered mode, run the following command from the `solr/`
 directory:
 
 `bin/solr start -c`
@@ -98,7 +98,7 @@ To run Solr in a container and expose the Solr port, run:
 
 `docker run -p 8983:8983 solr`
 
-In order to start Solr in cloud mode, run the following.
+In order to start Solr in clustered mode, run the following.
 
 `docker run -p 8983:8983 solr solr-fg -c`
 
@@ -126,8 +126,8 @@ Please refer to the [Solr Operator](https://solr.apache.org/operator) home for d
 
 ### Gradle build and IDE support
 
-- *IntelliJ* - IntelliJ idea can import the project out of the box. 
-               Code formatting conventions should be manually adjusted. 
+- *IntelliJ* - IntelliJ idea can import the project out of the box.
+               Code formatting conventions should be manually adjusted.
 - *Eclipse*  - Not tested.
 - *Netbeans* - Not tested.
 
@@ -153,5 +153,5 @@ contributing.
 
 - [Mailing Lists](https://solr.apache.org/community.html#mailing-lists-chat)
 - [Issue Tracker (JIRA)](https://issues.apache.org/jira/browse/SOLR)
-- IRC: `#solr` and `#solr-dev` on freenode.net
-- [Slack](https://solr.apache.org/community.html#slack) 
+- IRC: `#solr` and `#solr-dev` on libera.chat
+- [Slack](https://solr.apache.org/community.html#slack)
