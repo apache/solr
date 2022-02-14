@@ -1,0 +1,44 @@
+{
+  "authentication": {
+    "class": "solr.ConfigurableInternodeAuthHadoopPlugin",
+    "sysPropPrefix": "solr.",
+    "type": "kerberos",
+    "clientBuilderFactory": "org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder",
+    "enableDelegationToken": "true",
+    "initKerberosZk": "true",
+    "authConfigs": [
+      "kerberos.principal",
+      "kerberos.keytab",
+      "kerberos.name.rules"
+    ],
+    "defaultConfigs": {
+    },
+    "proxyUserConfigs": {
+      "proxyuser.solr.hosts": "*",
+      "proxyuser.solr.groups": "*"
+    }
+  },
+  "authorization":{
+    "class":"solr.RuleBasedAuthorizationPlugin",
+    "useShortName": "true",
+    "permissions":[
+      {
+        "name": "read",
+        "role": "alt_role",
+        "collection": "public"
+      },
+      {
+        "name":"read",
+        "role":"admin"
+      },
+      {
+        "name":"update",
+        "role":"admin"
+      }
+    ],
+    "user-role": {
+      "solr":"admin",
+      "solr_alt": "alt_role"
+    }
+  }
+}
