@@ -22,6 +22,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * A split index command encapsulated in an object.
@@ -38,6 +39,11 @@ public class SplitIndexCommand extends UpdateCommand {
   public final String routeFieldName;
   public final String splitKey;
   public final SolrIndexSplitter.SplitMethod splitMethod;
+  /**
+   * User provided commit data. Can be let to null if there is none.
+   * This commit data is used when the split command commits.
+   */
+  public Map<String, String> commitData;
 
   public SplitIndexCommand(SolrQueryRequest req, SolrQueryResponse rsp, List<String> paths, List<SolrCore> cores, List<DocRouter.Range> ranges,
                            DocRouter router, String routeFieldName, String splitKey, SolrIndexSplitter.SplitMethod splitMethod) {
@@ -71,6 +77,9 @@ public class SplitIndexCommand extends UpdateCommand {
       sb.append(",split.key=").append(splitKey);
     }
     sb.append(",method=").append(splitMethod.toLower());
+    if (commitData != null) {
+      sb.append(",commitData=").append(commitData);
+    }
     sb.append('}');
     return sb.toString();
   }

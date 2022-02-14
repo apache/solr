@@ -859,7 +859,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
             }
 
             // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't be used)
-            SolrIndexWriter.setCommitData(writer, cmd.getVersion());
+            SolrIndexWriter.setCommitData(writer, cmd.getVersion(), null);
             writer.commit();
 
             synchronized (solrCoreState.getUpdateLock()) {

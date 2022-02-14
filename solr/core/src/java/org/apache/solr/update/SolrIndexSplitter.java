@@ -103,42 +103,39 @@ public class SolrIndexSplitter {
     }
   }
 
-  SolrIndexSearcher searcher;
-  SchemaField field;
-  List<DocRouter.Range> ranges;
-  DocRouter.Range[] rangesArr; // same as ranges list, but an array for extra speed in inner loops
-  List<String> paths;
-  List<SolrCore> cores;
-  HashBasedRouter hashRouter;
-  int numPieces;
-  String routeFieldName;
-  String splitKey;
+  final SplitIndexCommand cmd;
+  final SolrIndexSearcher searcher;
+  final SchemaField field;
+  final DocRouter.Range[] rangesArr; // same as ranges list, but an array for extra speed in inner loops
+  final HashBasedRouter hashRouter;
+  final int numPieces;
+  final String splitKey;
   SplitMethod splitMethod;
-  RTimerTree timings = new RTimerTree();
+  final RTimerTree timings = new RTimerTree();
 
   public SolrIndexSplitter(SplitIndexCommand cmd) {
+    this.cmd = cmd;
     searcher = cmd.getReq().getSearcher();
-    ranges = cmd.ranges;
-    paths = cmd.paths;
-    cores = cmd.cores;
     hashRouter = cmd.router instanceof HashBasedRouter ? (HashBasedRouter)cmd.router : null;
 
-    if (ranges == null) {
-      numPieces =  paths != null ? paths.size() : cores.size();
+    if (cmd.ranges == null) {
+      numPieces =  cmd.paths != null ? cmd.paths.size() : cmd.cores.size();
+      rangesArr = null;
     } else  {
-      numPieces = ranges.size();
-      rangesArr = ranges.toArray(new DocRouter.Range[ranges.size()]);
+      numPieces = cmd.ranges.size();
+      rangesArr = cmd.ranges.toArray(new DocRouter.Range[0]);
     }
-    routeFieldName = cmd.routeFieldName;
-    if (routeFieldName == null) {
+    if (cmd.routeFieldName == null) {
       field = searcher.getSchema().getUniqueKeyField();
     } else  {
-      field = searcher.getSchema().getField(routeFieldName);
+      field = searcher.getSchema().getField(cmd.routeFieldName);
     }
-    if (cmd.splitKey != null) {
+    if (cmd.splitKey == null) {
+      splitKey = null;
+    } else {
       splitKey = getRouteKey(cmd.splitKey);
     }
-    if (cores == null) {
+    if (cmd.cores == null) {
       this.splitMethod = SplitMethod.REWRITE;
     } else {
       this.splitMethod = cmd.splitMethod;
@@ -239,20 +236,20 @@ public class SolrIndexSplitter {
     // - need to worry about if IW.addIndexes does a sync or not...
     // - would be more efficient on the read side, but prob less efficient merging
     for (int partitionNumber=0; partitionNumber<numPieces; partitionNumber++) {
-      String partitionName = "SolrIndexSplitter:partition=" + partitionNumber + ",partitionCount=" + numPieces + (ranges != null ? ",range=" + ranges.get(partitionNumber) : "");
+      String partitionName = "SolrIndexSplitter:partition=" + partitionNumber + ",partitionCount=" + numPieces + (cmd.ranges != null ? ",range=" + cmd.ranges.get(partitionNumber) : "");
       log.info(partitionName);
 
       boolean success = false;
 
       RefCounted<IndexWriter> iwRef = null;
       IndexWriter iw;
-      if (cores != null && splitMethod != SplitMethod.LINK) {
-        SolrCore subCore = cores.get(partitionNumber);
+      if (cmd.cores != null && splitMethod != SplitMethod.LINK) {
+        SolrCore subCore = cmd.cores.get(partitionNumber);
         iwRef = subCore.getUpdateHandler().getSolrCoreState().getIndexWriter(subCore);
         iw = iwRef.get();
       } else {
         if (splitMethod == SplitMethod.LINK) {
-          SolrCore subCore = cores.get(partitionNumber);
+          SolrCore subCore = cmd.cores.get(partitionNumber);
           String path = subCore.getDataDir() + INDEX_PREFIX + timestamp;
           t = timings.sub("hardLinkCopy");
           t.resume();
@@ -288,7 +285,7 @@ public class SolrIndexSplitter {
           t.pause();
         } else {
           SolrCore core = searcher.getCore();
-          String path = paths.get(partitionNumber);
+          String path = cmd.paths.get(partitionNumber);
           t = timings.sub("createSubIW");
           t.resume();
           iw = SolrIndexWriter.create(core, partitionName, path,
@@ -313,7 +310,7 @@ public class SolrIndexSplitter {
           for (int segmentNumber = 0; segmentNumber<leaves.size(); segmentNumber++) {
             if (log.isInfoEnabled()) {
               log.info("SolrIndexSplitter: partition # {} partitionCount={} {} segment #={} segmentCount={}", partitionNumber, numPieces
-                  , (ranges != null ? " range=" + ranges.get(partitionNumber) : ""), segmentNumber, leaves.size()); // nowarn
+                  , (cmd.ranges != null ? " range=" + cmd.ranges.get(partitionNumber) : ""), segmentNumber, leaves.size()); // nowarn
             }
             CodecReader subReader = SlowCodecReaderWrapper.wrap(leaves.get(segmentNumber).reader());
             iw.addIndexes(new LiveDocsReader(subReader, segmentDocSets.get(segmentNumber)[partitionNumber]));
@@ -324,7 +321,7 @@ public class SolrIndexSplitter {
         // because the sub-shard cores will just ignore such a commit because the update log is not
         // in active state at this time.
         //TODO no commitUpdateCommand
-        SolrIndexWriter.setCommitData(iw, -1);
+        SolrIndexWriter.setCommitData(iw, -1, cmd.commitData);
         t = timings.sub("subIWCommit");
         t.resume();
         iw.commit();
@@ -343,7 +340,7 @@ public class SolrIndexSplitter {
             IOUtils.closeWhileHandlingException(iw);
           }
           if (splitMethod == SplitMethod.LINK) {
-            SolrCore subCore = cores.get(partitionNumber);
+            SolrCore subCore = cmd.cores.get(partitionNumber);
             subCore.getDirectoryFactory().release(iw.getDirectory());
           }
         }
@@ -351,11 +348,11 @@ public class SolrIndexSplitter {
     }
     // all sub-indexes created ok
     // when using hard-linking switch directories & refresh cores
-    if (splitMethod == SplitMethod.LINK && cores != null) {
+    if (splitMethod == SplitMethod.LINK && cmd.cores != null) {
       boolean switchOk = true;
       t = timings.sub("switchSubIndexes");
       for (int partitionNumber = 0; partitionNumber < numPieces; partitionNumber++) {
-        SolrCore subCore = cores.get(partitionNumber);
+        SolrCore subCore = cmd.cores.get(partitionNumber);
         String indexDirPath = subCore.getIndexDir();
 
         log.debug("Switching directories");
@@ -375,7 +372,7 @@ public class SolrIndexSplitter {
         t = timings.sub("rollbackSubIndexes");
         // rollback the switch
         for (int partitionNumber = 0; partitionNumber < numPieces; partitionNumber++) {
-          SolrCore subCore = cores.get(partitionNumber);
+          SolrCore subCore = cmd.cores.get(partitionNumber);
           Directory dir = null;
           try {
             dir = subCore.getDirectoryFactory().get(subCore.getDataDir(), DirectoryFactory.DirContext.META_DATA,
@@ -411,7 +408,7 @@ public class SolrIndexSplitter {
         // complete the switch - remove original index
         t = timings.sub("cleanSubIndex");
         for (int partitionNumber = 0; partitionNumber < numPieces; partitionNumber++) {
-          SolrCore subCore = cores.get(partitionNumber);
+          SolrCore subCore = cmd.cores.get(partitionNumber);
           String oldIndexPath = subCore.getDataDir() + "index";
           Directory indexDir = null;
           try {
