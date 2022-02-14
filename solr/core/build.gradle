@@ -87,19 +87,19 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
-  implementation 'javax.servlet:javax.servlet-api'
+  compileOnlyApi 'javax.servlet:javax.servlet-api'
 
   implementation 'org.eclipse.jetty:jetty-client'
 
-  implementation 'org.eclipse.jetty.http2:http2-common'
-  implementation 'org.eclipse.jetty.http2:http2-server'
-  implementation 'org.eclipse.jetty:jetty-alpn-server'
-  implementation 'org.eclipse.jetty:jetty-http'
-  implementation 'org.eclipse.jetty:jetty-io'
-  implementation 'org.eclipse.jetty:jetty-rewrite'
-  implementation 'org.eclipse.jetty:jetty-server'
-  implementation 'org.eclipse.jetty:jetty-servlet'
-  implementation 'org.eclipse.jetty:jetty-util'
+  compileOnlyApi 'org.eclipse.jetty.http2:http2-common'
+  compileOnlyApi 'org.eclipse.jetty.http2:http2-server'
+  compileOnlyApi 'org.eclipse.jetty:jetty-alpn-server'
+  compileOnlyApi 'org.eclipse.jetty:jetty-http'
+  compileOnlyApi 'org.eclipse.jetty:jetty-io'
+  compileOnlyApi 'org.eclipse.jetty:jetty-rewrite'
+  compileOnlyApi 'org.eclipse.jetty:jetty-server'
+  compileOnlyApi 'org.eclipse.jetty:jetty-servlet'
+  compileOnlyApi 'org.eclipse.jetty:jetty-util'
 
   // ZooKeeper & Curator
   implementation('org.apache.zookeeper:zookeeper', {
