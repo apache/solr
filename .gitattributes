@@ -3,3 +3,5 @@ versions.lock text eol=lf
 
 # Gradle files are always in LF.
 *.gradle          text eol=lf
+
+gradle/wrapper/gradle-wrapper.jar export-ignore
