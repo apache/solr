@@ -88,6 +88,8 @@ New Features
 
 * SOLR-14660: Move HDFS support to a new HDFS module (Istvan Farkas, Kevin Risden)
 
+* SOLR-13989: Move Hadoop Authentication support to a new hadoop-auth module (Kevin Risden)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)

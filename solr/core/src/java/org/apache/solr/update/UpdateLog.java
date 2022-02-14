@@ -50,7 +50,6 @@ import java.util.stream.Stream;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
@@ -106,11 +105,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   private boolean debug = log.isDebugEnabled();
   private boolean trace = log.isTraceEnabled();
   private boolean usableForChildDocs;
-
-  // TODO: hack
-  public FileSystem getFs() {
-    return null;
-  }
 
   public enum SyncLevel { NONE, FLUSH, FSYNC;
     public static SyncLevel getSyncLevel(String level){
