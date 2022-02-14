@@ -2009,15 +2009,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           translog.writeCommit(cmd);
         }
 
-        try {
-          for (UpdateRequestProcessor proc : procPool) {
+        for (UpdateRequestProcessor proc : procPool) {
+          try {
             proc.finish();
-          }
-        } catch (IOException ex) {
-          recoveryInfo.errors++;
-          loglog.error("Replay exception: finish()", ex);
-        } finally {
-          for (UpdateRequestProcessor proc : procPool) {
+          } catch (IOException ex) {
+            recoveryInfo.errors++;
+            loglog.error("Replay exception: finish()", ex);
+          } finally {
             IOUtils.closeQuietly(proc);
           }
         }
