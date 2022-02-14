@@ -243,9 +243,9 @@ public class SolrPluginUtils {
         fieldFilter = new HashSet<>(fieldFilter);
         // add highlight fields
 
-        SolrHighlighter highlighter = HighlightComponent.getHighlighter(req.getCore());
-        for (String field: highlighter.getHighlightFields(query, req, null))
-          fieldFilter.add(field);
+        HighlightComponent hl = (HighlightComponent) req.getCore().getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
+        SolrHighlighter highlighter = hl.getHighlighter(req.getParams());
+        Collections.addAll(fieldFilter, highlighter.getHighlightFields(query, req, null));
 
         // fetch unique key if one exists.
         SchemaField keyField = searcher.getSchema().getUniqueKeyField();

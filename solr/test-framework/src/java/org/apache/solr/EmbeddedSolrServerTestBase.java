@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -76,9 +77,7 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
 
   private void writeTo(final Path base, final ContentStream... contents) {
     try {
-      if (!Files.exists(base)) {
-        Files.createDirectories(base);
-      }
+      Files.createDirectories(base);
 
       for (final ContentStream content : contents) {
         final File file = new File(base.toFile(), content.getName());
@@ -89,7 +88,7 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
         }
       }
     } catch (final IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 

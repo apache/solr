@@ -20,7 +20,7 @@ import com.codahale.metrics.Gauge;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.common.cloud.UrlScheme;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -135,14 +135,14 @@ public class SystemInfoHandler extends RequestHandlerBase
   {
     rsp.setHttpCaching(false);
     SolrCore core = req.getCore();
-    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req, core))) {
+    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req))) {
       return; // Request was proxied to other node
     }
     if (core != null) rsp.add( "core", getCoreInfo( core, req.getSchema() ) );
-    boolean solrCloudMode =  getCoreContainer(req, core).isZooKeeperAware();
+    boolean solrCloudMode =  getCoreContainer(req).isZooKeeperAware();
     rsp.add( "mode", solrCloudMode ? "solrcloud" : "std");
     if (solrCloudMode) {
-      rsp.add("zkHost", getCoreContainer(req, core).getZkController().getZkServerAddress());
+      rsp.add("zkHost", getCoreContainer(req).getZkController().getZkServerAddress());
     }
     if (cc != null) {
       rsp.add("solr_home", cc.getSolrHome());
@@ -154,10 +154,10 @@ public class SystemInfoHandler extends RequestHandlerBase
     rsp.add( "security", getSecurityInfo(req) );
     rsp.add( "system", getSystemInfo() );
     if (solrCloudMode) {
-      rsp.add("node", getCoreContainer(req, core).getZkController().getNodeName());
+      rsp.add("node", getCoreContainer(req).getZkController().getNodeName());
     }
     SolrEnvironment env = SolrEnvironment.getFromSyspropOrClusterprop(solrCloudMode ?
-        getCoreContainer(req, core).getZkController().zkStateReader : null);
+        getCoreContainer(req).getZkController().zkStateReader : null);
     if (env.isDefined()) {
       rsp.add("environment", env.getCode());
       if (env.getLabel() != null) {
@@ -169,14 +169,9 @@ public class SystemInfoHandler extends RequestHandlerBase
     }
   }
 
-  private CoreContainer getCoreContainer(SolrQueryRequest req, SolrCore core) {
-    CoreContainer coreContainer;
-    if (core != null) {
-       coreContainer = req.getCore().getCoreContainer();
-    } else {
-      coreContainer = cc;
-    }
-    return coreContainer;
+  private CoreContainer getCoreContainer(SolrQueryRequest req) {
+    CoreContainer coreContainer = req.getCoreContainer();
+    return coreContainer == null ? cc : coreContainer;
   }
   
   /**
@@ -357,7 +352,10 @@ public class SystemInfoHandler extends RequestHandlerBase
       }
     }
 
-    info.add("tls", UrlScheme.HTTPS.equals(UrlScheme.INSTANCE.getUrlScheme()));
+    if (cc != null && cc.getZkController() != null) {
+      String urlScheme = cc.getZkController().zkStateReader.getClusterProperty(ZkStateReader.BASE_URL_PROP, "http");
+      info.add("tls", ZkStateReader.HTTPS.equals(urlScheme));
+    }
 
     return info;
   }

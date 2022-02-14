@@ -39,9 +39,15 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.InvokeClassAPI;
+import org.apache.solr.handler.admin.api.MergeIndexesAPI;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
 import org.apache.solr.handler.admin.api.RejoinLeaderElectionAPI;
+import org.apache.solr.handler.admin.api.ReloadCoreAPI;
+import org.apache.solr.handler.admin.api.RenameCoreAPI;
 import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
+import org.apache.solr.handler.admin.api.SplitCoreAPI;
+import org.apache.solr.handler.admin.api.SwapCoresAPI;
+import org.apache.solr.handler.admin.api.UnloadCoreAPI;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -89,9 +95,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public static String RUNNING = "running";
   public static String COMPLETED = "completed";
   public static String FAILED = "failed";
-  public static String RESPONSE = "Response";
   public static String RESPONSE_STATUS = "STATUS";
   public static String RESPONSE_MESSAGE = "msg";
+  public static String OPERATION_RESPONSE = "response";
 
   public CoreAdminHandler() {
     super();
@@ -198,6 +204,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
             try {
               callInfo.call();
               taskObject.setRspObject(callInfo.rsp);
+              taskObject.setOperationRspObject(callInfo.rsp);
             } catch (Exception e) {
               exceptionCaught = true;
               taskObject.setRspObjectFromException(e);
@@ -325,6 +332,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   static class TaskObject {
     String taskId;
     String rspInfo;
+    Object operationRspInfo;
 
     public TaskObject(String taskId) {
       this.taskId = taskId;
@@ -340,6 +348,14 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
     public void setRspObjectFromException(Exception e) {
       this.rspInfo = e.getMessage();
+    }
+    
+    public Object getOperationRspObject() {
+      return operationRspInfo;
+    }
+
+    public void setOperationRspObject(SolrQueryResponse rspObject) {
+      this.operationRspInfo = rspObject.getResponse();
     }
   }
 
@@ -419,6 +435,12 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     apis.addAll(AnnotatedApi.getApis(new InvokeClassAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new ReloadCoreAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SwapCoresAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new RenameCoreAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new UnloadCoreAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new MergeIndexesAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new SplitCoreAPI(this)));
     return apis;
   }
 

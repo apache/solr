@@ -1030,7 +1030,7 @@ public class IndexFetcher {
           }
           // A hard link here should survive the eventual directory move, and should be more space efficient as
           // compared to a file copy. TODO: Maybe we could do a move safely here?
-          Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
+          Files.createLink(Path.of(tmpIndexDirPath, filename), localFile.toPath());
           bytesSkippedCopying += localFile.length();
         } else {
           dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file,

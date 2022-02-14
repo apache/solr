@@ -17,15 +17,15 @@
 package org.apache.solr.update;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -69,11 +69,10 @@ public class TransactionLog implements Closeable {
   private boolean debug = log.isDebugEnabled();
   private boolean trace = log.isTraceEnabled();
 
-  public final static String END_MESSAGE = "SOLR_TLOG_END";
+  public static final String END_MESSAGE = "SOLR_TLOG_END";
 
   long id;
-  File tlogFile;
-  RandomAccessFile raf;
+  Path tlog;
   FileChannel channel;
   OutputStream os;
   FastOutputStream fos;    // all accesses to this stream should be synchronized on "this" (The TransactionLog)
@@ -158,49 +157,50 @@ public class TransactionLog implements Closeable {
     }
   }
 
-  TransactionLog(File tlogFile, Collection<String> globalStrings) {
+  TransactionLog(Path tlogFile, Collection<String> globalStrings) {
     this(tlogFile, globalStrings, false);
   }
 
-  TransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) {
+  TransactionLog(Path tlogFile, Collection<String> globalStrings, boolean openExisting) {
     boolean success = false;
     try {
+      this.tlog = tlogFile;
+
       if (debug) {
-        log.debug("New TransactionLog file= {}, exists={}, size={} openExisting={}"
-                , tlogFile, tlogFile.exists(), tlogFile.length(), openExisting);
+        log.debug("New TransactionLog file={}, exists={}, size={} openExisting={}",
+            tlogFile, Files.exists(tlogFile), getLogSize(), openExisting);
       }
 
       // Parse tlog id from the filename
-      String filename = tlogFile.getName();
+      String filename = tlog.getFileName().toString();
       id = Long.parseLong(filename.substring(filename.lastIndexOf('.') + 1));
 
-      this.tlogFile = tlogFile;
-      raf = new RandomAccessFile(this.tlogFile, "rw");
-      long start = raf.length();
-      channel = raf.getChannel();
-      os = Channels.newOutputStream(channel);
-      fos = new FastOutputStream(os, new byte[65536], 0);
-      // fos = FastOutputStream.wrap(os);
-
       if (openExisting) {
+        assert Files.exists(tlog) : tlog + " did not exist";
+
+        long start = Files.size(tlog);
+        channel = FileChannel.open(tlog, StandardOpenOption.READ, StandardOpenOption.WRITE);
+        os = Channels.newOutputStream(channel);
+        fos = new FastOutputStream(os, new byte[65536], 0);
+
         if (start > 0) {
           readHeader(null);
-          raf.seek(start);
-          assert channel.position() == start;
+          channel.position(start);
           fos.setWritten(start);    // reflect that we aren't starting at the beginning
           assert fos.size() == channel.size();
         } else {
           addGlobalStrings(globalStrings);
         }
       } else {
-        if (start > 0) {
-          log.warn("New transaction log already exists:{} size={}", tlogFile, raf.length());
+        if (Files.exists(tlog)) {
+          log.warn("New transaction log already exists:{} size={}", tlog, Files.size(tlog));
           return;
         }
 
-        if (start > 0) {
-          raf.setLength(0);
-        }
+        channel = FileChannel.open(tlog, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
+        os = Channels.newOutputStream(channel);
+        fos = new FastOutputStream(os, new byte[65536], 0);
+
         addGlobalStrings(globalStrings);
       }
 
@@ -211,9 +211,9 @@ public class TransactionLog implements Closeable {
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
-      if (!success && raf != null) {
+      if (!success && channel != null) {
         try {
-          raf.close();
+          channel.close();
         } catch (Exception e) {
           log.error("Error closing tlog file (after error opening)", e);
         }
@@ -572,7 +572,7 @@ public class TransactionLog implements Closeable {
         // Since fsync is outside of synchronized block, we can end up with a partial
         // last record on power failure (which is OK, and does not represent an error...
         // we just need to be aware of it when reading).
-        raf.getFD().sync();
+        channel.force(true);
       }
 
     } catch (IOException e) {
@@ -593,7 +593,7 @@ public class TransactionLog implements Closeable {
 
       if (deleteOnClose) {
         try {
-          Files.deleteIfExists(tlogFile.toPath());
+          Files.deleteIfExists(tlog);
         } catch (IOException e) {
           // TODO: should this class care if a file couldnt be deleted?
           // this just emulates previous behavior, where only SecurityException would be handled.
@@ -616,12 +616,16 @@ public class TransactionLog implements Closeable {
 
   @Override
   public String toString() {
-    return "tlog{file=" + tlogFile.toString() + " refcount=" + refcount.get() + "}";
+    return "tlog{file=" + tlog + " refcount=" + refcount.get() + "}";
   }
 
   public long getLogSize() {
-    if (tlogFile != null) {
-      return tlogFile.length();
+    if (tlog != null) {
+      try {
+        return Files.size(tlog);
+      } catch (IOException e) {
+        log.warn("Could not read tlog length file={}", tlog);
+      }
     }
     return 0;
   }
@@ -710,7 +714,7 @@ public class TransactionLog implements Closeable {
     @Override
     public String toString() {
       synchronized (TransactionLog.this) {
-        return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + fos.size() + "}";
+        return "LogReader{" + "file=" + tlog + ", position=" + fis.position() + ", end=" + fos.size() + "}";
       }
     }
 
@@ -877,7 +881,7 @@ public class TransactionLog implements Closeable {
     @Override
     public String toString() {
       synchronized (TransactionLog.this) {
-        return "LogReader{" + "file=" + tlogFile + ", position=" + fis.position() + ", end=" + fos.size() + "}";
+        return "LogReader{" + "file=" + tlog + ", position=" + fis.position() + ", end=" + fos.size() + "}";
       }
     }
 

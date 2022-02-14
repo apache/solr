@@ -137,7 +137,7 @@ def parse_properties_file(filename):
 
 def get_solr_init_changes():
   return dedent('''
-    Docker and contrib modules have separate CHANGES.md files.
+    Docker and modules have separate CHANGES.md files.
 
     ''')
   

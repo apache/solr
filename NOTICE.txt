@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2021 The Apache Software Foundation
+ Copyright 2006-2022 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed at
@@ -136,7 +136,7 @@ parrt@antlr.org
 =========================================================================
 
 Apache Lucene
-Copyright 2001-2021 The Apache Software Foundation
+Copyright 2001-2022 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
@@ -399,7 +399,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ==  Apache Tika Notices                                                ==
 =========================================================================
 
-The following notices apply to contrib/extraction:
+The following notices apply to modules/extraction:
 
 This product includes software developed by the following copyright owners:
 
@@ -434,7 +434,7 @@ http://www.sourceforge.net/projects/jmatio
 ==  Language Detection Notices                                         ==
 =========================================================================
 
-The following notices apply to contrib/langid:
+The following notices apply to modules/langid:
 
 This product includes software developed by Cybozu Labs, Inc.
 (c)2010 All rights reserved by Cybozu Labs, Inc.
@@ -667,4 +667,4 @@ an open source universal data plane API, which can be obtained at:
 The S3 Output Stream is based on ASL 2.0 reference implementations found at:
     https://github.com/confluentinc/kafka-connect-storage-cloud/blob/5.0.x/kafka-connect-s3/src/main/java/io/confluent/connect/s3/storage/S3OutputStream.java
 This files resides at:
-    contrib/s3-repository/src/java/org/apache/solr/s3/S3OutputStream.java
+    modules/s3-repository/src/java/org/apache/solr/s3/S3OutputStream.java

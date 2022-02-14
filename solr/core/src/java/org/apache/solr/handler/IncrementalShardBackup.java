@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -131,7 +132,7 @@ public class IncrementalShardBackup {
         assert indexCommit != null;
         URI backupLocation = incBackupFiles.getBackupLocation();
         log.info("Creating backup snapshot at {} shardBackupMetadataFile:{}", backupLocation, shardBackupId);
-        NamedList<Object> details = new NamedList<>();
+        NamedList<Object> details = new SimpleOrderedMap<>();;
         details.add("startTime", Instant.now().toString());
 
         Collection<String> files = indexCommit.getFileNames();

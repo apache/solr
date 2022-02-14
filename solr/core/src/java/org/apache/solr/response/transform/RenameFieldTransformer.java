@@ -29,12 +29,14 @@ public class RenameFieldTransformer extends DocTransformer
   final String from;
   final String to;
   final boolean copy;
+  final String[] ensureFromFieldPresent;
 
-  public RenameFieldTransformer( String from, String to, boolean copy )
-  {
+  public RenameFieldTransformer( String from, String to, boolean copy ) {
     this.from = from;
     this.to = to;
     this.copy = copy;
+    this.ensureFromFieldPresent = new String[] { from };
+    assert !from.equals(to);
   }
 
   @Override
@@ -49,5 +51,10 @@ public class RenameFieldTransformer extends DocTransformer
     if( v != null ) {
       doc.setField(to, v);
     }
+  }
+
+  @Override
+  public String[] getExtraRequestFields() {
+    return ensureFromFieldPresent;
   }
 }

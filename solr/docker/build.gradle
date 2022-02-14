@@ -106,9 +106,13 @@ task assemblePackaging(type: Sync) {
 
   from(projectDir, {
     include "scripts/**"
+    include "README.md"
   })
   from(dockerfilesDirPath, {
     include 'Dockerfile.local'
+    rename {
+      'Dockerfile'
+    }
   })
   into packagingDir
 }
@@ -127,7 +131,7 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
     exec {
       standardInput = configurations.solrTgz.singleFile.newDataInputStream()
       commandLine "docker", "build",
-              "-f", "solr-${version}/docker/Dockerfile.local",
+              "-f", "solr-${version}/docker/Dockerfile",
               "--iidfile", imageIdFile,
               "--build-arg", "BASE_IMAGE=${inputs.properties.baseDockerImage}",
               "-"
@@ -173,7 +177,7 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
 
 task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
   group = 'Docker'
-  description = 'Test Solr docker image built from Dockerfile.local'
+  description = 'Test Solr docker image built from the local Dockerfile'
 
   idFile = tasks.dockerBuild.outputs.files.singleFile
   outputDir = file("$buildDir/test-results")
@@ -436,7 +440,7 @@ task testBuildDockerfileOfficial(type: Copy) {
 }
 
 task testDockerfileOfficial(type: TestDockerImageTask, dependsOn: configurations.dockerOfficialSmokeCheckImage) {
-  description = 'Smoke Test Solr docker image built from Dockerfile.official'
+  description = 'Smoke Test Solr docker image built from the official Dockerfile'
 
   idFile = file(imageIdFileOfficial)
   outputDir = file("$smokeTestOfficial/test-results")

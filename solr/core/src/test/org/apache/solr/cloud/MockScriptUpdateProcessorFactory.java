@@ -32,7 +32,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 /**
  * <p>
  * The scripting update processor capability is something that is only allowed by a trusted
- * configSet.   The actual code lives in the /contrib/scripting project, however the test
+ * configSet.   The actual code lives in the /modules/scripting project, however the test
  * for trusted configsets lives in TestConfigSetsAPI.   This class is meant to simulate the
  * ScriptUpdateProcessorFactory for this test.
  * </p>

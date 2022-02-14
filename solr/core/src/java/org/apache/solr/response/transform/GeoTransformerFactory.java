@@ -17,7 +17,11 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -63,10 +67,15 @@ import org.locationtech.spatial4j.shape.Shape;
  * </ul>
  * 
  */
-public class GeoTransformerFactory extends TransformerFactory
-{ 
+public class GeoTransformerFactory extends TransformerFactory implements TransformerFactory.FieldRenamer {
+
   @Override
   public DocTransformer create(String display, SolrParams params, SolrQueryRequest req) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public DocTransformer create(String display, SolrParams params, SolrQueryRequest req, Map<String, String> renamedFields, Set<String> reqFieldNames) {
 
     String fname = params.get("f", display);
     if(fname.startsWith("[") && fname.endsWith("]")) {
@@ -124,12 +133,7 @@ public class GeoTransformerFactory extends TransformerFactory
 
     // Using ValueSource
     if(shapes!=null) {
-      return new DocTransformer() {
-        @Override
-        public String getName() {
-          return display;
-        }
-
+      return new GeoDocTransformer(updater) {
         @Override
         public void transform(SolrDocument doc, int docid) throws IOException {
           int leafOrd = ReaderUtil.subIndex(docid, context.getSearcher().getTopReaderContext().leaves());
@@ -144,22 +148,26 @@ public class GeoTransformerFactory extends TransformerFactory
 
     }
     
+    // if source has been renamed, update reference
+    updater.field = renamedFields.getOrDefault(updater.field, updater.field);
+
+    // don't remove fields that were explicitly requested by others
+    final boolean copy = reqFieldNames != null && reqFieldNames.contains(updater.field);
+    if (!copy) {
+      renamedFields.put(updater.field, updater.display);
+    }
+
     // Using the raw stored values
-    return new DocTransformer() {
+    return new GeoDocTransformer(updater) {
       
       @Override
       public void transform(SolrDocument doc, int docid) throws IOException {
-        Object val = doc.remove(updater.field);
+        Object val = copy ? doc.get(updater.field) : doc.remove(updater.field);
         if(val!=null) {
           updater.setValue(doc, val);
         }
       }
       
-      @Override
-      public String getName() {
-        return updater.display;
-      }
-
       @Override
       public String[] getExtraRequestFields() {
         return new String[] {updater.field};
@@ -167,65 +175,77 @@ public class GeoTransformerFactory extends TransformerFactory
     };
   }
 
-}
+  private static abstract class GeoDocTransformer extends DocTransformer {
 
-class GeoFieldUpdater {
-  String field;
-  String display;
-  String display_error;
-  
-  boolean isJSON;
-  ShapeWriter writer;
-  SupportedFormats formats;
-  
-  void addShape(SolrDocument doc, Shape shape) {
-    if(isJSON) {
-      doc.addField(display, new WriteableGeoJSON(shape, writer));
+    private final GeoFieldUpdater updater;
+
+    private GeoDocTransformer(GeoFieldUpdater updater) {
+      this.updater = updater;
     }
-    else {
+
+    @Override
+    public String getName() {
+      return updater.display;
+    }
+
+    @Override
+    public Collection<String> getRawFields() {
+      return updater.isJSON ? Collections.singleton(updater.display) : Collections.emptySet();
+    }
+  }
+
+  private static class GeoFieldUpdater {
+    String field;
+    String display;
+    String display_error;
+
+    boolean isJSON;
+    ShapeWriter writer;
+    SupportedFormats formats;
+
+    void addShape(SolrDocument doc, Shape shape) {
       doc.addField(display, writer.toString(shape));
     }
-  }
-  
-  void setValue(SolrDocument doc, Object val) {
-    doc.remove(display);
-    if(val != null) {
-      if(val instanceof Iterable) {
-        Iterator<?> iter = ((Iterable<?>)val).iterator();
-        while(iter.hasNext()) {
-          addValue(doc, iter.next());
+
+    void setValue(SolrDocument doc, Object val) {
+      doc.remove(display);
+      if(val != null) {
+        if(val instanceof Iterable) {
+          Iterator<?> iter = ((Iterable<?>)val).iterator();
+          while(iter.hasNext()) {
+            addValue(doc, iter.next());
+          }
+        }
+        else {
+          addValue(doc, val);
         }
       }
+    }
+
+    void addValue(SolrDocument doc, Object val) {
+      if(val == null) {
+        return;
+      }
+
+      if(val instanceof Shape) {
+        addShape(doc, (Shape)val);
+      }
+      // Don't explode on 'InvalidShpae'
+      else if( val instanceof Exception) {
+        doc.setField( display_error, ((Exception)val).toString() );
+      }
       else {
-        addValue(doc, val);
-      }
-    }
-  }
-    
-  void addValue(SolrDocument doc, Object val) {
-    if(val == null) {
-      return;
-    }
-    
-    if(val instanceof Shape) {
-      addShape(doc, (Shape)val);
-    }
-    // Don't explode on 'InvalidShpae'
-    else if( val instanceof Exception) {
-      doc.setField( display_error, ((Exception)val).toString() );
-    }
-    else {
-      // Use the stored value
-      if(val instanceof IndexableField) {
-        val = ((IndexableField)val).stringValue();
-      }
-      try {
-        addShape(doc, formats.read(val.toString()));
-      }
-      catch(Exception ex) {
-        doc.setField( display_error, ex.toString() );
+        // Use the stored value
+        if(val instanceof IndexableField) {
+          val = ((IndexableField)val).stringValue();
+        }
+        try {
+          addShape(doc, formats.read(val.toString()));
+        }
+        catch(Exception ex) {
+          doc.setField( display_error, ex.toString() );
+        }
       }
     }
   }
 }
-

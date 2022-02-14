@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -1145,6 +1146,22 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "{!mlt qf=lowerfilt v=1}");
     } finally {
       delQ("*:*");
+      assertU(commit());
+    }
+  }
+
+  public void testQueryKNN() throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "0");
+    doc.addField("vector", Arrays.asList(1, 2, 3, 4));
+    assertU(adoc(doc));
+    assertU(commit());
+    
+    try {
+      assertQueryEquals("knn", "{!knn f=vector}[1.0,2.0,3.0,4.0]",
+              "{!knn f=vector v=[1.0,2.0,3.0,4.0]}");
+    } finally {
+      delQ("id:0");
       assertU(commit());
     }
   }

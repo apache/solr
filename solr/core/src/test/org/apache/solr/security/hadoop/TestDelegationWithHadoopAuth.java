@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.request.DelegationTokenRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -54,7 +53,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    HdfsTestUtil.checkAssumptions();
+    HadoopTestUtil.checkAssumptions();
 
     configureCluster(NUM_SERVERS)// nodes
         .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json"))
