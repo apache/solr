@@ -170,7 +170,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     public int adds;
     public int deletes;
     public int deleteByQuery;
-    public int errors;
+    public AtomicInteger errors = new AtomicInteger(0);
 
     public boolean failed;
 
@@ -454,7 +454,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         return 0;
       } else if (state == State.APPLYING_BUFFERED) {
         // numRecords counts header as a record
-        return tlog.numRecords() - 1 - recoveryInfo.adds - recoveryInfo.deleteByQuery - recoveryInfo.deletes - recoveryInfo.errors;
+        return tlog.numRecords() - 1 - recoveryInfo.adds - recoveryInfo.deleteByQuery - recoveryInfo.deletes - recoveryInfo.errors.get();
       } else {
         return 0;
       }
@@ -1784,11 +1784,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           SolrException.log(log, e);
           recoveryInfo.failed = true;
         } else {
-          recoveryInfo.errors++;
+          recoveryInfo.errors.incrementAndGet();
           SolrException.log(log, e);
         }
       } catch (Exception e) {
-        recoveryInfo.errors++;
+        recoveryInfo.errors.incrementAndGet();
         SolrException.log(log, e);
       } finally {
         // change the state while updates are still blocked to prevent races
@@ -1963,11 +1963,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               // XXX should not happen?
             }
           } catch (ClassCastException cl) {
-            recoveryInfo.errors++;
+            recoveryInfo.errors.incrementAndGet();
             loglog.warn("REPLAY_ERR: Unexpected log entry or corrupt log.  Entry={}", o, cl);
             // would be caused by a corrupt transaction log
           } catch (Exception ex) {
-            recoveryInfo.errors++;
+            recoveryInfo.errors.incrementAndGet();
             loglog.warn("REPLAY_ERR: Exception replaying log", ex);
             // something wrong with the request?
           }
@@ -1986,7 +1986,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           if (debug) log.debug("commit {}", cmd);
           uhandler.commit(cmd);          // this should cause a commit to be added to the incomplete log and avoid it being replayed again after a restart.
         } catch (IOException ex) {
-          recoveryInfo.errors++;
+          recoveryInfo.errors.incrementAndGet();
           loglog.error("Replay exception: final commit.", ex);
         }
 
@@ -1999,7 +1999,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         try {
           proc.finish();
         } catch (IOException ex) {
-          recoveryInfo.errors++;
+          recoveryInfo.errors.incrementAndGet();
           loglog.error("Replay exception: finish()", ex);
         } finally {
           IOUtils.closeQuietly(proc);
@@ -2060,7 +2060,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               proc.processDelete((DeleteUpdateCommand) cmd);
             }
           } catch (IOException e) {
-            recoveryInfo.errors++;
+            recoveryInfo.errors.incrementAndGet();
             loglog.warn("REPLAY_ERR: IOException reading log", e);
             // could be caused by an incomplete flush if recovering from log
           } catch (SolrException e) {
@@ -2068,8 +2068,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               exceptionHolder.compareAndSet(null, e);
               return;
             }
-            recoveryInfo.errors++;
-            loglog.warn("REPLAY_ERR: IOException reading log", e);
+            recoveryInfo.errors.incrementAndGet();
+            loglog.warn("REPLAY_ERR: SolrException reading log", e);
           } finally {
             pendingTasks.decrementAndGet();
           }
@@ -2083,15 +2083,15 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             proc.processDelete((DeleteUpdateCommand) cmd);
           }
         } catch (IOException e) {
-          recoveryInfo.errors++;
+          recoveryInfo.errors.incrementAndGet();
           loglog.warn("REPLAY_ERR: IOException replaying log", e);
           // could be caused by an incomplete flush if recovering from log
         } catch (SolrException e) {
           if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
             throw e;
           }
-          recoveryInfo.errors++;
-          loglog.warn("REPLAY_ERR: IOException replaying log", e);
+          recoveryInfo.errors.incrementAndGet();
+          loglog.warn("REPLAY_ERR: SolrException replaying log", e);
         }
       }
     }
