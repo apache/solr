@@ -1755,7 +1755,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     boolean finishing = false;  // state where we lock out other updates and finish those updates that snuck in before we locked
     boolean debug = loglog.isDebugEnabled();
     boolean inSortedOrder;
-    ThreadLocal<UpdateRequestProcessor> procThreadLocal = new ThreadLocal<>();
 
     public LogReplayer(List<TransactionLog> translogs, boolean activeLog) {
       this.translogs = new LinkedList<>();
