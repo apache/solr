@@ -42,8 +42,6 @@ Other Changes
 
 ==================  9.0.0 ==================
 
-Docker and modules have separate CHANGES.md files.
-
 New Features
 ---------------------
 * SOLR-14789: Migrate docker image creation from docker-solr repo to solr/docker. (Houston Putman, Martijn Koster, Tim Potter, David Smiley, janhoy, Mike Drob)
@@ -557,6 +555,9 @@ and each individual module's jar will be included in its directory's lib/ folder
 * SOLR-12901: Highlighting: hl.method=unified is the new default. (David Smiley)
 
 * SOLR-15991: analysis-extras module tests shouldn't rely on log4j dependency (Kevin Risden)
+
+* SOLR-15949: Docker: the official image now uses Java 17 provided by Eclipse Temurin.  Formerly it was Java 11 from OpenJDK.
+  (janhoy, David Smiley)
 
 Bug Fixes
 ---------------------
