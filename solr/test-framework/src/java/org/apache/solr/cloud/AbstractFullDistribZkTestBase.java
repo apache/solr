@@ -2284,10 +2284,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               }
             }
           } else {
-            if (timeout.hasTimedOut()) {
-              logReplicaTypesReplicationInfo(collectionName, zkStateReader);
-              fail(String.format(Locale.ROOT, "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)", pullReplica.getName(), replicaIndexVersion, leader.getName(), leaderIndexVersion));
-            }
             if (leaderIndexVersion > replicaIndexVersion) {
               if (log.isInfoEnabled()) {
                 log.info("{} version is {} and leader's is {}, will wait for replication"
@@ -2299,6 +2295,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                     , leader.getName(), pullReplica.getName(), leaderIndexVersion, replicaIndexVersion);
               }
             }
+          }
+          if (timeout.hasTimedOut()) {
+            logReplicaTypesReplicationInfo(collectionName, zkStateReader);
+            fail(String.format(Locale.ROOT, "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)", pullReplica.getName(), replicaIndexVersion, leader.getName(), leaderIndexVersion));
           }
           Thread.sleep(1000);
         }
