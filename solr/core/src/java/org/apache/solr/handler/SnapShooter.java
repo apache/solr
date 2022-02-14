@@ -273,11 +273,13 @@ public class SnapShooter {
         solrCore.getDirectoryFactory().release(dir);
       }
 
+      String endTime = Instant.now().toString();
+      
       details.add("fileCount", files.size()); // DEPRECATED: for removal, replaced with indexFileCount
       details.add("indexFileCount", files.size());
       details.add("status", "success");
-      details.add("snapshotCompletedAt", Instant.now().toString()); // DEPRECATED: for removal, replaced with endTime
-      details.add("endTime", Instant.now().toString());
+      details.add("snapshotCompletedAt", endTime); // DEPRECATED: for removal, replaced with endTime
+      details.add("endTime", endTime);
       details.add("snapshotName", snapshotName);
       details.add("directoryName", directoryName);
       if (log.isInfoEnabled()) {
@@ -330,9 +332,11 @@ public class SnapShooter {
       URI path = baseSnapDirPath.resolve("snapshot." + snapshotName);
       backupRepo.deleteDirectory(path);
 
+      String endTime = Instant.now().toString();
+      
       details.add("status", "success");
-      details.add("snapshotDeletedAt", Instant.now().toString()); // DEPRECATED: for removal, replaced with endTime
-      details.add("endTime", Instant.now().toString());
+      details.add("snapshotDeletedAt", endTime); // DEPRECATED: for removal, replaced with endTime
+      details.add("endTime", endTime);
 
     } catch (IOException e) {
       details.add("status", "Unable to delete snapshot: " + snapshotName);
