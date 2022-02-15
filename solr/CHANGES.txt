@@ -299,6 +299,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15556: Migrate the Ref Guide to be built with Antora, enabling many new features (Cassandra Targett, Houston Putman, Mike Drob)
 
+* SOLR-15965: Use better signatures for the PKI Authentication plugin. (Mike Drob)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
