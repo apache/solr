@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
@@ -83,8 +84,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       createCollection(null, COLLECTION_NAME1, 1, 1, client, null, "conf1");
     }
 
-      waitForCollection((ZkStateReader) ZkStateReader.from(cloudClient), COLLECTION_NAME, 2);
-      waitForCollection((ZkStateReader) ZkStateReader.from(cloudClient), COLLECTION_NAME1, 1);
+    waitForCollection(ZkStateReader.from(cloudClient), COLLECTION_NAME, 2);
+    waitForCollection(ZkStateReader.from(cloudClient), COLLECTION_NAME1, 1);
     waitForRecoveriesToFinish(COLLECTION_NAME, false);
     waitForRecoveriesToFinish(COLLECTION_NAME1, false);
 
@@ -112,7 +113,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   }
 
   private void assertMissingCollection(CloudSolrClient client, String collectionName) throws Exception {
-    ClusterState clusterState = ((ZkStateReader) ZkStateReader.from(client)).getClusterState();
+    ClusterState clusterState = ZkStateReader.from(client).getClusterState();
     assertNull(clusterState.getCollectionOrNull(collectionName));
   }
 
@@ -195,7 +196,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       CollectionAdminRequest.Create req = CollectionAdminRequest.createCollection("test_repFactorColl", "conf1", 1, 3, 0, 0);
       client.request(req);
 
-        waitForCollection((ZkStateReader) ZkStateReader.from(cloudClient), "test_repFactorColl", 1);
+      waitForCollection(ZkStateReader.from(cloudClient), "test_repFactorColl", 1);
       waitForRecoveriesToFinish("test_repFactorColl", false);
 
       //Assert that replicationFactor has also been set to 3
@@ -232,13 +233,13 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       client.request(request);
 
-      waitForCollection((ZkStateReader) ZkStateReader.from(cloudClient), collection, 1);
+      waitForCollection(ZkStateReader.from(cloudClient), collection, 1);
       waitForRecoveriesToFinish(collection, false);
 
       // Now try deleting the configset and doing a clusterstatus.
       String parent = ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet;
-      deleteThemAll(((ZkStateReader) ZkStateReader.from(client)).getZkClient(), parent);
-      ((ZkStateReader) ZkStateReader.from(client)).forciblyRefreshAllClusterStateSlow();
+      deleteThemAll(ZkStateReader.from(client).getZkClient(), parent);
+      ZkStateReader.from(client).forciblyRefreshAllClusterStateSlow();
 
       final CollectionAdminRequest.ClusterStatus req = CollectionAdminRequest.getClusterStatus();
       NamedList<?> rsp = client.request(req);
@@ -354,7 +355,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       JettySolrRunner jetty = chaosMonkey.getShard("shard1", 0);
       String nodeName = jetty.getNodeName();
       jetty.stop();
-      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(client);
+      ZkStateReader zkStateReader = ZkStateReader.from(client);
       zkStateReader.waitForState(COLLECTION_NAME, 30, TimeUnit.SECONDS, (liveNodes, docCollection) ->
           docCollection != null &&
               docCollection.getReplicas().stream()
@@ -617,7 +618,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void clusterStatusRolesTest() throws Exception  {
     try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
-        Replica replica = ((ZkStateReader) ZkStateReader.from(client)).getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
+      Replica replica = ZkStateReader.from(client).getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.ADDROLE.toString());
@@ -667,7 +668,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void replicaPropTest() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
-        Map<String, Slice> slices = ((ZkStateReader) ZkStateReader.from(client)).getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
+      Map<String, Slice> slices = ZkStateReader.from(client).getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
       List<String> sliceList = new ArrayList<>(slices.keySet());
       String c1_s1 = sliceList.get(0);
       List<String> replicasList = new ArrayList<>(slices.get(c1_s1).getReplicasMap().keySet());
@@ -678,7 +679,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       replicasList = new ArrayList<>(slices.get(c1_s2).getReplicasMap().keySet());
       String c1_s2_r1 = replicasList.get(0);
 
-        slices = ((ZkStateReader) ZkStateReader.from(client)).getClusterState().getCollection(COLLECTION_NAME1).getSlicesMap();
+      slices = ZkStateReader.from(client).getClusterState().getCollection(COLLECTION_NAME1).getSlicesMap();
       sliceList = new ArrayList<>(slices.keySet());
       String c2_s1 = sliceList.get(0);
       replicasList = new ArrayList<>(slices.get(c2_s1).getReplicasMap().keySet());
@@ -1043,8 +1044,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private Map<String, String> getProps(CloudSolrClient client, String collectionName, String replicaName, String... props)
       throws KeeperException, InterruptedException {
 
-      ((ZkStateReader) ZkStateReader.from(client)).forceUpdateCollection(collectionName);
-      ClusterState clusterState = ((ZkStateReader) ZkStateReader.from(client)).getClusterState();
+    ZkStateReader.from(client).forceUpdateCollection(collectionName);
+    ClusterState clusterState = ZkStateReader.from(client).getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
     if (docCollection == null || docCollection.getReplica(replicaName) == null) {
       fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);
@@ -1088,7 +1089,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       // first, try creating a collection with badconf
       BaseHttpSolrClient.RemoteSolrException rse = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
-          CollectionAdminRequest.createCollection
+        CollectionAdminRequest.createCollection
               ("testcollection", "badconf", 1, 2).process(client);
       });
       assertNotNull(rse.getMessage());
