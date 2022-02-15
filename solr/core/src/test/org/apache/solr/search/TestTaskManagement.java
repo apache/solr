@@ -61,7 +61,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
     @BeforeClass
     public static void setupCluster() throws Exception {
         configureCluster(4)
-                .addConfig("conf", configset("sql"))
+                .addConfig("conf", configset("cloud-minimal"))
                 .configure();
     }
 
