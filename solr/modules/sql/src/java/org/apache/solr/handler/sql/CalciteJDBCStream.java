@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler;
+package org.apache.solr.handler.sql;
 
 import java.io.IOException;
 import java.sql.Array;
