@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.junit.BeforeClass;
@@ -50,7 +49,7 @@ public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
   @Test
   public void testSQLHandler() throws Exception {
     String sql = "select id, field_i, str_s from " + DEFAULT_TEST_COLLECTION_NAME + " limit 10";
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql", "stmt", sql);
+    SolrParams sParams = params(CommonParams.QT, "/sql", "stmt", sql);
     String url = jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
 
     SolrStream solrStream = new SolrStream(url, sParams);
@@ -74,15 +73,5 @@ public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
       IOUtils.closeQuietly(tupleStream);
     }
     return tuples;
-  }
-
-  public static SolrParams mapParams(String... vals) {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    assertEquals("Parameters passed in here must be in pairs!", 0, (vals.length % 2));
-    for (int idx = 0; idx < vals.length; idx += 2) {
-      params.add(vals[idx], vals[idx + 1]);
-    }
-
-    return params;
   }
 }
