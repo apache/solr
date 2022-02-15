@@ -23,8 +23,6 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
-  implementation 'commons-io:commons-io'
-  implementation 'org.apache.lucene:lucene-analysis-common'
   implementation 'org.apache.lucene:lucene-core'
 
   implementation 'org.slf4j:slf4j-api'
@@ -38,4 +36,6 @@ dependencies {
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
   testImplementation 'org.hamcrest:hamcrest'
+
+  testImplementation 'commons-io:commons-io'
 }

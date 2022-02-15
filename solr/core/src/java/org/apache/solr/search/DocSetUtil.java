@@ -118,7 +118,7 @@ public class DocSetUtil {
   public static DocSet createDocSet(SolrIndexSearcher searcher, Query query, DocSet filter) throws IOException {
 
     if (filter != null) {
-      query = QueryUtils.combineQueryAndFilter(query, filter.getTopFilter());
+      query = QueryUtils.combineQueryAndFilter(query, filter.makeQuery());
     }
 
     if (query instanceof TermQuery) {
