@@ -42,7 +42,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
     @Test
     @ShardsFixed(num = 1)
     public void testCreateAndDeleteThenCreateAgain() throws Exception {
-        String overseerNode = OverseerCollectionConfigSetProcessor.getLeaderNode(cloudClient.getZkStateReader().getZkClient());
+        String overseerNode = OverseerCollectionConfigSetProcessor.getLeaderNode(((ZkStateReader) ZkStateReader.from(cloudClient)).getZkClient());
         String notOverseerNode = null;
         for (CloudJettyRunner cloudJetty : cloudJettys) {
             if (!overseerNode.equals(cloudJetty.nodeName)) {
@@ -108,7 +108,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
         if (request.get("success") != null) {
             // collection exists now
-            assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
+            assertTrue(((ZkStateReader) ZkStateReader.from(cloudClient)).getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
 
             String configName = cloudClient.getClusterStateProvider().getCollection(collectionName).getConfigName();
 
@@ -177,7 +177,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
     }
 
     public SolrZkClient getZkClient() {
-        return cloudClient.getZkStateReader().getZkClient();
+        return ((ZkStateReader) ZkStateReader.from(cloudClient)).getZkClient();
     }
 
 }

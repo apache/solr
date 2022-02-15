@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,10 +43,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -266,45 +261,6 @@ public class DeepRandomStream extends TupleStream implements Expressible {
 
   public List<TupleStream> children() {
     return solrStreams;
-  }
-
-  public static Slice[] getSlices(String collectionName, ZkStateReader zkStateReader, boolean checkAlias) throws IOException {
-    ClusterState clusterState = zkStateReader.getClusterState();
-
-    Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
-
-    //TODO we should probably split collection by comma to query more than one
-    //  which is something already supported in other parts of Solr
-
-    // check for alias or collection
-
-    List<String> allCollections = new ArrayList<>();
-    String[] collectionNames = collectionName.split(",");
-    for(String col : collectionNames) {
-      List<String> collections = checkAlias
-          ? zkStateReader.getAliases().resolveAliases(col)  // if not an alias, returns collectionName
-          : Collections.singletonList(collectionName);
-      allCollections.addAll(collections);
-    }
-
-    // Lookup all actives slices for these collections
-    List<Slice> slices = allCollections.stream()
-        .map(collectionsMap::get)
-        .filter(Objects::nonNull)
-        .flatMap(docCol -> Arrays.stream(docCol.getActiveSlicesArr()))
-        .collect(Collectors.toList());
-    if (!slices.isEmpty()) {
-      return slices.toArray(new Slice[slices.size()]);
-    }
-
-    // Check collection case insensitive
-    for(Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
-      if(entry.getKey().equalsIgnoreCase(collectionName)) {
-        return entry.getValue().getActiveSlicesArr();
-      }
-    }
-
-    throw new IOException("Slices not found for " + collectionName);
   }
 
   protected void constructStreams() throws IOException {

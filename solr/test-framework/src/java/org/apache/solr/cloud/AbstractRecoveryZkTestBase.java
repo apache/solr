@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -126,7 +127,7 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
     new UpdateRequest()
         .commit(cluster.getSolrClient(), collection);
 
-    cluster.getSolrClient().waitForState(collection, 120, TimeUnit.SECONDS, clusterShape(1, 2));
+    ZkStateReader.from(cluster.getSolrClient()).waitForState(collection, 120, TimeUnit.SECONDS, clusterShape(1, 2));
 
     // test that leader and replica have same doc count
     state = getCollectionState(collection);

@@ -19,16 +19,14 @@ package org.apache.solr.security.hadoop;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.Krb5HttpClientUtils;
+import org.apache.solr.client.solrj.impl.*;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.KerberosTestServices;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -115,6 +113,6 @@ public class TestRuleBasedAuthorizationWithKerberos extends SolrCloudTestCase {
         CollectionAdminRequest.Delete deleteReq = CollectionAdminRequest.deleteCollection(collectionName);
         deleteReq.process(solrClient);
         AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
-                solrClient.getZkStateReader(), true, 330);
+                ZkStateReader.from(solrClient), true, 330);
     }
 }

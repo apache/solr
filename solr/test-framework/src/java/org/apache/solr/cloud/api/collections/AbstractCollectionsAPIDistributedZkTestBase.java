@@ -288,7 +288,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
 
     TimeUnit.MILLISECONDS.sleep(1000);
     // in both cases, the collection should have default to the core name
-    cluster.getSolrClient().getZkStateReader().forceUpdateCollection("noconfig");
+    ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection("noconfig");
     assertFalse(CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains("noconfig"));
   }
 
@@ -297,7 +297,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     CollectionAdminRequest.createCollection("nodes_used_collection", "conf", 2, 2)
         .process(cluster.getSolrClient());
 
-    Set<String> liveNodes = cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes();
 
     List<String> createNodeList = new ArrayList<>(liveNodes);
 
@@ -407,7 +407,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     // TODO: we should not need this...beast test well when trying to fix
     Thread.sleep(1000);
     
-    cluster.getSolrClient().getZkStateReader().forciblyRefreshAllClusterStateSlow();
+    ZkStateReader.from(cluster.getSolrClient()).forciblyRefreshAllClusterStateSlow();
 
     new UpdateRequest()
         .add("id", "6")
@@ -443,7 +443,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             return DocCollection.isFullyActive(n, c, req.getNumShards(), req.getReplicationFactor());
           });
       
-      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
       // make sure we have leaders for each shard
       for (int z = 1; z < createRequests[j].getNumShards(); z++) {
         zkStateReader.getLeaderRetry(collectionName, "shard" + z, 10000);
@@ -582,7 +582,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
     ArrayList<String> nodeList
-        = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());
+        = new ArrayList<>(ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
 
     CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
@@ -591,7 +591,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     Replica newReplica = grabNewReplica(response, getCollectionState(collectionName));
 
     assertEquals("Replica should be created on the right node",
-        cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)), newReplica.getBaseUrl());
+        ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(nodeList.get(0)), newReplica.getBaseUrl());
 
     Path instancePath = createTempDir();
     response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")

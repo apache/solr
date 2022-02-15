@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -144,7 +145,7 @@ public abstract class AbstractRestartWhileUpdatingTestBase extends AbstractFullD
 
     Thread.sleep(5000);
 
-    waitForRecoveriesToFinish(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), false, true);
+    waitForRecoveriesToFinish(DEFAULT_COLLECTION, ZkStateReader.from(cloudClient), false, true);
 
     for (StoppableIndexingThread thread : threads) {
       thread.join();

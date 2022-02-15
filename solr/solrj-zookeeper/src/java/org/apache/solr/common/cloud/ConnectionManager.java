@@ -190,11 +190,11 @@ public class ConnectionManager implements Watcher {
 
       } while (!isClosed());
       log.info("zkClient Connected: {}", connected);
-    } else if (state == KeeperState.Disconnected) {
+    } else if (state == Disconnected) {
       log.warn("zkClient has disconnected");
       disconnected();
       connectionStrategy.disconnected();
-    } else if (state == KeeperState.AuthFailed) {
+    } else if (state == AuthFailed) {
       log.warn("zkClient received AuthFailed");
     }
   }

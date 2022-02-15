@@ -19,6 +19,14 @@ package org.apache.solr.common.cloud;
 import java.util.Objects;
 
 public class ZkCoreNodeProps {
+
+  // nocommit : to move these from ZkStateReader
+  public static final String LEADER_PROP = "leader";
+  public static final String NODE_NAME_PROP = "node_name";
+  public static final String STATE_PROP = "state";
+  public static final String CORE_NAME_PROP = "core";
+  public static final String BASE_URL_PROP = "base_url";
+
   private final ZkNodeProps nodeProps;
   
   public ZkCoreNodeProps(ZkNodeProps nodeProps) {
@@ -30,11 +38,11 @@ public class ZkCoreNodeProps {
   }
   
   public String getNodeName() {
-    return nodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
+    return nodeProps.getStr(NODE_NAME_PROP);
   }
 
   public String getState() {
-    return nodeProps.getStr(ZkStateReader.STATE_PROP);
+    return nodeProps.getStr(STATE_PROP);
   }
 
   public String getBaseUrl() {
@@ -42,23 +50,23 @@ public class ZkCoreNodeProps {
   }
   
   public String getCoreName() {
-    return nodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
+    return nodeProps.getStr(CORE_NAME_PROP);
   }
 
   private static String getBaseUrl(ZkNodeProps nodeProps) {
     String baseUrl = null;
-    final String nodeName = nodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
+    final String nodeName = nodeProps.getStr(NODE_NAME_PROP);
     if (nodeName != null) {
       baseUrl = UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName);
-    } else if (nodeProps.containsKey(ZkStateReader.BASE_URL_PROP)) {
-      baseUrl = UrlScheme.INSTANCE.applyUrlScheme(nodeProps.getStr(ZkStateReader.BASE_URL_PROP));
+    } else if (nodeProps.containsKey(BASE_URL_PROP)) {
+      baseUrl = UrlScheme.INSTANCE.applyUrlScheme(nodeProps.getStr(BASE_URL_PROP));
     }
     return baseUrl;
   }
   
   public static String getCoreUrl(ZkNodeProps nodeProps) {
     String baseUrl = getBaseUrl(nodeProps);
-    return baseUrl != null ? getCoreUrl(baseUrl, nodeProps.getStr(ZkStateReader.CORE_NAME_PROP)) : null;
+    return baseUrl != null ? getCoreUrl(baseUrl, nodeProps.getStr(CORE_NAME_PROP)) : null;
   }
   
   public static String getCoreUrl(String baseUrl, String coreName) {
@@ -81,6 +89,6 @@ public class ZkCoreNodeProps {
   }
 
   public boolean isLeader() {
-    return nodeProps.containsKey(ZkStateReader.LEADER_PROP);
+    return nodeProps.containsKey(LEADER_PROP);
   }
 }

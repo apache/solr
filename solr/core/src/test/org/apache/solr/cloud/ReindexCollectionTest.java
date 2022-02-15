@@ -190,7 +190,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
       ReindexCollectionCmd.State state = ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
       return ReindexCollectionCmd.State.FINISHED == state;
     });
-    solrClient.getZkStateReader().aliasesManager.update();
+      ((ZkStateReader) ZkStateReader.from(solrClient)).aliasesManager.update();
     // verify the target docs exist
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
     assertEquals("copied num docs", NUM_DOCS, rsp.getResults().getNumFound());
@@ -272,7 +272,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
 
     // check the shape of the new collection
     ClusterState clusterState = solrClient.getClusterStateProvider().getClusterState();
-    List<String> aliases = solrClient.getZkStateReader().getAliases().resolveAliases(targetCollection);
+      List<String> aliases = ((ZkStateReader) ZkStateReader.from(solrClient)).getAliases().resolveAliases(targetCollection);
     assertFalse(aliases.isEmpty());
     String realTargetCollection = aliases.get(0);
     DocCollection coll = clusterState.getCollection(realTargetCollection);

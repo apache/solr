@@ -32,22 +32,19 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.routing.PreferenceRule;
 import org.apache.solr.common.SolrCloseable;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.CommonTestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.rule.ImplicitSnitch.SYSPROP;
-
 /**
- * Caching other nodes system properties. The properties that will be cached based on the value define in
- * {@link org.apache.solr.common.cloud.ZkStateReader#DEFAULT_SHARD_PREFERENCES } of
- * {@link org.apache.solr.common.cloud.ZkStateReader#CLUSTER_PROPS }.
+ * Caching other nodes system properties.
  * If that key does not present then this cacher will do nothing.
  *
  * The cache will be refresh whenever /live_nodes get changed.
  */
-public class NodesSysPropsCacher implements SolrCloseable {
+public class NodesSysPropsCacher implements SolrCloseable, NodesSysProps {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int NUM_RETRY = 5;
 
@@ -120,7 +117,7 @@ public class NodesSysPropsCacher implements SolrCloseable {
         if (currentNode.equals(node)) {
           Map<String, String> props = new HashMap<>();
           for (String tag : tags) {
-            String propName = tag.substring(SYSPROP.length());
+            String propName = tag.substring(ImplicitSnitch.SYSPROP.length());
             if (additionalProps != null && additionalProps.containsKey(propName)) {
               props.put(tag, additionalProps.get(propName));
             } else {
@@ -162,6 +159,7 @@ public class NodesSysPropsCacher implements SolrCloseable {
     }
   }
 
+  @Override
   public Map<String, Object> getSysProps(String node, Collection<String> tags) {
     Map<String, Object> props = cache.get(node);
     HashMap<String, Object> result = new HashMap<>();

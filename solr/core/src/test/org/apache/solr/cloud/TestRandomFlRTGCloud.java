@@ -600,9 +600,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assert null != client.getDefaultCollection();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        client.getZkStateReader(),
-                                                        true, true, 330);
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
+              ZkStateReader.from(client), true, true, 330);
   }
 
   /** 
@@ -855,7 +854,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
   }
 
-  /** 
+  /**
    * enforces that a valid <code>[docid]</code> is present in the response, possibly using a 
    * resultKey alias.  By default the only validation of docId values is that they are an integer 
    * greater than or equal to <code>-1</code> -- but if any other validator in use returns true 

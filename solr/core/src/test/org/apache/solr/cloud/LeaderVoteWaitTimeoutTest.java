@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -132,8 +133,8 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     JettySolrRunner j = cluster.getJettySolrRunner(0);
     j.stop();
     cluster.waitForJettyToStop(j);
-    
-    cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> !liveNodes.contains(nodeName));
+
+      ZkStateReader.from(cluster.getSolrClient()).waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> !liveNodes.contains(nodeName));
 
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(cluster.getJettySolrRunner(1).getNodeName())
@@ -265,8 +266,8 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
   private void assertDocsExistInAllReplicas(List<Replica> notLeaders,
                                             String testCollectionName, int firstDocId, int lastDocId) throws Exception {
-    Replica leader =
-        cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
+      Replica leader =
+        ZkStateReader.from(cluster.getSolrClient()).getLeaderRetry(testCollectionName, "shard1", 10000);
     HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
     List<HttpSolrClient> replicas =
         new ArrayList<HttpSolrClient>(notLeaders.size());

@@ -41,11 +41,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.*;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -156,7 +153,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.runningZKTasks = ConcurrentHashMap.newKeySet();
     this.runningTasks = ConcurrentHashMap.newKeySet();
     this.completedTasks = new ConcurrentHashMap<>();
-    thisNode = Utils.getMDCNode();
+    thisNode = ZkUtils.getMDCNode();
 
     overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
     overseerTaskProcessorMetricsContext.gauge(() -> workQueue.getZkStats().getQueueLength(), true, "collectionWorkQueueSize", "queue");

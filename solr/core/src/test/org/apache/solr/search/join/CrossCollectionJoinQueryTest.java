@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -175,7 +176,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
           true);
       testCcJoinQuery(String.format(Locale.ROOT,
           "{!join method=crossCollection zkHost=\"%s\" fromIndex=products from=product_id_s to=product_id_s}size_s:M",
-          cluster.getSolrClient().getZkHost()),
+          CloudSolrClientUtils.getZkHost(cluster.getSolrClient())),
           true);
 
       // Test the ability to set other parameters on crossCollection join and have them passed through

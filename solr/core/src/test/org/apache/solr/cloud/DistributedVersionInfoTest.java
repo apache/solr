@@ -82,7 +82,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 3)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
-    final ZkStateReader stateReader = cluster.getSolrClient().getZkStateReader();
+      final ZkStateReader stateReader = (ZkStateReader) ZkStateReader.from(cluster.getSolrClient());
     stateReader.waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, 1, 3));
 

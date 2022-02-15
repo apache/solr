@@ -32,10 +32,12 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
@@ -130,7 +132,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     }
     
     for (String collection : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
-      cluster.getSolrClient().waitForState(collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+      CloudSolrClientUtils.waitForState(cluster.getSolrClient(), collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
                                            (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
     }
 
@@ -823,8 +825,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
    * Sigh.  DaemonStream requires polling the same core where the stream was exectured.
    */
   protected static String getRandomCoreUrl(final String collection) throws Exception {
-    final List<String> replicaUrls = 
-      cluster.getSolrClient().getZkStateReader().getClusterState()
+      final List<String> replicaUrls =
+      ZkStateReader.from(cluster.getSolrClient()).getClusterState()
       .getCollectionOrNull(collection).getReplicas().stream()
       .map(Replica::getCoreUrl).collect(Collectors.toList());
     Collections.shuffle(replicaUrls, random());

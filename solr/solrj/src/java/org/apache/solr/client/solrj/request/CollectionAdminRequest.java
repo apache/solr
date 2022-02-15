@@ -30,7 +30,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -56,7 +55,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.common.cloud.DocCollection.PER_REPLICA_STATE;
-import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionAdminParams.*;
 
 /**
@@ -65,6 +63,10 @@ import static org.apache.solr.common.params.CollectionAdminParams.*;
  * @since solr 4.5
  */
 public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> implements MapWriter {
+
+  // nocommit : to move these from ZkStateReader
+  public static final String REPLICATION_FACTOR = "replicationFactor";
+  public static final String READ_ONLY = "readOnly";
 
   /**
    * The set of modifiable collection properties
@@ -420,6 +422,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   // CREATE request
   public static class Create extends AsyncCollectionSpecificAdminRequest {
 
+    // nocommit : to move these from ZkStateReader
+    public static final String NUM_SHARDS_PROP = "numShards";
+    public static final String NRT_REPLICAS = "nrtReplicas";
+    public static final String PULL_REPLICAS = "pullReplicas";
+    public static final String TLOG_REPLICAS = "tlogReplicas";
+
     protected String configName = null;
     protected String createNodeSet = null;
     protected String routerName;
@@ -538,7 +546,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (createNodeSet != null)
         params.set(CREATE_NODE_SET_PARAM, createNodeSet);
       if (numShards != null) {
-        params.set( ZkStateReader.NUM_SHARDS_PROP, numShards);
+        params.set( NUM_SHARDS_PROP, numShards);
       }
       if (routerName != null)
         params.set( "router.name", routerName);
@@ -548,16 +556,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         params.set("router.field", routerField);
       }
       if (nrtReplicas != null) {
-        params.set( ZkStateReader.NRT_REPLICAS, nrtReplicas);
+        params.set( NRT_REPLICAS, nrtReplicas);
       }
       if (properties != null) {
         addProperties(params, properties);
       }
       if (pullReplicas != null) {
-        params.set(ZkStateReader.PULL_REPLICAS, pullReplicas);
+        params.set(PULL_REPLICAS, pullReplicas);
       }
       if (tlogReplicas != null) {
-        params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
+        params.set(TLOG_REPLICAS, tlogReplicas);
       }
       if(Boolean.TRUE.equals(perReplicaState)) {
         params.set(PER_REPLICA_STATE, perReplicaState);
@@ -785,6 +793,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   public static class ReindexCollection extends AsyncCollectionSpecificAdminRequest {
+
+    // nocommit : to move these from ZkStateReader
+    public final static String CONFIGNAME_PROP = "configName";
+
     String target;
     String query;
     String fields;
@@ -851,7 +863,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.setNonNull("target", target);
       params.setNonNull("cmd", cmd);
-      params.setNonNull(ZkStateReader.CONFIGNAME_PROP, configName);
+      params.setNonNull(CONFIGNAME_PROP, configName);
       params.setNonNull(CommonParams.Q, query);
       params.setNonNull(CommonParams.FL, fields);
       params.setNonNull("removeSource", removeSource);
@@ -1087,6 +1099,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   // RESTORE request
   public static class Restore extends AsyncCollectionSpecificAdminRequest {
+
+    // nocommit : to move these from ZkStateReader
+    public static final String REPLICATION_FACTOR = "replicationFactor";
+    public static final String NRT_REPLICAS = "nrtReplicas";
+    public static final String PULL_REPLICAS = "pullReplicas";
+    public static final String TLOG_REPLICAS = "tlogReplicas";
+
     protected final String backupName;
     protected Optional<String> repositoryName = Optional.empty();
     protected String location;
@@ -1191,16 +1210,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
             "Cannot set both replicationFactor and nrtReplicas as they mean the same thing");
       }
       if (replicationFactor != null) {
-        params.set(ZkStateReader.REPLICATION_FACTOR, replicationFactor);
+        params.set(REPLICATION_FACTOR, replicationFactor);
       }
       if (nrtReplicas != null) {
-        params.set(ZkStateReader.NRT_REPLICAS, nrtReplicas);
+        params.set(NRT_REPLICAS, nrtReplicas);
       }
       if (pullReplicas != null) {
-        params.set(ZkStateReader.PULL_REPLICAS, pullReplicas);
+        params.set(PULL_REPLICAS, pullReplicas);
       }
       if (tlogReplicas != null) {
-        params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
+        params.set(TLOG_REPLICAS, tlogReplicas);
       }
       if (properties != null) {
         addProperties(params, properties);
@@ -2150,6 +2169,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   // ADDREPLICA request
   public static class AddReplica extends AsyncCollectionAdminRequest {
 
+    // nocommit : to move these from ZkStateReader
+    public static final String REPLICA_TYPE = "type";
+    public static final String NRT_REPLICAS = "nrtReplicas";
+    public static final String TLOG_REPLICAS = "tlogReplicas";
+    public static final String PULL_REPLICAS = "pullReplicas";
+
     protected String collection;
     protected String shard;
     protected String node;
@@ -2313,7 +2338,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         params.add(CoreAdminParams.NAME, coreName);
       }
       if (type != null) {
-        params.add(ZkStateReader.REPLICA_TYPE, type.name());
+        params.add(REPLICA_TYPE, type.name());
       }
       if (properties != null) {
         addProperties(params, properties);
@@ -2361,6 +2386,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   // DELETEREPLICA request
   public static class DeleteReplica extends AsyncCollectionSpecificAdminRequest {
 
+    // nocommit : to move these from ZkStateReader
+    public static final String COLLECTION_PROP = "collection";
+    public static final String REPLICA_PROP = "replica";
+    public static final String SHARD_ID_PROP = "shard";
+
     protected String shard;
     protected String replica;
     protected Boolean onlyIfDown;
@@ -2406,12 +2436,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       // AsyncCollectionSpecificAdminRequest uses 'name' rather than 'collection'
       // TODO - deal with this inconsistency
       params.remove(CoreAdminParams.NAME);
-      params.set(ZkStateReader.COLLECTION_PROP, this.collection);
+      params.set(COLLECTION_PROP, this.collection);
 
       if (this.replica != null)
-        params.set(ZkStateReader.REPLICA_PROP, this.replica);
+        params.set(REPLICA_PROP, this.replica);
       if (this.shard != null)
-        params.set(ZkStateReader.SHARD_ID_PROP, this.shard);
+        params.set(SHARD_ID_PROP, this.shard);
 
       if (onlyIfDown != null) {
         params.set("onlyIfDown", onlyIfDown);

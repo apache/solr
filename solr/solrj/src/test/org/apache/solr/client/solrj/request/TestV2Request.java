@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
@@ -172,7 +173,7 @@ public class TestV2Request extends SolrCloudTestCase {
       if (!s.equals(node[0])) testNode[0] = s;
     });
 
-    String testServer = cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(testNode[0]);
+      String testServer = ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(testNode[0]);
      V2Request v2r = new V2Request.Builder("/c/v2forward/_introspect")
         .withMethod(SolrRequest.METHOD.GET).build();
 

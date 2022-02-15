@@ -252,7 +252,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
       fail("Could not create collection. Response" + response.toString());
     }
-    ZkStateReader zkStateReader = solrCluster.getSolrClient().getZkStateReader();
+      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(solrCluster.getSolrClient());
     solrCluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
   }
 

@@ -113,8 +113,8 @@ public class CollectionPropsTest extends SolrCloudTestCase {
         return false;
       }
     };
-    
-    cluster.getSolrClient().getZkStateReader().registerCollectionPropsWatcher(collectionName, w);
+
+      ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).registerCollectionPropsWatcher(collectionName, w);
     
     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
     collectionProps.setCollectionProperty(collectionName, "property2", "value2");
@@ -141,7 +141,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
     assertTrue("Gave up waitng an excessive amount of time for watcher to see final expected props",
                sawExpectedProps.tryAcquire(1, 120, TimeUnit.SECONDS));
-    cluster.getSolrClient().getZkStateReader().removeCollectionPropsWatcher(collectionName, w);
+      ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).removeCollectionPropsWatcher(collectionName, w);
     
     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
     checkValue("property1", "value1"); //Should be no cache, so the change should take effect immediately
@@ -149,12 +149,12 @@ public class CollectionPropsTest extends SolrCloudTestCase {
   }
   
   private void checkValue(String propertyName, String expectedValue) throws InterruptedException {
-    final Object value = cluster.getSolrClient().getZkStateReader().getCollectionProperties(collectionName).get(propertyName);
+      final Object value = ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).getCollectionProperties(collectionName).get(propertyName);
     assertEquals("Unexpected value for collection property: " + propertyName, expectedValue, value);
   }
 
   private void waitForValue(String propertyName, String expectedValue, int timeout) throws InterruptedException {
-    final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      final ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cluster.getSolrClient());
 
     Object lastValueSeen = null;
     for (int i = 0; i < timeout; i += 10) {
@@ -173,8 +173,8 @@ public class CollectionPropsTest extends SolrCloudTestCase {
       collectionpropsInZk = "Could not get file from ZooKeeper: " + e.getMessage();
       log.error("Could not get collectionprops from ZooKeeper for assertion mesage", e);
     }
-    
-    String propertiesInZkReader = cluster.getSolrClient().getZkStateReader().getCollectionProperties(collectionName).toString();
+
+      String propertiesInZkReader = ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).getCollectionProperties(collectionName).toString();
 
     fail(String.format(Locale.ROOT, "Could not see value change after setting collection property. Name: %s, current value: %s, expected value: %s. " +
                                     "\ncollectionprops.json file in ZooKeeper: %s" +
@@ -184,7 +184,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
   @Test
   public void testWatcher() throws KeeperException, InterruptedException, IOException {
-    final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      final ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cluster.getSolrClient());
     CollectionProperties collectionProps = new CollectionProperties(zkClient());
 
     // Add a watcher to collection props
@@ -222,7 +222,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
   @Test
   public void testMultipleWatchers() throws InterruptedException, IOException {
-    final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      final ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cluster.getSolrClient());
     CollectionProperties collectionProps = new CollectionProperties(zkClient());
 
     // Register the core with ZkStateReader
@@ -286,7 +286,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     public boolean onStateChanged(Map<String, String> collectionProperties) {
       log.info("{}: state changed...", name);
       if (forceReadPropsFromZk) {
-        final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+          final ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cluster.getSolrClient());
         props = Map.copyOf(zkStateReader.getCollectionProperties(collectionName));
         log.info("{}: Setting props from zk={}", name, props);
       } else {

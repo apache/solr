@@ -63,9 +63,9 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
   }
 
   private void reloadTest() throws Exception {
-    SolrZkClient client = cloudClient.getZkStateReader().getZkClient();
+      SolrZkClient client = ((ZkStateReader) ZkStateReader.from(cloudClient)).getZkClient();
     if (log.isInfoEnabled()) {
-      log.info("live_nodes_count :  {}", cloudClient.getZkStateReader().getClusterState().getLiveNodes());
+        log.info("live_nodes_count :  {}", ((ZkStateReader) ZkStateReader.from(cloudClient)).getClusterState().getLiveNodes());
     }
     String confPath = ZkConfigSetService.CONFIGS_ZKNODE+"/conf1/";
 //    checkConfReload(client, confPath + ConfigOverlay.RESOURCE_NAME, "overlay");
@@ -92,7 +92,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     }
     Integer newVersion = newStat.getVersion();
     long maxTimeoutSeconds = 60;
-    DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
+      DocCollection coll = ((ZkStateReader) ZkStateReader.from(cloudClient)).getClusterState().getCollection("collection1");
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())

@@ -97,7 +97,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     String location = createTempDir().toFile().getAbsolutePath();
     int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
 
-    DocCollection collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+      DocCollection collectionState = ((ZkStateReader) ZkStateReader.from(solrClient)).getClusterState().getCollection(collectionName);
     assertEquals(1, collectionState.getActiveSlices().size());
     Slice shard = collectionState.getActiveSlices().iterator().next();
     assertEquals(1, shard.getReplicas().size());
@@ -188,7 +188,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
 
     int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
 
-    DocCollection collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+      DocCollection collectionState = ((ZkStateReader) ZkStateReader.from(solrClient)).getClusterState().getCollection(collectionName);
     assertEquals(1, collectionState.getActiveSlices().size());
     Slice shard = collectionState.getActiveSlices().iterator().next();
     assertEquals(1, shard.getReplicas().size());

@@ -51,7 +51,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -325,14 +324,14 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
   }
 
-  public static Slice[] getSlices(String collectionName, ZkStateReader zkStateReader, boolean checkAlias) throws IOException {
-    ClusterState clusterState = zkStateReader.getClusterState();
+  public static Slice[] getSlices(String collectionName, CloudSolrClient cloudSolrClient, boolean checkAlias) throws IOException {
+    ClusterState clusterState = cloudSolrClient.getClusterStateProvider().getClusterState();
 
     // check for alias or collection
 
     List<String> allCollections = new ArrayList<>();
     String[] collectionNames = collectionName.split(",");
-    Aliases aliases = checkAlias ? zkStateReader.getAliases() : null;
+    Aliases aliases = null; // nocommit :  checkAlias ? zkStateReader.getAliases() :
 
     for(String col : collectionNames) {
       List<String> collections = (aliases != null)

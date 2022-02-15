@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
@@ -95,7 +96,7 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
       checkSecurityACLs(keeper, "/security");
 
       // Now test all ZK tree.
-      String zkHost = cluster.getSolrClient().getZkHost();
+      String zkHost = CloudSolrClientUtils.getZkHost(cluster.getSolrClient());
       String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf("/")) : null;
       walkZkTree(keeper, zkChroot, "/");
     }

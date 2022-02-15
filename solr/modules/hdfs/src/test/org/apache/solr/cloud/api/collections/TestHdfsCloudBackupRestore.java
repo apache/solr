@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.BackupManager;
@@ -199,7 +200,7 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
 
     URI baseLoc = repo.createDirectoryURI("/backup");
 
-    BackupManager mgr = BackupManager.forRestore(repo, solrClient.getZkStateReader(), repo.resolve(baseLoc, backupName));
+      BackupManager mgr = BackupManager.forRestore(repo, ZkStateReader.from(solrClient), repo.resolve(baseLoc, backupName));
     BackupProperties props = mgr.readBackupProperties();
     assertNotNull(props);
     assertEquals(collectionName, props.getCollection());

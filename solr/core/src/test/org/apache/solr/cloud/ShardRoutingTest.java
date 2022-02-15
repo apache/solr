@@ -20,6 +20,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -123,7 +124,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
 
   private void doHashingTest() throws Exception {
     log.info("### STARTING doHashingTest");
-    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+      assertEquals(4, ZkStateReader.from(cloudClient).getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     String shardKeys = ShardParams._ROUTE_;
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.

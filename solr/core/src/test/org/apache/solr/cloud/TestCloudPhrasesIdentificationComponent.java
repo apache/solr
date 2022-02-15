@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
@@ -198,8 +199,8 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assert null != client.getDefaultCollection();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        client.getZkStateReader(),
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
+              ZkStateReader.from(client),
                                                         true, true, 330);
   }
 

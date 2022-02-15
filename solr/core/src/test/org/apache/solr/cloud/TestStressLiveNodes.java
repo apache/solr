@@ -112,7 +112,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     ArrayList<String> result = null;
 
     for (int i = 0; i < 10; i++) {
-      result = new ArrayList<>(CLOUD_CLIENT.getZkStateReader().getClusterState().getLiveNodes());
+        result = new ArrayList<>(((ZkStateReader) ZkStateReader.from(CLOUD_CLIENT)).getClusterState().getLiveNodes());
       if (expectedCount != result.size()) {
         if (log.isInfoEnabled()) {
           log.info("sleeping #{} to give watchers a chance to finish: {} != {}",
@@ -144,7 +144,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
 
       // only here do we forcibly update the cached live nodes so we don't have to wait for it to catch up
       // with all the ephemeral nodes that vanished after the last iteration
-      CLOUD_CLIENT.getZkStateReader().updateLiveNodes();
+        ((ZkStateReader) ZkStateReader.from(CLOUD_CLIENT)).updateLiveNodes();
       
       // sanity check that our Cloud Client's local state knows about the 1 (real) live node in our cluster
       List<String> cachedLiveNodes = getCachedLiveNodesFromLocalState(actualLiveNodes.size());

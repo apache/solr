@@ -52,6 +52,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
@@ -199,7 +200,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
           + " is not found for collection " + collectionName);
     }
 
-    DocCollection collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+      DocCollection collectionState = ZkStateReader.from(solrClient).getClusterState().getCollection(collectionName);
     for (Slice s : collectionState.getSlices()) {
       List<CoreSnapshotMetaData> replicaSnaps = meta.getReplicaSnapshotsForShard(s.getName());
       // Prepare a list of *existing* replicas (since one or more replicas could have been deleted after the snapshot creation).

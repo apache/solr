@@ -153,7 +153,7 @@ public abstract class SolrScraper implements Closeable {
 
           if (client instanceof CloudSolrClient) {
             labelNames.add("zk_host");
-            labelValues.add(((CloudSolrClient) client).getZkHost());
+            labelValues.add(((CloudSolrClient) client).getClusterStateProvider().getQuorumHosts());
           }
 
           // Deduce core if not there

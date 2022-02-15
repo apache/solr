@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -59,7 +60,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       createCollection(null, COLLECTION_NAME, shards, rFactor, client, null, "conf1");
     }
 
-    waitForCollection(cloudClient.getZkStateReader(), COLLECTION_NAME, 2);
+      waitForCollection(ZkStateReader.from(cloudClient), COLLECTION_NAME, 2);
     waitForRecoveriesToFinish(COLLECTION_NAME, false);
 
     listCollection();
@@ -121,7 +122,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
               "property be pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'"));
 
       // Should be able to set non-unique-per-slice values in several places.
-      Map<String, Slice> slices = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
+        Map<String, Slice> slices = ZkStateReader.from(client).getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
       List<String> sliceList = new ArrayList<>(slices.keySet());
       String c1_s1 = sliceList.get(0);
       List<String> replicasList = new ArrayList<>(slices.get(c1_s1).getReplicasMap().keySet());
@@ -185,7 +186,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
     String lastFailMsg = "";
     for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
       lastFailMsg = "";
-      ClusterState clusterState = client.getZkStateReader().getClusterState();
+        ClusterState clusterState = ZkStateReader.from(client).getClusterState();
       for (Slice slice : clusterState.getCollection(collectionName).getSlices()) {
         boolean foundLeader = false;
         boolean foundPreferred = false;

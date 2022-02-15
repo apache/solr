@@ -136,7 +136,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         return;
       }
 
-      DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
+        DocCollection coll = ((ZkStateReader) ZkStateReader.from(cloudClient)).getClusterState().getCollection("collection1");
       List<String> urls = new ArrayList<>();
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas())

@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -113,7 +114,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     setAuthIfNeeded(CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2))
       .process(cluster.getSolrClient());
 
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+    CloudSolrClientUtils.waitForState(cluster.getSolrClient(), COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
   }
 
@@ -225,7 +226,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     
     int coresCompared = 0;
     int totalDocsOnAllShards = 0;
-    final DocCollection collectionState = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION);
+      final DocCollection collectionState = ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION);
     for (Slice shard : collectionState) {
       boolean firstReplica = true;
       for (Replica replica : shard) {
@@ -272,7 +273,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   private Map<String,ReplicaData> getTestDataForAllReplicas() throws IOException, SolrServerException {
     Map<String,ReplicaData> results = new HashMap<>();
 
-    DocCollection collectionState = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION);
+      DocCollection collectionState = ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION);
 
     for (Replica replica : collectionState.getReplicas()) {
 

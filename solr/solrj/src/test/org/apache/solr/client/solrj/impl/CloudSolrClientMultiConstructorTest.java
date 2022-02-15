@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.junit.Test;
 
 public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
@@ -72,7 +73,7 @@ public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
 
     try (CloudSolrClient client = (new CloudSolrClient.Builder(new ArrayList<>(hosts),
         Optional.ofNullable(clientChroot)).build())) {
-      assertEquals(sb.toString(), client.getZkHost());
+      assertEquals(sb.toString(), CloudSolrClientUtils.getZkHost(client));
     }
   }
   
@@ -100,7 +101,7 @@ public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
 
     final Optional<String> chrootOption = withChroot == false ? Optional.empty() : Optional.of(chroot);
     try (CloudSolrClient client = new CloudSolrClient.Builder(hosts, chrootOption).build()) {
-      assertEquals(sb.toString(), client.getZkHost());
+      assertEquals(sb.toString(), CloudSolrClientUtils.getZkHost(client));
     }
   }
   

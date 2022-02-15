@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,8 +60,8 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
     CollectionAdminRequest.deleteCollection("halfdeletedcollection2").process(cluster.getSolrClient());
     waitForState("Timed out waiting for collection to be deleted", "halfdeletedcollection2", (n, c) -> c == null);
 
-    assertFalse("Still found collection that should be gone",
-        cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2"));
+      assertFalse("Still found collection that should be gone",
+        ZkStateReader.from(cluster.getSolrClient()).getClusterState().hasCollection("halfdeletedcollection2"));
 
   }
 }

@@ -284,7 +284,7 @@ public class Aliases {
    * parameters.
    * <p>
    * Note that the state in zookeeper is unaffected by this method and the change must still be persisted via
-   * {@link ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
+   * {@code ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param alias       the alias to update, must not be null
    * @param collections the comma separated list of collections for the alias, null to remove the alias
@@ -322,7 +322,7 @@ public class Aliases {
    * Renaming routed aliases is not supported.
    * <p>
    * Note that the state in zookeeper is unaffected by this method and the change must still be persisted via
-   * {@link ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
+   * {@code ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param before previous alias name, must not be null
    * @param after new alias name. If this is null then it's equivalent to calling {@link #cloneWithCollectionAlias(String, String)}
@@ -385,7 +385,7 @@ public class Aliases {
    * with the same data as the current one but with a modification based on the parameters.
    * <p>
    * Note that the state in zookeeper is unaffected by this method and the change must still be persisted via
-   * {@link ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
+   * {@code ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param alias the alias to update
    * @param propertiesKey the key for the properties
@@ -401,7 +401,7 @@ public class Aliases {
    * with the same data as the current one but with a modification based on the parameters.
    * <p>
    * Note that the state in zookeeper is unaffected by this method and the change must still be persisted via
-   * {@link ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
+   * {@code ZkStateReader.AliasesManager#applyModificationAndExportToZk(UnaryOperator)}
    *
    * @param alias the alias to update
    * @param properties the properties to add/replace, null values in the map will remove the key.

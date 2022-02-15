@@ -37,15 +37,7 @@ import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStatesOps;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -378,7 +370,7 @@ public class ReplicaMutator {
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
     if (collection != null && collection.isPerReplicaState()) {
-      PerReplicaStates prs = PerReplicaStates.fetch(collection.getZNode(), zkClient, collection.getPerReplicaStates());
+      PerReplicaStates prs = PerReplicaStatesFetcher.fetch(collection.getZNode(), zkClient, collection.getPerReplicaStates());
       return new ZkWriteCommand(collectionName, newCollection, PerReplicaStatesOps.flipState(replica.getName(), replica.getState(), prs), persistCollectionState);
     } else{
       return new ZkWriteCommand(collectionName, newCollection);

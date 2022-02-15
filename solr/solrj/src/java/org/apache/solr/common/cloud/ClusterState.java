@@ -19,7 +19,6 @@ package org.apache.solr.common.cloud;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,12 +40,17 @@ import java.util.stream.Collectors;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using
- * {@link ZkStateReader#getClusterState()}.
+ * {@code ZkStateReader#getClusterState()}.
  * @lucene.experimental
  */
 public class ClusterState implements JSONWriter.Writable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  // nocommit : to move these from ZkStateReader
+  public static final String NODE_NAME_PROP = "node_name";
+  public static final String CORE_NAME_PROP = "core";
+  public final static String CONFIGNAME_PROP = "configName";
+  public static final String COLLECTIONS_ZKNODE = "/collections";
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
   private Set<String> liveNodes;
@@ -188,8 +192,8 @@ public class ClusterState implements JSONWriter.Writable {
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
           // TODO: for really large clusters, we could 'index' on this
-          String rnodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
-          String rcore = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+          String rnodeName = replica.getStr(NODE_NAME_PROP);
+          String rcore = replica.getStr(CORE_NAME_PROP);
           if (nodeName.equals(rnodeName) && coreName.equals(rcore)) {
             return slice.getName();
           }
@@ -231,50 +235,6 @@ public class ClusterState implements JSONWriter.Writable {
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
-    return createFromCollectionMap(version, stateMap, liveNodes);
-  }
-
-  /**
-   * Create a ClusterState from Json.
-   * This method supports legacy configName location
-   *
-   * @param bytes a byte array of a Json representation of a mapping from collection name to the Json representation of a
-   *              {@link DocCollection} as written by {@link #write(JSONWriter)}. It can represent
-   *              one or more collections.
-   * @param liveNodes list of live nodes
-   * @param coll collection name
-   * @param zkClient ZK client
-   * @return the ClusterState
-   */
-  @SuppressWarnings({"unchecked"})
-  @Deprecated
-  public static ClusterState createFromJsonSupportingLegacyConfigName(int version, byte[] bytes, Set<String> liveNodes, String coll, SolrZkClient zkClient) {
-    if (bytes == null || bytes.length == 0) {
-      return new ClusterState(liveNodes, Collections.emptyMap());
-    }
-    Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
-    Map<String, Object> props = (Map<String, Object>) stateMap.get(coll);
-    if (props != null) {
-      if (!props.containsKey(ZkStateReader.CONFIGNAME_PROP)) {
-        try {
-          // read configName from collections/collection node
-          String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll;
-          byte[] data = zkClient.getData(path, null, null, true);
-          if (data != null && data.length > 0) {
-            ZkNodeProps configProp = ZkNodeProps.load(data);
-            String configName = configProp.getStr(ZkStateReader.CONFIGNAME_PROP);
-            if (configName != null) {
-              props.put(ZkStateReader.CONFIGNAME_PROP, configName);
-              stateMap.put(coll, props);
-            } else {
-              log.warn("configName is null, not found on {}", path);
-            }
-          }
-        } catch (KeeperException | InterruptedException e) {
-          // do nothing
-        }
-      }
-    }
     return createFromCollectionMap(version, stateMap, liveNodes);
   }
 
@@ -405,7 +365,7 @@ public class ClusterState implements JSONWriter.Writable {
           consumer.accept(collection);
         }
       } catch (SolrException e) {
-        if (e.getCause() instanceof KeeperException.NoNodeException) {
+        if (e.getCause() != null && e.getCause().getClass().getName().endsWith("NoNodeException")) {
           //don't do anything. This collection does not exist
         } else{
           throw e;

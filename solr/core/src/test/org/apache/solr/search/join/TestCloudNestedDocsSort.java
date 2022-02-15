@@ -71,8 +71,8 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
     client = cluster.getSolrClient();
     client.setDefaultCollection("collection1");
-    
-    ZkStateReader zkStateReader = client.getZkStateReader();
+
+      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(client);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish("collection1", zkStateReader, true, true, 30);
     
     {

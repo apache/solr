@@ -111,7 +111,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         jetty.start();
       }
     }
-    if (cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionOrNull(collectionName) != null) {
+      if (((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).getClusterState().getCollectionOrNull(collectionName) != null) {
       log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
       log.info("Collection deleted");
@@ -333,7 +333,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 0));
     addDocs(500);
     List<Replica.State> statesSeen = new ArrayList<>(3);
-    cluster.getSolrClient().registerCollectionStateWatcher(collectionName, (liveNodes, collectionState) -> {
+    CloudSolrClientUtils.registerCollectionStateWatcher(cluster.getSolrClient(), collectionName, (liveNodes, collectionState) -> {
       Replica r = collectionState.getSlice("shard1").getReplica("core_node2");
       log.info("CollectionStateWatcher state change: {}", r);
       if (r == null) {
@@ -440,11 +440,11 @@ public class TestPullReplica extends SolrCloudTestCase {
 
     // Check that there is no leader for the shard
     Replica leader = docCollection.getSlice("shard1").getLeader();
-    assertTrue(leader == null || !leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+      assertTrue(leader == null || !leader.isActive(((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).getClusterState().getLiveNodes()));
 
     // Pull replica on the other hand should be active
     Replica pullReplica = docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0);
-    assertTrue(pullReplica.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+      assertTrue(pullReplica.isActive(((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).getClusterState().getLiveNodes()));
 
     long highestTerm = 0L;
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
@@ -486,10 +486,10 @@ public class TestPullReplica extends SolrCloudTestCase {
     unIgnoreException("No registered leader was found"); // Should have a leader from now on
 
     // Validate that the new nrt replica is the leader now
-    cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collectionName);
+      ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).forceUpdateCollection(collectionName);
     docCollection = getCollectionState(collectionName);
     leader = docCollection.getSlice("shard1").getLeader();
-    assertTrue(leader != null && leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+      assertTrue(leader != null && leader.isActive(((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).getClusterState().getLiveNodes()));
 
     // If jetty is restarted, the replication is not forced, and replica doesn't replicate from leader until new docs are added. Is this the correct behavior? Why should these two cases be different?
     if (removeReplica) {
@@ -579,14 +579,14 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   static void waitForDeletion(String collection) throws InterruptedException, KeeperException {
     TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
+      while (((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).getClusterState().hasCollection(collection)) {
       log.info("Collection not yet deleted");
       try {
         Thread.sleep(100);
         if (t.hasTimedOut()) {
           fail("Timed out waiting for collection " + collection + " to be deleted.");
         }
-        cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collection);
+          ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).forceUpdateCollection(collection);
       } catch(SolrException e) {
         return;
       }
@@ -600,7 +600,7 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   static DocCollection assertNumberOfReplicas(String coll, int numNrtReplicas, int numTlogReplicas, int numPullReplicas, boolean updateCollection, boolean activeOnly) throws KeeperException, InterruptedException {
     if (updateCollection) {
-      cluster.getSolrClient().getZkStateReader().forceUpdateCollection(coll);
+        ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).forceUpdateCollection(coll);
     }
     DocCollection docCollection = getCollectionState(coll);
     assertNotNull(docCollection);

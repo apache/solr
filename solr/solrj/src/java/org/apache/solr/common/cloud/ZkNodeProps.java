@@ -35,6 +35,10 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class ZkNodeProps implements JSONWriter.Writable {
 
+  // nocommit : to move these from ZkStateReader
+  public static final String NODE_NAME_PROP = "node_name";
+  public static final String BASE_URL_PROP = "base_url";
+
   /**
    * Feature flag to enable storing the 'base_url' property; base_url will not be stored as of Solr 9.x.
    * Installations that use an older (pre-8.8) SolrJ against a 8.8.0 or newer server will need to set this system
@@ -52,8 +56,8 @@ public class ZkNodeProps implements JSONWriter.Writable {
 
     // don't store base_url if we have a node_name to recompute from when we read back from ZK
     // sub-classes that know they need a base_url (Replica) can eagerly compute in their ctor
-    if (!STORE_BASE_URL && this.propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
-      this.propMap.remove(ZkStateReader.BASE_URL_PROP);
+    if (!STORE_BASE_URL && this.propMap.containsKey(NODE_NAME_PROP)) {
+      this.propMap.remove(BASE_URL_PROP);
     }
 
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
@@ -129,14 +133,14 @@ public class ZkNodeProps implements JSONWriter.Writable {
   @Override
   public void write(JSONWriter jsonWriter) {
     // don't write out the base_url if we have a node_name
-    if (!STORE_BASE_URL && propMap.containsKey(ZkStateReader.BASE_URL_PROP) && propMap.get(ZkStateReader.NODE_NAME_PROP) != null) {
+    if (!STORE_BASE_URL && propMap.containsKey(BASE_URL_PROP) && propMap.get(NODE_NAME_PROP) != null) {
       final Map<String, Object> filtered = new HashMap<>(propMap);
-      filtered.remove(ZkStateReader.BASE_URL_PROP);
+      filtered.remove(BASE_URL_PROP);
       jsonWriter.write(filtered);
-    } else if (STORE_BASE_URL && propMap.get(ZkStateReader.BASE_URL_PROP) == null && propMap.get(ZkStateReader.NODE_NAME_PROP) != null) {
+    } else if (STORE_BASE_URL && propMap.get(BASE_URL_PROP) == null && propMap.get(NODE_NAME_PROP) != null) {
       // this is for back-compat with older SolrJ
       final Map<String, Object> addBaseUrl = new HashMap<>(propMap);
-      addBaseUrl.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName((String)propMap.get(ZkStateReader.NODE_NAME_PROP)));
+      addBaseUrl.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName((String)propMap.get(NODE_NAME_PROP)));
       jsonWriter.write(addBaseUrl);
     } else {
       jsonWriter.write(propMap);
@@ -165,8 +169,8 @@ public class ZkNodeProps implements JSONWriter.Writable {
     Object o = propMap.get(key);
 
     // TODO: This "hack" should not be needed but keeping it here b/c we removed the base_url from the map in the ctor
-    if (o == null && def == null && ZkStateReader.BASE_URL_PROP.equals(key)) {
-      final String nodeName = (String)propMap.get(ZkStateReader.NODE_NAME_PROP);
+    if (o == null && def == null && BASE_URL_PROP.equals(key)) {
+      final String nodeName = (String)propMap.get(NODE_NAME_PROP);
       if (nodeName != null) {
         o = UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName);
       }
