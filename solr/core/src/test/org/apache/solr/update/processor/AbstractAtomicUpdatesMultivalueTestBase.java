@@ -24,12 +24,12 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.curator.shaded.com.google.common.collect.Lists;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -93,7 +93,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     assertThat(fieldValues, not(hasItems(vc.apply(values[0]))));
 
     getSolrClient().add(sdoc("id", "20000", fieldName, ImmutableMap.of("remove",
-        Lists.newArrayList(values[0]))));
+        List.of(values[0]))));
     getSolrClient().commit(true, true);
 
     if (queries != null) {
@@ -113,7 +113,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     assertThat(fieldValues, not(hasItems(vc.apply(values[0]))));
 
     getSolrClient().add(sdoc("id", "20001", fieldName, ImmutableMap.of("remove",
-        Lists.newArrayList(values[0], values[1], values[2]))));
+        List.of(values[0], values[1], values[2]))));
     getSolrClient().commit(true, true);
 
     if (queries != null) {
@@ -133,9 +133,9 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     assertThat(fieldValues, not(hasItems(vc.apply(values[0]), vc.apply(values[1]), vc.apply(values[2]))));
 
     getSolrClient().add(Arrays.asList(sdoc("id", "20000", fieldName, ImmutableMap.of("add",
-        Lists.newArrayList(values[0]), "remove", Lists.newArrayList(values[1], values[2]))),
+        List.of(values[0]), "remove", List.of(values[1], values[2]))),
         sdoc("id", "20001", fieldName,
-            ImmutableMap.of("add", Lists.newArrayList(values[0]), "remove", Lists.newArrayList(values[3])))));
+            ImmutableMap.of("add", List.of(values[0]), "remove", List.of(values[3])))));
     getSolrClient().commit(true, true);
 
     if (queries != null) {
@@ -155,9 +155,9 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     assertThat(fieldValues, not(hasItems(vc.apply(values[1]), vc.apply(values[2]), vc.apply(values[3]))));
 
     getSolrClient().add(Arrays.asList(sdoc("id", "20000", fieldName, ImmutableMap.of("set",
-        Lists.newArrayList(values[0], values[1], values[2], values[3]))), sdoc("id", "20001", fieldName,
+        List.of(values[0], values[1], values[2], values[3]))), sdoc("id", "20001", fieldName,
             ImmutableMap.of("set",
-                Lists.newArrayList(values[0], values[1], values[2], values[3])))));
+                List.of(values[0], values[1], values[2], values[3])))));
     getSolrClient().commit(true, true);
 
     if (queries != null) {
@@ -214,8 +214,8 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     final String fieldName = "booleanRemove";
 
     getSolrClient().add(Arrays.asList(
-        sdoc("id", "20000", fieldName, Lists.newArrayList(true, false)),
-        sdoc("id", "20001", fieldName, Lists.newArrayList(false, true))));
+        sdoc("id", "20000", fieldName, List.of(true, false)),
+        sdoc("id", "20001", fieldName, List.of(false, true))));
     getSolrClient().commit(true, true);
 
     assertQR(fieldName, "true", 2);
@@ -229,7 +229,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     assertThat(fieldValues, hasItems(true, false));
 
     getSolrClient().add(sdoc("id", "20000", fieldName, ImmutableMap.of("remove",
-        Lists.newArrayList(false))));
+        List.of(false))));
     getSolrClient().commit(true, true);
 
     assertQR(fieldName, "true", 2);
@@ -243,7 +243,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     assertThat(fieldValues, hasItems(true, false));
 
     getSolrClient().add(sdoc("id", "20001", fieldName, ImmutableMap.of("remove",
-        Lists.newArrayList(true, false))));
+        List.of(true, false))));
     getSolrClient().commit(true, true);
 
     assertQR(fieldName, "true", 1);
@@ -257,7 +257,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     assertNull(fieldValues);
 
     getSolrClient().add(Arrays.asList(sdoc("id", "20000", fieldName, ImmutableMap.of("add",
-        Lists.newArrayList(false, false)))));
+        List.of(false, false)))));
     getSolrClient().commit(true, true);
 
     assertQR(fieldName, "true", 1);
@@ -270,9 +270,9 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     assertNull(fieldValues);
 
     getSolrClient().add(Arrays.asList(sdoc("id", "20000", fieldName, ImmutableMap.of("set",
-        Lists.newArrayList(true, false))), sdoc("id", "20001", fieldName,
+        List.of(true, false))), sdoc("id", "20001", fieldName,
             ImmutableMap.of("set",
-                Lists.newArrayList(false, true)))));
+                List.of(false, true)))));
     getSolrClient().commit(true, true);
 
     assertQR(fieldName, "true", 2);
