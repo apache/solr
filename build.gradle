@@ -206,3 +206,5 @@ apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/ant-compat/solr.post-jar.gradle')
 
+apply from: file('gradle/node.gradle')
+

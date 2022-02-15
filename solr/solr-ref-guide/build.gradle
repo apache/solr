@@ -17,8 +17,6 @@
 
 import org.apache.tools.ant.util.TeeOutputStream
 
-apply from: file("$rootDir/gradle/node.gradle")
-
 description = 'Solr Reference Guide'
 
 def buildLocalUI = propertyOrEnvOrDefault("refguide.buildLocalUI", "SOLR_REF_GUIDE_BUILD_LOCAL_UI", "false").toBoolean()
@@ -43,8 +41,6 @@ dependencies {
 
 ext {
     antoraVersion = "3.0.1"
-    rootNodeDir = "${project.rootDir}/.gradle/node"
-    nodeProjectDir = file("${project.ext.rootNodeDir}/ref-guide-project")
 
     siteDir = "${buildDir}/site"
     antoraConfigBuildDir = "${buildDir}/antora-config"
@@ -170,17 +166,6 @@ dependencies {
 /*
     Downloading Build Tools
  */
-
-// We use Node to install and run Antora
-node {
-    // The directory where yarn is installed (when a Yarn task is used)
-    yarnWorkDir = file("${project.ext.rootNodeDir}/yarn")
-
-    // The Node.js project directory location
-    // This is where the package.json file and node_modules directory are located
-    // By default it is at the root of the current project
-    nodeProjectDir = project.ext.nodeProjectDir
-}
 
 task downloadAntoraCli(type: NpmTask) {
     group = 'Build Dependency Download'

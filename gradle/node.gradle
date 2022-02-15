@@ -15,19 +15,27 @@
  * limitations under the License.
  */
 
-apply plugin: "com.github.node-gradle.node"
+configure(allprojects.findAll {project -> project.path.startsWith(":solr:packaging") || project.path.startsWith(":solr:solr-ref-guide") }) {
+    apply plugin: "com.github.node-gradle.node"
 
-ext {
-    rootNodeDir = "$rootDir/.gradle/node"
-}
+    ext {
+        rootNodeDir = "$rootDir/.gradle/node"
+        nodeProjectDir = file("$rootNodeDir/$project.name")
+    }
 
-node {
-    download = true
-    version = "16.13.2" // LTS
+    node {
+        download = true
+        version = "16.13.2" // LTS
 
-    // The directory where Node.js is unpacked (when download is true)
-    workDir = file("${project.ext.rootNodeDir}/nodejs")
+        // The directory where Node.js is unpacked (when download is true)
+        workDir = file("${project.ext.rootNodeDir}/nodejs")
 
-    // The directory where npm is installed (when a specific version is defined)
-    npmWorkDir = file("${project.ext.rootNodeDir}/npm")
+        // The directory where npm is installed (when a specific version is defined)
+        npmWorkDir = file("${project.ext.rootNodeDir}/npm")
+
+        // The Node.js project directory location
+        // This is where the package.json file and node_modules directory are located
+        // By default it is at the root of the current project
+        nodeProjectDir = project.ext.nodeProjectDir
+    }
 }

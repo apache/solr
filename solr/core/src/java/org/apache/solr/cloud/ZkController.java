@@ -136,47 +136,7 @@ public class ZkController implements Closeable {
   public final static String COLLECTION_PARAM_PREFIX = "collection.";
   public final static String CONFIGNAME_PROP = "configName";
 
-  static class ContextKey {
-
-    private String collection;
-    private String coreNodeName;
-
-    public ContextKey(String collection, String coreNodeName) {
-      this.collection = collection;
-      this.coreNodeName = coreNodeName;
-    }
-
-    @Override
-    public int hashCode() {
-      final int prime = 31;
-      int result = 1;
-      result = prime * result
-          + ((collection == null) ? 0 : collection.hashCode());
-      result = prime * result
-          + ((coreNodeName == null) ? 0 : coreNodeName.hashCode());
-      return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (this == obj) return true;
-      if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
-      ContextKey other = (ContextKey) obj;
-      if (collection == null) {
-        if (other.collection != null) return false;
-      } else if (!collection.equals(other.collection)) return false;
-      if (coreNodeName == null) {
-        if (other.coreNodeName != null) return false;
-      } else if (!coreNodeName.equals(other.coreNodeName)) return false;
-      return true;
-    }
-
-    @Override
-    public String toString() {
-      return collection + ':' + coreNodeName;
-    }
-  }
+  record ContextKey(String collection, String coreNodeName) { }
 
   private final Map<ContextKey, ElectionContext> electionContexts = Collections.synchronizedMap(new HashMap<>());
 
@@ -449,6 +409,42 @@ public class ZkController implements Closeable {
         closeOutstandingElections(descriptorsSupplier);
         markAllAsNotLeader(descriptorsSupplier);
       }
+
+      private void closeOutstandingElections(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
+        List<CoreDescriptor> descriptors = registerOnReconnect.get();
+        if (descriptors != null) {
+          for (CoreDescriptor descriptor : descriptors) {
+            closeExistingElectionContext(descriptor);
+          }
+        }
+      }
+
+      private void markAllAsNotLeader(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
+        List<CoreDescriptor> descriptors = registerOnReconnect.get();
+        if (descriptors != null) {
+          for (CoreDescriptor descriptor : descriptors) {
+            descriptor.getCloudDescriptor().setLeader(false);
+            descriptor.getCloudDescriptor().setHasRegistered(false);
+          }
+        }
+      }
+
+      private ContextKey closeExistingElectionContext(CoreDescriptor cd) {
+        // look for old context - if we find it, cancel it
+        String collection = cd.getCloudDescriptor().getCollectionName();
+        final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+
+        ContextKey contextKey = new ContextKey(collection, coreNodeName);
+        ElectionContext prevContext = electionContexts.get(contextKey);
+
+        if (prevContext != null) {
+          prevContext.close();
+          electionContexts.remove(contextKey);
+        }
+
+        return contextKey;
+      }
+
     }, zkACLProvider, new ConnectionManager.IsClosed() {
 
       @Override
@@ -581,41 +577,6 @@ public class ZkController implements Closeable {
 
   public NodesSysPropsCacher getSysPropsCacher() {
     return sysPropsCacher;
-  }
-
-  private void closeOutstandingElections(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
-    List<CoreDescriptor> descriptors = registerOnReconnect.get();
-    if (descriptors != null) {
-      for (CoreDescriptor descriptor : descriptors) {
-        closeExistingElectionContext(descriptor);
-      }
-    }
-  }
-
-  private ContextKey closeExistingElectionContext(CoreDescriptor cd) {
-    // look for old context - if we find it, cancel it
-    String collection = cd.getCloudDescriptor().getCollectionName();
-    final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
-
-    ContextKey contextKey = new ContextKey(collection, coreNodeName);
-    ElectionContext prevContext = electionContexts.get(contextKey);
-
-    if (prevContext != null) {
-      prevContext.close();
-      electionContexts.remove(contextKey);
-    }
-
-    return contextKey;
-  }
-
-  private void markAllAsNotLeader(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
-    List<CoreDescriptor> descriptors = registerOnReconnect.get();
-    if (descriptors != null) {
-      for (CoreDescriptor descriptor : descriptors) {
-        descriptor.getCloudDescriptor().setLeader(false);
-        descriptor.getCloudDescriptor().setHasRegistered(false);
-      }
-    }
   }
 
   public void preClose() {

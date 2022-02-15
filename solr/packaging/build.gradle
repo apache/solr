@@ -25,14 +25,11 @@ plugins {
   id 'distribution'
 }
 
-apply from: file("$rootDir/gradle/node.gradle")
-
 description = 'Solr distribution packaging'
 
 ext {
   distDir = file("$buildDir/solr-${version}")
   devDir = file("$buildDir/dev")
-  nodeProjectDir = file("${project.ext.rootNodeDir}/packaging-project")
 }
 
 configurations {
@@ -166,15 +163,6 @@ distZip.enabled = false
 
 assemble.dependsOn installDist
 
-
-// We use Node to install BATS
-node {
-  // The Node.js project directory location
-  // This is where the package.json file and node_modules directory are located
-  // By default it is at the root of the current project
-  nodeProjectDir = project.ext.nodeProjectDir
-}
-
 task downloadBats(type: NpmTask) {
   group = 'Build Dependency Download'
   args = ["install", "bats",
@@ -188,23 +176,20 @@ task downloadBats(type: NpmTask) {
   outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-assert")
 }
 
-task bats(type: Exec) {
+task integrationTests(type: Exec) {
   dependsOn installDist
   dependsOn downloadBats
 
-  def testOutput = "$buildDir/bats-output"
-  def solrHome = "$testOutput/solr-home-" + Instant.now().toEpochMilli()
+  def integrationTestOutput = "$buildDir/test-output"
+  def solrHome = "$integrationTestOutput/solr-home"
 
   inputs.files(fileTree('test'))
-  def outputFile = "$testOutput/test-output.txt"
-  outputs.file(outputFile)
+  outputs.dir(integrationTestOutput)
+  outputs.dir(solrHome)
 
   doFirst {
     // TODO - if quiet then don't tee
-    standardOutput = new TeeOutputStream(System.out, new FileOutputStream(outputFile))
-
-    mkdir(testOutput)
-    mkdir(solrHome)
+    standardOutput = new TeeOutputStream(System.out, new FileOutputStream("$integrationTestOutput/test-output.txt"))
   }
 
   environment SOLR_TIP: distDir.toString()
