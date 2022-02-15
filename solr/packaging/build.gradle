@@ -58,7 +58,8 @@ dependencies {
    ":solr:modules:langid",
    ":solr:modules:ltr",
    ":solr:modules:s3-repository",
-   ":solr:modules:scripting"
+   ":solr:modules:scripting",
+   ":solr:modules:sql"
   ].each { moduleName ->
     modules project(path: moduleName, configuration: "packaging")
   }

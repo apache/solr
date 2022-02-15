@@ -36,7 +36,7 @@ dependencies {
   api 'org.apache.lucene:lucene-test-framework'
   implementation 'org.apache.lucene:lucene-core'
   implementation 'org.apache.lucene:lucene-queries'
-  implementation "org.apache.lucene:lucene-suggest"
+  implementation 'org.apache.lucene:lucene-suggest'
 
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler;
+package org.apache.solr.handler.sql;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -38,7 +38,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.sql.CalciteSolrDriver;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.StreamHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -62,10 +63,12 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
     CoreContainer coreContainer = core.getCoreContainer();
 
     if(coreContainer.isZooKeeperAware()) {
-      defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
+      defaultZkhost = coreContainer.getZkController().getZkServerAddress();
       defaultWorkerCollection = core.getCoreDescriptor().getCollectionName();
       isCloud = true;
     }
+
+    CalciteSolrDriver.INSTANCE.setSolrClientCache(coreContainer.getSolrClientCache());
   }
 
   @Override
