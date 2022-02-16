@@ -82,7 +82,7 @@ public class DocSetQuery extends Query implements DocSetProducer{
         // TestSolrQueryParser.testFilter to fail.
         return new ConstantScoreWeight(this, boost) {
             @Override
-            public Scorer scorer(LeafReaderContext context) throws IOException {
+            public Scorer scorer(LeafReaderContext context) {
                 DocIdSetIterator disi = null;
                 if (docSet != null) {
                     disi = docSet.iterator(context);
