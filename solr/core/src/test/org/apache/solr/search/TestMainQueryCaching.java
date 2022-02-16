@@ -180,7 +180,11 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   public void testMatchAllDocsFlScore() throws Exception {
     // explicitly requesting scores should unconditionally disable all cache consultation and sort optimization
     String response = JQ(req("q", MATCH_ALL_DOCS_QUERY, "indent", "true", "rows", "0", "fl", "id,score", "sort", (random().nextBoolean() ? "id asc" : "score desc")));
-    // NOTE: pretend we're not MatchAllDocs ...
+    // NOTE: pretend we're not MatchAllDocs, from the perspective of `assertMetricsCounts(...)`
+    // We're specifically choosing `*:*` here because we want a query that would _definitely_ hit our various
+    // optimizations, _but_ for the fact that we explicitly requested `score` to be returned. This would be a bit
+    // of an anti-pattern in "real life", but it's useful (e.g., in tests) to have this case just disable the
+    // optimizations.
     assertMetricCounts(response, false, 0, 1, 0, ALL_DOCS);
   }
 
