@@ -145,6 +145,15 @@ public interface SolrCache<K,V> extends SolrInfoBean {
   public State getState();
 
   /**
+   * A hook for caches that would like to perform some initialization for the first registered searcher.
+   * This method is analogous to {@link #warm(SolrIndexSearcher, SolrCache)}. The default implementation
+   * is a no-op. Implementers should not retain object references to the specified searcher.
+   */
+  default void bootstrap(SolrIndexSearcher initialSearcher) {
+    // no-op
+  }
+
+  /**
    * Warm this cache associated with <code>searcher</code> using the <code>old</code>
    * cache object.  <code>this</code> and <code>old</code> will have the same concrete type.
    */

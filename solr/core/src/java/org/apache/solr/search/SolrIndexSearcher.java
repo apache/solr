@@ -2140,6 +2140,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /**
+   * Gives each configured cache the opportunity to perform initialization with a reference to the
+   * first registered searcher. Analogous to {@link #warm(SolrIndexSearcher)}.
+   */
+  public void bootstrap() {
+    for (SolrCache<?, ?> solrCache : cacheList) {
+      solrCache.bootstrap(this);
+    }
+  }
+
+  /**
    * Warm this searcher based on an old one (primarily for auto-cache warming).
    */
   @SuppressWarnings({"unchecked"})
