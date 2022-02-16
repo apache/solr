@@ -26,7 +26,6 @@ import org.apache.lucene.search.SimpleCollector;
 import org.apache.solr.analytics.AnalyticsDriver;
 import org.apache.solr.analytics.function.ReductionCollectionManager.ReductionDataCollection;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -50,11 +49,11 @@ public abstract class AbstractSolrQueryFacet extends AnalyticsFacet {
    *
    * Each of these executors will be executed after the streaming phase in the {@link AnalyticsDriver}.
    *
-   * @param filter the overall filter representing the documents being used for the analytics request
+   * @param filter the overall query representing the documents being used for the analytics request
    * @param queryRequest the queryRequest
    * @param consumer the consumer of each facet value's executer
    */
-  public abstract void createFacetValueExecuters(final Filter filter, SolrQueryRequest queryRequest, Consumer<FacetValueQueryExecuter> consumer);
+  public abstract void createFacetValueExecuters(final Query filter, SolrQueryRequest queryRequest, Consumer<FacetValueQueryExecuter> consumer);
 
   /**
    * This executer is in charge of issuing the Solr query for a facet value and collecting results as the query is processed.

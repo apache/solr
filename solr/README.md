@@ -34,16 +34,16 @@ All the following commands are entered from the "solr" directory which should be
 To start Solr for the first time after installation, simply enter:
 
 ```
+  bin/solr start -c
+```
+
+This will launch Solr in clustered (SolrCloud) mode, which allows you to scale out using
+sharding and replication. Alternatively, you can launch a standalone Solr server
+in the background of your shell, listening on port 8983.  To launch Solr
+in standalone mode, enter:
+
+```
   bin/solr start
-```
-
-This will launch a standalone Solr server in the background of your shell,
-listening on port 8983. Alternatively, you can launch Solr in "cloud" mode,
-which allows you to scale out using sharding and replication. To launch Solr
-in cloud mode, enter:
-
-```
-  bin/solr start -cloud
 ```
 
 To see all available options for starting Solr, please enter:
@@ -53,7 +53,7 @@ To see all available options for starting Solr, please enter:
 ```
 
 After starting Solr, create either a core or collection depending on whether
-Solr is running in standalone (core) or SolrCloud mode (collection) by entering:
+Solr is running in standalone or clustered (SolrCloud) mode by entering:
 
 ```
   bin/solr create -c <name>
@@ -114,13 +114,13 @@ To add documents to the index, use bin/post.  For example:
 For more information about Solr examples please read...
 
  * [example/README.md](example/README.md)
-   
+
 For more information about the "Solr Home" and Solr specific configuration
- 
+
  * https://solr.apache.org/guide/solr-tutorial.html
-   
+
 For a Solr tutorial
- 
+
  * https://solr.apache.org/resources.html
 
 For a list of other tutorials and introductory articles.
@@ -182,22 +182,22 @@ Instructions for Building Apache Solr from Source
 
      https://solr.apache.org/community.html#version-control
 
-3. Navigate to the root of your source tree folder and issue the `./gradlew tasks` 
+3. Navigate to the root of your source tree folder and issue the `./gradlew tasks`
    command to see the available options for building, testing, and packaging Solr.
 
-   `./gradlew assemble` will create a Solr executable. 
+   `./gradlew assemble` will create a Solr executable.
    cd to "./solr/packaging/build/solr-9.0.0-SNAPSHOT" and run the bin/solr script
    to start Solr.
-   
+
    NOTE: `gradlew` is the "Gradle Wrapper" and will automatically download and
    start using the correct version of Gradle.
-   
-   NOTE: `./gradlew help` will print a list of high-level tasks. There are also a 
+
+   NOTE: `./gradlew help` will print a list of high-level tasks. There are also a
    number of plain-text files in <source folder root>/help.
-   
+
    NOTE: This CWiki page describes getting/building/testing Solr
    in more detail:
-   `https://cwiki.apache.org/confluence/display/solr/HowToContribute` 
+   `https://cwiki.apache.org/confluence/display/solr/HowToContribute`
 
 Export control
 -------------------------------------------------

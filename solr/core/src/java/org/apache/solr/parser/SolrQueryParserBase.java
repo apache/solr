@@ -65,7 +65,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
-import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
 import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.queryparser.charstream.FastCharStream;
@@ -864,7 +863,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       // syntax looks like foo:x^=3
       float val = Float.parseFloat(boost.image.substring(1));
       Query newQ = q;
-      if (q instanceof ConstantScoreQuery || q instanceof SolrConstantScoreQuery) {
+      if (q instanceof ConstantScoreQuery) {
         // skip
       } else {
         newQ = new ConstantScoreQuery( rawToNormal(q) );

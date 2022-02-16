@@ -39,7 +39,6 @@ import org.apache.solr.response.AnalyticsShardResponseWriter.AnalyticsResponse;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
@@ -88,8 +87,7 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
                                                                 false);
       // Collect the reduction data for the request
       SolrIndexSearcher searcher = req.getSearcher();
-      Filter filter = docs.getTopFilter();
-      AnalyticsDriver.drive(manager, searcher, filter, req);
+      AnalyticsDriver.drive(manager, searcher, docs, req);
 
       // Do not calculate results, instead export the reduction data for this shard.
       rsp.addResponse(new AnalyticsResponse(manager));

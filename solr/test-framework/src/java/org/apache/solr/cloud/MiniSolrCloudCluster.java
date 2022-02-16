@@ -109,7 +109,7 @@ public class MiniSolrCloudCluster {
       "    <str name=\"distributedClusterStateUpdates\">${solr.distributedClusterStateUpdates:false}</str> \n" +
       "    <str name=\"distributedCollectionConfigSetExecution\">${solr.distributedCollectionConfigSetExecution:false}</str> \n" +
       "  </solrcloud>\n" +
-      // NOTE: this turns off the metrics collection unless overriden by a sysprop
+      // NOTE: this turns off the metrics collection unless overridden by a sysprop
       "  <metrics enabled=\"${metricsEnabled:false}\">\n" +
       "    <reporter name=\"default\" class=\"org.apache.solr.metrics.reporters.SolrJmxReporter\">\n" +
       "      <str name=\"rootName\">solr_${hostPort:8983}</str>\n" +
