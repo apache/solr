@@ -28,14 +28,11 @@ dependencies {
   implementation 'commons-io:commons-io'
   implementation 'io.dropwizard.metrics:metrics-core'
   implementation 'javax.servlet:javax.servlet-api'
-  implementation 'org.apache.commons:commons-lang3'
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
   implementation 'org.eclipse.jetty:jetty-client'
   implementation ('com.google.guava:guava') { transitive = false }
   implementation 'org.slf4j:slf4j-api'
-
-  implementation 'com.fasterxml.jackson.core:jackson-databind'
 
   testImplementation project(':solr:test-framework')
   testImplementation 'org.apache.lucene:lucene-test-framework'
@@ -49,8 +46,14 @@ dependencies {
     exclude group: "io.netty", module: "netty-all"
     exclude group: "ch.qos.logback", module: "logback-classic"
   })
+  // required by mock-oauth2-server
+  testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+  // Not working currently https://github.com/gradle-dependency-analyze/gradle-dependency-analyze/issues/108
+  //permitTestUnusedDeclared 'com.fasterxml.jackson.core:jackson-databind'
+
   testImplementation 'com.nimbusds:nimbus-jose-jwt'
   testImplementation 'com.squareup.okhttp3:mockwebserver'
   testImplementation 'com.squareup.okhttp3:okhttp'
-  testImplementation 'io.netty:netty-codec-http'
+  testRuntimeOnly 'io.netty:netty-codec-http'
+  testImplementation 'org.apache.commons:commons-lang3'
 }

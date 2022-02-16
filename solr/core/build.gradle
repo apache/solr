@@ -26,6 +26,7 @@ dependencies {
   // It is not included in the release so exclude from checks.
   compileOnly 'com.github.spotbugs:spotbugs-annotations'
   testCompileOnly 'com.github.spotbugs:spotbugs-annotations'
+  permitUnusedDeclared 'com.github.spotbugs:spotbugs-annotations'
   // Exclude these from jar validation and license checks.
   configurations.jarValidation {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
@@ -44,13 +45,14 @@ dependencies {
 
   api project(':solr:solrj')
   api project(':solr:server')
+  permitUnusedDeclared project(':solr:server')
 
   // Non-API below; although there are exceptions
 
-  implementation "org.apache.lucene:lucene-analysis-kuromoji"
-  implementation "org.apache.lucene:lucene-analysis-nori"
-  implementation "org.apache.lucene:lucene-analysis-phonetic"
-  implementation "org.apache.lucene:lucene-backward-codecs"
+  runtimeOnly "org.apache.lucene:lucene-analysis-kuromoji"
+  runtimeOnly "org.apache.lucene:lucene-analysis-nori"
+  runtimeOnly "org.apache.lucene:lucene-analysis-phonetic"
+  runtimeOnly "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-codecs"
   implementation "org.apache.lucene:lucene-classification"
   implementation "org.apache.lucene:lucene-expressions"
@@ -87,19 +89,19 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
-  implementation 'javax.servlet:javax.servlet-api'
+  compileOnlyApi 'javax.servlet:javax.servlet-api'
 
   implementation 'org.eclipse.jetty:jetty-client'
 
-  implementation 'org.eclipse.jetty.http2:http2-common'
-  implementation 'org.eclipse.jetty.http2:http2-server'
-  implementation 'org.eclipse.jetty:jetty-alpn-server'
-  implementation 'org.eclipse.jetty:jetty-http'
-  implementation 'org.eclipse.jetty:jetty-io'
-  implementation 'org.eclipse.jetty:jetty-rewrite'
-  implementation 'org.eclipse.jetty:jetty-server'
-  implementation 'org.eclipse.jetty:jetty-servlet'
-  implementation 'org.eclipse.jetty:jetty-util'
+  compileOnlyApi 'org.eclipse.jetty.http2:http2-common'
+  compileOnlyApi 'org.eclipse.jetty.http2:http2-server'
+  compileOnlyApi 'org.eclipse.jetty:jetty-alpn-server'
+  compileOnlyApi 'org.eclipse.jetty:jetty-http'
+  compileOnlyApi 'org.eclipse.jetty:jetty-io'
+  compileOnlyApi 'org.eclipse.jetty:jetty-rewrite'
+  compileOnlyApi 'org.eclipse.jetty:jetty-server'
+  compileOnlyApi 'org.eclipse.jetty:jetty-servlet'
+  compileOnlyApi 'org.eclipse.jetty:jetty-util'
 
   // ZooKeeper & Curator
   implementation('org.apache.zookeeper:zookeeper', {
@@ -147,8 +149,6 @@ dependencies {
   implementation 'io.dropwizard.metrics:metrics-jmx'
   implementation 'io.dropwizard.metrics:metrics-jvm'
 
-  testImplementation 'org.slf4j:jcl-over-slf4j'
-
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
@@ -167,9 +167,11 @@ dependencies {
   // sub-deps of calcite-core that we reference directly
   implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
   implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
+  permitUnusedDeclared 'org.apache.calcite.avatica:avatica-core'
 
   // Hadoop auth framework
-  implementation ('org.apache.hadoop:hadoop-annotations')
+  implementation 'org.apache.hadoop:hadoop-annotations'
+  permitUnusedDeclared 'org.apache.hadoop:hadoop-annotations'
   implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
   // transitive of hadoop-common; used by Kerberos auth
@@ -186,9 +188,11 @@ dependencies {
     exclude group:'org.apache.kerby', module:'token-provider'
   })
 
-  testImplementation "org.apache.lucene:lucene-analysis-icu"
+  testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 
-  testImplementation project(':solr:modules:analysis-extras')
+  testRuntimeOnly "org.apache.lucene:lucene-analysis-icu"
+
+  testRuntimeOnly project(':solr:modules:analysis-extras')
 
   testImplementation project(':solr:core')
   testImplementation project(':solr:test-framework')

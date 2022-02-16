@@ -28,7 +28,9 @@ dependencies {
   implementation 'org.slf4j:slf4j-api'
 
   // Hadoop dependencies
+  permitUnusedDeclared 'org.apache.hadoop:hadoop-annotations'
   implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
+  permitUnusedDeclared 'org.apache.hadoop:hadoop-auth'
   implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
   // transitive of hadoop-common; used by HDFS

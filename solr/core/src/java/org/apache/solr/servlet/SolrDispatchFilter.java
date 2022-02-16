@@ -290,7 +290,8 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
         return;
       }
       String header = request.getHeader(PKIAuthenticationPlugin.HEADER);
-      if (header != null && cores.getPkiAuthenticationSecurityBuilder() != null)
+      String headerV2 = request.getHeader(PKIAuthenticationPlugin.HEADER_V2);
+      if ((header != null || headerV2 != null) && cores.getPkiAuthenticationSecurityBuilder() != null)
         authenticationPlugin = cores.getPkiAuthenticationSecurityBuilder();
       try {
         if (log.isDebugEnabled()) {
