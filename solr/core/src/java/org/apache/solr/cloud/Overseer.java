@@ -19,14 +19,7 @@ package org.apache.solr.cloud;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 
@@ -379,7 +372,11 @@ public class Overseer implements SolrCloseable {
       List<ZkWriteCommand> zkWriteCommands = null;
       final Timer.Context timerContext = stats.time(operation);
       try {
-        zkWriteCommands = processMessage(clusterState, message, operation);
+        zkWriteCommands = processMessage(clusterState, message, operation, zkStateWriter);
+        if (zkWriteCommands instanceof CommandWithClusterState) {
+          clusterState = ((CommandWithClusterState) zkWriteCommands).clusterState;
+        }
+
         stats.success(operation);
       } catch (Exception e) {
         // generally there is nothing we can do - in most cases, we have
@@ -444,9 +441,18 @@ public class Overseer implements SolrCloseable {
         }
       }
     }
+    class CommandWithClusterState extends ArrayList<ZkWriteCommand> {
+      final ClusterState clusterState;
+
+      CommandWithClusterState(ZkWriteCommand cmd, ClusterState state) {
+        super(1);
+        super.add(cmd);
+        this.clusterState = state;
+      }
+    }
 
     private List<ZkWriteCommand> processMessage(ClusterState clusterState,
-        final ZkNodeProps message, final String operation) {
+        final ZkNodeProps message, final String operation, final ZkStateWriter zkStateWriter) {
       CollectionParams.CollectionAction collectionAction = CollectionParams.CollectionAction.get(operation);
       if (collectionAction != null) {
         switch (collectionAction) {
@@ -472,7 +478,12 @@ public class Overseer implements SolrCloseable {
             }
             break;
           case MODIFYCOLLECTION:
-            return Collections.singletonList(new CollectionMutator(getSolrCloudManager()).modifyCollection(clusterState,message));
+            try {
+              clusterState = zkStateWriter.writePendingUpdates();
+            }  catch (Exception e) {
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to write updates");
+            }
+            return new CommandWithClusterState(new CollectionMutator(getSolrCloudManager()).modifyCollection(clusterState,message), clusterState);
           default:
             throw new RuntimeException("unknown operation:" + operation
                 + " contents:" + message.getProperties());
