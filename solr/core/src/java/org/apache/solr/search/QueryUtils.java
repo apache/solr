@@ -63,8 +63,7 @@ public class QueryUtils {
         return true;
       } else if (q instanceof MatchNoDocsQuery) {
         return true;
-      } else if (q instanceof Filter || q instanceof SolrConstantScoreQuery) {
-        // TODO: this clause will be replaced with `q instanceof DocSetQuery`, pending SOLR-12336
+      } else if (q instanceof DocSetQuery) {
         return true;
       } else if (q instanceof BooleanQuery) {
         // NOTE: this check can be very simple because:
