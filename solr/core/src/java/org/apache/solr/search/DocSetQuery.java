@@ -36,11 +36,10 @@ import java.util.Objects;
  * @see DocSet#makeQuery()
  * @since 9.0
  */
-public class DocSetQuery extends Query implements DocSetProducer{
+class DocSetQuery extends Query implements DocSetProducer{
     private final DocSet docSet;
 
-    public DocSetQuery(DocSet docSet) {
-        super();
+    DocSetQuery(DocSet docSet) {
         this.docSet = docSet;
     }
 
