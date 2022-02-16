@@ -96,19 +96,13 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
             .getValue();
   }
 
-  private static long coreToLiveDocsNaiveCacheHitCount(SolrCore core) {
-    return (long)((SolrMetricManager.GaugeWrapper<?>)core
-            .getCoreMetricManager().getRegistry().getMetrics().get("SEARCHER.searcher.liveDocsNaiveCacheHitCount")).getGauge()
-            .getValue();
-  }
-
   private static long coreToMatchAllDocsInsertCount(SolrCore core) {
     return (long) coreToLiveDocsCacheMetrics(core).get("inserts");
   }
 
   private static Map<String, Object> coreToLiveDocsCacheMetrics(SolrCore core) {
     return ((MetricsMap)((SolrMetricManager.GaugeWrapper<?>)core.getCoreMetricManager().getRegistry()
-            .getMetrics().get("CACHE.searcher.liveDocsCache")).getGauge()).getValue();
+            .getMetrics().get("SEARCHER.searcher.liveDocsCache")).getGauge()).getValue();
   }
   private static final String SCORING_QUERY = "str:d*";
   private static final String CONSTANT_SCORE_QUERY = "(" + SCORING_QUERY + ")^=1.0"; // wrapped as a ConstantScoreQuery
@@ -293,7 +287,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     long inserts = (long) liveDocsCacheMetrics.get("inserts"); // the one and only liveDocs computation
     long hits = (long) liveDocsCacheMetrics.get("hits"); // hits during the initial phase
     long asyncHits = (long) liveDocsCacheMetrics.get("asyncHits");
-    long naiveHits = coreToLiveDocsNaiveCacheHitCount(core);
+    long naiveHits = (long) liveDocsCacheMetrics.get("naiveHits");
 
     assertEquals(1, inserts);
     assertEquals(nThreads - 1, hits + naiveHits);

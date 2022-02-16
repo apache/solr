@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -106,12 +107,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static final Map<String,SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
   private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
 
-  private static final Map<String, String> LIVE_DOCS_CACHE_INIT_PARAMS = Map.of(
-          "name", "liveDocsCache",
-          SolrCache.SIZE_PARAM, "1",
-          SolrCache.INITIAL_SIZE_PARAM, "1"
-  );
-
   private final SolrCore core;
   private final IndexSchema schema;
   private final SolrDocumentFetcher docFetcher;
@@ -131,7 +126,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /**
    * Special-case cache to handle the lazy-init of {@link #liveDocs}.
    */
-  private final SolrCache<MatchAllDocsQuery,BitDocSet> liveDocsCache;
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private final CompletableFuture<BitDocSet>[] liveDocsCache = new CompletableFuture[1];
+  private final Supplier<BitDocSet> computeLiveDocs = this::computeLiveDocs;
 
   private final boolean cachingEnabled;
   private final SolrCache<Query,DocSet> filterCache;
@@ -140,6 +137,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final LongAdder fullSortCount = new LongAdder();
   private final LongAdder skipSortCount = new LongAdder();
   private final LongAdder liveDocsNaiveCacheHitCount = new LongAdder();
+  private final LongAdder liveDocsInsertsCount = new LongAdder();
+  private final LongAdder liveDocsHitCount = new LongAdder();
+  private final LongAdder liveDocsAsyncHitCount = new LongAdder();
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final Map<String,SolrCache<?, ?>> cacheMap;
@@ -304,13 +304,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     this.docFetcher = new SolrDocumentFetcher(this, solrConfig, enableCache);
 
-    liveDocsCache = new CaffeineCache<>();
-    liveDocsCache.init(LIVE_DOCS_CACHE_INIT_PARAMS, null, null);
-
     this.cachingEnabled = enableCache;
     if (cachingEnabled) {
       final ArrayList<SolrCache> clist = new ArrayList<>();
-      clist.add(liveDocsCache);
       fieldValueCache = solrConfig.fieldValueCacheConfig == null ? null
           : solrConfig.fieldValueCacheConfig.newInstance();
       if (fieldValueCache != null) clist.add(fieldValueCache);
@@ -887,12 +883,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * but should always be set to the same value, as all set values should pass through `liveDocsCache.computeIfAbsent`
    */
   private BitDocSet liveDocs;
-  private final IOFunction<MatchAllDocsQuery, BitDocSet> computeLiveDocs = this::computeLiveDocs;
 
   private static final BitDocSet EMPTY = new BitDocSet(new FixedBitSet(0), 0);
 
-  private BitDocSet computeLiveDocs(Query q) {
-    assert q == MATCH_ALL_DOCS_QUERY;
+  private BitDocSet computeLiveDocs() {
     switch (leafContexts.size()) {
       case 0:
         assert numDocs() == 0;
@@ -954,6 +948,36 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     } while (segOrd > 0);
   }
 
+  private BitDocSet populateLiveDocs(Supplier<BitDocSet> liveDocsSupplier) {
+    final boolean computeInline;
+    final CompletableFuture<BitDocSet> liveDocsCacheInstance;
+    synchronized (liveDocsCache) {
+      if (liveDocsCache[0] != null) {
+        computeInline = false;
+        liveDocsCacheInstance = liveDocsCache[0];
+      } else {
+        computeInline = true;
+        liveDocsCacheInstance = new CompletableFuture<>();
+        liveDocsCache[0] = liveDocsCacheInstance;
+      }
+    }
+    final BitDocSet docs;
+    if (computeInline) {
+      docs = liveDocsSupplier.get();
+      liveDocsCacheInstance.complete(docs);
+      liveDocs = docs;
+      liveDocsInsertsCount.increment();
+    } else {
+      if (liveDocsCacheInstance.isDone()) {
+        liveDocsHitCount.increment();
+      } else {
+        liveDocsAsyncHitCount.increment();
+      }
+      docs = liveDocsCacheInstance.join();
+    }
+    return docs;
+  }
+
   /**
    * Returns an efficient random-access {@link DocSet} of the live docs.  It's cached.  Never null.
    * @lucene.internal the type of DocSet returned may change in the future
@@ -963,9 +987,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (docs != null) {
       liveDocsNaiveCacheHitCount.increment();
     } else {
-      docs = liveDocsCache.computeIfAbsent(MATCH_ALL_DOCS_QUERY, computeLiveDocs);
+      docs = populateLiveDocs(computeLiveDocs);
       // assert DocSetUtil.equals(docs, DocSetUtil.createDocSetGeneric(this, MATCH_ALL_DOCS_QUERY));
-      liveDocs = docs; // all `docs` will be identical (`==`); we don't care which one "wins"
     }
     assert docs.size() == numDocs();
     return docs;
@@ -995,15 +1018,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       liveDocsNaiveCacheHitCount.increment();
       return ret;
     }
-    try {
-      // a few places currently expect BitDocSet
-      ret = liveDocsCache.computeIfAbsent(MATCH_ALL_DOCS_QUERY, q -> makeBitDocSet(docSetSupplier.get()));
-    } catch (IOException ex) {
-      // should be impossible... offered liveDocs already exists
-      // all we may need to do is wrap it, so no IO should be necessary
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
-    }
-    this.liveDocs = ret;
+    // a few places currently expect BitDocSet
+    ret = populateLiveDocs(() -> makeBitDocSet(docSetSupplier.get()));
     return ret;
   }
 
@@ -2469,7 +2485,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     parentContext.gauge(() -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
     parentContext.gauge(fullSortCount::sum, true, "fullSortCount", Category.SEARCHER.toString(), scope);
     parentContext.gauge(skipSortCount::sum, true, "skipSortCount", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(liveDocsNaiveCacheHitCount::sum, true, "liveDocsNaiveCacheHitCount", Category.SEARCHER.toString(), scope);
+    final MetricsMap liveDocsCacheMetrics = new MetricsMap((map) -> {
+      final long asyncHitCount = liveDocsAsyncHitCount.sum();
+      map.put("inserts", liveDocsInsertsCount.sum());
+      map.put("asyncHits", asyncHitCount);
+      map.put("hits", liveDocsHitCount.sum() + asyncHitCount); // for compatibility with CaffeineCache, `asyncHits` is a subset of `hits`
+      map.put("naiveHits", liveDocsNaiveCacheHitCount.sum());
+    });
+    parentContext.gauge(liveDocsCacheMetrics, true, "liveDocsCache", Category.SEARCHER.toString(), scope);
     // reader stats
     parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.numDocs()), true, "numDocs", Category.SEARCHER.toString(), scope);
     parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.maxDoc()), true, "maxDoc", Category.SEARCHER.toString(), scope);
