@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.handler.TestSQLHandler;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
@@ -111,7 +110,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
       createDaemon(DAEMON_DEF.replace("DAEMON_NAME", name), name);
     }
 
-    List<Tuple> tuples = getTuples(TestSQLHandler.mapParams("qt", "/stream", "action", "list"));
+    List<Tuple> tuples = getTuples(params("qt", "/stream", "action", "list"));
     assertEquals("Should have all daemons listed", numDaemons, tuples.size());
 
     for (int idx = 0; idx < numDaemons; ++idx) {
@@ -124,13 +123,13 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     }
 
     // We shouldn't be able to open a daemon twice without closing., leads to thread leeks.
-    Tuple tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "start", "id", daemonOfInterest)
+    Tuple tupleOfInterest = getTupleOfInterest(params("qt", "/stream", "action", "start", "id", daemonOfInterest)
         , DAEMON_OP);
     assertTrue("Should not open twice without closing",
         tupleOfInterest.getString(DAEMON_OP).contains("There is already an open daemon named"));
 
     // Try stopping and check return.
-    tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "stop", "id", daemonOfInterest),
+    tupleOfInterest = getTupleOfInterest(params("qt", "/stream", "action", "stop", "id", daemonOfInterest),
         DAEMON_OP);
     assertTrue("Should have been able to stop the daemon",
         tupleOfInterest.getString(DAEMON_OP).contains(daemonOfInterest + " stopped"));
@@ -144,7 +143,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     }
 
     // Try starting and check return.
-    tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "start", "id", daemonOfInterest),
+    tupleOfInterest = getTupleOfInterest(params("qt", "/stream", "action", "start", "id", daemonOfInterest),
         DAEMON_OP);
     assertTrue("Should have been able to start the daemon",
         tupleOfInterest.getString(DAEMON_OP).contains(daemonOfInterest + " started"));
@@ -155,7 +154,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     }
 
     // Try killing a daemon, it should be removed from lists.
-    tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "kill", "id", daemonOfInterest),
+    tupleOfInterest = getTupleOfInterest(params("qt", "/stream", "action", "kill", "id", daemonOfInterest),
         DAEMON_OP);
     assertTrue("Daemon should have been killed",
         tupleOfInterest.getString(DAEMON_OP).contains(daemonOfInterest + " killed"));
@@ -164,19 +163,19 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     checkDaemonKilled(daemonOfInterest);
 
     // Should not be able to start a killed daemon
-    tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "start", "id", daemonOfInterest),
+    tupleOfInterest = getTupleOfInterest(params("qt", "/stream", "action", "start", "id", daemonOfInterest),
         DAEMON_OP);
     assertTrue("Daemon should not be found",
         tupleOfInterest.getString(DAEMON_OP).contains(daemonOfInterest + " not found"));
 
     // Should not be able to sop a killed daemon
-    tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "stop", "id", daemonOfInterest),
+    tupleOfInterest = getTupleOfInterest(params("qt", "/stream", "action", "stop", "id", daemonOfInterest),
         DAEMON_OP);
     assertTrue("Daemon should not be found",
         tupleOfInterest.getString(DAEMON_OP).contains(daemonOfInterest + " not found"));
 
     // Should not be able to kill a killed daemon
-    tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "kill", "id", daemonOfInterest),
+    tupleOfInterest = getTupleOfInterest(params("qt", "/stream", "action", "kill", "id", daemonOfInterest),
         DAEMON_OP);
     assertTrue("Daemon should not be found",
         tupleOfInterest.getString(DAEMON_OP).contains(daemonOfInterest + " not found"));
@@ -189,7 +188,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
 
     // Now kill them all so the threads disappear.
     for (String daemon : daemonNames) {
-        getTuples(TestSQLHandler.mapParams("qt", "/stream", "action", "kill", "id", daemon));
+        getTuples(params("qt", "/stream", "action", "kill", "id", daemon));
         checkDaemonKilled(daemon);
     }
   }
@@ -199,7 +198,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     while (timeout.hasTimedOut() == false) {
-      Tuple tuple = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "list"),
+      Tuple tuple = getTupleOfInterest(params("qt", "/stream", "action", "list"),
           daemonName);
       String state = tuple.getString("state");
       if (state.equals("RUNNABLE") || state.equals("WAITING") || state.equals("TIMED_WAITING")) {
@@ -215,7 +214,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     while (timeout.hasTimedOut() == false) {
-      Tuple tuple = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "list"),
+      Tuple tuple = getTupleOfInterest(params("qt", "/stream", "action", "list"),
           daemonOfInterest);
       if (tuple.getString("state").equals("TERMINATED")) {
         return;
@@ -229,7 +228,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     while (timeout.hasTimedOut() == false) {
-      List<Tuple> tuples = getTuples(TestSQLHandler.mapParams("qt", "/stream", "action", "list"));
+      List<Tuple> tuples = getTuples(params("qt", "/stream", "action", "list"));
       Boolean foundIt = false;
       for (Tuple tuple : tuples) {
         if (tuple.get("id").equals(daemon)) {
@@ -244,28 +243,28 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   private void createDaemon(String daemonDef, String errMsg) throws IOException, SolrServerException {
     SolrClient client = cluster.getSolrClient();
     // create a daemon
-    QueryResponse resp = client.query(CHECKPOINT_COLL, TestSQLHandler.mapParams("expr", daemonDef, "qt", "/stream"));
+    QueryResponse resp = client.query(CHECKPOINT_COLL, params("expr", daemonDef, "qt", "/stream"));
     assertEquals(errMsg, 0, resp.getStatus());
 
     // This should close and replace the current daemon and NOT leak threads.
-    resp = client.query(CHECKPOINT_COLL, TestSQLHandler.mapParams("expr", daemonDef, "qt", "/stream"));
+    resp = client.query(CHECKPOINT_COLL, params("expr", daemonDef, "qt", "/stream"));
     assertEquals(errMsg, 0, resp.getStatus());
   }
 
   private void checkCmdsNoDaemon(String daemonName) throws IOException {
 
-    List<Tuple> tuples = getTuples(TestSQLHandler.mapParams("qt", "/stream", "action", "list"));
+    List<Tuple> tuples = getTuples(params("qt", "/stream", "action", "list"));
     assertEquals("List should be empty", 0, tuples.size());
 
-    Tuple tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "start", "id", daemonName),
+    Tuple tupleOfInterest = getTupleOfInterest(params("qt", "/stream", "action", "start", "id", daemonName),
         "DaemonOp");
     assertTrue("Start for daemon should not be found", tupleOfInterest.getString("DaemonOp").contains("not found on"));
 
-    tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "stop", "id", daemonName),
+    tupleOfInterest = getTupleOfInterest(params("qt", "/stream", "action", "stop", "id", daemonName),
         "DaemonOp");
     assertTrue("Stop for daemon should not be found", tupleOfInterest.getString("DaemonOp").contains("not found on"));
 
-    tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "kill", "id", daemonName),
+    tupleOfInterest = getTupleOfInterest(params("qt", "/stream", "action", "kill", "id", daemonName),
         "DaemonOp");
 
     assertTrue("Kill for daemon should not be found", tupleOfInterest.getString("DaemonOp").contains("not found on"));

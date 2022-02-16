@@ -27,6 +27,7 @@ configurations {
 }
 
 dependencies {
+  permitUnusedDeclared project(":solr:core")
   implementation(project(":solr:core"), {
     exclude module: "server"
 
