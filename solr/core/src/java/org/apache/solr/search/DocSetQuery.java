@@ -80,12 +80,15 @@ public class DocSetQuery extends Query implements DocSetProducer{
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
         //This should probably use the provided boost as scorer. However, that causes
         // TestSolrQueryParser.testFilter to fail.
-        return new ConstantScoreWeight(this, 0) {
+        return new ConstantScoreWeight(this, boost) {
             @Override
             public Scorer scorer(LeafReaderContext context) throws IOException {
-                DocIdSetIterator disi = docSet.iterator(context);
-                if (disi == null) {
-                    return null;
+                DocIdSetIterator disi = null;
+                if (docSet != null) {
+                    disi = docSet.iterator(context);
+                    if (disi == null) {
+                        return null;
+                    }
                 }
                 return new ConstantScoreScorer(this, score(), scoreMode, disi);
             }
@@ -97,3 +100,4 @@ public class DocSetQuery extends Query implements DocSetProducer{
         };
     }
 }
+
