@@ -116,6 +116,10 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
           break;
         }
         case CollectionAdminParams.NO_INDEX_BACKUP_STRATEGY: {
+          NamedList<Object> response = new SimpleOrderedMap<>();
+          response.add("collection", collectionName);
+          response.add("startTime", backupProperties.getStartTime());
+          results.add("response", response);
           break;
         }
       }
