@@ -118,99 +118,35 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
   }
 
   @Override
-  public short readShort() throws IOException {
-    if (2 <= (bufferLength - bufferPosition)) {
-      final byte b1 = buffer[bufferPosition++];
-      final byte b2 = buffer[bufferPosition++];
-      return (short) ((b2 & 0xFF) << 8 | (b1 & 0xFF));
-    } else {
-      return super.readShort();
-    }
+  public final short readShort() throws IOException {
+    // this can make JVM less confused (see LUCENE-10366 / SOLR-15943)
+    return super.readShort();
   }
 
   @Override
-  public int readInt() throws IOException {
-    if (4 <= (bufferLength - bufferPosition)) {
-      final byte b1 = buffer[bufferPosition++];
-      final byte b2 = buffer[bufferPosition++];
-      final byte b3 = buffer[bufferPosition++];
-      final byte b4 = buffer[bufferPosition++];
-      return (b4 & 0xFF) << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
-    } else {
-      return super.readInt();
-    }
+  public final int readInt() throws IOException {
+    // this can make JVM less confused (see LUCENE-10366 / SOLR-15943)
+    return super.readInt();
   }
-  
+
   @Override
-  public long readLong() throws IOException {
-    if (8 <= (bufferLength - bufferPosition)) {
-      return (readInt() & 0xFFFFFFFFL) | (((long) readInt()) << 32);
-    } else {
-      return super.readLong();
-    }
+  public final long readLong() throws IOException {
+    // this can make JVM less confused (see LUCENE-10366 / SOLR-15943)
+    return super.readLong();
   }
-  
+
   @Override
-  public int readVInt() throws IOException {
-    if (5 <= (bufferLength - bufferPosition)) {
-      byte b = buffer[bufferPosition++];
-      if (b >= 0) return b;
-      int i = b & 0x7F;
-      b = buffer[bufferPosition++];
-      i |= (b & 0x7F) << 7;
-      if (b >= 0) return i;
-      b = buffer[bufferPosition++];
-      i |= (b & 0x7F) << 14;
-      if (b >= 0) return i;
-      b = buffer[bufferPosition++];
-      i |= (b & 0x7F) << 21;
-      if (b >= 0) return i;
-      b = buffer[bufferPosition++];
-      // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
-      i |= (b & 0x0F) << 28;
-      if ((b & 0xF0) == 0) return i;
-      throw new RuntimeException("Invalid vInt detected (too many bits)");
-    } else {
-      return super.readVInt();
-    }
+  public final int readVInt() throws IOException {
+    // this can make JVM less confused (see LUCENE-10366 / SOLR-15943)
+    return super.readVInt();
   }
-  
+
   @Override
-  public long readVLong() throws IOException {
-    if (9 <= bufferLength - bufferPosition) {
-      byte b =buffer[bufferPosition++];
-      if (b >= 0) return b;
-      long i = b & 0x7FL;
-      b = buffer[bufferPosition++];
-      i |= (b & 0x7FL) << 7;
-      if (b >= 0) return i;
-      b = buffer[bufferPosition++];
-      i |= (b & 0x7FL) << 14;
-      if (b >= 0) return i;
-      b = buffer[bufferPosition++];
-      i |= (b & 0x7FL) << 21;
-      if (b >= 0) return i;
-      b = buffer[bufferPosition++];
-      i |= (b & 0x7FL) << 28;
-      if (b >= 0) return i;
-      b = buffer[bufferPosition++];
-      i |= (b & 0x7FL) << 35;
-      if (b >= 0) return i;
-      b = buffer[bufferPosition++];
-      i |= (b & 0x7FL) << 42;
-      if (b >= 0) return i;
-      b = buffer[bufferPosition++];
-      i |= (b & 0x7FL) << 49;
-      if (b >= 0) return i;
-      b = buffer[bufferPosition++];
-      i |= (b & 0x7FL) << 56;
-      if (b >= 0) return i;
-      throw new RuntimeException("Invalid vLong detected (negative values disallowed)");
-    } else {
-      return super.readVLong();
-    }
+  public final long readVLong() throws IOException {
+    // this can make JVM less confused (see LUCENE-10366 / SOLR-15943)
+    return super.readVLong();
   }
-  
+
   private void refill() throws IOException {
     long start = bufferStart + bufferPosition;
     long end = start + bufferSize;
