@@ -646,6 +646,8 @@ Bug Fixes
 
 * SOLR-15558: Don't wait for zombie processes to exit when stopping. (Colvin Cowie)
 
+* SOLR-16019: UTF-8 parsing errors for parameters should cause a HTTP 400 status code, not 500 (janhoy, Matthias Pigulla)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
