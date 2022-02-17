@@ -30,7 +30,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -165,6 +164,70 @@ public class TestFilteredDocIdSet extends SolrTestCase {
       @Override
       public boolean equals(Object o) {
         return o == this;
+      }
+
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
+      }
+    };
+
+    Query filtered = new BooleanQuery.Builder()
+        .add(new MatchAllDocsQuery(), Occur.MUST)
+        .add(f, Occur.FILTER)
+        .build();
+    Assert.assertEquals(0, searcher.search(filtered, 10).totalHits.value);
+    reader.close();
+    dir.close();
+  }
+
+  public void testNullIteratorFilteredDocIdSet() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(newStringField("c", "val", Field.Store.NO));
+    writer.addDocument(doc);
+    IndexReader reader = writer.getReader();
+    writer.close();
+
+    // First verify the document is searchable.
+    IndexSearcher searcher = newSearcher(reader);
+    Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
+
+    // Now search w/ a Query which returns a null Scorer
+    Query f = new Query() {
+      @Override
+      public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
+        return new Weight(this) {
+
+          @Override
+          public Explanation explain(LeafReaderContext context, int doc) {
+              return Explanation.match(0f, "No match on id " + doc);
+          }
+
+          @Override
+          public Scorer scorer(LeafReaderContext leafReaderContext) {
+            return null;
+          }
+
+          @Override
+          public boolean isCacheable(LeafReaderContext ctx) {
+            return false;
+          }
+        };
+      }
+
+      @Override
+      public String toString(String field) {
+        return "nullDocIdSetFilter";
+      }
+
+      @Override
+      public void visit(QueryVisitor queryVisitor) {}
+
+      @Override
+      public boolean equals(Object other) {
+        return other == this;
       }
 
       @Override
