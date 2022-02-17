@@ -51,6 +51,8 @@ Bug Fixes
 
 * SOLR-15964: Transient cores: don't evict a core when it's still being used. (David Smiley)
 
+* SOLR-15116: Support a HEAD request for managed resources. (Eric Pugh)
+
 Other Changes
 ---------------------
 * SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
@@ -62,8 +64,6 @@ Other Changes
 * SOLR-15886: Remove deprecated showItems configuration value from solrconfig.xml files (Andy Lester via Eric Pugh)
 
 ==================  9.0.0 ==================
-
-Docker and modules have separate CHANGES.md files.
 
 New Features
 ---------------------
@@ -273,6 +273,12 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15209: The old LegacyAssignStrategy has been refactored into the SimplePlacementPlugin. This is still the default
   placement policy for Solr. (Houston Putman, Ilan Ginzburg)
 
+* SOLR-15257: Replace DocSet.getTopFilter with DocSet.makeQuery. Create DocSetQuery which is a Query
+  and DocSetProducer. (Collins Abanda, Mike Drob, Tim Potter, David Smiley, Michael Gibney)
+
+* SOLR-12336: Remove Filter, SolrFilter and SolrConstantScoreQuery. Filter no longer has a need to exist due to multiple JIRA issues,
+  implemented by a number of issues. With Filter going away, there is no longer need for SolrConstantScoreQuery. (Collins Abanda, Mike Drob, Tim Potter, David Smiley, Michael Gibney)
+
 * SOLR-14916: Add split parameter to timeseries Streaming Expression (Joel Bernstein)
 
 * SOLR-14686: Logs: Removed the "[corename]" prefix of some SolrCore logs that has become redundant
@@ -292,6 +298,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-11905: New Admin UI Query screen input boxes for JSON query and facet DSL (janhoy)
 
 * SOLR-15556: Migrate the Ref Guide to be built with Antora, enabling many new features (Cassandra Targett, Houston Putman, Mike Drob)
+
+* SOLR-15965: Use better signatures for the PKI Authentication plugin. (Mike Drob)
 
 * SOLR-15982: Add end time value to backup response, standardize backup response key names and date formats (Artem Abeleshev, Christine Poerschke, Houston Putman)
 
@@ -575,11 +583,16 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-15936: Reduce unnecessary startup logging, such as SSL warnings when SSL not in use (janhoy)
 
+* SOLR-15950: Create SOLR_HOME/filestore lazily on first use. Do not automatically create SOLR_HOME/userfiles (janhoy)
+
 * SOLR-15777: Forbid useDocValuesAsStored for ICUCollationField (warn for luceneMatchVersion < 9.0.0). (Michael Gibney)
 
 * SOLR-12901: Highlighting: hl.method=unified is the new default. (David Smiley)
 
 * SOLR-15991: analysis-extras module tests shouldn't rely on log4j dependency (Kevin Risden)
+
+* SOLR-15949: Docker: the official image now uses Java 17 provided by Eclipse Temurin.  Formerly it was Java 11 from OpenJDK.
+  (janhoy, David Smiley)
 
 Bug Fixes
 ---------------------
@@ -645,6 +658,8 @@ Bug Fixes
 
 * SOLR-14569: Configuring a shardHandlerFactory on the /select requestHandler results in HTTP 401 when searching on alias
   in secured Solr. (Isabelle Giguere, Jason Gerlowski, Anshum Gupta, Mark Mark Miller)
+
+* SOLR-15974: Remove Calcite's ENUMERABLE_AGGREGATE_RULE as Solr only supports push-down for LogicalAggregate (Timothy Potter, Kiran Chitturi)
 
 ==================  8.11.1 ==================
 
