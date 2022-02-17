@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -259,7 +260,7 @@ public class SnapShooter {
     boolean success = false;
     try {
       NamedList<Object> details = new SimpleOrderedMap<>();
-      details.add("startTime", new Date().toString());//bad; should be Instant.now().toString()
+      details.add("startTime", Instant.now().toString());
 
       Collection<String> files = indexCommit.getFileNames();
       Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
@@ -272,9 +273,13 @@ public class SnapShooter {
         solrCore.getDirectoryFactory().release(dir);
       }
 
-      details.add("fileCount", files.size());
+      String endTime = Instant.now().toString();
+      
+      details.add("fileCount", files.size()); // DEPRECATED: for removal, replaced with indexFileCount
+      details.add("indexFileCount", files.size());
       details.add("status", "success");
-      details.add("snapshotCompletedAt", new Date().toString());//bad; should be Instant.now().toString()
+      details.add("snapshotCompletedAt", endTime); // DEPRECATED: for removal, replaced with endTime
+      details.add("endTime", endTime);
       details.add("snapshotName", snapshotName);
       details.add("directoryName", directoryName);
       if (log.isInfoEnabled()) {
@@ -320,14 +325,18 @@ public class SnapShooter {
     log.info("Deleting snapshot: {}", snapshotName);
 
     NamedList<Object> details = new NamedList<>();
+    details.add("startTime", Instant.now().toString());
     details.add("snapshotName", snapshotName);
       
     try {
       URI path = baseSnapDirPath.resolve("snapshot." + snapshotName);
       backupRepo.deleteDirectory(path);
 
+      String endTime = Instant.now().toString();
+      
       details.add("status", "success");
-      details.add("snapshotDeletedAt", new Date().toString());
+      details.add("snapshotDeletedAt", endTime); // DEPRECATED: for removal, replaced with endTime
+      details.add("endTime", endTime);
 
     } catch (IOException e) {
       details.add("status", "Unable to delete snapshot: " + snapshotName);
