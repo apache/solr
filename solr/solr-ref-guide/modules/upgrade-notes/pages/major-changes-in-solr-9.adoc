@@ -328,7 +328,5 @@ Example has been provided in `sample_techproducts_configs` to override content-t
 * SOLR-15124: Removed three core level admin API endpoints because they are already registered at the node level
 where they really belong: /admin/threads, /admin/properties, /admin/logging
 
-* SOLR-12336: Remove Filter, SolrFilter and SolrConstantScoreQuery
-
 * SOLR-15949: Docker: the official image now uses Java 17 provided by Eclipse Temurin.  Formerly it was Java 11 from OpenJDK.
 (janhoy, David Smiley)
