@@ -1658,6 +1658,34 @@ A boolean parameter allowing users to choose whether to create an incremental (`
 If unspecified, backups are done incrementally by default.
 Incremental backups are preferred in all known circumstances and snapshot backups are deprecated, so this parameter should only be used after much consideration.
 
+
+[example.tab-pane#backup-response-incremental]
+====
+[.tab-label]*Incremental Backup Response*
+
+[source,json]
+----
+{
+    "response": {
+        "collection": "techproducts",
+        "numShards": 2,
+        "backupId": 0,
+        "indexVersion": "9.0.0",
+        "startTime": "2022-02-11T17:20:44.157305500Z",
+        "indexFileCount": 22,
+        "uploadedIndexFileCount": 22,
+        "indexSizeMB": 0.007,
+        "uploadedIndexFileMB": 0.007,
+        "shardBackupIds": [
+            "md_shard2_0",
+            "md_shard1_0"
+        ],
+        "endTime": "2022-02-11T17:20:45.245534400Z"
+    }
+}
+----
+====
+
 [[listbackup]]
 == LISTBACKUP: List Backups
 

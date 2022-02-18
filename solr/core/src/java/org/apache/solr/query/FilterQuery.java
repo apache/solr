@@ -19,6 +19,7 @@ package org.apache.solr.query;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
@@ -30,6 +31,11 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.SolrIndexSearcher;
 
+/**
+ * A filtered query wrapped around another query
+ * similar to {@link org.apache.lucene.search.BooleanClause.Occur#FILTER} -- it scores as 0.
+ * Moreover, it will use Solr's filter cache.
+ */
 public class FilterQuery extends ExtendedQueryBase {
   protected final Query q;
 
@@ -68,7 +74,7 @@ public class FilterQuery extends ExtendedQueryBase {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    q.visit(visitor);
+    q.visit(visitor.getSubVisitor(BooleanClause.Occur.FILTER, this));
   }
 
   @Override
@@ -87,13 +93,15 @@ public class FilterQuery extends ExtendedQueryBase {
 
     if (!(searcher instanceof SolrIndexSearcher)) {
       // delete-by-query won't have SolrIndexSearcher
-      return new ConstantScoreQuery(q).createWeight(searcher, scoreMode, 1f);
+      // note: CSQ has some optimizations so we wrap it even though unnecessary given 0 boost
+      return new ConstantScoreQuery(q).createWeight(searcher, scoreMode, 0f);
     }
 
     SolrIndexSearcher solrSearcher = (SolrIndexSearcher)searcher;
     DocSet docs = solrSearcher.getDocSet(q);
     // reqInfo.addCloseHook(docs);  // needed for off-heap refcounting
 
-    return docs.makeQuery().createWeight(searcher, scoreMode, 1f);
+    // note: DocSet.makeQuery is basically a CSQ
+    return docs.makeQuery().createWeight(searcher, scoreMode, 0f);
   }
 }
