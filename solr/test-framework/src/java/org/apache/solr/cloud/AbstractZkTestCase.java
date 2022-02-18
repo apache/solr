@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 
@@ -54,29 +53,20 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     
     zkServer.buildZooKeeper(SolrTestCaseJ4.TEST_PATH(),
         "solrconfig.xml", "schema.xml");
-
-    initCore("solrconfig.xml", "schema.xml");
   }
   
   @AfterClass
   public static void azt_afterClass() throws Exception {
-    try {
-      deleteCore();
-    } finally {
+    System.clearProperty("zkHost");
+    System.clearProperty("solrcloud.skip.autorecovery");
+    System.clearProperty("jetty.port");
+    System.clearProperty(ZOOKEEPER_FORCE_SYNC);
 
-      System.clearProperty("zkHost");
-      System.clearProperty("solr.test.sys.prop1");
-      System.clearProperty("solr.test.sys.prop2");
-      System.clearProperty("solrcloud.skip.autorecovery");
-      System.clearProperty("jetty.port");
-      System.clearProperty(ZOOKEEPER_FORCE_SYNC);
-
-      if (zkServer != null) {
-        zkServer.shutdown();
-        zkServer = null;
-      }
-      zkDir = null;
+    if (zkServer != null) {
+      zkServer.shutdown();
+      zkServer = null;
     }
+    zkDir = null;
   }
 
   protected void printLayout() throws Exception {
