@@ -128,8 +128,6 @@ changes, however the module needs to be installed - see the section xref:deploym
 * SOLR-13989: Hadoop authentication support has been moved to the hadoop-auth module. Existing Solr configurations do not need any Hadoop authentication related
 changes, however the module needs to be installed - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
 
-* SOLR-15950: The folder $SOLR_HOME/userfiles, used by the "cat" streaming expression, is no longer created automatically on startup. The user must create this folder.
-
 * SOLR-15097: JWTAuthPlugin has been moved to a module. Users need to add the module to classpath. The plugin has also
   changed package name to `org.apache.solr.security.jwt`, but can still be loaded as shortform `class="solr.JWTAuthPlugin"`.
 

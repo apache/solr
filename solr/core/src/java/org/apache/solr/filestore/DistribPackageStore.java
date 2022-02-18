@@ -51,7 +51,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrPaths;
 import org.apache.solr.filestore.PackageStoreAPI.MetaData;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -92,16 +91,11 @@ public class DistribPackageStore implements PackageStore {
     if (File.separatorChar == '\\') {
       path = path.replace('/', File.separatorChar);
     }
-    SolrPaths.assertNotUnc(Path.of(path));
-    while (path.startsWith(File.separator)) { // Trim all leading slashes
-      path = path.substring(1);
+    if (!path.isEmpty() && path.charAt(0) != File.separatorChar) {
+      path = File.separator + path;
     }
-    var finalPath = getPackageStoreDirPath(solrHome).resolve(path);
-    // Guard against path traversal by asserting final path is sub path of filestore
-    if (!finalPath.normalize().startsWith(getPackageStoreDirPath(solrHome).normalize())) {
-      throw new SolrException(BAD_REQUEST, "Illegal path " + path);
-    }
-    return finalPath;
+    // Use concat because path might start with a slash and be incorrectly interpreted as absolute
+    return solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY + path);
   }
 
   class FileInfo {
@@ -577,17 +571,8 @@ public class DistribPackageStore implements PackageStore {
     }
   }
 
-  public static synchronized Path getPackageStoreDirPath(Path solrHome) {
-    var path = solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
-    if (!Files.exists(path)) {
-      try {
-        Files.createDirectories(path);
-        log.info("Created filestore folder {}", path);
-      } catch (IOException e) {
-        throw new SolrException(SERVER_ERROR, "Faild creating 'filestore' folder in SOLR_HOME", e);
-      }
-    }
-    return path;
+  public static Path getPackageStoreDirPath(Path solrHome) {
+    return solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
   }
 
   private static String _getMetapath(String path) {
