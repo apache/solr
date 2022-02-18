@@ -140,10 +140,12 @@ http://localhost:8983/solr/gettingstarted/replication?command=details&wt=xml
 [source,xml]
 ----
 <lst name="backup">
-  <str name="startTime">Sun Apr 12 16:22:50 DAVT 2015</str>
+  <str name="startTime">2022-02-11T17:19:33.271461700Z</str>
   <int name="fileCount">10</int>
+  <int name="indexFileCount">10</int>
   <str name="status">success</str>
-  <str name="snapshotCompletedAt">Sun Apr 12 16:22:50 DAVT 2015</str>
+  <str name="snapshotCompletedAt">2022-02-11T17:19:34.363859100Z</str>
+  <str name="endTime">2022-02-11T17:19:34.363859100Z</str>
   <str name="snapshotName">my_backup</str>
 </lst>
 ----

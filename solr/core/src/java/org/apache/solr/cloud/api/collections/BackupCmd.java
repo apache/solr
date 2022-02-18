@@ -111,11 +111,15 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
               throw e;
             }
           } else {
-            copyIndexFiles(backupUri, collectionName, message, results);
+            copyIndexFiles(backupUri, collectionName, message, results, backupProperties, backupMgr);
           }
           break;
         }
         case CollectionAdminParams.NO_INDEX_BACKUP_STRATEGY: {
+          NamedList<Object> response = new SimpleOrderedMap<>();
+          response.add("collection", collectionName);
+          response.add("startTime", backupProperties.getStartTime());
+          results.add("response", response);
           break;
         }
       }
@@ -137,6 +141,13 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
 
       backupMgr.writeBackupProperties(backupProperties);
 
+      // It is safe to extract results here
+      @SuppressWarnings("unchecked")
+      NamedList<Object> response = (NamedList<Object>) results.get("response");
+      // Note that endTime can't be handled within aggregateResults call
+      // since it is defined later
+      response.add("endTime", backupProperties.getEndTime());
+      
       log.info("Completed backing up ZK data for backupName={}", backupName);
 
       int maxNumBackup = message.getInt(CoreAdminParams.MAX_NUM_BACKUP_POINTS, -1);
@@ -257,7 +268,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     //Aggregating result from different shards
-    NamedList<Object> aggRsp = aggregateResults(results, collectionName, slices, backupManager, backupProperties);
+    NamedList<Object> aggRsp = aggregateResults(results, collectionName, slices, backupManager, backupProperties, true);
     results.add("response", aggRsp);
   }
 
@@ -265,19 +276,18 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
                                              String collectionName,
                                              Collection<Slice> slices,
                                              BackupManager backupManager,
-                                             BackupProperties backupProps) {
+                                             BackupProperties backupProps,
+                                             boolean incremental) {
     NamedList<Object> aggRsp = new SimpleOrderedMap<>();
     aggRsp.add("collection", collectionName);
     aggRsp.add("numShards", slices.size());
-    if (backupManager != null) {
+    if(incremental) {
       aggRsp.add("backupId", backupManager.getBackupId().id);
     }
-    if (backupProps != null) {
-      aggRsp.add("indexVersion", backupProps.getIndexVersion());
-      aggRsp.add("startTime", backupProps.getStartTime());
-    }
+    aggRsp.add("indexVersion", backupProps.getIndexVersion());
+    aggRsp.add("startTime", backupProps.getStartTime());
 
-    // Optional options for incremental backups
+    // Optional options for backups
     Optional<Integer> indexFileCount = Optional.empty();
     Optional<Integer> uploadedIndexFileCount = Optional.empty();
     Optional<Double> indexSizeMB = Optional.empty();
@@ -297,7 +307,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
         uploadedIndexFileCount = Optional.of(uploadedIndexFileCount.orElse(0) + shardUploadedIndexFileCount);
       }
       Double shardIndexSizeMB = (Double) shardResp.get("indexSizeMB");
-      if (shardUploadedIndexFileCount != null) {
+      if (shardIndexSizeMB != null) {
         indexSizeMB = Optional.of(indexSizeMB.orElse(0.0) + shardIndexSizeMB);
       }
       Double shardUploadedIndexFileMB = (Double) shardResp.get("uploadedIndexFileMB");
@@ -331,7 +341,8 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     return params;
   }
 
-  private void copyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request, NamedList<Object> results) throws Exception {
+  private void copyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request, NamedList<Object> results, BackupProperties backupProperties,
+      BackupManager backupManager) throws Exception {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
@@ -395,7 +406,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     shardRequestTracker.processResponses(results, shardHandler, true, "Could not backup all shards");
 
     //Aggregating result from different shards
-    NamedList<Object> aggRsp = aggregateResults(results, collectionName, slices, null, null);
+    NamedList<Object> aggRsp = aggregateResults(results, collectionName, slices, backupManager, backupProperties, false);
     results.add("response", aggRsp);
   }
 }

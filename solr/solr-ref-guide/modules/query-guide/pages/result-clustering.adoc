@@ -377,7 +377,7 @@ If there is no need for this synthetic cluster, it can be set to `false`.
 Location of algorithm-specific resources and configuration files (stop words, other lexical resources, default settings).
 This property is `null` by default and all resources are read from their respective algorithm default resource pool (JARs).
 If this property is not empty, it resolves relative to Solr core's configuration directory.
-This parameter can be applied during Solr startup _only_, it can't be overriden per-request.
+This parameter can be applied during Solr startup _only_, it can't be overridden per-request.
 
 There are more properties applying to engine configuration.
 We describe these in functional sections that follow.

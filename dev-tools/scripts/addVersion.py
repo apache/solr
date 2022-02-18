@@ -136,10 +136,7 @@ def parse_properties_file(filename):
   return dict(parser.items('DUMMY_SECTION'))
 
 def get_solr_init_changes():
-  return dedent('''
-    Docker and modules have separate CHANGES.md files.
-
-    ''')
+  return ''
   
 def main():
   if not os.path.exists('build.gradle'):
