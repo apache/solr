@@ -647,6 +647,8 @@ Bug Fixes
 
 * SOLR-15983: Fix ClassCastException in UpdateLog$LogReplayer.doReplay. (Christine Poerschke, David Smiley)
 
+* SOLR-15333: Reduced spurious warn logging by AbstractSpatialPrefixTreeFieldType field properties (Steffen Moldenhauer, David Smiley, Mike Drob)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
