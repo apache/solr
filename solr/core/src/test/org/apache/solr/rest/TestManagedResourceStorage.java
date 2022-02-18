@@ -42,19 +42,12 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
    */
   @Test
   public void testZkBasedJsonStorage() throws Exception {
-    
-    // test using ZooKeeper
-    //assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());
-    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
     // Solr unit tests can only write to their working directory due to
     // a custom Java Security Manager installed in the test environment
-    NamedList<String> initArgs = new NamedList<>();
-    try {
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"))) {
       ZooKeeperStorageIO zkStorageIO = new ZooKeeperStorageIO(zkServer.getZkClient(), "/test");
-      zkStorageIO.configure(loader, initArgs);
+      zkStorageIO.configure(loader, new NamedList<>());
       doStorageTests(loader, zkStorageIO);
-    } finally {
-      loader.close();
     }
   }
 
@@ -65,16 +58,13 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
   @Test
   public void testFileBasedJsonStorage() throws Exception {
     File instanceDir = createTempDir("json-storage").toFile();
-    SolrResourceLoader loader = new SolrResourceLoader(instanceDir.toPath());
-    try {
+    try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir.toPath())) {
       NamedList<String> initArgs = new NamedList<>();
       String managedDir = instanceDir.getAbsolutePath() + File.separator + "managed";
       initArgs.add(ManagedResourceStorage.STORAGE_DIR_INIT_ARG, managedDir);
       FileStorageIO fileStorageIO = new FileStorageIO();
       fileStorageIO.configure(loader, initArgs);
       doStorageTests(loader, fileStorageIO);
-    } finally {
-      loader.close();
     }
   }
 
@@ -113,7 +103,7 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
     assertEquals("true", storedArgs.get("ignoreCase"));
     List<String> storedList = (List<String>)storedMap.get(ManagedResource.MANAGED_JSON_LIST_FIELD);
     assertNotNull(storedList);
-    assertTrue(storedList.size() == managedList.size());
+    assertEquals(storedList.size(), managedList.size());
     assertTrue(storedList.contains("a"));    
     
     // now verify you can update existing data
@@ -129,7 +119,7 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
     assertEquals("someValue", storedArgs.get("anotherArg"));
     storedList = (List<String>)storedMap.get(ManagedResource.MANAGED_JSON_LIST_FIELD);
     assertNotNull(storedList);
-    assertTrue(storedList.size() == managedList.size());
+    assertEquals(storedList.size(), managedList.size());
     assertTrue(storedList.contains("e"));        
   }
 }
