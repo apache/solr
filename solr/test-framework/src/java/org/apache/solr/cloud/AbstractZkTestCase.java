@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 
@@ -35,17 +36,6 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static Path SOLRHOME;
-  static {
-    try {
-      SOLRHOME = SolrTestCaseJ4.TEST_PATH();
-    } catch (RuntimeException e) {
-      log.warn("TEST_PATH() does not exist - solrj test?");
-      // solrj tests not working with TEST_HOME()
-      // must override getSolrHome
-    }
-  }
-
   protected volatile static ZkTestServer zkServer;
 
   protected volatile static Path zkDir;
@@ -62,22 +52,14 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     System.setProperty("jetty.port", "0000");
     System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
     
-    zkServer.buildZooKeeper(SOLRHOME,
+    zkServer.buildZooKeeper(SolrTestCaseJ4.TEST_PATH(),
         "solrconfig.xml", "schema.xml");
 
     initCore("solrconfig.xml", "schema.xml");
   }
-
-
-
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
   
   @AfterClass
   public static void azt_afterClass() throws Exception {
-
     try {
       deleteCore();
     } finally {
