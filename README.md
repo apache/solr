@@ -103,7 +103,7 @@ In order to start Solr in clustered mode, run the following.
 `docker run -p 8983:8983 solr solr-fg -c`
 
 For documentation on using the official docker builds, please refer to the [DockerHub page](https://hub.docker.com/_/solr).  
-Up to date documentation for running locally built images of this branch can be found in the [local reference guide](solr/solr-ref-guide/src/running-solr-in-docker.adoc).
+Up to date documentation for running locally built images of this branch can be found in the [local reference guide](solr/solr-ref-guide/modules/deployment-guide/pages/solr-in-docker.adoc).
 
 There is also a gradle task for building custom Solr images from your local checkout.
 These local images are built identically to the official image except for retrieving the Solr artifacts locally instead of from the official release.
