@@ -66,7 +66,7 @@ public class AddUpdateCommand extends UpdateCommand {
 
   private BytesRef indexedId;
   private String indexedIdStr;
-  private String childDocIdStr;
+  private String selfOrNestedDocIdStr;
 
   public AddUpdateCommand(SolrQueryRequest req) {
     super(req);
@@ -82,7 +82,7 @@ public class AddUpdateCommand extends UpdateCommand {
      solrDoc = null;
      indexedId = null;
      indexedIdStr = null;
-     childDocIdStr = null;
+     selfOrNestedDocIdStr = null;
      updateTerm = null;
      isLastDocInBatch = false;
      version = 0;
@@ -140,9 +140,9 @@ public class AddUpdateCommand extends UpdateCommand {
    *
    * @return possibly null if there's no uniqueKey field
    */
-  public String getChildDocIdStr() {
+  public String getSelfOrNestedDocIdStr() {
     extractIdsIfNeeded();
-    return childDocIdStr;
+    return selfOrNestedDocIdStr;
   }
 
   /** The ID for logging purposes. */
@@ -153,10 +153,10 @@ public class AddUpdateCommand extends UpdateCommand {
     extractIdsIfNeeded();
     if (indexedIdStr == null) {
       return "(null)";
-    } else if (indexedIdStr.equals(childDocIdStr)) {
+    } else if (indexedIdStr.equals(selfOrNestedDocIdStr)) {
       return indexedIdStr;
     } else {
-      return childDocIdStr + " (root=" + indexedIdStr + ")";
+      return selfOrNestedDocIdStr + " (root=" + indexedIdStr + ")";
     }
   }
 
@@ -178,11 +178,11 @@ public class AddUpdateCommand extends UpdateCommand {
         } else if (count  > 1) {
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + field);
         } else {
-          this.childDocIdStr = field.getFirstValue().toString();
+          this.selfOrNestedDocIdStr = field.getFirstValue().toString();
           // the root might be in _root_ field; if not then uniqueKeyField.
           this.indexedIdStr = (String) solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME); // or here
           if (this.indexedIdStr == null) {
-            this.indexedIdStr = childDocIdStr;
+            this.indexedIdStr = selfOrNestedDocIdStr;
           }
           indexedId = schema.indexableUniqueKey(indexedIdStr);
         }
@@ -194,7 +194,7 @@ public class AddUpdateCommand extends UpdateCommand {
   public void setIndexedId(BytesRef indexedId) {
     this.indexedId = indexedId;
     this.indexedIdStr = indexedId.utf8ToString();
-    this.childDocIdStr = indexedIdStr;
+    this.selfOrNestedDocIdStr = indexedIdStr;
   }
 
   /**
