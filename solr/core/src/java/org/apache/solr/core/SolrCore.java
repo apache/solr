@@ -2395,8 +2395,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
 
         if (currSearcher == null) {
-          newSearcher.bootstrap();
           future = searcherExecutor.submit(() -> {
+            newSearcher.bootstrap();
             try {
               for (SolrEventListener listener : firstSearcherListeners) {
                 listener.newSearcher(newSearcher, null);
