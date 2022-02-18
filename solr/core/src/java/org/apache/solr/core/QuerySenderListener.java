@@ -18,6 +18,8 @@ package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -48,9 +50,116 @@ public class QuerySenderListener extends AbstractSolrEventListener {
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     final SolrIndexSearcher searcher = newSearcher;
     log.debug("QuerySenderListener sending requests to {}", newSearcher);
-    @SuppressWarnings("unchecked")
-    List<NamedList<Object>> allLists = (List<NamedList<Object>>)getArgs().get("queries");
+
+    Object queries = getArgs().get("queries");
+
+    List<NamedList<Object>> allLists = new ArrayList<NamedList<Object>>();
+
+    if (queries instanceof List) {
+      @SuppressWarnings("unchecked")
+      List<NamedList<Object>> queriesLists = (List<NamedList<Object>>)queries;
+
+      if (queriesLists == null) return;
+
+      log.info("queriesLists: " + queriesLists.toString());
+
+      // this works for XML list, but throws if we provide JSON with nested array
+      // java.lang.ClassCastException: class java.util.ArrayList cannot be cast to class org.apache.solr.common.util.NamedList
+
+      // if (queriesLists.length() == 0) return;
+
+      //if (queriesLists.get(0) instanceof NamedList) {
+      try {
+        for (NamedList<Object> nlst : queriesLists) {
+          log.warn("nlst is a " + nlst.getClass().toString()  + ": " + nlst.toString());
+          allLists.add(nlst);
+        }
+      } catch(java.lang.ClassCastException ccex) {
+        log.warn(ccex.toString());
+        for (Object nlst : queriesLists) {
+          log.warn("nlst is a " + nlst.getClass().toString()  + ": " + nlst.toString());
+
+          for (Object nlst2 : (ArrayList)nlst) {
+
+            // nlst2 is a class java.util.LinkedHashMap: {q=xxx, fq=env:live}
+            log.warn("nlst2 is a " + nlst2.getClass().toString()  + ": " + nlst2.toString());
+
+            // I guess I need to construct a NamedList?
+
+            if (nlst2 instanceof LinkedHashMap) {
+              
+              @SuppressWarnings("unchecked")
+              LinkedHashMap<String, Object> lhm = (LinkedHashMap<String, Object>)nlst2;
+
+              log.warn("lhm is a " + lhm.getClass().toString()  + ": " + lhm.toString());
+              
+              NamedList<Object> nlst3 = new NamedList<Object>();
+
+              lhm.forEach((key, value)-> nlst3.add(key, value));
+
+              log.warn("nlst3 is a " + nlst3.getClass().toString()  + ": " + nlst3.toString());
+
+              allLists.add(nlst3);
+            }
+          }
+        }
+        // for (ArrayList alst : queriesLists) {
+        //   for (NamedList<Object> nlst : alst) {
+        //     allLists.add(nlst);
+        //   }
+        // }
+      }
+      // } else if (queriesLists.get(0) instanceof ArrayList) {
+      //   log.info("going deep: " + queriesLists.toString());
+      //   // for (NamedList<Object> nlst : queriesLists[0]) {
+      //   //   allLists.add(nlst);
+      //   // }
+      // }
+
+         // for (Object lst : queriesLists) {
+
+        //   if (lst instanceof NamedList) {
+        //     log.info("lst is NamedList: " + lst.toString());
+  
+        //     @SuppressWarnings("unchecked")
+        //     allLists.add((NamedList<Object>)lst);
+  
+        //   } else if (lst instanceof List) {
+        //     log.info("lst is List: " + lst.toString());
+        //     for (Object item : (List)lst) {
+        //       log.info("item: " + item.toString());
+  
+        //       @SuppressWarnings("unchecked")
+        //       allLists.add((NamedList<Object>)item);
+              
+        //     }
+        //   } else {
+        //     log.warn("lst is " + lst.getClass().toString() + " " + lst.toString());
+        //   }
+        // }
+    } else if (queries instanceof NamedList) {
+
+      // this only receives first entry in JSON list
+
+      log.info("queries: " + queries.toString());
+
+      @SuppressWarnings("unchecked")
+      NamedList<Object> query = (NamedList<Object>)queries;
+
+      log.info("query: " + query.toString());
+      
+      allLists.add(query);
+      
+    } else {
+      log.warn("\u26A0 queries is a " + queries.getClass().toString());
+      log.info("queries: " + queries.toString());
+      // class org.apache.solr.common.util.NamedList
+    }
+
     if (allLists == null) return;
+
+    log.info("allLists: " + allLists.toString());
+
     for (NamedList<Object> nlst : allLists) {
       try {
         // bind the request to a particular searcher (the newSearcher)
