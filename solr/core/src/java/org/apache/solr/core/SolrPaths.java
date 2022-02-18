@@ -71,34 +71,20 @@ public final class SolrPaths {
   public static void assertPathAllowed(Path pathToAssert, Set<Path> allowPaths) throws SolrException {
     if (ALL_PATHS.equals(allowPaths)) return; // Catch-all allows all paths (*/_ALL_)
     if (pathToAssert == null) return;
-    assertNotUnc(pathToAssert);
+    if (OS.isFamilyWindows() && pathToAssert.toString().startsWith("\\\\")) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Path " + pathToAssert + " disallowed. UNC paths not supported. Please use drive letter instead.");
+    }
     // Conversion Path -> String -> Path is to be able to compare against org.apache.lucene.mockfile.FilterPath instances
     final Path path = Path.of(pathToAssert.toString()).normalize();
-    assertNoPathTraversal(path);
+    if (path.startsWith("..")) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Path " + pathToAssert + " disallowed due to path traversal..");
+    }
     if (!path.isAbsolute()) return; // All relative paths are accepted
     if (allowPaths.stream().noneMatch(p -> path.startsWith(Path.of(p.toString())))) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Path " + path + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.allowPaths' to add other allowed paths.");
-    }
-  }
-
-  /**
-   * Asserts that a path does not contain directory traversal
-   */
-  public static void assertNoPathTraversal(Path pathToAssert) {
-    if (pathToAssert.toString().contains("..")) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Path " + pathToAssert + " disallowed due to path traversal..");
-    }
-  }
-
-  /**
-   * Asserts that a path is not a Windows UNC path
-   */
-  public static void assertNotUnc(Path pathToAssert) {
-    if (OS.isFamilyWindows() && pathToAssert.toString().startsWith("\\\\")) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Path " + pathToAssert + " disallowed. UNC paths not supported.");
     }
   }
 
