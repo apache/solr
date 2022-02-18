@@ -64,8 +64,6 @@ public class AddUpdateCommand extends UpdateCommand {
 
   public boolean isLastDocInBatch = false;
 
-  // optional id in "internal" indexed form... if it is needed and not supplied,
-  // it will be obtained from the doc.
   private BytesRef indexedId;
   private String indexedIdStr;
   private String childDocIdStr;
@@ -113,7 +111,8 @@ public class AddUpdateCommand extends UpdateCommand {
    }
 
   /**
-   * Returns the indexed ID for this document, or the root ID for nested documents.
+   * Returns the indexed ID that we route this document on.  Typically, this is
+   * for the unique key of the document but for a nested document, it's the ID of the root.
    *
    * @return possibly null if there's no uniqueKey field
    */
@@ -123,8 +122,10 @@ public class AddUpdateCommand extends UpdateCommand {
   }
 
   /**
-   * Returns the indexed ID for this document, or the root ID for nested documents. The returned
-   * BytesRef should be treated as immutable. It will not be re-used/modified for additional docs.
+   * Returns the indexed ID that we route this document on.  Typically, this is
+   * for the unique key of the document but for a nested document, it's the ID of the root.
+   *
+   * BytesRef should be treated as immutable.  It will not be re-used/modified for additional docs.
    *
    * @return possibly null if there's no uniqueKey field
    */
