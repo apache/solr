@@ -648,6 +648,8 @@ Bug Fixes
 
 * SOLR-15558: Don't wait for zombie processes to exit when stopping. (Colvin Cowie)
 
+* SOLR-15333: Reduced spurious warn logging by AbstractSpatialPrefixTreeFieldType field properties (Steffen Moldenhauer, David Smiley, Mike Drob)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
