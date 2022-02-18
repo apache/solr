@@ -32,8 +32,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -76,8 +78,6 @@ import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableMap;
 
 import static java.util.Collections.singletonList;
 import static org.apache.solr.core.PluginInfo.APPENDS;
@@ -1072,41 +1072,28 @@ public class SolrPluginUtils {
       return UNKNOWN_VALUE;
   }
 
-  private static final String[] purposeUnknown = new String[] { UNKNOWN_VALUE };
-
   /**
-   * Given the integer purpose of a request generates a readable value corresponding
-   * the request purposes (there can be more than one on a single request). If
-   * there is a purpose parameter present that's not known this method will
-   * return a 1-element array containing {@value #UNKNOWN_VALUE}
+   * Given the integer purpose of a request generates a readable value corresponding the request
+   * purposes (there can be more than one on a single request). If there is a purpose parameter
+   * present that's not known this method will invoke the consumer with {@value #UNKNOWN_VALUE}.
+   *
    * @param reqPurpose Numeric request purpose
-   * @return an array of purpose names.
+   * @param consumer recipient of a string
    */
-  public static String[] getRequestPurposeNames(Integer reqPurpose) {
+  public static void forEachRequestPurpose(Integer reqPurpose, Consumer<String> consumer) {
+    boolean sendUnknown = true;
     if (reqPurpose != null) {
-      int valid = 0;
-      for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
+      for (Map.Entry<Integer, String> entry : purposes.entrySet()) {
         if ((reqPurpose & entry.getKey()) != 0) {
-          valid++;
+          consumer.accept(entry.getValue());
+          sendUnknown = false;
         }
-      }
-      if (valid == 0) {
-        return purposeUnknown;
-      } else {
-        String[] result = new String[valid];
-        int i = 0;
-        for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
-          if ((reqPurpose & entry.getKey()) != 0) {
-            result[i] = entry.getValue();
-            i++;
-          }
-        }
-        return result;
       }
     }
-    return purposeUnknown;
+    if (sendUnknown) {
+      consumer.accept(UNKNOWN_VALUE);
+    }
   }
-
 }
 
 

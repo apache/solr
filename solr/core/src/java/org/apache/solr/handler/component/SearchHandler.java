@@ -16,6 +16,20 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+
+import com.codahale.metrics.Counter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
@@ -34,6 +48,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
@@ -55,13 +71,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static org.apache.solr.common.params.CommonParams.*;
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.FAILURE;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.params.CommonParams.STATUS;
 
 
 /**
@@ -78,6 +91,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
    * A counter to ensure that no RID is equal, even if they fall in the same millisecond
    */
   private static final AtomicLong ridCounter = new AtomicLong();
+
+  private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
 
   protected volatile List<SearchComponent> components;
   private ShardHandlerFactory shardHandlerFactory;
@@ -108,6 +123,19 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         break;
       }
     }
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    MetricsMap metricsMap = new MetricsMap(map ->
+        shardPurposes.forEach((k, v) -> map.putNoEx(k, v.getCount())));
+    solrMetricsContext.gauge(metricsMap, true, "purposes", getCategory().toString(), scope + "[shard]");
+  }
+
+  @Override
+  protected boolean supportsDistribedRequests() {
+    return true;
   }
 
   @Override
@@ -283,6 +311,12 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
+    if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
+      SolrPluginUtils.forEachRequestPurpose(
+          purpose, n -> shardPurposes.computeIfAbsent(n, name -> new Counter()).inc());
+    }
+
     List<SearchComponent> components  = getComponents();
     ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
