@@ -41,6 +41,27 @@ public class FilterQuery extends ExtendedQueryBase {
     this.q = q;
   }
 
+  @Override
+  public final void setCache(boolean cache) {
+    if (cache) {
+      // because of the special syntax for invoking FilterQuery (i.e., `filter([backing_query])` -- different from
+      // the normal QParser + localParams syntax) there should be no risk of attempting to set `cache=true`.
+      throw new IllegalArgumentException(FilterQuery.class + " caches internally and does not support external setCache(true)");
+    }
+  }
+
+  @Override
+  public final boolean getCache() {
+    return false;
+    // Paradoxically, this _is_ what we want. The FilterQuery wrapper is designed to ensure that its
+    // inner query always consults the filterCache, regardless of the context in which it's called.
+    // FilterQuery internally calls SolrIndexSearcher.getDocSet with its _wrapped_ query, so the caching
+    // happens at that level, and we want _not_ to consult the filterCache with the FilterQuery wrapper
+    // per se. Allowing `doCache=true` here can result in double-entry in the filterCache (e.g. when
+    // using `fq=filter({!term f=field v=term})`, or caching separate clauses of a BooleanQuery via
+    // `fq={!bool should='filter($q1)' should='filter($q2)'}`).
+  }
+
   public Query getQuery() {
     return q;
   }
