@@ -2,11 +2,9 @@
 
 This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
-https://github.com/apache/solr/blob/main/solr/solr-ref-guide/src/solr-upgrade-notes.adoc
+https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
 ==================  10.0.0 ==================
-
-Docker and modules have separate CHANGES.md files.
 
 New Features
 ---------------------
@@ -30,8 +28,6 @@ Other Changes
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
 
 ==================  9.1.0 ==================
-
-Docker and modules have separate CHANGES.md files.
 
 New Features
 ---------------------
