@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
@@ -35,6 +36,8 @@ import org.junit.Test;
 /**
  * Depends on ZK for testing ZooKeeper backed storage logic.
  */
+@Slow
+// commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6443")
 public class TestManagedResourceStorage extends AbstractZkTestCase {
 
   /**
@@ -44,7 +47,7 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
   public void testZkBasedJsonStorage() throws Exception {
     
     // test using ZooKeeper
-    //assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());
+    assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());
     SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
     // Solr unit tests can only write to their working directory due to
     // a custom Java Security Manager installed in the test environment
