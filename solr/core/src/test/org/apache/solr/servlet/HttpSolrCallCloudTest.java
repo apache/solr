@@ -127,11 +127,6 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
       this.path = path;
     }
 
-    public TestRequest(String path, String method) {
-      this(path);
-      setMethod(method);
-    }
-
     @Override
     public String getQueryString() {
       return "version=2";
