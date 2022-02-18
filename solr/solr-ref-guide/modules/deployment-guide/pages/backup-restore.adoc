@@ -685,7 +685,7 @@ When using the Backup & Restore Collections API Calls, the **`location`** option
 All the above options will resolve to the same directory in your S3 Bucket: `dir/in/bucket`.
 
 Pre-Creation::
-The directory within your S3 bucket must already exist before you preform any backup operations with that location.
+The location must already exist within your S3 bucket before you can preform any backup operations with that location.
 +
 **Please note that the directory you create in S3 cannot begin with a `/`, as `locations` are stripped of any `/` prefix (shown in `Location Format`).**
 
