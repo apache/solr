@@ -133,24 +133,8 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     // Now search w/ a Query which returns a null Scorer
     DocSetQuery f = new DocSetQuery(null) {
       @Override
-      public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
-        return new Weight(this) {
-
-          @Override
-          public Explanation explain(LeafReaderContext context, int doc) {
-              return Explanation.match(0f, "No match on id " + doc);
-          }
-
-          @Override
-          public Scorer scorer(LeafReaderContext leafReaderContext) {
-            return null;
-          }
-
-          @Override
-          public boolean isCacheable(LeafReaderContext ctx) {
-            return false;
-          }
-        };
+      public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+        return super.createWeight(searcher, scoreMode, 0);
       }
 
       @Override

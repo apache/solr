@@ -83,12 +83,12 @@ public class DocSetQuery extends Query implements DocSetProducer{
         return new ConstantScoreWeight(this, 0) {
             @Override
             public Scorer scorer(LeafReaderContext context) {
-                DocIdSetIterator disi = null;
-                if (docSet != null) {
-                    disi = docSet.iterator(context);
-                    if (disi == null) {
-                        return null;
-                    }
+                if (docSet == null) {
+                    return null;
+                }
+                DocIdSetIterator disi = docSet.iterator(context);
+                if (disi == null) {
+                    return null;
                 }
                 return new ConstantScoreScorer(this, score(), scoreMode, disi);
             }
