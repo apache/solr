@@ -71,7 +71,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
 
   private void assertCoreChosen(int numCores, TestRequest testRequest) throws UnavailableException {
     var jettySolrRunner = cluster.getJettySolrRunner(0);
-    var coreNames = new HashSet<>();
+    var coreNames = new HashSet<String>();
     var dispatchFilter = jettySolrRunner.getSolrDispatchFilter();
     for (int i = 0; i < NUM_SHARD * REPLICA_FACTOR * 20; i++) {
       if (coreNames.size() == numCores) return;
