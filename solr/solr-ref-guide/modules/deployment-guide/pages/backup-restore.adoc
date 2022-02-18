@@ -671,9 +671,27 @@ This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide
 
 [NOTE]
 ====
-When using the Backup & Restore Collections API Calls, you can provide a **location** that either starts with `s3://` or not.
-Either way, if your **location** (or s3 object prefix) starts with a `/`, it will be removed automatically.
-The repository does not allow backup locations that begin with a `/`.
+There are a few nuances to using the **`location`** option with the S3 Repository.
+The `location` option specifies the sub-directory to store backup information in.
+
+Location Format::
+When using the Backup & Restore Collections API Calls, the **`location`** option can be presented in a number of ways:
++
+* `dir/in/bucket`
+* `/dir/in/bucket`
+* `s3:/dir/in/bucket`
+* `s3://dir/in/bucket`
++
+All the above options will resolve to the same directory in your S3 Bucket: `dir/in/bucket`.
+
+Pre-Creation::
+The directory within your S3 bucket must already exist before you preform any backup operations with that location.
++
+**Please note that the directory you create in S3 cannot begin with a `/`, as `locations` are stripped of any `/` prefix (shown in `Location Format`).**
+
+Empty Location::
+If you do not want to use a sub-directory within your bucket to store your backup, you can use any of the following location options: `/`, `s3:/`, `s3://`.
+However the location option is mandatory and you will recieve an error when trying to perform backup operations without it.
 ====
 
 An example configuration to enable S3 backups and restore can be seen below:
