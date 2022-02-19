@@ -18,18 +18,21 @@ package org.apache.solr.analytics.stream.reservation;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
-
 import org.apache.solr.analytics.stream.reservation.read.LongDataArrayReader;
 import org.apache.solr.analytics.stream.reservation.write.LongDataArrayWriter;
 
-import java.util.function.IntConsumer;
-import java.util.function.IntSupplier;
+public class LongArrayReservation
+    extends ReductionDataArrayReservation<LongConsumer, LongSupplier> {
 
-public class LongArrayReservation extends ReductionDataArrayReservation<LongConsumer, LongSupplier> {
-
-  public LongArrayReservation(LongConsumer applier, IntConsumer sizeApplier, LongSupplier extractor, IntSupplier sizeExtractor) {
+  public LongArrayReservation(
+      LongConsumer applier,
+      IntConsumer sizeApplier,
+      LongSupplier extractor,
+      IntSupplier sizeExtractor) {
     super(applier, sizeApplier, extractor, sizeExtractor);
   }
 

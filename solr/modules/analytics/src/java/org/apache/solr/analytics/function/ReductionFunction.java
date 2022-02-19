@@ -17,21 +17,18 @@
 package org.apache.solr.analytics.function;
 
 import java.util.function.UnaryOperator;
-
 import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
 import org.apache.solr.analytics.value.AnalyticsValue;
 
-/**
- * A function that reduces the values of a mapping expression, field or constant.
- */
+/** A function that reduces the values of a mapping expression, field or constant. */
 public interface ReductionFunction extends AnalyticsValue {
 
   /**
-   * Syncs the data collectors with shared versions across the entire Analytics Request
-   * so that as little data as possible is sent across shards.
+   * Syncs the data collectors with shared versions across the entire Analytics Request so that as
+   * little data as possible is sent across shards.
    *
-   * @param sync a function that takes in a {@link ReductionDataCollector} and returns a shared version
+   * @param sync a function that takes in a {@link ReductionDataCollector} and returns a shared
+   *     version
    */
   void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync);
 }
-

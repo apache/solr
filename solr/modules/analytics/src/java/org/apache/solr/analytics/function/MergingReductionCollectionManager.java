@@ -19,22 +19,24 @@ package org.apache.solr.analytics.function;
 import org.apache.solr.analytics.function.field.AnalyticsField;
 import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
 
-/**
- * The {@link ReductionCollectionManager} used for distributed requests.
- */
+/** The {@link ReductionCollectionManager} used for distributed requests. */
 public class MergingReductionCollectionManager extends ReductionCollectionManager {
 
   public MergingReductionCollectionManager() {
     super();
   }
 
-  public MergingReductionCollectionManager(final ReductionDataCollector<?>[] reductionDataCollectors, final Iterable<AnalyticsField> fields) {
+  public MergingReductionCollectionManager(
+      final ReductionDataCollector<?>[] reductionDataCollectors,
+      final Iterable<AnalyticsField> fields) {
     super(reductionDataCollectors, fields);
   }
 
   @Override
-  protected ReductionCollectionManager createNewManager(final ReductionDataCollector<?>[] reductionDataCollectors, final Iterable<AnalyticsField> fields) {
-    return new MergingReductionCollectionManager(reductionDataCollectors,fields);
+  protected ReductionCollectionManager createNewManager(
+      final ReductionDataCollector<?>[] reductionDataCollectors,
+      final Iterable<AnalyticsField> fields) {
+    return new MergingReductionCollectionManager(reductionDataCollectors, fields);
   }
 
   @Override

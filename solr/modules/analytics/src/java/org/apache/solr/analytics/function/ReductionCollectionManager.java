@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.analytics.function.field.AnalyticsField;
 import org.apache.solr.analytics.function.reduction.data.ReductionData;
@@ -35,14 +34,15 @@ import org.apache.solr.analytics.stream.reservation.write.ReductionDataWriter;
 import org.apache.solr.analytics.value.AnalyticsValue;
 
 /**
- * The manager of reduction collection.
- * Contains a group of {@link ReductionDataCollector}s which will be updated together.
- * <p>
- * The manager assumes a non-distributed request. {@link MergingReductionCollectionManager} is used for distributed requests.
+ * The manager of reduction collection. Contains a group of {@link ReductionDataCollector}s which
+ * will be updated together.
+ *
+ * <p>The manager assumes a non-distributed request. {@link MergingReductionCollectionManager} is
+ * used for distributed requests.
  */
 public class ReductionCollectionManager {
   protected final ReductionDataCollector<?>[] reductionDataCollectors;
-  private final List<ReductionDataReservation<?,?>> reservations;
+  private final List<ReductionDataReservation<?, ?>> reservations;
 
   private final List<ReductionDataReader<?>> readers;
   private final List<ReductionDataWriter<?>> writers;
@@ -56,12 +56,16 @@ public class ReductionCollectionManager {
   /**
    * Create a Manager to oversee the given {@link ReductionDataCollector}s.
    *
-   * @param reductionDataCollectors array of collectors that are collecting over the same set of data
+   * @param reductionDataCollectors array of collectors that are collecting over the same set of
+   *     data
    * @param fields all fields used by the given collectors
    */
-  public ReductionCollectionManager(final ReductionDataCollector<?>[] reductionDataCollectors, final Iterable<AnalyticsField> fields) {
+  public ReductionCollectionManager(
+      final ReductionDataCollector<?>[] reductionDataCollectors,
+      final Iterable<AnalyticsField> fields) {
     this.reductionDataCollectors = reductionDataCollectors;
-    Arrays.sort(reductionDataCollectors, (a,b) -> a.getExpressionStr().compareTo(b.getExpressionStr()));
+    Arrays.sort(
+        reductionDataCollectors, (a, b) -> a.getExpressionStr().compareTo(b.getExpressionStr()));
 
     reservations = new LinkedList<>();
     for (int i = 0; i < reductionDataCollectors.length; i++) {
@@ -88,23 +92,25 @@ public class ReductionCollectionManager {
    * Merge this collection manager with others.
    *
    * @param reductionManagers the collection managers to merge with
-   * @return a collection manager that manages the union of data collectors from this class and the given managers
+   * @return a collection manager that manages the union of data collectors from this class and the
+   *     given managers
    */
   public ReductionCollectionManager merge(Iterable<ReductionCollectionManager> reductionManagers) {
-    HashMap<String,ReductionDataCollector<?>> mergedCollectors = new HashMap<>();
-    HashMap<String,AnalyticsField> mergedFields = new HashMap<>();
+    HashMap<String, ReductionDataCollector<?>> mergedCollectors = new HashMap<>();
+    HashMap<String, AnalyticsField> mergedFields = new HashMap<>();
 
     for (ReductionDataCollector<?> collector : reductionDataCollectors) {
       mergedCollectors.put(collector.getExpressionStr(), collector);
     }
-    fields.forEach( field -> mergedFields.put(field.getExpressionStr(), field) );
+    fields.forEach(field -> mergedFields.put(field.getExpressionStr(), field));
 
-    reductionManagers.forEach( manager -> {
-      for (ReductionDataCollector<?> collector : manager.reductionDataCollectors) {
-        mergedCollectors.put(collector.getExpressionStr(), collector);
-      }
-      manager.fields.forEach( field -> mergedFields.put(field.getExpressionStr(), field) );
-    });
+    reductionManagers.forEach(
+        manager -> {
+          for (ReductionDataCollector<?> collector : manager.reductionDataCollectors) {
+            mergedCollectors.put(collector.getExpressionStr(), collector);
+          }
+          manager.fields.forEach(field -> mergedFields.put(field.getExpressionStr(), field));
+        });
     ReductionDataCollector<?>[] collectors = new ReductionDataCollector<?>[mergedCollectors.size()];
     mergedCollectors.values().toArray(collectors);
     return createNewManager(collectors, mergedFields.values());
@@ -117,8 +123,10 @@ public class ReductionCollectionManager {
    * @param fields fields used by the reductions
    * @return a collection manager
    */
-  protected ReductionCollectionManager createNewManager(final ReductionDataCollector<?>[] reductionDataCollectors, final Iterable<AnalyticsField> fields) {
-    return new ReductionCollectionManager(reductionDataCollectors,fields);
+  protected ReductionCollectionManager createNewManager(
+      final ReductionDataCollector<?>[] reductionDataCollectors,
+      final Iterable<AnalyticsField> fields) {
+    return new ReductionCollectionManager(reductionDataCollectors, fields);
   }
 
   /**
@@ -155,8 +163,8 @@ public class ReductionCollectionManager {
   }
 
   /**
-   * Add a {@link ReductionDataCollection} to target while collecting documents.
-   * This target is valid until the lasting targets are cleared.
+   * Add a {@link ReductionDataCollection} to target while collecting documents. This target is
+   * valid until the lasting targets are cleared.
    *
    * @param target data collection to add document data too
    */
@@ -165,9 +173,7 @@ public class ReductionCollectionManager {
       reductionDataCollectors[i].addLastingCollectTarget(target.dataArr[i]);
     }
   }
-  /**
-   * Clear lasting collection targets.
-   */
+  /** Clear lasting collection targets. */
   public void clearLastingCollectTargets() {
     for (int i = 0; i < reductionDataCollectors.length; i++) {
       reductionDataCollectors[i].clearLastingCollectTargets();
@@ -175,8 +181,8 @@ public class ReductionCollectionManager {
   }
 
   /**
-   * Add a new {@link ReductionDataCollection} to target while collecting the next document.
-   * This target is only valid for the next {@link #apply()} call.
+   * Add a new {@link ReductionDataCollection} to target while collecting the next document. This
+   * target is only valid for the next {@link #apply()} call.
    *
    * @return the new data collection being targeted
    */
@@ -189,8 +195,8 @@ public class ReductionCollectionManager {
     return newCol;
   }
   /**
-   * Add a {@link ReductionDataCollection} to target while collecting the next document.
-   * This target is only valid for the next {@link #apply()} call.
+   * Add a {@link ReductionDataCollection} to target while collecting the next document. This target
+   * is only valid for the next {@link #apply()} call.
    *
    * @param target data collection to add document data too
    */
@@ -201,20 +207,22 @@ public class ReductionCollectionManager {
   }
 
   /**
-   * Apply the values of the collected fields through the expressions' logic to the managed data collectors.
-   * This is called after {@link #collect(int)} has been called and the collection targets have been added.
+   * Apply the values of the collected fields through the expressions' logic to the managed data
+   * collectors. This is called after {@link #collect(int)} has been called and the collection
+   * targets have been added.
    */
   public void apply() {
     for (int i = 0; i < reductionDataCollectors.length; i++) {
-      reductionDataCollectors[i].collectAndApply();;
+      reductionDataCollectors[i].collectAndApply();
+      ;
     }
   }
 
   /**
-   * Finalize the reductions with the collected data stored in the parameter.
-   * Once the data is finalized, the {@link ReductionFunction}s that use these
-   * {@link ReductionDataCollector}s act like regular {@link AnalyticsValue} classes that
-   * can be accessed through their {@code get<value-type>} methods.
+   * Finalize the reductions with the collected data stored in the parameter. Once the data is
+   * finalized, the {@link ReductionFunction}s that use these {@link ReductionDataCollector}s act
+   * like regular {@link AnalyticsValue} classes that can be accessed through their {@code
+   * get<value-type>} methods.
    *
    * @param dataCollection the collection of reduction data to compute results for
    */
@@ -245,12 +253,13 @@ public class ReductionCollectionManager {
    */
   public void setShardInput(DataInput input) {
     readers.clear();
-    reservations.forEach( resv -> readers.add(resv.createReadStream(input)));
+    reservations.forEach(resv -> readers.add(resv.createReadStream(input)));
   }
   /**
-   * Merge the data from the given shard input stream into the set IO data collectors.
-   * Should always be called after {@link #setShardInput(DataInput)} and either {@link #prepareReductionDataIO(ReductionDataCollection)}
-   * or {@link #newDataCollectionIO()} have been called.
+   * Merge the data from the given shard input stream into the set IO data collectors. Should always
+   * be called after {@link #setShardInput(DataInput)} and either {@link
+   * #prepareReductionDataIO(ReductionDataCollection)} or {@link #newDataCollectionIO()} have been
+   * called.
    *
    * @throws IOException if an error occurs while reading the shard data
    */
@@ -267,11 +276,12 @@ public class ReductionCollectionManager {
    */
   public void setShardOutput(DataOutput output) {
     writers.clear();
-    reservations.forEach( resv -> writers.add(resv.createWriteStream(output)));
+    reservations.forEach(resv -> writers.add(resv.createWriteStream(output)));
   }
   /**
-   * Export the data from the set IO data collectors to the given shard output stream.
-   * Should always be called after {@link #setShardOutput(DataOutput)} and {@link #prepareReductionDataIO(ReductionDataCollection)}.
+   * Export the data from the set IO data collectors to the given shard output stream. Should always
+   * be called after {@link #setShardOutput(DataOutput)} and {@link
+   * #prepareReductionDataIO(ReductionDataCollection)}.
    *
    * @throws IOException if an error occurs while writing the shard data
    */
@@ -293,8 +303,8 @@ public class ReductionCollectionManager {
   }
 
   /**
-   * Create a new {@link ReductionDataCollection} to merge to or export from.
-   * Mainly used for creating facet value collectors when merging shard data.
+   * Create a new {@link ReductionDataCollection} to merge to or export from. Mainly used for
+   * creating facet value collectors when merging shard data.
    *
    * @return the new data collection created
    */
@@ -310,11 +320,10 @@ public class ReductionCollectionManager {
   /**
    * Holds the collection of {@link ReductionData} that will be updated together.
    *
-   * For example each grouping will have a separate {@link ReductionDataCollection}, and
+   * <p>For example each grouping will have a separate {@link ReductionDataCollection}, and
    * ungrouped expressions will have their own as well.
    */
-  public static class ReductionDataCollection{
+  public static class ReductionDataCollection {
     public ReductionData[] dataArr;
   }
 }
-

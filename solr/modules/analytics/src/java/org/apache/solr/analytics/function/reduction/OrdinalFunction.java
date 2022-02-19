@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.reduction;
 
 import java.util.Locale;
 import java.util.function.UnaryOperator;
-
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
 import org.apache.solr.analytics.function.ReductionFunction;
 import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
@@ -28,64 +27,74 @@ import org.apache.solr.analytics.function.reduction.data.SortedListCollector.Sor
 import org.apache.solr.analytics.function.reduction.data.SortedListCollector.SortedLongListCollector;
 import org.apache.solr.analytics.function.reduction.data.SortedListCollector.SortedStringListCollector;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
+import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
 import org.apache.solr.analytics.value.DateValueStream;
+import org.apache.solr.analytics.value.DoubleValue.AbstractDoubleValue;
 import org.apache.solr.analytics.value.DoubleValueStream;
+import org.apache.solr.analytics.value.FloatValue.AbstractFloatValue;
 import org.apache.solr.analytics.value.FloatValueStream;
 import org.apache.solr.analytics.value.IntValue;
-import org.apache.solr.analytics.value.IntValueStream;
-import org.apache.solr.analytics.value.LongValueStream;
-import org.apache.solr.analytics.value.StringValueStream;
-import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
-import org.apache.solr.analytics.value.DoubleValue.AbstractDoubleValue;
-import org.apache.solr.analytics.value.FloatValue.AbstractFloatValue;
 import org.apache.solr.analytics.value.IntValue.AbstractIntValue;
+import org.apache.solr.analytics.value.IntValueStream;
 import org.apache.solr.analytics.value.LongValue.AbstractLongValue;
+import org.apache.solr.analytics.value.LongValueStream;
 import org.apache.solr.analytics.value.StringValue.AbstractStringValue;
+import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.constant.ConstantValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
- * A reduction function which returns the given ordinal of the sorted values of the given expression.
+ * A reduction function which returns the given ordinal of the sorted values of the given
+ * expression.
  */
 public class OrdinalFunction {
   public static final String name = "ordinal";
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length != 2) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 2 paramater, " + params.length + " found.");
-    }
-    AnalyticsValueStream percValue = params[0];
-    int ord = 0;
-    if (params[0] instanceof IntValue && params[0] instanceof ConstantValue) {
-      ord = ((IntValue)percValue).getInt();
-      if (ord == 0) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires the ordinal to be >= 1 or <= -1, 0 is not accepted.");
-      }
-    } else {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a constant int value (the ordinal) as the first argument.");
-    }
-    AnalyticsValueStream param = params[1];
-    if (param instanceof DateValueStream) {
-      return new DateOrdinalFunction((DateValueStream)param, ord);
-    }else if (param instanceof IntValueStream) {
-      return new IntOrdinalFunction((IntValueStream)param, ord);
-    } else if (param instanceof LongValueStream) {
-      return new LongOrdinalFunction((LongValueStream)param, ord);
-    } else if (param instanceof FloatValueStream) {
-      return new FloatOrdinalFunction((FloatValueStream)param, ord);
-    } else if (param instanceof DoubleValueStream) {
-      return new DoubleOrdinalFunction((DoubleValueStream)param, ord);
-    } else if (param instanceof StringValueStream) {
-      return new StringOrdinalFunction((StringValueStream)param, ord);
-    }
-    throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a comparable parameter.");
-  });
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length != 2) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The " + name + " function requires 2 paramater, " + params.length + " found.");
+        }
+        AnalyticsValueStream percValue = params[0];
+        int ord = 0;
+        if (params[0] instanceof IntValue && params[0] instanceof ConstantValue) {
+          ord = ((IntValue) percValue).getInt();
+          if (ord == 0) {
+            throw new SolrException(
+                ErrorCode.BAD_REQUEST,
+                "The "
+                    + name
+                    + " function requires the ordinal to be >= 1 or <= -1, 0 is not accepted.");
+          }
+        } else {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The "
+                  + name
+                  + " function requires a constant int value (the ordinal) as the first argument.");
+        }
+        AnalyticsValueStream param = params[1];
+        if (param instanceof DateValueStream) {
+          return new DateOrdinalFunction((DateValueStream) param, ord);
+        } else if (param instanceof IntValueStream) {
+          return new IntOrdinalFunction((IntValueStream) param, ord);
+        } else if (param instanceof LongValueStream) {
+          return new LongOrdinalFunction((LongValueStream) param, ord);
+        } else if (param instanceof FloatValueStream) {
+          return new FloatOrdinalFunction((FloatValueStream) param, ord);
+        } else if (param instanceof DoubleValueStream) {
+          return new DoubleOrdinalFunction((DoubleValueStream) param, ord);
+        } else if (param instanceof StringValueStream) {
+          return new StringOrdinalFunction((StringValueStream) param, ord);
+        }
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "The " + name + " function requires a comparable parameter.");
+      });
 
   protected static String createOrdinalExpressionString(AnalyticsValueStream param, double ord) {
-    return String.format(Locale.ROOT, "%s(%s,%s)",
-                         name,
-                         ord,
-                         param.getExpressionStr());
+    return String.format(Locale.ROOT, "%s(%s,%s)", name, ord, param.getExpressionStr());
   }
 
   static class IntOrdinalFunction extends AbstractIntValue implements ReductionFunction {
@@ -109,6 +118,7 @@ public class OrdinalFunction {
         return (ordinal * -1) <= size ? collector.get(size + ordinal) : 0;
       }
     }
+
     @Override
     public boolean exists() {
       return (ordinal > 0 ? ordinal : (ordinal * -1)) <= collector.size();
@@ -116,7 +126,7 @@ public class OrdinalFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedIntListCollector)sync.apply(collector);
+      collector = (SortedIntListCollector) sync.apply(collector);
       collector.calcOrdinal(ordinal);
     }
 
@@ -124,10 +134,12 @@ public class OrdinalFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return ExpressionType.REDUCTION;
@@ -155,6 +167,7 @@ public class OrdinalFunction {
         return (ordinal * -1) <= size ? collector.get(size + ordinal) : 0;
       }
     }
+
     @Override
     public boolean exists() {
       return (ordinal > 0 ? ordinal : (ordinal * -1)) <= collector.size();
@@ -162,7 +175,7 @@ public class OrdinalFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedLongListCollector)sync.apply(collector);
+      collector = (SortedLongListCollector) sync.apply(collector);
       collector.calcOrdinal(ordinal);
     }
 
@@ -170,10 +183,12 @@ public class OrdinalFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return ExpressionType.REDUCTION;
@@ -201,6 +216,7 @@ public class OrdinalFunction {
         return (ordinal * -1) <= size ? collector.get(size + ordinal) : 0;
       }
     }
+
     @Override
     public boolean exists() {
       return (ordinal > 0 ? ordinal : (ordinal * -1)) <= collector.size();
@@ -208,7 +224,7 @@ public class OrdinalFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedFloatListCollector)sync.apply(collector);
+      collector = (SortedFloatListCollector) sync.apply(collector);
       collector.calcOrdinal(ordinal);
     }
 
@@ -216,10 +232,12 @@ public class OrdinalFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return ExpressionType.REDUCTION;
@@ -247,6 +265,7 @@ public class OrdinalFunction {
         return (ordinal * -1) <= size ? collector.get(size + ordinal) : 0;
       }
     }
+
     @Override
     public boolean exists() {
       return (ordinal > 0 ? ordinal : (ordinal * -1)) <= collector.size();
@@ -254,7 +273,7 @@ public class OrdinalFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedDoubleListCollector)sync.apply(collector);
+      collector = (SortedDoubleListCollector) sync.apply(collector);
       collector.calcOrdinal(ordinal);
     }
 
@@ -262,10 +281,12 @@ public class OrdinalFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return ExpressionType.REDUCTION;
@@ -293,6 +314,7 @@ public class OrdinalFunction {
         return (ordinal * -1) <= size ? collector.get(size + ordinal) : 0;
       }
     }
+
     @Override
     public boolean exists() {
       return (ordinal > 0 ? ordinal : (ordinal * -1)) <= collector.size();
@@ -300,7 +322,7 @@ public class OrdinalFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedLongListCollector)sync.apply(collector);
+      collector = (SortedLongListCollector) sync.apply(collector);
       collector.calcOrdinal(ordinal);
     }
 
@@ -308,10 +330,12 @@ public class OrdinalFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return ExpressionType.REDUCTION;
@@ -339,6 +363,7 @@ public class OrdinalFunction {
         return (ordinal * -1) <= size ? collector.get(size + ordinal) : null;
       }
     }
+
     @Override
     public boolean exists() {
       return (ordinal > 0 ? ordinal : (ordinal * -1)) <= collector.size();
@@ -346,7 +371,7 @@ public class OrdinalFunction {
 
     @Override
     public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-      collector = (SortedStringListCollector)sync.apply(collector);
+      collector = (SortedStringListCollector) sync.apply(collector);
       collector.calcOrdinal(ordinal);
     }
 
@@ -354,14 +379,15 @@ public class OrdinalFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return ExpressionType.REDUCTION;
     }
   }
 }
-

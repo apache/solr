@@ -25,6 +25,7 @@ public class LongDataReader extends ReductionDataReader<LongConsumer> {
   public LongDataReader(DataInput inputStream, LongConsumer applier) {
     super(inputStream, applier);
   }
+
   @Override
   public void read() throws IOException {
     applier.accept(inputStream.readLong());
