@@ -17,6 +17,8 @@
 
 package org.apache.solr.prometheus.collector;
 
+import io.prometheus.client.Collector;
+import io.prometheus.client.Histogram;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -29,11 +31,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import io.prometheus.client.Collector;
-import io.prometheus.client.Histogram;
-import org.apache.solr.prometheus.exporter.SolrExporter;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.prometheus.exporter.SolrExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,18 +48,19 @@ public class SchedulerMetricsCollector implements Closeable {
   private final int duration;
   private final TimeUnit timeUnit;
 
-  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(
-      1,
-      new SolrNamedThreadFactory("scheduled-metrics-collector"));
+  private final ScheduledExecutorService scheduler =
+      Executors.newScheduledThreadPool(
+          1, new SolrNamedThreadFactory("scheduled-metrics-collector"));
 
   private final ExecutorService executor;
 
   private final List<Observer> observers = new CopyOnWriteArrayList<>();
 
-  private static final Histogram metricsCollectionTime = Histogram.build()
-      .name("solr_exporter_duration_seconds")
-      .help("Duration taken to record all metrics")
-      .register(SolrExporter.defaultRegistry);
+  private static final Histogram metricsCollectionTime =
+      Histogram.build()
+          .name("solr_exporter_duration_seconds")
+          .help("Duration taken to record all metrics")
+          .register(SolrExporter.defaultRegistry);
 
   public SchedulerMetricsCollector(
       ExecutorService executor,
@@ -82,17 +82,17 @@ public class SchedulerMetricsCollector implements Closeable {
     try (Histogram.Timer timer = metricsCollectionTime.startTimer()) {
       log.info("Beginning metrics collection");
 
-      final List<Future<MetricSamples>> futures = executor.invokeAll(
-          metricCollectors.stream()
-              .map(metricCollector -> (Callable<MetricSamples>) metricCollector::collect)
-              .collect(Collectors.toList())
-      );
+      final List<Future<MetricSamples>> futures =
+          executor.invokeAll(
+              metricCollectors.stream()
+                  .map(metricCollector -> (Callable<MetricSamples>) metricCollector::collect)
+                  .collect(Collectors.toList()));
       MetricSamples metricSamples = new MetricSamples();
       for (Future<MetricSamples> future : futures) {
         try {
           metricSamples.addAll(future.get());
         } catch (ExecutionException e) {
-          log.error("Error occurred during metrics collection", e.getCause());//nowarn
+          log.error("Error occurred during metrics collection", e.getCause()); // nowarn
           // continue any ways; do not fail
         }
       }
@@ -104,7 +104,6 @@ public class SchedulerMetricsCollector implements Closeable {
       log.warn("Interrupted waiting for metric collection to complete", e);
       Thread.currentThread().interrupt();
     }
-
   }
 
   public void addObserver(Observer observer) {
@@ -123,5 +122,4 @@ public class SchedulerMetricsCollector implements Closeable {
   public void close() {
     scheduler.shutdownNow();
   }
-
 }

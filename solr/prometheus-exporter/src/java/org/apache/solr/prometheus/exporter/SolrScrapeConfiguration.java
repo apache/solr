@@ -30,7 +30,8 @@ public class SolrScrapeConfiguration {
   private final String zookeeperConnectionString;
   private final String solrHost;
 
-  private SolrScrapeConfiguration(ConnectionType type, String zookeeperConnectionString, String solrHost) {
+  private SolrScrapeConfiguration(
+      ConnectionType type, String zookeeperConnectionString, String solrHost) {
     this.type = type;
     this.zookeeperConnectionString = zookeeperConnectionString;
     this.solrHost = solrHost;
@@ -66,5 +67,4 @@ public class SolrScrapeConfiguration {
       return "None";
     }
   }
-
 }
