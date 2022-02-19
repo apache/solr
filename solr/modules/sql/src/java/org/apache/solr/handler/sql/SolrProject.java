@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.sql;
 
+import java.util.List;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -28,21 +29,22 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 
-import java.util.List;
-
-/**
- * Implementation of {@link org.apache.calcite.rel.core.Project} relational expression in Solr.
- */
+/** Implementation of {@link org.apache.calcite.rel.core.Project} relational expression in Solr. */
 class SolrProject extends Project implements SolrRel {
-  SolrProject(RelOptCluster cluster, RelTraitSet traitSet,
-              RelNode input, List<? extends RexNode> projects, RelDataType rowType) {
+  SolrProject(
+      RelOptCluster cluster,
+      RelTraitSet traitSet,
+      RelNode input,
+      List<? extends RexNode> projects,
+      RelDataType rowType) {
     super(cluster, traitSet, input, projects, rowType);
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == input.getConvention();
   }
 
   @Override
-  public Project copy(RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType) {
+  public Project copy(
+      RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType) {
     return new SolrProject(getCluster(), traitSet, input, projects, rowType);
   }
 
@@ -53,8 +55,10 @@ class SolrProject extends Project implements SolrRel {
 
   public void implement(Implementor implementor) {
     implementor.visitChild(0, getInput());
-    final SolrRules.RexToSolrTranslator translator = new SolrRules.RexToSolrTranslator(
-        (JavaTypeFactory) getCluster().getTypeFactory(), SolrRules.solrFieldNames(getInput().getRowType()));
+    final SolrRules.RexToSolrTranslator translator =
+        new SolrRules.RexToSolrTranslator(
+            (JavaTypeFactory) getCluster().getTypeFactory(),
+            SolrRules.solrFieldNames(getInput().getRowType()));
     for (Pair<RexNode, String> pair : getNamedProjects()) {
       final String name = pair.right;
       final String expr = pair.left.accept(translator);

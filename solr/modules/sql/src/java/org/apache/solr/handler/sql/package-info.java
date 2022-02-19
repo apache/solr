@@ -16,6 +16,7 @@
  */
 
 /**
- * Classes related to Apache Calcite implementation in {@link org.apache.solr.handler.sql.SQLHandler}
+ * Classes related to Apache Calcite implementation in {@link
+ * org.apache.solr.handler.sql.SQLHandler}
  */
 package org.apache.solr.handler.sql;

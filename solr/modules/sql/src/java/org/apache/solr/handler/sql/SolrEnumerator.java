@@ -16,17 +16,16 @@
  */
 package org.apache.solr.handler.sql;
 
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Enumerator that reads from a Solr collection. */
 class SolrEnumerator implements Enumerator<Object> {
@@ -36,7 +35,8 @@ class SolrEnumerator implements Enumerator<Object> {
   private final List<Map.Entry<String, Class<?>>> fields;
   private Tuple current;
 
-  /** Creates a SolrEnumerator.
+  /**
+   * Creates a SolrEnumerator.
    *
    * @param tupleStream Solr TupleStream
    * @param fields Fields to get from each Tuple
@@ -53,7 +53,8 @@ class SolrEnumerator implements Enumerator<Object> {
     this.current = null;
   }
 
-  /** Produce the next row from the results
+  /**
+   * Produce the next row from the results
    *
    * @return A new row from the results
    */
@@ -74,20 +75,21 @@ class SolrEnumerator implements Enumerator<Object> {
   private Object getter(Tuple tuple, Map.Entry<String, Class<?>> field) {
     Object val = tuple.get(field.getKey());
 
-    if(val == null) {
+    if (val == null) {
       return null;
     }
 
     Class<?> clazz = field.getValue();
-    if(clazz.equals(Long.class)) {
-      if(val instanceof Double) {
+    if (clazz.equals(Long.class)) {
+      if (val instanceof Double) {
         return this.getRealVal(val);
       }
       return val;
     }
 
     if (clazz.equals(Date.class)) {
-      // make sure the val returned is a Date as Avatica cannot deal with string values for Timestamp fields
+      // make sure the val returned is a Date as Avatica cannot deal with string values for
+      // Timestamp fields
       val = tuple.getDate(field.getKey());
     }
 
@@ -96,11 +98,11 @@ class SolrEnumerator implements Enumerator<Object> {
 
   private Object getRealVal(Object val) {
     // Check if Double is really a Long
-    if(val instanceof Double) {
+    if (val instanceof Double) {
       double doubleVal = (double) val;
-      //make sure that double has no decimals and fits within Long
-      if(doubleVal % 1 == 0 && doubleVal >= Long.MIN_VALUE && doubleVal <= Long.MAX_VALUE) {
-        return (long)doubleVal;
+      // make sure that double has no decimals and fits within Long
+      if (doubleVal % 1 == 0 && doubleVal >= Long.MIN_VALUE && doubleVal <= Long.MAX_VALUE) {
+        return (long) doubleVal;
       }
       return doubleVal;
     }
@@ -129,7 +131,7 @@ class SolrEnumerator implements Enumerator<Object> {
   }
 
   public void close() {
-    if(this.tupleStream != null) {
+    if (this.tupleStream != null) {
       try {
         this.tupleStream.close();
       } catch (IOException e) {

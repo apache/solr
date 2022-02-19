@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.sql;
 
+import com.google.common.collect.ImmutableMap;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Date;
@@ -28,8 +29,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
@@ -139,9 +138,13 @@ class SolrSchema extends AbstractSchema implements Closeable {
   }
 
   private boolean isStoredIndexedOrDocValues(final EnumSet<FieldFlag> flags) {
-    // if a field is not stored but indexed, then we should still include it in the table schema so that users
+    // if a field is not stored but indexed, then we should still include it in the table schema so
+    // that users
     // can filter on it, they just won't be able to return it as a field
-    return flags != null && (flags.contains(FieldFlag.DOC_VALUES) || flags.contains(FieldFlag.STORED) || flags.contains(FieldFlag.INDEXED));
+    return flags != null
+        && (flags.contains(FieldFlag.DOC_VALUES)
+            || flags.contains(FieldFlag.STORED)
+            || flags.contains(FieldFlag.INDEXED));
   }
 
   private EnumSet<FieldFlag> getFieldFlags(final LukeResponse.FieldInfo luceneFieldInfo) {
@@ -169,20 +172,31 @@ class SolrSchema extends AbstractSchema implements Closeable {
     // proto-type will be copied into a real type factory.
     final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
     final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-    
+
     // Get fields that have data, including dynamic field instances
     Map<String, LukeResponse.FieldInfo> fieldsInUseMap = getFieldInfo(collection);
 
     LukeResponse schema = getSchema(collection);
-    Map<String, LukeResponse.FieldInfo> storedFields = schema.getFieldInfo().entrySet().stream()
+    Map<String, LukeResponse.FieldInfo> storedFields =
+        schema.getFieldInfo().entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    // merge the actual fields in use returned by Luke with the declared fields in the schema that are empty
-    Map<String, LukeResponse.FieldInfo> combinedFields = Stream.of(fieldsInUseMap, storedFields)
+    // merge the actual fields in use returned by Luke with the declared fields in the schema that
+    // are empty
+    Map<String, LukeResponse.FieldInfo> combinedFields =
+        Stream.of(fieldsInUseMap, storedFields)
             .flatMap(map -> map.entrySet().stream())
-            .filter(e -> isStoredIndexedOrDocValues(getFieldFlags(e.getValue()))) // Only want fields that are stored, indexed, or have docValues enabled
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1, TreeMap::new));
+            .filter(
+                e ->
+                    isStoredIndexedOrDocValues(
+                        getFieldFlags(
+                            e.getValue()))) // Only want fields that are stored, indexed, or have
+            // docValues enabled
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1, TreeMap::new));
 
-    Map<String, Class<?>> javaClassForTypeMap = new HashMap<>(); // local cache for custom field types we've already resolved
+    Map<String, Class<?>> javaClassForTypeMap =
+        new HashMap<>(); // local cache for custom field types we've already resolved
 
     for (Map.Entry<String, LukeResponse.FieldInfo> entry : combinedFields.entrySet()) {
       LukeResponse.FieldInfo luceneFieldInfo = entry.getValue();
@@ -198,7 +212,8 @@ class SolrSchema extends AbstractSchema implements Closeable {
       // We have to pass multi-valued fields through Calcite as SQL Type ANY
       // Array doesn't work for aggregations! Calcite doesn't like GROUP BY on an ARRAY field
       // but Solr happily computes aggs on a multi-valued field, so we have a paradigm mis-match and
-      // ANY is the best way to retain use of operators on multi-valued fields while still being able
+      // ANY is the best way to retain use of operators on multi-valued fields while still being
+      // able
       // to GROUP BY and project the multi-valued fields in results
       EnumSet<FieldFlag> flags = getFieldFlags(luceneFieldInfo);
       if (flags != null && flags.contains(FieldFlag.MULTI_VALUED)) {
@@ -230,7 +245,8 @@ class SolrSchema extends AbstractSchema implements Closeable {
           default:
             Class<?> javaClass = javaClassForTypeMap.get(luceneFieldType);
             if (javaClass == null) {
-              javaClass = guessJavaClassForFieldType(schema.getFieldTypeInfo().get(luceneFieldType));
+              javaClass =
+                  guessJavaClassForFieldType(schema.getFieldTypeInfo().get(luceneFieldType));
               javaClassForTypeMap.put(luceneFieldType, javaClass);
             }
             type = typeFactory.createJavaType(javaClass);
@@ -248,11 +264,14 @@ class SolrSchema extends AbstractSchema implements Closeable {
     Class<?> typeClass = null;
     if (typeInfo != null && !typeInfo.isTokenized() && typeInfo.getClassName() != null) {
       try {
-        final Class<?> fieldTypeClass = getClass().getClassLoader().loadClass(typeInfo.getClassName());
+        final Class<?> fieldTypeClass =
+            getClass().getClassLoader().loadClass(typeInfo.getClassName());
         // a numeric type ... narrow down
-        if (IntValueFieldType.class.isAssignableFrom(fieldTypeClass) || LongValueFieldType.class.isAssignableFrom(fieldTypeClass)) {
+        if (IntValueFieldType.class.isAssignableFrom(fieldTypeClass)
+            || LongValueFieldType.class.isAssignableFrom(fieldTypeClass)) {
           typeClass = Long.class;
-        } else if (FloatValueFieldType.class.isAssignableFrom(fieldTypeClass) || DoubleValueFieldType.class.isAssignableFrom(fieldTypeClass)) {
+        } else if (FloatValueFieldType.class.isAssignableFrom(fieldTypeClass)
+            || DoubleValueFieldType.class.isAssignableFrom(fieldTypeClass)) {
           typeClass = Double.class;
         } else if (DateValueFieldType.class.isAssignableFrom(fieldTypeClass)) {
           typeClass = Date.class;

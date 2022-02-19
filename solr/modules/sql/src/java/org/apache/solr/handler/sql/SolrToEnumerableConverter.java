@@ -17,6 +17,10 @@
 package org.apache.solr.handler.sql;
 
 import com.google.common.collect.Lists;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -31,14 +35,7 @@ import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Pair;
 
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-/**
- * Relational expression representing a scan of a table in Solr
- */
+/** Relational expression representing a scan of a table in Solr */
 class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
   SolrToEnumerableConverter(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
     super(cluster, ConventionTraitDef.INSTANCE, traits, input);
@@ -60,12 +57,17 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final SolrRel.Implementor solrImplementor = new SolrRel.Implementor();
     solrImplementor.visitChild(0, getInput());
     final RelDataType rowType = getRowType();
-    final PhysType physType = PhysTypeImpl.of(implementor.getTypeFactory(), rowType, pref.prefer(JavaRowFormat.ARRAY));
-    final Expression table = list.append("table", solrImplementor.table.getExpression(SolrTable.SolrQueryable.class));
+    final PhysType physType =
+        PhysTypeImpl.of(implementor.getTypeFactory(), rowType, pref.prefer(JavaRowFormat.ARRAY));
+    final Expression table =
+        list.append("table", solrImplementor.table.getExpression(SolrTable.SolrQueryable.class));
     final Expression fields =
-        list.append("fields",
+        list.append(
+            "fields",
             constantArrayList(
-                Pair.zip(generateFields(SolrRules.solrFieldNames(rowType), solrImplementor.fieldMappings),
+                Pair.zip(
+                    generateFields(
+                        SolrRules.solrFieldNames(rowType), solrImplementor.fieldMappings),
                     new AbstractList<Class<?>>() {
                       @Override
                       public Class<?> get(int index) {
@@ -78,16 +80,39 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
                       }
                     }),
                 Pair.class));
-    final Expression query = list.append("query", Expressions.constant(solrImplementor.query, String.class));
-    final Expression orders = list.append("orders", constantArrayList(solrImplementor.orders, Pair.class));
-    final Expression buckets = list.append("buckets", constantArrayList(solrImplementor.buckets, String.class));
-    final Expression metricPairs = list.append("metricPairs", constantArrayList(solrImplementor.metricPairs, Pair.class));
+    final Expression query =
+        list.append("query", Expressions.constant(solrImplementor.query, String.class));
+    final Expression orders =
+        list.append("orders", constantArrayList(solrImplementor.orders, Pair.class));
+    final Expression buckets =
+        list.append("buckets", constantArrayList(solrImplementor.buckets, String.class));
+    final Expression metricPairs =
+        list.append("metricPairs", constantArrayList(solrImplementor.metricPairs, Pair.class));
     final Expression limit = list.append("limit", Expressions.constant(solrImplementor.limitValue));
-    final Expression negativeQuery = list.append("negativeQuery", Expressions.constant(Boolean.toString(solrImplementor.negativeQuery), String.class));
-    final Expression havingPredicate = list.append("havingTest", Expressions.constant(solrImplementor.havingPredicate, String.class));
-    final Expression offset = list.append("offset", Expressions.constant(solrImplementor.offsetValue));
-    Expression enumerable = list.append("enumerable", Expressions.call(table, SolrMethod.SOLR_QUERYABLE_QUERY.method,
-        fields, query, orders, buckets, metricPairs, limit, negativeQuery, havingPredicate, offset));
+    final Expression negativeQuery =
+        list.append(
+            "negativeQuery",
+            Expressions.constant(Boolean.toString(solrImplementor.negativeQuery), String.class));
+    final Expression havingPredicate =
+        list.append(
+            "havingTest", Expressions.constant(solrImplementor.havingPredicate, String.class));
+    final Expression offset =
+        list.append("offset", Expressions.constant(solrImplementor.offsetValue));
+    Expression enumerable =
+        list.append(
+            "enumerable",
+            Expressions.call(
+                table,
+                SolrMethod.SOLR_QUERYABLE_QUERY.method,
+                fields,
+                query,
+                orders,
+                buckets,
+                metricPairs,
+                limit,
+                negativeQuery,
+                havingPredicate,
+                offset));
     Hook.QUERY_PLAN.run(query);
     list.add(Expressions.return_(null, enumerable));
     return implementor.result(physType, list.toBlock());
@@ -95,11 +120,11 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
   private List<String> generateFields(List<String> queryFields, Map<String, String> fieldMappings) {
 
-    if(fieldMappings.isEmpty()) {
+    if (fieldMappings.isEmpty()) {
       return queryFields;
     } else {
       List<String> fields = new ArrayList<>();
-      for(String field : queryFields) {
+      for (String field : queryFields) {
         fields.add(getField(fieldMappings, field));
       }
       return fields;
@@ -108,9 +133,9 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
   private String getField(Map<String, String> fieldMappings, String field) {
     String retField = field;
-    while(fieldMappings.containsKey(field)) {
+    while (fieldMappings.containsKey(field)) {
       field = fieldMappings.getOrDefault(field, retField);
-      if(retField.equals(field)) {
+      if (retField.equals(field)) {
         break;
       } else {
         retField = field;
@@ -119,17 +144,15 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     return retField;
   }
 
-  /**
-   * E.g. {@code constantArrayList("x", "y")} returns
-   * "Arrays.asList('x', 'y')".
-   */
+  /** E.g. {@code constantArrayList("x", "y")} returns "Arrays.asList('x', 'y')". */
   private static <T> MethodCallExpression constantArrayList(List<T> values, Class<?> clazz) {
-    return Expressions.call(BuiltInMethod.ARRAYS_AS_LIST.method,
-        Expressions.newArrayInit(clazz, constantList(values)));
+    return Expressions.call(
+        BuiltInMethod.ARRAYS_AS_LIST.method, Expressions.newArrayInit(clazz, constantList(values)));
   }
 
   /**
-   * E.g. {@code constantList("x", "y")} returns "{ConstantExpression("x"), ConstantExpression("y")}".
+   * E.g. {@code constantList("x", "y")} returns "{ConstantExpression("x"),
+   * ConstantExpression("y")}".
    */
   private static <T> List<Expression> constantList(List<T> values) {
     return Lists.transform(values, Expressions::constant);

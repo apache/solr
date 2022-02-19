@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
@@ -53,7 +52,7 @@ public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
     String url = jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
 
     SolrStream solrStream = new SolrStream(url, sParams);
-    IOException ex = expectThrows(IOException.class,  () -> getTuples(solrStream));
+    IOException ex = expectThrows(IOException.class, () -> getTuples(solrStream));
     assertTrue(ex.getMessage().contains(SQLHandler.sqlNonCloudErrorMsg));
   }
 
