@@ -19,6 +19,7 @@ package org.apache.solr.scripting.xslt;
 
 import static org.apache.solr.scripting.xslt.XSLTConstants.*;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Map;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -27,7 +28,6 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.sax.SAXSource;
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -43,8 +43,8 @@ import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
 /**
- * Send XML formatted documents to Solr, transforming them from the original XML
- * format to the Solr XML format using an XSLT stylesheet via the 'tr' parameter.
+ * Send XML formatted documents to Solr, transforming them from the original XML format to the Solr
+ * XML format using an XSLT stylesheet via the 'tr' parameter.
  */
 public class XSLTUpdateRequestHandler extends UpdateRequestHandler {
 
@@ -128,7 +128,6 @@ public class XSLTUpdateRequestHandler extends UpdateRequestHandler {
         if (parser != null) parser.close();
       }
     }
-
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
