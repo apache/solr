@@ -19,16 +19,13 @@ package org.apache.solr.analytics.function.field;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.function.Consumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.solr.analytics.value.StringValueStream.CastingStringValueStream;
 import org.apache.solr.schema.StrField;
 
-/**
- * An analytics wrapper for a multi-valued {@link StrField} with DocValues enabled.
- */
+/** An analytics wrapper for a multi-valued {@link StrField} with DocValues enabled. */
 public class StringMultiField extends AnalyticsField implements CastingStringValueStream {
   private SortedSetDocValues docValues;
   private ArrayList<String> values;
@@ -42,12 +39,13 @@ public class StringMultiField extends AnalyticsField implements CastingStringVal
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedSet(context.reader(), fieldName);
   }
+
   @Override
   public void collect(int doc) throws IOException {
     values.clear();
     if (docValues.advanceExact(doc)) {
       int term;
-      while ((term = (int)docValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+      while ((term = (int) docValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
         values.add(docValues.lookupOrd(term).utf8ToString());
       }
     }
@@ -62,5 +60,4 @@ public class StringMultiField extends AnalyticsField implements CastingStringVal
   public void streamObjects(Consumer<Object> cons) {
     values.forEach(value -> cons.accept(value));
   }
-
 }

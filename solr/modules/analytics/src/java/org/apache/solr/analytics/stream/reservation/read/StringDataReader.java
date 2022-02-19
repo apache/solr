@@ -25,6 +25,7 @@ public class StringDataReader extends ReductionDataReader<Consumer<String>> {
   public StringDataReader(DataInput inputStream, Consumer<String> applier) {
     super(inputStream, applier);
   }
+
   @Override
   public void read() throws IOException {
     if (inputStream.readBoolean()) {

@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -32,6 +31,7 @@ import org.apache.solr.schema.TrieIntField;
 
 /**
  * An analytics wrapper for a multi-valued {@link TrieIntField} with DocValues enabled.
+ *
  * @deprecated Trie fields are deprecated as of Solr 7.0
  */
 @Deprecated
@@ -56,7 +56,7 @@ public class IntMultiTrieField extends AnalyticsField implements CastingIntValue
     count = 0;
     if (docValues.advanceExact(doc)) {
       int term;
-      while ((term = (int)docValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+      while ((term = (int) docValues.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
         if (count == values.length) {
           resizeValues();
         }
@@ -66,7 +66,7 @@ public class IntMultiTrieField extends AnalyticsField implements CastingIntValue
   }
 
   private void resizeValues() {
-    int[] newValues = new int[values.length*2];
+    int[] newValues = new int[values.length * 2];
     for (int i = 0; i < count; ++i) {
       newValues[i] = values[i];
     }
@@ -79,22 +79,27 @@ public class IntMultiTrieField extends AnalyticsField implements CastingIntValue
       cons.accept(values[i]);
     }
   }
+
   @Override
   public void streamLongs(LongConsumer cons) {
-    streamInts(value -> cons.accept((long)value));
+    streamInts(value -> cons.accept((long) value));
   }
+
   @Override
   public void streamFloats(FloatConsumer cons) {
-    streamInts(value -> cons.accept((float)value));
+    streamInts(value -> cons.accept((float) value));
   }
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
-    streamInts(value -> cons.accept((double)value));
+    streamInts(value -> cons.accept((double) value));
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     streamInts(value -> cons.accept(Integer.toString(value)));
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     streamInts(value -> cons.accept(value));

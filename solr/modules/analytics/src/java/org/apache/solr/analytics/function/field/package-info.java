@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Fields to use for analytics expressions.
- */
+/** Fields to use for analytics expressions. */
 package org.apache.solr.analytics.function.field;
-
-

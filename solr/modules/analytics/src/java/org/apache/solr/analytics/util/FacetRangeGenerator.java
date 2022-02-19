@@ -21,7 +21,6 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.solr.analytics.facet.RangeFacet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams.FacetRangeInclude;
@@ -31,10 +30,7 @@ import org.apache.solr.schema.NumericFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.DateMathParser;
 
-
-/**
- * Calculates a set of {@link FacetRange}s for a given {@link RangeFacet}.
- */
+/** Calculates a set of {@link FacetRange}s for a given {@link RangeFacet}. */
 public abstract class FacetRangeGenerator<T extends Comparable<T>> {
   protected final SchemaField field;
   protected final RangeFacet rangeFacet;
@@ -45,75 +41,78 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
   }
 
   /**
-   * Formats a Range endpoint for use as a range label name in the response.
-   * Default Impl just uses toString()
+   * Formats a Range endpoint for use as a range label name in the response. Default Impl just uses
+   * toString()
    */
   public String formatValue(final T val) {
     return val.toString();
   }
 
   /**
-   * Parses a String param into an Range endpoint value throwing
-   * a useful exception if not possible
+   * Parses a String param into an Range endpoint value throwing a useful exception if not possible
    */
   public final T getValue(final String rawval) {
     try {
       return parseVal(rawval);
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't parse value "+rawval+" for field: " + field.getName(), e);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Can't parse value " + rawval + " for field: " + field.getName(),
+          e);
     }
   }
 
   /**
-   * Parses a String param into an Range endpoint.
-   * Can throw a low level format exception as needed.
+   * Parses a String param into an Range endpoint. Can throw a low level format exception as needed.
    */
   protected abstract T parseVal(final String rawval) throws java.text.ParseException;
 
   /**
-   * Parses a String param into a value that represents the gap and
-   * can be included in the response, throwing
-   * a useful exception if not possible.
+   * Parses a String param into a value that represents the gap and can be included in the response,
+   * throwing a useful exception if not possible.
    *
-   * Note: uses Object as the return type instead of T for things like
-   * Date where gap is just a DateMathParser string
+   * <p>Note: uses Object as the return type instead of T for things like Date where gap is just a
+   * DateMathParser string
    */
   public final Object getGap(final String gap) {
     try {
       return parseGap(gap);
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't parse gap "+gap+" for field: " + field.getName(), e);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Can't parse gap " + gap + " for field: " + field.getName(),
+          e);
     }
   }
 
   /**
-   * Parses a String param into a value that represents the gap and
-   * can be included in the response.
+   * Parses a String param into a value that represents the gap and can be included in the response.
    * Can throw a low level format exception as needed.
    *
-   * Default Impl calls parseVal
+   * <p>Default Impl calls parseVal
    */
   protected Object parseGap(final String rawval) throws java.text.ParseException {
     return parseVal(rawval);
   }
 
   /**
-   * Adds the String gap param to a low Range endpoint value to determine
-   * the corrisponding high Range endpoint value, throwing
-   * a useful exception if not possible.
+   * Adds the String gap param to a low Range endpoint value to determine the corrisponding high
+   * Range endpoint value, throwing a useful exception if not possible.
    */
   public final T addGap(T value, String gap) {
     try {
       return parseAndAddGap(value, gap);
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't add gap "+gap+" to value " + value + " for field: " + field.getName(), e);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Can't add gap " + gap + " to value " + value + " for field: " + field.getName(),
+          e);
     }
   }
 
   /**
-   * Adds the String gap param to a low Range endpoint value to determine
-   * the corrisponding high Range endpoint value.
-   * Can throw a low level format exception as needed.
+   * Adds the String gap param to a low Range endpoint value to determine the corrisponding high
+   * Range endpoint value. Can throw a low level format exception as needed.
    */
   protected abstract T parseAndAddGap(T value, String gap) throws java.text.ParseException;
 
@@ -125,7 +124,8 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
     public final boolean includeUpper;
     private final String facetValue;
 
-    public FacetRange(String name, String lower, String upper, boolean includeLower, boolean includeUpper) {
+    public FacetRange(
+        String name, String lower, String upper, boolean includeLower, boolean includeUpper) {
       this.name = name;
       this.lower = lower;
       this.upper = upper;
@@ -140,24 +140,26 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
       if (upper == null) {
         value += "*)";
       } else {
-        value += upper + (includeUpper? "]" : ")");
+        value += upper + (includeUpper ? "]" : ")");
       }
       facetValue = value;
     }
 
     @Override
     public String toString() {
-        return facetValue;
+      return facetValue;
     }
   }
 
-  public List<FacetRange> getRanges(){
+  public List<FacetRange> getRanges() {
 
     final T start = getValue(rangeFacet.getStart());
     T end = getValue(rangeFacet.getEnd()); // not final, hardend may change this
 
-    if( end.compareTo(start) < 0 ){
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "range facet 'end' comes before 'start': "+end+" < "+start);
+    if (end.compareTo(start) < 0) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "range facet 'end' comes before 'start': " + end + " < " + start);
     }
 
     // explicitly return the gap.  compute this early so we are more
@@ -174,12 +176,12 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
     int gapCounter = 0;
 
     while (low.compareTo(end) < 0) {
-      if (gapCounter<gaps.size()) {
+      if (gapCounter < gaps.size()) {
         gap = gaps.get(gapCounter++);
       }
-      T high = addGap(low,gap);
+      T high = addGap(low, gap);
       if (end.compareTo(high) < 0) {
-        if (rangeFacet.isHardEnd()){
+        if (rangeFacet.isHardEnd()) {
           high = end;
         } else {
           end = high;
@@ -187,64 +189,93 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
       }
 
       if (high.compareTo(low) < 0) {
-        throw new SolrException (SolrException.ErrorCode.BAD_REQUEST, "range facet infinite loop (is gap negative? did the math overflow?)");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "range facet infinite loop (is gap negative? did the math overflow?)");
       }
 
       if (high.compareTo(low) == 0) {
-        throw new SolrException (SolrException.ErrorCode.BAD_REQUEST, "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: " + low + " + " + gap + " = " + high );
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: "
+                + low
+                + " + "
+                + gap
+                + " = "
+                + high);
       }
 
-      final boolean includeLower = (include.contains(FacetRangeInclude.ALL) ||
-                                    include.contains(FacetRangeInclude.LOWER) ||
-                                   (include.contains(FacetRangeInclude.EDGE) &&
-                                   0 == low.compareTo(start)));
-      final boolean includeUpper = (include.contains(FacetRangeInclude.ALL) ||
-                                    include.contains(FacetRangeInclude.UPPER) ||
-                                   (include.contains(FacetRangeInclude.EDGE) &&
-                                   0 == high.compareTo(end)));
+      final boolean includeLower =
+          (include.contains(FacetRangeInclude.ALL)
+              || include.contains(FacetRangeInclude.LOWER)
+              || (include.contains(FacetRangeInclude.EDGE) && 0 == low.compareTo(start)));
+      final boolean includeUpper =
+          (include.contains(FacetRangeInclude.ALL)
+              || include.contains(FacetRangeInclude.UPPER)
+              || (include.contains(FacetRangeInclude.EDGE) && 0 == high.compareTo(end)));
 
       final String lowS = formatValue(low);
       final String highS = formatValue(high);
 
-      ranges.add( new FacetRange(lowS,lowS,highS,includeLower,includeUpper) );
+      ranges.add(new FacetRange(lowS, lowS, highS, includeLower, includeUpper));
       low = high;
     }
 
     final Set<FacetRangeOther> others = rangeFacet.getOthers();
-    if (null != others && 0 < others.size() ) {
+    if (null != others && 0 < others.size()) {
 
       // no matter what other values are listed, we don't do
       // anything if "none" is specified.
-      if( !others.contains(FacetRangeOther.NONE) ) {
+      if (!others.contains(FacetRangeOther.NONE)) {
 
         boolean all = others.contains(FacetRangeOther.ALL);
 
         if (all || others.contains(FacetRangeOther.BEFORE)) {
           // include upper bound if "outer" or if first gap doesn't already include it
-          ranges.add( new FacetRange(FacetRangeOther.BEFORE.toString(),
-                                        null, formatValue(start), false, include.contains(FacetRangeInclude.OUTER) || include.contains(FacetRangeInclude.ALL) ||
-                                                            !(include.contains(FacetRangeInclude.LOWER) || include.contains(FacetRangeInclude.EDGE)) ) );
-
+          ranges.add(
+              new FacetRange(
+                  FacetRangeOther.BEFORE.toString(),
+                  null,
+                  formatValue(start),
+                  false,
+                  include.contains(FacetRangeInclude.OUTER)
+                      || include.contains(FacetRangeInclude.ALL)
+                      || !(include.contains(FacetRangeInclude.LOWER)
+                          || include.contains(FacetRangeInclude.EDGE))));
         }
         if (all || others.contains(FacetRangeOther.AFTER)) {
           // include lower bound if "outer" or if last gap doesn't already include it
-          ranges.add( new FacetRange(FacetRangeOther.AFTER.toString(),
-                                        formatValue(end), null, include.contains(FacetRangeInclude.OUTER) || include.contains(FacetRangeInclude.ALL) ||
-                                                   !(include.contains(FacetRangeInclude.UPPER) || include.contains(FacetRangeInclude.EDGE)), false) );
+          ranges.add(
+              new FacetRange(
+                  FacetRangeOther.AFTER.toString(),
+                  formatValue(end),
+                  null,
+                  include.contains(FacetRangeInclude.OUTER)
+                      || include.contains(FacetRangeInclude.ALL)
+                      || !(include.contains(FacetRangeInclude.UPPER)
+                          || include.contains(FacetRangeInclude.EDGE)),
+                  false));
         }
         if (all || others.contains(FacetRangeOther.BETWEEN)) {
-          ranges.add( new FacetRange(FacetRangeOther.BETWEEN.toString(), formatValue(start), formatValue(end),
-                                        include.contains(FacetRangeInclude.LOWER) || include.contains(FacetRangeInclude.EDGE) || include.contains(FacetRangeInclude.ALL),
-                                        include.contains(FacetRangeInclude.UPPER) || include.contains(FacetRangeInclude.EDGE) || include.contains(FacetRangeInclude.ALL)) );
+          ranges.add(
+              new FacetRange(
+                  FacetRangeOther.BETWEEN.toString(),
+                  formatValue(start),
+                  formatValue(end),
+                  include.contains(FacetRangeInclude.LOWER)
+                      || include.contains(FacetRangeInclude.EDGE)
+                      || include.contains(FacetRangeInclude.ALL),
+                  include.contains(FacetRangeInclude.UPPER)
+                      || include.contains(FacetRangeInclude.EDGE)
+                      || include.contains(FacetRangeInclude.ALL)));
         }
       }
-
     }
 
     return ranges;
   }
 
-  public static FacetRangeGenerator<? extends Comparable<?>> create(RangeFacet rangeFacet){
+  public static FacetRangeGenerator<? extends Comparable<?>> create(RangeFacet rangeFacet) {
     final SchemaField sf = rangeFacet.getField();
     final FieldType ft = sf.getType();
     final FacetRangeGenerator<?> calc;
@@ -266,21 +297,27 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
           calc = new DateFacetRangeGenerator(rangeFacet, null);
           break;
         default:
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to range facet on numeric field of unexpected type: " + sf.getName());
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Unable to range facet on numeric field of unexpected type: " + sf.getName());
       }
     } else {
-      throw new SolrException (SolrException.ErrorCode.BAD_REQUEST, "Unable to range facet on non-numeric field: " + sf);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Unable to range facet on non-numeric field: " + sf);
     }
     return calc;
   }
 
   static class IntegerFacetRangeGenerator extends FacetRangeGenerator<Integer> {
-    public IntegerFacetRangeGenerator(final RangeFacet rangeFacet) { super(rangeFacet); }
+    public IntegerFacetRangeGenerator(final RangeFacet rangeFacet) {
+      super(rangeFacet);
+    }
 
     @Override
     protected Integer parseVal(String rawval) {
       return Integer.valueOf(rawval);
     }
+
     @Override
     public Integer parseAndAddGap(Integer value, String gap) {
       return value.intValue() + Integer.valueOf(gap).intValue();
@@ -288,12 +325,15 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
   }
 
   static class LongFacetRangeGenerator extends FacetRangeGenerator<Long> {
-    public LongFacetRangeGenerator(final RangeFacet rangeFacet) { super(rangeFacet); }
+    public LongFacetRangeGenerator(final RangeFacet rangeFacet) {
+      super(rangeFacet);
+    }
 
     @Override
     protected Long parseVal(String rawval) {
       return Long.valueOf(rawval);
     }
+
     @Override
     public Long parseAndAddGap(Long value, String gap) {
       return value.longValue() + Long.valueOf(gap).longValue();
@@ -301,12 +341,15 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
   }
 
   static class FloatFacetRangeGenerator extends FacetRangeGenerator<Float> {
-    public FloatFacetRangeGenerator(final RangeFacet rangeFacet) { super(rangeFacet); }
+    public FloatFacetRangeGenerator(final RangeFacet rangeFacet) {
+      super(rangeFacet);
+    }
 
     @Override
     protected Float parseVal(String rawval) {
       return Float.valueOf(rawval);
     }
+
     @Override
     public Float parseAndAddGap(Float value, String gap) {
       return value.floatValue() + Float.valueOf(gap).floatValue();
@@ -314,12 +357,15 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
   }
 
   static class DoubleFacetRangeGenerator extends FacetRangeGenerator<Double> {
-    public DoubleFacetRangeGenerator(final RangeFacet rangeFacet) { super(rangeFacet); }
+    public DoubleFacetRangeGenerator(final RangeFacet rangeFacet) {
+      super(rangeFacet);
+    }
 
     @Override
     protected Double parseVal(String rawval) {
       return Double.valueOf(rawval);
     }
+
     @Override
     public Double parseAndAddGap(Double value, String gap) {
       return value.doubleValue() + Double.valueOf(gap).doubleValue();
@@ -328,6 +374,7 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
 
   static class DateFacetRangeGenerator extends FacetRangeGenerator<Date> {
     private final Date now;
+
     public DateFacetRangeGenerator(final RangeFacet rangeFacet, final Date now) {
       super(rangeFacet);
       this.now = now;
@@ -337,14 +384,17 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
     public String formatValue(Date val) {
       return val.toInstant().toString();
     }
+
     @Override
     protected Date parseVal(String rawval) {
       return DateMathParser.parseMath(now, rawval);
     }
+
     @Override
     protected Object parseGap(final String rawval) {
       return rawval;
     }
+
     @Override
     public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
       final DateMathParser dmp = new DateMathParser();
@@ -353,4 +403,3 @@ public abstract class FacetRangeGenerator<T extends Comparable<T>> {
     }
   }
 }
-
