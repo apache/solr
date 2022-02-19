@@ -26,7 +26,9 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashSet;
+import java.util.Set;
 
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -62,7 +64,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
 
   // https://issues.apache.org/jira/browse/SOLR-16019
   @Test
-  public void testRequestParsingFails() throws Exception {
+  public void testWrongUtf8InQ() throws Exception {
     var baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     var request = new URL(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0"); // Illegal UTF-8 string
     var connection = (HttpURLConnection) request.openConnection();
@@ -70,12 +72,12 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
   }
 
   private void assertCoreChosen(int numCores, TestRequest testRequest) throws UnavailableException {
-    var jettySolrRunner = cluster.getJettySolrRunner(0);
-    var coreNames = new HashSet<String>();
-    var dispatchFilter = jettySolrRunner.getSolrDispatchFilter();
+    JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(0);
+    Set<String> coreNames = new HashSet<>();
+    SolrDispatchFilter dispatchFilter = jettySolrRunner.getSolrDispatchFilter();
     for (int i = 0; i < NUM_SHARD * REPLICA_FACTOR * 20; i++) {
       if (coreNames.size() == numCores) return;
-      var httpSolrCall = new HttpSolrCall(dispatchFilter, dispatchFilter.getCores(), testRequest, new TestResponse(), false);
+      HttpSolrCall httpSolrCall = new HttpSolrCall(dispatchFilter, dispatchFilter.getCores(), testRequest, new TestResponse(), false);
       try {
         httpSolrCall.init();
       } catch (Exception e) {
