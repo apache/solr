@@ -134,7 +134,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     DocSetQuery f = new DocSetQuery(null) {
       @Override
       public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-        return super.createWeight(searcher, scoreMode, 0);
+        return super.createWeight(searcher, scoreMode, boost);
       }
 
       @Override
