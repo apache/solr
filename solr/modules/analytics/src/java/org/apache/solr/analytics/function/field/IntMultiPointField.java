@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -29,9 +28,7 @@ import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.IntValueStream.CastingIntValueStream;
 import org.apache.solr.schema.IntPointField;
 
-/**
- * An analytics wrapper for a multi-valued {@link IntPointField} with DocValues enabled.
- */
+/** An analytics wrapper for a multi-valued {@link IntPointField} with DocValues enabled. */
 public class IntMultiPointField extends AnalyticsField implements CastingIntValueStream {
   private SortedNumericDocValues docValues;
   private int count;
@@ -54,7 +51,7 @@ public class IntMultiPointField extends AnalyticsField implements CastingIntValu
       count = docValues.docValueCount();
       resizeEmptyValues(count);
       for (int i = 0; i < count; ++i) {
-        values[i] = (int)docValues.nextValue();
+        values[i] = (int) docValues.nextValue();
       }
     } else {
       count = 0;
@@ -73,22 +70,27 @@ public class IntMultiPointField extends AnalyticsField implements CastingIntValu
       cons.accept(values[i]);
     }
   }
+
   @Override
   public void streamLongs(LongConsumer cons) {
-    streamInts(value -> cons.accept((long)value));
+    streamInts(value -> cons.accept((long) value));
   }
+
   @Override
   public void streamFloats(FloatConsumer cons) {
-    streamInts(value -> cons.accept((float)value));
+    streamInts(value -> cons.accept((float) value));
   }
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
-    streamInts(value -> cons.accept((double)value));
+    streamInts(value -> cons.accept((double) value));
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     streamInts(value -> cons.accept(Integer.toString(value)));
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     streamInts(value -> cons.accept(value));

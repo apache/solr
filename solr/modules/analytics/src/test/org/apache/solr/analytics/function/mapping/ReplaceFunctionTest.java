@@ -21,7 +21,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValue;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
@@ -31,14 +30,6 @@ import org.apache.solr.analytics.value.DateValue;
 import org.apache.solr.analytics.value.DateValueStream;
 import org.apache.solr.analytics.value.DoubleValue;
 import org.apache.solr.analytics.value.DoubleValueStream;
-import org.apache.solr.analytics.value.FloatValue;
-import org.apache.solr.analytics.value.FloatValueStream;
-import org.apache.solr.analytics.value.IntValue;
-import org.apache.solr.analytics.value.IntValueStream;
-import org.apache.solr.analytics.value.LongValue;
-import org.apache.solr.analytics.value.LongValueStream;
-import org.apache.solr.analytics.value.StringValue;
-import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.FillableTestValue.TestAnalyticsValue;
 import org.apache.solr.analytics.value.FillableTestValue.TestAnalyticsValueStream;
 import org.apache.solr.analytics.value.FillableTestValue.TestBooleanValue;
@@ -55,27 +46,75 @@ import org.apache.solr.analytics.value.FillableTestValue.TestLongValue;
 import org.apache.solr.analytics.value.FillableTestValue.TestLongValueStream;
 import org.apache.solr.analytics.value.FillableTestValue.TestStringValue;
 import org.apache.solr.analytics.value.FillableTestValue.TestStringValueStream;
+import org.apache.solr.analytics.value.FloatValue;
+import org.apache.solr.analytics.value.FloatValueStream;
+import org.apache.solr.analytics.value.IntValue;
+import org.apache.solr.analytics.value.IntValueStream;
+import org.apache.solr.analytics.value.LongValue;
+import org.apache.solr.analytics.value.LongValueStream;
+import org.apache.solr.analytics.value.StringValue;
+import org.apache.solr.analytics.value.StringValueStream;
 import org.junit.Test;
 
 public class ReplaceFunctionTest extends SolrTestCaseJ4 {
 
   @Test
   public void castingTest() {
-    assertTrue(ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {new TestBooleanValue(), new TestStringValue(), new TestStringValue()}) instanceof StringValue);
+    assertTrue(
+        ReplaceFunction.creatorFunction.apply(
+                new AnalyticsValueStream[] {
+                  new TestBooleanValue(), new TestStringValue(), new TestStringValue()
+                })
+            instanceof StringValue);
 
-    assertFalse(ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {new TestIntValueStream(), new TestFloatValue(), new TestDoubleValue()}) instanceof FloatValueStream);
+    assertFalse(
+        ReplaceFunction.creatorFunction.apply(
+                new AnalyticsValueStream[] {
+                  new TestIntValueStream(), new TestFloatValue(), new TestDoubleValue()
+                })
+            instanceof FloatValueStream);
 
-    assertFalse(ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {new TestLongValueStream(), new TestDateValue(), new TestLongValue()}) instanceof DateValueStream);
+    assertFalse(
+        ReplaceFunction.creatorFunction.apply(
+                new AnalyticsValueStream[] {
+                  new TestLongValueStream(), new TestDateValue(), new TestLongValue()
+                })
+            instanceof DateValueStream);
 
-    assertFalse(ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {new TestLongValue(), new TestAnalyticsValue(), new TestStringValue()}) instanceof StringValue);
+    assertFalse(
+        ReplaceFunction.creatorFunction.apply(
+                new AnalyticsValueStream[] {
+                  new TestLongValue(), new TestAnalyticsValue(), new TestStringValue()
+                })
+            instanceof StringValue);
 
-    assertTrue(ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {new TestIntValue(), new TestLongValue(), new TestFloatValue()}) instanceof DoubleValue);
+    assertTrue(
+        ReplaceFunction.creatorFunction.apply(
+                new AnalyticsValueStream[] {
+                  new TestIntValue(), new TestLongValue(), new TestFloatValue()
+                })
+            instanceof DoubleValue);
 
-    assertFalse(ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {new TestDateValue(), new TestStringValue(), new TestLongValue()}) instanceof DateValue);
+    assertFalse(
+        ReplaceFunction.creatorFunction.apply(
+                new AnalyticsValueStream[] {
+                  new TestDateValue(), new TestStringValue(), new TestLongValue()
+                })
+            instanceof DateValue);
 
-    assertFalse(ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {new TestBooleanValueStream(), new TestStringValue(), new TestStringValue()}) instanceof BooleanValueStream);
+    assertFalse(
+        ReplaceFunction.creatorFunction.apply(
+                new AnalyticsValueStream[] {
+                  new TestBooleanValueStream(), new TestStringValue(), new TestStringValue()
+                })
+            instanceof BooleanValueStream);
 
-    assertFalse(ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {new TestDoubleValue(), new TestIntValue(), new TestLongValue()}) instanceof LongValue);
+    assertFalse(
+        ReplaceFunction.creatorFunction.apply(
+                new AnalyticsValueStream[] {
+                  new TestDoubleValue(), new TestIntValue(), new TestLongValue()
+                })
+            instanceof LongValue);
   }
 
   @Test
@@ -84,7 +123,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestBooleanValue comp = new TestBooleanValue();
     TestBooleanValue fill = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof BooleanValue);
     BooleanValue func = (BooleanValue) uncasted;
 
@@ -134,7 +174,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestIntValue comp = new TestIntValue();
     TestIntValue fill = new TestIntValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof IntValue);
     IntValue func = (IntValue) uncasted;
 
@@ -189,7 +230,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestLongValue comp = new TestLongValue();
     TestLongValue fill = new TestLongValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof LongValue);
     LongValue func = (LongValue) uncasted;
 
@@ -245,7 +287,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestFloatValue comp = new TestFloatValue();
     TestFloatValue fill = new TestFloatValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof FloatValue);
     FloatValue func = (FloatValue) uncasted;
 
@@ -301,7 +344,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestDoubleValue comp = new TestDoubleValue();
     TestDoubleValue fill = new TestDoubleValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
 
@@ -360,7 +404,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestDateValue comp = new TestDateValue();
     TestDateValue fill = new TestDateValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof DateValue);
     DateValue func = (DateValue) uncasted;
 
@@ -416,7 +461,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestStringValue comp = new TestStringValue();
     TestStringValue fill = new TestStringValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof StringValue);
     StringValue func = (StringValue) uncasted;
 
@@ -472,7 +518,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestAnalyticsValue comp = new TestAnalyticsValue();
     TestAnalyticsValue fill = new TestAnalyticsValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof AnalyticsValue);
     AnalyticsValue func = (AnalyticsValue) uncasted;
 
@@ -528,7 +575,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestBooleanValue comp = new TestBooleanValue();
     TestBooleanValue fill = new TestBooleanValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
 
@@ -536,26 +584,29 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     comp.setExists(false);
     fill.setExists(false);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     comp.setValue(true).setExists(true);
     fill.setValue(false).setExists(true);
-    func.streamBooleans( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Comp doesn't exist
     val.setValues(false, true, false, true, true);
     comp.setExists(false);
     fill.setValue(true).setExists(true);
     Iterator<Boolean> values1 = Arrays.asList(false, true, false, true, true).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Values exist
@@ -563,20 +614,22 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     comp.setValue(true).setExists(true);
     fill.setValue(false).setExists(true);
     Iterator<Boolean> values2 = Arrays.asList(false, false, false, false, false).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value);
+        });
     assertFalse(values2.hasNext());
 
     val.setValues(false, true, false, true, true);
     comp.setValue(false).setExists(true);
     fill.setExists(false);
     Iterator<Boolean> values3 = Arrays.asList(true, true, true).iterator();
-    func.streamBooleans( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next(), value);
-    });
+    func.streamBooleans(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next(), value);
+        });
     assertFalse(values3.hasNext());
   }
 
@@ -586,7 +639,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestIntValue comp = new TestIntValue();
     TestIntValue fill = new TestIntValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof IntValueStream);
     IntValueStream func = (IntValueStream) uncasted;
 
@@ -594,26 +648,29 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     comp.setExists(false);
     fill.setExists(false);
-    func.streamInts( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     comp.setValue(324).setExists(true);
     fill.setValue(52341).setExists(true);
-    func.streamInts( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Comp doesn't exist
     val.setValues(1, 234, -234, 4439, -234, -3245);
     comp.setExists(false);
     fill.setValue(52135).setExists(true);
     Iterator<Integer> values1 = Arrays.asList(1, 234, -234, 4439, -234, -3245).iterator();
-    func.streamInts( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next().intValue(), value);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next().intValue(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Values exist
@@ -621,20 +678,22 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     comp.setValue(-234).setExists(true);
     fill.setExists(false);
     Iterator<Integer> values2 = Arrays.asList(1, 234, 4439, -3245).iterator();
-    func.streamInts( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next().intValue(), value);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next().intValue(), value);
+        });
     assertFalse(values2.hasNext());
 
     val.setValues(1, 234, -234, 4439, -234, -3245);
     comp.setValue(4439).setExists(true);
     fill.setValue(-1000).setExists(true);
     Iterator<Integer> values3 = Arrays.asList(1, 234, -234, -1000, -234, -3245).iterator();
-    func.streamInts( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next().intValue(), value);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next().intValue(), value);
+        });
     assertFalse(values3.hasNext());
   }
 
@@ -644,7 +703,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestLongValue comp = new TestLongValue();
     TestLongValue fill = new TestLongValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof LongValueStream);
     LongValueStream func = (LongValueStream) uncasted;
 
@@ -652,26 +712,29 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     comp.setExists(false);
     fill.setExists(false);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     comp.setValue(2323L).setExists(true);
     fill.setValue(-5943L).setExists(true);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Comp doesn't exist
     val.setValues(1L, 234L, -234L, 4439L, -234L, -3245L);
     comp.setExists(false);
     fill.setValue(52135L).setExists(true);
     Iterator<Long> values1 = Arrays.asList(1L, 234L, -234L, 4439L, -234L, -3245L).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next().longValue(), value);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next().longValue(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Values exist
@@ -679,20 +742,22 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     comp.setValue(-234L).setExists(true);
     fill.setExists(false);
     Iterator<Long> values2 = Arrays.asList(1L, 234L, 4439L, -3245L).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next().longValue(), value);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next().longValue(), value);
+        });
     assertFalse(values2.hasNext());
 
     val.setValues(1L, 234L, -234L, 4439L, -234L, -3245L);
     comp.setValue(4439L).setExists(true);
     fill.setValue(-1000L).setExists(true);
     Iterator<Long> values3 = Arrays.asList(1L, 234L, -234L, -1000L, -234L, -3245L).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next().longValue(), value);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next().longValue(), value);
+        });
     assertFalse(values3.hasNext());
   }
 
@@ -702,7 +767,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestFloatValue comp = new TestFloatValue();
     TestFloatValue fill = new TestFloatValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof FloatValueStream);
     FloatValueStream func = (FloatValueStream) uncasted;
 
@@ -710,26 +776,30 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     comp.setExists(false);
     fill.setExists(false);
-    func.streamFloats( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamFloats(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     comp.setValue(-230.32F).setExists(true);
     fill.setValue(9459.3458F).setExists(true);
-    func.streamFloats( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamFloats(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Comp doesn't exist
     val.setValues(1423.3F, 423.4323F, -2349.2F, -343.43934F, 423.4323F);
     comp.setExists(false);
     fill.setValue(234.234F).setExists(true);
-    Iterator<Float> values1 = Arrays.asList(1423.3F, 423.4323F, -2349.2F, -343.43934F, 423.4323F).iterator();
-    func.streamFloats( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value, .000001);
-    });
+    Iterator<Float> values1 =
+        Arrays.asList(1423.3F, 423.4323F, -2349.2F, -343.43934F, 423.4323F).iterator();
+    func.streamFloats(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value, .000001);
+        });
     assertFalse(values1.hasNext());
 
     // Values exist
@@ -737,20 +807,23 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     comp.setValue(423.4323F).setExists(true);
     fill.setExists(false);
     Iterator<Float> values2 = Arrays.asList(1423.3F, -2349.2F, -343.43934F).iterator();
-    func.streamFloats( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value, .000001);
-    });
+    func.streamFloats(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value, .000001);
+        });
     assertFalse(values2.hasNext());
 
     val.setValues(1423.3F, 423.4323F, -2349.2F, -343.43934F, 423.4323F);
     comp.setValue(423.4323F).setExists(true);
     fill.setValue(-1000F).setExists(true);
-    Iterator<Float> values3 = Arrays.asList(1423.3F, -1000F, -2349.2F, -343.43934F, -1000F).iterator();
-    func.streamFloats( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next(), value, .000001);
-    });
+    Iterator<Float> values3 =
+        Arrays.asList(1423.3F, -1000F, -2349.2F, -343.43934F, -1000F).iterator();
+    func.streamFloats(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next(), value, .000001);
+        });
     assertFalse(values3.hasNext());
   }
 
@@ -760,7 +833,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestDoubleValue comp = new TestDoubleValue();
     TestDoubleValue fill = new TestDoubleValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
 
@@ -768,26 +842,30 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     comp.setExists(false);
     fill.setExists(false);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     comp.setValue(234237.67).setExists(true);
     fill.setValue(-234.312).setExists(true);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Comp doesn't exist
     val.setValues(1423.3, 423.4323, -2349.2, -343.43934, 423.4323);
     comp.setExists(false);
     fill.setValue(234.234).setExists(true);
-    Iterator<Double> values1 = Arrays.asList(1423.3, 423.4323, -2349.2, -343.43934, 423.4323).iterator();
-    func.streamDoubles( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value, .000001);
-    });
+    Iterator<Double> values1 =
+        Arrays.asList(1423.3, 423.4323, -2349.2, -343.43934, 423.4323).iterator();
+    func.streamDoubles(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value, .000001);
+        });
     assertFalse(values1.hasNext());
 
     // Values exist
@@ -795,20 +873,23 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     comp.setValue(423.4323).setExists(true);
     fill.setExists(false);
     Iterator<Double> values2 = Arrays.asList(1423.3, -2349.2, -343.43934).iterator();
-    func.streamDoubles( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value, .000001);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value, .000001);
+        });
     assertFalse(values2.hasNext());
 
     val.setValues(1423.3, 423.4323, -2349.2, -343.43934, 423.4323);
     comp.setValue(423.4323).setExists(true);
     fill.setValue(-1000.0).setExists(true);
-    Iterator<Double> values3 = Arrays.asList(1423.3, -1000.0, -2349.2, -343.43934, -1000.0).iterator();
-    func.streamDoubles( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next(), value, .000001);
-    });
+    Iterator<Double> values3 =
+        Arrays.asList(1423.3, -1000.0, -2349.2, -343.43934, -1000.0).iterator();
+    func.streamDoubles(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next(), value, .000001);
+        });
     assertFalse(values3.hasNext());
   }
 
@@ -822,7 +903,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestDateValue comp = new TestDateValue();
     TestDateValue fill = new TestDateValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof DateValueStream);
     DateValueStream func = (DateValueStream) uncasted;
 
@@ -830,47 +912,68 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     comp.setExists(false);
     fill.setExists(false);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     comp.setValue("1700-12-14").setExists(true);
     fill.setValue("3450-04-23").setExists(true);
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Comp doesn't exist
-    val.setValues("1810-12-02T10:30:15Z", "1931-03-16T18:15:45Z", "2023-11-01T20:30:15Z", "1931-03-16T18:15:45Z");
+    val.setValues(
+        "1810-12-02T10:30:15Z",
+        "1931-03-16T18:15:45Z",
+        "2023-11-01T20:30:15Z",
+        "1931-03-16T18:15:45Z");
     comp.setExists(false);
     fill.setValue("1810-12-02T10:30:15Z").setExists(true);
-    Iterator<Long> values1 = Arrays.asList(date1.getTime(), date2.getTime(), date3.getTime(), date2.getTime()).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next().longValue(), value);
-    });
+    Iterator<Long> values1 =
+        Arrays.asList(date1.getTime(), date2.getTime(), date3.getTime(), date2.getTime())
+            .iterator();
+    func.streamLongs(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next().longValue(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Values exist
-    val.setValues("1810-12-02T10:30:15Z", "1931-03-16T18:15:45Z", "2023-11-01T20:30:15Z", "1931-03-16T18:15:45Z");
+    val.setValues(
+        "1810-12-02T10:30:15Z",
+        "1931-03-16T18:15:45Z",
+        "2023-11-01T20:30:15Z",
+        "1931-03-16T18:15:45Z");
     comp.setValue("1931-03-16T18:15:45Z").setExists(true);
     fill.setExists(false);
     Iterator<Long> values2 = Arrays.asList(date1.getTime(), date3.getTime()).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next().longValue(), value);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next().longValue(), value);
+        });
     assertFalse(values2.hasNext());
 
-    val.setValues("1810-12-02T10:30:15Z", "1931-03-16T18:15:45Z", "2023-11-01T20:30:15Z", "1931-03-16T18:15:45Z");
+    val.setValues(
+        "1810-12-02T10:30:15Z",
+        "1931-03-16T18:15:45Z",
+        "2023-11-01T20:30:15Z",
+        "1931-03-16T18:15:45Z");
     comp.setValue("1931-03-16T18:15:45Z").setExists(true);
     fill.setValue("1810-12-02T10:30:15Z").setExists(true);
-    Iterator<Long> values3 = Arrays.asList(date1.getTime(), date1.getTime(), date3.getTime(), date1.getTime()).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next().longValue(), value);
-    });
+    Iterator<Long> values3 =
+        Arrays.asList(date1.getTime(), date1.getTime(), date3.getTime(), date1.getTime())
+            .iterator();
+    func.streamLongs(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next().longValue(), value);
+        });
     assertFalse(values3.hasNext());
   }
 
@@ -880,7 +983,8 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestStringValue comp = new TestStringValue();
     TestStringValue fill = new TestStringValue();
 
-    AnalyticsValueStream uncasted = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream uncasted =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
     assertTrue(uncasted instanceof StringValueStream);
     StringValueStream func = (StringValueStream) uncasted;
 
@@ -888,26 +992,29 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     comp.setExists(false);
     fill.setExists(false);
-    func.streamStrings( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     comp.setValue("ads").setExists(true);
     fill.setValue("empty").setExists(true);
-    func.streamStrings( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Comp doesn't exist
     val.setValues("abc", "123", "456", "def", "123");
     comp.setExists(false);
     fill.setValue("won't show up").setExists(true);
     Iterator<String> values1 = Arrays.asList("abc", "123", "456", "def", "123").iterator();
-    func.streamStrings( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Values exist
@@ -915,20 +1022,22 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     comp.setValue("123").setExists(true);
     fill.setExists(false);
     Iterator<String> values2 = Arrays.asList("abc", "456", "def").iterator();
-    func.streamStrings( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value);
+        });
     assertFalse(values2.hasNext());
 
     val.setValues("abc", "123", "456", "def", "123");
     comp.setValue("456").setExists(true);
     fill.setValue("changed").setExists(true);
     Iterator<String> values3 = Arrays.asList("abc", "123", "changed", "def", "123").iterator();
-    func.streamStrings( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next(), value);
-    });
+    func.streamStrings(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next(), value);
+        });
     assertFalse(values3.hasNext());
   }
 
@@ -938,53 +1047,62 @@ public class ReplaceFunctionTest extends SolrTestCaseJ4 {
     TestAnalyticsValue comp = new TestAnalyticsValue();
     TestAnalyticsValue fill = new TestAnalyticsValue();
 
-    AnalyticsValueStream func = ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
+    AnalyticsValueStream func =
+        ReplaceFunction.creatorFunction.apply(new AnalyticsValueStream[] {val, comp, fill});
 
     // No values
     val.setValues();
     comp.setExists(false);
     fill.setExists(false);
-    func.streamObjects( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     val.setValues();
     comp.setValue("doesn't matter").setExists(true);
     fill.setValue("won't show up").setExists(true);
-    func.streamObjects( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Comp doesn't exist
     val.setValues("asdfs", new Date(12312), 213123L, new Date(12312));
     comp.setExists(false);
     fill.setValue("won't show up").setExists(true);
-    Iterator<Object> values1 = Arrays.<Object>asList("asdfs", new Date(12312), 213123L, new Date(12312)).iterator();
-    func.streamObjects( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next(), value);
-    });
+    Iterator<Object> values1 =
+        Arrays.<Object>asList("asdfs", new Date(12312), 213123L, new Date(12312)).iterator();
+    func.streamObjects(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Values exist
     val.setValues("asdfs", new Date(12312), 213123L, new Date(12312));
     comp.setValue("asdfs").setExists(true);
     fill.setExists(false);
-    Iterator<Object> values2 = Arrays.<Object>asList(new Date(12312), 213123L, new Date(12312)).iterator();
-    func.streamObjects( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next(), value);
-    });
+    Iterator<Object> values2 =
+        Arrays.<Object>asList(new Date(12312), 213123L, new Date(12312)).iterator();
+    func.streamObjects(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next(), value);
+        });
     assertFalse(values2.hasNext());
 
     val.setValues("asdfs", new Date(12312), 213123L, new Date(12312));
     comp.setValue(new Date(12312)).setExists(true);
     fill.setValue(Boolean.FALSE).setExists(true);
-    Iterator<Object> values3 = Arrays.<Object>asList("asdfs", Boolean.FALSE, 213123L, Boolean.FALSE).iterator();
-    func.streamObjects( value -> {
-      assertTrue(values3.hasNext());
-      assertEquals(values3.next(), value);
-    });
+    Iterator<Object> values3 =
+        Arrays.<Object>asList("asdfs", Boolean.FALSE, 213123L, Boolean.FALSE).iterator();
+    func.streamObjects(
+        value -> {
+          assertTrue(values3.hasNext());
+          assertEquals(values3.next(), value);
+        });
     assertFalse(values3.hasNext());
   }
 }

@@ -18,17 +18,18 @@ package org.apache.solr.analytics.stream.reservation;
 
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
-
 import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
 
 /**
- * A reservation allows a {@link ReductionDataCollector} to specify an array of data it needs to export from the shard.
+ * A reservation allows a {@link ReductionDataCollector} to specify an array of data it needs to
+ * export from the shard.
  */
 public abstract class ReductionDataArrayReservation<A, E> extends ReductionDataReservation<A, E> {
   protected final IntConsumer sizeApplier;
   protected final IntSupplier sizeExtractor;
 
-  protected ReductionDataArrayReservation(A applier, IntConsumer sizeApplier, E extractor, IntSupplier sizeExtractor) {
+  protected ReductionDataArrayReservation(
+      A applier, IntConsumer sizeApplier, E extractor, IntSupplier sizeExtractor) {
     super(applier, extractor);
     this.sizeApplier = sizeApplier;
     this.sizeExtractor = sizeExtractor;

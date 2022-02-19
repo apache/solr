@@ -19,7 +19,6 @@ package org.apache.solr.analytics.function.field;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -30,7 +29,8 @@ import org.apache.solr.schema.FloatPointField;
 import org.apache.solr.schema.TrieFloatField;
 
 /**
- * An analytics wrapper for a single-valued {@link TrieFloatField} or {@link FloatPointField} with DocValues enabled.
+ * An analytics wrapper for a single-valued {@link TrieFloatField} or {@link FloatPointField} with
+ * DocValues enabled.
  */
 public class FloatField extends AnalyticsField implements CastingFloatValue {
   private NumericDocValues docValues;
@@ -50,7 +50,7 @@ public class FloatField extends AnalyticsField implements CastingFloatValue {
   public void collect(int doc) throws IOException {
     exists = docValues.advanceExact(doc);
     if (exists) {
-      value = Float.intBitsToFloat((int)docValues.longValue());
+      value = Float.intBitsToFloat((int) docValues.longValue());
     }
   }
 
@@ -58,18 +58,22 @@ public class FloatField extends AnalyticsField implements CastingFloatValue {
   public float getFloat() {
     return value;
   }
+
   @Override
   public double getDouble() {
-    return (double)value;
+    return (double) value;
   }
+
   @Override
   public String getString() {
     return exists ? Float.toString(value) : null;
   }
+
   @Override
   public Object getObject() {
     return exists ? value : null;
   }
+
   @Override
   public boolean exists() {
     return exists;
@@ -81,18 +85,21 @@ public class FloatField extends AnalyticsField implements CastingFloatValue {
       cons.accept(value);
     }
   }
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
     if (exists) {
-      cons.accept((double)value);
+      cons.accept((double) value);
     }
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     if (exists) {
       cons.accept(Float.toString(value));
     }
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     if (exists) {

@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.mapping;
 
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.DoubleValue;
@@ -35,7 +34,8 @@ public class PowerFunctionTest extends SolrTestCaseJ4 {
     TestIntValue base = new TestIntValue();
     TestFloatValue pow = new TestFloatValue();
 
-    AnalyticsValueStream uncasted = PowerFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, pow});
+    AnalyticsValueStream uncasted =
+        PowerFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, pow});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
 
@@ -63,32 +63,36 @@ public class PowerFunctionTest extends SolrTestCaseJ4 {
     TestLongValueStream base = new TestLongValueStream();
     TestDoubleValue pow = new TestDoubleValue();
 
-    AnalyticsValueStream uncasted = PowerFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, pow});
+    AnalyticsValueStream uncasted =
+        PowerFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, pow});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
 
     // No values, One value
     base.setValues();
     pow.setValue(21.56F).setExists(true);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, no value
     base.setValues(4L, 10023L);
     pow.setExists(false);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, one value
     base.setValues(4L, 123L, 10L);
     pow.setValue(2.5F).setExists(true);
     Iterator<Double> values = Arrays.asList(32.0, 167788.7268, 316.2277).iterator();
-    func.streamDoubles( value -> {
-      assertTrue(values.hasNext());
-      assertEquals(values.next(), value, 0.001);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value, 0.001);
+        });
     assertFalse(values.hasNext());
   }
 
@@ -97,32 +101,36 @@ public class PowerFunctionTest extends SolrTestCaseJ4 {
     TestDoubleValue base = new TestDoubleValue();
     TestLongValueStream pow = new TestLongValueStream();
 
-    AnalyticsValueStream uncasted = PowerFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, pow});
+    AnalyticsValueStream uncasted =
+        PowerFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, pow});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
 
     // No values, One value
     base.setValue(21.56F).setExists(true);
     pow.setValues();
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, no value
     base.setExists(false);
     pow.setValues(4L, 10023L);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, one value
     base.setValue(4.56F).setExists(true);
     pow.setValues(2L, 5L, 3L);
     Iterator<Double> values = Arrays.asList(20.7936, 1971.6245, 94.8188).iterator();
-    func.streamDoubles( value -> {
-      assertTrue(values.hasNext());
-      assertEquals(values.next(), value, 0.0001);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value, 0.0001);
+        });
     assertFalse(values.hasNext());
   }
 }

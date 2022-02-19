@@ -17,13 +17,12 @@
 package org.apache.solr.analytics.stream.reservation;
 
 import java.util.function.BooleanSupplier;
-
 import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
 
 /**
- * A reservation allows a {@link ReductionDataCollector} to specify a piece of data it needs to export from the shard.
- * This data may, or may not, exist. The {@link ReductionDataCollector} need not check while importing/exporting since
- * the Reader/Writers handle all checking.
+ * A reservation allows a {@link ReductionDataCollector} to specify a piece of data it needs to
+ * export from the shard. This data may, or may not, exist. The {@link ReductionDataCollector} need
+ * not check while importing/exporting since the Reader/Writers handle all checking.
  */
 public abstract class ReductionCheckedDataReservation<A, E> extends ReductionDataReservation<A, E> {
   protected final BooleanSupplier exists;

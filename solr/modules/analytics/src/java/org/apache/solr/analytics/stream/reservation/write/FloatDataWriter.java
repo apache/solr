@@ -18,7 +18,6 @@ package org.apache.solr.analytics.stream.reservation.write;
 
 import java.io.DataOutput;
 import java.io.IOException;
-
 import org.apache.solr.analytics.util.function.FloatSupplier;
 
 public class FloatDataWriter extends ReductionDataWriter<FloatSupplier> {
