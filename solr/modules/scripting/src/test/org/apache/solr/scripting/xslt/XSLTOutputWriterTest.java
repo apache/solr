@@ -21,11 +21,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests the ability to configure multiple query output writers, and select those at query time. This test 
- * is specific to the XSLT writer, which isn't part of the core.
- * 
- * See the related unit test OutputWriterTest.
+ * Tests the ability to configure multiple query output writers, and select those at query time.
+ * This test is specific to the XSLT writer, which isn't part of the core.
  *
+ * <p>See the related unit test OutputWriterTest.
  */
 public class XSLTOutputWriterTest extends SolrTestCaseJ4 {
 
@@ -49,5 +48,4 @@ public class XSLTOutputWriterTest extends SolrTestCaseJ4 {
     String out = h.query(req("*:*"));
     assertTrue(out.contains("DUMMY"));
   }
-
 }
