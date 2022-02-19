@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
 import org.apache.calcite.config.Lex;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -48,7 +47,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
+public class SQLHandler extends RequestHandlerBase
+    implements SolrCoreAware, PermissionNameProvider {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -62,7 +62,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
   public void inform(SolrCore core) {
     CoreContainer coreContainer = core.getCoreContainer();
 
-    if(coreContainer.isZooKeeperAware()) {
+    if (coreContainer.isZooKeeperAware()) {
       defaultZkhost = coreContainer.getZkController().getZkServerAddress();
       defaultWorkerCollection = core.getCoreDescriptor().getCollectionName();
       isCloud = true;
@@ -91,11 +91,11 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
     TupleStream tupleStream = null;
     try {
 
-      if(!isCloud) {
+      if (!isCloud) {
         throw new IllegalStateException(sqlNonCloudErrorMsg);
       }
 
-      if(sql == null) {
+      if (sql == null) {
         throw new Exception("stmt parameter cannot be null");
       }
 
@@ -104,7 +104,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
       Properties properties = new Properties();
       // Add all query parameters
       Iterator<String> parameterNamesIterator = params.getParameterNamesIterator();
-      while(parameterNamesIterator.hasNext()) {
+      while (parameterNamesIterator.hasNext()) {
         String param = parameterNamesIterator.next();
         properties.setProperty(param, params.get(param));
       }
@@ -115,16 +115,17 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
 
       String driverClass = CalciteSolrDriver.class.getCanonicalName();
 
-      // JDBC driver requires metadata from the SQLHandler. Default to false since this adds a new Metadata stream.
+      // JDBC driver requires metadata from the SQLHandler. Default to false since this adds a new
+      // Metadata stream.
       boolean includeMetadata = params.getBool("includeMetadata", false);
       tupleStream = new SqlHandlerStream(url, sql, null, properties, driverClass, includeMetadata);
 
       tupleStream = new StreamHandler.TimerStream(new ExceptionStream(tupleStream));
 
       rsp.add("result-set", tupleStream);
-    } catch(Exception e) {
-      //Catch the SQL parsing and query transformation exceptions.
-      if(tupleStream != null) {
+    } catch (Exception e) {
+      // Catch the SQL parsing and query transformation exceptions.
+      if (tupleStream != null) {
         tupleStream.close();
       }
       SolrException.log(log, e);
@@ -149,8 +150,13 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
     List<String> metadataFields = new ArrayList<>();
     Map<String, String> metadataAliases = new HashMap<>();
 
-    SqlHandlerStream(String connectionUrl, String sqlQuery, StreamComparator definedSort,
-                     Properties connectionProperties, String driverClassName, boolean includeMetadata)
+    SqlHandlerStream(
+        String connectionUrl,
+        String sqlQuery,
+        StreamComparator definedSort,
+        Properties connectionProperties,
+        String driverClassName,
+        boolean includeMetadata)
         throws IOException {
       super(connectionUrl, sqlQuery, definedSort, connectionProperties, driverClassName);
 
@@ -160,7 +166,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
     @Override
     public Tuple read() throws IOException {
       // Return a metadata tuple as the first tuple and then pass through to the JDBCStream.
-      if(firstTuple) {
+      if (firstTuple) {
         try {
           Tuple tuple = new Tuple();
 
@@ -168,14 +174,14 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
 
           ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
-          for(int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+          for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnName(i);
             String columnLabel = resultSetMetaData.getColumnLabel(i);
             metadataFields.add(columnName);
             metadataAliases.put(columnName, columnLabel);
           }
 
-          if(includeMetadata) {
+          if (includeMetadata) {
             tuple.put("isMetadata", true);
             tuple.put("fields", metadataFields);
             tuple.put("aliases", metadataAliases);
@@ -187,7 +193,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
       }
 
       Tuple tuple = super.read();
-      if(!tuple.EOF) {
+      if (!tuple.EOF) {
         tuple.setFieldNames(metadataFields);
         tuple.setFieldLabels(metadataAliases);
       }

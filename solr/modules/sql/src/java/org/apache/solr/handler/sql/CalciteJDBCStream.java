@@ -22,21 +22,25 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Properties;
-
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.JDBCStream;
 
 /**
  * Used with o.a.s.Handler.SQLHandler.
- * 
+ *
  * @lucene.internal
  * @since 7.0.0
  */
 public class CalciteJDBCStream extends JDBCStream {
   private static final long serialVersionUID = 1L;
 
-  public CalciteJDBCStream(String connectionUrl, String sqlQuery, StreamComparator definedSort,
-      Properties connectionProperties, String driverClassName) throws IOException {
+  public CalciteJDBCStream(
+      String connectionUrl,
+      String sqlQuery,
+      StreamComparator definedSort,
+      Properties connectionProperties,
+      String driverClassName)
+      throws IOException {
     super(connectionUrl, sqlQuery, definedSort, connectionProperties, driverClassName);
   }
 
@@ -49,26 +53,27 @@ public class CalciteJDBCStream extends JDBCStream {
       final String columnName = metadata.getColumnLabel(columnNumber);
       final String className = metadata.getColumnClassName(columnNumber);
       if (Array.class.getName().equals(className)) {
-        valueSelector = new ResultSetValueSelector() {
-          @Override
-          public Object selectValue(ResultSet resultSet) throws SQLException {
-            Object o = resultSet.getObject(columnNumber);
-            if (resultSet.wasNull()) {
-              return null;
-            }
-            if (o instanceof Array) {
-              Array array = (Array) o;
-              return array.getArray();
-            } else {
-              return o;
-            }
-          }
+        valueSelector =
+            new ResultSetValueSelector() {
+              @Override
+              public Object selectValue(ResultSet resultSet) throws SQLException {
+                Object o = resultSet.getObject(columnNumber);
+                if (resultSet.wasNull()) {
+                  return null;
+                }
+                if (o instanceof Array) {
+                  Array array = (Array) o;
+                  return array.getArray();
+                } else {
+                  return o;
+                }
+              }
 
-          @Override
-          public String getColumnName() {
-            return columnName;
-          }
-        };
+              @Override
+              public String getColumnName() {
+                return columnName;
+              }
+            };
       }
     }
     return valueSelector;

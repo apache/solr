@@ -17,10 +17,11 @@
 
 package org.apache.solr.handler.sql;
 
+import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -37,8 +38,6 @@ import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
-
 public class SQLWithAuthzEnabledTest extends SolrCloudTestCase {
 
   private static final String ADMIN_USER = "solr";
@@ -49,22 +48,32 @@ public class SQLWithAuthzEnabledTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
-    final String SECURITY_JSON = Utils.toJSONString
-        (Map.of("authorization",
-            Map.of("class", RuleBasedAuthorizationPlugin.class.getName(),
-                "user-role", Map.of(SQL_USER, "sql", ADMIN_USER, "admin", SAD_USER, "sad"),
-                "permissions", Arrays.asList(
-                    Map.of("name", "sql", "role", "sql", "path", "/sql", "collection", "*"),
-                    Map.of("name", "export", "role", "sql", "path", "/export", "collection", "*"),
-                    Map.of("name", "all", "role", "admin"))
-            ),
-            "authentication",
-            Map.of("class", BasicAuthPlugin.class.getName(),
-                "blockUnknown", true,
-                "credentials", Map.of(
-                    SAD_USER, getSaltedHashedValue(PASS),
-                    SQL_USER, getSaltedHashedValue(PASS),
-                    ADMIN_USER, getSaltedHashedValue(PASS)))));
+    final String SECURITY_JSON =
+        Utils.toJSONString(
+            Map.of(
+                "authorization",
+                Map.of(
+                    "class",
+                    RuleBasedAuthorizationPlugin.class.getName(),
+                    "user-role",
+                    Map.of(SQL_USER, "sql", ADMIN_USER, "admin", SAD_USER, "sad"),
+                    "permissions",
+                    Arrays.asList(
+                        Map.of("name", "sql", "role", "sql", "path", "/sql", "collection", "*"),
+                        Map.of(
+                            "name", "export", "role", "sql", "path", "/export", "collection", "*"),
+                        Map.of("name", "all", "role", "admin"))),
+                "authentication",
+                Map.of(
+                    "class",
+                    BasicAuthPlugin.class.getName(),
+                    "blockUnknown",
+                    true,
+                    "credentials",
+                    Map.of(
+                        SAD_USER, getSaltedHashedValue(PASS),
+                        SQL_USER, getSaltedHashedValue(PASS),
+                        ADMIN_USER, getSaltedHashedValue(PASS)))));
 
     configureCluster(2)
         .addConfig("conf", configset("sql"))
@@ -79,23 +88,30 @@ public class SQLWithAuthzEnabledTest extends SolrCloudTestCase {
 
   @Test
   public void testSqlAuthz() throws Exception {
-    doAsAdmin(CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2, 0, 0)).process(cluster.getSolrClient());
-    waitForState("Expected collection to be created with 1 shards and 2 replicas", collectionName, clusterShape(1, 2));
+    doAsAdmin(CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2, 0, 0))
+        .process(cluster.getSolrClient());
+    waitForState(
+        "Expected collection to be created with 1 shards and 2 replicas",
+        collectionName,
+        clusterShape(1, 2));
 
-    doAsAdmin(new UpdateRequest()
-        .add("id", "1")
-        .add("id", "2")
-        .add("id", "3")
-        .add("id", "4")
-        .add("id", "5")
-        .add("id", "6")
-        .add("id", "7")
-        .add("id", "8")).commit(cluster.getSolrClient(), collectionName);
+    doAsAdmin(
+            new UpdateRequest()
+                .add("id", "1")
+                .add("id", "2")
+                .add("id", "3")
+                .add("id", "4")
+                .add("id", "5")
+                .add("id", "6")
+                .add("id", "7")
+                .add("id", "8"))
+        .commit(cluster.getSolrClient(), collectionName);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.QT, "/sql");
     params.set("stmt", "select id from " + collectionName);
-    String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + collectionName;
+    String baseUrl =
+        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + collectionName;
     SolrStream solrStream = new SolrStream(baseUrl, params);
     solrStream.setCredentials(SAD_USER, PASS);
 
@@ -112,8 +128,7 @@ public class SQLWithAuthzEnabledTest extends SolrCloudTestCase {
     int count = 0;
     try (tupleStream) {
       tupleStream.open();
-      for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read())
-        count++;
+      for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) count++;
     }
     return count;
   }

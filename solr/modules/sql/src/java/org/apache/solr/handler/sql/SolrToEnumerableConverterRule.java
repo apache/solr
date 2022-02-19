@@ -22,13 +22,18 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 
 /**
- * Rule to convert a relational expression from {@link SolrRel#CONVENTION} to {@link EnumerableConvention}.
+ * Rule to convert a relational expression from {@link SolrRel#CONVENTION} to {@link
+ * EnumerableConvention}.
  */
 class SolrToEnumerableConverterRule extends ConverterRule {
   static final ConverterRule INSTANCE = new SolrToEnumerableConverterRule();
 
   private SolrToEnumerableConverterRule() {
-    super(RelNode.class, SolrRel.CONVENTION, EnumerableConvention.INSTANCE, "SolrToEnumerableConverterRule");
+    super(
+        RelNode.class,
+        SolrRel.CONVENTION,
+        EnumerableConvention.INSTANCE,
+        "SolrToEnumerableConverterRule");
   }
 
   @Override

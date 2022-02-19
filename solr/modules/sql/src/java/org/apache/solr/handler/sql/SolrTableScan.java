@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.sql;
 
+import java.util.List;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
@@ -24,11 +25,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 
-import java.util.List;
-
-/**
- * Relational expression representing a scan of a Solr collection.
- */
+/** Relational expression representing a scan of a Solr collection. */
 class SolrTableScan extends TableScan implements SolrRel {
   private final SolrTable solrTable;
   private final RelDataType projectRowType;
@@ -36,14 +33,18 @@ class SolrTableScan extends TableScan implements SolrRel {
   /**
    * Creates a SolrTableScan.
    *
-   * @param cluster        Cluster
-   * @param traitSet       Traits
-   * @param table          Table
-   * @param solrTable      Solr table
+   * @param cluster Cluster
+   * @param traitSet Traits
+   * @param table Table
+   * @param solrTable Solr table
    * @param projectRowType Fields and types to project; null to project raw row
    */
-  SolrTableScan(RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table, SolrTable solrTable,
-                RelDataType projectRowType) {
+  SolrTableScan(
+      RelOptCluster cluster,
+      RelTraitSet traitSet,
+      RelOptTable table,
+      SolrTable solrTable,
+      RelDataType projectRowType) {
     super(cluster, traitSet, table);
     this.solrTable = solrTable;
     this.projectRowType = projectRowType;
@@ -52,7 +53,8 @@ class SolrTableScan extends TableScan implements SolrRel {
     assert getConvention() == SolrRel.CONVENTION;
   }
 
-  @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+  @Override
+  public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
     final float f = projectRowType == null ? 1f : (float) projectRowType.getFieldCount() / 100f;
     return super.computeSelfCost(planner, mq).multiplyBy(.1 * f);
   }
@@ -75,9 +77,12 @@ class SolrTableScan extends TableScan implements SolrRel {
       planner.addRule(rule);
     }
 
-    // Solr's impl only supports LogicalAggregate, so don't let Calcite convert LogicalAggregate's to Enumerable (SOLR-15974)
+    // Solr's impl only supports LogicalAggregate, so don't let Calcite convert LogicalAggregate's
+    // to Enumerable (SOLR-15974)
     planner.removeRule(EnumerableRules.ENUMERABLE_AGGREGATE_RULE);
-    planner.removeRule(CoreRules.FILTER_REDUCE_EXPRESSIONS); // prevent AND NOT from being reduced away, see SOLR-15461
+    planner.removeRule(
+        CoreRules
+            .FILTER_REDUCE_EXPRESSIONS); // prevent AND NOT from being reduced away, see SOLR-15461
   }
 
   public void implement(Implementor implementor) {
