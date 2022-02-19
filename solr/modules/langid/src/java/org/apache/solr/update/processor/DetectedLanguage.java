@@ -16,20 +16,19 @@
  */
 package org.apache.solr.update.processor;
 
-/**
- * Bean holding a language and a detection certainty 
- */
+/** Bean holding a language and a detection certainty */
 public class DetectedLanguage {
   private final String langCode;
   private final Double certainty;
-  
+
   DetectedLanguage(String lang, Double certainty) {
     this.langCode = lang;
     this.certainty = certainty;
   }
-  
+
   /**
    * Returns the detected language code
+   *
    * @return language code as a string
    */
   public String getLangCode() {
@@ -38,6 +37,7 @@ public class DetectedLanguage {
 
   /**
    * Returns the detected certainty for this language
+   *
    * @return certainty as a value between 0.0 and 1.0 where 1.0 is 100% certain
    */
   public Double getCertainty() {
