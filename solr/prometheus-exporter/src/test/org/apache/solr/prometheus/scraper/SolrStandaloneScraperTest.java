@@ -17,24 +17,23 @@
 
 package org.apache.solr.prometheus.scraper;
 
+import io.prometheus.client.Collector;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-
-import io.prometheus.client.Collector;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.prometheus.PrometheusExporterTestBase;
 import org.apache.solr.prometheus.collector.MetricSamples;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 import org.apache.solr.prometheus.utils.Helpers;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RestTestBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -57,15 +56,13 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     initCore("solrconfig.xml", "managed-schema");
 
     createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
-        "solrconfig.xml",
-        "managed-schema",
-        "/solr",
-        true,
-        null);
+        tmpSolrHome.getAbsolutePath(), "solrconfig.xml", "managed-schema", "/solr", true, null);
 
-    executor = ExecutorUtil.newMDCAwareFixedThreadPool(25, new SolrNamedThreadFactory("solr-cloud-scraper-tests"));
-    configuration = Helpers.loadConfiguration("conf/prometheus-solr-exporter-scraper-test-config.xml");
+    executor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            25, new SolrNamedThreadFactory("solr-cloud-scraper-tests"));
+    configuration =
+        Helpers.loadConfiguration("conf/prometheus-solr-exporter-scraper-test-config.xml");
 
     solrClient = getHttpSolrClient(restTestHarness.getAdminURL());
     solrScraper = new SolrStandaloneScraper(solrClient, executor);
@@ -97,16 +94,16 @@ public class SolrStandaloneScraperTest extends RestTestBase {
 
   @Test
   public void pingCollections() throws IOException {
-    Map<String, MetricSamples> collectionMetrics = solrScraper.pingAllCollections(
-        configuration.getPingConfiguration().get(0));
+    Map<String, MetricSamples> collectionMetrics =
+        solrScraper.pingAllCollections(configuration.getPingConfiguration().get(0));
 
     assertTrue(collectionMetrics.isEmpty());
   }
 
   @Test
   public void pingCores() throws Exception {
-    Map<String, MetricSamples> allCoreMetrics = solrScraper.pingAllCores(
-        configuration.getPingConfiguration().get(0));
+    Map<String, MetricSamples> allCoreMetrics =
+        solrScraper.pingAllCores(configuration.getPingConfiguration().get(0));
 
     assertEquals(1, allCoreMetrics.size());
 
@@ -117,24 +114,28 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     assertEquals(1, samples.samples.size());
     assertEquals(1.0, samples.samples.get(0).value, 0.001);
     assertEquals(Collections.singletonList("base_url"), samples.samples.get(0).labelNames);
-    assertEquals(Collections.singletonList(restTestHarness.getAdminURL()), samples.samples.get(0).labelValues);
+    assertEquals(
+        Collections.singletonList(restTestHarness.getAdminURL()),
+        samples.samples.get(0).labelValues);
   }
 
   @Test
   public void queryCollections() throws Exception {
-    List<Collector.MetricFamilySamples> collection1Metrics = solrScraper.collections(
-        configuration.getCollectionsConfiguration().get(0)).asList();
+    List<Collector.MetricFamilySamples> collection1Metrics =
+        solrScraper.collections(configuration.getCollectionsConfiguration().get(0)).asList();
 
     assertTrue(collection1Metrics.isEmpty());
   }
 
   @Test
   public void metricsForHost() throws Exception {
-    Map<String, MetricSamples> metricsByHost = solrScraper.metricsForAllHosts(configuration.getMetricsConfiguration().get(0));
+    Map<String, MetricSamples> metricsByHost =
+        solrScraper.metricsForAllHosts(configuration.getMetricsConfiguration().get(0));
 
     assertEquals(1, metricsByHost.size());
 
-    List<Collector.MetricFamilySamples> replicaSamples = metricsByHost.get(restTestHarness.getAdminURL()).asList();
+    List<Collector.MetricFamilySamples> replicaSamples =
+        metricsByHost.get(restTestHarness.getAdminURL()).asList();
 
     assertEquals(1, replicaSamples.size());
 
@@ -144,7 +145,8 @@ public class SolrStandaloneScraperTest extends RestTestBase {
 
   @Test
   public void search() throws Exception {
-    List<Collector.MetricFamilySamples> samples = solrScraper.search(configuration.getSearchConfiguration().get(0)).asList();
+    List<Collector.MetricFamilySamples> samples =
+        solrScraper.search(configuration.getSearchConfiguration().get(0)).asList();
 
     assertEquals(1, samples.size());
 
@@ -153,8 +155,10 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     assertEquals(PrometheusExporterTestBase.FACET_VALUES.size(), sampleFamily.samples.size());
 
     for (Collector.MetricFamilySamples.Sample sample : sampleFamily.samples) {
-      assertEquals(PrometheusExporterTestBase.FACET_VALUES.get(sample.labelValues.get(0)), sample.value, 0.001);
+      assertEquals(
+          PrometheusExporterTestBase.FACET_VALUES.get(sample.labelValues.get(0)),
+          sample.value,
+          0.001);
     }
   }
-
 }
