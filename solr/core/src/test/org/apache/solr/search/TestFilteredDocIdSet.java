@@ -132,10 +132,6 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     
     // Now search w/ a Query which returns a null Scorer
     DocSetQuery f = new DocSetQuery(null) {
-      @Override
-      public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-        return super.createWeight(searcher, scoreMode, boost);
-      }
 
       @Override
       public String toString(String s) {
