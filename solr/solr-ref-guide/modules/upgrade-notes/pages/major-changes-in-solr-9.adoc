@@ -333,3 +333,5 @@ where they really belong: /admin/threads, /admin/properties, /admin/logging
 
 * SOLR-15949: Docker: the official image now uses Java 17 provided by Eclipse Temurin.  Formerly it was Java 11 from OpenJDK.
 (janhoy, David Smiley)
+
+* Atomic/partial updates to nested documents now _require_ the `\_root_` field to clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.
