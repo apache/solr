@@ -103,7 +103,7 @@ dependencies {
   compileOnlyApi 'org.eclipse.jetty:jetty-servlet'
   compileOnlyApi 'org.eclipse.jetty:jetty-util'
 
-  // ZooKeeper & Curator
+  // ZooKeeper
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
     exclude group: "log4j", module: "log4j"
@@ -114,9 +114,6 @@ dependencies {
   }
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly ('org.xerial.snappy:snappy-java')
-  implementation ('org.apache.curator:curator-client')
-  implementation ('org.apache.curator:curator-framework')
-  runtimeOnly ('org.apache.curator:curator-recipes')
 
   // For Package Manager
   implementation 'com.github.zafarkhaja:java-semver'
@@ -168,25 +165,6 @@ dependencies {
   implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
   implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
   permitUnusedDeclared 'org.apache.calcite.avatica:avatica-core'
-
-  // Hadoop auth framework
-  implementation 'org.apache.hadoop:hadoop-annotations'
-  permitUnusedDeclared 'org.apache.hadoop:hadoop-annotations'
-  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
-  // transitive of hadoop-common; used by Kerberos auth
-  runtimeOnly 'commons-collections:commons-collections'
-  runtimeOnly 'com.google.re2j:re2j'
-  runtimeOnly 'org.apache.commons:commons-configuration2'
-  runtimeOnly 'org.apache.htrace:htrace-core4' // note: removed in Hadoop 3.3.2
-  runtimeOnly 'org.apache.kerby:kerb-core'
-  runtimeOnly 'org.apache.kerby:kerb-util'
-
-  // Hadoop MiniKdc Dependencies (for Kerberos auth tests)
-  testImplementation ('org.apache.hadoop:hadoop-minikdc', {
-    exclude group:'org.apache.kerby', module:'kerby-xdr'
-    exclude group:'org.apache.kerby', module:'token-provider'
-  })
 
   testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 

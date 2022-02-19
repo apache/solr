@@ -31,15 +31,15 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * A class that accesses Queries based on a DocSet
+ * A Query based on a {@link DocSet}.  The un-boosted score is always 1.
  *
- * Refer SOLR-15257
+ * @see DocSet#makeQuery()
+ * @since 9.0
  */
-public class DocSetQuery extends Query implements DocSetProducer{
+class DocSetQuery extends Query implements DocSetProducer{
     private final DocSet docSet;
 
-    public DocSetQuery(DocSet docSet) {
-        super();
+    DocSetQuery(DocSet docSet) {
         this.docSet = docSet;
     }
 
@@ -78,11 +78,9 @@ public class DocSetQuery extends Query implements DocSetProducer{
 
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-        //This should probably use the provided boost as scorer. However, that causes
-        // TestSolrQueryParser.testFilter to fail.
-        return new ConstantScoreWeight(this, 0) {
+        return new ConstantScoreWeight(this, boost) {
             @Override
-            public Scorer scorer(LeafReaderContext context) throws IOException {
+            public Scorer scorer(LeafReaderContext context) {
                 DocIdSetIterator disi = docSet.iterator(context);
                 if (disi == null) {
                     return null;

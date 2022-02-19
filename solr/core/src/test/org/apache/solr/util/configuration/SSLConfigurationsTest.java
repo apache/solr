@@ -22,22 +22,16 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.lucene.util.TestRuleRestoreSystemProperties;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
-import org.apache.solr.util.configuration.providers.HadoopSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
-import org.mockito.Mockito;
 
-import static org.apache.hadoop.security.alias.CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.when;
 
 public class SSLConfigurationsTest {
   private Map<String, String> envs;
@@ -56,24 +50,12 @@ public class SSLConfigurationsTest {
       SSLConfigurations.SysProps.SSL_KEY_STORE_PASSWORD,
       SSLConfigurations.SysProps.SSL_TRUST_STORE_PASSWORD,
       SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD,
-      SSLConfigurations.SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD,
-      CREDENTIAL_PROVIDER_PATH
+      SSLConfigurations.SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD
   );
 
   @Before
   public void setUp() {
     envs = new HashMap<>();
-  }
-
-  private SSLConfigurations createSut(Configuration mockHadoopConfiguration) {
-    EnvSSLCredentialProvider envSSLCredentialProvider = new EnvSSLCredentialProvider();
-    envSSLCredentialProvider.setEnvVars(envs);
-    sut = new SSLConfigurations(Arrays.asList(
-        new HadoopSSLCredentialProvider(mockHadoopConfiguration),
-        envSSLCredentialProvider,
-        new SysPropSSLCredentialProvider())
-    );
-    return sut;
   }
 
   private SSLConfigurations createSut() {
@@ -102,20 +84,6 @@ public class SSLConfigurationsTest {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_KEY_STORE_PASSWORD, SAMPLE_PW1);
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW2);
     createSut().init();
-    assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
-  }
-
-  @Test
-  public void testSslConfigKeystorePwFromKeystoreHadoopCredentialProvider() throws IOException {
-    getSutWithMockedHadoopCredentialProvider(SSLConfigurations.SysProps.SSL_KEY_STORE_PASSWORD, SAMPLE_PW1)
-        .init();
-    assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW1));
-  }
-
-  @Test
-  public void testSslConfigKeystorePwFromClientKeystoreHadoopCredentialProvider() throws IOException {
-    getSutWithMockedHadoopCredentialProvider(SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW2)
-        .init();
     assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
   }
 
@@ -173,13 +141,6 @@ public class SSLConfigurationsTest {
   }
 
   @Test
-  public void testGetKeyStorePasswordFromHadoopCredentialProvider() throws IOException {
-    SSLConfigurations sut = getSutWithMockedHadoopCredentialProvider(SSLConfigurations.SysProps.SSL_KEY_STORE_PASSWORD, SAMPLE_PW3);
-    assertThat(sut.getKeyStorePassword(), is(SAMPLE_PW3));
-  }
-
-
-  @Test
   public void testGetTrustStorePasswordFromProperty() {
     System.setProperty(TRUST_STORE_PASSWORD, SAMPLE_PW1);
     assertThat(createSut().getTrustStorePassword(), is(SAMPLE_PW1));
@@ -189,12 +150,6 @@ public class SSLConfigurationsTest {
   public void testGetTrustStorePasswordFromEnv() {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD, SAMPLE_PW2);
     assertThat(createSut().getTrustStorePassword(), is(SAMPLE_PW2));
-  }
-
-  @Test
-  public void testGetTruststorePasswordFromHadoopCredentialProvider() throws IOException {
-    SSLConfigurations sut = getSutWithMockedHadoopCredentialProvider(SSLConfigurations.SysProps.SSL_TRUST_STORE_PASSWORD, SAMPLE_PW3);
-    assertThat(sut.getTrustStorePassword(), is(SAMPLE_PW3));
   }
 
   @Test
@@ -210,13 +165,6 @@ public class SSLConfigurationsTest {
   }
 
   @Test
-  public void testGetClientKeyStorePasswordFromHadoopCredentialProvider() throws IOException {
-    SSLConfigurations sut = getSutWithMockedHadoopCredentialProvider(SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW3);
-    assertThat(sut.getClientKeyStorePassword(), is(SAMPLE_PW3));
-  }
-
-
-  @Test
   public void testGetClientTrustStorePasswordFromProperty() {
     System.setProperty(CLIENT_TRUST_STORE_PASSWORD, SAMPLE_PW1);
     assertThat(createSut().getClientTrustStorePassword(), is(SAMPLE_PW1));
@@ -229,40 +177,10 @@ public class SSLConfigurationsTest {
   }
 
   @Test
-  public void testGetClientTruststorePasswordFromHadoopCredentialProvider() throws IOException {
-    SSLConfigurations sut = getSutWithMockedHadoopCredentialProvider(SSLConfigurations.SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD, SAMPLE_PW3);
-    assertThat(sut.getClientTrustStorePassword(), is(SAMPLE_PW3));
-  }
-
-  @Test
   public void testSystemPropertyPriorityOverEnvVar() throws IOException {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_KEY_STORE_PASSWORD, SAMPLE_PW2);
     assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
     System.setProperty(KEY_STORE_PASSWORD, SAMPLE_PW1);
     assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
   }
-
-  @Test
-  public void testHadoopCredentialProviderPrioritySysPropAndEnvVars() throws IOException {
-    envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_KEY_STORE_PASSWORD, SAMPLE_PW2);
-    assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
-    System.setProperty(KEY_STORE_PASSWORD, SAMPLE_PW1);
-    assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
-    SSLConfigurations sut = getSutWithMockedHadoopCredentialProvider(KEY_STORE_PASSWORD, SAMPLE_PW3);
-    assertThat(sut.getKeyStorePassword(), is(SAMPLE_PW3));
-  }
-
-  private SSLConfigurations getSutWithMockedHadoopCredentialProvider(String key, String pw) throws IOException {
-    Configuration mockHadoopConfiguration = getMockHadoopConfiguration();
-    when(mockHadoopConfiguration.getPassword(key))
-        .then(invocationOnMock -> invocationOnMock.getArguments()[0].equals(key) ? pw.toCharArray() : null);
-    System.setProperty(CREDENTIAL_PROVIDER_PATH, "/some/path"); // enables HCP
-    return createSut(mockHadoopConfiguration);
-  }
-
-  private Configuration getMockHadoopConfiguration() {
-    SolrTestCaseJ4.assumeWorkingMockito();
-    return Mockito.mock(Configuration.class);
-  }
-
 }

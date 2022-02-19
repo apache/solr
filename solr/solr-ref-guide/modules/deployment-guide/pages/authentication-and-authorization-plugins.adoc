@@ -87,7 +87,7 @@ Create the file `security.json` with the contents:
 
 [source,json]
 ----
-{"authentication": {"class": "org.apache.solr.security.KerberosPlugin"}}
+{"authentication": {"class": "solr.KerberosPlugin"}}
 ----
 
 Note that this example defines the `KerberosPlugin` for authentication.

@@ -51,18 +51,18 @@ SolrCloud doesn't support that but may sometime.
 
 === Rolling Upgrades
 
+WARNING: Rolling upgrades from Solr 8 to Solr 9 require upgrading from Solr 8.7 or newer.
+
 * SOLR-14702: All references to "master" and "slave" were replaced in the code with "leader" and "follower".
 This includes API calls for the replication handler and metrics.
-For rolling upgrades into 9.0, you need to be on Solr version 8.7 or greater. Some metrics also changed, alerts and monitors on Solr KPIs that mention "master" or "slave" will also now be "leader" and "follower"
+Some metrics also changed, alerts and monitors on Solr KPIs that mention "master" or "slave" will also now be "leader" and "follower"
 
 * SOLR-15965: Internode communication secured by PKI Authentication has changed formats. For detailed information, see
   xref:deployment-guide:authentication-and-authorization-plugins.adoc#pkiauthenticationplugin[PKI Authentication Plugin].
   A rolling upgrade from Solr 8 to Solr 9 requires the following multiple restart sequence:
-** Either:
-*** Upgrade to Solr 8.11.2 or newer
-*** Upgrade to Solr 9 and set system properties: `solr.pki.sendVersion=v1` and `solr.pki.acceptVersions=v1,v2`
-** Upgrade to Solr 9 with `solr.pki.acceptVersions=v1,v2`. If you had already upgraded to Solr 9 in the previous step, this will be a rolling restart, not upgrade.
-** (Optional) A rolling restart with system property `solr.pki.acceptVersions=v2` to prevent outdated nodes from connecting to your cluster.
+1. Upgrade to Solr 9 and set system properties: `solr.pki.sendVersion=v1` and `solr.pki.acceptVersions=v1,v2`. This will allow Solr 9 nodes to send messages to Solr 8 nodes while the upgrade is in progress.
+2. Restart with `solr.pki.sendVersion=v2` (default, can be unset) and `solr.pki.acceptVersions=v1,v2`. This will force all nodes to send the new header.
+3. (Optional) Restart with system property `solr.pki.acceptVersions=v2` (default, can be unset) to prevent outdated nodes from connecting to your cluster.
 
 === Reindexing After Upgrade
 
@@ -113,11 +113,20 @@ All the usages are replaced by BaseHttpSolrClient.RemoteSolrException and BaseHt
 In previous versions there was a field returned in async backup status responses, `Response`. This has now been renamed to `msg`, to better fit other collections API responses.
 The `response` field is now a map, containing information about the backup (`startTime`, `indexSizeMB`, `indexFileCount`, etc.).
 
+* SOLR-15982: For collection's snapshot backup request responses additional fields `indexVersion`, `indexFileCount`, etc. were added similar to incremental backup request responses.
+Also, both snapshot and incremental backup request responses will now contain `starTime` and `endTime`.
+Snapshot backup shard's response were updated to add fields `indexFileCount` and `endTime`, snapshot delete shard's response were updated to add fields `startTime` and `endTime`.
+Previous fields `fileCount`, `snapshotCompletedAt` and `snapshotDeletedAt` of backup and delete shard's responses are now deprecated and will be removed in future releases.
+All date/time fields of backup and delete related shard's responses have been updated to use `Instance` instead of `Date`, meaning the output will be in the standard ISO 8601 Format.
+
 * SOLR-15884: In Backup request responses, the `response` key now uses a map to return information instead of a list.
 This is only applicable for users returning information in JSON format, which is the default behavior.
 
 * SOLR-14660: HDFS storage support has been moved to a module. Existing Solr configurations do not need any HDFS-related
 changes, however the module needs to be installed - see the section xref:deployment-guide:solr-on-hdfs.adoc[].
+
+* SOLR-13989: Hadoop authentication support has been moved to the hadoop-auth module. Existing Solr configurations do not need any Hadoop authentication related
+changes, however the module needs to be installed - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
 
 * SOLR-15950: The folder $SOLR_HOME/userfiles, used by the "cat" streaming expression, is no longer created automatically on startup. The user must create this folder.
 
@@ -322,7 +331,7 @@ Example has been provided in `sample_techproducts_configs` to override content-t
 * SOLR-15124: Removed three core level admin API endpoints because they are already registered at the node level
 where they really belong: /admin/threads, /admin/properties, /admin/logging
 
-* SOLR-12336: Remove Filter, SolrFilter and SolrConstantScoreQuery
-
 * SOLR-15949: Docker: the official image now uses Java 17 provided by Eclipse Temurin.  Formerly it was Java 11 from OpenJDK.
 (janhoy, David Smiley)
+
+* Atomic/partial updates to nested documents now _require_ the `\_root_` field to clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.

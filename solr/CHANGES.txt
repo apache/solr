@@ -2,11 +2,9 @@
 
 This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
-https://github.com/apache/solr/blob/main/solr/solr-ref-guide/src/solr-upgrade-notes.adoc
+https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
 ==================  10.0.0 ==================
-
-Docker and modules have separate CHANGES.md files.
 
 New Features
 ---------------------
@@ -30,8 +28,6 @@ Other Changes
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
 
 ==================  9.1.0 ==================
-
-Docker and modules have separate CHANGES.md files.
 
 New Features
 ---------------------
@@ -110,6 +106,8 @@ New Features
 * SOLR-15880: Introduce support for k nearest neighbors search (Alessandro Benedetti, Elia Porciani)
 
 * SOLR-14660: Move HDFS support to a new HDFS module (Istvan Farkas, Kevin Risden)
+
+* SOLR-13989: Move Hadoop Authentication support to a new hadoop-auth module (Kevin Risden)
 
 Improvements
 ----------------------
@@ -300,6 +298,8 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15556: Migrate the Ref Guide to be built with Antora, enabling many new features (Cassandra Targett, Houston Putman, Mike Drob)
 
 * SOLR-15965: Use better signatures for the PKI Authentication plugin. (Mike Drob)
+
+* SOLR-15982: Add end time value to backup response, standardize backup response key names and date formats (Artem Abeleshev, Christine Poerschke, Houston Putman)
 
 Build
 ---------------------
@@ -589,8 +589,14 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-15991: analysis-extras module tests shouldn't rely on log4j dependency (Kevin Risden)
 
+* SOLR-15064: Atomic/partial updates to nested documents now _require_ the `\_root_` field to
+  clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.
+  (David Smiley)
+
 * SOLR-15949: Docker: the official image now uses Java 17 provided by Eclipse Temurin.  Formerly it was Java 11 from OpenJDK.
   (janhoy, David Smiley)
+
+* SOLR-15943: Simplify HDFS cache to account for LUCENE-10366 / LUCENE-10376 (Kevin Risden)
 
 Bug Fixes
 ---------------------
@@ -645,6 +651,8 @@ Bug Fixes
 * SOLR-15968: Hide annoying WARN log from bin/solr zk command (janhoy, Mike Drob)
 
 * SOLR-15558: Don't wait for zombie processes to exit when stopping. (Colvin Cowie)
+
+* SOLR-15333: Reduced spurious warn logging by AbstractSpatialPrefixTreeFieldType field properties (Steffen Moldenhauer, David Smiley, Mike Drob)
 
 * SOLR-16019: UTF-8 parsing errors for parameters should cause a HTTP 400 status code, not 500 (janhoy, Matthias Pigulla)
 
