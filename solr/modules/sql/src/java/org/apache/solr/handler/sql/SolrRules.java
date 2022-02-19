@@ -16,6 +16,10 @@
  */
 package org.apache.solr.handler.sql;
 
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelCollations;
@@ -34,22 +38,13 @@ import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Predicate;
-
-/**
- * Rules and relational operators for
- * {@link SolrRel#CONVENTION}
- * calling convention.
- */
+/** Rules and relational operators for {@link SolrRel#CONVENTION} calling convention. */
 class SolrRules {
   static final RelOptRule[] RULES = {
-      SolrSortRule.SORT_RULE,
-      SolrFilterRule.FILTER_RULE,
-      SolrProjectRule.PROJECT_RULE,
-      SolrAggregateRule.AGGREGATE_RULE,
+    SolrSortRule.SORT_RULE,
+    SolrFilterRule.FILTER_RULE,
+    SolrProjectRule.PROJECT_RULE,
+    SolrAggregateRule.AGGREGATE_RULE,
   };
 
   static List<String> solrFieldNames(final RelDataType rowType) {
@@ -64,7 +59,8 @@ class SolrRules {
           public int size() {
             return rowType.getFieldCount();
           }
-        }, true);
+        },
+        true);
   }
 
   /** Translator from {@link RexNode} to strings in Solr's expression language. */
@@ -102,7 +98,9 @@ class SolrRules {
     }
   }
 
-  /** Base class for planner rules that convert a relational expression to Solr calling convention. */
+  /**
+   * Base class for planner rules that convert a relational expression to Solr calling convention.
+   */
   abstract static class SolrConverterRule extends ConverterRule {
     final Convention out = SolrRel.CONVENTION;
 
@@ -110,14 +108,13 @@ class SolrRules {
       this(clazz, relNode -> true, description);
     }
 
-    <R extends RelNode> SolrConverterRule(Class<R> clazz, Predicate<RelNode> predicate, String description) {
+    <R extends RelNode> SolrConverterRule(
+        Class<R> clazz, Predicate<RelNode> predicate, String description) {
       super(clazz, Convention.NONE, SolrRel.CONVENTION, description);
     }
   }
 
-  /**
-   * Rule to convert a {@link LogicalFilter} to a {@link SolrFilter}.
-   */
+  /** Rule to convert a {@link LogicalFilter} to a {@link SolrFilter}. */
   private static class SolrFilterRule extends SolrConverterRule {
     private static boolean isNotFilterByExpr(List<RexNode> rexNodes, List<String> fieldNames) {
 
@@ -128,14 +125,16 @@ class SolrRules {
         if (rexNode instanceof RexCall) {
           result = result && isNotFilterByExpr(((RexCall) rexNode).getOperands(), fieldNames);
         } else if (rexNode instanceof RexInputRef) {
-          result = result && !fieldNames.get(((RexInputRef) rexNode).getIndex()).startsWith("EXPR$");
+          result =
+              result && !fieldNames.get(((RexInputRef) rexNode).getIndex()).startsWith("EXPR$");
         }
       }
       return result;
     }
 
     private static boolean filter(RelNode relNode) {
-      List<RexNode> filterOperands = ((RexCall) ((LogicalFilter) relNode).getCondition()).getOperands();
+      List<RexNode> filterOperands =
+          ((RexCall) ((LogicalFilter) relNode).getCondition()).getOperands();
       return isNotFilterByExpr(filterOperands, SolrRules.solrFieldNames(relNode.getRowType()));
     }
 
@@ -149,16 +148,11 @@ class SolrRules {
       final LogicalFilter filter = (LogicalFilter) rel;
       final RelTraitSet traitSet = filter.getTraitSet().replace(out);
       return new SolrFilter(
-          rel.getCluster(),
-          traitSet,
-          convert(filter.getInput(), out),
-          filter.getCondition());
+          rel.getCluster(), traitSet, convert(filter.getInput(), out), filter.getCondition());
     }
   }
 
-  /**
-   * Rule to convert a {@link LogicalProject} to a {@link SolrProject}.
-   */
+  /** Rule to convert a {@link LogicalProject} to a {@link SolrProject}. */
   private static class SolrProjectRule extends SolrConverterRule {
     private static final SolrProjectRule PROJECT_RULE = new SolrProjectRule();
 
@@ -171,17 +165,11 @@ class SolrRules {
       final RelNode converted = convert(project.getInput(), out);
       final RelTraitSet traitSet = project.getTraitSet().replace(out);
       return new SolrProject(
-          rel.getCluster(),
-          traitSet,
-          converted,
-          project.getProjects(),
-          project.getRowType());
+          rel.getCluster(), traitSet, converted, project.getProjects(), project.getRowType());
     }
   }
 
-  /**
-   * Rule to convert a {@link LogicalSort} to a {@link SolrSort}.
-   */
+  /** Rule to convert a {@link LogicalSort} to a {@link SolrSort}. */
   private static class SolrSortRule extends SolrConverterRule {
     static final SolrSortRule SORT_RULE = new SolrSortRule(LogicalSort.class, "SolrSortRule");
 
@@ -203,13 +191,11 @@ class SolrRules {
     }
   }
 
-  /**
-   * Rule to convert an {@link LogicalAggregate} to an {@link SolrAggregate}.
-   */
+  /** Rule to convert an {@link LogicalAggregate} to an {@link SolrAggregate}. */
   private static class SolrAggregateRule extends SolrConverterRule {
-//    private static final Predicate<RelNode> AGGREGATE_PREDICTE = relNode ->
-//        Aggregate.IS_SIMPLE.apply(((LogicalAggregate)relNode));// &&
-//        !((LogicalAggregate)relNode).containsDistinctCall();
+    //    private static final Predicate<RelNode> AGGREGATE_PREDICTE = relNode ->
+    //        Aggregate.IS_SIMPLE.apply(((LogicalAggregate)relNode));// &&
+    //        !((LogicalAggregate)relNode).containsDistinctCall();
 
     private static final RelOptRule AGGREGATE_RULE = new SolrAggregateRule();
 

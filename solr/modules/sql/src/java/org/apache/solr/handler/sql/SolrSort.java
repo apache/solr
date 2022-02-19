@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.sql;
 
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -29,15 +30,16 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 
-import java.util.List;
-
-/**
- * Implementation of {@link org.apache.calcite.rel.core.Sort} relational expression in Solr.
- */
+/** Implementation of {@link org.apache.calcite.rel.core.Sort} relational expression in Solr. */
 class SolrSort extends Sort implements SolrRel {
 
-  SolrSort(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode offset,
-           RexNode fetch) {
+  SolrSort(
+      RelOptCluster cluster,
+      RelTraitSet traitSet,
+      RelNode child,
+      RelCollation collation,
+      RexNode offset,
+      RexNode fetch) {
     super(cluster, traitSet, child, collation, offset, fetch);
 
     assert getConvention() == SolrRel.CONVENTION;
@@ -50,7 +52,12 @@ class SolrSort extends Sort implements SolrRel {
   }
 
   @Override
-  public Sort copy(RelTraitSet traitSet, RelNode input, RelCollation newCollation, RexNode offset, RexNode fetch) {
+  public Sort copy(
+      RelTraitSet traitSet,
+      RelNode input,
+      RelCollation newCollation,
+      RexNode offset,
+      RexNode fetch) {
     return new SolrSort(getCluster(), traitSet, input, collation, offset, fetch);
   }
 
@@ -70,7 +77,6 @@ class SolrSort extends Sort implements SolrRel {
         implementor.addOrder(name, direction);
       }
     }
-
 
     if (fetch != null) {
       implementor.setLimit(((RexLiteral) fetch).getValue().toString());
