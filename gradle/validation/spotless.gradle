@@ -44,7 +44,6 @@ configure(project(":solr").subprojects) { prj ->
 
         // Exclude certain files (generated ones, mostly).
         switch (project.path) {
-          case ":solr:modules:gcs-repository":
           case ":solr:modules:hadoop-auth":
           case ":solr:modules:hdfs":
           case ":solr:modules:sql":

@@ -19,14 +19,11 @@ package org.apache.solr.gcs;
 
 import com.google.api.gax.retrying.RetrySettings;
 import com.google.cloud.storage.StorageOptions;
+import java.util.Map;
 import org.apache.solr.common.util.NamedList;
 import org.threeten.bp.Duration;
 
-import java.util.Map;
-
-/**
- * Parses configuration for {@link GCSBackupRepository} from NamedList and environment variables
- */
+/** Parses configuration for {@link GCSBackupRepository} from NamedList and environment variables */
 public class GCSConfigParser {
   protected static final String GCS_BUCKET_ENV_VAR_NAME = "GCS_BUCKET";
   protected static final String GCS_CREDENTIAL_ENV_VAR_NAME = "GCS_CREDENTIAL_PATH";
@@ -35,15 +32,19 @@ public class GCSConfigParser {
   private static final String GCS_CREDENTIAL_PARAM_NAME = "gcsCredentialPath";
   private static final String GCS_WRITE_BUFFER_SIZE_PARAM_NAME = "gcsWriteBufferSizeBytes";
   private static final String GCS_READ_BUFFER_SIZE_PARAM_NAME = "gcsReadBufferSizeBytes";
-  private static final String HTTP_CONNECT_TIMEOUT_MILLIS_NAME = "gcsClientHttpConnectTimeoutMillis";
+  private static final String HTTP_CONNECT_TIMEOUT_MILLIS_NAME =
+      "gcsClientHttpConnectTimeoutMillis";
   private static final String HTTP_READ_TIMEOUT_MILLIS_NAME = "gcsClientHttpReadTimeoutMillis";
   private static final String MAX_REQUEST_RETRIES_NAME = "gcsClientMaxRetries";
   private static final String TOTAL_TIMEOUT_MILLIS_NAME = "gcsClientMaxRequestTimeoutMillis";
-  private static final String HTTP_INITIAL_RETRY_DELAY_MILLIS_NAME = "gcsClientHttpInitialRetryDelayMillis";
-  private static final String HTTP_SUBSEQUENT_RETRY_DELAY_MULTIPLIER_NAME = "gcsClientHttpRetryDelayMultiplier";
+  private static final String HTTP_INITIAL_RETRY_DELAY_MILLIS_NAME =
+      "gcsClientHttpInitialRetryDelayMillis";
+  private static final String HTTP_SUBSEQUENT_RETRY_DELAY_MULTIPLIER_NAME =
+      "gcsClientHttpRetryDelayMultiplier";
   private static final String HTTP_MAX_RETRY_DELAY_MILLIS_NAME = "gcsClientHttpMaxRetryDelayMillis";
   private static final String RPC_INITIAL_TIMEOUT_MILLIS_NAME = "gcsClientRpcInitialTimeoutMillis";
-  private static final String RPC_SUBSEQUENT_TIMEOUT_MULTIPLIER_NAME = "gcsClientRpcTimeoutMultiplier";
+  private static final String RPC_SUBSEQUENT_TIMEOUT_MULTIPLIER_NAME =
+      "gcsClientRpcTimeoutMultiplier";
   private static final String RPC_MAX_TIMEOUT_MILLIS_NAME = "gcsClientRpcMaxTimeoutMillis";
 
   private static final String DEFAULT_GCS_BUCKET_VALUE = "solrBackupsBucket";
@@ -67,10 +68,19 @@ public class GCSConfigParser {
   public GCSConfig parseConfiguration(NamedList<?> repoConfig, Map<String, String> envVars) {
     final String bucketName = parseBucket(repoConfig, envVars);
     final String credentialPathStr = parseCredentialPath(repoConfig, envVars);
-    final int writeBufferSizeBytes = getIntOrDefault(repoConfig, GCS_WRITE_BUFFER_SIZE_PARAM_NAME, DEFAULT_GCS_WRITE_BUFFER_SIZE_VALUE);
-    final int readBufferSizeBytes = getIntOrDefault(repoConfig, GCS_READ_BUFFER_SIZE_PARAM_NAME, DEFAULT_GCS_READ_BUFFER_SIZE_VALUE);
+    final int writeBufferSizeBytes =
+        getIntOrDefault(
+            repoConfig, GCS_WRITE_BUFFER_SIZE_PARAM_NAME, DEFAULT_GCS_WRITE_BUFFER_SIZE_VALUE);
+    final int readBufferSizeBytes =
+        getIntOrDefault(
+            repoConfig, GCS_READ_BUFFER_SIZE_PARAM_NAME, DEFAULT_GCS_READ_BUFFER_SIZE_VALUE);
     final StorageOptions.Builder storageOptionsBuilder = parseStorageOptions(repoConfig);
-    return new GCSConfig(bucketName, credentialPathStr, writeBufferSizeBytes, readBufferSizeBytes, storageOptionsBuilder);
+    return new GCSConfig(
+        bucketName,
+        credentialPathStr,
+        writeBufferSizeBytes,
+        readBufferSizeBytes,
+        storageOptionsBuilder);
   }
 
   /*
@@ -94,12 +104,15 @@ public class GCSConfigParser {
   }
 
   public static String potentiallyMissingCredentialMsg() {
-    return "No explicit credential path was provided for this GCSBackupRepository.  If Solr is running inside GCP, this " +
-            "may be expected if GCP's \"Workload Identity\" or a related feature is configured.  Solr instances " +
-            "running outside of GCP however must provide a valid credential path in order to access GCS.  These users " +
-            "should specify their credential path by adding a '" + GCS_CREDENTIAL_PARAM_NAME + "' property to the " +
-            "repository definition in solconfig, or by setting the path value in an env-var named '" +
-            GCS_CREDENTIAL_ENV_VAR_NAME + "'.";
+    return "No explicit credential path was provided for this GCSBackupRepository.  If Solr is running inside GCP, this "
+        + "may be expected if GCP's \"Workload Identity\" or a related feature is configured.  Solr instances "
+        + "running outside of GCP however must provide a valid credential path in order to access GCS.  These users "
+        + "should specify their credential path by adding a '"
+        + GCS_CREDENTIAL_PARAM_NAME
+        + "' property to the "
+        + "repository definition in solconfig, or by setting the path value in an env-var named '"
+        + GCS_CREDENTIAL_ENV_VAR_NAME
+        + "'.";
   }
 
   private int getIntOrDefault(NamedList<?> config, String propName, int defaultValue) {
@@ -118,26 +131,63 @@ public class GCSConfigParser {
 
   private StorageOptions.Builder parseStorageOptions(NamedList<?> repoConfig) {
     final StorageOptions.Builder builder = StorageOptions.newBuilder();
-    builder.setTransportOptions(StorageOptions.getDefaultHttpTransportOptions().toBuilder()
-            .setConnectTimeout(getIntOrDefault(repoConfig, HTTP_CONNECT_TIMEOUT_MILLIS_NAME, DEFAULT_HTTP_CONNECT_TIMEOUT_MILLIS))
-            .setReadTimeout(getIntOrDefault(repoConfig, HTTP_READ_TIMEOUT_MILLIS_NAME, DEFAULT_HTTP_READ_TIMEOUT_MILLIS))
+    builder.setTransportOptions(
+        StorageOptions.getDefaultHttpTransportOptions().toBuilder()
+            .setConnectTimeout(
+                getIntOrDefault(
+                    repoConfig,
+                    HTTP_CONNECT_TIMEOUT_MILLIS_NAME,
+                    DEFAULT_HTTP_CONNECT_TIMEOUT_MILLIS))
+            .setReadTimeout(
+                getIntOrDefault(
+                    repoConfig, HTTP_READ_TIMEOUT_MILLIS_NAME, DEFAULT_HTTP_READ_TIMEOUT_MILLIS))
             .build());
-    builder.setRetrySettings(RetrySettings.newBuilder()
-                    // All retries
-                    .setMaxAttempts(getIntOrDefault(repoConfig, MAX_REQUEST_RETRIES_NAME, DEFAULT_MAX_RETRIES))
-                    .setTotalTimeout(Duration.ofMillis(getIntOrDefault(repoConfig, TOTAL_TIMEOUT_MILLIS_NAME, DEFAULT_TOTAL_TIMEOUT_MILLIS)))
-                    //http requests
-                    .setInitialRetryDelay(Duration.ofMillis(getIntOrDefault(repoConfig, HTTP_INITIAL_RETRY_DELAY_MILLIS_NAME, DEFAULT_HTTP_INITIAL_RETRY_DELAY_MILLIS)))
-                    .setMaxRetryDelay(Duration.ofMillis(getIntOrDefault(repoConfig, HTTP_MAX_RETRY_DELAY_MILLIS_NAME, DEFAULT_HTTP_MAX_RETRY_DELAY_MILLIS)))
-                    .setRetryDelayMultiplier(getDoubleOrDefault(repoConfig, HTTP_SUBSEQUENT_RETRY_DELAY_MULTIPLIER_NAME, DEFAULT_HTTP_SUBSEQUENT_RETRY_DELAY_MULTIPLIER))
-                    //rpc requests
-                    .setInitialRpcTimeout(Duration.ofMillis(getIntOrDefault(repoConfig, RPC_INITIAL_TIMEOUT_MILLIS_NAME, DEFAULT_RPC_INITIAL_TIMEOUT_MILLIS)))
-                    .setMaxRpcTimeout(Duration.ofMillis(getIntOrDefault(repoConfig, RPC_MAX_TIMEOUT_MILLIS_NAME, DEFAULT_RPC_MAX_TIMEOUT_MILLIS)))
-                    .setRpcTimeoutMultiplier(getDoubleOrDefault(repoConfig, RPC_SUBSEQUENT_TIMEOUT_MULTIPLIER_NAME, DEFAULT_RPC_SUBSEQUENT_TIMEOUT_MULTIPLIER))
-                    .build());
+    builder.setRetrySettings(
+        RetrySettings.newBuilder()
+            // All retries
+            .setMaxAttempts(
+                getIntOrDefault(repoConfig, MAX_REQUEST_RETRIES_NAME, DEFAULT_MAX_RETRIES))
+            .setTotalTimeout(
+                Duration.ofMillis(
+                    getIntOrDefault(
+                        repoConfig, TOTAL_TIMEOUT_MILLIS_NAME, DEFAULT_TOTAL_TIMEOUT_MILLIS)))
+            // http requests
+            .setInitialRetryDelay(
+                Duration.ofMillis(
+                    getIntOrDefault(
+                        repoConfig,
+                        HTTP_INITIAL_RETRY_DELAY_MILLIS_NAME,
+                        DEFAULT_HTTP_INITIAL_RETRY_DELAY_MILLIS)))
+            .setMaxRetryDelay(
+                Duration.ofMillis(
+                    getIntOrDefault(
+                        repoConfig,
+                        HTTP_MAX_RETRY_DELAY_MILLIS_NAME,
+                        DEFAULT_HTTP_MAX_RETRY_DELAY_MILLIS)))
+            .setRetryDelayMultiplier(
+                getDoubleOrDefault(
+                    repoConfig,
+                    HTTP_SUBSEQUENT_RETRY_DELAY_MULTIPLIER_NAME,
+                    DEFAULT_HTTP_SUBSEQUENT_RETRY_DELAY_MULTIPLIER))
+            // rpc requests
+            .setInitialRpcTimeout(
+                Duration.ofMillis(
+                    getIntOrDefault(
+                        repoConfig,
+                        RPC_INITIAL_TIMEOUT_MILLIS_NAME,
+                        DEFAULT_RPC_INITIAL_TIMEOUT_MILLIS)))
+            .setMaxRpcTimeout(
+                Duration.ofMillis(
+                    getIntOrDefault(
+                        repoConfig, RPC_MAX_TIMEOUT_MILLIS_NAME, DEFAULT_RPC_MAX_TIMEOUT_MILLIS)))
+            .setRpcTimeoutMultiplier(
+                getDoubleOrDefault(
+                    repoConfig,
+                    RPC_SUBSEQUENT_TIMEOUT_MULTIPLIER_NAME,
+                    DEFAULT_RPC_SUBSEQUENT_TIMEOUT_MULTIPLIER))
+            .build());
     return builder;
   }
-
 
   public static class GCSConfig {
     private final StorageOptions.Builder optionsBuilder;
@@ -146,7 +196,12 @@ public class GCSConfigParser {
     private final int writeBufferSizeBytes;
     private final int readBufferSizeBytes;
 
-    public GCSConfig(String bucketName, String gcsCredentialPath, int writeBufferSizeBytes, int readBufferSizeBytes, StorageOptions.Builder optionsBuilder) {
+    public GCSConfig(
+        String bucketName,
+        String gcsCredentialPath,
+        int writeBufferSizeBytes,
+        int readBufferSizeBytes,
+        StorageOptions.Builder optionsBuilder) {
       this.bucketName = bucketName;
       this.gcsCredentialPath = gcsCredentialPath;
       this.writeBufferSizeBytes = writeBufferSizeBytes;
