@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import java.io.IOException;
 import java.nio.CharBuffer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -309,7 +308,7 @@ public class StrUtils {
    * Characters with a numeric value less than 32 are encoded.
    * &amp;,=,%,+,space are encoded.
    */
-  public static void partialURLEncodeVal(Appendable dest, String val) throws IOException {
+  public static void partialURLEncodeVal(StringBuilder dest, String val) {
     for (int i = 0; i < val.length(); i++) {
       char ch = val.charAt(i);
       if (ch < 32) {

@@ -39,7 +39,7 @@ public class JSONTestUtil {
    * @see #DEFAULT_DELTA
    * @see #match(String,String,double)
    */
-  public static String match(String input, String pathAndExpected) throws Exception {
+  public static String match(String input, String pathAndExpected) throws IOException {
     return match(input, pathAndExpected, DEFAULT_DELTA);
   }
 
@@ -48,7 +48,7 @@ public class JSONTestUtil {
    * @see #DEFAULT_DELTA
    * @see #match(String,String,String,double)
    */
-  public static String match(String path, String input, String expected) throws Exception {
+  public static String match(String path, String input, String expected) throws IOException {
     return match(path, input, expected, DEFAULT_DELTA);
   }
 
@@ -57,16 +57,16 @@ public class JSONTestUtil {
    * @see #DEFAULT_DELTA
    * @see #matchObj(String,Object,Object,double)
    */
-  public static String matchObj(String path, Object input, Object expected) throws Exception {
+  public static String matchObj(String path, Object input, Object expected) throws IOException {
     return matchObj(path,input,expected, DEFAULT_DELTA);
   }
 
   /**
    * @param input JSON Structure to parse and test against
    * @param pathAndExpected JSON path expression + '==' + expected value
-   * @param delta tollerance allowed in comparing float/double values
+   * @param delta tolerance allowed in comparing float/double values
    */
-  public static String match(String input, String pathAndExpected, double delta) throws Exception {
+  public static String match(String input, String pathAndExpected, double delta) throws IOException {
     int pos = pathAndExpected.indexOf("==");
     String path = pos>=0 ? pathAndExpected.substring(0,pos) : null;
     String expected = pos>=0 ? pathAndExpected.substring(pos+2) : pathAndExpected;
@@ -76,9 +76,9 @@ public class JSONTestUtil {
   /**
    * @param input Object structure to parse and test against
    * @param pathAndExpected JSON path expression + '==' + expected value
-   * @param delta tollerance allowed in comparing float/double values
+   * @param delta tolerance allowed in comparing float/double values
    */
-  public static String matchObj(Object input, String pathAndExpected, double delta) throws Exception {
+  public static String matchObj(Object input, String pathAndExpected, double delta) throws IOException {
     int pos = pathAndExpected.indexOf("==");
     String path = pos>=0 ? pathAndExpected.substring(0,pos) : null;
     String expected = pos>=0 ? pathAndExpected.substring(pos+2) : pathAndExpected;
@@ -90,9 +90,9 @@ public class JSONTestUtil {
    * @param path JSON path expression
    * @param input JSON Structure to parse and test against
    * @param expected expected value of path
-   * @param delta tollerance allowed in comparing float/double values
+   * @param delta tolerance allowed in comparing float/double values
    */
-  public static String match(String path, String input, String expected, double delta) throws Exception {
+  public static String match(String path, String input, String expected, double delta) throws IOException {
     Object inputObj = failRepeatedKeys ? new NoDupsObjectBuilder(new JSONParser(input)).getVal() : ObjectBuilder.fromJSON(input);
     Object expectObj = failRepeatedKeys ? new NoDupsObjectBuilder(new JSONParser(expected)).getVal() : ObjectBuilder.fromJSON(expected);
     return matchObj(path, inputObj, expectObj, delta);
@@ -117,14 +117,15 @@ public class JSONTestUtil {
    * @param path JSON path expression
    * @param input JSON Structure
    * @param expected expected JSON Object
-   * @param delta tollerance allowed in comparing float/double values
+   * @param delta tolerance allowed in comparing float/double values
+   * @return the error message from the match, or null if match was good
    */
   public static String matchObj(String path, Object input, Object expected, double delta) {
     CollectionTester tester = new CollectionTester(input,delta);
     boolean reversed = path.startsWith("!");
     String positivePath = reversed ? path.substring(1) : path;
     if (!tester.seek(positivePath) ^ reversed) {
-      return "Path not found: " + path;
+      return "Path " + (reversed ? "" : "not ") + "found: " + path;
     }
     if (expected != null && (!tester.match(expected) ^ reversed)) {
       return tester.err + " @ " + tester.getPath();
