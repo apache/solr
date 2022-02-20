@@ -101,13 +101,13 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    *
    * @param request the URL path and optional query params
    * @return The response to the query
-   * @exception Exception any exception in the response.
+   * @exception IOException any exception in the response.
    */
-  public String query(String request) throws Exception {
+  public String query(String request) throws IOException {
     return getResponse(new HttpGet(getBaseURL() + request));
   }
 
-  public String adminQuery(String request) throws Exception {
+  public String adminQuery(String request) throws IOException {
     return getResponse(new HttpGet(getAdminURL() + request));
   }
 

@@ -17,6 +17,7 @@
 package org.apache.solr.ltr;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Files;
@@ -258,20 +259,31 @@ public class TestRerankBase extends RestTestBase {
     return sb.toString();
   }
 
+  /** Load a feature from the test fstore and verify that it succeeded */
   protected static void loadFeature(String name, String type, String params)
-      throws Exception {
-    final String feature = getFeatureInJson(name, type, "test", params);
-    log.info("loading feauture \n{} ", feature);
-    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
-        "/responseHeader/status==0");
+      throws IOException {
+    loadFeature(name, type, "test", params, 0);
   }
 
+  /** Load a feature and expect a given status code (i.e. testing for failure) */
+  protected static void loadFeature(String name, String type, String params, int responseCode)
+      throws IOException {
+    loadFeature(name, type, "test", params, responseCode);
+  }
+
+  /** Load a feature from a custom fstore and verify that it succeeded */
   protected static void loadFeature(String name, String type, String fstore,
       String params) throws Exception {
+    loadFeature(name, type, fstore, params, 0);
+  }
+
+  /** Load a feature from a custom fstore and expect a given status code (i.e. testing for failure) */
+  protected static void loadFeature(String name, String type, String fstore,
+                                    String params, int responseCode) throws IOException {
     final String feature = getFeatureInJson(name, type, fstore, params);
     log.info("loading feauture \n{} ", feature);
     assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
-        "/responseHeader/status==0");
+        "/responseHeader/status==" + responseCode);
   }
 
   protected static void loadModel(String name, String type, String[] features,
