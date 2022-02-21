@@ -28,6 +28,7 @@ import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.server.Response;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@SolrTestCaseJ4.SuppressSSL
 public class HttpSolrCallCloudTest extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
   private static final int NUM_SHARD = 3;
