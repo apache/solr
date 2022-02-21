@@ -80,7 +80,6 @@ public class DistribPackageStore implements PackageStore {
   public DistribPackageStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     this.solrhome = Paths.get(this.coreContainer.getSolrHome());
-    ensurePackageStoreDir(Paths.get(coreContainer.getSolrHome()));
   }
 
   @Override
@@ -563,20 +562,6 @@ public class DistribPackageStore implements PackageStore {
     return file.charAt(0) == '.' && file.endsWith(".json");
   }
 
-  private void ensurePackageStoreDir(Path solrHome) {
-    final File packageStoreDir = getPackageStoreDirPath(solrHome).toFile();
-    if (!packageStoreDir.exists()) {
-      try {
-        final boolean created = packageStoreDir.mkdirs();
-        if (!created) {
-          log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", packageStoreDir, solrHome);
-        }
-      } catch (Exception e) {
-        log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", packageStoreDir, solrHome, e);
-      }
-    }
-  }
-
   public static synchronized Path getPackageStoreDirPath(Path solrHome) {
     var path = solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
     if (!Files.exists(path)) {
@@ -584,7 +569,7 @@ public class DistribPackageStore implements PackageStore {
         Files.createDirectories(path);
         log.info("Created filestore folder {}", path);
       } catch (IOException e) {
-        throw new SolrException(SERVER_ERROR, "Faild creating 'filestore' folder in SOLR_HOME", e);
+        throw new SolrException(SERVER_ERROR, "Failed creating 'filestore' folder in SOLR_HOME", e);
       }
     }
     return path;
