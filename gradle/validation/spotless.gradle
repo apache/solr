@@ -44,14 +44,20 @@ configure(project(":solr").subprojects) { prj ->
 
         // Exclude certain files (generated ones, mostly).
         switch (project.path) {
-          case ":solr:modules:hdfs":
+          case ":solr:modules:sql":
           case ":solr:core":
           case ":solr:solrj":
           case ":solr:test-framework":
             targetExclude "src/**/*.java"
             break
+<<<<<<< HEAD
           case ":solr:modules:ltr":
             targetExclude "src/test/**/*.java"
+=======
+          case ":solr:modules:hdfs":
+            // Exclude Hadoop copied files to make upgrades easier
+            targetExclude "src/**/org/apache/hadoop/**"
+>>>>>>> 2b6e490cafa (SOLR-16025: Enable spotless on hdfs module)
             break
         }
       }

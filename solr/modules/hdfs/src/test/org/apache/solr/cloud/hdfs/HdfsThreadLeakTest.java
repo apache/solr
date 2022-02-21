@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
@@ -32,14 +33,15 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
-@ThreadLeakLingering(linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
+@ThreadLeakLingering(
+    linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class HdfsThreadLeakTest extends SolrTestCaseJ4 {
   private static MiniDFSCluster dfsCluster;
 
@@ -62,9 +64,9 @@ public class HdfsThreadLeakTest extends SolrTestCaseJ4 {
     String uri = HdfsTestUtil.getURI(dfsCluster);
     Path path = new Path(uri);
     Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
-    try(FileSystem fs = FileSystem.get(path.toUri(), conf)) {
+    try (FileSystem fs = FileSystem.get(path.toUri(), conf)) {
       Path testFile = new Path(uri + "/testfile");
-      try(FSDataOutputStream out = fs.create(testFile)) {
+      try (FSDataOutputStream out = fs.create(testFile)) {
         out.write(5);
         out.hflush();
       }

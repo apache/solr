@@ -16,25 +16,20 @@
  */
 package org.apache.solr.cloud.hdfs;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.TrustManager;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.ssl.KeyStoresFactory;
 import org.apache.hadoop.security.ssl.SSLFactory;
 
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.TrustManager;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-
 public class DisableKeyStoresFactory implements KeyStoresFactory {
   @Override
-  public void init(SSLFactory.Mode mode) throws IOException, GeneralSecurityException {
-    
-  }
+  public void init(SSLFactory.Mode mode) throws IOException, GeneralSecurityException {}
 
   @Override
-  public void destroy() {
-
-  }
+  public void destroy() {}
 
   @Override
   public KeyManager[] getKeyManagers() {
@@ -47,9 +42,7 @@ public class DisableKeyStoresFactory implements KeyStoresFactory {
   }
 
   @Override
-  public void setConf(Configuration conf) {
-
-  }
+  public void setConf(Configuration conf) {}
 
   @Override
   public Configuration getConf() {

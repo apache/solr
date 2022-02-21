@@ -16,27 +16,29 @@
  */
 package org.apache.solr.cloud.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.AbstractRestartWhileUpdatingTestBase;
 import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import com.carrotsearch.randomizedtesting.annotations.Nightly;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
 @Slow
 @Nightly
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
-@ThreadLeakLingering(linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
+@ThreadLeakLingering(
+    linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class HdfsRestartWhileUpdatingTest extends AbstractRestartWhileUpdatingTestBase {
   private static MiniDFSCluster dfsCluster;
 
@@ -51,7 +53,7 @@ public class HdfsRestartWhileUpdatingTest extends AbstractRestartWhileUpdatingTe
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
   }
-  
+
   @AfterClass
   public static void teardownClass() throws Exception {
     try {
@@ -60,7 +62,7 @@ public class HdfsRestartWhileUpdatingTest extends AbstractRestartWhileUpdatingTe
       dfsCluster = null;
     }
   }
-  
+
   @Override
   protected String getDataDir(String dataDir) {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);

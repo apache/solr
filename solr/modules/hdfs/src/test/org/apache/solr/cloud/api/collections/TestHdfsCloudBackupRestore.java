@@ -16,6 +16,11 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.core.backup.BackupManager.CONFIG_STATE_DIR;
+import static org.apache.solr.core.backup.BackupManager.TRADITIONAL_BACKUP_PROPS_FILE;
+import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
+
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -25,11 +30,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
-
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -37,6 +37,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -55,56 +57,56 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.core.backup.BackupManager.TRADITIONAL_BACKUP_PROPS_FILE;
-import static org.apache.solr.core.backup.BackupManager.CONFIG_STATE_DIR;
-import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
-
-/**
- * This class implements the tests for HDFS integration for Solr backup/restore capability.
- */
-@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
-@ThreadLeakLingering(linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
+/** This class implements the tests for HDFS integration for Solr backup/restore capability. */
+@LuceneTestCase.SuppressCodecs({
+  "SimpleText"
+}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
+@ThreadLeakLingering(
+    linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
-  public static final String SOLR_XML = "<solr>\n" +
-      "\n" +
-      "  <str name=\"shareSchema\">${shareSchema:false}</str>\n" +
-      "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n" +
-      "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n" +
-      "\n" +
-      "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"HttpShardHandlerFactory\">\n" +
-      "    <str name=\"urlScheme\">${urlScheme:}</str>\n" +
-      "    <int name=\"socketTimeout\">${socketTimeout:90000}</int>\n" +
-      "    <int name=\"connTimeout\">${connTimeout:15000}</int>\n" +
-      "  </shardHandlerFactory>\n" +
-      "\n" +
-      "  <solrcloud>\n" +
-      "    <str name=\"host\">127.0.0.1</str>\n" +
-      "    <int name=\"hostPort\">${hostPort:8983}</int>\n" +
-      "    <str name=\"hostContext\">${hostContext:solr}</str>\n" +
-      "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n" +
-      "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n" +
-      "    <int name=\"leaderVoteWait\">10000</int>\n" +
-      "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n" +
-      "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n" +
-      "  </solrcloud>\n" +
-      "  \n" +
-      "  <backup>\n" +
-      "    <repository  name=\"hdfs\" class=\"org.apache.solr.core.backup.repository.HdfsBackupRepository\"> \n" +
-      "      <str name=\"location\">${solr.hdfs.default.backup.path}</str>\n" +
-      "      <str name=\"solr.hdfs.home\">${solr.hdfs.home:}</str>\n" +
-      "      <str name=\"solr.hdfs.confdir\">${solr.hdfs.confdir:}</str>\n" +
-      "    </repository>\n" +
-      "    <repository  name=\"poisioned\" default=\"true\" "
-            + "class=\"org.apache.solr.cloud.api.collections.TestLocalFSCloudBackupRestore$PoinsionedRepository\"> \n" +
-      "    </repository>\n" +
-      "  </backup>\n" +
-      "  \n" +
-      "</solr>\n";
+  public static final String SOLR_XML =
+      "<solr>\n"
+          + "\n"
+          + "  <str name=\"shareSchema\">${shareSchema:false}</str>\n"
+          + "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n"
+          + "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n"
+          + "\n"
+          + "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"HttpShardHandlerFactory\">\n"
+          + "    <str name=\"urlScheme\">${urlScheme:}</str>\n"
+          + "    <int name=\"socketTimeout\">${socketTimeout:90000}</int>\n"
+          + "    <int name=\"connTimeout\">${connTimeout:15000}</int>\n"
+          + "  </shardHandlerFactory>\n"
+          + "\n"
+          + "  <solrcloud>\n"
+          + "    <str name=\"host\">127.0.0.1</str>\n"
+          + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
+          + "    <str name=\"hostContext\">${hostContext:solr}</str>\n"
+          + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
+          + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
+          + "    <int name=\"leaderVoteWait\">10000</int>\n"
+          + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
+          + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
+          + "  </solrcloud>\n"
+          + "  \n"
+          + "  <backup>\n"
+          + "    <repository  name=\"hdfs\" class=\"org.apache.solr.core.backup.repository.HdfsBackupRepository\"> \n"
+          + "      <str name=\"location\">${solr.hdfs.default.backup.path}</str>\n"
+          + "      <str name=\"solr.hdfs.home\">${solr.hdfs.home:}</str>\n"
+          + "      <str name=\"solr.hdfs.confdir\">${solr.hdfs.confdir:}</str>\n"
+          + "    </repository>\n"
+          + "    <repository  name=\"poisioned\" default=\"true\" "
+          + "class=\"org.apache.solr.cloud.api.collections.TestLocalFSCloudBackupRestore$PoinsionedRepository\"> \n"
+          + "    </repository>\n"
+          + "  </backup>\n"
+          + "  \n"
+          + "</solr>\n";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static MiniDFSCluster dfsCluster;
@@ -142,12 +144,24 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     System.setProperty("solr.hdfs.home", hdfsUri + "/solr");
     useFactory("solr.StandardDirectoryFactory");
 
-    configureCluster(NUM_SHARDS)// nodes
-    .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf"))
-    .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf"))
-    .withSolrXml(SOLR_XML)
-    .configure();
-    cluster.getZkClient().delete(ZkConfigSetService.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1, true);
+    configureCluster(NUM_SHARDS) // nodes
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf"))
+        .addConfig(
+            "confFaulty",
+            TEST_PATH().resolve("configsets").resolve("cloud-subdirs").resolve("conf"))
+        .withSolrXml(SOLR_XML)
+        .configure();
+    cluster
+        .getZkClient()
+        .delete(
+            ZkConfigSetService.CONFIGS_ZKNODE
+                + Path.SEPARATOR
+                + "confFaulty"
+                + Path.SEPARATOR
+                + "solrconfig.xml",
+            -1,
+            true);
   }
 
   @AfterClass
@@ -184,13 +198,14 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     String backupName = "configonlybackup";
     CloudSolrClient solrClient = cluster.getSolrClient();
 
-    CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
-        .setRepositoryName(getBackupRepoName())
-        .setIncremental(false)
-        .setIndexBackupStrategy(CollectionAdminParams.NO_INDEX_BACKUP_STRATEGY);
+    CollectionAdminRequest.Backup backup =
+        CollectionAdminRequest.backupCollection(collectionName, backupName)
+            .setRepositoryName(getBackupRepoName())
+            .setIncremental(false)
+            .setIndexBackupStrategy(CollectionAdminParams.NO_INDEX_BACKUP_STRATEGY);
     backup.process(solrClient);
 
-    Map<String,String> params = new HashMap<>();
+    Map<String, String> params = new HashMap<>();
     params.put("location", "/backup");
     params.put("solr.hdfs.home", hdfsUri + "/solr");
 
@@ -199,7 +214,9 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
 
     URI baseLoc = repo.createDirectoryURI("/backup");
 
-    BackupManager mgr = BackupManager.forRestore(repo, solrClient.getZkStateReader(), repo.resolve(baseLoc, backupName));
+    BackupManager mgr =
+        BackupManager.forRestore(
+            repo, solrClient.getZkStateReader(), repo.resolve(baseLoc, backupName));
     BackupProperties props = mgr.readBackupProperties();
     assertNotNull(props);
     assertEquals(collectionName, props.getCollection());
@@ -210,7 +227,8 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     assertNotNull(collectionState);
     assertEquals(collectionName, collectionState.getName());
 
-    URI configDirLoc = repo.resolve(baseLoc, backupName, ZK_STATE_DIR, CONFIG_STATE_DIR, configName);
+    URI configDirLoc =
+        repo.resolve(baseLoc, backupName, ZK_STATE_DIR, CONFIG_STATE_DIR, configName);
     assertTrue(repo.exists(configDirLoc));
 
     Collection<String> expected = Arrays.asList(TRADITIONAL_BACKUP_PROPS_FILE, ZK_STATE_DIR);

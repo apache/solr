@@ -34,13 +34,15 @@ import org.junit.Test;
 
 @Slow
 @Nightly
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
 @TimeoutSuite(millis = TimeUnits.HOUR)
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13924")
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13924")
 public class MoveReplicaHDFSTest extends AbstractMoveReplicaTestBase {
   private static MiniDFSCluster dfsCluster;
 
@@ -70,18 +72,21 @@ public class MoveReplicaHDFSTest extends AbstractMoveReplicaTestBase {
   }
 
   @Test
-  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
-  //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
-  //commented 23-AUG-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
-  // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
-  //commented 20-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
-  //Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
+  // 2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
+  // 21-May-2018
+  // commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
+  // added 20-Jul-2018
+  // commented 23-AUG-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
+  // added 17-Aug-2018
+  // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
+  // added 23-Aug-2018
+  // commented 20-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
+  // 6-Sep-2018
+  // Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
+  // added 20-Sep-2018
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testNormalFailedMove() throws Exception {
     inPlaceMove = false;
     super.testFailedMove();
   }
-
-
 }
-

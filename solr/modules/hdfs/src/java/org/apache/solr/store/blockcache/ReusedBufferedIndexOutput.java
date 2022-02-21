@@ -17,20 +17,17 @@
 package org.apache.solr.store.blockcache;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.IndexOutput;
 
-/**
- * @lucene.experimental
- */
+/** @lucene.experimental */
 public abstract class ReusedBufferedIndexOutput extends IndexOutput {
-  
+
   public static final int BUFFER_SIZE = 1024;
-  
+
   private int bufferSize = BUFFER_SIZE;
-  
+
   protected byte[] buffer;
-  
+
   /** position in the file of buffer */
   private long bufferStart = 0;
   /** end of valid bytes */
@@ -39,13 +36,13 @@ public abstract class ReusedBufferedIndexOutput extends IndexOutput {
   private int bufferPosition = 0;
   /** total length of the file */
   private long fileLength = 0;
-  
+
   private final Store store;
-  
+
   public ReusedBufferedIndexOutput(String resourceDescription, String name) {
     this(resourceDescription, name, BUFFER_SIZE);
   }
-  
+
   public ReusedBufferedIndexOutput(String resourceDescription, String name, int bufferSize) {
     super(resourceDescription, name);
     checkBufferSize(bufferSize);
@@ -53,27 +50,28 @@ public abstract class ReusedBufferedIndexOutput extends IndexOutput {
     store = BufferStore.instance(bufferSize);
     buffer = store.takeBuffer(this.bufferSize);
   }
-  
+
   protected long getBufferStart() {
     return bufferStart;
   }
-  
+
   private void checkBufferSize(int bufferSize) {
-    if (bufferSize <= 0) throw new IllegalArgumentException(
-        "bufferSize must be greater than 0 (got " + bufferSize + ")");
+    if (bufferSize <= 0)
+      throw new IllegalArgumentException(
+          "bufferSize must be greater than 0 (got " + bufferSize + ")");
   }
-  
+
   /** Write the buffered bytes to cache */
   protected void flushBufferToCache() throws IOException {
     writeInternal(buffer, 0, bufferLength);
-    
+
     bufferStart += bufferLength;
     bufferLength = 0;
     bufferPosition = 0;
   }
-  
+
   protected abstract void closeInternal() throws IOException;
-  
+
   @Override
   public void close() throws IOException {
     flushBufferToCache();
@@ -81,12 +79,12 @@ public abstract class ReusedBufferedIndexOutput extends IndexOutput {
     store.putBuffer(buffer);
     buffer = null;
   }
-  
+
   @Override
   public long getFilePointer() {
     return bufferStart + bufferPosition;
   }
-  
+
   @Override
   public void writeByte(byte b) throws IOException {
     if (bufferPosition >= bufferSize) {
@@ -100,21 +98,17 @@ public abstract class ReusedBufferedIndexOutput extends IndexOutput {
       bufferLength = bufferPosition;
     }
   }
-  
+
   /**
-   * Expert: implements buffer flushing to cache. Writes bytes to the current
-   * position in the output.
-   * 
-   * @param b
-   *          the array of bytes to write
-   * @param offset
-   *          the offset in the array of bytes to write
-   * @param length
-   *          the number of bytes to write
+   * Expert: implements buffer flushing to cache. Writes bytes to the current position in the
+   * output.
+   *
+   * @param b the array of bytes to write
+   * @param offset the offset in the array of bytes to write
+   * @param length the number of bytes to write
    */
-  protected abstract void writeInternal(byte[] b, int offset, int length)
-      throws IOException;
-  
+  protected abstract void writeInternal(byte[] b, int offset, int length) throws IOException;
+
   @Override
   public void writeBytes(byte[] b, int offset, int length) throws IOException {
     if (getFilePointer() + length > fileLength) {
@@ -139,9 +133,9 @@ public abstract class ReusedBufferedIndexOutput extends IndexOutput {
         bufferPosition = bufferSize;
         bufferLength = bufferSize;
       }
-      
+
       flushBufferToCache();
-      
+
       // and now, write the remaining 'length' bytes:
       if (length < bufferSize) {
         // If the amount left to write is small enough do it in the usual
@@ -158,7 +152,6 @@ public abstract class ReusedBufferedIndexOutput extends IndexOutput {
         bufferPosition = 0;
         bufferLength = 0;
       }
-      
     }
   }
 }
