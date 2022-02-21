@@ -16,13 +16,11 @@
  */
 package org.apache.solr.security.hadoop;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -39,15 +37,14 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Test 5 nodes Solr cluster with Kerberos plugin enabled.
- */
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadZookeeperThreadsFilter.class // Zookeeper login leaks TGT renewal threads
-})
-
+/** Test 5 nodes Solr cluster with Kerberos plugin enabled. */
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadZookeeperThreadsFilter.class // Zookeeper login leaks TGT renewal threads
+    })
 @LuceneTestCase.Slow
 @ThreadLeakLingering(linger = 10000) // minikdc has some lingering threads
 public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
@@ -56,10 +53,10 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
 
   private static final int numShards = 1;
   private static final int numReplicas = 1;
-  private static final int nodeCount = numShards*numReplicas;
+  private static final int nodeCount = numShards * numReplicas;
   private static final String configName = "solrCloudCollectionConfig";
   private static final String collectionName = "testkerberoscollection";
-  
+
   private KerberosTestServices kerberosTestServices;
 
   @Override
@@ -71,32 +68,41 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
 
   private void setupMiniKdc() throws Exception {
     System.setProperty("solr.jaas.debug", "true");
-    String kdcDir = createTempDir()+File.separator+"minikdc";
+    String kdcDir = createTempDir() + File.separator + "minikdc";
     String solrClientPrincipal = "solr";
     File keytabFile = new File(kdcDir, "keytabs");
-    kerberosTestServices = KerberosTestServices.builder()
-        .withKdc(new File(kdcDir))
-        .withJaasConfiguration(solrClientPrincipal, keytabFile, "SolrClient")
-        .build();
+    kerberosTestServices =
+        KerberosTestServices.builder()
+            .withKdc(new File(kdcDir))
+            .withJaasConfiguration(solrClientPrincipal, keytabFile, "SolrClient")
+            .build();
     String solrServerPrincipal = "HTTP/127.0.0.1";
     kerberosTestServices.start();
-    kerberosTestServices.getKdc().createPrincipal(keytabFile, solrServerPrincipal, solrClientPrincipal);
+    kerberosTestServices
+        .getKdc()
+        .createPrincipal(keytabFile, solrServerPrincipal, solrClientPrincipal);
 
-    String jaas = "SolrClient {\n"
-        + " com.sun.security.auth.module.Krb5LoginModule required\n"
-        + " useKeyTab=true\n"
-        + " keyTab=\"" + keytabFile.getAbsolutePath() + "\"\n"
-        + " storeKey=true\n"
-        + " useTicketCache=false\n"
-        + " doNotPrompt=true\n"
-        + " debug=true\n"
-        + " principal=\"" + solrClientPrincipal + "\";\n"
-        + "};";
+    String jaas =
+        "SolrClient {\n"
+            + " com.sun.security.auth.module.Krb5LoginModule required\n"
+            + " useKeyTab=true\n"
+            + " keyTab=\""
+            + keytabFile.getAbsolutePath()
+            + "\"\n"
+            + " storeKey=true\n"
+            + " useTicketCache=false\n"
+            + " doNotPrompt=true\n"
+            + " debug=true\n"
+            + " principal=\""
+            + solrClientPrincipal
+            + "\";\n"
+            + "};";
 
-    String jaasFilePath = kdcDir+File.separator+"jaas-client.conf";
+    String jaasFilePath = kdcDir + File.separator + "jaas-client.conf";
     FileUtils.write(new File(jaasFilePath), jaas, StandardCharsets.UTF_8);
     System.setProperty("java.security.auth.login.config", jaasFilePath);
-    System.setProperty("solr.kerberos.jaas.appname", "SolrClient"); // Get this app name from the jaas file
+    System.setProperty(
+        "solr.kerberos.jaas.appname", "SolrClient"); // Get this app name from the jaas file
     System.setProperty("solr.kerberos.cookie.domain", "127.0.0.1");
     System.setProperty("solr.kerberos.principal", solrServerPrincipal);
     System.setProperty("solr.kerberos.keytab", keytabFile.getAbsolutePath());
@@ -105,10 +111,11 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
     log.info("Enable delegation token: {}", enableDt);
     System.setProperty("solr.kerberos.delegation.token.enabled", Boolean.toString(enableDt));
     // Extracts 127.0.0.1 from HTTP/127.0.0.1@EXAMPLE.COM
-    System.setProperty("solr.kerberos.name.rules", "RULE:[1:$1@$0](.*EXAMPLE.COM)s/@.*//"
-        + "\nRULE:[2:$2@$0](.*EXAMPLE.COM)s/@.*//"
-        + "\nDEFAULT"
-        );
+    System.setProperty(
+        "solr.kerberos.name.rules",
+        "RULE:[1:$1@$0](.*EXAMPLE.COM)s/@.*//"
+            + "\nRULE:[2:$2@$0](.*EXAMPLE.COM)s/@.*//"
+            + "\nDEFAULT");
 
     // more debugging, if needed
     // System.setProperty("sun.security.jgss.debug", "true");
@@ -116,7 +123,7 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
     // System.setProperty("sun.security.jgss.debug", "true");
     // System.setProperty("java.security.debug", "logincontext,policy,scl,gssloginconfig");
   }
-  
+
   @Test
   public void testBasics() throws Exception {
     testCollectionCreateSearchDelete();
@@ -135,12 +142,12 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
     new UpdateRequest().add("id", "1").commit(client, collectionName);
     QueryResponse rsp = client.query(collectionName, new SolrQuery("*:*"));
     assertEquals(1, rsp.getResults().getNumFound());
-        
+
     // delete the collection we created earlier
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
-        
-    AbstractDistribZkTestBase.waitForCollectionToDisappear
-        (collectionName, client.getZkStateReader(), true, 330);
+
+    AbstractDistribZkTestBase.waitForCollectionToDisappear(
+        collectionName, client.getZkStateReader(), true, 330);
   }
 
   @Override
@@ -154,7 +161,7 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
     System.clearProperty("authenticationPlugin");
     System.clearProperty("solr.kerberos.delegation.token.enabled");
     System.clearProperty("solr.kerberos.name.rules");
-    
+
     // more debugging, if needed
     // System.clearProperty("sun.security.jgss.debug");
     // System.clearProperty("sun.security.krb5.debug");

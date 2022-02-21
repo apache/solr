@@ -16,13 +16,14 @@
  */
 package org.apache.solr.security.hadoop;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -30,9 +31,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.security.authentication.util.KerberosName;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationHandler;
 import org.apache.http.HttpRequest;
@@ -59,7 +57,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
 
   Krb5HttpClientBuilder kerberosBuilder = new Krb5HttpClientBuilder();
   private Filter kerberosFilter;
-  
+
   public static final String NAME_RULES_PARAM = "solr.kerberos.name.rules";
   public static final String NAME_RULES_MECHANISM_PARAM = "solr.kerberos.name.rules.mechanism";
   public static final String COOKIE_DOMAIN_PARAM = "solr.kerberos.cookie.domain";
@@ -72,7 +70,8 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   public static final String DELEGATION_TOKEN_ENABLED = "solr.kerberos.delegation.token.enabled";
   public static final String DELEGATION_TOKEN_KIND = "solr.kerberos.delegation.token.kind";
   public static final String DELEGATION_TOKEN_VALIDITY = "solr.kerberos.delegation.token.validity";
-  public static final String DELEGATION_TOKEN_SECRET_PROVIDER = "solr.kerberos.delegation.token.signer.secret.provider";
+  public static final String DELEGATION_TOKEN_SECRET_PROVIDER =
+      "solr.kerberos.delegation.token.signer.secret.provider";
   public static final String DELEGATION_TOKEN_SECRET_PROVIDER_ZK_PATH =
       "solr.kerberos.delegation.token.signer.secret.provider.zookeper.path";
   public static final String DELEGATION_TOKEN_SECRET_MANAGER_ZNODE_WORKING_PATH =
@@ -84,8 +83,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
 
   public static final String ORIGINAL_USER_PRINCIPAL_HEADER = "originalUserPrincipal";
 
-  static final String DELEGATION_TOKEN_ZK_CLIENT =
-      "solr.kerberos.delegation.token.zk.client";
+  static final String DELEGATION_TOKEN_ZK_CLIENT = "solr.kerberos.delegation.token.zk.client";
 
   private final CoreContainer coreContainer;
 
@@ -99,17 +97,22 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
       FilterConfig conf = getInitFilterConfig(pluginConfig, false);
       kerberosFilter.init(conf);
     } catch (ServletException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error initializing kerberos authentication plugin: "+e);
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Error initializing kerberos authentication plugin: " + e);
     }
   }
 
-
   @VisibleForTesting
-  protected FilterConfig getInitFilterConfig(Map<String, Object> pluginConfig, boolean skipKerberosChecking) {
+  protected FilterConfig getInitFilterConfig(
+      Map<String, Object> pluginConfig, boolean skipKerberosChecking) {
     Map<String, String> params = new HashMap<>();
     params.put("type", "kerberos");
     putParam(params, "kerberos.name.rules", NAME_RULES_PARAM, "DEFAULT");
-    putParam(params, "kerberos.name.rules.mechanism", NAME_RULES_MECHANISM_PARAM, KerberosName.DEFAULT_MECHANISM);
+    putParam(
+        params,
+        "kerberos.name.rules.mechanism",
+        NAME_RULES_MECHANISM_PARAM,
+        KerberosName.DEFAULT_MECHANISM);
     putParam(params, "token.valid", TOKEN_VALID_PARAM, "30");
     putParam(params, "cookie.path", COOKIE_PATH_PARAM, "/");
     if (!skipKerberosChecking) {
@@ -124,7 +127,11 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     ZkController controller = coreContainer.getZkController();
 
     if (delegationTokenEnabled) {
-      putParam(params, "delegation-token.token-kind", DELEGATION_TOKEN_KIND, DELEGATION_TOKEN_TYPE_DEFAULT);
+      putParam(
+          params,
+          "delegation-token.token-kind",
+          DELEGATION_TOKEN_KIND,
+          DELEGATION_TOKEN_TYPE_DEFAULT);
       if (coreContainer.isZooKeeperAware()) {
         putParam(params, "signer.secret.provider", DELEGATION_TOKEN_SECRET_PROVIDER, "zookeeper");
         if ("zookeeper".equals(params.get("signer.secret.provider"))) {
@@ -132,19 +139,28 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
           putParam(params, "token.validity", DELEGATION_TOKEN_VALIDITY, "36000");
           params.put("zk-dt-secret-manager.enable", "true");
 
-          String chrootPath = zkHost.contains("/")? zkHost.substring(zkHost.indexOf("/")): "";
-          String znodeWorkingPath = chrootPath + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH + "/zkdtsm";
+          String chrootPath = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf("/")) : "";
+          String znodeWorkingPath =
+              chrootPath + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH + "/zkdtsm";
           // Note - Curator complains if the znodeWorkingPath starts with /
-          znodeWorkingPath = znodeWorkingPath.startsWith("/")? znodeWorkingPath.substring(1): znodeWorkingPath;
-          putParam(params, "zk-dt-secret-manager.znodeWorkingPath",
-              DELEGATION_TOKEN_SECRET_MANAGER_ZNODE_WORKING_PATH, znodeWorkingPath);
-          putParam(params, "signer.secret.provider.zookeeper.path",
-              DELEGATION_TOKEN_SECRET_PROVIDER_ZK_PATH, "/token");
+          znodeWorkingPath =
+              znodeWorkingPath.startsWith("/") ? znodeWorkingPath.substring(1) : znodeWorkingPath;
+          putParam(
+              params,
+              "zk-dt-secret-manager.znodeWorkingPath",
+              DELEGATION_TOKEN_SECRET_MANAGER_ZNODE_WORKING_PATH,
+              znodeWorkingPath);
+          putParam(
+              params,
+              "signer.secret.provider.zookeeper.path",
+              DELEGATION_TOKEN_SECRET_PROVIDER_ZK_PATH,
+              "/token");
           // ensure krb5 is setup properly before running curator
           getHttpClientBuilder(SolrHttpClientBuilder.create());
         }
       } else {
-        log.info("CoreContainer is not ZooKeeperAware, not setting ZK-related delegation token properties");
+        log.info(
+            "CoreContainer is not ZooKeeperAware, not setting ZK-related delegation token properties");
       }
     }
 
@@ -152,25 +168,27 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     // appended to the domain. Useful for situations where multiple solr nodes are
     // on the same host.
     String usePortStr = System.getProperty(COOKIE_PORT_AWARE_PARAM, null);
-    boolean needPortAwareCookies = (usePortStr == null) ? false: Boolean.parseBoolean(usePortStr);
+    boolean needPortAwareCookies = (usePortStr == null) ? false : Boolean.parseBoolean(usePortStr);
 
     if (!needPortAwareCookies || !coreContainer.isZooKeeperAware()) {
       putParam(params, "cookie.domain", COOKIE_DOMAIN_PARAM, null);
     } else { // we need port aware cookies and we are in SolrCloud mode.
       String host = System.getProperty(COOKIE_DOMAIN_PARAM, null);
-      if (host==null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Missing required parameter '"+COOKIE_DOMAIN_PARAM+"'.");
+      if (host == null) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR, "Missing required parameter '" + COOKIE_DOMAIN_PARAM + "'.");
       }
       int port = controller.getHostPort();
       params.put("cookie.domain", host + ":" + port);
     }
 
     // check impersonator config
-    for (Enumeration<?> e = System.getProperties().propertyNames(); e.hasMoreElements();) {
+    for (Enumeration<?> e = System.getProperties().propertyNames(); e.hasMoreElements(); ) {
       String key = e.nextElement().toString();
       if (key.startsWith(IMPERSONATOR_PREFIX)) {
         if (!delegationTokenEnabled) {
-          throw new SolrException(ErrorCode.SERVER_ERROR,
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR,
               "Impersonator configuration requires delegation tokens to be enabled: " + key);
         }
         params.put(key, System.getProperty(key));
@@ -178,7 +196,9 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     }
 
     // Needed to work around HADOOP-13346
-    params.put(DelegationTokenAuthenticationHandler.JSON_MAPPER_PREFIX + JsonGenerator.Feature.AUTO_CLOSE_TARGET,
+    params.put(
+        DelegationTokenAuthenticationHandler.JSON_MAPPER_PREFIX
+            + JsonGenerator.Feature.AUTO_CLOSE_TARGET,
         "false");
 
     final ServletContext servletContext = new AttributeOnlyServletContext();
@@ -194,55 +214,66 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     }
     log.info("Params: {}", params);
 
-    FilterConfig conf = new FilterConfig() {
-      @Override
-      public ServletContext getServletContext() {
-        return servletContext;
-      }
+    FilterConfig conf =
+        new FilterConfig() {
+          @Override
+          public ServletContext getServletContext() {
+            return servletContext;
+          }
 
-      @Override
-      public Enumeration<String> getInitParameterNames() {
-        return Collections.enumeration(params.keySet());
-      }
+          @Override
+          public Enumeration<String> getInitParameterNames() {
+            return Collections.enumeration(params.keySet());
+          }
 
-      @Override
-      public String getInitParameter(String param) {
-        return params.get(param);
-      }
+          @Override
+          public String getInitParameter(String param) {
+            return params.get(param);
+          }
 
-      @Override
-      public String getFilterName() {
-        return "KerberosFilter";
-      }
-    };
+          @Override
+          public String getFilterName() {
+            return "KerberosFilter";
+          }
+        };
 
     return conf;
   }
 
-  private void putParam(Map<String, String> params, String internalParamName, String externalParamName, String defaultValue) {
+  private void putParam(
+      Map<String, String> params,
+      String internalParamName,
+      String externalParamName,
+      String defaultValue) {
     String value = System.getProperty(externalParamName, defaultValue);
-    if (value==null) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Missing required parameter '"+externalParamName+"'.");
+    if (value == null) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Missing required parameter '" + externalParamName + "'.");
     }
     params.put(internalParamName, value);
   }
 
-  private void putParamOptional(Map<String, String> params, String internalParamName, String externalParamName) {
+  private void putParamOptional(
+      Map<String, String> params, String internalParamName, String externalParamName) {
     String value = System.getProperty(externalParamName);
-    if (value!=null) {
+    if (value != null) {
       params.put(internalParamName, value);
     }
   }
 
   @Override
-  public boolean doAuthenticate(HttpServletRequest req, HttpServletResponse rsp,
-                                FilterChain chain) throws Exception {
+  public boolean doAuthenticate(HttpServletRequest req, HttpServletResponse rsp, FilterChain chain)
+      throws Exception {
     log.debug("Request to authenticate using kerberos: {}", req);
     kerberosFilter.doFilter(req, rsp, chain);
 
-    String requestContinuesAttr = (String)req.getAttribute(RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);
+    String requestContinuesAttr =
+        (String)
+            req.getAttribute(RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);
     if (requestContinuesAttr == null) {
-      log.warn("Could not find {}", RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);
+      log.warn(
+          "Could not find {}",
+          RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);
       return false;
     } else {
       return Boolean.parseBoolean(requestContinuesAttr);
@@ -261,8 +292,9 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
 
   private boolean intercept(BiConsumer<String, String> header) {
     SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-    if (info != null && (info.getAction() == SolrDispatchFilter.Action.FORWARD ||
-        info.getAction() == SolrDispatchFilter.Action.REMOTEQUERY)) {
+    if (info != null
+        && (info.getAction() == SolrDispatchFilter.Action.FORWARD
+            || info.getAction() == SolrDispatchFilter.Action.REMOTEQUERY)) {
       if (info.getUserPrincipal() != null) {
         if (log.isInfoEnabled()) {
           log.info("Setting original user principal: {}", info.getUserPrincipal().getName());
@@ -281,12 +313,13 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
 
   @Override
   public void setup(Http2SolrClient client) {
-    final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
-      @Override
-      public void onQueued(Request request) {
-        interceptInternodeRequest(request);
-      }
-    };
+    final HttpListenerFactory.RequestResponseListener listener =
+        new HttpListenerFactory.RequestResponseListener() {
+          @Override
+          public void onQueued(Request request) {
+            interceptInternodeRequest(request);
+          }
+        };
     client.addListenerFactory(() -> listener);
 
     kerberosBuilder.setup(client);
@@ -298,7 +331,11 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     kerberosBuilder.close();
   }
 
-  protected Filter getKerberosFilter() { return kerberosFilter; }
+  protected Filter getKerberosFilter() {
+    return kerberosFilter;
+  }
 
-  protected void setKerberosFilter(Filter kerberosFilter) { this.kerberosFilter = kerberosFilter; }
+  protected void setKerberosFilter(Filter kerberosFilter) {
+    this.kerberosFilter = kerberosFilter;
+  }
 }

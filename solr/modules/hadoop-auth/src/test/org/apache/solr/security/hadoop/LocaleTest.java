@@ -16,18 +16,6 @@
  */
 package org.apache.solr.security.hadoop;
 
-import org.apache.hadoop.minikdc.MiniKdc;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.SolrTestCase;
-import org.apache.solr.util.LogLevel;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.security.auth.login.AppConfigurationEntry;
-import javax.security.auth.login.Configuration;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -37,6 +25,17 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+import org.apache.hadoop.minikdc.MiniKdc;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.util.LogLevel;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "https://issues.apache.org/jira/browse/DIRKRB-753")
 @LogLevel("org.apache.kerby=WARN")
@@ -56,23 +55,32 @@ public class LocaleTest extends SolrTestCase {
     kdc.start();
     kdc.createPrincipal(keytabFile, principal);
 
-    AppConfigurationEntry appConfigEntry = new AppConfigurationEntry(
-        KerberosTestServices.krb5LoginModuleName,
-        AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-        Map.of("principal", principal,
-            "storeKey", "true",
-            "useKeyTab", "true",
-            "useTicketCache", "false",
-            "refreshKrb5Config", "true",
-            "keyTab", keytabFile.getAbsolutePath(),
-            "keytab", keytabFile.getAbsolutePath())
-    );
-    Configuration configuration = new Configuration() {
-      @Override
-      public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-        return new AppConfigurationEntry[]{appConfigEntry};
-      }
-    };
+    AppConfigurationEntry appConfigEntry =
+        new AppConfigurationEntry(
+            KerberosTestServices.krb5LoginModuleName,
+            AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+            Map.of(
+                "principal",
+                principal,
+                "storeKey",
+                "true",
+                "useKeyTab",
+                "true",
+                "useTicketCache",
+                "false",
+                "refreshKrb5Config",
+                "true",
+                "keyTab",
+                keytabFile.getAbsolutePath(),
+                "keytab",
+                keytabFile.getAbsolutePath()));
+    Configuration configuration =
+        new Configuration() {
+          @Override
+          public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+            return new AppConfigurationEntry[] {appConfigEntry};
+          }
+        };
 
     List<Locale> locales = new ArrayList<>();
     for (Locale locale : Locale.getAvailableLocales()) {
@@ -83,7 +91,9 @@ public class LocaleTest extends SolrTestCase {
         locales.add(locale);
       }
     }
-    log.error("Could not login with locales {}", locales.stream().collect(Collectors.groupingBy(Locale::getLanguage)));
+    log.error(
+        "Could not login with locales {}",
+        locales.stream().collect(Collectors.groupingBy(Locale::getLanguage)));
 
     kdc.stop();
   }

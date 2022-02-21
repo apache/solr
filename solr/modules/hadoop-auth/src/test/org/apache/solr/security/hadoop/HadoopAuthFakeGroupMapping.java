@@ -18,12 +18,9 @@ package org.apache.solr.security.hadoop;
 
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.hadoop.security.GroupMappingServiceProvider;
 
-/**
- * Fake mapping for Hadoop to prevent falling back to Shell group provider
- */
+/** Fake mapping for Hadoop to prevent falling back to Shell group provider */
 public class HadoopAuthFakeGroupMapping implements GroupMappingServiceProvider {
   @Override
   public List<String> getGroups(String user) {
@@ -31,10 +28,8 @@ public class HadoopAuthFakeGroupMapping implements GroupMappingServiceProvider {
   }
 
   @Override
-  public void cacheGroupsRefresh() {
-  }
+  public void cacheGroupsRefresh() {}
 
   @Override
-  public void cacheGroupsAdd(List<String> groups) {
-  }
+  public void cacheGroupsAdd(List<String> groups) {}
 }

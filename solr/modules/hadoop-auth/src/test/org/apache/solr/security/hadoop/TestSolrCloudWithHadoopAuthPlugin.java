@@ -39,9 +39,10 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
 
     kerberosTestServices = KerberosUtils.setupMiniKdc(createTempDir());
 
-    configureCluster(NUM_SERVERS)// nodes
+    configureCluster(NUM_SERVERS) // nodes
         .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_kerberos_config.json"))
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
         .configure();
   }
@@ -64,10 +65,11 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
     String collectionName = "testkerberoscollection";
 
     // create collection
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1",
-        NUM_SHARDS, REPLICATION_FACTOR);
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(
+            collectionName, "conf1", NUM_SHARDS, REPLICATION_FACTOR);
     create.process(solrClient);
-    // The metrics counter for wrong credentials here really just means  
+    // The metrics counter for wrong credentials here really just means
     assertAuthMetricsMinimums(2, 1, 0, 1, 0, 0);
 
     SolrInputDocument doc = new SolrInputDocument();
@@ -81,10 +83,11 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
     QueryResponse rsp = solrClient.query(collectionName, query);
     assertEquals(1, rsp.getResults().getNumFound());
 
-    CollectionAdminRequest.Delete deleteReq = CollectionAdminRequest.deleteCollection(collectionName);
+    CollectionAdminRequest.Delete deleteReq =
+        CollectionAdminRequest.deleteCollection(collectionName);
     deleteReq.process(solrClient);
-    AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
-        solrClient.getZkStateReader(), true, 330);
+    AbstractDistribZkTestBase.waitForCollectionToDisappear(
+        collectionName, solrClient.getZkStateReader(), true, 330);
     // cookie was used to avoid re-authentication
     assertAuthMetricsMinimums(6, 4, 0, 2, 0, 0);
   }

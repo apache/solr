@@ -17,9 +17,13 @@
 
 package org.apache.solr.util.configuration.providers.hadoop;
 
+import static org.apache.hadoop.security.alias.CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH;
+import static org.apache.solr.util.configuration.providers.AbstractSSLCredentialProvider.DEFAULT_CREDENTIAL_KEY_MAP;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.lucene.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.SolrTestCaseJ4;
@@ -29,19 +33,11 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.mockito.Mockito;
 
-import static org.apache.hadoop.security.alias.CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH;
-import static org.apache.solr.util.configuration.providers.AbstractSSLCredentialProvider.DEFAULT_CREDENTIAL_KEY_MAP;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-
-/**
- */
+/** */
 public class HadoopSSLCredentialProviderTest {
 
   @Rule
-  public TestRule syspropRestore = new TestRuleRestoreSystemProperties(
-      CREDENTIAL_PROVIDER_PATH
-  );
+  public TestRule syspropRestore = new TestRuleRestoreSystemProperties(CREDENTIAL_PROVIDER_PATH);
 
   @Test(expected = RuntimeException.class)
   public void testConstructorRequiresCredPath() {
@@ -51,17 +47,22 @@ public class HadoopSSLCredentialProviderTest {
   @Test
   public void testGetCredentials() throws Exception {
     int cnt = 0;
-    for (Map.Entry<SSLCredentialProvider.CredentialType, String> set : DEFAULT_CREDENTIAL_KEY_MAP.entrySet()) {
+    for (Map.Entry<SSLCredentialProvider.CredentialType, String> set :
+        DEFAULT_CREDENTIAL_KEY_MAP.entrySet()) {
       String pw = "pw" + ++cnt;
-      HadoopSSLCredentialProvider sut = new HadoopSSLCredentialProvider(getMockedHadoopCredentialProvider(set.getValue(), pw));
+      HadoopSSLCredentialProvider sut =
+          new HadoopSSLCredentialProvider(getMockedHadoopCredentialProvider(set.getValue(), pw));
       assertThat(sut.getCredential(set.getKey()), is(pw));
     }
   }
 
-  private Configuration getMockedHadoopCredentialProvider(String key, String pw) throws IOException {
+  private Configuration getMockedHadoopCredentialProvider(String key, String pw)
+      throws IOException {
     Configuration mockHadoopConfiguration = getMockHadoopConfiguration();
     Mockito.when(mockHadoopConfiguration.getPassword(key))
-        .then(invocationOnMock -> invocationOnMock.getArguments()[0].equals(key) ? pw.toCharArray() : null);
+        .then(
+            invocationOnMock ->
+                invocationOnMock.getArguments()[0].equals(key) ? pw.toCharArray() : null);
     System.setProperty(CREDENTIAL_PROVIDER_PATH, "/some/path"); // enables HCP
     return mockHadoopConfiguration;
   }
