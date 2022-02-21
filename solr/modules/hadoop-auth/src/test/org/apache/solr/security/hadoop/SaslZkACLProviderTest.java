@@ -16,13 +16,13 @@
  */
 package org.apache.solr.security.hadoop;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -45,13 +45,13 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadZookeeperThreadsFilter.class
-})
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadZookeeperThreadsFilter.class
+    })
 public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -62,12 +62,12 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() {
-    assumeFalse("FIXME: SOLR-7040: This test fails under IBM J9",
-                Constants.JAVA_VENDOR.startsWith("IBM"));
+    assumeFalse(
+        "FIXME: SOLR-7040: This test fails under IBM J9", Constants.JAVA_VENDOR.startsWith("IBM"));
     System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("hostName", "localhost");
   }
-  
+
   @AfterClass
   public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
@@ -89,8 +89,10 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
     System.setProperty("zkHost", zkServer.getZkAddress());
 
-    try (SolrZkClient zkClient = new SolrZkClientWithACLs(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
-      ZooKeeperSaslClient saslClient = zkClient.getSolrZooKeeper().getConnection().zooKeeperSaslClient;
+    try (SolrZkClient zkClient =
+        new SolrZkClientWithACLs(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
+      ZooKeeperSaslClient saslClient =
+          zkClient.getSolrZooKeeper().getConnection().zooKeeperSaslClient;
       assumeFalse("Could not set up ZK with SASL", saslClient.isFailed());
       zkClient.makePath("/solr", false, true);
     } catch (KeeperException e) {
@@ -105,19 +107,37 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   }
 
   protected void setupZNodes() throws Exception {
-    SolrZkClient zkClient = new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient =
+        new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      zkClient.create("/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
-      zkClient.makePath("/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
-      zkClient.create(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+      zkClient.create(
+          "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+      zkClient.makePath(
+          "/protectedMakePathNode",
+          "content".getBytes(DATA_ENCODING),
+          CreateMode.PERSISTENT,
+          false);
+      zkClient.create(
+          SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
+          "content".getBytes(DATA_ENCODING),
+          CreateMode.PERSISTENT,
+          false);
     } finally {
       zkClient.close();
     }
 
     zkClient = new SolrZkClientNoACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      zkClient.create("/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
-      zkClient.makePath("/unprotectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+      zkClient.create(
+          "/unprotectedCreateNode",
+          "content".getBytes(DATA_ENCODING),
+          CreateMode.PERSISTENT,
+          false);
+      zkClient.makePath(
+          "/unprotectedMakePathNode",
+          "content".getBytes(DATA_ENCODING),
+          CreateMode.PERSISTENT,
+          false);
     } finally {
       zkClient.close();
     }
@@ -133,12 +153,12 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   @Test
   public void testSaslZkACLProvider() throws Exception {
     // Test with Sasl enabled
-    SolrZkClient zkClient = new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient =
+        new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      AbstractVMParamsZkACLAndCredentialsProvidersTestBase.doTest(zkClient,
-          true, true, true, true, true,
-          true, true, true, true, true);
-     } finally {
+      AbstractVMParamsZkACLAndCredentialsProvidersTestBase.doTest(
+          zkClient, true, true, true, true, true, true, true, true, true, true);
+    } finally {
       zkClient.close();
     }
 
@@ -147,18 +167,15 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     System.setProperty("zookeeper.sasl.client", "false");
     zkClient = new SolrZkClientNoACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      AbstractVMParamsZkACLAndCredentialsProvidersTestBase.doTest(zkClient,
-          true, true, false, false, false,
-          false, false, false, false, false);
+      AbstractVMParamsZkACLAndCredentialsProvidersTestBase.doTest(
+          zkClient, true, true, false, false, false, false, false, false, false, false);
     } finally {
       zkClient.close();
       System.clearProperty("zookeeper.sasl.client");
     }
   }
 
-  /**
-   * A SolrZKClient that adds Sasl ACLs
-   */
+  /** A SolrZKClient that adds Sasl ACLs */
   private static class SolrZkClientWithACLs extends SolrZkClient {
 
     public SolrZkClientWithACLs(String zkServerAddress, int zkClientTimeout) {
@@ -171,9 +188,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     }
   }
 
-  /**
-   * A SolrZKClient that doesn't add ACLs
-   */
+  /** A SolrZKClient that doesn't add ACLs */
   private static class SolrZkClientNoACLs extends SolrZkClient {
 
     public SolrZkClientNoACLs(String zkServerAddress, int zkClientTimeout) {
@@ -186,9 +201,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     }
   }
 
-  /**
-   * A ZkTestServer with Sasl support
-   */
+  /** A ZkTestServer with Sasl support */
   public static class SaslZkTestServer extends ZkTestServer {
     private final Path kdcDir;
     private KerberosTestServices kerberosTestServices;
@@ -209,14 +222,17 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
         String zkClientPrincipal = "solr";
         String zkServerPrincipal = "zookeeper/localhost";
 
-        kerberosTestServices = KerberosTestServices.builder()
-            .withKdc(kdcDir.toFile())
-            .withDebug() // SOLR-15366
-            .withJaasConfiguration(zkClientPrincipal, keytabFile, zkServerPrincipal, keytabFile)
-            .build();
+        kerberosTestServices =
+            KerberosTestServices.builder()
+                .withKdc(kdcDir.toFile())
+                .withDebug() // SOLR-15366
+                .withJaasConfiguration(zkClientPrincipal, keytabFile, zkServerPrincipal, keytabFile)
+                .build();
         kerberosTestServices.start();
 
-        kerberosTestServices.getKdc().createPrincipal(keytabFile, zkClientPrincipal, zkServerPrincipal);
+        kerberosTestServices
+            .getKdc()
+            .createPrincipal(keytabFile, zkClientPrincipal, zkServerPrincipal);
       } catch (Exception ex) {
         throw new RuntimeException(ex);
       }
@@ -229,8 +245,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
       System.clearProperty("zookeeper.kerberos.removeRealmFromPrincipal");
       System.clearProperty("zookeeper.kerberos.removeHostFromPrincipal");
       super.shutdown();
-      if (kerberosTestServices != null)
-        kerberosTestServices.stop();
+      if (kerberosTestServices != null) kerberosTestServices.stop();
     }
   }
 }

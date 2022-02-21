@@ -19,16 +19,15 @@ package org.apache.solr.security.hadoop;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
+import javax.servlet.FilterRegistration.Dynamic;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
@@ -36,12 +35,9 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
-import javax.servlet.FilterRegistration.Dynamic;
 import javax.servlet.descriptor.JspConfigDescriptor;
 
-/**
- * A concrete implementation of {@linkplain ServletContext} which support only attributes.
- */
+/** A concrete implementation of {@linkplain ServletContext} which support only attributes. */
 class AttributeOnlyServletContext implements ServletContext {
   private Map<String, Object> attributes = new HashMap<String, Object>();
 
@@ -88,7 +84,7 @@ class AttributeOnlyServletContext implements ServletContext {
   }
 
   @Override
-  public Map<String,? extends ServletRegistration> getServletRegistrations() {
+  public Map<String, ? extends ServletRegistration> getServletRegistrations() {
     return null;
   }
 
@@ -178,7 +174,7 @@ class AttributeOnlyServletContext implements ServletContext {
   }
 
   @Override
-  public Map<String,? extends FilterRegistration> getFilterRegistrations() {
+  public Map<String, ? extends FilterRegistration> getFilterRegistrations() {
     return null;
   }
 
@@ -251,7 +247,8 @@ class AttributeOnlyServletContext implements ServletContext {
   }
 
   @Override
-  public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass) {
+  public javax.servlet.ServletRegistration.Dynamic addServlet(
+      String servletName, Class<? extends Servlet> servletClass) {
     return null;
   }
 
@@ -261,7 +258,8 @@ class AttributeOnlyServletContext implements ServletContext {
   }
 
   @Override
-  public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, String className) {
+  public javax.servlet.ServletRegistration.Dynamic addServlet(
+      String servletName, String className) {
     return null;
   }
 

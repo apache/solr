@@ -20,7 +20,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-
 import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
 import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
@@ -55,18 +54,16 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   public static void setupClass() throws Exception {
     HadoopTestUtil.checkAssumptions();
 
-    configureCluster(NUM_SERVERS)// nodes
-        .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json"))
+    configureCluster(NUM_SERVERS) // nodes
+        .withSecurityJson(
+            TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json"))
         .configure();
 
     JettySolrRunner runnerPrimary = cluster.getJettySolrRunners().get(0);
-    primarySolrClient =
-        new HttpSolrClient.Builder(runnerPrimary.getBaseUrl().toString())
-            .build();
+    primarySolrClient = new HttpSolrClient.Builder(runnerPrimary.getBaseUrl().toString()).build();
     JettySolrRunner runnerSecondary = cluster.getJettySolrRunners().get(1);
     secondarySolrClient =
-        new HttpSolrClient.Builder(runnerSecondary.getBaseUrl().toString())
-            .build();
+        new HttpSolrClient.Builder(runnerSecondary.getBaseUrl().toString()).build();
   }
 
   @AfterClass
@@ -82,36 +79,40 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private String getDelegationToken(final String renewer, final String user, HttpSolrClient solrClient) throws Exception {
-    DelegationTokenRequest.Get get = new DelegationTokenRequest.Get(renewer) {
-      @Override
-      public SolrParams getParams() {
-        ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-        params.set(PseudoAuthenticator.USER_NAME, user);
-        return params;
-      }
-    };
+  private String getDelegationToken(
+      final String renewer, final String user, HttpSolrClient solrClient) throws Exception {
+    DelegationTokenRequest.Get get =
+        new DelegationTokenRequest.Get(renewer) {
+          @Override
+          public SolrParams getParams() {
+            ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+            params.set(PseudoAuthenticator.USER_NAME, user);
+            return params;
+          }
+        };
     DelegationTokenResponse.Get getResponse = get.process(solrClient);
     return getResponse.getDelegationToken();
   }
 
-  private long renewDelegationToken(final String token, final int expectedStatusCode,
-      final String user, HttpSolrClient client) throws Exception {
-    DelegationTokenRequest.Renew renew = new DelegationTokenRequest.Renew(token) {
-      @Override
-      public SolrParams getParams() {
-        ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-        params.set(PseudoAuthenticator.USER_NAME, user);
-        return params;
-      }
+  private long renewDelegationToken(
+      final String token, final int expectedStatusCode, final String user, HttpSolrClient client)
+      throws Exception {
+    DelegationTokenRequest.Renew renew =
+        new DelegationTokenRequest.Renew(token) {
+          @Override
+          public SolrParams getParams() {
+            ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+            params.set(PseudoAuthenticator.USER_NAME, user);
+            return params;
+          }
 
-      @Override
-      public Set<String> getQueryParams() {
-        Set<String> queryParams = super.getQueryParams();
-        queryParams.add(PseudoAuthenticator.USER_NAME);
-        return queryParams;
-      }
-    };
+          @Override
+          public Set<String> getQueryParams() {
+            Set<String> queryParams = super.getQueryParams();
+            queryParams.add(PseudoAuthenticator.USER_NAME);
+            return queryParams;
+          }
+        };
     try {
       DelegationTokenResponse.Renew renewResponse = renew.process(client);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
@@ -123,7 +124,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   }
 
   private void cancelDelegationToken(String token, int expectedStatusCode, HttpSolrClient client)
-  throws Exception {
+      throws Exception {
     DelegationTokenRequest.Cancel cancel = new DelegationTokenRequest.Cancel(token);
     try {
       cancel.process(client);
@@ -134,12 +135,12 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   }
 
   private void doSolrRequest(String token, int expectedStatusCode, HttpSolrClient client)
-  throws Exception {
+      throws Exception {
     doSolrRequest(token, expectedStatusCode, client, 1);
   }
 
-  private void doSolrRequest(String token, int expectedStatusCode, HttpSolrClient client, int trials)
-  throws Exception {
+  private void doSolrRequest(
+      String token, int expectedStatusCode, HttpSolrClient client, int trials) throws Exception {
     int lastStatusCode = 0;
     for (int i = 0; i < trials; ++i) {
       lastStatusCode = getStatusCode(token, null, null, client);
@@ -163,21 +164,26 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   }
 
   private int getStatusCode(String token, final String user, final String op, HttpSolrClient client)
-  throws Exception {
+      throws Exception {
     SolrClient delegationTokenClient;
-    if (random().nextBoolean()) delegationTokenClient = new HttpSolrClient.Builder(client.getBaseURL().toString())
-        .withKerberosDelegationToken(token)
-        .withResponseParser(client.getParser())
-        .build();
-    else delegationTokenClient = new CloudSolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-        .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
-            .withResponseParser(client.getParser())
-            .withSocketTimeout(30000).withConnectionTimeout(15000)
-            .withHttpSolrClientBuilder(
-                new HttpSolrClient.Builder()
-                    .withKerberosDelegationToken(token)
-            ))
-        .build();
+    if (random().nextBoolean())
+      delegationTokenClient =
+          new HttpSolrClient.Builder(client.getBaseURL().toString())
+              .withKerberosDelegationToken(token)
+              .withResponseParser(client.getParser())
+              .build();
+    else
+      delegationTokenClient =
+          new CloudSolrClient.Builder(
+                  Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+              .withLBHttpSolrClientBuilder(
+                  new LBHttpSolrClient.Builder()
+                      .withResponseParser(client.getParser())
+                      .withSocketTimeout(30000)
+                      .withConnectionTimeout(15000)
+                      .withHttpSolrClientBuilder(
+                          new HttpSolrClient.Builder().withKerberosDelegationToken(token)))
+              .build();
     try {
       ModifiableSolrParams p = new ModifiableSolrParams();
       if (user != null) p.set(PseudoAuthenticator.USER_NAME, user);
@@ -200,9 +206,8 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private void doSolrRequest(SolrClient client,
-                             SolrRequest<?> request,
-      int expectedStatusCode) throws Exception {
+  private void doSolrRequest(SolrClient client, SolrRequest<?> request, int expectedStatusCode)
+      throws Exception {
     try {
       client.request(request);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
@@ -212,7 +217,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   }
 
   private void verifyTokenValid(String token) throws Exception {
-     // pass with token
+    // pass with token
     doSolrRequest(token, HttpStatus.SC_OK, primarySolrClient);
 
     // fail without token
@@ -225,9 +230,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     doSolrRequest(null, ErrorCode.UNAUTHORIZED.code, secondarySolrClient);
   }
 
-  /**
-   * Test basic Delegation Token get/verify
-   */
+  /** Test basic Delegation Token get/verify */
   @Test
   public void testDelegationTokenVerify() throws Exception {
     // Get token
@@ -294,8 +297,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private void verifyDelegationTokenRenew(String renewer, String user)
-  throws Exception {
+  private void verifyDelegationTokenRenew(String renewer, String user) throws Exception {
     {
       // renew on same server
       String token = getDelegationToken(renewer, user, primarySolrClient);
@@ -316,7 +318,9 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   }
 
   @Test
-// commented 4-Sep-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  // commented 4-Sep-2018
+  // @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
+  // 2-Aug-2018
   public void testDelegationTokenRenew() throws Exception {
     // test with specifying renewer
     verifyDelegationTokenRenew(USER_1, USER_1);
@@ -340,12 +344,11 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     renewDelegationToken(token, ErrorCode.FORBIDDEN.code, "notRenewUser", secondarySolrClient);
   }
 
-  /**
-   * Test that a non-delegation-token "op" http param is handled correctly
-   */
+  /** Test that a non-delegation-token "op" http param is handled correctly */
   @Test
   public void testDelegationOtherOp() throws Exception {
-    assertEquals(HttpStatus.SC_OK, getStatusCode(null, USER_1, "someSolrOperation", primarySolrClient));
+    assertEquals(
+        HttpStatus.SC_OK, getStatusCode(null, USER_1, "someSolrOperation", primarySolrClient));
   }
 
   @Test
@@ -360,9 +363,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  /**
-   * Test HttpSolrServer's delegation token support
-   */
+  /** Test HttpSolrServer's delegation token support */
   @Test
   public void testDelegationTokenSolrClient() throws Exception {
     // Get token
@@ -382,17 +383,20 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
       ss.close();
     }
 
-    try (HttpSolrClient client = new HttpSolrClient.Builder(primarySolrClient.getBaseURL())
-             .withKerberosDelegationToken(token)
-             .withResponseParser(primarySolrClient.getParser())
-             .build()) {
+    try (HttpSolrClient client =
+        new HttpSolrClient.Builder(primarySolrClient.getBaseURL())
+            .withKerberosDelegationToken(token)
+            .withResponseParser(primarySolrClient.getParser())
+            .build()) {
       // test with token via property
       doSolrRequest(client, request, HttpStatus.SC_OK);
 
       // test with param -- should throw an exception
       ModifiableSolrParams tokenParam = new ModifiableSolrParams();
       tokenParam.set("delegation", "invalidToken");
-      expectThrows(IllegalArgumentException.class, () -> doSolrRequest(client, getAdminRequest(tokenParam), ErrorCode.FORBIDDEN.code));
+      expectThrows(
+          IllegalArgumentException.class,
+          () -> doSolrRequest(client, getAdminRequest(tokenParam), ErrorCode.FORBIDDEN.code));
     }
   }
 }

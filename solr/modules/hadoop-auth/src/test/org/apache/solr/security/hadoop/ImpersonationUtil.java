@@ -17,7 +17,6 @@
 package org.apache.solr.security.hadoop;
 
 import java.util.List;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
 import org.apache.lucene.util.Constants;
@@ -28,7 +27,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * This class implements utility functions required to test the secure impersonation feature for {@linkplain HadoopAuthPlugin}
+ * This class implements utility functions required to test the secure impersonation feature for
+ * {@linkplain HadoopAuthPlugin}
  */
 public class ImpersonationUtil {
 
@@ -68,5 +68,4 @@ public class ImpersonationUtil {
   static String getExpectedHostExMsg(String user) {
     return "Unauthorized connection for super-user: " + user;
   }
-
 }

@@ -26,7 +26,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
@@ -49,26 +48,30 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
   protected static final int REPLICATION_FACTOR = 1;
   private static final String SOLR_PASSWD = "solr";
   private static final String FOO_PASSWD = "foo";
-  private static final Id SOLR_ZK_ID = new Id("digest", digest ("solr", SOLR_PASSWD));
-  private static final Id FOO_ZK_ID = new Id("digest", digest ("foo", FOO_PASSWD));
+  private static final Id SOLR_ZK_ID = new Id("digest", digest("solr", SOLR_PASSWD));
+  private static final Id FOO_ZK_ID = new Id("digest", digest("foo", FOO_PASSWD));
 
   @BeforeClass
   public static void setupClass() throws Exception {
     HadoopTestUtil.checkAssumptions();
 
-    System.setProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
+    System.setProperty(
+        SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
         VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());
-    System.setProperty(SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
+    System.setProperty(
+        SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
         VMParamsSingleSetCredentialsDigestZkCredentialsProvider.class.getName());
     System.setProperty(DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, "solr");
     System.setProperty(DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME, SOLR_PASSWD);
     System.setProperty(DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME, "foo");
     System.setProperty(DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME, FOO_PASSWD);
 
-    configureCluster(NUM_SERVERS)// nodes
+    configureCluster(NUM_SERVERS) // nodes
         .withSolrXml(MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML)
-        .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json"))
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withSecurityJson(
+            TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json"))
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
   }
 
@@ -85,8 +88,13 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
   @Test
   @SuppressWarnings({"try"})
   public void testZkAcls() throws Exception {
-    try (ZooKeeper keeper = new ZooKeeper(cluster.getZkServer().getZkAddress(),
-        (int) TimeUnit.MINUTES.toMillis(1), arg0 -> {/* Do nothing */})) {
+    try (ZooKeeper keeper =
+        new ZooKeeper(
+            cluster.getZkServer().getZkAddress(),
+            (int) TimeUnit.MINUTES.toMillis(1),
+            arg0 -> {
+              /* Do nothing */
+            })) {
       keeper.addAuthInfo("digest", ("solr:" + SOLR_PASSWD).getBytes(StandardCharsets.UTF_8));
 
       // Test well known paths.
@@ -101,7 +109,7 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private void walkZkTree (ZooKeeper keeper, String zkChroot, String path) throws Exception {
+  private void walkZkTree(ZooKeeper keeper, String zkChroot, String path) throws Exception {
     if (isSecurityZNode(zkChroot, path)) {
       checkSecurityACLs(keeper, path);
     } else {
@@ -130,7 +138,7 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
     assertTrue(message, acls.contains(new ACL(ZooDefs.Perms.ALL, SOLR_ZK_ID)));
   }
 
-  private void checkNonSecurityACLs(ZooKeeper keeper, String path)  throws Exception {
+  private void checkNonSecurityACLs(ZooKeeper keeper, String path) throws Exception {
     List<ACL> acls = keeper.getACL(path, new Stat());
     String message = String.format(Locale.ROOT, "Path %s ACLs found %s", path, acls);
     assertEquals(message, 2, acls.size());
@@ -138,9 +146,9 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
     assertTrue(message, acls.contains(new ACL(ZooDefs.Perms.READ, FOO_ZK_ID)));
   }
 
-  private static String digest (String userName, String passwd) {
+  private static String digest(String userName, String passwd) {
     try {
-      return DigestAuthenticationProvider.generateDigest(userName+":"+passwd);
+      return DigestAuthenticationProvider.generateDigest(userName + ":" + passwd);
     } catch (NoSuchAlgorithmException ex) {
       throw new RuntimeException(ex);
     }
