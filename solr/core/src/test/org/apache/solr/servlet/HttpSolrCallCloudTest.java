@@ -23,6 +23,8 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.UnavailableException;
 import javax.servlet.WriteListener;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,7 +37,7 @@ import org.eclipse.jetty.server.Response;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
+public class HttpSolrCallCloudTest extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
   private static final int NUM_SHARD = 3;
   private static final int REPLICA_FACTOR = 2;
@@ -54,10 +56,19 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void test() throws Exception {
+  public void testCoreChosen() throws Exception {
     assertCoreChosen(NUM_SHARD, new TestRequest("/collection1/update"));
     assertCoreChosen(NUM_SHARD, new TestRequest("/collection1/update/json"));
     assertCoreChosen(NUM_SHARD * REPLICA_FACTOR, new TestRequest("/collection1/select"));
+  }
+
+  // https://issues.apache.org/jira/browse/SOLR-16019
+  @Test
+  public void testWrongUtf8InQ() throws Exception {
+    var baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
+    var request = new URL(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0"); // Illegal UTF-8 string
+    var connection = (HttpURLConnection) request.openConnection();
+    assertEquals(400, connection.getResponseCode());
   }
 
   private void assertCoreChosen(int numCores, TestRequest testRequest) throws UnavailableException {
