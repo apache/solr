@@ -1,12 +1,9 @@
-name: SolrJ Tests
+name: Affected Module Tests
 
 on:
   pull_request:
     branches:
       - 'main'
-    paths:
-      - '.github/workflows/solrj-test.yml'
-      - 'solr/solrj/**'
 
 jobs:
   test:
@@ -29,11 +26,11 @@ jobs:
       with:
         path: |
           ~/.gradle/caches
-        key: ${{ runner.os }}-gradle-solrj-${{ hashFiles('versions.lock') }}
+        key: ${{ runner.os }}-gradle-solr-tests-affected-${{ hashFiles('versions.lock') }}
         restore-keys: |
-          ${{ runner.os }}-gradle-solrj-
+          ${{ runner.os }}-gradle-solr-tests-affected--
           ${{ runner.os }}-gradle-
     - name: Initialize gradle settings
       run: ./gradlew localSettings
-    - name: Test the SolrJ Package
-      run: ./gradlew solr:solrj:test
+    - name: Test modules affected by this PR
+      run: ./gradlew runAffectedUnitTests -Paffected_module_detector.enable
