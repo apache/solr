@@ -17,7 +17,6 @@
 package org.apache.solr.index.hdfs;
 
 import java.io.IOException;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.lucene.index.CheckIndex;
@@ -45,11 +44,13 @@ public class CheckHdfsIndex {
     }
 
     if (!CheckIndex.assertsOn()) {
-      System.out.println("\nNOTE: testing will be more thorough if you run java with '-ea:org.apache.lucene...', so assertions are enabled");
+      System.out.println(
+          "\nNOTE: testing will be more thorough if you run java with '-ea:org.apache.lucene...', so assertions are enabled");
     }
 
     if (opts.getDirImpl() != null) {
-      System.out.println("\nIgnoring specified -dir-impl, instead using " + HdfsDirectory.class.getSimpleName());
+      System.out.println(
+          "\nIgnoring specified -dir-impl, instead using " + HdfsDirectory.class.getSimpleName());
     }
 
     Path indexPath = new Path(opts.getIndexPath());
@@ -64,7 +65,8 @@ public class CheckHdfsIndex {
       return 1;
     }
 
-    try (Directory dir = directory; CheckIndex checker = new CheckIndex(dir)) {
+    try (Directory dir = directory;
+        CheckIndex checker = new CheckIndex(dir)) {
       opts.setOut(System.out);
       return checker.doCheck(opts);
     }
@@ -76,7 +78,7 @@ public class CheckHdfsIndex {
     HdfsUtil.addHdfsResources(conf, confDir);
 
     String fsScheme = path.toUri().getScheme();
-    if(fsScheme != null) {
+    if (fsScheme != null) {
       conf.setBoolean("fs." + fsScheme + ".impl.disable.cache", true);
     }
     return conf;

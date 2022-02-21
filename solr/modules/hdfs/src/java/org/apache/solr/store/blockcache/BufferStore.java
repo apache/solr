@@ -22,24 +22,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @lucene.experimental
- */
+/** @lucene.experimental */
 public class BufferStore implements Store {
 
-  private static final Store EMPTY = new Store() {
+  private static final Store EMPTY =
+      new Store() {
 
-    @Override
-    public byte[] takeBuffer(int bufferSize) {
-      return new byte[bufferSize];
-    }
+        @Override
+        public byte[] takeBuffer(int bufferSize) {
+          return new byte[bufferSize];
+        }
 
-    @Override
-    public void putBuffer(byte[] buffer) {
-    }
-  };
+        @Override
+        public void putBuffer(byte[] buffer) {}
+      };
 
-  private final static ConcurrentMap<Integer, BufferStore> bufferStores = new ConcurrentHashMap<>(8192, 0.75f, 512);
+  private static final ConcurrentMap<Integer, BufferStore> bufferStores =
+      new ConcurrentHashMap<>(8192, 0.75f, 512);
 
   private final BlockingQueue<byte[]> buffers;
 
@@ -56,12 +55,12 @@ public class BufferStore implements Store {
   static void clearBufferStores() {
     bufferStores.clear();
   }
-  
-  public synchronized static void initNewBuffer(int bufferSize, long totalAmount) {
+
+  public static synchronized void initNewBuffer(int bufferSize, long totalAmount) {
     initNewBuffer(bufferSize, totalAmount, null);
   }
 
-  public synchronized static void initNewBuffer(int bufferSize, long totalAmount, Metrics metrics) {
+  public static synchronized void initNewBuffer(int bufferSize, long totalAmount, Metrics metrics) {
     if (totalAmount == 0) {
       return;
     }
@@ -77,12 +76,17 @@ public class BufferStore implements Store {
         shardBuffercacheLost = metrics.shardBuffercacheLost;
         shardBuffercacheAllocate = metrics.shardBuffercacheAllocate;
       }
-      BufferStore store = new BufferStore(bufferSize, (int) count, shardBuffercacheAllocate, shardBuffercacheLost);
+      BufferStore store =
+          new BufferStore(bufferSize, (int) count, shardBuffercacheAllocate, shardBuffercacheLost);
       bufferStores.put(bufferSize, store);
     }
   }
 
-  private BufferStore(int bufferSize, int count, AtomicLong shardBuffercacheAllocate, AtomicLong shardBuffercacheLost) {
+  private BufferStore(
+      int bufferSize,
+      int count,
+      AtomicLong shardBuffercacheAllocate,
+      AtomicLong shardBuffercacheLost) {
     this.bufferSize = bufferSize;
     this.shardBuffercacheAllocate = shardBuffercacheAllocate;
     this.shardBuffercacheLost = shardBuffercacheLost;
@@ -108,8 +112,12 @@ public class BufferStore implements Store {
   @Override
   public byte[] takeBuffer(int bufferSize) {
     if (this.bufferSize != bufferSize) {
-      throw new RuntimeException("Buffer with length [" + bufferSize + "] does not match buffer size of ["
-          + bufferSize + "]");
+      throw new RuntimeException(
+          "Buffer with length ["
+              + bufferSize
+              + "] does not match buffer size of ["
+              + bufferSize
+              + "]");
     }
     return newBuffer(buffers.poll());
   }
@@ -120,8 +128,12 @@ public class BufferStore implements Store {
       return;
     }
     if (buffer.length != bufferSize) {
-      throw new RuntimeException("Buffer with length [" + buffer.length + "] does not match buffer size of ["
-          + bufferSize + "]");
+      throw new RuntimeException(
+          "Buffer with length ["
+              + buffer.length
+              + "] does not match buffer size of ["
+              + bufferSize
+              + "]");
     }
     checkReturn(buffers.offer(buffer));
   }

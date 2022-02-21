@@ -17,10 +17,9 @@
 
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import java.io.IOException;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -40,11 +39,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
 @Nightly // test is too long for non nightly
 public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
   private static MiniDFSCluster dfsCluster;
@@ -52,7 +53,8 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupClass() throws Exception {
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
 
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
@@ -82,12 +84,12 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
     String hdfsUri = HdfsTestUtil.getURI(dfsCluster);
     String dataDir = hdfsUri + "/dummyFolder/dataDir";
     String ulogDir = hdfsUri + "/dummyFolder2/ulogDir";
-    CollectionAdminResponse res = CollectionAdminRequest
-        .addReplicaToShard(coll, "shard1")
-        .setDataDir(dataDir)
-        .setUlogDir(ulogDir)
-        .setNode(cluster.getJettySolrRunner(0).getNodeName())
-        .process(cluster.getSolrClient());
+    CollectionAdminResponse res =
+        CollectionAdminRequest.addReplicaToShard(coll, "shard1")
+            .setDataDir(dataDir)
+            .setUlogDir(ulogDir)
+            .setNode(cluster.getJettySolrRunner(0).getNodeName())
+            .process(cluster.getSolrClient());
 
     ulogDir += "/tlog";
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
@@ -95,28 +97,42 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
 
     DocCollection docCollection = zkStateReader.getClusterState().getCollection(coll);
     Replica replica = docCollection.getReplicas().iterator().next();
-    assertTrue(replica.getStr("ulogDir"), replica.getStr("ulogDir").equals(ulogDir) || replica.getStr("ulogDir").equals(ulogDir+'/'));
-    assertTrue(replica.getStr("dataDir"),replica.getStr("dataDir").equals(dataDir) || replica.getStr("dataDir").equals(dataDir+'/'));
+    assertTrue(
+        replica.getStr("ulogDir"),
+        replica.getStr("ulogDir").equals(ulogDir)
+            || replica.getStr("ulogDir").equals(ulogDir + '/'));
+    assertTrue(
+        replica.getStr("dataDir"),
+        replica.getStr("dataDir").equals(dataDir)
+            || replica.getStr("dataDir").equals(dataDir + '/'));
 
-    new CollectionAdminRequest.MoveReplica(coll, replica.getName(), cluster.getJettySolrRunner(1).getNodeName())
+    new CollectionAdminRequest.MoveReplica(
+            coll, replica.getName(), cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
     assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000));
     docCollection = zkStateReader.getClusterState().getCollection(coll);
     assertEquals(1, docCollection.getSlice("shard1").getReplicas().size());
     Replica newReplica = docCollection.getReplicas().iterator().next();
     assertEquals(newReplica.getNodeName(), cluster.getJettySolrRunner(1).getNodeName());
-    assertTrue(newReplica.getStr("ulogDir"), newReplica.getStr("ulogDir").equals(ulogDir) || newReplica.getStr("ulogDir").equals(ulogDir+'/'));
-    assertTrue(newReplica.getStr("dataDir"),newReplica.getStr("dataDir").equals(dataDir) || newReplica.getStr("dataDir").equals(dataDir+'/'));
+    assertTrue(
+        newReplica.getStr("ulogDir"),
+        newReplica.getStr("ulogDir").equals(ulogDir)
+            || newReplica.getStr("ulogDir").equals(ulogDir + '/'));
+    assertTrue(
+        newReplica.getStr("dataDir"),
+        newReplica.getStr("dataDir").equals(dataDir)
+            || newReplica.getStr("dataDir").equals(dataDir + '/'));
 
     assertEquals(replica.getName(), newReplica.getName());
     assertEquals(replica.getCoreName(), newReplica.getCoreName());
     assertFalse(replica.getNodeName().equals(newReplica.getNodeName()));
     final int numDocs = 100;
-    addDocs(coll, numDocs);  // indexed but not committed
+    addDocs(coll, numDocs); // indexed but not committed
 
     cluster.getJettySolrRunner(1).stop();
     Thread.sleep(5000);
-    new CollectionAdminRequest.MoveReplica(coll, newReplica.getName(), cluster.getJettySolrRunner(0).getNodeName())
+    new CollectionAdminRequest.MoveReplica(
+            coll, newReplica.getName(), cluster.getJettySolrRunner(0).getNodeName())
         .process(cluster.getSolrClient());
     assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000));
 
@@ -127,13 +143,21 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
     assertEquals(1, docCollection.getReplicas().size());
     newReplica = docCollection.getReplicas().iterator().next();
     assertEquals(newReplica.getNodeName(), cluster.getJettySolrRunner(0).getNodeName());
-    assertTrue(newReplica.getStr("ulogDir"), newReplica.getStr("ulogDir").equals(ulogDir) || newReplica.getStr("ulogDir").equals(ulogDir+'/'));
-    assertTrue(newReplica.getStr("dataDir"),newReplica.getStr("dataDir").equals(dataDir) || newReplica.getStr("dataDir").equals(dataDir+'/'));
+    assertTrue(
+        newReplica.getStr("ulogDir"),
+        newReplica.getStr("ulogDir").equals(ulogDir)
+            || newReplica.getStr("ulogDir").equals(ulogDir + '/'));
+    assertTrue(
+        newReplica.getStr("dataDir"),
+        newReplica.getStr("dataDir").equals(dataDir)
+            || newReplica.getStr("dataDir").equals(dataDir + '/'));
 
     assertEquals(0, cluster.getJettySolrRunner(1).getCoreContainer().getCores().size());
 
     cluster.getSolrClient().commit(coll);
-    assertEquals(numDocs, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    assertEquals(
+        numDocs,
+        cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
     CollectionAdminRequest.deleteCollection(coll).process(cluster.getSolrClient());
   }
 
@@ -147,26 +171,38 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
     Replica replica = getCollectionState(coll).getReplicas().iterator().next();
 
     cluster.getJettySolrRunners().get(0).stop();
-    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+    assertTrue(
+        ClusterStateUtil.waitForAllReplicasNotLive(
+            cluster.getSolrClient().getZkStateReader(), 20000));
 
     // move replica from node0 -> node1
-    new CollectionAdminRequest.MoveReplica(coll, replica.getName(), cluster.getJettySolrRunner(1).getNodeName())
+    new CollectionAdminRequest.MoveReplica(
+            coll, replica.getName(), cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
-    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 20000));
+    assertTrue(
+        ClusterStateUtil.waitForAllActiveAndLiveReplicas(
+            cluster.getSolrClient().getZkStateReader(), 20000));
 
     cluster.getJettySolrRunners().get(1).stop();
-    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+    assertTrue(
+        ClusterStateUtil.waitForAllReplicasNotLive(
+            cluster.getSolrClient().getZkStateReader(), 20000));
 
     // node0 will delete it replica because of CloudUtil.checkSharedFSFailoverReplaced()
     cluster.getJettySolrRunners().get(0).start();
     Thread.sleep(5000);
-    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+    assertTrue(
+        ClusterStateUtil.waitForAllReplicasNotLive(
+            cluster.getSolrClient().getZkStateReader(), 20000));
 
     cluster.getJettySolrRunners().get(1).start();
-    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 20000));
+    assertTrue(
+        ClusterStateUtil.waitForAllActiveAndLiveReplicas(
+            cluster.getSolrClient().getZkStateReader(), 20000));
 
     assertEquals(1, getCollectionState(coll).getReplicas().size());
-    assertEquals(2, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    assertEquals(
+        2, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
     CollectionAdminRequest.deleteCollection(coll).process(cluster.getSolrClient());
   }
 
@@ -180,24 +216,34 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
     Replica replica = getCollectionState(coll).getReplicas().iterator().next();
 
     cluster.getJettySolrRunners().get(0).stop();
-    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+    assertTrue(
+        ClusterStateUtil.waitForAllReplicasNotLive(
+            cluster.getSolrClient().getZkStateReader(), 20000));
 
     // move replica from node0 -> node1
-    new CollectionAdminRequest.MoveReplica(coll, replica.getName(), cluster.getJettySolrRunner(1).getNodeName())
+    new CollectionAdminRequest.MoveReplica(
+            coll, replica.getName(), cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
-    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 20000));
+    assertTrue(
+        ClusterStateUtil.waitForAllActiveAndLiveReplicas(
+            cluster.getSolrClient().getZkStateReader(), 20000));
 
     cluster.getJettySolrRunners().get(1).stop();
-    assertTrue(ClusterStateUtil.waitForAllReplicasNotLive(cluster.getSolrClient().getZkStateReader(), 20000));
+    assertTrue(
+        ClusterStateUtil.waitForAllReplicasNotLive(
+            cluster.getSolrClient().getZkStateReader(), 20000));
 
     cluster.getJettySolrRunners().get(1).start();
     // node0 will delete it replica because of CloudUtil.checkSharedFSFailoverReplaced()
     cluster.getJettySolrRunners().get(0).start();
     Thread.sleep(5000);
-    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 20000));
+    assertTrue(
+        ClusterStateUtil.waitForAllActiveAndLiveReplicas(
+            cluster.getSolrClient().getZkStateReader(), 20000));
 
     assertEquals(1, getCollectionState(coll).getReplicas().size());
-    assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    assertEquals(
+        100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
     CollectionAdminRequest.deleteCollection(coll).process(cluster.getSolrClient());
   }
 

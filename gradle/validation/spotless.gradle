@@ -44,13 +44,16 @@ configure(project(":solr").subprojects) { prj ->
 
         // Exclude certain files (generated ones, mostly).
         switch (project.path) {
-          case ":solr:modules:hdfs":
           case ":solr:modules:sql":
           case ":solr:core":
           case ":solr:solrj":
           case ":solr:solr-ref-guide":
           case ":solr:test-framework":
             targetExclude "src/**/*.java"
+            break
+          case ":solr:modules:hdfs":
+            // Exclude Hadoop copied files to make upgrades easier
+            targetExclude "src/**/org/apache/hadoop/**"
             break
         }
       }

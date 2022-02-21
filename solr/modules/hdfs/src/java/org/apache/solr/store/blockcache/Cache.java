@@ -16,54 +16,39 @@
  */
 package org.apache.solr.store.blockcache;
 
-/**
- * @lucene.experimental
- */
+/** @lucene.experimental */
 public interface Cache {
-  
+
   /**
    * Remove a file from the cache.
-   * 
-   * @param name
-   *          cache file name
+   *
+   * @param name cache file name
    */
   void delete(String name);
-  
-  /**
-   * Update the content of the specified cache file. Creates cache entry if
-   * necessary.
-   * 
-   */
-  void update(String name, long blockId, int blockOffset, byte[] buffer,
-      int offset, int length);
-  
+
+  /** Update the content of the specified cache file. Creates cache entry if necessary. */
+  void update(String name, long blockId, int blockOffset, byte[] buffer, int offset, int length);
+
   /**
    * Fetch the specified cache file content.
-   * 
+   *
    * @return true if cached content found, otherwise return false
    */
-  boolean fetch(String name, long blockId, int blockOffset, byte[] b, int off,
-      int lengthToReadInBlock);
-  
-  /**
-   * Number of entries in the cache.
-   */
+  boolean fetch(
+      String name, long blockId, int blockOffset, byte[] b, int off, int lengthToReadInBlock);
+
+  /** Number of entries in the cache. */
   long size();
-  
+
   /**
-   * Expert: Rename the specified file in the cache. Allows a file to be moved
-   * without invalidating the cache.
-   * 
-   * @param source
-   *          original name
-   * @param dest
-   *          final name
+   * Expert: Rename the specified file in the cache. Allows a file to be moved without invalidating
+   * the cache.
+   *
+   * @param source original name
+   * @param dest final name
    */
   void renameCacheFile(String source, String dest);
 
-  /**
-   * Release any resources associated with the cache.
-   */
+  /** Release any resources associated with the cache. */
   void releaseResources();
-  
 }

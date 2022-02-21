@@ -18,7 +18,6 @@ package org.apache.solr.store.blockcache;
 
 import java.math.BigDecimal;
 import java.util.Map;
-
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.MetricsMap;
@@ -29,7 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class BufferStoreTest extends SolrTestCase {
-  private final static int blockSize = 1024;
+  private static final int blockSize = 1024;
 
   private Metrics metrics;
   private MetricsMap metricsMap;
@@ -44,7 +43,14 @@ public class BufferStoreTest extends SolrTestCase {
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     metrics.initializeMetrics(solrMetricsContext, scope);
-    metricsMap = (MetricsMap) ((SolrMetricManager.GaugeWrapper)metricManager.registry(registry).getMetrics().get("CACHE." + scope + ".hdfsBlockCache")).getGauge();
+    metricsMap =
+        (MetricsMap)
+            ((SolrMetricManager.GaugeWrapper)
+                    metricManager
+                        .registry(registry)
+                        .getMetrics()
+                        .get("CACHE." + scope + ".hdfsBlockCache"))
+                .getGauge();
     BufferStore.initNewBuffer(blockSize, blockSize, metrics);
     store = BufferStore.instance(blockSize);
   }
@@ -78,32 +84,32 @@ public class BufferStoreTest extends SolrTestCase {
   }
 
   private void assertRawMetricCounts(int allocated, int lost) {
-    assertEquals("Buffer allocation count is wrong.", allocated,
-        metrics.shardBuffercacheAllocate.get());
-    assertEquals("Lost buffer count is wrong", lost,
-        metrics.shardBuffercacheLost.get());
+    assertEquals(
+        "Buffer allocation count is wrong.", allocated, metrics.shardBuffercacheAllocate.get());
+    assertEquals("Lost buffer count is wrong", lost, metrics.shardBuffercacheLost.get());
   }
 
   /**
-   * Stateful method to verify whether the amount of buffers allocated and lost
-   * since the last call has changed.
+   * Stateful method to verify whether the amount of buffers allocated and lost since the last call
+   * has changed.
    *
-   * @param allocated
-   *          whether buffers should have been allocated since the last call
-   * @param lost
-   *          whether buffers should have been lost since the last call
+   * @param allocated whether buffers should have been allocated since the last call
+   * @param lost whether buffers should have been lost since the last call
    */
   private void assertGaugeMetricsChanged(boolean allocated, boolean lost) {
-    Map<String,Object> stats = metricsMap.getValue();
+    Map<String, Object> stats = metricsMap.getValue();
 
-    assertEquals("Buffer allocation metric not updating correctly.",
-        allocated, isMetricPositive(stats, "buffercache.allocations"));
-    assertEquals("Buffer lost metric not updating correctly.",
-        lost, isMetricPositive(stats, "buffercache.lost"));
+    assertEquals(
+        "Buffer allocation metric not updating correctly.",
+        allocated,
+        isMetricPositive(stats, "buffercache.allocations"));
+    assertEquals(
+        "Buffer lost metric not updating correctly.",
+        lost,
+        isMetricPositive(stats, "buffercache.lost"));
   }
 
-  private boolean isMetricPositive(Map<String,Object> stats, String metric) {
+  private boolean isMetricPositive(Map<String, Object> stats, String metric) {
     return new BigDecimal(stats.get(metric).toString()).compareTo(BigDecimal.ZERO) > 0;
   }
-
 }

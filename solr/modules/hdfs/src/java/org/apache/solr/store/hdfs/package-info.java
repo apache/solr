@@ -14,9 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * An HDFS Directory implementation.
- */
-package org.apache.solr.store.hdfs;
 
+/** An HDFS Directory implementation. */
+package org.apache.solr.store.hdfs;
