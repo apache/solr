@@ -16,9 +16,7 @@
  */
 package org.apache.solr.ltr;
 
-/**
- * A feature logger that logs in csv format.
- */
+/** A feature logger that logs in csv format. */
 public class CSVFeatureLogger extends FeatureLogger {
   public static final char DEFAULT_KEY_VALUE_SEPARATOR = '=';
   public static final char DEFAULT_FEATURE_SEPARATOR = ',';
@@ -39,24 +37,22 @@ public class CSVFeatureLogger extends FeatureLogger {
 
   @Override
   public String makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo) {
-    // Allocate the buffer to a size based on the number of features instead of the 
-    // default 16.  You need space for the name, value, and two separators per feature, 
-    // but not all the features are expected to fire, so this is just a naive estimate. 
+    // Allocate the buffer to a size based on the number of features instead of the
+    // default 16.  You need space for the name, value, and two separators per feature,
+    // but not all the features are expected to fire, so this is just a naive estimate.
     StringBuilder sb = new StringBuilder(featuresInfo.length * 3);
     boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
-    for (LTRScoringQuery.FeatureInfo featInfo:featuresInfo) {
-      if (featInfo.isUsed() || isDense){
+    for (LTRScoringQuery.FeatureInfo featInfo : featuresInfo) {
+      if (featInfo.isUsed() || isDense) {
         sb.append(featInfo.getName())
-        .append(keyValueSep)
-        .append(featInfo.getValue())
-        .append(featureSep);
+            .append(keyValueSep)
+            .append(featInfo.getValue())
+            .append(featureSep);
       }
     }
 
-    final String features = (sb.length() > 0 ? 
-        sb.substring(0, sb.length() - 1) : "");
+    final String features = (sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "");
 
     return features;
   }
-
 }

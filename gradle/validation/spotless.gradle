@@ -52,13 +52,15 @@ configure(project(":solr").subprojects) { prj ->
           case ":solr:modules:hadoop-auth":
           case ":solr:modules:hdfs":
           case ":solr:modules:langid":
-          case ":solr:modules:ltr":
           case ":solr:modules:scripting":
           case ":solr:core":
           case ":solr:solrj":
           case ":solr:solr-ref-guide":
           case ":solr:test-framework":
             targetExclude "src/**/*.java"
+            break
+          case ":solr:modules:ltr":
+            targetExclude "src/test/**/*.java"
             break
         }
       }
