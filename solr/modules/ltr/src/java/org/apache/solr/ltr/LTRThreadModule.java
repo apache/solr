@@ -19,7 +19,6 @@ package org.apache.solr.ltr;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
-
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -56,7 +55,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * of <code>totalPoolThreads</code> imposes a contention between the queries if <code>
  * (totalPoolThreads &lt; numThreadsPerRequest * total parallel queries)</code>.
  */
-public final class LTRThreadModule implements NamedListInitializedPlugin  {
+public final class LTRThreadModule implements NamedListInitializedPlugin {
 
   public static LTRThreadModule getInstance(NamedList<?> args) {
 

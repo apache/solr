@@ -145,7 +145,8 @@ public class LTRQParserPlugin extends QParserPlugin
     @Override
     public Query parse() throws SyntaxError {
       if (threadManager != null) {
-        threadManager.setExecutor(req.getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
+        threadManager.setExecutor(
+            req.getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
       }
       // ReRanking Model
       final String[] modelNames = localParams.getParams(LTRQParserPlugin.MODEL);
