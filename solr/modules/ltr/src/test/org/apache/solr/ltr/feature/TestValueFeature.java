@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.feature;
 
 import java.util.LinkedHashMap;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
@@ -57,10 +56,9 @@ public class TestValueFeature extends TestRerankBase {
 
   @Test
   public void testRerankingWithConstantValueFeatureReplacesDocScore() throws Exception {
-    loadFeature("c3", ValueFeature.class.getName(), "c3",
-        "{\"value\":2}");
-    loadModel("m3", LinearModel.class.getName(), new String[] {"c3"},
-        "c3", "{\"weights\":{\"c3\":1.0}}");
+    loadFeature("c3", ValueFeature.class.getName(), "c3", "{\"value\":2}");
+    loadModel(
+        "m3", LinearModel.class.getName(), new String[] {"c3"}, "c3", "{\"weights\":{\"c3\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");
@@ -77,10 +75,9 @@ public class TestValueFeature extends TestRerankBase {
 
   @Test
   public void testRerankingWithEfiValueFeatureReplacesDocScore() throws Exception {
-    loadFeature("c6", ValueFeature.class.getName(), "c6",
-        "{\"value\":\"${val6}\"}");
-    loadModel("m6", LinearModel.class.getName(), new String[] {"c6"},
-        "c6", "{\"weights\":{\"c6\":1.0}}");
+    loadFeature("c6", ValueFeature.class.getName(), "c6", "{\"value\":\"${val6}\"}");
+    loadModel(
+        "m6", LinearModel.class.getName(), new String[] {"c6"}, "c6", "{\"weights\":{\"c6\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");
@@ -95,13 +92,11 @@ public class TestValueFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/score==2.0");
   }
 
-
   @Test
   public void testValueFeatureImplicitlyNotRequiredShouldReturnOkStatusCode() throws Exception {
-    loadFeature("c5", ValueFeature.class.getName(), "c5",
-        "{\"value\":\"${val6}\"}");
-    loadModel("m5", LinearModel.class.getName(), new String[] {"c5"},
-        "c5", "{\"weights\":{\"c5\":1.0}}");
+    loadFeature("c5", ValueFeature.class.getName(), "c5", "{\"value\":\"${val6}\"}");
+    loadModel(
+        "m5", LinearModel.class.getName(), new String[] {"c5"}, "c5", "{\"weights\":{\"c5\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");
@@ -115,10 +110,10 @@ public class TestValueFeature extends TestRerankBase {
 
   @Test
   public void testValueFeatureExplictlyNotRequiredShouldReturnOkStatusCode() throws Exception {
-    loadFeature("c7", ValueFeature.class.getName(), "c7",
-        "{\"value\":\"${val7}\",\"required\":false}");
-    loadModel("m7", LinearModel.class.getName(), new String[] {"c7"},
-        "c7", "{\"weights\":{\"c7\":1.0}}");
+    loadFeature(
+        "c7", ValueFeature.class.getName(), "c7", "{\"value\":\"${val7}\",\"required\":false}");
+    loadModel(
+        "m7", LinearModel.class.getName(), new String[] {"c7"}, "c7", "{\"weights\":{\"c7\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");
@@ -132,10 +127,10 @@ public class TestValueFeature extends TestRerankBase {
 
   @Test
   public void testValueFeatureRequiredShouldReturn400StatusCode() throws Exception {
-    loadFeature("c8", ValueFeature.class.getName(), "c8",
-        "{\"value\":\"${val8}\",\"required\":true}");
-    loadModel("m8", LinearModel.class.getName(), new String[] {"c8"},
-        "c8", "{\"weights\":{\"c8\":1.0}}");
+    loadFeature(
+        "c8", ValueFeature.class.getName(), "c8", "{\"value\":\"${val8}\",\"required\":true}");
+    loadModel(
+        "m8", LinearModel.class.getName(), new String[] {"c8"}, "c8", "{\"weights\":{\"c8\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");
@@ -149,12 +144,11 @@ public class TestValueFeature extends TestRerankBase {
 
   @Test
   public void testParamsToMap() throws Exception {
-    final LinkedHashMap<String,Object> params = new LinkedHashMap<String,Object>();
-    params.put("value", "${val"+random().nextInt(10)+"}");
+    final LinkedHashMap<String, Object> params = new LinkedHashMap<String, Object>();
+    params.put("value", "${val" + random().nextInt(10) + "}");
     if (random().nextBoolean()) {
       params.put("required", random().nextBoolean());
     }
     doTestParamsToMap(ValueFeature.class.getName(), params);
   }
-
 }

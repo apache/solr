@@ -59,9 +59,6 @@ configure(project(":solr").subprojects) { prj ->
           case ":solr:test-framework":
             targetExclude "src/**/*.java"
             break
-          case ":solr:modules:ltr":
-            targetExclude "src/test/**/*.java"
-            break
         }
       }
     }

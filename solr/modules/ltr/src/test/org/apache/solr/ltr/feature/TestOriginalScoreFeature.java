@@ -19,7 +19,6 @@ package org.apache.solr.ltr.feature;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
@@ -55,29 +54,36 @@ public class TestOriginalScoreFeature extends TestRerankBase {
   @Test
   public void testOriginalScore() throws Exception {
     loadFeature("score", OriginalScoreFeature.class.getName(), "{}");
-    loadModel("originalScore", LinearModel.class.getName(),
-        new String[] {"score"}, "{\"weights\":{\"score\":1.0}}");
+    loadModel(
+        "originalScore",
+        LinearModel.class.getName(),
+        new String[] {"score"},
+        "{\"weights\":{\"score\":1.0}}");
 
     implTestOriginalScoreResponseDocsCheck("originalScore", "score", null, null);
   }
 
   @Test
   public void testOriginalScoreWithNonScoringFeatures() throws Exception {
-    loadFeature("origScore", OriginalScoreFeature.class.getName(),
-        "store2", "{}");
-    loadFeature("c2", ValueFeature.class.getName(), "store2",
-        "{\"value\":2.0}");
+    loadFeature("origScore", OriginalScoreFeature.class.getName(), "store2", "{}");
+    loadFeature("c2", ValueFeature.class.getName(), "store2", "{\"value\":2.0}");
 
-    loadModel("origScore", LinearModel.class.getName(),
-        new String[] {"origScore"}, "store2",
+    loadModel(
+        "origScore",
+        LinearModel.class.getName(),
+        new String[] {"origScore"},
+        "store2",
         "{\"weights\":{\"origScore\":1.0}}");
 
     implTestOriginalScoreResponseDocsCheck("origScore", "origScore", "c2", "2.0");
   }
 
-  public static void implTestOriginalScoreResponseDocsCheck(String modelName,
+  public static void implTestOriginalScoreResponseDocsCheck(
+      String modelName,
       String origScoreFeatureName,
-      String nonScoringFeatureName, String nonScoringFeatureValue) throws Exception {
+      String nonScoringFeatureName,
+      String nonScoringFeatureValue)
+      throws Exception {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");
@@ -91,28 +97,51 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     final int doc3Id = 7;
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='"+doc0Id+"'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='"+doc1Id+"'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='"+doc2Id+"'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='"+doc3Id+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='" + doc0Id + "'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='" + doc1Id + "'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='" + doc2Id + "'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='" + doc3Id + "'");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
     @SuppressWarnings({"unchecked"})
-    final Map<String,Object> jsonParse = (Map<String,Object>) Utils
-        .fromJSONString (res);
+    final Map<String, Object> jsonParse = (Map<String, Object>) Utils.fromJSONString(res);
     @SuppressWarnings({"unchecked"})
-    final String doc0Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
-        .get("response")).get("docs")).get(0)).get("score")).toString();
+    final String doc0Score =
+        ((Double)
+                ((Map<String, Object>)
+                        ((ArrayList<Object>)
+                                ((Map<String, Object>) jsonParse.get("response")).get("docs"))
+                            .get(0))
+                    .get("score"))
+            .toString();
 
     @SuppressWarnings({"unchecked"})
-    final String doc1Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
-        .get("response")).get("docs")).get(1)).get("score")).toString();
+    final String doc1Score =
+        ((Double)
+                ((Map<String, Object>)
+                        ((ArrayList<Object>)
+                                ((Map<String, Object>) jsonParse.get("response")).get("docs"))
+                            .get(1))
+                    .get("score"))
+            .toString();
     @SuppressWarnings({"unchecked"})
-    final String doc2Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
-        .get("response")).get("docs")).get(2)).get("score")).toString();
+    final String doc2Score =
+        ((Double)
+                ((Map<String, Object>)
+                        ((ArrayList<Object>)
+                                ((Map<String, Object>) jsonParse.get("response")).get("docs"))
+                            .get(2))
+                    .get("score"))
+            .toString();
     @SuppressWarnings({"unchecked"})
-    final String doc3Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
-        .get("response")).get("docs")).get(3)).get("score")).toString();
+    final String doc3Score =
+        ((Double)
+                ((Map<String, Object>)
+                        ((ArrayList<Object>)
+                                ((Map<String, Object>) jsonParse.get("response")).get("docs"))
+                            .get(3))
+                    .get("score"))
+            .toString();
 
     final boolean debugQuery = random().nextBoolean();
     if (debugQuery) {
@@ -121,48 +150,105 @@ public class TestOriginalScoreFeature extends TestRerankBase {
 
     query.remove("fl");
     query.add("fl", "*, score, fv:[fv]");
-    query.add("rq", "{!ltr model="+modelName+" reRankDocs=4}");
+    query.add("rq", "{!ltr model=" + modelName + " reRankDocs=4}");
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='"+doc0Id+"'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='"+doc1Id+"'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='"+doc2Id+"'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='"+doc3Id+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='" + doc0Id + "'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='" + doc1Id + "'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='" + doc2Id + "'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='" + doc3Id + "'");
 
-    implTestOriginalScoreResponseDocsCheck(modelName, query, 0, doc0Id, origScoreFeatureName, doc0Score,
-        nonScoringFeatureName, nonScoringFeatureValue, debugQuery);
-    implTestOriginalScoreResponseDocsCheck(modelName, query, 1, doc1Id, origScoreFeatureName, doc1Score,
-        nonScoringFeatureName, nonScoringFeatureValue, debugQuery);
-    implTestOriginalScoreResponseDocsCheck(modelName, query, 2, doc2Id, origScoreFeatureName, doc2Score,
-        nonScoringFeatureName, nonScoringFeatureValue, debugQuery);
-    implTestOriginalScoreResponseDocsCheck(modelName, query, 3, doc3Id, origScoreFeatureName, doc3Score,
-        nonScoringFeatureName, nonScoringFeatureValue, debugQuery);
+    implTestOriginalScoreResponseDocsCheck(
+        modelName,
+        query,
+        0,
+        doc0Id,
+        origScoreFeatureName,
+        doc0Score,
+        nonScoringFeatureName,
+        nonScoringFeatureValue,
+        debugQuery);
+    implTestOriginalScoreResponseDocsCheck(
+        modelName,
+        query,
+        1,
+        doc1Id,
+        origScoreFeatureName,
+        doc1Score,
+        nonScoringFeatureName,
+        nonScoringFeatureValue,
+        debugQuery);
+    implTestOriginalScoreResponseDocsCheck(
+        modelName,
+        query,
+        2,
+        doc2Id,
+        origScoreFeatureName,
+        doc2Score,
+        nonScoringFeatureName,
+        nonScoringFeatureValue,
+        debugQuery);
+    implTestOriginalScoreResponseDocsCheck(
+        modelName,
+        query,
+        3,
+        doc3Id,
+        origScoreFeatureName,
+        doc3Score,
+        nonScoringFeatureName,
+        nonScoringFeatureValue,
+        debugQuery);
   }
 
-  private static void implTestOriginalScoreResponseDocsCheck(String modelName,
-      SolrQuery query, int docIdx, int docId,
-      String origScoreFeatureName, String origScoreFeatureValue,
-      String nonScoringFeatureName, String nonScoringFeatureValue,
-      boolean debugQuery) throws Exception {
+  private static void implTestOriginalScoreResponseDocsCheck(
+      String modelName,
+      SolrQuery query,
+      int docIdx,
+      int docId,
+      String origScoreFeatureName,
+      String origScoreFeatureValue,
+      String nonScoringFeatureName,
+      String nonScoringFeatureValue,
+      boolean debugQuery)
+      throws Exception {
 
     final String fv;
     if (nonScoringFeatureName == null) {
       fv = FeatureLoggerTestUtils.toFeatureVector(origScoreFeatureName, origScoreFeatureValue);
     } else {
-      fv = FeatureLoggerTestUtils.toFeatureVector(origScoreFeatureName, origScoreFeatureValue, nonScoringFeatureName, nonScoringFeatureValue);
+      fv =
+          FeatureLoggerTestUtils.toFeatureVector(
+              origScoreFeatureName,
+              origScoreFeatureValue,
+              nonScoringFeatureName,
+              nonScoringFeatureValue);
     }
 
-    assertJQ("/query" + query.toQueryString(), "/response/docs/["+docIdx+"]/fv=='"+fv+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[" + docIdx + "]/fv=='" + fv + "'");
     if (debugQuery) {
-      assertJQ("/query" + query.toQueryString(),
-          "/debug/explain/"+docId+"=='\n"+origScoreFeatureValue+" = LinearModel(name="+modelName+",featureWeights=["+origScoreFeatureName+"=1.0]) model applied to features, sum of:\n  "+origScoreFeatureValue+" = prod of:\n    1.0 = weight on feature\n    "+origScoreFeatureValue+" = OriginalScoreFeature [query:"+query.getQuery()+"]\n'");
+      assertJQ(
+          "/query" + query.toQueryString(),
+          "/debug/explain/"
+              + docId
+              + "=='\n"
+              + origScoreFeatureValue
+              + " = LinearModel(name="
+              + modelName
+              + ",featureWeights=["
+              + origScoreFeatureName
+              + "=1.0]) model applied to features, sum of:\n  "
+              + origScoreFeatureValue
+              + " = prod of:\n    1.0 = weight on feature\n    "
+              + origScoreFeatureValue
+              + " = OriginalScoreFeature [query:"
+              + query.getQuery()
+              + "]\n'");
     }
   }
 
   @Test
   public void testParamsToMap() throws Exception {
-    final LinkedHashMap<String,Object> params = new LinkedHashMap<String,Object>();
+    final LinkedHashMap<String, Object> params = new LinkedHashMap<String, Object>();
     doTestParamsToMap(OriginalScoreFeature.class.getName(), params);
   }
-
 }
