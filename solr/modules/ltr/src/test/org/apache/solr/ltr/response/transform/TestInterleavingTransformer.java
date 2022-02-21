@@ -261,17 +261,8 @@ public class TestInterleavingTransformer extends TestRerankBase {
     int[] nullFeatureVectorIndexes = new int[]{1, 2, 4};
     for (int index : nullFeatureVectorIndexes) {
       TeamDraftInterleaving.setRANDOM(new Random(10101010));
-      String[] nullFeatureVectorTests = new String[1];
-      try {
-        nullFeatureVectorTests[0] = "/response/docs/[" + index + "]/features==";
-        assertJQ("/query" + query.toQueryString(), nullFeatureVectorTests);
-      } catch (Exception e) {
-        assertEquals("Path not found: /response/docs/[" + index + "]/features", e.getMessage());
-        continue;
-      }
-
+      assertJQ("/query" + query.toQueryString(), "!/response/docs/[" + index + "]/features==");
     }
-
   }
 
 }

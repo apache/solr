@@ -48,23 +48,11 @@ public class TestValueFeature extends TestRerankBase {
   }
 
   @Test
-  public void testValueFeatureWithEmptyValue() throws Exception {
-    final RuntimeException expectedException =
-        new RuntimeException("mismatch: '0'!='500' @ responseHeader/status");
-    RuntimeException e = expectThrows(RuntimeException.class, () -> {
-      loadFeature("c2", ValueFeature.class.getName(), "{\"value\":\"\"}");
-    });
-    assertEquals(expectedException.toString(), e.toString());
-  }
-
-  @Test
-  public void testValueFeatureWithWhitespaceValue() throws Exception {
-    final RuntimeException expectedException =
-        new RuntimeException("mismatch: '0'!='500' @ responseHeader/status");
-    RuntimeException e = expectThrows(RuntimeException.class, () -> {
-      loadFeature("c2", ValueFeature.class.getName(), "{\"value\":\" \"}");
-    });
-    assertEquals(expectedException.toString(), e.toString());
+  public void testValueFeaturesWithBadValues() throws Exception {
+    // Empty Value
+    loadFeature("c2", ValueFeature.class.getName(), "{\"value\":\"\"}", 500);
+    // Whitespace Value
+    loadFeature("c2", ValueFeature.class.getName(), "{\"value\":\" \"}", 500);
   }
 
   @Test

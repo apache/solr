@@ -40,7 +40,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Assert;
 import org.junit.Before;
@@ -81,16 +80,6 @@ public class TestSQLHandler extends SolrCloudTestCase {
     }
   }
 
-  public static SolrParams mapParams(String... vals) {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    assertEquals("Parameters passed in here must be in pairs!", 0, (vals.length % 2));
-    for (int idx = 0; idx < vals.length; idx += 2) {
-      params.add(vals[idx], vals[idx + 1]);
-    }
-
-    return params;
-  }
-
   @Before
   public void cleanIndex() throws Exception {
     new UpdateRequest()
@@ -113,7 +102,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "8", "text_t", "XXXX XXXX", "str_s", "c", "field_i", "60", "field_f", "60.5", "field_d", "60.5", "field_l", "60")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql",
+    SolrParams sParams = params(CommonParams.QT, "/sql",
         "stmt",
         "select id, field_i, str_s, field_f, field_d, field_l from collection1 where (text_t='(XXXX)' OR text_t='XXXX') AND text_t='XXXX' order by field_i desc");
 
@@ -199,7 +188,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     //assertResponseContains(clients.get(0), sParams, "{\"docs\":[{\"id\":\"8\",\"field_i\":60,\"str_s\":\"c\",\"field_i\":60,\"field_f\":60.5,\"field_d\":60.5,\"field_l\":60}");
 
 
-    sParams = mapParams(CommonParams.QT, "/sql", "stmt",
+    sParams = params(CommonParams.QT, "/sql", "stmt",
         "select id, field_i, str_s from collection1 where text_t='XXXX' order by id desc");
 
     tuples = getTuples(sParams, baseUrl);
@@ -246,7 +235,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 7);
     assert (tuple.get("str_s").equals("a"));
 
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select id, field_i, str_s from collection1 where text_t='XXXX' order by field_i desc limit 1");
 
     tuples = getTuples(sParams, baseUrl);
@@ -258,7 +247,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 60);
     assert (tuple.get("str_s").equals("c"));
 
-    sParams = mapParams(CommonParams.QT, "/sql", "stmt",
+    sParams = params(CommonParams.QT, "/sql", "stmt",
         "select id, field_i, str_s from collection1 where text_t='XXXX' AND id='(1 2 3)' order by field_i desc");
 
     tuples = getTuples(sParams, baseUrl);
@@ -280,7 +269,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 7);
     assert (tuple.get("str_s").equals("a"));
 
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt",
         "select id as myId, field_i as myInt, str_s as myString from collection1 where text_t='XXXX' AND id='(1 2 3)' order by myInt desc");
 
@@ -303,7 +292,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("myInt") == 7);
     assert (tuple.get("myString").equals("a"));
 
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt",
         "select id as myId, field_i as myInt, str_s as myString from collection1 where text_t='XXXX' AND id='(1 2 3)' order by field_i desc");
 
@@ -327,7 +316,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.get("myString").equals("a"));
 
     // SOLR-8845 - Test to make sure that 1 = 0 works for things like Spark SQL
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select id, field_i, str_s from collection1 where 1 = 0");
 
     tuples = getTuples(sParams, baseUrl);
@@ -353,7 +342,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
     // Equals
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql",
+    SolrParams sParams = params(CommonParams.QT, "/sql",
         "stmt", "select id from collection1 where id = 1 order by id asc");
 
     List<Tuple> tuples = getTuples(sParams, baseUrl);
@@ -364,7 +353,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals("1", tuple.get("id"));
 
     // Not Equals <>
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select id from collection1 where id <> 1 order by id asc limit 10");
 
     tuples = getTuples(sParams, baseUrl);
@@ -388,7 +377,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     // TODO requires different Calcite SQL conformance level
     // Not Equals !=
-    // sParams = mapParams(CommonParams.QT, "/sql",
+    // sParams = params(CommonParams.QT, "/sql",
     // "stmt", "select id from collection1 where id != 1 order by id asc limit 10");
     //
     // tuples = getTuples(sParams);
@@ -411,7 +400,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // assertEquals(8L, tuple.get("id"));
 
     // Less than
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select id from collection1 where id < 2 order by id asc");
 
     tuples = getTuples(sParams, baseUrl);
@@ -422,7 +411,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals("1", tuple.get("id"));
 
     // Less than equal
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select id from collection1 where id <= 2 order by id asc");
 
     tuples = getTuples(sParams, baseUrl);
@@ -435,7 +424,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals("2", tuple.get("id"));
 
     // Greater than
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select id from collection1 where id > 7 order by id asc");
 
     tuples = getTuples(sParams, baseUrl);
@@ -446,7 +435,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertEquals("8", tuple.get("id"));
 
     // Greater than equal
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select id from collection1 where id >= 7 order by id asc");
 
     tuples = getTuples(sParams, baseUrl);
@@ -484,7 +473,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    SolrParams sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select id, Field_i, Str_s from collection1 where Text_t='XXXX' order by Field_i desc");
 
     List<Tuple> tuples = getTuples(sParams, baseUrl);
@@ -534,7 +523,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.get("Str_s").equals("a"));
 
     // TODO get sum(Field_i) as named one
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt",
         "select Str_s, sum(Field_i) from collection1 where id='(1 8)' group by Str_s having (sum(Field_i) = 7 OR sum(Field_i) = 60) order by sum(Field_i) desc");
 
@@ -551,7 +540,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.get("Str_s").equals("a"));
     assert (tuple.getDouble("EXPR$1") == 7);
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt",
         "select Str_s, sum(Field_i) from collection1 where id='(1 8)' group by Str_s having (sum(Field_i) = 7 OR sum(Field_i) = 60) order by sum(Field_i) desc");
 
@@ -586,7 +575,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
 
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    SolrParams sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select distinct str_s, field_i from collection1 order by str_s asc, field_i asc");
 
 
@@ -622,7 +611,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 60);
 
     // reverse the sort
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select distinct str_s, field_i from collection1 order by str_s desc, field_i desc");
 
     tuples = getTuples(sParams, baseUrl);
@@ -654,7 +643,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 1);
 
     // reverse the sort
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select distinct str_s as myString, field_i as myInt from collection1 order by str_s desc, myInt desc");
 
     tuples = getTuples(sParams, baseUrl);
@@ -686,7 +675,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("myInt") == 1);
 
     // test with limit
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select distinct str_s, field_i from collection1 order by str_s desc, field_i desc limit 2");
 
     tuples = getTuples(sParams, baseUrl);
@@ -702,7 +691,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 50);
 
     // Test without a sort. Sort should be asc by default.
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select distinct str_s, field_i from collection1");
 
     tuples = getTuples(sParams, baseUrl);
@@ -739,7 +728,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 60);
 
     // Test with a predicate.
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select distinct str_s, field_i from collection1 where str_s = 'a'");
 
     tuples = getTuples(sParams, baseUrl);
@@ -772,7 +761,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    SolrParams sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s, field_i from collection1 order by str_s asc, field_i asc");
 
     List<Tuple> tuples = getTuples(sParams, baseUrl);
@@ -803,7 +792,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 60);
 
     // reverse the sort
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s, field_i from collection1 order by str_s desc, field_i desc");
 
     tuples = getTuples(sParams, baseUrl);
@@ -834,7 +823,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.get("str_s").equals("a"));
     assert (tuple.getLong("field_i") == 1);
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s as myString, field_i from collection1 order by myString desc, field_i desc");
 
     tuples = getTuples(sParams, baseUrl);
@@ -866,7 +855,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 1);
 
     // test with limit
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s, field_i from collection1 order by str_s desc, field_i desc limit 2");
 
     tuples = getTuples(sParams, baseUrl);
@@ -882,7 +871,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 50);
 
     // Test without a sort. Sort should be asc by default.
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s, field_i from collection1");
 
     tuples = getTuples(sParams, baseUrl);
@@ -914,7 +903,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 60);
 
     // Test with a predicate.
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s, field_i from collection1 where str_s = 'a'");
 
     tuples = getTuples(sParams, baseUrl);
@@ -945,7 +934,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
+    SolrParams sParams = params(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s, field_i from collection1 order by str_s asc, field_i asc");
 
     List<Tuple> tuples = getTuples(sParams, baseUrl);
@@ -979,7 +968,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 60);
 
     // reverse the sort
-    sParams = mapParams(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s, field_i from collection1 order by str_s desc, field_i desc");
 
     tuples = getTuples(sParams, baseUrl);
@@ -1011,7 +1000,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 1);
 
     // reverse the sort
-    sParams = mapParams(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s as myString, field_i from collection1 order by myString desc, field_i desc");
 
     tuples = getTuples(sParams, baseUrl);
@@ -1043,7 +1032,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 1);
 
     // test with limit
-    sParams = mapParams(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s, field_i from collection1 order by str_s desc, field_i desc limit 2");
 
     tuples = getTuples(sParams, baseUrl);
@@ -1059,7 +1048,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 50);
 
     // Test without a sort. Sort should be asc by default.
-    sParams = mapParams(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s, field_i from collection1");
 
     tuples = getTuples(sParams, baseUrl);
@@ -1091,7 +1080,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("field_i") == 60);
 
     // Test with a predicate.
-    sParams = mapParams(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
         "stmt", "select distinct str_s, field_i from collection1 where str_s = 'a'");
 
     tuples = getTuples(sParams, baseUrl);
@@ -1125,7 +1114,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    SolrParams sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
             "cast(avg(1.0 * field_i) as float) from collection1 where text_t='XXXX' group by str_s " +
             "order by sum(field_i) asc limit 2");
@@ -1153,7 +1142,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getDouble("EXPR$4") == 20); // max(field_i)
     assert (tuple.getDouble("EXPR$5") == 13.5D); // avg(field_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
             "avg(field_i) from collection1 where text_t='XXXX' group by str_s " +
             "order by sum(field_i) asc limit 2");
@@ -1179,7 +1168,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getDouble("EXPR$4") == 20); // max(field_i)
     assert (tuple.getDouble("EXPR$5") == 14); // avg(field_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), "
             + "cast(avg(1.0 * field_i) as float) from collection1 where (text_t='XXXX' AND NOT (text_t='XXXY')) "
             + "group by str_s order by str_s desc");
@@ -1215,7 +1204,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getDouble("EXPR$4") == 20); // max(field_i)
     assert (tuple.getDouble("EXPR$5") == 13.5D); // avg(field_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select str_s as myString, count(*), sum(field_i) as mySum, min(field_i), max(field_i), "
             + "cast(avg(1.0 * field_i) as float) from collection1 where (text_t='XXXX' AND NOT (text_t='XXXY')) "
             + "group by str_s order by myString desc");
@@ -1251,7 +1240,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getDouble("EXPR$4") == 20); // max(field_i)
     assert (tuple.getDouble("EXPR$5") == 13.5D); // avg(field_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
             "cast(avg(1.0 * field_i) as float) from collection1 where text_t='XXXX' group by str_s having sum(field_i) = 19");
 
@@ -1267,7 +1256,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getDouble("EXPR$4") == 11); // max(field_i)
     assert (tuple.getDouble("EXPR$5") == 9.5D); // avg(field_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
             "cast(avg(1.0 * field_i) as float) from collection1 where text_t='XXXX' group by str_s " +
             "having ((sum(field_i) = 19) AND (min(field_i) = 8))");
@@ -1284,7 +1273,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getDouble("EXPR$4") == 11); // max(field_i)
     assert (tuple.getDouble("EXPR$5") == 9.5D); // avg(field_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select str_s, count(*), sum(field_i) as mySum, min(field_i), max(field_i), " +
             "cast(avg(1.0 * field_i) as float) from collection1 where text_t='XXXX' group by str_s " +
             "having ((sum(field_i) = 19) AND (min(field_i) = 8))");
@@ -1301,7 +1290,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getDouble("EXPR$4") == 11); // max(field_i)
     assert (tuple.getDouble("EXPR$5") == 9.5D); // avg(field_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
             "cast(avg(1.0 * field_i) as float) from collection1 where text_t='XXXX' group by str_s " +
             "having ((sum(field_i) = 19) AND (min(field_i) = 100))");
@@ -1330,7 +1319,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql", "stmt",
+    SolrParams sParams = params(CommonParams.QT, "/sql", "stmt",
         "select count(*), sum(a_i), min(a_i), max(a_i), cast(avg(1.0 * a_i) as float), sum(a_f), " +
             "min(a_f), max(a_f), avg(a_f) from collection1");
 
@@ -1363,7 +1352,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertTrue(maxf == 10.0D);
     assertTrue(avgf == 5.5D);
 
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select count(*) as myCount, sum(a_i) as mySum, min(a_i) as myMin, max(a_i) as myMax, " +
             "cast(avg(1.0 * a_i) as float) as myAvg, sum(a_f), min(a_f), max(a_f), avg(a_f) from collection1");
 
@@ -1397,7 +1386,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertTrue(avgf == 5.5D);
 
     // Test without cast on average int field
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select count(*) as myCount, sum(a_i) as mySum, min(a_i) as myMin, max(a_i) as myMax, " +
             "avg(a_i) as myAvg, sum(a_f), min(a_f), max(a_f), avg(a_f) from collection1");
 
@@ -1432,7 +1421,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertTrue(avgf == 5.5D);
 
     // Test where clause hits
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select count(*), sum(a_i), min(a_i), max(a_i), cast(avg(1.0 * a_i) as float), sum(a_f), " +
             "min(a_f), max(a_f), avg(a_f) from collection1 where id = 2");
 
@@ -1464,7 +1453,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertTrue(avgf == 2.0);
 
     // Test zero hits
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select count(*), sum(a_i), min(a_i), max(a_i), cast(avg(1.0 * a_i) as float), sum(a_f), " +
             "min(a_f), max(a_f), avg(a_f) from collection1 where a_s = 'blah'");
 
@@ -1495,7 +1484,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assertTrue(avgf == null);
 
     // test bunch of where predicates
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select count(*), sum(a_i), min(a_i), max(a_i), cast(avg(1.0 * a_i) as float), sum(a_f), " +
             "min(a_f), max(a_f), avg(a_f) from collection1 where id = 2 AND a_s='hello0' AND a_i=2 AND a_f=2");
 
@@ -1522,7 +1511,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    SolrParams sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select year_i, sum(item_i) from collection1 group by year_i order by year_i desc");
 
     List<Tuple> tuples = getTuples(sParams, baseUrl);
@@ -1539,7 +1528,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("year_i") == 2014);
     assert (tuple.getDouble("EXPR$1") == 7); // sum(item_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select year_i, month_i, sum(item_i) from collection1 group by year_i, month_i " +
             "order by year_i desc, month_i desc");
 
@@ -1562,7 +1551,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("month_i") == 4);
     assert (tuple.getDouble("EXPR$2") == 7); // sum(item_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select year_i, month_i, day_i, sum(item_i) from collection1 group by year_i, month_i, day_i " +
             "order by year_i desc, month_i desc, day_i desc");
 
@@ -1625,7 +1614,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    SolrParams sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt", "select id, str_s from collection1 where text_t='XXXX' order by field_iff desc");
 
     SolrStream solrStream = new SolrStream(baseUrl, sParams);
@@ -1634,7 +1623,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.EXCEPTION);
     assert (tuple.getException().contains("Column 'field_iff' not found in any table"));
 
-    sParams = mapParams(CommonParams.QT, "/sql",
+    sParams = params(CommonParams.QT, "/sql",
         "stmt", "select id, field_iff, str_s from collection1 where text_t='XXXX' order by field_iff desc");
 
     solrStream = new SolrStream(baseUrl, sParams);
@@ -1644,7 +1633,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     assert (tuple.getException().contains("Column 'field_iff' not found in any table"));
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt",
         "select str_s, count(*), sum(field_iff), min(field_i), max(field_i), cast(avg(1.0 * field_i) as float) from collection1 where text_t='XXXX' group by str_s having ((sum(field_iff) = 19) AND (min(field_i) = 8))");
 
@@ -1654,7 +1643,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.EXCEPTION);
     assert (tuple.getException().contains("Column 'field_iff' not found in any table"));
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt",
         "select str_s, count(*), blah(field_i), min(field_i), max(field_i), cast(avg(1.0 * field_i) as float) from collection1 where text_t='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 8))");
 
@@ -1665,7 +1654,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getException().contains("No match found for function signature blah"));
 
     // verify exception message formatting with wildcard query
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "map_reduce",
         "stmt",
         "select str_s from collection1 where not_a_field LIKE 'foo%'");
 
@@ -1693,7 +1682,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    SolrParams sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select year_i, sum(item_i) from collection1 group by year_i order by year_i desc");
 
     List<Tuple> tuples = getTuples(sParams, baseUrl);
@@ -1710,7 +1699,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("year_i") == 2014);
     assert (tuple.getDouble("EXPR$1") == 7); // sum(item_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select year_i, month_i, sum(item_i) from collection1 group by year_i, month_i " +
             "order by year_i desc, month_i desc");
 
@@ -1733,7 +1722,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("month_i") == 4);
     assert (tuple.getDouble("EXPR$2") == 7); // sum(item_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql", "aggregationMode", "facet",
+    sParams = params(CommonParams.QT, "/sql", "aggregationMode", "facet",
         "stmt", "select year_i, month_i, day_i, sum(item_i) from collection1 group by year_i, month_i, day_i " +
             "order by year_i desc, month_i desc, day_i desc");
 
@@ -1796,7 +1785,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
 
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
+    SolrParams sParams = params(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
         "stmt", "select year_i, sum(item_i) from collection1 group by year_i order by year_i desc");
 
     List<Tuple> tuples = getTuples(sParams, baseUrl);
@@ -1815,7 +1804,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("year_i") == 2014);
     assert (tuple.getDouble("EXPR$1") == 7); // sum(item_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
         "stmt", "select year_i, month_i, sum(item_i) from collection1 group by year_i, month_i " +
             "order by year_i desc, month_i desc");
 
@@ -1840,7 +1829,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     assert (tuple.getLong("month_i") == 4);
     assert (tuple.getDouble("EXPR$2") == 7); // sum(item_i)
 
-    sParams = mapParams(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
+    sParams = params(CommonParams.QT, "/sql", "numWorkers", "2", "aggregationMode", "map_reduce",
         "stmt", "select year_i, month_i, day_i, sum(item_i) from collection1 group by year_i, month_i, day_i " +
             "order by year_i desc, month_i desc, day_i desc");
 
@@ -1918,7 +1907,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "4", "text_t", "foobaz", "str_s", "d")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-    SolrParams sParams = mapParams(CommonParams.QT, "/sql",
+    SolrParams sParams = params(CommonParams.QT, "/sql",
         "stmt",
         "select id from collection1 where str_s IN ('a','b','c')");
 
@@ -1933,7 +1922,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
 
   private List<Tuple> expectResults(String sql, final int expectedCount) throws Exception {
     String sqlStmt = sql.replace("$ALIAS", COLLECTIONORALIAS);
-    SolrParams params = mapParams(CommonParams.QT, "/sql", "stmt", sqlStmt);
+    SolrParams params = params(CommonParams.QT, "/sql", "stmt", sqlStmt);
     List<Tuple> tuples = getTuples(params, sqlUrl());
     assertEquals(expectedCount, tuples.size());
     return tuples;

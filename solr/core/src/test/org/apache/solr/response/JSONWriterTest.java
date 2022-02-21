@@ -191,25 +191,25 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   @Test
   public void testArrntvWriterOverridesAllWrites() {
     // List rather than Set because two not-overridden methods could share name but not signature
-    final List<String> methodsExpectedNotOverriden = new ArrayList<>(14);
-    methodsExpectedNotOverriden.add("writeResponse");
-    methodsExpectedNotOverriden.add("writeKey");
-    methodsExpectedNotOverriden.add("writeNamedListAsMapMangled");
-    methodsExpectedNotOverriden.add("writeNamedListAsMapWithDups");
-    methodsExpectedNotOverriden.add("writeNamedListAsArrMap");
-    methodsExpectedNotOverriden.add("writeNamedListAsArrArr");
-    methodsExpectedNotOverriden.add("writeNamedListAsFlat");
-    methodsExpectedNotOverriden.add("writeEndDocumentList");
-    methodsExpectedNotOverriden.add("writeMapOpener");
-    methodsExpectedNotOverriden.add("writeMapSeparator");
-    methodsExpectedNotOverriden.add("writeMapCloser");
-    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeArray(java.lang.String,java.util.List,boolean) throws java.io.IOException");
-    methodsExpectedNotOverriden.add("writeArrayOpener");
-    methodsExpectedNotOverriden.add("writeArraySeparator");
-    methodsExpectedNotOverriden.add("writeArrayCloser");
-    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeMap(org.apache.solr.common.MapWriter) throws java.io.IOException");
-    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeIterator(org.apache.solr.common.IteratorWriter) throws java.io.IOException");
-    methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeJsonIter(java.util.Iterator,boolean) throws java.io.IOException");
+    final List<String> methodsExpectedNotOverridden = new ArrayList<>(14);
+    methodsExpectedNotOverridden.add("writeResponse");
+    methodsExpectedNotOverridden.add("writeKey");
+    methodsExpectedNotOverridden.add("writeNamedListAsMapMangled");
+    methodsExpectedNotOverridden.add("writeNamedListAsMapWithDups");
+    methodsExpectedNotOverridden.add("writeNamedListAsArrMap");
+    methodsExpectedNotOverridden.add("writeNamedListAsArrArr");
+    methodsExpectedNotOverridden.add("writeNamedListAsFlat");
+    methodsExpectedNotOverridden.add("writeEndDocumentList");
+    methodsExpectedNotOverridden.add("writeMapOpener");
+    methodsExpectedNotOverridden.add("writeMapSeparator");
+    methodsExpectedNotOverridden.add("writeMapCloser");
+    methodsExpectedNotOverridden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeArray(java.lang.String,java.util.List,boolean) throws java.io.IOException");
+    methodsExpectedNotOverridden.add("writeArrayOpener");
+    methodsExpectedNotOverridden.add("writeArraySeparator");
+    methodsExpectedNotOverridden.add("writeArrayCloser");
+    methodsExpectedNotOverridden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeMap(org.apache.solr.common.MapWriter) throws java.io.IOException");
+    methodsExpectedNotOverridden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeIterator(org.apache.solr.common.IteratorWriter) throws java.io.IOException");
+    methodsExpectedNotOverridden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeJsonIter(java.util.Iterator,boolean) throws java.io.IOException");
 
     final Class<?> subClass = JSONResponseWriter.ArrayOfNameTypeValueJSONWriter.class;
     final Class<?> superClass = subClass.getSuperclass();
@@ -229,12 +229,12 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
       if (Modifier.isStatic(modifiers)) continue;
       if (Modifier.isPrivate(modifiers)) continue;
 
-      final boolean expectOverriden = !methodsExpectedNotOverriden.contains(methodName)
-          && !methodsExpectedNotOverriden.contains(methodFullName);
+      final boolean expectOverridden = !methodsExpectedNotOverridden.contains(methodName)
+          && !methodsExpectedNotOverridden.contains(methodFullName);
 
       try {
         final Method subClassMethod = getDeclaredMethodInClasses(superClassMethod, subClass);
-        if (expectOverriden) {
+        if (expectOverridden) {
           assertEquals("getReturnType() difference",
               superClassMethod.getReturnType(),
               subClassMethod.getReturnType());
@@ -242,16 +242,16 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
           fail(subClass + " must not override '" + superClassMethod + "'");
         }
       } catch (NoSuchMethodException e) {
-        if (expectOverriden) {
+        if (expectOverridden) {
           fail(subClass + " needs to override '" + superClassMethod + "'");
         } else {
-          assertTrue(methodName+" not found in remaining "+methodsExpectedNotOverriden, methodsExpectedNotOverriden.remove(methodName)|| methodsExpectedNotOverriden.remove(methodFullName));
+          assertTrue(methodName+" not found in remaining "+methodsExpectedNotOverridden, methodsExpectedNotOverridden.remove(methodName)|| methodsExpectedNotOverridden.remove(methodFullName));
         }
       }
     }
 
-    assertTrue("methodsExpected NotOverriden but NotFound instead: "+methodsExpectedNotOverriden,
-        methodsExpectedNotOverriden.isEmpty());
+    assertTrue("methodsExpected NotOverridden but NotFound instead: "+methodsExpectedNotOverridden,
+        methodsExpectedNotOverridden.isEmpty());
   }
 
   @Test

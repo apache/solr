@@ -26,7 +26,6 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
-import org.apache.solr.util.configuration.providers.HadoopSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,8 +40,7 @@ public class SSLCredentialProviderFactory {
 
   private static final Map<String, Class<? extends SSLCredentialProvider>> defaultProviders = ImmutableMap.of(
       "env", EnvSSLCredentialProvider.class,
-      "sysprop", SysPropSSLCredentialProvider.class,
-      "hadoop", HadoopSSLCredentialProvider.class
+      "sysprop", SysPropSSLCredentialProvider.class
   );
 
   private String providerChain;
