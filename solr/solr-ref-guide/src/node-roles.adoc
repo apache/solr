@@ -133,7 +133,7 @@ curl http://localhost:8983/api/cluster/node-roles
 }
 ----
 
-=== GET /api/cluster/node-roles/role/{role}
+=== GET /api/cluster/node-roles/role/\{role}
 
 Fetches the current node roles assignment for a specified role.
 
@@ -176,7 +176,7 @@ http://localhost:8983/api/node-roles/role/data/off
 
 
 
-=== GET /api/cluster/node-roles/node/{node}
+=== GET /api/cluster/node-roles/node/\{node}
 
 Fetches the current node roles assignment for the specified node.
 

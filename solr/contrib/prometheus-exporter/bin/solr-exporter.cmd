@@ -71,7 +71,7 @@ if "%JAVACMD%"=="" set JAVACMD=java
 
 if "%REPO%"=="" set REPO=%BASEDIR%\lib
 
-set CLASSPATH=%REPO%\*;%BASEDIR%\conf;%BASEDIR%\..\..\dist\solrj-lib\*;%BASEDIR%\..\..\dist\*;%BASEDIR%\..\..\server\lib\ext\*
+set CLASSPATH=%REPO%\*;%BASEDIR%\conf;%BASEDIR%\..\..\server\lib\ext\*;%BASEDIR%\..\..\server\solr-webapp\webapp\WEB-INF\lib\*
 
 @REM Convert Environment Variables to Command Line Options
 set EXPORTER_ARGS=

@@ -38,7 +38,7 @@ Rscript solr_rjdbc.R
 
 library("RJDBC")
 
-solrCP <- c(list.files('/opt/solr/dist/solrj-lib', full.names=TRUE), list.files('/opt/solr/dist', pattern='solrj', full.names=TRUE, recursive = TRUE))
+solrCP <- c(list.files('/opt/solr/server/lib/ext/', list.files('/opt/solr/server/solr-webapp/webapp/WEB-INF/lib/', full.names=TRUE, recursive = TRUE))
 
 drv <- JDBC("org.apache.solr.client.solrj.io.sql.DriverImpl",
            solrCP,

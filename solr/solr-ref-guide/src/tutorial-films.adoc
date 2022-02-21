@@ -244,7 +244,7 @@ Each command will produce output similar to the below seen while indexing JSON:
 [source,bash,subs="verbatim,attributes"]
 ----
 $ ./bin/post -c films example/films/films.json
-/bin/java -classpath /solr-{solr-docs-version}.0/dist/solr-core-{solr-docs-version}.0.jar -Dauto=yes -Dc=films -Ddata=files org.apache.solr.util.SimplePostTool example/films/films.json
+/bin/java -classpath /solr-{solr-docs-version}.0/server/solr-webapp/webapp/WEB-INF/lib/solr-core-{solr-docs-version}.0.jar -Dauto=yes -Dc=films -Ddata=files org.apache.solr.util.SimplePostTool example/films/films.json
 SimplePostTool version 5.0.0
 Posting files to [base] url http://localhost:8983/solr/films/update...
 Entering auto mode. File endings considered are xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log

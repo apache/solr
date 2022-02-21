@@ -56,7 +56,7 @@ import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
 import static org.apache.solr.handler.admin.CoreAdminHandler.FAILED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE;
+import static org.apache.solr.handler.admin.CoreAdminHandler.OPERATION_RESPONSE;
 import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_MESSAGE;
 import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
 import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
@@ -185,10 +185,11 @@ public enum CoreAdminOperation implements CoreAdminOp {
       it.rsp.add(RESPONSE_STATUS, RUNNING);
     } else if (it.handler.getRequestStatusMap(COMPLETED).containsKey(requestId)) {
       it.rsp.add(RESPONSE_STATUS, COMPLETED);
-      it.rsp.add(RESPONSE, it.handler.getRequestStatusMap(COMPLETED).get(requestId).getRspObject());
+      it.rsp.add(RESPONSE_MESSAGE, it.handler.getRequestStatusMap(COMPLETED).get(requestId).getRspObject());
+      it.rsp.add(OPERATION_RESPONSE, it.handler.getRequestStatusMap(COMPLETED).get(requestId).getOperationRspObject());
     } else if (it.handler.getRequestStatusMap(FAILED).containsKey(requestId)) {
       it.rsp.add(RESPONSE_STATUS, FAILED);
-      it.rsp.add(RESPONSE, it.handler.getRequestStatusMap(FAILED).get(requestId).getRspObject());
+      it.rsp.add(RESPONSE_MESSAGE, it.handler.getRequestStatusMap(FAILED).get(requestId).getRspObject());
     } else {
       it.rsp.add(RESPONSE_STATUS, "notfound");
       it.rsp.add(RESPONSE_MESSAGE, "No task found in running, completed or failed tasks");

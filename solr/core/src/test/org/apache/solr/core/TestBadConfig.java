@@ -44,7 +44,7 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
 
   public void testSchemaMutableButNotManaged() throws Exception {
     assertConfigs("bad-solrconfig-schema-mutable-but-not-managed.xml",
-                  "schema-minimal.xml", "Unexpected arg(s): {mutable=false, managedSchemaResourceName=schema.xml}");
+                  "schema-minimal.xml", "Unexpected arg(s)"); // SOLR-15939
   }
 
   public void testManagedSchemaCannotBeNamedSchemaDotXml() throws Exception {

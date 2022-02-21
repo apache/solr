@@ -208,9 +208,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private void deleteAll() throws IOException {
-    if (log.isInfoEnabled()) {
-      log.info("{} REMOVING ALL DOCUMENTS FROM INDEX", core.getLogId());
-    }
+    log.info("REMOVING ALL DOCUMENTS FROM INDEX");
     RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
     try {
       iw.get().deleteAll();

@@ -412,7 +412,6 @@ You can run these commands from your `$SOLR_INSTALL` directory:
 [source,bash]
 ----
 cp contrib/extraction/lib/*.jar server/solr-webapp/webapp/WEB-INF/lib/
-cp dist/solr-extraction-*.jar server/solr-webapp/webapp/WEB-INF/lib/
 ----
 
 Once the libraries are in place, you can add `wt=xlsx` to your request, and results will be returned as an XLSX sheet.

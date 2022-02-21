@@ -25,6 +25,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.prometheus.PrometheusExporterTestBase;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 
@@ -43,5 +44,16 @@ public class Helpers {
       client.request(req, PrometheusExporterTestBase.COLLECTION);
     }
     client.commit(PrometheusExporterTestBase.COLLECTION);
+  }
+
+  // Parses a prometheus line into key and value, e.g.
+  //   solr_exporter_duration_seconds_bucket{le="1.0",} 1.0
+  //   first="solr_exporter_duration_seconds_bucket{le="1.0",}," second=1.0
+  public static Pair<String, Double> parseMetricsLine(String line) {
+    int spaceIdx = line.lastIndexOf(" ");
+    if (spaceIdx == -1) {
+      throw new IllegalArgumentException("Failed parsing metrics line, must contain a space. Line was: " + line);
+    }
+    return new Pair<>(line.substring(0,spaceIdx), Double.parseDouble(line.substring(spaceIdx)));
   }
 }

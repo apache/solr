@@ -35,7 +35,7 @@ For projects built with Ant (using http://ant.apache.org/ivy/[Ivy]), place the f
 
 [source,xml,subs="verbatim,attributes"]
 ----
-<dependency org="org.apache.solr" name="solr-solrj" rev="{solr-docs-version}.0"/>
+<dependency org="org.apache.solr" name="solr-solrj" rev="{solr-full-version}"/>
 ----
 
 For projects built with Maven, place the following in your `pom.xml`:
@@ -45,7 +45,7 @@ For projects built with Maven, place the following in your `pom.xml`:
 <dependency>
   <groupId>org.apache.solr</groupId>
   <artifactId>solr-solrj</artifactId>
-  <version>{solr-docs-version}.0</version>
+  <version>{solr-full-version}</version>
 </dependency>
 ----
 
@@ -53,28 +53,29 @@ For projects built with Gradle, place the following in your `build.gradle`:
 
 [source,groovy,subs="attributes"]
 ----
-compile group: 'org.apache.solr', name: 'solr-solrj', version: '{solr-docs-version}.0'
+compile group: 'org.apache.solr', name: 'solr-solrj', version: '{solr-full-version}'
 ----
 
 === Adding SolrJ to the Classpath Manually
 
 If you are not using one of the above build system, it's still easy to add SolrJ to your build.
 
-At build time, all that is required is the SolrJ jar itself: `solr-solrj-{solr-docs-version}.0.jar`.
+At build time, all that is required is the SolrJ jar itself: `solr-solrj-{solr-full-version}.jar`.
 To compile code manually that uses SolrJ, use a `javac` command similar to:
 
 [source,bash,subs="attributes"]
 ----
-javac -cp .:$SOLR_HOME/dist/solr-solrj-{solr-docs-version}.0.jar ...
+javac -cp .:$SOLR_TIP/server/solr-webapp/webapp/WEB-INF/lib/solr-solrj-{solr-full-version}.jar ...
 ----
 
 At runtime, you need a few of SolrJ's dependencies, in addition to SolrJ itself.
-For convenience, these dependencies are made available in the `dist/solrj-lib` directory.
+In the Solr distribution these dependencies are not separated from Solr's dependencies, so you must include all or manually choose the exact set that is needed.
+Please refer to the https://search.maven.org/artifact/org.apache.solr/solr-solrj/{solr-full-version}/jar[maven release] for the exact dependencies needed for your version.
 Run your project with a classpath like:
 
 [source,bash,subs="attributes"]
 ----
-java -cp .:$SOLR_HOME/dist/solrj-lib/*:$SOLR_HOME/dist/solr-solrj-{solr-docs-version}.0.jar ...
+java -cp .:$SOLR_TIP/server/lib/ext:$SOLR_TIP/server/solr-webapp/webapp/WEB-INF/lib/* ...
 ----
 
 If you are worried about the SolrJ libraries expanding the size of your client application, you can use a code obfuscator like http://proguard.sourceforge.net/[ProGuard] to remove APIs that you are not using.

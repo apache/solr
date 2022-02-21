@@ -381,6 +381,11 @@ public class SolrLogPostTool {
     }
 
     private String parseNewSearcherCore(String line) {
+      String xCore = parseCore(line);
+      if (xCore != null) {
+        return xCore;
+      }
+      // pre Solr 9
       char[] ca = {']'};
       String parts[] = line.split("\\[");
       if(parts.length > 3) {

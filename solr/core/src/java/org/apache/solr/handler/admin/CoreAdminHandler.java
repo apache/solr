@@ -89,9 +89,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public static String RUNNING = "running";
   public static String COMPLETED = "completed";
   public static String FAILED = "failed";
-  public static String RESPONSE = "Response";
   public static String RESPONSE_STATUS = "STATUS";
   public static String RESPONSE_MESSAGE = "msg";
+  public static String OPERATION_RESPONSE = "response";
 
   public CoreAdminHandler() {
     super();
@@ -198,6 +198,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
             try {
               callInfo.call();
               taskObject.setRspObject(callInfo.rsp);
+              taskObject.setOperationRspObject(callInfo.rsp);
             } catch (Exception e) {
               exceptionCaught = true;
               taskObject.setRspObjectFromException(e);
@@ -325,6 +326,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   static class TaskObject {
     String taskId;
     String rspInfo;
+    Object operationRspInfo;
 
     public TaskObject(String taskId) {
       this.taskId = taskId;
@@ -340,6 +342,14 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
     public void setRspObjectFromException(Exception e) {
       this.rspInfo = e.getMessage();
+    }
+    
+    public Object getOperationRspObject() {
+      return operationRspInfo;
+    }
+
+    public void setOperationRspObject(SolrQueryResponse rspObject) {
+      this.operationRspInfo = rspObject.getResponse();
     }
   }
 

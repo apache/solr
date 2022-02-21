@@ -33,6 +33,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.prometheus.PrometheusExporterTestBase;
 import org.apache.solr.prometheus.utils.Helpers;
 import org.junit.After;
@@ -105,11 +106,9 @@ public class SolrExporterTestBase extends PrometheusExporterTestBase {
             continue;
           }
 
-          String[] parts = currentLine.split(" ");
+          Pair<String, Double> kv = Helpers.parseMetricsLine(currentLine);
 
-          assertEquals("Metric must have name and value: " + currentLine, 2, parts.length);
-
-          metrics.put(parts[0], Double.valueOf(parts[1]));
+          metrics.put(kv.first(), kv.second());
         }
       }
     }

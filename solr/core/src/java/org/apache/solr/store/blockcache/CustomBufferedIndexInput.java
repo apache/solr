@@ -38,7 +38,7 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
   private int bufferLength = 0; // end of valid bytes
   private int bufferPosition = 0; // next byte to read
   
-  private Store store;
+  private final Store store;
   
   @Override
   public byte readByte() throws IOException {
@@ -116,14 +116,26 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
       }
     }
   }
-  
+
+  @Override
+  public short readShort() throws IOException {
+    if (2 <= (bufferLength - bufferPosition)) {
+      final byte b1 = buffer[bufferPosition++];
+      final byte b2 = buffer[bufferPosition++];
+      return (short) ((b2 & 0xFF) << 8 | (b1 & 0xFF));
+    } else {
+      return super.readShort();
+    }
+  }
+
   @Override
   public int readInt() throws IOException {
     if (4 <= (bufferLength - bufferPosition)) {
-      return ((buffer[bufferPosition++] & 0xFF) << 24)
-          | ((buffer[bufferPosition++] & 0xFF) << 16)
-          | ((buffer[bufferPosition++] & 0xFF) << 8)
-          | (buffer[bufferPosition++] & 0xFF);
+      final byte b1 = buffer[bufferPosition++];
+      final byte b2 = buffer[bufferPosition++];
+      final byte b3 = buffer[bufferPosition++];
+      final byte b4 = buffer[bufferPosition++];
+      return (b4 & 0xFF) << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
     } else {
       return super.readInt();
     }
@@ -132,15 +144,7 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
   @Override
   public long readLong() throws IOException {
     if (8 <= (bufferLength - bufferPosition)) {
-      final int i1 = ((buffer[bufferPosition++] & 0xff) << 24)
-          | ((buffer[bufferPosition++] & 0xff) << 16)
-          | ((buffer[bufferPosition++] & 0xff) << 8)
-          | (buffer[bufferPosition++] & 0xff);
-      final int i2 = ((buffer[bufferPosition++] & 0xff) << 24)
-          | ((buffer[bufferPosition++] & 0xff) << 16)
-          | ((buffer[bufferPosition++] & 0xff) << 8)
-          | (buffer[bufferPosition++] & 0xff);
-      return (((long) i1) << 32) | (i2 & 0xFFFFFFFFL);
+      return (readInt() & 0xFFFFFFFFL) | (((long) readInt()) << 32);
     } else {
       return super.readLong();
     }
@@ -150,12 +154,22 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
   public int readVInt() throws IOException {
     if (5 <= (bufferLength - bufferPosition)) {
       byte b = buffer[bufferPosition++];
+      if (b >= 0) return b;
       int i = b & 0x7F;
-      for (int shift = 7; (b & 0x80) != 0; shift += 7) {
-        b = buffer[bufferPosition++];
-        i |= (b & 0x7F) << shift;
-      }
-      return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7F) << 7;
+      if (b >= 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7F) << 14;
+      if (b >= 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7F) << 21;
+      if (b >= 0) return i;
+      b = buffer[bufferPosition++];
+      // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
+      i |= (b & 0x0F) << 28;
+      if ((b & 0xF0) == 0) return i;
+      throw new RuntimeException("Invalid vInt detected (too many bits)");
     } else {
       return super.readVInt();
     }
@@ -164,13 +178,34 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
   @Override
   public long readVLong() throws IOException {
     if (9 <= bufferLength - bufferPosition) {
-      byte b = buffer[bufferPosition++];
-      long i = b & 0x7F;
-      for (int shift = 7; (b & 0x80) != 0; shift += 7) {
-        b = buffer[bufferPosition++];
-        i |= (b & 0x7FL) << shift;
-      }
-      return i;
+      byte b =buffer[bufferPosition++];
+      if (b >= 0) return b;
+      long i = b & 0x7FL;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 7;
+      if (b >= 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 14;
+      if (b >= 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 21;
+      if (b >= 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 28;
+      if (b >= 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 35;
+      if (b >= 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 42;
+      if (b >= 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 49;
+      if (b >= 0) return i;
+      b = buffer[bufferPosition++];
+      i |= (b & 0x7FL) << 56;
+      if (b >= 0) return i;
+      throw new RuntimeException("Invalid vLong detected (negative values disallowed)");
     } else {
       return super.readVLong();
     }
