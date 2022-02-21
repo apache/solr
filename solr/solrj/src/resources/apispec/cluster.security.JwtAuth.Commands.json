@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/jwt-authentication-plugin.html",
+  "documentation": "https://solr.apache.org/guide/jwt-authentication-plugin.html",
   "description": "Modifies the configuration of JWT token authentication.",
   "methods": [
     "POST"

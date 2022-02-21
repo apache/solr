@@ -42,7 +42,7 @@ import org.apache.solr.search.SyntaxError;
 /**
  * This feature allows you to reuse any Solr query as a feature. The value of the feature will be
  * the score of the given query for the current document. See <a
- * href="https://lucene.apache.org/solr/guide/other-parsers.html">Solr documentation of other
+ * href="https://solr.apache.org/solr/guide/other-parsers.html">Solr documentation of other
  * parsers</a> you can use as a feature. Example configurations:
  *
  * <pre>

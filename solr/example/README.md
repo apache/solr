@@ -62,7 +62,7 @@ For more information about this example please read...
 
 For more information about the "Solr Home" and Solr specific configuration
 
-* https://lucene.apache.org/solr/guide/solr-tutorial.html
+* https://solr.apache.org/guide/solr-tutorial.html
 
 For a Solr tutorial
 

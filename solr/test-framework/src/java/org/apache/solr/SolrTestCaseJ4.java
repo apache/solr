@@ -2913,7 +2913,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     
     assertFalse("SecureRandom algorithm '" + algorithm + "' is in use by your JVM, " +
                 "which is a potentially blocking algorithm on some environments. " +
-                "Please report the details of this failure (and your JVM vendor/version) to solr-user@lucene.apache.org. " +
+                "Please report the details of this failure (and your JVM vendor/version) to users@solr.apache.org. " +
                 "You can try to run your tests with -D"+EGD+"="+URANDOM+" or bypass this check using " +
                 "-Dtest.solr.allowed.securerandom="+ algorithm +" as a JVM option when running tests.",
                 // be permissive in our checks and deny only algorithms

@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/basic-authentication-plugin.html",
+  "documentation": "https://solr.apache.org/guide/basic-authentication-plugin.html",
   "description": "Modifies the configuration of the multi-auth plugin. Each command should be wrapped in a single key object that identifies the scheme. The embedded command is then passed to the scheme specific plugin.",
   "methods": [
     "POST"

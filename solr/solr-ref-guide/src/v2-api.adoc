@@ -75,7 +75,7 @@ Example: `\http://localhost:8983/api/c/gettingstarted/get/_introspect`
 ----
 {
   "spec":[{
-      "documentation":"https://lucene.apache.org/solr/guide/real-time-get.html",
+      "documentation":"https://solr.apache.org/guide/real-time-get.html",
       "description":"RealTime Get allows retrieving documents by ID before the documents have been committed to the index. It is useful when you need access to documents as soon as they are indexed but your commit times are high for other reasons.",
       "methods":["GET"],
       "url":{
@@ -110,13 +110,13 @@ Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstart
 ----
 {
   "spec":[{
-      "documentation":"https://lucene.apache.org/solr/guide/collections-api.html",
+      "documentation":"https://solr.apache.org/guide/collections-api.html",
       "description":"Several collection-level operations are supported with this endpoint: modify collection attributes; reload a collection; migrate documents to a different collection; rebalance collection leaders; balance properties across shards; and add or delete a replica property.",
       "methods":["POST"],
       "url":{"paths":["/collections/{collection}",
           "/c/{collection}"]},
       "commands":{"modify":{
-          "documentation":"https://lucene.apache.org/solr/guide/collections-api.html#modifycollection",
+          "documentation":"https://solr.apache.org/guide/collections-api.html#modifycollection",
           "description":"Modifies specific attributes of a collection. Multiple attributes can be changed at one time.",
           "type":"object",
           "properties":{

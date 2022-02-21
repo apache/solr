@@ -3163,7 +3163,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      * Sets the collection attribute to the given value
      *
      * @param key   a string attribute key, must be one of the entries documented
-     *              in the <a href="https://lucene.apache.org/solr/guide/collections-api.html#modifycollection">Modify Collection API documentation</a>
+     *              in the <a href="https://solr.apache.org/guide/collections-api.html#modifycollection">Modify Collection API documentation</a>
      * @param value the attribute value for the given key
      */
     public Modify setAttribute(String key, Object value) {
@@ -3188,7 +3188,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      * Removes the given key from the collection
      *
      * @param key the string attribute key, must be one of the entries documented
-     *            in the <a href="https://lucene.apache.org/solr/guide/collections-api.html#modifycollection">Modify Collection API documentation</a>
+     *            in the <a href="https://solr.apache.org/guide/collections-api.html#modifycollection">Modify Collection API documentation</a>
      */
     public Modify unsetAttribute(String key) {
       if (key == null) {

@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/schema-api.html#list-fields",
+  "documentation": "https://solr.apache.org/guide/schema-api.html#list-fields",
   "description": "Get only the fields defined in the schema.",
   "methods": [
     "GET"

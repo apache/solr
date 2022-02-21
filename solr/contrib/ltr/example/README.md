@@ -1,6 +1,6 @@
 This README file is only about this example directory's content.
 
-Please refer to the Solr Reference Guide's section on [Learning To Rank](https://lucene.apache.org/solr/guide/learning-to-rank.html) section for broader information on Learning to Rank (LTR) with Apache Solr.
+Please refer to the Solr Reference Guide's section on [Learning To Rank](https://solr.apache.org/guide/learning-to-rank.html) section for broader information on Learning to Rank (LTR) with Apache Solr.
 
 # Start Solr with the LTR plugin enabled
 

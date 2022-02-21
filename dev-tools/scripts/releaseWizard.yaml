@@ -64,7 +64,7 @@ templates:
     (( template=vote_logic ))
     .Mail template {% if passed %}successful{% else %}failed{% endif %} vote
     ----
-    To: dev@lucene.apache.org
+    To: dev@solr.apache.org
     Subject: [{% if passed %}RESULT{% else %}FAILED{% endif %}] [VOTE] Release Lucene/Solr {{ release_version }} RC{{ rc_number }}
 
     It's been >72h since the vote was initiated and the result is:
@@ -113,7 +113,7 @@ templates:
 
     Solr {{ release_version }} is available for immediate download at:
 
-      <https://lucene.apache.org/solr/downloads.html>
+      <https://solr.apache.org/downloads.html>
 
     ### Solr {{ release_version }} Release Highlights:
 
@@ -122,11 +122,11 @@ templates:
 
     Please refer to the Upgrade Notes in the Solr Ref Guide for information on upgrading from previous Solr versions:
 
-      <https://lucene.apache.org/solr/guide/{{ release_version_refguide }}/solr-upgrade-notes.html>
+      <https://solr.apache.org/guide/{{ release_version_refguide }}/solr-upgrade-notes.html>
 
     Please read CHANGES.txt for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
 
-      <https://lucene.apache.org/solr/{{ release_version_underscore }}/changes/Changes.html>
+      <https://solr.apache.org/{{ release_version_underscore }}/changes/Changes.html>
 
     Solr {{ release_version }} also includes {% if is_feature_release %}features, optimizations and {% endif %}bugfixes in the corresponding Apache Lucene release:
 
@@ -137,7 +137,7 @@ templates:
 
     .Mail template
     ----
-    To: dev@lucene.apache.org, general@lucene.apache.org, java-user@lucene.apache.org
+    To: dev@solr.apache.org, users@solr.apache.org
     Subject: [ANNOUNCE] Apache Lucene {{ release_version }} released
 
     (( template=announce_lucene_mail_body ))
@@ -171,7 +171,7 @@ templates:
 
     .Mail template
     ----
-    To: dev@lucene.apache.org, general@lucene.apache.org, solr-user@lucene.apache.org
+    To: dev@solr.apache.org, users@solr.apache.org
     Subject: [ANNOUNCE] Apache Solr {{ release_version }} released
 
     (( template=announce_solr_mail_body ))
@@ -548,7 +548,7 @@ groups:
 
       .Mail template
       ----
-      To: dev@lucene.apache.org
+      To: dev@solr.apache.org
       Subject: New branch and feature freeze for Lucene/Solr {{ release_version }}
 
       NOTICE:
@@ -588,7 +588,7 @@ groups:
 
       .Mail template
       ----
-      To: dev@lucene.apache.org
+      To: dev@solr.apache.org
       Subject: Bugfix release Lucene/Solr {{ release_version }}
 
       NOTICE:
@@ -799,7 +799,7 @@ groups:
 
       .Mail template
       ----
-      To: dev@lucene.apache.org
+      To: dev@solr.apache.org
       Subject: [VOTE] Release Lucene/Solr {{ release_version }} RC{{ rc_number }}
 
       Please vote for release candidate {{ rc_number }} for Lucene/Solr {{ release_version }}
@@ -1232,7 +1232,7 @@ groups:
       - stage_website
     description: |
       Push the website changes to 'production' branch. This will build and publish the live site on
-      https://lucene.apache.org
+      https://solr.apache.org
     commands: !Commands
       root_folder: '{{ git_website_folder }}'
       commands:

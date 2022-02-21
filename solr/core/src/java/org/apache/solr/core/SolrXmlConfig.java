@@ -235,7 +235,7 @@ public class SolrXmlConfig {
 
     if (config.getVal(xPath, false) != null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Should not have found " + xPath +
-          "\n. Please upgrade your solr.xml: https://lucene.apache.org/solr/guide/format-of-solr-xml.html");
+          "\n. Please upgrade your solr.xml: https://solr.apache.org/guide/format-of-solr-xml.html");
     }
   }
 

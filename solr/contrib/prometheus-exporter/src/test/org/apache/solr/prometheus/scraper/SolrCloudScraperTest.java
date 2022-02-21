@@ -152,7 +152,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     assertEquals(2, collection1Metrics.size());
     Collector.MetricFamilySamples liveNodeSamples = collection1Metrics.get(0);
     assertEquals("solr_collections_live_nodes", liveNodeSamples.name);
-    assertEquals("See following URL: https://lucene.apache.org/solr/guide/collections-api.html#clusterstatus", liveNodeSamples.help);
+    assertEquals("See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus", liveNodeSamples.help);
     assertEquals(1, liveNodeSamples.samples.size());
 
     assertEquals(
