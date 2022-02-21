@@ -16,67 +16,66 @@
  */
 package org.apache.solr.store.blockcache;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.solr.store.blockcache.BlockCache.OnRelease;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
-
-
-/**
- * @lucene.experimental
- */
+/** @lucene.experimental */
 public class BlockDirectoryCache implements Cache {
   private final BlockCache blockCache;
   private final AtomicInteger counter = new AtomicInteger();
-  private final com.github.benmanes.caffeine.cache.Cache<String,Integer> names;
+  private final com.github.benmanes.caffeine.cache.Cache<String, Integer> names;
   private Set<BlockCacheKey> keysToRelease;
   private final String path;
   private final Metrics metrics;
-  
+
   public BlockDirectoryCache(BlockCache blockCache, String path, Metrics metrics) {
     this(blockCache, path, metrics, false);
   }
-  
-  public BlockDirectoryCache(BlockCache blockCache, String path, Metrics metrics, boolean releaseBlocks) {
+
+  public BlockDirectoryCache(
+      BlockCache blockCache, String path, Metrics metrics, boolean releaseBlocks) {
     this.blockCache = blockCache;
     this.path = path;
     this.metrics = metrics;
-        
+
     names = Caffeine.newBuilder().maximumSize(50000).build();
-    
+
     if (releaseBlocks) {
-      keysToRelease = Collections.newSetFromMap(new ConcurrentHashMap<BlockCacheKey,Boolean>(1024, 0.75f, 512));
-      blockCache.setOnRelease(new OnRelease() {
-        
-        @Override
-        public void release(BlockCacheKey key) {
-          keysToRelease.remove(key);
-        }
-      });
+      keysToRelease =
+          Collections.newSetFromMap(
+              new ConcurrentHashMap<BlockCacheKey, Boolean>(1024, 0.75f, 512));
+      blockCache.setOnRelease(
+          new OnRelease() {
+
+            @Override
+            public void release(BlockCacheKey key) {
+              keysToRelease.remove(key);
+            }
+          });
     }
   }
 
   /**
    * Expert: mostly for tests
-   * 
+   *
    * @lucene.experimental
    */
   public BlockCache getBlockCache() {
     return blockCache;
   }
-  
+
   @Override
   public void delete(String name) {
     names.invalidate(name);
   }
-  
+
   @Override
-  public void update(String name, long blockId, int blockOffset, byte[] buffer,
-      int offset, int length) {
+  public void update(
+      String name, long blockId, int blockOffset, byte[] buffer, int offset, int length) {
     Integer file = names.getIfPresent(name);
     if (file == null) {
       file = counter.incrementAndGet();
@@ -86,14 +85,15 @@ public class BlockDirectoryCache implements Cache {
     blockCacheKey.setPath(path);
     blockCacheKey.setBlock(blockId);
     blockCacheKey.setFile(file);
-    if (blockCache.store(blockCacheKey, blockOffset, buffer, offset, length) && keysToRelease != null) {
+    if (blockCache.store(blockCacheKey, blockOffset, buffer, offset, length)
+        && keysToRelease != null) {
       keysToRelease.add(blockCacheKey);
     }
   }
-  
+
   @Override
-  public boolean fetch(String name, long blockId, int blockOffset, byte[] b,
-      int off, int lengthToReadInBlock) {
+  public boolean fetch(
+      String name, long blockId, int blockOffset, byte[] b, int off, int lengthToReadInBlock) {
     Integer file = names.getIfPresent(name);
     if (file == null) {
       return false;
@@ -102,16 +102,15 @@ public class BlockDirectoryCache implements Cache {
     blockCacheKey.setPath(path);
     blockCacheKey.setBlock(blockId);
     blockCacheKey.setFile(file);
-    boolean fetch = blockCache.fetch(blockCacheKey, b, blockOffset, off,
-        lengthToReadInBlock);
+    boolean fetch = blockCache.fetch(blockCacheKey, b, blockOffset, off, lengthToReadInBlock);
     return fetch;
   }
-  
+
   @Override
   public long size() {
     return blockCache.getSize();
   }
-  
+
   @Override
   public void renameCacheFile(String source, String dest) {
     Integer file = names.getIfPresent(source);

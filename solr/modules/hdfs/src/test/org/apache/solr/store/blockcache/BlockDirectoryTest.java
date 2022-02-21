@@ -16,13 +16,11 @@
  */
 package org.apache.solr.store.blockcache;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
-
-import com.github.benmanes.caffeine.cache.Caffeine;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -38,13 +36,12 @@ import org.junit.Test;
 public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
   private static class MapperCache implements Cache {
-    public Map<String, byte[]> map = Caffeine.newBuilder()
-        .maximumSize(8)
-        .<String, byte[]>build()
-        .asMap();
+    public Map<String, byte[]> map =
+        Caffeine.newBuilder().maximumSize(8).<String, byte[]>build().asMap();
 
     @Override
-    public void update(String name, long blockId, int blockOffset, byte[] buffer, int offset, int length) {
+    public void update(
+        String name, long blockId, int blockOffset, byte[] buffer, int offset, int length) {
       byte[] cached = map.get(name + blockId);
       if (cached != null) {
         int newlen = Math.max(cached.length, blockOffset + length);
@@ -65,7 +62,8 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public boolean fetch(String name, long blockId, int blockOffset, byte[] b, int off, int lengthToReadInBlock) {
+    public boolean fetch(
+        String name, long blockId, int blockOffset, byte[] b, int off, int lengthToReadInBlock) {
       // return false;
       byte[] data = map.get(name + blockId);
       if (data == null) {
@@ -76,9 +74,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void delete(String name) {
-
-    }
+    public void delete(String name) {}
 
     @Override
     public long size() {
@@ -86,8 +82,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void renameCacheFile(String source, String dest) {
-    }
+    public void renameCacheFile(String source, String dest) {}
 
     @Override
     public void releaseResources() {}
@@ -117,7 +112,8 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
       int slabSize = blockSize * 16384;
       long totalMemory = 1 * slabSize;
       BlockCache blockCache = new BlockCache(metrics, true, totalMemory, slabSize, blockSize);
-      BlockDirectoryCache cache = new BlockDirectoryCache(blockCache, "/collection1", metrics, true);
+      BlockDirectoryCache cache =
+          new BlockDirectoryCache(blockCache, "/collection1", metrics, true);
       directory = new BlockDirectory("test", dir, cache, null, true, false);
     } else {
       directory = new BlockDirectory("test", dir, mapperCache, null, true, true);
@@ -178,15 +174,12 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
       fail("Test failed on pass [" + i + "]");
     }
     long t2 = System.nanoTime();
-    System.out.println("Total time is " + ((t2 - t1)/1000000) + "ms");
+    System.out.println("Total time is " + ((t2 - t1) / 1000000) + "ms");
   }
 
   @Test
   public void testRandomAccessWritesLargeCache() throws IOException {
-    mapperCache.map = Caffeine.newBuilder()
-        .maximumSize(10_000)
-        .<String, byte[]>build()
-        .asMap();
+    mapperCache.map = Caffeine.newBuilder().maximumSize(10_000).<String, byte[]>build().asMap();
     testRandomAccessWrites();
   }
 
@@ -236,7 +229,10 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     IndexOutput fsOutput = fsDir.createOutput(name, IOContext.DEFAULT);
     IndexOutput hdfsOutput = hdfs.createOutput(name, IOContext.DEFAULT);
     for (int i = 0; i < writes; i++) {
-      byte[] buf = new byte[random.nextInt(Math.min(MAX_BUFFER_SIZE - MIN_BUFFER_SIZE, fileLength)) + MIN_BUFFER_SIZE];
+      byte[] buf =
+          new byte
+              [random.nextInt(Math.min(MAX_BUFFER_SIZE - MIN_BUFFER_SIZE, fileLength))
+                  + MIN_BUFFER_SIZE];
       random.nextBytes(buf);
       int offset = random.nextInt(buf.length);
       int length = random.nextInt(buf.length - offset);
@@ -260,13 +256,10 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     }
   }
 
-  /**
-   * Verify the configuration options for the block cache are handled
-   * appropriately.
-   */
+  /** Verify the configuration options for the block cache are handled appropriately. */
   @Test
   public void ensureCacheConfigurable() throws Exception {
-    IOContext mergeContext = new IOContext(new MergeInfo(1,1,false,1));
+    IOContext mergeContext = new IOContext(new MergeInfo(1, 1, false, 1));
 
     BlockDirectory d = directory;
     assertTrue(d.useReadCache("", IOContext.DEFAULT));

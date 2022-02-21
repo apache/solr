@@ -16,15 +16,13 @@
  */
 package org.apache.solr.store.blockcache;
 
-/**
- * @lucene.experimental
- */
+/** @lucene.experimental */
 public class BlockCacheKey implements Cloneable {
-  
+
   private long block;
   private int file;
   private String path;
-  
+
   public String getPath() {
     return path;
   }
@@ -36,19 +34,19 @@ public class BlockCacheKey implements Cloneable {
   public long getBlock() {
     return block;
   }
-  
+
   public int getFile() {
     return file;
   }
-  
+
   public void setBlock(long block) {
     this.block = block;
   }
-  
+
   public void setFile(int file) {
     this.file = file;
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;

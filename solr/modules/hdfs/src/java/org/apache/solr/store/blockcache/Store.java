@@ -16,13 +16,10 @@
  */
 package org.apache.solr.store.blockcache;
 
-/**
- * @lucene.experimental
- */
+/** @lucene.experimental */
 public interface Store {
 
   byte[] takeBuffer(int bufferSize);
 
   void putBuffer(byte[] buffer);
-
 }

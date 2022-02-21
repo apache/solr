@@ -18,6 +18,12 @@ package org.apache.solr.handler;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -52,55 +58,54 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
-@SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test
-@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
-@ThreadLeakLingering(linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
+@SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
+@LuceneTestCase.SuppressCodecs({
+  "SimpleText"
+}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+@ThreadLeakLingering(
+    linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
-  public static final String HDFS_REPO_SOLR_XML = "<solr>\n" +
-      "\n" +
-      "  <str name=\"shareSchema\">${shareSchema:false}</str>\n" +
-      "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n" +
-      "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n" +
-      "\n" +
-      "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"HttpShardHandlerFactory\">\n" +
-      "    <str name=\"urlScheme\">${urlScheme:}</str>\n" +
-      "    <int name=\"socketTimeout\">${socketTimeout:90000}</int>\n" +
-      "    <int name=\"connTimeout\">${connTimeout:15000}</int>\n" +
-      "  </shardHandlerFactory>\n" +
-      "\n" +
-      "  <solrcloud>\n" +
-      "    <str name=\"host\">127.0.0.1</str>\n" +
-      "    <int name=\"hostPort\">${hostPort:8983}</int>\n" +
-      "    <str name=\"hostContext\">${hostContext:solr}</str>\n" +
-      "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n" +
-      "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n" +
-      "    <int name=\"leaderVoteWait\">10000</int>\n" +
-      "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n" +
-      "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n" +
-      "  </solrcloud>\n" +
-      "  \n" +
-      "  <backup>\n" +
-      "    <repository  name=\"hdfs\" class=\"org.apache.solr.core.backup.repository.HdfsBackupRepository\"> \n" +
-      "      <str name=\"location\">${solr.hdfs.default.backup.path}</str>\n" +
-      "      <str name=\"solr.hdfs.home\">${solr.hdfs.home:}</str>\n" +
-      "      <str name=\"solr.hdfs.confdir\">${solr.hdfs.confdir:}</str>\n" +
-      "      <str name=\"solr.hdfs.permissions.umask-mode\">${solr.hdfs.permissions.umask-mode:000}</str>\n" +
-      "    </repository>\n" +
-      "  </backup>\n" +
-      "  \n" +
-      "</solr>\n";
+  public static final String HDFS_REPO_SOLR_XML =
+      "<solr>\n"
+          + "\n"
+          + "  <str name=\"shareSchema\">${shareSchema:false}</str>\n"
+          + "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n"
+          + "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n"
+          + "\n"
+          + "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"HttpShardHandlerFactory\">\n"
+          + "    <str name=\"urlScheme\">${urlScheme:}</str>\n"
+          + "    <int name=\"socketTimeout\">${socketTimeout:90000}</int>\n"
+          + "    <int name=\"connTimeout\">${connTimeout:15000}</int>\n"
+          + "  </shardHandlerFactory>\n"
+          + "\n"
+          + "  <solrcloud>\n"
+          + "    <str name=\"host\">127.0.0.1</str>\n"
+          + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
+          + "    <str name=\"hostContext\">${hostContext:solr}</str>\n"
+          + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
+          + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
+          + "    <int name=\"leaderVoteWait\">10000</int>\n"
+          + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
+          + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
+          + "  </solrcloud>\n"
+          + "  \n"
+          + "  <backup>\n"
+          + "    <repository  name=\"hdfs\" class=\"org.apache.solr.core.backup.repository.HdfsBackupRepository\"> \n"
+          + "      <str name=\"location\">${solr.hdfs.default.backup.path}</str>\n"
+          + "      <str name=\"solr.hdfs.home\">${solr.hdfs.home:}</str>\n"
+          + "      <str name=\"solr.hdfs.confdir\">${solr.hdfs.confdir:}</str>\n"
+          + "      <str name=\"solr.hdfs.permissions.umask-mode\">${solr.hdfs.permissions.umask-mode:000}</str>\n"
+          + "    </repository>\n"
+          + "  </backup>\n"
+          + "  \n"
+          + "</solr>\n";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static MiniDFSCluster dfsCluster;
@@ -139,11 +144,12 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     System.setProperty("solr.hdfs.home", hdfsUri + "/solr");
     useFactory("solr.StandardDirectoryFactory");
 
-    configureCluster(1)// nodes
-    .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-    .withSolrXml(HDFS_REPO_SOLR_XML)
-    .configure();
-    
+    configureCluster(1) // nodes
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withSolrXml(HDFS_REPO_SOLR_XML)
+        .configure();
+
     docsSeed = random().nextLong();
   }
 
@@ -176,7 +182,8 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
 
     int nDocs = BackupRestoreUtils.indexDocs(solrClient, collectionName, docsSeed);
 
-    DocCollection collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    DocCollection collectionState =
+        solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
     assertEquals(1, collectionState.getActiveSlices().size());
     Slice shard = collectionState.getActiveSlices().iterator().next();
     assertEquals(1, shard.getReplicas().size());
@@ -194,39 +201,42 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
       // Create a backup.
       if (testViaReplicationHandler) {
         log.info("Running Backup via replication handler");
-        BackupRestoreUtils.runReplicationHandlerCommand(baseUrl, coreName, ReplicationHandler.CMD_BACKUP, "hdfs", backupName);
-        final BackupStatusChecker backupStatus
-          = new BackupStatusChecker(leaderClient, "/" + coreName + "/replication");
+        BackupRestoreUtils.runReplicationHandlerCommand(
+            baseUrl, coreName, ReplicationHandler.CMD_BACKUP, "hdfs", backupName);
+        final BackupStatusChecker backupStatus =
+            new BackupStatusChecker(leaderClient, "/" + coreName + "/replication");
         backupStatus.waitForBackupSuccess(backupName, 30);
       } else {
         log.info("Running Backup via core admin api");
-        Map<String,String> params = new HashMap<>();
+        Map<String, String> params = new HashMap<>();
         params.put("name", backupName);
         params.put(CoreAdminParams.BACKUP_REPOSITORY, "hdfs");
         params.put(CoreAdminParams.SHARD_BACKUP_ID, shardBackupId);
-        BackupRestoreUtils.runCoreAdminCommand(replicaBaseUrl, coreName, CoreAdminAction.BACKUPCORE.toString(), params);
+        BackupRestoreUtils.runCoreAdminCommand(
+            replicaBaseUrl, coreName, CoreAdminAction.BACKUPCORE.toString(), params);
       }
 
       int numRestoreTests = nDocs > 0 ? TestUtil.nextInt(random(), 1, 5) : 1;
-      for (int attempts=0; attempts<numRestoreTests; attempts++) {
-        //Modify existing index before we call restore.
+      for (int attempts = 0; attempts < numRestoreTests; attempts++) {
+        // Modify existing index before we call restore.
         if (nDocs > 0) {
-          //Delete a few docs
+          // Delete a few docs
           int numDeletes = TestUtil.nextInt(random(), 1, nDocs);
-          for(int i=0; i<numDeletes; i++) {
+          for (int i = 0; i < numDeletes; i++) {
             leaderClient.deleteByQuery(collectionName, "id:" + i);
           }
           leaderClient.commit(collectionName);
 
-          //Add a few more
+          // Add a few more
           int moreAdds = TestUtil.nextInt(random(), 1, 100);
-          for (int i=0; i<moreAdds; i++) {
+          for (int i = 0; i < moreAdds; i++) {
             SolrInputDocument doc = new SolrInputDocument();
             doc.addField("id", i + nDocs);
             doc.addField("name", "name = " + (i + nDocs));
             leaderClient.add(collectionName, doc);
           }
-          //Purposely not calling commit once in a while. There can be some docs which are not committed
+          // Purposely not calling commit once in a while. There can be some docs which are not
+          // committed
           if (usually()) {
             leaderClient.commit(collectionName);
           }
@@ -235,26 +245,30 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
         if (testViaReplicationHandler) {
           log.info("Running Restore via replication handler");
           // Snapshooter prefixes "snapshot." to the backup name.
-          BackupRestoreUtils.runReplicationHandlerCommand(baseUrl, coreName, ReplicationHandler.CMD_RESTORE, "hdfs", backupName);
+          BackupRestoreUtils.runReplicationHandlerCommand(
+              baseUrl, coreName, ReplicationHandler.CMD_RESTORE, "hdfs", backupName);
           while (!TestRestoreCoreUtil.fetchRestoreStatus(baseUrl, coreName)) {
             Thread.sleep(1000);
           }
         } else {
           log.info("Running Restore via core admin api");
-          Map<String,String> params = new HashMap<>();
+          Map<String, String> params = new HashMap<>();
           params.put("name", "snapshot." + backupName);
           params.put(CoreAdminParams.BACKUP_REPOSITORY, "hdfs");
           params.put(CoreAdminParams.SHARD_BACKUP_ID, shardBackupId);
-          BackupRestoreUtils.runCoreAdminCommand(replicaBaseUrl, coreName, CoreAdminAction.RESTORECORE.toString(), params);
+          BackupRestoreUtils.runCoreAdminCommand(
+              replicaBaseUrl, coreName, CoreAdminAction.RESTORECORE.toString(), params);
         }
-        //See if restore was successful by checking if all the docs are present again
+        // See if restore was successful by checking if all the docs are present again
         BackupRestoreUtils.verifyDocs(nDocs, leaderClient, coreName);
 
         // Verify the permissions on the backup folder.
-        final String backupPath = (testViaReplicationHandler) ?
-                "/backup/snapshot."+ backupName :
-                "/backup/shard_backup_metadata";
-        final FsAction expectedPerms = (testViaReplicationHandler) ? FsAction.ALL : FsAction.READ_EXECUTE;
+        final String backupPath =
+            (testViaReplicationHandler)
+                ? "/backup/snapshot." + backupName
+                : "/backup/shard_backup_metadata";
+        final FsAction expectedPerms =
+            (testViaReplicationHandler) ? FsAction.ALL : FsAction.READ_EXECUTE;
 
         FileStatus status = fs.getFileStatus(new org.apache.hadoop.fs.Path(backupPath));
         FsPermission perm = status.getPermission();
