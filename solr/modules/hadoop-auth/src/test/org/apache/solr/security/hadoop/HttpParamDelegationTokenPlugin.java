@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -37,13 +36,11 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.authentication.server.AuthenticationToken;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationHandler;
-
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
@@ -61,25 +58,30 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.eclipse.jetty.client.api.Request;
 
 /**
- * AuthenticationHandler that supports delegation tokens and simple
- * authentication via the "user" http parameter
+ * AuthenticationHandler that supports delegation tokens and simple authentication via the "user"
+ * http parameter
  */
 public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
   public static final String USER_PARAM = "user"; // http parameter for user authentication
-  public static final String REMOTE_HOST_PARAM = "remoteHost"; // http parameter for indicating remote host
-  public static final String REMOTE_ADDRESS_PARAM = "remoteAddress"; // http parameter for indicating remote address
-  public static final String INTERNAL_REQUEST_HEADER = "internalRequest"; // http header for indicating internal request
+  public static final String REMOTE_HOST_PARAM =
+      "remoteHost"; // http parameter for indicating remote host
+  public static final String REMOTE_ADDRESS_PARAM =
+      "remoteAddress"; // http parameter for indicating remote address
+  public static final String INTERNAL_REQUEST_HEADER =
+      "internalRequest"; // http header for indicating internal request
 
   boolean isSolrThread() {
     return ExecutorUtil.isSolrServerThread();
   }
 
-  private final HttpRequestInterceptor interceptor = new HttpRequestInterceptor() {
-    @Override
-    public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
-      getPrincipal().ifPresent(usr -> httpRequest.setHeader(INTERNAL_REQUEST_HEADER, usr));
-    }
-  };
+  private final HttpRequestInterceptor interceptor =
+      new HttpRequestInterceptor() {
+        @Override
+        public void process(HttpRequest httpRequest, HttpContext httpContext)
+            throws HttpException, IOException {
+          getPrincipal().ifPresent(usr -> httpRequest.setHeader(INTERNAL_REQUEST_HEADER, usr));
+        }
+      };
 
   public HttpParamDelegationTokenPlugin(CoreContainer coreContainer) {
     super(coreContainer);
@@ -90,36 +92,38 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
     try {
       final FilterConfig initConf = getInitFilterConfig(pluginConfig, true);
 
-      FilterConfig conf = new FilterConfig() {
-        @Override
-        public ServletContext getServletContext() {
-          return initConf.getServletContext();
-        }
+      FilterConfig conf =
+          new FilterConfig() {
+            @Override
+            public ServletContext getServletContext() {
+              return initConf.getServletContext();
+            }
 
-        @Override
-        public Enumeration<String> getInitParameterNames() {
-          return initConf.getInitParameterNames();
-        }
+            @Override
+            public Enumeration<String> getInitParameterNames() {
+              return initConf.getInitParameterNames();
+            }
 
-        @Override
-        public String getInitParameter(String param) {
-          if (AuthenticationFilter.AUTH_TYPE.equals(param)) {
-            return HttpParamDelegationTokenAuthenticationHandler.class.getName();
-          }
-          return initConf.getInitParameter(param);
-        }
+            @Override
+            public String getInitParameter(String param) {
+              if (AuthenticationFilter.AUTH_TYPE.equals(param)) {
+                return HttpParamDelegationTokenAuthenticationHandler.class.getName();
+              }
+              return initConf.getInitParameter(param);
+            }
 
-        @Override
-        public String getFilterName() {
-         return "HttpParamFilter";
-        }
-      };
+            @Override
+            public String getFilterName() {
+              return "HttpParamFilter";
+            }
+          };
       Filter kerberosFilter = new HttpParamToRequestFilter();
       kerberosFilter.init(conf);
       setKerberosFilter(kerberosFilter);
     } catch (ServletException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error initializing kerberos authentication plugin: "+e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Error initializing kerberos authentication plugin: " + e);
     }
   }
 
@@ -129,32 +133,33 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
     if (reqInfo != null) {
       Principal principal = reqInfo.getUserPrincipal();
       if (principal == null) {
-        //this had a request but not authenticated
-        //so we don't not need to set a principal
+        // this had a request but not authenticated
+        // so we don't not need to set a principal
         return Optional.empty();
       } else {
         usr = principal.getName();
       }
     } else {
       if (!isSolrThread()) {
-        //if this is not running inside a Solr threadpool (as in testcases)
+        // if this is not running inside a Solr threadpool (as in testcases)
         // then no need to add any header
         return Optional.empty();
       }
-      //this request seems to be originated from Solr itself
-      usr = "$"; //special name to denote the user is the node itself
+      // this request seems to be originated from Solr itself
+      usr = "$"; // special name to denote the user is the node itself
     }
     return Optional.of(usr);
   }
 
   @Override
   public void setup(Http2SolrClient client) {
-    final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
-      @Override
-      public void onQueued(Request request) {
-        getPrincipal().ifPresent(usr -> request.header(INTERNAL_REQUEST_HEADER, usr));
-      }
-    };
+    final HttpListenerFactory.RequestResponseListener listener =
+        new HttpListenerFactory.RequestResponseListener() {
+          @Override
+          public void onQueued(Request request) {
+            getPrincipal().ifPresent(usr -> request.header(INTERNAL_REQUEST_HEADER, usr));
+          }
+        };
     client.addListenerFactory(() -> listener);
   }
 
@@ -172,7 +177,8 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
   }
 
   private static String getHttpParam(HttpServletRequest request, String param) {
-    List<NameValuePair> pairs = URLEncodedUtils.parse(request.getQueryString(), Charset.forName("UTF-8"));
+    List<NameValuePair> pairs =
+        URLEncodedUtils.parse(request.getQueryString(), Charset.forName("UTF-8"));
     for (NameValuePair nvp : pairs) {
       if (param.equals(nvp.getName())) {
         return nvp.getValue();
@@ -181,8 +187,8 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
     return null;
   }
 
-  public static class HttpParamDelegationTokenAuthenticationHandler extends
-      DelegationTokenAuthenticationHandler {
+  public static class HttpParamDelegationTokenAuthenticationHandler
+      extends DelegationTokenAuthenticationHandler {
 
     public HttpParamDelegationTokenAuthenticationHandler() {
       super(new HttpParamAuthenticationHandler());
@@ -205,28 +211,26 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
       }
 
       @Override
-      public void init(Properties config) throws ServletException {
-      }
+      public void init(Properties config) throws ServletException {}
 
       @Override
-      public void destroy() {
-      }
+      public void destroy() {}
 
       @Override
-      public boolean managementOperation(AuthenticationToken token,
-                                         HttpServletRequest request, HttpServletResponse response)
+      public boolean managementOperation(
+          AuthenticationToken token, HttpServletRequest request, HttpServletResponse response)
           throws IOException, AuthenticationException {
         return false;
       }
 
       @Override
-      public AuthenticationToken authenticate(HttpServletRequest request,
-                                              HttpServletResponse response)
+      public AuthenticationToken authenticate(
+          HttpServletRequest request, HttpServletResponse response)
           throws IOException, AuthenticationException {
         AuthenticationToken token = null;
         String userName = getHttpParam(request, USER_PARAM);
         if (userName == null) {
-          //check if this is an internal request
+          // check if this is an internal request
           userName = request.getHeader(INTERNAL_REQUEST_HEADER);
         }
         if (userName != null) {
@@ -240,52 +244,54 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
     }
   }
 
-  /**
-   * Filter that converts http params to HttpServletRequest params
-   */
+  /** Filter that converts http params to HttpServletRequest params */
   private static class HttpParamToRequestFilter extends DelegationTokenKerberosFilter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
         throws IOException, ServletException {
       final HttpServletRequest httpRequest = (HttpServletRequest) request;
-      final HttpServletRequestWrapper requestWrapper = new HttpServletRequestWrapper(httpRequest) {
-        @Override
-        public String getRemoteHost() {
-          String param = getHttpParam(httpRequest, REMOTE_HOST_PARAM);
-          return param != null ? param : httpRequest.getRemoteHost();
-        }
+      final HttpServletRequestWrapper requestWrapper =
+          new HttpServletRequestWrapper(httpRequest) {
+            @Override
+            public String getRemoteHost() {
+              String param = getHttpParam(httpRequest, REMOTE_HOST_PARAM);
+              return param != null ? param : httpRequest.getRemoteHost();
+            }
 
-        @Override
-        public String getRemoteAddr() {
-          String param = getHttpParam(httpRequest, REMOTE_ADDRESS_PARAM);
-          return param != null ? param : httpRequest.getRemoteAddr();
-        }
-      };
+            @Override
+            public String getRemoteAddr() {
+              String param = getHttpParam(httpRequest, REMOTE_ADDRESS_PARAM);
+              return param != null ? param : httpRequest.getRemoteAddr();
+            }
+          };
 
       super.doFilter(requestWrapper, response, chain);
     }
 
     @Override
-    protected void doFilter(FilterChain filterChain, HttpServletRequest request,
-                            HttpServletResponse response) throws IOException, ServletException {
-      // remove the filter-specific authentication information, so it doesn't get accidentally forwarded.
+    protected void doFilter(
+        FilterChain filterChain, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException {
+      // remove the filter-specific authentication information, so it doesn't get accidentally
+      // forwarded.
       List<NameValuePair> newPairs = new LinkedList<NameValuePair>();
-      List<NameValuePair> pairs = URLEncodedUtils.parse(request.getQueryString(), Charset.forName("UTF-8"));
+      List<NameValuePair> pairs =
+          URLEncodedUtils.parse(request.getQueryString(), Charset.forName("UTF-8"));
       for (NameValuePair nvp : pairs) {
         if (!USER_PARAM.equals(nvp.getName())) {
           newPairs.add(nvp);
-        }
-        else {
+        } else {
           request.setAttribute(USER_PARAM, nvp.getValue());
         }
       }
       final String queryStringNoUser = URLEncodedUtils.format(newPairs, StandardCharsets.UTF_8);
-      HttpServletRequest requestWrapper = new HttpServletRequestWrapper(request) {
-        @Override
-        public String getQueryString() {
-          return queryStringNoUser;
-        }
-      };
+      HttpServletRequest requestWrapper =
+          new HttpServletRequestWrapper(request) {
+            @Override
+            public String getQueryString() {
+              return queryStringNoUser;
+            }
+          };
       super.doFilter(filterChain, requestWrapper, response);
     }
   }

@@ -16,6 +16,13 @@
  */
 package org.apache.solr.security.hadoop;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URISyntaxException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.client.utils.URIBuilder;
@@ -31,19 +38,12 @@ import org.eclipse.jetty.client.api.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URISyntaxException;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
-
 /**
- * This class extends {@linkplain HadoopAuthPlugin} by enabling configuration of
- * authentication mechanism for Solr internal communication.
- **/
-public class ConfigurableInternodeAuthHadoopPlugin extends HadoopAuthPlugin implements HttpClientBuilderPlugin {
+ * This class extends {@linkplain HadoopAuthPlugin} by enabling configuration of authentication
+ * mechanism for Solr internal communication.
+ */
+public class ConfigurableInternodeAuthHadoopPlugin extends HadoopAuthPlugin
+    implements HttpClientBuilderPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -64,9 +64,15 @@ public class ConfigurableInternodeAuthHadoopPlugin extends HadoopAuthPlugin impl
   public void init(Map<String, Object> pluginConfig) {
     super.init(pluginConfig);
 
-    String httpClientBuilderFactory = (String) Objects.requireNonNull(pluginConfig.get(HTTPCLIENT_BUILDER_FACTORY),
-        "Please specify clientBuilderFactory to be used for Solr internal communication.");
-    factory = this.coreContainer.getResourceLoader().newInstance(httpClientBuilderFactory, HttpClientBuilderFactory.class);
+    String httpClientBuilderFactory =
+        (String)
+            Objects.requireNonNull(
+                pluginConfig.get(HTTPCLIENT_BUILDER_FACTORY),
+                "Please specify clientBuilderFactory to be used for Solr internal communication.");
+    factory =
+        this.coreContainer
+            .getResourceLoader()
+            .newInstance(httpClientBuilderFactory, HttpClientBuilderFactory.class);
   }
 
   @Override
@@ -90,22 +96,24 @@ public class ConfigurableInternodeAuthHadoopPlugin extends HadoopAuthPlugin impl
 
   @Override
   public boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
-    if (! (httpRequest instanceof HttpRequestWrapper)) {
+    if (!(httpRequest instanceof HttpRequestWrapper)) {
       log.warn("Unable to add doAs to forwarded/distributed request - unknown request type");
       return false;
     }
     AtomicBoolean success = new AtomicBoolean(false);
-    return intercept((key, value) -> {
-      HttpRequestWrapper request = (HttpRequestWrapper) httpRequest;
-      URIBuilder uriBuilder = new URIBuilder(request.getURI());
-      uriBuilder.setParameter(key, value);
-      try {
-        request.setURI(uriBuilder.build());
-        success.set(true);
-      } catch (URISyntaxException e) {
-        log.warn("Unable to add doAs to forwarded/distributed request - bad URI");
-      }
-    }) && success.get();
+    return intercept(
+            (key, value) -> {
+              HttpRequestWrapper request = (HttpRequestWrapper) httpRequest;
+              URIBuilder uriBuilder = new URIBuilder(request.getURI());
+              uriBuilder.setParameter(key, value);
+              try {
+                request.setURI(uriBuilder.build());
+                success.set(true);
+              } catch (URISyntaxException e) {
+                log.warn("Unable to add doAs to forwarded/distributed request - bad URI");
+              }
+            })
+        && success.get();
   }
 
   @Override
@@ -115,8 +123,9 @@ public class ConfigurableInternodeAuthHadoopPlugin extends HadoopAuthPlugin impl
 
   private boolean intercept(BiConsumer<String, String> setParam) {
     SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-    if (info != null && (info.getAction() == SolrDispatchFilter.Action.FORWARD ||
-        info.getAction() == SolrDispatchFilter.Action.REMOTEQUERY)) {
+    if (info != null
+        && (info.getAction() == SolrDispatchFilter.Action.FORWARD
+            || info.getAction() == SolrDispatchFilter.Action.REMOTEQUERY)) {
       if (info.getUserPrincipal() != null) {
         String name = info.getUserPrincipal().getName();
         log.debug("Setting doAs={} to forwarded/remote request", name);

@@ -20,13 +20,11 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * A utility class which provides common functionality required to test kerberos integration.
- */
+/** A utility class which provides common functionality required to test kerberos integration. */
 public class KerberosUtils {
   /**
-   * This method sets up Hadoop mini-kdc along with relevant Kerberos configuration files
-   * (e.g. jaas.conf) as well as system properties.
+   * This method sets up Hadoop mini-kdc along with relevant Kerberos configuration files (e.g.
+   * jaas.conf) as well as system properties.
    *
    * @param baseDir The directory path which should be used by the Hadoop mini-kdc
    * @return An instance of {@link KerberosTestServices}
@@ -36,26 +34,36 @@ public class KerberosUtils {
     System.setProperty("solr.jaas.debug", "true");
     Path kdcDir = baseDir.resolve("minikdc");
     String solrClientPrincipal = "solr";
-    String solrAltClientPrincipal = "solr_alt"; // An alternate principal that can be handled differently by authz tests
+    String solrAltClientPrincipal =
+        "solr_alt"; // An alternate principal that can be handled differently by authz tests
     File keytabFile = kdcDir.resolve("keytabs").toFile();
-    KerberosTestServices tmp = KerberosTestServices.builder()
+    KerberosTestServices tmp =
+        KerberosTestServices.builder()
             .withKdc(kdcDir.toFile())
             .withJaasConfiguration(solrClientPrincipal, keytabFile, "SolrClient")
             .build();
     String solrServerPrincipal = "HTTP/127.0.0.1";
     tmp.start();
-    tmp.getKdc().createPrincipal(keytabFile, solrServerPrincipal, solrAltClientPrincipal, solrClientPrincipal);
+    tmp.getKdc()
+        .createPrincipal(
+            keytabFile, solrServerPrincipal, solrAltClientPrincipal, solrClientPrincipal);
 
     String appName = "SolrClient";
-    String jaas = appName + " {\n"
+    String jaas =
+        appName
+            + " {\n"
             + " com.sun.security.auth.module.Krb5LoginModule required\n"
             + " useKeyTab=true\n"
-            + " keyTab=\"" + keytabFile.getAbsolutePath() + "\"\n"
+            + " keyTab=\""
+            + keytabFile.getAbsolutePath()
+            + "\"\n"
             + " storeKey=true\n"
             + " useTicketCache=false\n"
             + " doNotPrompt=true\n"
             + " debug=true\n"
-            + " principal=\"" + solrClientPrincipal + "\";\n"
+            + " principal=\""
+            + solrClientPrincipal
+            + "\";\n"
             + "};";
 
     Path jaasFile = kdcDir.resolve("jaas-client.conf");
@@ -66,16 +74,18 @@ public class KerberosUtils {
     System.setProperty("solr.kerberos.principal", solrServerPrincipal);
     System.setProperty("solr.kerberos.keytab", keytabFile.getAbsolutePath());
     // Extracts 127.0.0.1 from HTTP/127.0.0.1@EXAMPLE.COM
-    System.setProperty("solr.kerberos.name.rules", "RULE:[1:$1@$0](.*EXAMPLE.COM)s/@.*//"
+    System.setProperty(
+        "solr.kerberos.name.rules",
+        "RULE:[1:$1@$0](.*EXAMPLE.COM)s/@.*//"
             + "\nRULE:[2:$2@$0](.*EXAMPLE.COM)s/@.*//"
-            + "\nDEFAULT"
-    );
+            + "\nDEFAULT");
 
     return tmp;
   }
 
   /**
-   * This method stops the Hadoop mini-kdc instance as well as cleanup relevant Java system properties.
+   * This method stops the Hadoop mini-kdc instance as well as cleanup relevant Java system
+   * properties.
    *
    * @param kerberosTestServices An instance of Hadoop mini-kdc
    */
