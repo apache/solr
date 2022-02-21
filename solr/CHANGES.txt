@@ -656,6 +656,8 @@ Bug Fixes
 
 * SOLR-16019: UTF-8 parsing errors for parameters should cause a HTTP 400 status code, not 500 (janhoy, Matthias Pigulla)
 
+* SOLR-15983: Fix ClassCastException in UpdateLog$LogReplayer.doReplay. (Christine Poerschke, David Smiley)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
