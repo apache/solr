@@ -188,21 +188,21 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
   /** Asserts the sorted arrays are equals, with a helpful error message when not.*/
   public void assertSortedArrayEquals(String message, Object[] expecteds, Object[] actuals) {
-    AssertionError error = null;
     try {
       assertArrayEquals(null, expecteds, actuals);
-    } catch (AssertionError e) {
-      error = e;
+    } catch (AssertionError error) {
+      TreeSet<Object> expectedRemaining = new TreeSet<>(Arrays.asList(expecteds));
+      TreeSet<Object> actualsRemaining = new TreeSet<>(Arrays.asList(actuals));
+
+      expectedRemaining.removeAll(actualsRemaining); // expected - actual
+      if (!expectedRemaining.isEmpty()) {
+        message += ": didn't find expected " + expectedRemaining.first() + " (of " + expectedRemaining.size() + ")";
+      } else {
+        Arrays.asList(expecteds).forEach(actualsRemaining::remove); // actual - expected
+        message += ": didn't expect " + actualsRemaining.first() + " (of " + actualsRemaining.size() + ")";
+      }
+      throw new AssertionError(message, error);
     }
-    if (error == null)
-      return;
-    TreeSet<Object> expectedRemaining = new TreeSet<>(Arrays.asList(expecteds));
-    expectedRemaining.removeAll(Arrays.asList(actuals));
-    if (!expectedRemaining.isEmpty())
-      fail(message+": didn't find expected "+expectedRemaining.first()+" (of "+expectedRemaining.size()+"); "+ error);
-    TreeSet<Object> actualsRemaining = new TreeSet<>(Arrays.asList(actuals));
-    actualsRemaining.removeAll(Arrays.asList(expecteds));
-    fail(message+": didn't expect "+actualsRemaining.first()+" (of "+actualsRemaining.size()+"); "+ error);
   }
 
   class TestTag implements Comparable<TestTag> {

@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.*;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -53,16 +54,26 @@ class SimpleClusterAbstractionsImpl {
 
   static class ClusterImpl implements Cluster {
     private final Set<Node> liveNodes;
+    private final Set<Node> liveNodesWithData;
     private final ClusterState clusterState;
 
     ClusterImpl(SolrCloudManager solrCloudManager) throws IOException {
-      liveNodes = NodeImpl.getNodes(solrCloudManager.getClusterStateProvider().getLiveNodes());
+      Set<String> liveNodes = solrCloudManager.getClusterStateProvider().getLiveNodes();
+      Collection<String> liveNodesWithData = Assign.filterNonDataNodes( solrCloudManager.getDistribStateManager(), liveNodes);
+      this.liveNodes = NodeImpl.getNodes(liveNodes);
+      this.liveNodesWithData = liveNodesWithData.size() == liveNodes.size() ?
+              this.liveNodes :
+              NodeImpl.getNodes(liveNodesWithData);
       clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
     }
 
     @Override
     public Set<Node> getLiveNodes() {
       return liveNodes;
+    }
+
+    public Set<Node> getLiveDataNodes() {
+      return liveNodesWithData;
     }
 
     @Override

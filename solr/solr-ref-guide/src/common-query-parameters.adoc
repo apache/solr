@@ -186,6 +186,8 @@ The fields must be either `stored="true"` or `docValues="true"``.`
 The field list can be specified as a space-separated or comma-separated list of field names.
 The string "score" can be used to indicate that the score of each document for the particular query should be returned as a field.
 The wildcard character `*` selects all the fields in the document which are either `stored="true"` or `docValues="true"` and `useDocValuesAsStored="true"` (which is the default when docValues are enabled).
+Combine the wildcard character with field name to make a glob pattern for matching multiple field names.
+
 You can also add pseudo-fields, functions and transformers to the field list request.
 
 This table shows some basic examples of how to use `fl`:
@@ -196,6 +198,8 @@ This table shows some basic examples of how to use `fl`:
 |id name price |Return only the id, name, and price fields.
 |id,name,price |Return only the id, name, and price fields.
 |id name, price |Return only the id, name, and price fields.
+|id na* price |Return the id, name, name_exact, and price fields.
+|id na*e price |Return the id, name, and price fields.
 |id score |Return the id field and the score.
 |* |Return all the `stored` fields in each document, as well as any `docValues` fields that have `useDocValuesAsStored="true"`. This is the default value of the fl parameter.
 |* score |Return all the fields in each document, along with each field's score.

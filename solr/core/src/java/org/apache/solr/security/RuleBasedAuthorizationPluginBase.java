@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.Utils;
@@ -46,6 +47,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, WildCardSupportMap> mapping = new HashMap<>();
+  private final Map<String, Set<Permission>> roleToPermissionsMap = new HashMap<>();
 
   // Doesn't implement Map because we violate the contracts of put() and get()
   private static class WildCardSupportMap {
@@ -108,6 +110,16 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
     //check wildcard (all=*) permissions.
     MatchStatus flag = checkCollPerm(mapping.get("*"), context);
     return flag.rsp;
+  }
+
+  /**
+   * Retrieves permission names for a given set of roles
+   */
+  public Set<String> getPermissionNamesForRoles(Set<String> roles) {
+    return roles.stream().filter(roleToPermissionsMap::containsKey)
+        .flatMap(r -> roleToPermissionsMap.get(r).stream())
+        .map(p -> p.name)
+        .collect(Collectors.toSet());
   }
 
   private MatchStatus checkCollPerm(WildCardSupportMap pathVsPerms, AuthorizationContext context) {
@@ -173,6 +185,7 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
       log.trace("'ALL' perm applies to all requests; perm applies.");
       return true; //'ALL' applies to everything!
     } else if (! (context.getHandler() instanceof PermissionNameProvider)) {
+      // TODO: Is this code path needed anymore, now that all handlers implement the interface? context.getHandler returns Object and is not documented
       if (log.isTraceEnabled()) {
         log.trace("Request handler [{}] is not a PermissionNameProvider, perm doesnt apply", context.getHandler());
       }
@@ -283,6 +296,12 @@ public abstract class RuleBasedAuthorizationPluginBase implements AuthorizationP
         List<Permission> perms = m.get(path);
         if (perms == null) m.put(path, perms = new ArrayList<>());
         perms.add(permission);
+      }
+    }
+    if (permission.role != null) {
+      for (String r : permission.role) {
+        Set<Permission> rm = roleToPermissionsMap.computeIfAbsent(r, k -> new HashSet<>());
+        rm.add(permission);
       }
     }
   }

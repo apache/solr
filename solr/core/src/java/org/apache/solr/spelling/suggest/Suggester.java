@@ -116,9 +116,6 @@ public class Suggester extends SolrSpellChecker {
           }
         }
       }
-      
-      @Override
-      public void postClose(SolrCore core) {}
     });
     
     String store = (String)config.get(STORE_DIR);

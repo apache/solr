@@ -684,13 +684,13 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     float_vals[5] = Float.MAX_VALUE;
     float_vals[6] = Float.MIN_VALUE;
     float_vals[7] = 1/3f; //0.33333334
-    float_vals[8] = 0.33333333f;
+    float_vals[8] = 0.3333333f; //max digits before float loses precision
     float_vals[9] = random().nextFloat();
 
     for (int i = 0; i < numDocs; i++) {
       int number = TestUtil.nextInt(random(), 0, 9);
       assertU(adoc("id", String.valueOf(i),
-          "floatdv", String.valueOf(number),
+          "floatdv", String.valueOf(float_vals[number]),
           "intdv", String.valueOf(number),
           "stringdv", String.valueOf(str_vals[number]),
           "longdv", String.valueOf(number),

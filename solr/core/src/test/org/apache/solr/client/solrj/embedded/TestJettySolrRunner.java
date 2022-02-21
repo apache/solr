@@ -28,7 +28,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 
 public class TestJettySolrRunner extends SolrTestCaseJ4 {
@@ -42,7 +41,7 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
     Path solrHome = createTempDir();
     Path coresDir = createTempDir("crazy_path_to_cores");
 
-    Path configsets = Paths.get(TEST_HOME()).resolve("configsets");
+    Path configsets = TEST_PATH().resolve("configsets");
 
     String solrxml
         = "<solr><str name=\"configSetBaseDir\">CONFIGSETS</str><str name=\"coreRootDirectory\">COREROOT</str></solr>"

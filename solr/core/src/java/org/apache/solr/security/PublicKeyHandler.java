@@ -77,4 +77,9 @@ public class PublicKeyHandler extends RequestHandlerBase {
   public Category getCategory() {
     return Category.ADMIN;
   }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.ALL;
+  }
 }

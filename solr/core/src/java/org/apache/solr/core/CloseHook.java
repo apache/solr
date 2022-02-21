@@ -24,7 +24,7 @@ package org.apache.solr.core;
  * The close hook can be useful for releasing objects related to the request handler (for instance, if you have a JDBC DataSource or something like that)
  */
 
-public abstract class CloseHook {
+public interface CloseHook {
 
   /**
    * Method called when the given SolrCore object is closing / shutting down but before the update handler and
@@ -36,7 +36,9 @@ public abstract class CloseHook {
    *
    * @param core SolrCore object that is shutting down / closing
    */
-  public abstract void preClose(SolrCore core);
+  default void preClose(SolrCore core) {
+
+  }
 
   /**
    * Method called when the given SolrCore object has been shut down and update handlers and searchers are closed
@@ -48,6 +50,10 @@ public abstract class CloseHook {
    * <b>Important:</b> Keep the method implementation as short as possible. If it were to use any heavy i/o , network connections -
    * it might be a better idea to launch in a separate Thread so as to not to block the process of
    * shutting down a given SolrCore instance.
+   *
+   * @param core SolrCore object that is shutting down / closing
    */
-  public abstract void postClose(SolrCore core);
+  default void postClose(SolrCore core) {
+
+  }
 }

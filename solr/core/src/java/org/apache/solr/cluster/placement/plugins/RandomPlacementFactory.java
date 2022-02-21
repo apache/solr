@@ -63,7 +63,7 @@ public class RandomPlacementFactory implements PlacementPluginFactory<PlacementP
           totalReplicasPerShard += request.getCountReplicasToCreate(rt);
         }
 
-        if (placementContext.getCluster().getLiveNodes().size() < totalReplicasPerShard) {
+        if (request.getTargetNodes().size() < totalReplicasPerShard) {
           throw new PlacementException("Cluster size too small for number of replicas per shard");
         }
 
@@ -72,7 +72,7 @@ public class RandomPlacementFactory implements PlacementPluginFactory<PlacementP
         // Now place randomly all replicas of all shards on available nodes
         for (String shardName : request.getShardNames()) {
           // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct yet random nodes
-          ArrayList<Node> nodesToAssign = new ArrayList<>(placementContext.getCluster().getLiveNodes());
+          ArrayList<Node> nodesToAssign = new ArrayList<>(request.getTargetNodes());
           Collections.shuffle(nodesToAssign, replicaPlacementRandom);
 
           for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {

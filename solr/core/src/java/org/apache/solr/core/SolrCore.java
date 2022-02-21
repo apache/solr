@@ -3028,11 +3028,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     if (deleteInstanceDir) {
       addCloseHook(new CloseHook() {
         @Override
-        public void preClose(SolrCore core) {
-          // empty block
-        }
-
-        @Override
         public void postClose(SolrCore core) {
           if (desc != null) {
             try {
@@ -3262,10 +3257,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     // define the blob
     BlobRepository.BlobContentRef<T> blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
     addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-      }
-
       @Override
       public void postClose(SolrCore core) {
         coreContainer.getBlobRepository().decrementBlobRefCount(blobRef);

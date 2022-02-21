@@ -27,8 +27,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.util.PropertiesUtil;
@@ -57,10 +55,10 @@ public class DataConfigNode implements ConfigNode {
     });
     for (Map.Entry<String, List<ConfigNode>> e : kids.entrySet()) {
       if(e.getValue()  != null) {
-        e.setValue(ImmutableList.copyOf(e.getValue()));
+        e.setValue(List.copyOf(e.getValue()));
       }
     }
-    this.kids = kids.isEmpty()? EMPTY:  new WrappedSimpleMap<>(ImmutableMap.copyOf(kids));
+    this.kids = kids.isEmpty()? EMPTY:  new WrappedSimpleMap<>(Map.copyOf(kids));
   }
 
   public String subtituteVal(String s) {

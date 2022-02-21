@@ -255,6 +255,9 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
   @Test
   public void testCreateShouldFailOnExistingCore() throws Exception {
+    String nn1 = cluster.getJettySolrRunner(0).getNodeName();
+    String nn2 = cluster.getJettySolrRunner(1).getNodeName();
+
     assertEquals(0, CollectionAdminRequest.createCollection("halfcollectionblocker", "conf", 1, 1)
         .setCreateNodeSet("")
         .process(cluster.getSolrClient()).getStatus());
@@ -271,11 +274,8 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
         .setCoreName("halfcollection_shard1_replica_n1")
         .process(cluster.getSolrClient()).isSuccess());
 
-    String nn1 = cluster.getJettySolrRunner(0).getNodeName();
-    String nn2 = cluster.getJettySolrRunner(1).getNodeName();
-
     expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
-      CollectionAdminResponse resp = CollectionAdminRequest.createCollection("halfcollection", "conf", 2, 1)
+      CollectionAdminRequest.createCollection("halfcollection", "conf", 1, 1)
           .setCreateNodeSet(nn1 + "," + nn2)
           .process(cluster.getSolrClient());
     });

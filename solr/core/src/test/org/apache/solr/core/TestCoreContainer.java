@@ -525,7 +525,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     @Override
-    protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) {
+    protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) throws IOException {
       return null;
     }
   }

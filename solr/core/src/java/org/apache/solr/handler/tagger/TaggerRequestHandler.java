@@ -70,6 +70,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.security.AuthorizationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -237,6 +238,11 @@ public class TaggerRequestHandler extends RequestHandlerBase {
 
     //Solr's standard name for matching docs in response
     rsp.add("response", getDocList(rows, matchDocIdsBS));
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.READ_PERM;
   }
 
   private static class InputStringLazy implements Callable<String> {

@@ -223,8 +223,8 @@ public class IntegrationTestGenerator {
         initLineAdd(output, hll, schemaVersion);
 
         for(int i=0; i<SPARSE_THRESHOLD; i++) {
-            final int registerIndex = Math.abs(random.nextInt()) % REGISTER_COUNT;
-            final int registerValue = ((Math.abs(random.nextInt()) % REGISTER_MAX_VALUE) + 1);
+            final int registerIndex = random.nextInt(REGISTER_COUNT);
+            final int registerValue = random.nextInt(REGISTER_MAX_VALUE) + 1;
             final long rawValue = constructHLLValue(LOG2M, registerIndex, registerValue);
 
             cumulativeAddLine(output, hll, rawValue, schemaVersion);
@@ -329,8 +329,8 @@ public class IntegrationTestGenerator {
             // make a SPARSE set and populate with cardinality 1
             final HLL sparseHLL = newHLL(HLLType.SPARSE);
 
-            final int registerIndex = Math.abs(random.nextInt()) % REGISTER_COUNT;
-            final int registerValue = ((Math.abs(random.nextInt()) % REGISTER_MAX_VALUE) + 1);
+            final int registerIndex = random.nextInt(REGISTER_COUNT);
+            final int registerValue = random.nextInt(REGISTER_MAX_VALUE) + 1;
             final long rawValue = constructHLLValue(LOG2M, registerIndex, registerValue);
             sparseHLL.addRaw(rawValue);
 
@@ -400,8 +400,8 @@ public class IntegrationTestGenerator {
         for(int i=0; i<SPARSE_THRESHOLD; i++) {
             // make a SPARSE set and populate with cardinality 1
             final HLL sparseHLL = newHLL(HLLType.SPARSE);
-            final int registerIndex = Math.abs(random.nextInt()) % REGISTER_COUNT;
-            final int registerValue = ((Math.abs(random.nextInt()) % REGISTER_MAX_VALUE) + 1);
+            final int registerIndex = random.nextInt(REGISTER_COUNT);
+            final int registerValue = random.nextInt(REGISTER_MAX_VALUE) + 1;
             final long rawValue = constructHLLValue(LOG2M, registerIndex, registerValue);
             sparseHLL.addRaw(rawValue);
 
@@ -504,7 +504,7 @@ public class IntegrationTestGenerator {
      *         and {@link #SPARSE_THRESHOLD}) specified above.
      */
     private static HLL newHLL(final HLLType type) {
-        return newHLL(type);
+        return new HLL(LOG2M, REGWIDTH, EXPLICIT_THRESHOLD, SPARSE_THRESHOLD, type);
     }
 
     /**

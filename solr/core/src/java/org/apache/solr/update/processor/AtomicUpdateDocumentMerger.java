@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,9 +33,9 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -47,7 +48,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
@@ -84,6 +84,10 @@ public class AtomicUpdateDocumentMerger {
    */
   public static boolean isAtomicUpdate(final AddUpdateCommand cmd) {
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
+    return isAtomicUpdate(sdoc);
+  }
+
+  private static boolean isAtomicUpdate(SolrInputDocument sdoc) {
     for (SolrInputField sif : sdoc.values()) {
       Object val = sif.getValue();
       if (val instanceof Map && !(val instanceof SolrDocumentBase)) {
@@ -354,26 +358,6 @@ public class AtomicUpdateDocumentMerger {
   }
 
   /**
-   *
-   * @param completeHierarchy SolrInputDocument that represents the nested document hierarchy from its root
-   * @param fieldPath the path to fetch, separated by a '/' e.g. /children/grandChildren
-   * @return the SolrInputField of fieldPath
-   */
-  public static SolrInputField getFieldFromHierarchy(SolrInputDocument completeHierarchy, String fieldPath) {
-    // substr to remove first '/'
-    final List<String> docPaths = StrUtils.splitSmart(fieldPath.substring(1), '/');
-    Pair<String, Integer> subPath;
-    SolrInputField sifToReplace = null;
-    SolrInputDocument currDoc = completeHierarchy;
-    for (String subPathString: docPaths) {
-      subPath = getPathAndIndexFromNestPath(subPathString);
-      sifToReplace = currDoc.getField(subPath.getLeft());
-      currDoc = (SolrInputDocument) ((List)sifToReplace.getValues()).get(subPath.getRight());
-    }
-    return sifToReplace;
-  }
-  
-  /**
    * Given an AddUpdateCommand containing update operations (e.g. set, inc), merge and resolve the operations into
    * a partial document that can be used for indexing the in-place updates. The AddUpdateCommand is modified to contain
    * the partial document (instead of the original document which contained the update operations) and also
@@ -452,7 +436,77 @@ public class AtomicUpdateDocumentMerger {
 
   protected void doAdd(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     String name = sif.getName();
-    toDoc.addField(name, getNativeFieldValue(name, fieldVal));
+    Object nativeFieldValue = getNativeFieldValue(name, fieldVal);
+    if (isChildDoc(fieldVal)) {
+      // our child can be single update or a collection. Normalise to List to make any subsequent
+      // mapping easier
+      final List<SolrInputDocument> children = asChildren(fieldVal);
+      doAddChildren(toDoc, sif, children);
+    } else {
+      toDoc.addField(name, nativeFieldValue);
+    }
+  }
+
+  private List<SolrInputDocument> asChildren(Object fieldVal) {
+    if (fieldVal instanceof Collection) {
+      return ((Collection<?>) fieldVal)
+          .stream().map(SolrInputDocument.class::cast).collect(Collectors.toList());
+    } else {
+      return Collections.singletonList((SolrInputDocument) fieldVal);
+    }
+  }
+
+  private void doAddChildren(
+      SolrInputDocument toDoc, SolrInputField sif, List<SolrInputDocument> children) {
+    final String name = sif.getName();
+
+    final SolrInputField existingField =
+        Optional.ofNullable(toDoc.get(name))
+            .orElseGet(
+                () -> {
+                  final SolrInputField replacement = new SolrInputField(name);
+                  replacement.setValue(Collections.emptyList());
+                  return replacement;
+                });
+
+    Map<BytesRef, SolrInputDocument> originalChildrenById =
+        existingField.getValues().stream()
+            .filter(SolrInputDocument.class::isInstance)
+            .map(SolrInputDocument.class::cast)
+            .filter(doc -> doc.containsKey(idField.getName()))
+            .collect(
+                Collectors.toMap(
+                    this::readChildIdBytes, doc -> doc, (u, v) -> u, LinkedHashMap::new));
+
+    if (existingField.getValues().size() != originalChildrenById.size()) {
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          "Can't add child document on field: "
+              + existingField.getName()
+              + " since it contains values which are either not SolrInputDocument's or do not have an id property");
+    }
+    for (SolrInputDocument child : children) {
+      if (isAtomicUpdate(child)) {
+        // When it is atomic update, update the nested document ONLY if it already exists
+        final BytesRef childIdBytes = readChildIdBytes(child);
+        SolrInputDocument original = originalChildrenById.get(childIdBytes);
+        if (original == null) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "A nested atomic update can only update an existing nested document");
+        }
+        SolrInputDocument merged = mergeDocHavingSameId(child, original);
+        originalChildrenById.put(childIdBytes, merged);
+      } else {
+        // If the child is not atomic, replace any existing nested document with the current one
+        originalChildrenById.put(readChildIdBytes(child), (child));
+      }
+    }
+    toDoc.setField(name, originalChildrenById.values());
+  }
+
+  private BytesRef readChildIdBytes(SolrInputDocument doc) {
+    return schema.indexableUniqueKey(doc.get(idField.getName()).getValue().toString());
   }
 
   protected void doAddDistinct(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
@@ -689,12 +743,4 @@ public class AtomicUpdateDocumentMerger {
     }
   }
 
-  private static Pair<String, Integer> getPathAndIndexFromNestPath(String nestPath) {
-    List<String> splitPath = StrUtils.splitSmart(nestPath, '#');
-    if(splitPath.size() == 1) {
-      return Pair.of(splitPath.get(0), 0);
-    }
-    return Pair.of(splitPath.get(0), Integer.parseInt(splitPath.get(1)));
-  }
-  
 }

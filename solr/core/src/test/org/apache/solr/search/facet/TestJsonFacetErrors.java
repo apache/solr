@@ -93,15 +93,12 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   public void doTestErrors(Client client) throws Exception {
     client.deleteByQuery("*:*", null);
 
-    try {
+    SolrException e = assertThrows(SolrException.class, () ->
       client.testJQ(params("ignore_exception", "true", "q", "*:*"
           , "json.facet", "{f:{type:ignore_exception_aaa, field:bbbbbb}}"
           )
-      );
-    } catch (SolrException e) {
-      assertTrue( e.getMessage().contains("ignore_exception_aaa") );
-    }
-
+    ));
+    assertTrue( e.getMessage().contains("ignore_exception_aaa") );
   }
 
   @Test

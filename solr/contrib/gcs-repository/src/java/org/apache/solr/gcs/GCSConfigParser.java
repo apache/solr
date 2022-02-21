@@ -28,8 +28,8 @@ import java.util.Map;
  * Parses configuration for {@link GCSBackupRepository} from NamedList and environment variables
  */
 public class GCSConfigParser {
-  private static final String GCS_BUCKET_ENV_VAR_NAME = "GCS_BUCKET";
-  private static final String GCS_CREDENTIAL_ENV_VAR_NAME = "GCS_CREDENTIAL_PATH";
+  protected static final String GCS_BUCKET_ENV_VAR_NAME = "GCS_BUCKET";
+  protected static final String GCS_CREDENTIAL_ENV_VAR_NAME = "GCS_CREDENTIAL_PATH";
 
   private static final String GCS_BUCKET_PARAM_NAME = "gcsBucket";
   private static final String GCS_CREDENTIAL_PARAM_NAME = "gcsCredentialPath";
@@ -93,11 +93,13 @@ public class GCSConfigParser {
     return envVars.get(GCS_CREDENTIAL_ENV_VAR_NAME);
   }
 
-  public static String missingCredentialErrorMsg() {
-    return "GCSBackupRepository requires a credential for GCS communication, but none was provided.  Please specify a " +
-            "path to this GCS credential by adding a '" + GCS_CREDENTIAL_PARAM_NAME + "' property to the repository " +
-            "definition in your solrconfig, or by setting the path value in an env-var named '" +
-            GCS_CREDENTIAL_ENV_VAR_NAME + "'";
+  public static String potentiallyMissingCredentialMsg() {
+    return "No explicit credential path was provided for this GCSBackupRepository.  If Solr is running inside GCP, this " +
+            "may be expected if GCP's \"Workload Identity\" or a related feature is configured.  Solr instances " +
+            "running outside of GCP however must provide a valid credential path in order to access GCS.  These users " +
+            "should specify their credential path by adding a '" + GCS_CREDENTIAL_PARAM_NAME + "' property to the " +
+            "repository definition in solconfig, or by setting the path value in an env-var named '" +
+            GCS_CREDENTIAL_ENV_VAR_NAME + "'.";
   }
 
   private int getIntOrDefault(NamedList<?> config, String propName, int defaultValue) {

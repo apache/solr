@@ -331,4 +331,23 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "count(//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/*)=1");
   }
 
+  // SOLR-10321
+  public void testDontReturnEmptyHighlights() throws Exception {
+    clearIndex();
+    // this doc has no value for field text2
+    assertU(adoc("text", "third document", "id", "103"));
+    assertU(commit());
+    // query on text & text2.  Assert we only highlight text; text2 shouldn't be present at all
+    assertJQ(
+        req(
+            "q", "text:document OR text2:document",
+            "hl", "true",
+            "hl.fl", "text, text2",
+            "sort", "id asc",
+            "hl", "true"),
+        "highlighting=={\n"
+            + "    '103':{\n"
+            + "      'text':['third <em>document</em>']}}}");
+  }
+
 }

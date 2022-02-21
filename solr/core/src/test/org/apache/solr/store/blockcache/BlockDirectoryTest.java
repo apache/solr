@@ -249,7 +249,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   }
 
   private String getName() {
-    return Long.toString(Math.abs(random.nextLong()));
+    return Long.toUnsignedString(random.nextLong());
   }
 
   public static void rm(File file) {

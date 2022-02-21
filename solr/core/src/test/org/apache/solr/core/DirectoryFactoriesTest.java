@@ -95,7 +95,7 @@ public class DirectoryFactoriesTest extends SolrTestCaseJ4 {
       assertTrue(path + " should still exist even after being released", dirFac.exists(path));
       
     } catch (AssertionError ae) {
-      throw new AssertionError(clazz + ": " + ae.getMessage());
+      throw new AssertionError("Failed with " + clazz.getName(), ae);
     } finally {
       if (null != dirFac) {
         dirFac.close();

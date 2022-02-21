@@ -241,7 +241,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     values.put("d", 4.123456789123456);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Double);
-    Assert.assertEquals(14.623456789123456, result);
+    Assert.assertEquals(14.623456789123456, (Double) result, 0.000000001);
     
     values.clear();
     values.put("a", 123456789123456789L);

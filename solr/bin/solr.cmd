@@ -150,6 +150,9 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
 )
 
 REM Requestlog options
+IF NOT DEFINED SOLR_REQUESTLOG_ENABLED (
+  set SOLR_REQUESTLOG_ENABLED=true
+)
 IF "%SOLR_REQUESTLOG_ENABLED%"=="true" (
   set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=requestlog"
 )

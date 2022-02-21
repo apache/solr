@@ -52,6 +52,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SimplePostTool;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -668,6 +669,11 @@ public class TestPackages extends SolrCloudTestCase {
     @Override
     public String getDescription() {
       return "test";
+    }
+
+    @Override
+    public Name getPermissionName(AuthorizationContext request) {
+      return Name.ALL;
     }
   }
 

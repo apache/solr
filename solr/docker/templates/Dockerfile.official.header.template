@@ -90,5 +90,5 @@ RUN set -ex; \
   fi; \
   { command -v gpgconf; gpgconf --kill all || :; }; \
   rm -r "$GNUPGHOME"; \
-  tar -C /opt --extract --file "/opt/solr-$SOLR_VERSION.tgz";
+  tar -C /opt --extract --preserve-permissions --file "/opt/solr-$SOLR_VERSION.tgz";
 

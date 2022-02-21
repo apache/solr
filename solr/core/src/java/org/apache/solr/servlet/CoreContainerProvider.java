@@ -22,7 +22,6 @@ import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.client.HttpClient;
-import org.apache.lucene.util.Version;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -39,6 +38,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricManager.ResolutionStrategy;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.servlet.RateLimitManager.Builder;
+import org.apache.solr.util.SolrVersion;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -267,7 +267,7 @@ public class CoreContainerProvider implements ServletContextListener {
     }
   }
   private String solrVersion() {
-    String specVer = Version.LATEST.toString();
+    String specVer = SolrVersion.LATEST.toString();
     try {
       String implVer = SolrCore.class.getPackage().getImplementationVersion();
       return (specVer.equals(implVer.split(" ")[0])) ? specVer : implVer;

@@ -876,7 +876,7 @@ Prerequisite: the <<OpenNLP Tokenizer>> and the <<OpenNLP Part-Of-Speech Filter>
 
 NOTE: Lucene currently does not index token types, so if you want to keep this information, you have to preserve it either in a payload or as a synonym; see the examples below.
 
-*Factory class:* `solr.OpenNLPChunkerFilter`
+*Factory class:* `solr.OpenNLPChunkerFilterFactory`
 
 *Arguments:*
 
@@ -921,7 +921,7 @@ Index the phrase chunk label for each token as a payload:
              sentenceModel="en-sent.bin"
              tokenizerModel="en-tokenizer.bin"/>
   <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
-  <filter class="solr.OpenNLPChunkerFactory" chunkerModel="en-chunker.bin"/>
+  <filter class="solr.OpenNLPChunkerFilterFactory" chunkerModel="en-chunker.bin"/>
   <filter class="solr.TypeAsPayloadFilterFactory"/>
 </analyzer>
 ----

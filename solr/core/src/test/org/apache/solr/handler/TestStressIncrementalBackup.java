@@ -91,6 +91,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
         System.clearProperty("solr.allowPaths");
     }
 
+    @SuppressWarnings("AssertionFailureIgnored") // failure happens inside of a thread
     public void testCoreAdminHandler() throws Exception {
         final int numBackupIters = 20; // don't use 'atLeast', we don't want to blow up on nightly
 

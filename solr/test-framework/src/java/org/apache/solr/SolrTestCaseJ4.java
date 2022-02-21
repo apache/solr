@@ -2130,6 +2130,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static Path TEST_PATH() { return getFile("solr/collection1").getParentFile().toPath(); }
 
+  public static Path TEST_COLL1_CONF() { return TEST_PATH().resolve("collection1").resolve("conf"); }
+
   public static Path configset(String name) {
     return TEST_PATH().resolve("configsets").resolve(name).resolve("conf");
   }

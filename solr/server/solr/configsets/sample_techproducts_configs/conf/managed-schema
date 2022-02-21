@@ -195,39 +195,35 @@
 
 
    <!-- Dynamic field definitions allow using convention over configuration
-       for fields via the specification of patterns to match field names.
-       EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
-       RESTRICTION: the glob-like pattern in the name attribute must have
-       a "*" only at the start or the end.  -->
+      for fields via the specification of patterns to match field names.
+      EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
+      RESTRICTION: the glob-like pattern in the name attribute must have a "*" only at the start or the end.  -->
 
-   <dynamicField name="*_i"  type="pint"    indexed="true"  stored="true"/>
-   <dynamicField name="*_is" type="pint"    indexed="true"  stored="true"  multiValued="true"/>
-   <dynamicField name="*_s"  type="string"  indexed="true"  stored="true" />
-   <dynamicField name="*_s_ns"  type="string"  indexed="true"  stored="false" />
-   <dynamicField name="*_ss" type="string"  indexed="true"  stored="true" multiValued="true"/>
-   <dynamicField name="*_l"  type="plong"   indexed="true"  stored="true"/>
-   <dynamicField name="*_l_ns"  type="plong"   indexed="true"  stored="false"/>
-   <dynamicField name="*_ls" type="plong"   indexed="true"  stored="true"  multiValued="true"/>
-   <dynamicField name="*_t"  type="text_general"    indexed="true"  stored="true"/>
-   <dynamicField name="*_txt" type="text_general"   indexed="true"  stored="true" multiValued="true"/>
-   <dynamicField name="*_en"  type="text_en"    indexed="true"  stored="true" multiValued="true"/>
-   <dynamicField name="*_b"  type="boolean" indexed="true" stored="true"/>
-   <dynamicField name="*_bs" type="boolean" indexed="true" stored="true"  multiValued="true"/>
-   <dynamicField name="*_f"  type="pfloat"  indexed="true"  stored="true"/>
-   <dynamicField name="*_fs" type="pfloat"  indexed="true"  stored="true"  multiValued="true"/>
-   <dynamicField name="*_d"  type="pdouble" indexed="true"  stored="true"/>
-   <dynamicField name="*_ds" type="pdouble" indexed="true"  stored="true"  multiValued="true"/>
-
+   <dynamicField name="*_i"   type="pint"     indexed="true"  stored="true"/>
+   <dynamicField name="*_is"  type="pints"    indexed="true"  stored="true"/>
+   <dynamicField name="*_s"   type="string"   indexed="true"  stored="true" />
+   <dynamicField name="*_ss"  type="strings"  indexed="true"  stored="true"/>
+   <dynamicField name="*_l"   type="plong"    indexed="true"  stored="true"/>
+   <dynamicField name="*_ls"  type="plongs"   indexed="true"  stored="true"/>
+   <dynamicField name="*_b"   type="boolean"  indexed="true"  stored="true"/>
+   <dynamicField name="*_bs"  type="booleans" indexed="true"  stored="true"/>
+   <dynamicField name="*_f"   type="pfloat"   indexed="true"  stored="true"/>
+   <dynamicField name="*_fs"  type="pfloats"  indexed="true"  stored="true"/>
+   <dynamicField name="*_d"   type="pdouble"  indexed="true"  stored="true"/>
+   <dynamicField name="*_ds"  type="pdoubles" indexed="true"  stored="true"/>
    <dynamicField name="*_dt"  type="pdate"    indexed="true"  stored="true"/>
-   <dynamicField name="*_dts" type="pdate"    indexed="true"  stored="true" multiValued="true"/>
-   <dynamicField name="*_p"  type="location" indexed="true" stored="true"/>
+   <dynamicField name="*_dts" type="pdates"   indexed="true"  stored="true"/>
+   <dynamicField name="*_t"   type="text_general" indexed="true" stored="true" multiValued="false"/>
+   <dynamicField name="*_txt" type="text_general" indexed="true" stored="true"/>
+
+   <dynamicField name="random_*" type="random"/>
+   <dynamicField name="ignored_*" type="ignored"/>
 
    <dynamicField name="*_c"   type="currency" indexed="true"  stored="true"/>
 
-   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
-   <dynamicField name="attr_*" type="text_general" indexed="true" stored="true" multiValued="true"/>
-
-   <dynamicField name="random_*" type="random" />
+   <!-- Subfields used with currency fieldType -->
+   <dynamicField name="*_s_ns"  type="string"  indexed="true"  stored="false" />
+   <dynamicField name="*_l_ns"  type="plong"   indexed="true"  stored="false"/>
 
    <!-- uncomment the following to ignore any fields that don't already match an existing
         field name or dynamic field, rather than reporting them as an error.
@@ -290,9 +286,12 @@
 
     <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
+    <fieldType name="strings" class="solr.StrField" sortMissingLast="true" multiValued="true" docValues="true" />
+
 
     <!-- boolean type: "true" or "false" -->
     <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
+    <fieldType name="booleans" class="solr.BoolField" sortMissingLast="true" multiValued="true"/>
 
     <!-- sortMissingLast and sortMissingFirst attributes are optional attributes are
          currently supported on types that are sorted internally as strings

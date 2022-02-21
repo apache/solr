@@ -118,7 +118,6 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized {
 
   protected static final String SNIPPET_SEPARATOR = "\u0000";
-  private static final String[] ZERO_LEN_STR_ARRAY = new String[0];
 
   @Override
   public void init(PluginInfo info) {
@@ -174,7 +173,6 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
         String snippet = snippets.get(field)[i];
         if (snippet == null) {
           //TODO reuse logic of DefaultSolrHighlighter.alternateField
-          summary.add(field, ZERO_LEN_STR_ARRAY);
         } else {
           // we used a special snippet separator char and we can now split on it.
           summary.add(field, snippet.split(SNIPPET_SEPARATOR));

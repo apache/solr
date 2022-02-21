@@ -156,15 +156,11 @@ public class TestWrapperModel extends TestRerankBase {
           "getFeatureStoreName", // wrapper and wrapped model feature store should match, so need not override
           "getParams" // the wrapper model's params are its own params i.e. _not_ the params of the wrapped model
           ).contains(superClassMethod.getName())) {
-        try {
-          final Method subClassMethod = WrapperModel.class.getDeclaredMethod(
-              superClassMethod.getName(),
-              superClassMethod.getParameterTypes());
-          fail(WrapperModel.class + " need not override\n'" + superClassMethod + "'"
-               + " but it does override\n'" + subClassMethod + "'");
-        } catch (NoSuchMethodException e) {
-          // ok
-        }
+        assertThrows("WrapperModel need not override '" + superClassMethod.getName() + "'",
+            NoSuchMethodException.class, () -> {
+              WrapperModel.class.getDeclaredMethod(superClassMethod.getName(), superClassMethod.getParameterTypes());
+            }
+        );
       } else {
         try {
           final Method subClassMethod = WrapperModel.class.getDeclaredMethod(
@@ -174,7 +170,7 @@ public class TestWrapperModel extends TestRerankBase {
               superClassMethod.getReturnType(),
               subClassMethod.getReturnType());
         } catch (NoSuchMethodException e) {
-          fail(WrapperModel.class + " needs to override '" + superClassMethod + "'");
+          throw new AssertionError("WrapperModel needs to override '" + superClassMethod + "'", e);
         }
       }
     }

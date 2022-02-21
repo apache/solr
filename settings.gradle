@@ -47,6 +47,7 @@ include "solr:solr-ref-guide"
 include "solr:example"
 include "solr:documentation"
 include "solr:packaging"
+include "solr:distribution"
 include "solr:docker"
 
 // Configures development for joint Lucene/ Solr composite build.

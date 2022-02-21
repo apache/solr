@@ -150,3 +150,10 @@ The log file under which you can find all these queries is called `solr_slow_req
 
 In addition to the logging options described above, it's possible to log only a selected list of request parameters (such as those sent with queries) with an additional request parameter called `logParamsList`.
 See the section on <<common-query-parameters.adoc#logparamslist-parameter,logParamsList Parameter>> for more information.
+
+== Request Logging
+
+Every incoming HTTP(s) request is by default logged in the standard https://en.wikipedia.org/wiki/Common_Log_Format[`NCSA format`]
+in files with name `$SOLR_LOG_DIR/<yyyy_mm_dd>.request.log`, rolled over daily. By default, 3 days worth of request logs are retained.
+You can disable request logging by setting `SOLR_REQUESTLOG_ENABLED=false` via environment variable or in `solr.in.sh`/`solr.in.cmd`.
+You can change the number of days to retain by system property `-Dsolr.log.requestlog.retaindays`.

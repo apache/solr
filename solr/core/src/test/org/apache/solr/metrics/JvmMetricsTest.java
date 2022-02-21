@@ -16,14 +16,14 @@
  */
 package org.apache.solr.metrics;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
@@ -116,17 +116,17 @@ public class JvmMetricsTest extends SolrJettyTestBase {
 
   @Test
   public void testHiddenSysProps() throws Exception {
-    Path home = Paths.get(TEST_HOME());
+    Path home = TEST_PATH();
 
     // default config
-    String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr.xml").toFile(), "UTF-8");
+    String solrXml = Files.readString(home.resolve("solr.xml"), StandardCharsets.UTF_8);
     NodeConfig config = SolrXmlConfig.fromString(home, solrXml);
     NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.forEach(s -> {
       assertTrue(s, config.getMetricsConfig().getHiddenSysProps().contains(s));
     });
 
     // custom config
-    solrXml = FileUtils.readFileToString(home.resolve("solr-hiddensysprops.xml").toFile(), "UTF-8");
+    solrXml = Files.readString(home.resolve("solr-hiddensysprops.xml"), StandardCharsets.UTF_8);
     NodeConfig config2 = SolrXmlConfig.fromString(home, solrXml);
     Arrays.asList("foo", "bar", "baz").forEach(s -> {
       assertTrue(s, config2.getMetricsConfig().getHiddenSysProps().contains(s));

@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -60,8 +59,8 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     
     differentUniqueId = random().nextBoolean();
-    
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+
+    final Path configDir = TEST_COLL1_CONF();
 
     String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;

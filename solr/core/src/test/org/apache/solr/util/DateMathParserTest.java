@@ -47,6 +47,7 @@ public class DateMathParserTest extends SolrTestCaseJ4 {
    */
   private DateTimeFormatter parser;
 
+  @SuppressWarnings("MisusedDayOfYear") // use a bunch of pattern symbols for more comprehensive testing
   public DateMathParserTest() {
     fmt = DateTimeFormatter.ofPattern("G yyyyy MM ww W D dd F E a HH hh mm ss SSS z Z", Locale.ROOT)
         .withZone(ZoneOffset.UTC);

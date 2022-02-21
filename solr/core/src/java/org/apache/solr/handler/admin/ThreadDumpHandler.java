@@ -35,6 +35,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.solr.security.AuthorizationContext;
+
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -185,5 +187,10 @@ public class ThreadDumpHandler extends RequestHandlerBase {
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.METRICS_READ_PERM;
   }
 }

@@ -49,7 +49,6 @@ import org.apache.solr.util.SolrJacksonAnnotationInspector;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zafarkhaja.semver.Version;
-import com.google.common.base.Strings;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
@@ -153,13 +152,6 @@ public class PackageUtils {
     } catch (UnsupportedOperationException | IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  /**
-   * Checks whether a given version satisfies the constraint (defined by a semver expression)
-   */
-  public static boolean checkVersionConstraint(String ver, String constraint) {
-    return Strings.isNullOrEmpty(constraint) || Version.valueOf(ver).satisfies(constraint);
   }
 
   /**

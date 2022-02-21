@@ -47,7 +47,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
     RateLimiterConfig rateLimiterConfig = getRateLimiterConfig();
     byte[] configInput = Utils.toJSON(properties.get(RL_CONFIG_KEY));
 
-    if (configInput == null) {
+    if (configInput == null || configInput.length == 0) {
       return;
     }
 

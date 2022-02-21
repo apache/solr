@@ -200,7 +200,7 @@ ext {
         dependsOn "build${details.name}"
 
         classpath = sourceSets.main.runtimeClasspath
-        main = 'CheckLinksAndAnchors'
+        main = 'org.apache.solr.guide.CheckLinksAndAnchors'
         workingDir = contentDir
 
         // NOTE: even for the 'real' site, we check all relative links
@@ -285,7 +285,7 @@ abstract class PrepareSources extends DefaultTask {
                                       .getPlugin(JavaPluginConvention.class)
                                       .getSourceSets().getByName("main").getRuntimeClasspath() )
                 execSpec.setWorkingDir( intoDir )
-                execSpec.setMain( 'BuildNavDataFiles' )
+                execSpec.setMain( 'org.apache.solr.guide.BuildNavDataFiles' )
                 execSpec.args([ intoDir, p.property('mainPage') ])
             })
         }

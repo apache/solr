@@ -33,7 +33,6 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.jmx.ManagedUtil;
-import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.ServerCnxn;
 import org.apache.zookeeper.server.ServerCnxnFactory;
@@ -48,7 +47,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.management.JMException;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -57,9 +55,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,13 +72,13 @@ public class ZkTestServer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static File SOLRHOME;
+  public static Path SOLRHOME;
   static {
     try {
-      SOLRHOME = new File(SolrTestCaseJ4.TEST_HOME());
+      SOLRHOME = SolrTestCaseJ4.TEST_PATH();
     } catch (RuntimeException e) {
-      log.warn("TEST_HOME() does not exist - solrj test?");
-      // solrj tests not working with TEST_HOME()
+      log.warn("TEST_PATH() does not exist - solrj test?");
+      // solrj tests not working with TEST_PATH()
       // must override getSolrHome
     }
   }
@@ -262,33 +259,6 @@ public class ZkTestServer {
       }
     }
 
-    private class TestServerCnxn extends NIOServerCnxn {
-
-      private final WatchLimiter limiter;
-
-      public TestServerCnxn(ZooKeeperServer zk, SocketChannel sock, SelectionKey sk,
-                            NIOServerCnxnFactory factory, WatchLimiter limiter) throws IOException {
-        super(zk, sock, sk, factory, null);
-        this.limiter = limiter;
-      }
-
-      @Override
-      public synchronized void process(WatchedEvent event) {
-        limiter.updateForFire(event);
-        super.process(event);
-      }
-    }
-
-    private class TestServerCnxnFactory extends NIOServerCnxnFactory {
-
-      private final WatchLimiter limiter;
-
-      public TestServerCnxnFactory(WatchLimiter limiter) throws IOException {
-        super();
-        this.limiter = limiter;
-      }
-    }
-
     private class TestZKDatabase extends ZKDatabase {
 
       private final WatchLimiter limiter;
@@ -341,7 +311,7 @@ public class ZkTestServer {
             config.getMinSessionTimeout(), config.getMaxSessionTimeout(),
             config.getClientPortListenBacklog(),
             new TestZKDatabase(ftxn, limiter), "");
-        cnxnFactory = new TestServerCnxnFactory(limiter);
+        cnxnFactory = new NIOServerCnxnFactory();
         cnxnFactory.configure(config.getClientPortAddress(),
             config.getMaxClientCnxns());
         cnxnFactory.startup(zooKeeperServer);
@@ -810,24 +780,23 @@ public class ZkTestServer {
     buildZooKeeper(SOLRHOME, config, schema);
   }
 
-  public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String name)
+  public static void putConfig(String confName, SolrZkClient zkClient, Path solrhome, final String name)
       throws Exception {
     putConfig(confName, zkClient, null, solrhome, name, name);
   }
 
 
-  public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String srcName,
+  public static void putConfig(String confName, SolrZkClient zkClient, Path solrhome, final String srcName,
                                  String destName) throws Exception {
       putConfig(confName, zkClient, null, solrhome, srcName, destName);
   }
 
-  public static void putConfig(String confName, SolrZkClient zkClient, String zkChroot, File solrhome,
+  public static void putConfig(String confName, SolrZkClient zkClient, String zkChroot, Path solrhome,
                                final String srcName, String destName) throws Exception {
-    File file = new File(solrhome, "collection1"
-        + File.separator + "conf" + File.separator + srcName);
-    if (!file.exists()) {
+    Path file = solrhome.resolve("collection1").resolve("conf").resolve(srcName);
+    if (!Files.exists(file)) {
       if (log.isInfoEnabled()) {
-        log.info("skipping {} because it doesn't exist", file.getAbsolutePath());
+        log.info("skipping {} because it doesn't exist", file.toAbsolutePath());
       }
       return;
     }
@@ -837,13 +806,13 @@ public class ZkTestServer {
       destPath = zkChroot + destPath;
     }
     if (log.isInfoEnabled()) {
-      log.info("put {} to {}", file.getAbsolutePath(), destPath);
+      log.info("put {} to {}", file.toAbsolutePath(), destPath);
     }
     zkClient.makePath(destPath, file, false, true);
   }
 
   // static to share with distrib test
-  public void buildZooKeeper(File solrhome, String config, String schema) throws Exception {
+  public void buildZooKeeper(Path solrhome, String config, String schema) throws Exception {
 
     Map<String,Object> props = new HashMap<>();
     props.put("configName", "conf1");

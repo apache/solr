@@ -144,10 +144,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         public void preClose(SolrCore core) {
           shardHandlerFactory.close();
         }
-
-        @Override
-        public void postClose(SolrCore core) {
-        }
       });
     }
 

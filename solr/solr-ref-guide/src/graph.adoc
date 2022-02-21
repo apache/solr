@@ -390,12 +390,20 @@ Because of the lower `docFreq` eggs is considered more relevant to this subgraph
 == Temporal Graph Expressions
 
 The examples above lay the groundwork for temporal graph queries.
-Temporal graph queries allow the `nodes` function to walk the graph using *windows of time* to surface *cross-correlations* within the data.
-The nodes function currently supports graph walks using *ten second increments* which is useful for *event correlation* and *root cause analysis* in log analytics.
+Temporal graph queries allow the `nodes` function to walk the graph using *windows of time*
+to surface *cross-correlations* within a temporal graph.
+The nodes function currently supports graph walks using
+*ten second windows*, *daily windows* and *weekday windows*.
 
-In order to support temporal graph queries a ten second truncated timestamp in *ISO 8601* format must be added to the log records as a string field at indexing time.
-Here is a sample ten second truncated timestamp: `2021-02-10T20:51:30Z`.
-This small data change enables some very important use cases so it's well worth the effort.
+Ten second windows are useful for *event correlation* and *root cause analysis* in log analytics. The daily and weekday
+windows are useful for correlating events that happen days apart.
+
+In order to support temporal graph queries a truncated timestamp in *ISO 8601* format must be added to the log records as a
+string field at indexing time.
+To support ten second time windows a ten second truncated timestamp should be indexed in a string field
+as follows: `2021-02-10T20:51:30Z` .
+To support daily and weekly time windows a day truncated timestamp should be indexed in a string field as follows:
+`2021-02-10T00:00:00Z`.
 
 Solr's indexing tool for Solr logs, described <<logs.adoc#,here>>, already adds the ten second truncated timestamps.
 So those using Solr to analyze Solr logs get temporal graph expressions for free.
@@ -542,7 +550,8 @@ Notice that there is only one *error* event within the same ten second windows o
 For event correlation and root cause analysis it's not enough to find events that occur within the *same* ten second root event windows.
 What's needed is to find events that occur within a window of time *prior to each root event*.
 The `window` parameter allows you to specify this prior window of time as part of the query.
-The window parameter is an integer which specifies the number of ten second time windows, prior to each root event window, to include in the graph walk.
+The window parameter is an integer which specifies the number of ten second time windows,
+prior to each root event window, to include in the graph walk.
 
 [source,text]
 ----
@@ -553,9 +562,12 @@ nodes(solr_logs,
             avg(qtime_i)),
             walk="time_ten_second_s->time_ten_second_s",
       gather="type_s",
-      window="3",
+      window="-3",
       count(*))
 ----
+
+Notice that the window parameter in this example is *negative* (-3). This will walk back in time from the events. A positive
+window will walk forward in time.
 
 Below is the node set returned when the window parameter is added.
 Notice that there are *now 29 error* events within the 3 ten second windows prior to the slow query events.
@@ -644,7 +656,7 @@ scoreNodes(nodes(solr_logs,
                        avg(qtime_i)),
                  walk="time_ten_second_s->time_ten_second_s",
                  gather="type_s",
-                 window="3",
+                 window="-3",
                  count(*)))
 ----
 
@@ -715,3 +727,44 @@ This score give us a good indication of where to begin our *root cause analysis*
   }
 }
 ----
+
+=== DAY and WEEKDAY Time Windows
+
+To switch to *day* or *weekday* time windows we must first index day truncated ISO 8601 timestamps in a string field with the log records.
+In the example below the field `time_day_s` contains the day truncated time stamps.
+
+Then its simply a matter of specifying -3DAYS in the window parameter. This will switch from the default ten second
+time windows to daily windows.
+
+[source,text]
+----
+scoreNodes(nodes(solr_logs,
+                 facet(solr_logs,
+                       q="+type_s:query +distrib_s:false",
+                       buckets="time_day_s",
+                       avg(qtime_i)),
+                 walk="time_day_s->time_day_s",
+                 gather="type_s",
+                 window="-3DAYS",
+                 count(*)))
+----
+
+There are times when you may need to skip the weekends when walking forwards or backwards in time. This is useful
+for correlating financial instruments that trade on weekdays. The WEEKDAYS time window will walk forward or backward the
+specified number of weekdays.
+
+[source,text]
+----
+scoreNodes(nodes(solr_logs,
+                 facet(solr_logs,
+                       q="+type_s:query +distrib_s:false",
+                       buckets="time_day_s",
+                       avg(qtime_i)),
+                 walk="time_day_s->time_day_s",
+                 gather="type_s",
+                 window="-3WEEKDAYS",
+                 count(*)))
+----
+
+
+

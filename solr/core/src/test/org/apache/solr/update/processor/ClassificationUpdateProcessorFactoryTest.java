@@ -64,21 +64,15 @@ public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   @Test
   public void init_emptyInputFields_shouldThrowExceptionWithDetailedMessage() {
     args.removeAll("inputFields");
-    try {
-      cFactoryToTest.init(args);
-    } catch (SolrException e) {
-      assertEquals("Classification UpdateProcessor 'inputFields' can not be null", e.getMessage());
-    }
+    SolrException e = assertThrows(SolrException.class, () -> cFactoryToTest.init(args));
+    assertEquals("Classification UpdateProcessor 'inputFields' can not be null", e.getMessage());
   }
 
   @Test
   public void init_emptyClassField_shouldThrowExceptionWithDetailedMessage() {
     args.removeAll("classField");
-    try {
-      cFactoryToTest.init(args);
-    } catch (SolrException e) {
-      assertEquals("Classification UpdateProcessor 'classField' can not be null", e.getMessage());
-    }
+    SolrException e = assertThrows(SolrException.class, () -> cFactoryToTest.init(args));
+    assertEquals("Classification UpdateProcessor 'classField' can not be null", e.getMessage());
   }
 
   @Test
@@ -95,11 +89,8 @@ public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   public void init_unsupportedAlgorithm_shouldThrowExceptionWithDetailedMessage() {
     args.removeAll("algorithm");
     args.add("algorithm", "unsupported");
-    try {
-      cFactoryToTest.init(args);
-    } catch (SolrException e) {
-      assertEquals("Classification UpdateProcessor Algorithm: 'unsupported' not supported", e.getMessage());
-    }
+    SolrException e = assertThrows(SolrException.class, () -> cFactoryToTest.init(args));
+    assertEquals("Classification UpdateProcessor Algorithm: 'unsupported' not supported", e.getMessage());
   }
 
   @Test
@@ -110,13 +101,12 @@ public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     SolrQueryRequest mockRequest = mock(SolrQueryRequest.class);
     SolrQueryResponse mockResponse = mock(SolrQueryResponse.class);
     args.add("knn.filterQuery", "not supported query");
-    try {
-      cFactoryToTest.init(args);
+    cFactoryToTest.init(args);
+    SolrException e = assertThrows(SolrException.class, () -> {
       /* parsing failure happens because of the mocks, fine enough to check a proper exception propagation */
       cFactoryToTest.getInstance(mockRequest, mockResponse, mockProcessor);
-    } catch (SolrException e) {
-      assertEquals("Classification UpdateProcessor Training Filter Query: 'not supported query' is not supported", e.getMessage());
-    }
+    });
+    assertEquals("Classification UpdateProcessor Training Filter Query: 'not supported query' is not supported", e.getMessage());
   }
 
   @Test

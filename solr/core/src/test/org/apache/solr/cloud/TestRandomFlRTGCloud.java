@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -79,8 +78,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    *
    * @see #addRandomFlValidators
    */
-  private static final List<FlValidator> FL_VALIDATORS = Collections.unmodifiableList
-    (Arrays.<FlValidator>asList(
+  private static final List<FlValidator> FL_VALIDATORS = List.of(
       new GlobValidator("*"),
       new GlobValidator("*_i"),
       new GlobValidator("*_s"),
@@ -117,7 +115,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       new ExplainValidator("explain_alias"),
       new SubQueryValidator(),
       new NotIncludedValidator("score"),
-      new NotIncludedValidator("score","score_alias:score")));
+      new NotIncludedValidator("score","score_alias:score"));
   
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
@@ -134,7 +132,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     final int numNodes = 1 + (singleCoreMode ? 0 : (numShards * repFactor));
     
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_COLL1_CONF();
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
 
@@ -590,6 +588,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * What we're primarily concerned with is that the transformer does it's job and puts the string 
    * in the response, regardless of cloud/RTG/uncommited state of the document.
    */
+  @SuppressWarnings("UnusedNestedClass") // SOLR-9376
   private static class RawFieldValueValidator extends RenameFieldValueValidator {
     final String type;
     final String alias;
@@ -812,7 +811,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       for (int i = -42; i < 66; i+=13) {
         VALUES.put("POINT( 42 "+i+" )", "{\"type\":\"Point\",\"coordinates\":[42,"+i+"]}");
       }
-      ALLOWED_FIELD_VALUES = Collections.unmodifiableList(new ArrayList<>(VALUES.keySet()));
+      ALLOWED_FIELD_VALUES = List.copyOf(VALUES.keySet());
     }
     /** 
      * returns a random field value usable when indexing a document that this validator will

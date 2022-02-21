@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+package org.apache.solr.guide;
+
 import java.io.*;
 import java.io.FilenameFilter;
 import java.util.*;
