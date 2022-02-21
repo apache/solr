@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- *  Contains Feature related classes
- */
+/** Contains Feature related classes */
 package org.apache.solr.ltr.feature;
