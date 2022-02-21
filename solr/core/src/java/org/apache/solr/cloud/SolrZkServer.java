@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
@@ -37,8 +38,6 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Pattern;
-
 
 public class SolrZkServer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -54,7 +53,7 @@ public class SolrZkServer {
 
   private Thread zkThread;  // the thread running a zookeeper server, only if zkRun is set
 
-  private File dataHome;
+  private File dataHome; // o.a.zookeeper.**.QuorumPeerConfig needs a File not a Path
   private String confHome;
 
   public SolrZkServer(String zkRun, String zkHost, File dataHome, String confHome, int solrPort) {
@@ -84,9 +83,20 @@ public class SolrZkServer {
       zkProps.zkRun = zkRun;
       zkProps.solrPort = Integer.toString(solrPort);
     }
-    
+
+    var zooCfgPath = Path.of(confHome).resolve("zoo.cfg");
+    if (!Files.exists(zooCfgPath)) {
+      log.info("Zookeeper configuration not found in {}, using built-in default", confHome);
+      String solrInstallDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+      if (solrInstallDir == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Could not find default zoo.cfg file due to missing " + SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+      }
+      zooCfgPath = Path.of(solrInstallDir).resolve("server").resolve("solr").resolve("zoo.cfg");
+    }
+
     try {
-      props = SolrZkServerProps.getProperties(confHome + '/' + "zoo.cfg");
+      props = SolrZkServerProps.getProperties(zooCfgPath);
       SolrZkServerProps.injectServers(props, zkRun, zkHost);
       if (props.getProperty("clientPort") == null) {
         props.setProperty("clientPort", Integer.toString(solrPort + 1000));
@@ -168,34 +178,29 @@ public class SolrZkServer {
 // zoo.cfg (which validates that there is a dataDir)
 class SolrZkServerProps extends QuorumPeerConfig {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final Pattern MISSING_MYID_FILE_PATTERN = Pattern.compile(".*myid file is missing$");
 
   String solrPort; // port that Solr is listening on
   String zkRun;
 
   /**
    * Parse a ZooKeeper configuration file
-   * @param path the patch of the configuration file
+   * @param configPath the path of the configuration file
    * @throws IllegalArgumentException if a config file does not exist at the given path
    * @throws ConfigException error processing configuration
    */
-  public static Properties getProperties(String path) throws ConfigException {
-    Path configPath = Path.of(path);
+  public static Properties getProperties(Path configPath) throws ConfigException {
     log.info("Reading configuration from: {}", configPath);
 
-    try {
-      if (!Files.exists(configPath)) {
-        throw new IllegalArgumentException(configPath.toString()
-            + " file is missing");
-      }
+    if (!Files.exists(configPath)) {
+      throw new IllegalArgumentException(configPath + " file is missing");
+    }
 
-      try (Reader reader = Files.newBufferedReader(configPath)) {
-        Properties cfg = new Properties();
-        cfg.load(reader);
-        return cfg;
-      }
+    try (Reader reader = Files.newBufferedReader(configPath)) {
+      Properties cfg = new Properties();
+      cfg.load(reader);
+      return cfg;
     } catch (IOException | IllegalArgumentException e) {
-      throw new ConfigException("Error processing " + path, e);
+      throw new ConfigException("Error processing " + configPath, e);
     }
   }
 

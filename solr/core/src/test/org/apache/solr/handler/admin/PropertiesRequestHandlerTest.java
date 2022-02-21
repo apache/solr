@@ -16,11 +16,13 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.StringReader;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.RedactionUtils;
 import org.junit.BeforeClass;
@@ -62,13 +64,11 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"unchecked"})
   private NamedList<Object> readProperties() throws Exception {
-    String xml = h.query(req(
-        CommonParams.QT, "/admin/properties",
-        CommonParams.WT, "xml"
-    ));
+    SolrClient client = new EmbeddedSolrServer(h.getCore());
 
-    XMLResponseParser parser = new XMLResponseParser();
-    return (NamedList<Object>)
-        parser.processResponse(new StringReader(xml)).get("system.properties");
+    NamedList<Object> properties = client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/properties",
+            new ModifiableSolrParams()));
+
+    return (NamedList<Object>) properties.get("system.properties");
   }
 }

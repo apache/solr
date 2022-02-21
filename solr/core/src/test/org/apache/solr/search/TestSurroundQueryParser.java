@@ -93,8 +93,12 @@ public class TestSurroundQueryParser extends SolrTestCaseJ4 {
         ,"//lst[@name='1']/arr[@name='name']/str[.='a b c d e a b c f g h i j <em>k</em> <em>l</em> m l k j z z z']");
 
     // test highlighted response with ordered query and hl.usePhraseHighlighter=false
-    assertQ(req("q", "{!surround df=name}k w l", 
-                "hl", "true", 
+    //  Note: UnifiedHighlighter doesn't support it because RewriteQuery doesn't implement visit(),
+    //   but it will work with usePhraseHighlighter (and thus weight.matches mode)
+    //   which is the default (as seen above).  See SOLR-15962
+    assertQ(req("q", "{!surround df=name}k w l",
+                "hl", "true",
+                "hl.method", "original",
                 "hl.fl", "name", 
                 "hl.usePhraseHighlighter", "false")
         ,"//*[@numFound='1']"

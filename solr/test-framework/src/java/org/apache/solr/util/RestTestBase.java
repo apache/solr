@@ -33,16 +33,17 @@ import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.SortedMap;
 
-abstract public class RestTestBase extends SolrJettyTestBase {
+public abstract class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static RestTestHarness restTestHarness;
 
   @AfterClass
   public static void cleanUpHarness() throws IOException {
-    if (restTestHarness != null) {
-      restTestHarness.close();
+    RestTestHarness localHarness = restTestHarness;
+    if (localHarness != null) {
+      localHarness.close();
+      restTestHarness = null;
     }
-    restTestHarness = null;
   }
 
   public static void createJettyAndHarness
@@ -134,12 +135,8 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       String results = TestHarness.validateXPath(response, tests);
 
       if (null != results) {
-        String msg = "REQUEST FAILED: xpath=" + results
-            + "\n\txml response was: " + response
-            + "\n\trequest was:" + request;
-
-        log.error(msg);
-        throw new RuntimeException(msg);
+        log.error("REQUEST FAILED: xpath={}\n\txml response was: {}\n\trequest was:{}", results, response, request);
+        fail(results);
       }
 
     } catch (XPathExpressionException e1) {
@@ -155,32 +152,15 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    *
    * @param request a URL path with optional query params, e.g. "/schema/fields?fl=id,_version_" 
    */
-  public static String JQ(String request) throws Exception {
-    int queryStartPos = request.indexOf('?');
-    String query;
-    String path;
-    if (-1 == queryStartPos) {
-      query = "";
-      path = request;
-    } else {
-      query = request.substring(queryStartPos + 1);
-      path = request.substring(0, queryStartPos);
-    }
-    query = setParam(query, "wt", "json");
-    request = path + '?' + setParam(query, "indent", "on"); 
+  public static String JQ(String request) throws IOException {
+    request = setWtJsonAndIndent(request);
 
-    String response;
-    boolean failed=true;
     try {
-      response = restTestHarness.query(request);
-      failed = false;
-    } finally {
-      if (failed) {
-        log.error("REQUEST FAILED: {}", request);
-      }
+      return restTestHarness.query(request);
+    } catch (IOException e) {
+      log.error("REQUEST FAILED: {}", request);
+      throw e;
     }
-
-    return response;
   }
 
   /**
@@ -206,64 +186,31 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * @param delta tolerance allowed in comparing float/double values
    * @param tests JSON path expression + '==' + expected value
    */
-  public static void assertJQ(String request, double delta, String... tests) throws Exception {
-    int queryStartPos = request.indexOf('?');
-    String query;
-    String path;
-    if (-1 == queryStartPos) {
-      query = "";
-      path = request;
-    } else {
-      query = request.substring(queryStartPos + 1);
-      path = request.substring(0, queryStartPos);
-    }
-    query = setParam(query, "wt", "json");
-    request = path + '?' + setParam(query, "indent", "on");
+  public static void assertJQ(String request, double delta, String... tests) throws IOException {
+    request = setWtJsonAndIndent(request);
 
     String response;
-    boolean failed = true;
     try {
       response = restTestHarness.query(request);
-      failed = false;
-    } finally {
-      if (failed) {
-        log.error("REQUEST FAILED: {}", request);
-      }
+    } catch (IOException e) {
+      log.error("REQUEST FAILED: {}", request);
+      throw e;
     }
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = json(test);
-
-      try {
-        failed = true;
-        String err = JSONTestUtil.match(response, testJSON, delta);
-        failed = false;
-        if (err != null) {
-          log.error("query failed JSON validation. error={}"
-              + "\n expected ={}\n response = {}\n request = {}\n"
-              , err, testJSON, response, request);
-          throw new RuntimeException(err);
-        }
-      } finally {
-        if (failed) {
-          log.error("JSON query validation threw an exception."
-              +"\n expected ={}\n response = {}\n request = {}\n"
-              , testJSON, response, request);
-        }
-      }
+      assertJsonMatches(request, response, json(test), delta);
     }
   }
 
-  
-  
+
   /**
    * Validates the response from a PUT request matches some JSON test expressions
    * 
    * @see org.apache.solr.JSONTestUtil#DEFAULT_DELTA
    * @see #assertJQ(String,double,String...)
    */
-  public static void assertJPut(String request, String content, String... tests) throws Exception {
+  public static void assertJPut(String request, String content, String... tests) throws IOException {
     assertJPut(request, content, JSONTestUtil.DEFAULT_DELTA, tests);
   }
 
@@ -283,52 +230,37 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * @param delta tolerance allowed in comparing float/double values
    * @param tests JSON path expression + '==' + expected value
    */
-  public static void assertJPut(String request, String content, double delta, String... tests) throws Exception {
-    int queryStartPos = request.indexOf('?');
-    String query;
-    String path;
-    if (-1 == queryStartPos) {
-      query = "";
-      path = request;
-    } else {
-      query = request.substring(queryStartPos + 1);
-      path = request.substring(0, queryStartPos);
-    }
-    query = setParam(query, "wt", "json");
-    request = path + '?' + setParam(query, "indent", "on");
+  public static void assertJPut(String request, String content, double delta, String... tests) throws IOException {
+    request = setWtJsonAndIndent(request);
 
     String response;
-    boolean failed = true;
     try {
       response = restTestHarness.put(request, content);
-      failed = false;
-    } finally {
-      if (failed) {
-        log.error("REQUEST FAILED: {}", request);
-      }
+    } catch (IOException e) {
+      log.error("REQUEST FAILED: {}", request);
+      throw e;
     }
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = json(test);
+      assertJsonMatches(request, response, json(test), delta);
+    }
+  }
 
-      try {
-        failed = true;
-        String err = JSONTestUtil.match(response, testJSON, delta);
-        failed = false;
-        if (err != null) {
-          log.error("query failed JSON validation. error={}"
-              + "\n expected ={}\n response = {}\n request = {}\n"
-              ,err, testJSON, response, request);
-          throw new RuntimeException(err);
-        }
-      } finally {
-        if (failed) {
-          log.error("JSON query validation threw an exception."
-              + "\n expected ={}\n response = {}\n request = {}"
-              , testJSON, response, request);
-        }
+  private static void assertJsonMatches(String request, String response, String testJSON, double delta) throws IOException {
+    try {
+      String err = JSONTestUtil.match(response, testJSON, delta);
+      if (err != null) {
+        log.error("query failed JSON validation. error: {}"
+                + "\n expected: {}\n response: {}\n request: {}\n"
+            , err, testJSON, response, request);
+        fail(err);
       }
+    } catch (IOException e) {
+      log.error("JSON query validation threw an exception."
+              +"\n expected: {}\n response: {}\n request: {}"
+          , testJSON, response, request);
+      throw e;
     }
   }
 
@@ -359,51 +291,19 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * @param tests JSON path expression + '==' + expected value
    */
   public static void assertJPost(String request, String content, double delta, String... tests) throws Exception {
-    int queryStartPos = request.indexOf('?');
-    String query;
-    String path;
-    if (-1 == queryStartPos) {
-      query = "";
-      path = request;
-    } else {
-      query = request.substring(queryStartPos + 1);
-      path = request.substring(0, queryStartPos);
-    }
-    query = setParam(query, "wt", "json");
-    request = path + '?' + setParam(query, "indent", "on");
+    request = setWtJsonAndIndent(request);
 
     String response;
-    boolean failed = true;
     try {
       response = restTestHarness.post(request, content);
-      failed = false;
-    } finally {
-      if (failed) {
-        log.error("REQUEST FAILED: {}", request);
-      }
+    } catch (IOException e) {
+      log.error("REQUEST FAILED: {}", request);
+      throw e;
     }
 
     for (String test : tests) {
       if (null == test || 0 == test.length()) continue;
-      String testJSON = json(test);
-
-      try {
-        failed = true;
-        String err = JSONTestUtil.match(response, testJSON, delta);
-        failed = false;
-        if (err != null) {
-          log.error("query failed JSON validation. error={}"
-              + "\n expected ={}\n response = {}\n request = {}\n"
-              , err, testJSON, response, request);
-          throw new RuntimeException(err);
-        }
-      } finally {
-        if (failed) {
-          log.error("JSON query validation threw an exception." +
-              "\n expected ={}\n response = {}\n request = {}\n"
-              ,testJSON, response, request);
-        }
-      }
+      assertJsonMatches(request, response, json(test), delta);
     }
   }
   
@@ -422,6 +322,28 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * response using the specified double delta tolerance.
    */
   public static void assertJDelete(String request, double delta, String... tests) throws Exception {
+    request = setWtJsonAndIndent(request);
+
+    String response;
+    try {
+      response = restTestHarness.delete(request);
+    } catch (IOException e) {
+      log.error("REQUEST FAILED: {}", request);
+      throw e;
+    }
+
+    for (String test : tests) {
+      if (null == test || 0 == test.length()) continue;
+      assertJsonMatches(request, response, json(test), delta);
+    }
+  }
+
+  /**
+   * Parse the request string and set wt=json&indent=on for json queries
+   * @param request the original request
+   * @return the new (possibly unmodified) request
+   */
+  private static String setWtJsonAndIndent(String request) {
     int queryStartPos = request.indexOf('?');
     String query;
     String path;
@@ -434,45 +356,12 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     }
     query = setParam(query, "wt", "json");
     request = path + '?' + setParam(query, "indent", "on");
-
-    String response;
-    boolean failed = true;
-    try {
-      response = restTestHarness.delete(request);
-      failed = false;
-    } finally {
-      if (failed) {
-        log.error("REQUEST FAILED: {}", request);
-      }
-    }
-
-    for (String test : tests) {
-      if (null == test || 0 == test.length()) continue;
-      String testJSON = json(test);
-
-      try {
-        failed = true;
-        String err = JSONTestUtil.match(response, testJSON, delta);
-        failed = false;
-        if (err != null) {
-          log.error("query failed JSON validation. error={}\n expected ={}"
-              + "\n response = {}\n request = {}"
-              , err, testJSON, response, request);
-          throw new RuntimeException(err);
-        }
-      } finally {
-        if (failed) {
-          log.error("JSON query validation threw an exception.\n expected ={}\n"
-              + "\n response = {}\n request = {}"
-              , testJSON, response, request
-          );
-        }
-      }
-    }
+    return request;
   }
 
+
   /**
-   * Insures that the given param is included in the query with the given value.
+   * Ensures that the given param is included in the query with the given value.
    *
    * <ol>
    *   <li>If the param is already included with the given value, the request is returned unchanged.</li>
@@ -492,54 +381,50 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     if (null == valueToSet) {
       valueToSet = "";
     }
-    try {
-      StringBuilder builder = new StringBuilder();
-      if (null == query || query.trim().isEmpty()) {
-        // empty query -> return "paramToSet=valueToSet"
-        builder.append(paramToSet);
-        builder.append('=');
-        StrUtils.partialURLEncodeVal(builder, valueToSet);
-        return builder.toString();
-      }
-      MultiMapSolrParams requestParams = SolrRequestParsers.parseQueryString(query);
-      String[] values = requestParams.getParams(paramToSet);
-      if (null == values) {
-        // paramToSet isn't present in the request -> append "&paramToSet=valueToSet"
-        builder.append(query);
-        builder.append('&');
-        builder.append(paramToSet);
-        builder.append('=');
-        StrUtils.partialURLEncodeVal(builder, valueToSet);
-        return builder.toString();
-      }
-      if (1 == values.length && valueToSet.equals(values[0])) {
-        // paramToSet=valueToSet is already in the query - just return the query as-is.
-        return query;
-      }
-      // More than one value for paramToSet on the request, or paramToSet's value is not valueToSet
-      // -> rebuild the query
-      boolean isFirst = true;
-      for (Map.Entry<String,String[]> entry : requestParams.getMap().entrySet()) {
-        String key = entry.getKey();
-        String[] valarr = entry.getValue();
-
-        if ( ! key.equals(paramToSet)) {
-          for (String val : valarr) {
-            builder.append(isFirst ? "" : '&');
-            isFirst = false;
-            builder.append(key);
-            builder.append('=');
-            StrUtils.partialURLEncodeVal(builder, null == val ? "" : val);
-          }
-        }
-      }
-      builder.append(isFirst ? "" : '&');
+    StringBuilder builder = new StringBuilder();
+    if (null == query || query.trim().isEmpty()) {
+      // empty query -> return "paramToSet=valueToSet"
       builder.append(paramToSet);
       builder.append('=');
       StrUtils.partialURLEncodeVal(builder, valueToSet);
       return builder.toString();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     }
+    MultiMapSolrParams requestParams = SolrRequestParsers.parseQueryString(query);
+    String[] values = requestParams.getParams(paramToSet);
+    if (null == values) {
+      // paramToSet isn't present in the request -> append "&paramToSet=valueToSet"
+      builder.append(query);
+      builder.append('&');
+      builder.append(paramToSet);
+      builder.append('=');
+      StrUtils.partialURLEncodeVal(builder, valueToSet);
+      return builder.toString();
+    }
+    if (1 == values.length && valueToSet.equals(values[0])) {
+      // paramToSet=valueToSet is already in the query - just return the query as-is.
+      return query;
+    }
+    // More than one value for paramToSet on the request, or paramToSet's value is not valueToSet
+    // -> rebuild the query
+    boolean isFirst = true;
+    for (Map.Entry<String,String[]> entry : requestParams.getMap().entrySet()) {
+      String key = entry.getKey();
+      String[] valarr = entry.getValue();
+
+      if ( ! key.equals(paramToSet)) {
+        for (String val : valarr) {
+          builder.append(isFirst ? "" : '&');
+          isFirst = false;
+          builder.append(key);
+          builder.append('=');
+          StrUtils.partialURLEncodeVal(builder, null == val ? "" : val);
+        }
+      }
+    }
+    builder.append(isFirst ? "" : '&');
+    builder.append(paramToSet);
+    builder.append('=');
+    StrUtils.partialURLEncodeVal(builder, valueToSet);
+    return builder.toString();
   }
 }  

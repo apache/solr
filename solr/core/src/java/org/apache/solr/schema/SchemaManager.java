@@ -186,7 +186,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.addFieldTypes(singletonList(fieldType), false);
           return true;
         } catch (Exception e) {
-          log.error("err", e);
+          log.error("Could not add field type.", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -221,7 +221,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.addCopyFields(src, dests, maxChars);
           return true;
         } catch (Exception e) {
-          log.error("err", e);
+          log.error("Could not add copy field", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -239,7 +239,7 @@ public class SchemaManager {
               = mgr.managedIndexSchema.addFields(singletonList(field), Collections.emptyMap(), false);
           return true;
         } catch (Exception e) {
-          log.error("err", e);
+          log.error("Could not add field", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -257,7 +257,7 @@ public class SchemaManager {
               = mgr.managedIndexSchema.addDynamicFields(singletonList(field), Collections.emptyMap(), false);
           return true;
         } catch (Exception e) {
-          log.error("err", e);
+          log.error("Could not add dynamic field", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -276,7 +276,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFieldTypes(singleton(name));
           return true;
         } catch (Exception e) {
-          log.error("err", e);
+          log.error("Could not delete field type", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -297,6 +297,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteCopyFields(singletonMap(source, dests));
           return true;
         } catch (Exception e) {
+          log.error("Could not delete copy field", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -315,6 +316,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFields(singleton(name));
           return true;
         } catch (Exception e) {
+          log.error("Could not delete field", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -333,7 +335,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteDynamicFields(singleton(name));
           return true;
         } catch (Exception e) {
-          log.error("err", e);
+          log.error("Could not delete dynamic field", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -349,7 +351,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.replaceFieldType(name, className, op.getDataMap());
           return true;
         } catch (Exception e) {
-          log.error("err", e);
+          log.error("Could not replace field type", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -370,7 +372,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.replaceField(name, ft, op.getValuesExcluding(NAME, TYPE));
           return true;
         } catch (Exception e) {
-          log.error("err", e);
+          log.error("Could not replace field", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -391,6 +393,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.replaceDynamicField(name, ft, op.getValuesExcluding(NAME, TYPE));
           return true;
         } catch (Exception e) {
+          log.error("Could not replace dynamic field", e);
           op.addError(getErrorStr(e));
           return false;
         }

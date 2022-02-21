@@ -225,25 +225,21 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     // For creating the baseZnode, the cleanup parameter is only allowed to be true when singleFilePath is not passed.
     createBaseNode(configSetService, overwritesExisting, requestIsTrusted, configSetName);
 
-    ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
-    ZipEntry zipEntry = null;
-    boolean hasEntry = false;
-    while ((zipEntry = zis.getNextEntry()) != null) {
-      hasEntry = true;
-      String filePath = zipEntry.getName();
-      if (filePath.endsWith("/")) {
-        filesToDelete.remove(filePath.substring(0, filePath.length() - 1));
-      } else {
+    try(ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8)) {
+      boolean hasEntry = false;
+      ZipEntry zipEntry;
+      while ((zipEntry = zis.getNextEntry()) != null) {
+        hasEntry = true;
+        String filePath = zipEntry.getName();
         filesToDelete.remove(filePath);
+        if (!zipEntry.isDirectory()) {
+          configSetService.uploadFileToConfig(configSetName, filePath, IOUtils.toByteArray(zis), true);
+        }
       }
-      if (!zipEntry.isDirectory()) {
-        configSetService.uploadFileToConfig(configSetName, zipEntry.getName(), IOUtils.toByteArray(zis), true);
+      if (!hasEntry) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "Either empty zipped data, or non-zipped data was uploaded. In order to upload a configSet, you must zip a non-empty directory to upload.");
       }
-    }
-    zis.close();
-    if (!hasEntry) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-              "Either empty zipped data, or non-zipped data was uploaded. In order to upload a configSet, you must zip a non-empty directory to upload.");
     }
     deleteUnusedFiles(configSetService, configSetName, filesToDelete);
 

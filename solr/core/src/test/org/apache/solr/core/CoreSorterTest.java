@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreSorter.CountsForEachShard;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
@@ -42,6 +43,7 @@ import org.junit.Test;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@SolrTestCaseJ4.SuppressSSL
 public class CoreSorterTest extends SolrTestCaseJ4 {
 
   private static final List<CountsForEachShard> inputCounts = Arrays.asList(
@@ -195,7 +197,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   protected Replica addNewReplica(List<Replica> replicaList, String collection, String slice, List<String> possibleNodes) {
     String replica = "r" + replicaList.size();
     String node = possibleNodes.get(random().nextInt(possibleNodes.size())); // place on a random node
-    Replica r = new Replica(replica, Map.of("core", replica, "node_name", node), collection, slice);
+    Replica r = new Replica(replica, Map.of(ZkStateReader.CORE_NAME_PROP, replica, ZkStateReader.NODE_NAME_PROP, node, ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName(node, "http")), collection, slice);
     replicaList.add(r);
     return r;
   }

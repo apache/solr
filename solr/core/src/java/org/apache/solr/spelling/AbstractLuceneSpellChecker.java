@@ -18,6 +18,7 @@ package org.apache.solr.spelling;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -223,7 +224,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
       // Windows causes problems because deleted files can't be opened.  It would be better for SpellChecker to hold a single IW instance,
       // and close it on close, but Solr never seems to close its spell checkers.  Wrapping as FilterDirectory prevents IndexWriter from
       // catching the pending deletions:
-      index = new FilterDirectory(FSDirectory.open(new File(indexDir).toPath())) {
+      index = new FilterDirectory(FSDirectory.open(Path.of(indexDir))) {
       };
     } else {
       index = new ByteBuffersDirectory();

@@ -36,8 +36,6 @@ import java.util.List;
  * </p>
  */
 public class DirectoryFactoriesTest extends SolrTestCaseJ4 {
-
-  // TODO: what do we need to setup to be able to test HdfsDirectoryFactory?
   public static final List<Class<? extends DirectoryFactory>> ALL_CLASSES
     = Arrays.asList(MMapDirectoryFactory.class,
                     MockDirectoryFactory.class,

@@ -116,10 +116,8 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.spec.InvalidKeySpecException;
@@ -127,7 +125,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -191,7 +188,7 @@ public class CoreContainer {
   private volatile InfoHandler infoHandler;
   protected volatile ConfigSetsHandler configSetsHandler = null;
 
-  private volatile PKIAuthenticationPlugin pkiAuthenticationPlugin;
+  private volatile PKIAuthenticationPlugin pkiAuthenticationSecurityBuilder;
 
   protected volatile Properties containerProperties;
 
@@ -528,13 +525,19 @@ public class CoreContainer {
       // Setup HttpClient for internode communication
       HttpClientBuilderPlugin builderPlugin = ((HttpClientBuilderPlugin) authcPlugin);
       SolrHttpClientBuilder builder = builderPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
-      shardHandlerFactory.setSecurityBuilder(builderPlugin);
-      updateShardHandler.setSecurityBuilder(builderPlugin);
 
-      // The default http client of the core container's shardHandlerFactory has already been created and
-      // configured using the default httpclient configurer. We need to reconfigure it using the plugin's
-      // http client configurer to set it up for internode communication.
-      log.debug("Reconfiguring HttpClient settings.");
+
+      // this caused plugins like KerberosPlugin to register it's intercepts, but this intercept logic is also
+      // handled by the pki authentication code when it decideds to let the plugin handle auth via it's intercept
+      // - so you would end up with two intercepts
+      // -->
+      //  shardHandlerFactory.setSecurityBuilder(builderPlugin); // calls setup for the authcPlugin
+      //  updateShardHandler.setSecurityBuilder(builderPlugin);
+      // <--
+
+      // This should not happen here at all - it's only currently required due to its affect on http1 clients
+      // in a test or two incorrectly counting on it for their configuration.
+      // -->
 
       SolrHttpClientContextBuilder httpClientBuilder = new SolrHttpClientContextBuilder();
       if (builder.getCredentialsProviderProvider() != null) {
@@ -557,13 +560,16 @@ public class CoreContainer {
       }
 
       HttpClientUtil.setHttpClientRequestContextBuilder(httpClientBuilder);
+
+      // <--
     }
+
     // Always register PKI auth interceptor, which will then delegate the decision of who should secure
     // each request to the configured authentication plugin.
-    if (pkiAuthenticationPlugin != null && !pkiAuthenticationPlugin.isInterceptorRegistered()) {
-      pkiAuthenticationPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
-      shardHandlerFactory.setSecurityBuilder(pkiAuthenticationPlugin);
-      updateShardHandler.setSecurityBuilder(pkiAuthenticationPlugin);
+    if (pkiAuthenticationSecurityBuilder != null && !pkiAuthenticationSecurityBuilder.isInterceptorRegistered()) {
+      pkiAuthenticationSecurityBuilder.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
+      shardHandlerFactory.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
+      updateShardHandler.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
     }
   }
 
@@ -620,8 +626,8 @@ public class CoreContainer {
     return containerProperties;
   }
 
-  public PKIAuthenticationPlugin getPkiAuthenticationPlugin() {
-    return pkiAuthenticationPlugin;
+  public PKIAuthenticationPlugin getPkiAuthenticationSecurityBuilder() {
+    return pkiAuthenticationSecurityBuilder;
   }
 
   public SolrMetricManager getMetricManager() {
@@ -669,32 +675,6 @@ public class CoreContainer {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
 
-    // Always add $SOLR_HOME/lib to the shared resource loader
-    Set<String> libDirs = new LinkedHashSet<>();
-    libDirs.add("lib");
-
-    if (!StringUtils.isBlank(cfg.getSharedLibDirectory())) {
-      List<String> sharedLibs = Arrays.asList(cfg.getSharedLibDirectory().split("\\s*,\\s*"));
-      libDirs.addAll(sharedLibs);
-    }
-
-    boolean modified = false;
-    // add the sharedLib to the shared resource loader before initializing cfg based plugins
-    for (String libDir : libDirs) {
-      Path libPath = Paths.get(getSolrHome()).resolve(libDir);
-      if (Files.exists(libPath)) {
-        try {
-          loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
-          modified = true;
-        } catch (IOException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't load libs: " + e, e);
-        }
-      }
-    }
-    if (modified) {
-      loader.reloadLuceneSPI();
-    }
-
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
     clusterEventProducer = clusterEventProducerFactory;
 
@@ -737,10 +717,10 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
-      pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
+      pkiAuthenticationSecurityBuilder = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       // use deprecated API for back-compat, remove in 9.0
-      pkiAuthenticationPlugin.initializeMetrics(solrMetricsContext, "/authentication/pki");
+      pkiAuthenticationSecurityBuilder.initializeMetrics(solrMetricsContext, "/authentication/pki");
 
       packageStoreAPI = new PackageStoreAPI(this);
       containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
@@ -847,9 +827,6 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
     }
-
-    // Do this before cores get created
-    createUserFilesDirectory();
 
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
@@ -965,17 +942,6 @@ public class CoreContainer {
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
-  }
-
-  private void createUserFilesDirectory() {
-    if (isZooKeeperAware()) {
-      Path userFilesPath = getUserFilesPath(); // TODO make configurable on cfg?
-      try {
-        Files.createDirectories(userFilesPath); // does nothing if already exists
-      } catch (Exception e) {
-        log.warn("Unable to create [{}].  Features requiring this directory may fail.", userFilesPath, e);
-      }
-    }
   }
 
   public void securityNodeChanged() {
@@ -1714,7 +1680,6 @@ public class CoreContainer {
       // CoreDescriptor and we need to reload it from the disk files
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
       solrCores.addCoreDescriptor(cd);
-      Closeable oldCore = null;
       boolean success = false;
       try {
         solrCores.waitAddPendingCoreOps(cd.getName());
@@ -2084,15 +2049,6 @@ public class CoreContainer {
     return solrCores.isLoaded(name);
   }
 
-  public boolean isLoadedNotPendingClose(String name) {
-    return solrCores.isLoadedNotPendingClose(name);
-  }
-
-  // Primarily for transient cores when a core is aged out.
-  public void queueCoreToClose(SolrCore coreToClose) {
-    solrCores.queueCoreToClose(coreToClose);
-  }
-
   /**
    * Gets a solr core descriptor for a core that is not loaded. Note that if the caller calls this on a
    * loaded core, the unloaded descriptor will be returned.
@@ -2113,8 +2069,7 @@ public class CoreContainer {
   /**
    * A path where Solr users can retrieve arbitrary files from.  Absolute.
    * <p>
-   * This directory is generally created by each node on startup.  Files located in this directory can then be
-   * manipulated using select Solr features (e.g. streaming expressions).
+   * Files located in this directory can be manipulated using select Solr features (e.g. streaming expressions).
    */
   public Path getUserFilesPath() {
     return solrHome.resolve("userfiles");
@@ -2284,8 +2239,10 @@ class CloserThread extends Thread {
 
       SolrCore core;
       while (!container.isShutDown() && (core = solrCores.getCoreToClose()) != null) {
+        assert core.getOpenCount() == 1;
         try {
-          core.close();
+          MDCLoggingContext.setCore(core);
+          core.close(); // will clear MDC
         } finally {
           solrCores.removeFromPendingOps(core.getName());
         }

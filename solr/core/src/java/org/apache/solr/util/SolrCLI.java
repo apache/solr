@@ -63,7 +63,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -1924,9 +1923,7 @@ public class SolrCLI implements CLIO {
         if (configSetPath.endsWith("/conf") == false) {
           configSetPath = Paths.get(configSetPath.toString(), "conf");
         }
-        if (Files.exists(configSetPath) == false) {
-          Files.createDirectories(configSetPath);
-        }
+        Files.createDirectories(configSetPath);
         echo("Downloading configset " + confName + " from ZooKeeper at " + zkHost +
             " to directory " + configSetPath.toAbsolutePath());
 
@@ -2732,7 +2729,6 @@ public class SolrCLI implements CLIO {
 
     protected void runImpl(CommandLine cli) throws Exception {
       this.urlScheme = cli.getOptionValue("urlScheme", "http");
-      UrlScheme.INSTANCE.setUrlScheme(this.urlScheme);
 
       serverDir = new File(cli.getOptionValue("serverDir"));
       if (!serverDir.isDirectory())

@@ -34,7 +34,7 @@ import org.apache.solr.request.SolrQueryRequest;
   *
   * <p>
   * All of the following options may be configured for this plugin
-  * in the solrconfig as defaults, and may be overriden as request parameters
+  * in the solrconfig as defaults, and may be overridden as request parameters
   * </p>
   *
   * <ul>

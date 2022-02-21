@@ -192,18 +192,18 @@ public interface FacetParams {
   public static final String FACET_DATE = FACET + ".date";
   /**
    * Date string indicating the starting point for a date facet range.
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    */
   public static final String FACET_DATE_START = FACET_DATE + ".start";
   /**
    * Date string indicating the ending point for a date facet range.
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    */
   public static final String FACET_DATE_END = FACET_DATE + ".end";
   /**
    * Date Math string indicating the interval of sub-ranges for a date
    * facet range.
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    */
   public static final String FACET_DATE_GAP = FACET_DATE + ".gap";
   /**
@@ -217,13 +217,13 @@ public interface FacetParams {
    * results in the range between 'start' and 'end' being evenly
    * divisible by 'gap'.
    * The default is false.
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    */
   public static final String FACET_DATE_HARD_END = FACET_DATE + ".hardend";
   /**
    * String indicating what "other" ranges should be computed for a
    * date facet range (multi-value).
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    * @see FacetRangeOther
    */
   public static final String FACET_DATE_OTHER = FACET_DATE + ".other";
@@ -238,7 +238,7 @@ public interface FacetParams {
    * The default value if none are specified is: [lower,upper,edge] <i>(NOTE: This is different then FACET_RANGE_INCLUDE)</i>
    * </p>
    * <p>
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    * </p>
    * @see FacetRangeInclude
    * @see #FACET_RANGE_INCLUDE
@@ -252,18 +252,18 @@ public interface FacetParams {
   public static final String FACET_RANGE = FACET + ".range";
   /**
    * Number indicating the starting point for a numerical range facet.
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    */
   public static final String FACET_RANGE_START = FACET_RANGE + ".start";
   /**
    * Number indicating the ending point for a numerical range facet.
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    */
   public static final String FACET_RANGE_END = FACET_RANGE + ".end";
   /**
    * Number indicating the interval of sub-ranges for a numerical
    * facet range.
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    */
   public static final String FACET_RANGE_GAP = FACET_RANGE + ".gap";
   /**
@@ -277,13 +277,13 @@ public interface FacetParams {
    * results in the range between 'start' and 'end' being evenly
    * divisible by 'gap'.
    * The default is false.
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    */
   public static final String FACET_RANGE_HARD_END = FACET_RANGE + ".hardend";
   /**
    * String indicating what "other" ranges should be computed for a
    * numerical range facet (multi-value).
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    */
   public static final String FACET_RANGE_OTHER = FACET_RANGE + ".other";
 
@@ -297,7 +297,7 @@ public interface FacetParams {
    * The default value if none are specified is: lower
    * </p>
    * <p>
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    * </p>
    * @see FacetRangeInclude
    */
@@ -306,7 +306,7 @@ public interface FacetParams {
   /**
    * String indicating the method to use to resolve range facets.
    * <p>
-   * Can be overriden on a per field basis.
+   * Can be overridden on a per field basis.
    * @see FacetRangeMethod
    */
   public static final String FACET_RANGE_METHOD = FACET_RANGE + ".method";

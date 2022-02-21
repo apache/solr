@@ -365,17 +365,17 @@ public class SchemaXmlWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeArray(String name, Object[] val) throws IOException {
-    writeArray(name, Arrays.asList(val).iterator());
+  public void writeArray(String name, Object[] val, boolean raw) throws IOException {
+    writeArray(name, Arrays.asList(val).iterator(), raw);
   }
 
   @Override
-  public void writeArray(String name, Iterator<?> iter) throws IOException {
+  public void writeArray(String name, Iterator<?> iter, boolean raw) throws IOException {
     if( iter.hasNext() ) {
       startTag("arr", name, false );
       incLevel();
       while( iter.hasNext() ) {
-        writeVal(null, iter.next());
+        writeVal(null, iter.next(), raw);
       }
       decLevel();
       if (doIndent) indent();

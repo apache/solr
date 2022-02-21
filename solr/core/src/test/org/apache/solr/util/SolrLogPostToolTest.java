@@ -268,43 +268,43 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCommit() throws Exception{
-    String record = "2019-12-16T14:20:19.708 INFO  (qtp812143047-22671) [c:production_201912 s:shard128 r:core_node7 x:production_201912_shard128_replica] o.a.s.u.DirectUpdateHandler2 start commit{_version_=1653086376121335808,optimize=false,openSearcher=true,waitSearcher=true,expungeDeletes=false,softCommit=false,prepareCommit=false}\n";
+    String record = "2021-10-08 16:42:10.636 INFO  (qtp1080476785-26) [c:collection1 s:shard1 r:core_node2 x:collection1_shard1_replica_n1] o.a.s.u.p.LogUpdateProcessorFactory [collection1_shard1_replica_n1]  webapp=/solr path=/update params={waitSearcher=true&commit=true&softCommit=false&wt=javabin&version=2}{commit=} 0 152";
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 1);
     SolrInputDocument doc = docs.get(0);
-
     SolrInputField date = doc.getField("date_dt");
     SolrInputField type = doc.getField("type_s");
     SolrInputField shard = doc.getField("shard_s");
     SolrInputField replica = doc.getField("replica_s");
     SolrInputField core = doc.getField("core_s");
-    SolrInputField openSearcher = doc.getField("open_searcher_s");
-    SolrInputField softCommit = doc.getField("soft_commit_s");
     SolrInputField collection = doc.getField("collection_s");
-
-    assertEquals(date.getValue(), "2019-12-16T14:20:19.708Z");
+    assertEquals(date.getValue(), "2021-10-08T16:42:10.636Z");
     assertEquals(type.getValue(), "commit");
-    assertEquals(shard.getValue(), "shard128");
-    assertEquals(replica.getValue(), "core_node7");
-    assertEquals(core.getValue(), "production_201912_shard128_replica");
-    assertEquals(openSearcher.getValue(), "true");
-    assertEquals(softCommit.getValue(), "false");
-    assertEquals(collection.getValue(), "production_201912");
+    assertEquals(shard.getValue(), "shard1");
+    assertEquals(replica.getValue(), "core_node2");
+    assertEquals(core.getValue(), "collection1_shard1_replica_n1");
+    assertEquals(collection.getValue(), "collection1");
   }
+
 
   @Test
   public void testNewSearcher() throws Exception{
     String record = sometimesSolr9Format(
-        "2019-12-16 19:00:23.931 INFO  (searcherExecutor-66-thread-1) [ x:production_cv_month_201912_shard35_replica_n1] o.a.s.c.SolrCore [production_cv_month_201912_shard35_replica_n1] Registered new searcher Searcher@16ef5fac[production_cv_month_201912_shard35_replica_n1] ...");
+"2022-01-25 20:01:15.903 INFO  (searcherExecutor-19-thread-1-processing-localhost:8983_solr test_shard1_replica_n1 test shard1 core_node2) [c:test s:shard1 r:core_node2 x:test_shard1_replica_n1] o.a.s.c.SolrCore Registered new searcher autowarm time: 0 ms");
+
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 1);
     SolrInputDocument doc = docs.get(0);
     SolrInputField date = doc.getField("date_dt");
     SolrInputField type = doc.getField("type_s");
     SolrInputField core = doc.getField("core_s");
-    assertEquals(date.getValue(), "2019-12-16T19:00:23.931Z");
+    SolrInputField replica = doc.getField("replica_s");
+    SolrInputField collection = doc.getField("collection_s");
+    assertEquals(date.getValue(), "2022-01-25T20:01:15.903Z");
     assertEquals(type.getValue(), "newSearcher");
-    assertEquals(core.getValue(), "production_cv_month_201912_shard35_replica_n1");
+    assertEquals(core.getValue(), "test_shard1_replica_n1");
+    assertEquals(replica.getValue(), "core_node2");
+    assertEquals(collection.getValue(), "test");
   }
 
   // Ensure SolrLogPostTool parses _all_ log lines into searchable records

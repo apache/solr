@@ -631,7 +631,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    */
   private UpdateCommand fetchFullUpdateFromLeader(AddUpdateCommand inplaceAdd, long versionOnUpdate) throws IOException {
     String id = inplaceAdd.getIndexedIdStr();
-    UpdateShardHandler updateShardHandler = inplaceAdd.getReq().getCore().getCoreContainer().getUpdateShardHandler();
+    UpdateShardHandler updateShardHandler = inplaceAdd.getReq().getCoreContainer().getUpdateShardHandler();
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB, false);
     params.set("getInputDocument", id);
@@ -714,7 +714,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     SolrInputDocument mergedDoc;
     if (oldRootDocWithChildren == null) {
       if (versionOnUpdate > 0
-          || !rootDocIdString.equals(cmd.getChildDocIdStr())) {
+          || !rootDocIdString.equals(cmd.getSelfOrNestedDocIdStr())) {
         // could just let the optimistic locking throw the error
         throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + rootDocIdString);
       }

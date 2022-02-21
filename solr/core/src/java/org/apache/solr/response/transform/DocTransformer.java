@@ -17,6 +17,8 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.response.QueryResponseWriter;
@@ -50,6 +52,22 @@ public abstract class DocTransformer {
   public void setContext( ResultContext context ) {
     this.context = context;
 
+  }
+
+  /**
+   * If this transformer wants to bypass escaping in the {@link org.apache.solr.response.TextResponseWriter} and
+   * write content directly to output for certain field(s), the names of any such field(s) should be returned
+   *
+   * NOTE: normally this will be conditional on the `wt` param in the request, as supplied to the
+   * {@link DocTransformer}'s parent {@link TransformerFactory} at the time of transformer creation.
+   *
+   * @return Collection containing field names to be written raw; if no field names should
+   * be written raw, an empty collection should be returned. Any collection returned collection
+   * need not be externally modifiable -- i.e., {@link java.util.Collections#singleton(Object)} is
+   * acceptable.
+   */
+  public Collection<String> getRawFields() {
+    return Collections.emptySet();
   }
 
   /**

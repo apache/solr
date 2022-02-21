@@ -780,7 +780,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     QueryResponse rsp = client.query( new SolrQuery( "*:*") );
     Assert.assertEquals(0, rsp.getResults().getNumFound());
     NamedList<Object> result = client.request(new StreamingUpdateRequest("/update",
-        getFile("solrj/books.csv"), "application/csv")
+        getFile("solrj/books.csv").toPath(), "application/csv")
         .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
     assertNotNull("Couldn't upload books.csv", result);
     rsp = client.query( new SolrQuery( "*:*") );
