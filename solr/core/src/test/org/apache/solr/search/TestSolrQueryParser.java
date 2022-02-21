@@ -67,6 +67,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.max.booleanClauses", "42"); // lower for testing
+    System.setProperty("solr.filterCache.async", "true"); // for testLocalParamsInQP
     initCore("solrconfig.xml", "schema12.xml");
     createIndex();
   }
@@ -572,16 +573,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     inserts += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     assertJQ(req("q", "doesnotexist2 filter(id:1) filter(qqq_s:X) filter(abcdefg)")
         , "/response/numFound==2"
     );
 
     hits += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     // make sure normal "fq" parameters also hit the cache the same way
     assertJQ(req("q", "doesnotexist3", "fq", "id:1", "fq", "qqq_s:X", "fq", "abcdefg")
@@ -589,8 +590,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     hits += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     // try a query deeply nested in a FQ
     assertJQ(req("q", "*:* doesnotexist4", "fq", "(id:* +(filter(id:1) filter(qqq_s:X) filter(abcdefg)) )")
@@ -599,8 +600,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     inserts += 1;  // +1 for top level fq
     hits += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     // retry the complex FQ and make sure hashCode/equals works as expected w/ filter queries
     assertJQ(req("q", "*:* doesnotexist5", "fq", "(id:* +(filter(id:1) filter(qqq_s:X) filter(abcdefg)) )")
@@ -608,8 +609,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     hits += 1;  // top-level fq should have been found.
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
 
     // try nested filter with multiple top-level args (i.e. a boolean query)
@@ -619,8 +620,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     hits += 1;  // the inner filter
     inserts += 1; // the outer filter
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals("wrong number of inserts", inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
+    assertEquals("wrong number of hits", hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
 
     // test the score for a filter, and that default score is 0
     assertJQ(req("q", "+filter(*:*) +filter(id:1)", "fl", "id,score", "sort", "id asc")
@@ -1595,13 +1596,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public void testFieldExistsQueries() throws SyntaxError {
     SolrQueryRequest req = req();
     String[] fieldSuffix = new String[] {
-        "ti", "tf", "td", "tl", "tdt",
-        "pi", "pf", "pd", "pl", "pdt",
-        "i", "f", "d", "l", "dt", "s", "b",
-        "is", "fs", "ds", "ls", "dts", "ss", "bs",
-        "i_dv", "f_dv", "d_dv", "l_dv", "dt_dv", "s_dv", "b_dv",
-        "is_dv", "fs_dv", "ds_dv", "ls_dv", "dts_dv", "ss_dv", "bs_dv",
-        "i_dvo", "f_dvo", "d_dvo", "l_dvo", "dt_dvo",
+        "ti", "tf", "td", "tl", "tdt", // trie types
+        "pi", "pf", "pd", "pl", "pdt", // point types
+        "i", "f", "d", "l", "dt", "s", "b", // numeric types
+        "is", "fs", "ds", "ls", "dts", "ss", "bs", // multi-valued
+        "i_dv", "f_dv", "d_dv", "l_dv", "dt_dv", "s_dv", "b_dv", // numerics + docValues
+        "is_dv", "fs_dv", "ds_dv", "ls_dv", "dts_dv", "ss_dv", "bs_dv", // multi-docValues
+        "i_dvo", "f_dvo", "d_dvo", "l_dvo", "dt_dvo", // not indexed
         "t",
         "t_on", "b_norms", "s_norms", "dt_norms", "i_norms", "l_norms", "f_norms", "d_norms"
     };

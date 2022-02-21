@@ -59,12 +59,14 @@ This means that you won't need to move any index files around to perform the upg
 === Step 1: Stop Solr
 
 Begin by stopping the Solr node you want to upgrade.
-After stopping the node, if using a replication (i.e., collections with `replicationFactor` less than 1), verify that all leaders hosted on the downed node have successfully migrated to other replicas; you can do this by visiting the <<cloud-screens.adoc#,Cloud panel in the Solr Admin UI>>. If not using replication, then any collections with shards hosted on the downed node will be temporarily off-line.
+After stopping the node, if using a replication (i.e., collections with `replicationFactor` less than 1), verify that all leaders hosted on the downed node have successfully migrated to other replicas; you can do this by visiting the <<cloud-screens.adoc#,Cloud panel in the Solr Admin UI>>.
+If not using replication, then any collections with shards hosted on the downed node will be temporarily off-line.
 
 
 === Step 2: Install Solr as a Service
 
-Please follow the instructions to install Solr as a Service on Linux documented at <<taking-solr-to-production.adoc#,Taking Solr to Production>>. Use the `-n` parameter to avoid automatic start of Solr by the installer script.
+Please follow the instructions to install Solr as a Service on Linux documented at <<taking-solr-to-production.adoc#,Taking Solr to Production>>.
+Use the `-n` parameter to avoid automatic start of Solr by the installer script.
 You need to update the `/etc/default/solr.in.sh` include file in the next step to complete the upgrade process.
 
 [NOTE]

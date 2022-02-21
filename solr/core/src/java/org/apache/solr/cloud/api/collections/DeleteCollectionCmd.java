@@ -93,7 +93,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
     // verify the placement modifications caused by the deletion are allowed
     DocCollection coll = state.getCollectionOrNull(collection);
     if (coll != null) {
-      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer(), state, coll);
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
       assignStrategy.verifyDeleteCollection(ccc.getSolrCloudManager(), coll);
     }
 

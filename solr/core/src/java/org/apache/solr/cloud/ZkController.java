@@ -1063,6 +1063,7 @@ public class ZkController implements Closeable {
         zkHost.indexOf("/")), 60000, 30000, null, null, null);
     boolean exists = tmpClient.exists(chrootPath, true);
     if (!exists && create) {
+      log.info("creating chroot {}", chrootPath);
       tmpClient.makePath(chrootPath, false, true);
       exists = true;
     }

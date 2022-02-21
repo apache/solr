@@ -71,7 +71,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
       cloudClient.query(params);
       MockAuthorizationPlugin.protectedResources.add("/select");
 
-      // This user is blacklisted in the mock. The request should return a 403.
+      // This user is disallowed in the mock. The request should return a 403.
       params.add("uname", "user1");
       expectThrows(Exception.class, () -> cloudClient.query(params));
       log.info("Ending test");

@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -61,6 +60,7 @@ import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -84,7 +84,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private static final String PARAM_PRINCIPAL_CLAIM = "principalClaim";
   private static final String PARAM_ROLES_CLAIM = "rolesClaim";
   private static final String PARAM_REQUIRE_EXPIRATIONTIME = "requireExp";
-  private static final String PARAM_ALG_WHITELIST = "algWhitelist";
+  private static final String PARAM_ALG_ALLOWLIST = "algAllowlist";
   private static final String PARAM_JWK_CACHE_DURATION = "jwkCacheDur";
   private static final String PARAM_CLAIMS_MATCH = "claimsMatch";
   private static final String PARAM_SCOPE = "scope";
@@ -101,8 +101,11 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private static final long DEFAULT_REFRESH_REPRIEVE_THRESHOLD = 5000;
   static final String PRIMARY_ISSUER = "PRIMARY";
 
+  @Deprecated(since = "9.0") // Remove in 10.0
+  private static final String PARAM_ALG_WHITELIST = "algWhitelist";
+
   private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN,
-      PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
+      PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_ALLOWLIST,
       PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_REALM, PARAM_ROLES_CLAIM,
       PARAM_ADMINUI_SCOPE, PARAM_REDIRECT_URIS, PARAM_REQUIRE_ISSUER, PARAM_ISSUERS,
       PARAM_TRUSTED_CERTS_FILE, PARAM_TRUSTED_CERTS,
@@ -113,7 +116,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
 
   private JwtConsumer jwtConsumer;
   private boolean requireExpirationTime;
-  private List<String> algWhitelist;
+  private List<String> algAllowlist;
   private String principalClaim;
   private String rolesClaim;
   private HashMap<String, Pattern> claimsMatchCompiled;
@@ -159,7 +162,12 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     principalClaim = (String) pluginConfig.getOrDefault(PARAM_PRINCIPAL_CLAIM, "sub");
 
     rolesClaim = (String) pluginConfig.get(PARAM_ROLES_CLAIM);
-    algWhitelist = (List<String>) pluginConfig.get(PARAM_ALG_WHITELIST);
+    algAllowlist = (List<String>) pluginConfig.get(PARAM_ALG_ALLOWLIST);
+    // TODO: Remove deprecated warning in Solr 10.0
+    if ((algAllowlist == null || algAllowlist.isEmpty()) && pluginConfig.containsKey(PARAM_ALG_WHITELIST)) {
+      log.warn("Found use of deprecated parameter algWhitelist. Please use {} instead.", PARAM_ALG_ALLOWLIST);
+      algAllowlist = (List<String>) pluginConfig.get(PARAM_ALG_WHITELIST);
+    }
     realm = (String) pluginConfig.getOrDefault(PARAM_REALM, DEFAULT_AUTH_REALM);
 
     Map<String, String> claimsMatch = (Map<String, String>) pluginConfig.get(PARAM_CLAIMS_MATCH);
@@ -545,9 +553,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
     if (requireExpirationTime)
       jwtConsumerBuilder.setRequireExpirationTime();
-    if (algWhitelist != null)
+    if (algAllowlist != null)
       jwtConsumerBuilder.setJwsAlgorithmConstraints( // only allow the expected signature algorithm(s) in the given context
-          new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST, algWhitelist.toArray(new String[0])));
+          new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, algAllowlist.toArray(new String[0])));
     jwtConsumerBuilder.setVerificationKeyResolver(verificationKeyResolver);
     jwtConsumer = jwtConsumerBuilder.build(); // create the JwtConsumer instance
   }
@@ -625,7 +633,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     data.put("scope", adminUiScope);
     data.put("redirect_uris", redirectUris);
     String headerJson = Utils.toJSONString(data);
-    return Base64.byteArrayToBase64(headerJson.getBytes(StandardCharsets.UTF_8));
+    return Base64.getEncoder().encodeToString(headerJson.getBytes(StandardCharsets.UTF_8));
   }
 
   /**

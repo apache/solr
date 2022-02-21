@@ -22,6 +22,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,6 +34,15 @@ import org.slf4j.LoggerFactory;
 
 public class ObjectReleaseTracker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final List<String> DEFAULT_STACK_FILTERS = Arrays.asList(new String [] {
+      "org.junit.",
+      "junit.framework.",
+      "sun.",
+      "java.lang.reflect.",
+      "com.carrotsearch.randomizedtesting.",
+  });
+
   public static final Map<Object, Exception> OBJECTS = new ConcurrentHashMap<>();
   
   public static boolean track(Object object) {
@@ -96,6 +107,15 @@ public class ObjectReleaseTracker {
         }
       }
     }
+  }
+
+  /**
+   * @return null if ok else error message
+   */
+  public static String clearObjectTrackerAndCheckEmpty() {
+    String result = ObjectReleaseTracker.checkEmpty();
+    ObjectReleaseTracker.clear();
+    return result;
   }
   
   static class ObjectTrackerException extends RuntimeException {

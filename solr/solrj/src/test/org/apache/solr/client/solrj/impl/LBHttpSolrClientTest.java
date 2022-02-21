@@ -32,7 +32,7 @@ import static org.junit.Assert.assertNull;
 public class LBHttpSolrClientTest {
   
   /**
-   * Test method for {@link LBHttpSolrClient#LBHttpSolrClient(org.apache.http.client.HttpClient, org.apache.solr.client.solrj.ResponseParser, java.lang.String[])}.
+   * Test method for {@link LBHttpSolrClient.Builder}.
    * 
    * Validate that the parser passed in is used in the <code>HttpSolrClient</code> instances created.
    */
@@ -51,7 +51,10 @@ public class LBHttpSolrClientTest {
     ResponseParser parser = new BinaryResponseParser();
     httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
     try {
-      try ( LBHttpSolrClient testClient = new LBHttpSolrClient(httpClient, parser); HttpSolrClient httpSolrClient = testClient.makeSolrClient("http://127.0.0.1:8080")) {
+      try ( LBHttpSolrClient testClient = new LBHttpSolrClient.Builder()
+          .withHttpClient(httpClient)
+          .withResponseParser(parser).build();
+          HttpSolrClient httpSolrClient = testClient.makeSolrClient("http://127.0.0.1:8080")) {
         assertEquals("Invalid parser passed to generated server.", parser, httpSolrClient.getParser());
       }
     } finally {

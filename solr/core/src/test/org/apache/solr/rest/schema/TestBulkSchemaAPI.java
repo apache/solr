@@ -38,7 +38,6 @@ import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.util.RESTfulServerProvider;
@@ -203,7 +202,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     @SuppressWarnings({"rawtypes"})
     Map analyzer = (Map)map.get("analyzer");
     assertEquals("org.apache.lucene.analysis.core.WhitespaceAnalyzer", String.valueOf(analyzer.get("class")));
-    assertEquals("5.0.0", String.valueOf(analyzer.get(IndexSchema.LUCENE_MATCH_VERSION_PARAM)));
+
   }
 
   public void testAnalyzerByName() throws Exception {

@@ -75,6 +75,7 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.LongSet;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -1454,10 +1455,18 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     public List<Long> getVersions(int n, long maxVersion) {
       List<Long> ret = new ArrayList<>(n);
+      LongSet set = new LongSet(n);
+      final int nInput = n;
 
       for (List<Update> singleList : updateList) {
         for (Update ptr : singleList) {
           if(Math.abs(ptr.version) > Math.abs(maxVersion)) continue;
+          if (!set.add(ptr.version)) {
+            if (debug) {
+              log.debug("getVersions(n={}, maxVersion={}) not returning duplicate version = {}", nInput, maxVersion, ptr.version);
+            }
+            continue;
+          }
           ret.add(ptr.version);
           if (--n <= 0) return ret;
         }
@@ -1474,12 +1483,19 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     /** Returns the list of deleteByQueries that happened after the given version */
-    public List<Object> getDeleteByQuery(long afterVersion) {
+    public List<Object> getDeleteByQuery(long afterVersion, LongSet updateVersions) {
       List<Object> result = new ArrayList<>(deleteByQueryList.size());
       for (Update update : deleteByQueryList) {
         if (Math.abs(update.version) > afterVersion) {
-          Object dbq = update.log.lookup(update.pointer);
-          result.add(dbq);
+          if (updateVersions.add(update.version)) {
+            Object dbq = update.log.lookup(update.pointer);
+            result.add(dbq);
+          } else {
+            if (debug) {
+              log.debug("UpdateLog.RecentUpdates.getDeleteByQuery(afterVersion={}) not returning duplicate version = {}",
+                  afterVersion, update.version);
+            }
+          }
         }
       }
       return result;

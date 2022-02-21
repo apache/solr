@@ -292,7 +292,9 @@ public class CrossCollectionJoinQuery extends Query {
           }
 
           Object value = tuple.get(fromField);
-          collector.collect(value);
+          if (null != value) {
+            collector.collect(value);
+          }
         }
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -361,7 +363,7 @@ public class CrossCollectionJoinQuery extends Query {
             Objects.equals(collection, other.collection) &&
             Objects.equals(fromField, other.fromField) &&
             Objects.equals(toField, other.toField) &&
-            Objects.equals(routedByJoinKey, other.routedByJoinKey) &&
+            routedByJoinKey == other.routedByJoinKey &&
             Objects.equals(otherParamsString, other.otherParamsString) &&
             TimeUnit.SECONDS.convert(Math.abs(timestamp - other.timestamp), TimeUnit.NANOSECONDS) < Math.min(ttl, other.ttl);
   }

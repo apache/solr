@@ -28,7 +28,6 @@ def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCK
 def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
 def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
 def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
-def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DOCKER_GITHUB_URL", 'github.com')
 
 def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName','');
 
@@ -111,8 +110,7 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
 
   // Ensure that the docker image is rebuilt on build-arg changes or changes in the docker context
   inputs.properties([
-          baseDockerImage: baseDockerImage,
-          githubUrlOrMirror: githubUrlOrMirror
+          baseDockerImage: baseDockerImage
   ])
   inputs.files(configurations.solrTgz)
 
@@ -123,7 +121,6 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
               "-f", "solr-${version}/docker/Dockerfile.local",
               "--iidfile", imageIdFile,
               "--build-arg", "BASE_IMAGE=${inputs.properties.baseDockerImage}",
-              "--build-arg", "GITHUB_URL=${inputs.properties.githubUrlOrMirror}",
               "-"
     }
   }
@@ -393,7 +390,6 @@ task testBuildDockerfileOfficial(type: Copy) {
             "--iidfile", imageIdFileOfficial,
             '--build-arg', "SOLR_CLOSER_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
             '--build-arg', "SOLR_ARCHIVE_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
-            "--build-arg", "GITHUB_URL=${githubUrlOrMirror}",
             '-'
         }
         
@@ -436,18 +432,26 @@ task testDockerfileOfficial(type: TestDockerImageTask, dependsOn: configurations
 }
 
 // Re-usable class for running tests...
-public abstract class TestDockerImageTask extends DefaultTask {
+abstract class TestDockerImageTask extends DefaultTask {
 
   // Ensure that the docker image is re-tested if the image ID changes or the test files change
-  @InputFile abstract public RegularFileProperty getIdFile()
-  @InputDirectory final public File sourceDir = project.file("tests/cases")
+  @InputFile
+  abstract public RegularFileProperty getIdFile()
 
-  @Input final public SetProperty<String> testCasesInclude = project.objects.setProperty(String)
-  @Input final public SetProperty<String> testCasesExclude = project.objects.setProperty(String)
+  @InputDirectory
+  File sourceDir = project.file("tests/cases")
+
+  @Input
+  SetProperty<String> testCasesInclude = project.objects.setProperty(String)
+
+  @Input
+  SetProperty<String> testCasesExclude = project.objects.setProperty(String)
   
-  @OutputDirectory abstract public DirectoryProperty getOutputDir()
+  @OutputDirectory
+  abstract public DirectoryProperty getOutputDir()
 
-  @Inject abstract public WorkerExecutor getWorkerExecutor();
+  @Inject
+  abstract public WorkerExecutor getWorkerExecutor();
 
   public static interface SingleTestParameters extends WorkParameters {
     // NOTE: we explicitly don't use DirectoryProperty here because the way WorkerExecutor serializes the params
@@ -457,6 +461,7 @@ public abstract class TestDockerImageTask extends DefaultTask {
     Property<String> getWorkDir();
     Property<String> getImageId();
   }
+
   public abstract static class SingleTestAction implements WorkAction<SingleTestParameters> {
     @Inject
     abstract public ExecOperations getExec();

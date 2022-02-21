@@ -271,7 +271,8 @@ Current implementation details and limitations:
 === SPLITSHARD Response
 
 The output will include the status of the request and the new shard names, which will use the original shard as their basis, adding an underscore and a number.
-For example, "shard1" will become "shard1_0" and "shard1_1". If the status is anything other than "success", an error message will explain why the request failed.
+For example, "shard1" will become "shard1_0" and "shard1_1".
+If the status is anything other than "success", an error message will explain why the request failed.
 
 [[createshard]]
 == CREATESHARD: Create a Shard

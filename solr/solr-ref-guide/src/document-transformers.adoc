@@ -153,10 +153,10 @@ This can be particularly useful when you have multiple levels of hierarchical do
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `10`
+|Optional |Default: `-1`
 |===
 +
-The maximum number of child documents to be returned per parent document.
+The maximum number of child documents to be returned underneath the document being augmented. The default is `-1` which means unlimited.
 
 `fl`::
 +
@@ -401,7 +401,8 @@ In a sense this double-storage between docValues and stored-value storage isn't 
 
 === [features] - LTRFeatureLoggerTransformerFactory
 
-The "LTR" prefix stands for <<learning-to-rank.adoc#,Learning To Rank>>. This transformer returns the values of features and it can be used for feature extraction and feature logging.
+The "LTR" prefix stands for <<learning-to-rank.adoc#,Learning To Rank>>.
+This transformer returns the values of features and it can be used for feature extraction and feature logging.
 
 [source,plain]
 ----

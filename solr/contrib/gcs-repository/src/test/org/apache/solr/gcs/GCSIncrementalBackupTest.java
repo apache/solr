@@ -17,6 +17,7 @@
 
 package org.apache.solr.gcs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.junit.AfterClass;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 
+@ThreadLeakLingering(linger = 10)
 @LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

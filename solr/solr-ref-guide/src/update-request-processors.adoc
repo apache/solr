@@ -357,7 +357,7 @@ When using any of these factories, please consult the {solr-javadocs}/core/org/a
 
 {solr-javadocs}/core/org/apache/solr/update/processor/ConcatFieldUpdateProcessorFactory.html[ConcatFieldUpdateProcessorFactory]:: Concatenates multiple values for fields matching the specified conditions using a configurable delimiter.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/CountFieldValuesUpdateProcessorFactory.html[CountFieldValuesUpdateProcessorFactory]:: Replaces any list of values for a field matching the specified conditions with the the count of the number of values for that field.
+{solr-javadocs}/core/org/apache/solr/update/processor/CountFieldValuesUpdateProcessorFactory.html[CountFieldValuesUpdateProcessorFactory]:: Replaces any list of values for a field matching the specified conditions with the count of the number of values for that field.
 
 {solr-javadocs}/core/org/apache/solr/update/processor/FieldLengthUpdateProcessorFactory.html[FieldLengthUpdateProcessorFactory]:: Replaces any CharSequence values found in fields matching the specified conditions with the lengths of those CharSequences (as an Integer).
 
@@ -369,9 +369,9 @@ When using any of these factories, please consult the {solr-javadocs}/core/org/a
 
 {solr-javadocs}/core/org/apache/solr/update/processor/LastFieldValueUpdateProcessorFactory.html[LastFieldValueUpdateProcessorFactory]:: Keeps only the last value of fields matching the specified conditions.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/MaxFieldValueUpdateProcessorFactory.html[MaxFieldValueUpdateProcessorFactory]:: An update processor that keeps only the the maximum value from any selected fields where multiple values are found.
+{solr-javadocs}/core/org/apache/solr/update/processor/MaxFieldValueUpdateProcessorFactory.html[MaxFieldValueUpdateProcessorFactory]:: An update processor that keeps only the maximum value from any selected fields where multiple values are found.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/MinFieldValueUpdateProcessorFactory.html[MinFieldValueUpdateProcessorFactory]:: An update processor that keeps only the the minimum value from any selected fields where multiple values are found.
+{solr-javadocs}/core/org/apache/solr/update/processor/MinFieldValueUpdateProcessorFactory.html[MinFieldValueUpdateProcessorFactory]:: An update processor that keeps only the minimum value from any selected fields where multiple values are found.
 
 {solr-javadocs}/core/org/apache/solr/update/processor/ParseBooleanFieldUpdateProcessorFactory.html[ParseBooleanFieldUpdateProcessorFactory]:: Attempts to mutate selected fields that have only CharSequence-typed values into Boolean values.
 

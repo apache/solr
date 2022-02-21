@@ -124,7 +124,7 @@ By default, no aliasing is used and field names specified in the query string ar
 
 == Examples of eDisMax Queries
 
-All of the sample URLs in this section assume you are running Solr's "```techproducts```" example:
+All of the sample URLs in this section assume you are running Solr's "techproducts" example:
 
 [source,bash]
 ----

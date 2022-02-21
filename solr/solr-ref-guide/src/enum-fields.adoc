@@ -25,7 +25,7 @@ Examples of this are severity lists, or risk definitions.
 EnumField has been deprecated in favor of EnumFieldType; all configuration examples below use EnumFieldType.
 ====
 
-== Defining an EnumFieldType in schema.xml
+== Defining an EnumFieldType in the Schema
 
 The EnumFieldType type definition is quite simple, as in this example defining field types for "priorityLevel" and "riskLevel" enumerations:
 

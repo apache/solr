@@ -69,7 +69,7 @@ class ReplicaPlacementImpl implements ReplicaPlacement {
    * Translates a set of {@link ReplicaPlacement} returned by a plugin into a list of {@link ReplicaPosition} expected
    * by {@link org.apache.solr.cloud.api.collections.Assign.AssignStrategy}
    */
-  static List<ReplicaPosition> toReplicaPositions(Set<ReplicaPlacement> replicaPlacementSet) {
+  static List<ReplicaPosition> toReplicaPositions(String collection, Set<ReplicaPlacement> replicaPlacementSet) {
     // The replica index in ReplicaPosition is not as strict a concept as it might seem. It is used in rules
     // based placement (for sorting replicas) but its presence in ReplicaPosition is not justified (and when the code
     // is executing here, it means rules based placement is not used).
@@ -80,7 +80,7 @@ class ReplicaPlacementImpl implements ReplicaPlacement {
     List<ReplicaPosition> replicaPositions = new ArrayList<>(replicaPlacementSet.size());
     int index = 0; // This really an arbitrary value when adding replicas and a possible source of core name collisions
     for (ReplicaPlacement placement : replicaPlacementSet) {
-      replicaPositions.add(new ReplicaPosition(placement.getShardName(), index++, SimpleClusterAbstractionsImpl.ReplicaImpl.toCloudReplicaType(placement.getReplicaType()), placement.getNode().getName()));
+      replicaPositions.add(new ReplicaPosition(collection, placement.getShardName(), index++, SimpleClusterAbstractionsImpl.ReplicaImpl.toCloudReplicaType(placement.getReplicaType()), placement.getNode().getName()));
     }
 
     return replicaPositions;

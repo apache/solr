@@ -19,7 +19,8 @@
 
 The package manager in Solr allows installation and updating of Solr-specific packages in Solr's cluster environment.
 
-In this system, a _package_ is a set of Java jar files (usually one) containing one or more <<solr-plugins.adoc#,Solr plugins>>. Each jar file is also accompanied by a signature string (which can be verified against a supplied public key).
+In this system, a _package_ is a set of Java jar files (usually one) containing one or more <<solr-plugins.adoc#,Solr plugins>>.
+Each jar file is also accompanied by a signature string (which can be verified against a supplied public key).
 
 A key design aspect of this system is the ability to install or update packages in a cluster environment securely without the need to restart every node.
 
@@ -117,7 +118,7 @@ If you pass `-y` to the command, confirmation can be skipped.
 
 ==== Manual Deploy
 
-It is also possible to deploy a package's collection level plugins manually by editing a configset (e.g., `solrconfig.xml`, `managed-schema`/`schema.xml`, etc.) and reloading the collection.
+It is also possible to deploy a package's collection level plugins manually by editing a <<config-sets.adoc#,configset>> and reloading the collection.
 
 For example, if a package named `mypackage` contains a request handler, we would add it to a configset's `solrconfig.xml` like this:
 

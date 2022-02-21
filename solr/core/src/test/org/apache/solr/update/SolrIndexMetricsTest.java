@@ -67,7 +67,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     Map<String, Metric> metrics = registry.getMetrics();
 
-    assertEquals(12, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
+    assertEquals(13, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
 
     // check basic index meters
     Timer timer = (Timer)metrics.get("INDEX.merge.minor");
@@ -92,8 +92,8 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
     assertNotNull(registry);
 
     Map<String, Metric> metrics = registry.getMetrics();
-    // INDEX.size, INDEX.sizeInBytes
-    assertEquals(2, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
+    // INDEX.size, INDEX.sizeInBytes, INDEX.segmentCount
+    assertEquals(3, metrics.entrySet().stream().filter(e -> e.getKey().startsWith("INDEX")).count());
   }
 
   @Test

@@ -17,14 +17,14 @@
 package org.apache.solr.common;
 
 import java.io.InputStream;
+
+import org.apache.http.impl.io.EmptyInputStream;
 import org.xml.sax.InputSource;
 import org.xml.sax.EntityResolver;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLResolver;
-
-import org.apache.commons.io.input.ClosedInputStream;
 
 /**
  * This class provides several singletons of entity resolvers used by
@@ -41,14 +41,14 @@ public final class EmptyEntityResolver {
   public static final EntityResolver SAX_INSTANCE = new EntityResolver() {
     @Override
     public InputSource resolveEntity(String publicId, String systemId) {
-      return new InputSource(ClosedInputStream.CLOSED_INPUT_STREAM);
+      return new InputSource(EmptyInputStream.INSTANCE);
     }
   };
 
   public static final XMLResolver STAX_INSTANCE = new XMLResolver() {
     @Override
     public InputStream resolveEntity(String publicId, String systemId, String baseURI, String namespace) {
-      return ClosedInputStream.CLOSED_INPUT_STREAM;
+      return EmptyInputStream.INSTANCE;
     }
   };
   

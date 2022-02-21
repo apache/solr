@@ -74,7 +74,7 @@ Here is a sample response for a simple query like `q=id:VS1GB400C3`:
   }}
 ----
 
-The default mime type for the JSON writer is `application/json`, however this can be overridden in the `solrconfig.xml` - such as in this example from the "`techproducts`" configuration:
+The default mime type for the JSON writer is `application/json`, however this can be overridden in the `solrconfig.xml` - such as in this example from the "techproducts" configset:
 
 [source,xml]
 ----

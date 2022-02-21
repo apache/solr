@@ -109,7 +109,7 @@
   <!-- Similarity is the scoring routine for each document vs. a query.
        A custom Similarity or SimilarityFactory may be specified here, but
        the default is fine for most applications.
-       For more info: http://wiki.apache.org/solr/SchemaXml#Similarity
+       For more info: https://solr.apache.org/guide/schema-elements.html#similarity
     -->
   <!--
      <similarity class="com.example.solr.CustomSimilarityFactory">

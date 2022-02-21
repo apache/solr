@@ -344,9 +344,9 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         }
       } else {
         try {
-          klas = Class.forName(klassInfo.className);
-        } catch (ClassNotFoundException e) {
-          errs.add("Error loading class " + e.toString());
+          klas = coreContainer.getResourceLoader().findClass(klassInfo.className, Object.class);
+        } catch (Exception e) {
+          errs.add(e.toString());
           return;
         }
         pkgVersion = null;

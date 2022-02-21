@@ -366,7 +366,7 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
         final String locationPathStr = locationPath.toString();
         h.getCoreContainer().getAllowPaths().add(locationPath);
         try (BackupRepository backupRepo = h.getCoreContainer().newBackupRepository(null)) {
-            final URI locationUri = backupRepo.createURI(locationPathStr);
+            final URI locationUri = backupRepo.createDirectoryURI(locationPathStr);
             final BackupFilePaths backupFilePaths = new BackupFilePaths(backupRepo, locationUri);
             backupFilePaths.createIncrementalBackupFolders();
             return locationUri;

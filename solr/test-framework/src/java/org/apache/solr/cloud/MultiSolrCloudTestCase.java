@@ -46,8 +46,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
     @Override
     public MiniSolrCloudCluster apply(String clusterId) {
       try {
-        final MiniSolrCloudCluster cluster = new SolrCloudTestCase
-            .Builder(nodesPerCluster(clusterId), createTempDir())
+        final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster.Builder(nodesPerCluster(clusterId), createTempDir())
             .addConfig("conf", configset("cloud-dynamic"))
             .build();
         return cluster;

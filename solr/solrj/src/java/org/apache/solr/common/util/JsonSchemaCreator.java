@@ -42,6 +42,8 @@ public class JsonSchemaCreator {
     natives.put(String.class, "string");
     natives.put(Integer.class, "integer");
     natives.put(int.class, "integer");
+    natives.put(Long.class, "long");
+    natives.put(long.class, "long");
     natives.put(Float.class, "number");
     natives.put(float.class, "number");
     natives.put(Double.class, "number");

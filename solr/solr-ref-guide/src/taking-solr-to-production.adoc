@@ -278,7 +278,8 @@ For instance, to ensure all znodes created by SolrCloud are stored under `/solr`
 ZK_HOST=zk1,zk2,zk3/solr
 ----
 
-Before using a chroot for the first time, you need to create the root path (znode) in ZooKeeper by using the <<solr-control-script-reference.adoc#,Solr Control Script>>. We can use the mkroot command for that:
+Before using a chroot for the first time, you need to create the root path (znode) in ZooKeeper by using the <<solr-control-script-reference.adoc#,Solr Control Script>>.
+We can use the mkroot command for that:
 
 [source,bash]
 ----
@@ -358,7 +359,8 @@ ulimit -a
 These four settings in particular are important to have set very high, unlimited if possible.
 
 * max processes (`ulimit -u`): 65,000 is the recommended _minimum_.
-* file handles (`ulimit -n`): 65,000 is the recommended _minimum_. All the files used by all replicas have their file handles open at once so this can grow quite large.
+* file handles (`ulimit -n`): 65,000 is the recommended _minimum_.
+All the files used by all replicas have their file handles open at once so this can grow quite large.
 * virtual memory (`ulimit -v`): Set to unlimited.
 This is used to by MMapping the indexes.
 * max memory size (`ulimit -m`): Also used by MMap, set to unlimited.
@@ -385,7 +387,8 @@ Errors such as "too many open files", "connection error", and "max processes exc
 
 When running a Java application like Lucene/Solr, having the OS swap memory to disk is a very bad situation.
 We usually prefer a hard crash so other healthy Solr nodes can take over, instead of letting a Solr node swap, causing terrible performance, timeouts and an unstable system.
-So our recommendation is to disable swap on the host altogether or reduce the "swappiness". These instructions are valid for Linux environments.
+So our recommendation is to disable swap on the host altogether or reduce the "swappiness".
+These instructions are valid for Linux environments.
 Also note that when running Solr in a Docker container, these changes must be applied to the *host*.
 
 ==== Disabling Swap

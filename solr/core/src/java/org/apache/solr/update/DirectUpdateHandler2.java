@@ -111,8 +111,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     this.commitWithinSoftCommit = value;
   }
 
-  protected boolean indexWriterCloseWaitsForMerges;
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public DirectUpdateHandler2(SolrCore core) {
@@ -132,7 +130,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, NO_FILE_SIZE_UPPER_BOUND_PLACEHOLDER, true, true);
     
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
-    indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
 
     ZkController zkController = core.getCoreContainer().getZkController();
     if (zkController != null && core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
@@ -158,7 +155,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     softCommitTracker = new CommitTracker("Soft", core, softCommitDocsUpperBound, softCommitTimeUpperBound, NO_FILE_SIZE_UPPER_BOUND_PLACEHOLDER, updateHandlerInfo.openSearcher, true);
     
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
-    indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
 
     UpdateLog existingLog = updateHandler.getUpdateLog();
     if (this.ulog != null && this.ulog == existingLog) {

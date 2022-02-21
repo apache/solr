@@ -17,14 +17,20 @@
 package org.apache.solr.index;
 
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 /**
  * A {@link MergePolicyFactory} for simple {@link MergePolicy} objects. Implementations need only create the policy
  * {@link #getMergePolicyInstance() instance} and this class will then configure it with all set properties.
  */
 public abstract class SimpleMergePolicyFactory extends MergePolicyFactory {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected SimpleMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(resourceLoader, args, schema);
@@ -35,7 +41,19 @@ public abstract class SimpleMergePolicyFactory extends MergePolicyFactory {
   @Override
   public final MergePolicy getMergePolicy() {
     final MergePolicy mp = getMergePolicyInstance();
-    args.invokeSetters(mp);
+    if (mp instanceof NoMergePolicy) { // allow turning off merges in config via system prop
+      try {
+        args.invokeSetters(mp);
+      } catch (RuntimeException e) {
+        String msg = e.getMessage();
+        if (log.isInfoEnabled()) {
+          log.info("Ignoring unknown config setting for {} : {}", NoMergePolicy.class.getSimpleName(), msg);
+        }
+      }
+    } else {
+      args.invokeSetters(mp);
+    }
+
     return mp;
   }
 

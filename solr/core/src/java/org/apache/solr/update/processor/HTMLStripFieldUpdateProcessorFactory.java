@@ -68,7 +68,7 @@ public final class HTMLStripFieldUpdateProcessorFactory extends FieldMutatingUpd
         try {
           in = new HTMLStripCharFilter
               (new StringReader(s.toString()));
-          IOUtils.copy(in, result);
+          in.transferTo(result);
           return result.toString();
         } catch (IOException e) {
           // we tried and failed

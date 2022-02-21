@@ -302,7 +302,7 @@ In contrast, the Unified Highlighter can only be chosen exclusively.
 
 The Unified Highlighter is exclusively configured via search parameters.
 In contrast, some settings for the Original and FastVector Highlighters are set in `solrconfig.xml`.
-There's a robust example of the latter in the "```techproducts```" configset.
+There's a robust example of the latter in the "techproducts" configset.
 
 In addition to further information below, more information can be found in the {solr-javadocs}/core/org/apache/solr/highlight/package-summary.html[Solr javadocs].
 
@@ -409,7 +409,8 @@ If `true`, use the leading portion of the text as a snippet if a proper highligh
 |Optional |Default: `1.2`
 |===
 +
-Specifies BM25 term frequency normalization parameter 'k1'. For example, it can be set to `0` to rank passages solely based on the number of query terms that match.
+Specifies BM25 term frequency normalization parameter 'k1'.
+For example, it can be set to `0` to rank passages solely based on the number of query terms that match.
 
 `hl.score.b`::
 +
@@ -418,7 +419,8 @@ Specifies BM25 term frequency normalization parameter 'k1'. For example, it can 
 |Optional |Default: `0.75`
 |===
 +
-Specifies BM25 length normalization parameter 'b'. For example, it can be set to "0" to ignore the length of passages entirely when ranking.
+Specifies BM25 length normalization parameter 'b'.
+For example, it can be set to "0" to ignore the length of passages entirely when ranking.
 
 `hl.score.pivot`::
 +

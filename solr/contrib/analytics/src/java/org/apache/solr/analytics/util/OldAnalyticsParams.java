@@ -18,8 +18,6 @@ package org.apache.solr.analytics.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -40,14 +38,6 @@ public interface OldAnalyticsParams {
 
   public static final String OLD_EXPRESSION = "s|stat|statistic";
 
-  public static class OldRequest {
-    public String name;
-    public Map<String,String> expressions = new HashMap<>();
-    public Map<String,OldFieldFacet> fieldFacets = new HashMap<>();
-    public Map<String,OldRangeFacet> rangeFacets = new HashMap<>();
-    public Map<String,OldQueryFacet> queryFacets = new HashMap<>();
-  }
-
   public static final String FIELD_FACET = "(?:ff|fieldfacet)";
   public static final String VALUE_FACET = "(?:vf|valuefacet)";
   public static final String LIMIT = "(?:l|limit)";
@@ -56,15 +46,6 @@ public interface OldAnalyticsParams {
   public static final String SORT_EXPRESSION ="(?:se|sortexpr|sortexpression)";
   public static final String OLAP_SORT_EXPRESSION ="(?:ss|sortstat|sortstatistic)";
   public static final String SORT_DIRECTION ="(?:sd|sortdirection)";
-
-  public static class OldFieldFacet {
-    public String field;
-    public String showMissing;
-    public String limit;
-    public String offset;
-    public String sortExpr;
-    public String sortDir;
-  }
 
   public static class FieldFacetParamParser {
     public static String regexParamList = LIMIT + "|" + OFFSET + "|" + SHOW_MISSING + "|" + OLAP_SORT_EXPRESSION + "|" + SORT_DIRECTION;
@@ -122,16 +103,6 @@ public interface OldAnalyticsParams {
   public static final String INCLUDE_BOUNDARY = "(?:ib|includebound)";
   public static final String OTHER_RANGE = "(?:or|otherrange)";
 
-  public static class OldRangeFacet {
-    public String field;
-    public String start;
-    public String end;
-    public String gaps;
-    public String hardend;
-    public String[] include;
-    public String[] others;
-  }
-
   public static class RangeFacetParamParser {
     public static String regexParamList = START + "|" + END + "|" + GAP + "|" + HARDEND + "|" + INCLUDE_BOUNDARY + "|" + OTHER_RANGE;
 
@@ -163,11 +134,6 @@ public interface OldAnalyticsParams {
         facet.others = Arrays.asList(values);
       }
     }
-  }
-
-  public static class OldQueryFacet {
-    public String name;
-    public String[] queries;
   }
 
   public static final String QUERY_FACET = "(?:qf|queryfacet)";

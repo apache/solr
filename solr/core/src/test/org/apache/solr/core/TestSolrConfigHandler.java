@@ -93,7 +93,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     public static  ByteBuffer persistZip(String loc, Class<?>... classes) throws IOException {
       ByteBuffer jar = generateZip(classes);
       try (FileOutputStream fos =  new FileOutputStream(loc)){
-        fos.write(jar.array(), 0, jar.limit());
+        fos.write(jar.array(), jar.arrayOffset(), jar.limit());
         fos.flush();
       }
       return jar;
@@ -108,7 +108,7 @@ public class TestSolrConfigHandler extends RestTestBase {
           ZipEntry entry = new ZipEntry(path);
           ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
           zipOut.putNextEntry(entry);
-          zipOut.write(b.array(), 0, b.limit());
+          zipOut.write(b.array(), b.arrayOffset(), b.limit());
           zipOut.closeEntry();
         }
       }

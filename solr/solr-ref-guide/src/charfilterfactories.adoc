@@ -241,7 +241,7 @@ s|Required |Default: none
 +
 The text to use to replace matching patterns.
 
-You can configure this filter in `schema.xml` like this:
+You can configure this filter in the schema like this:
 
 [.dynamic-tabs]
 --

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.analytics.legacy.facet;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@ThreadLeakLingering(linger = 0)
 public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloudTest {
   public static final int INT = 71;
   public static final int LONG = 36;

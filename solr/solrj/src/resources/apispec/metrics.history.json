@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/metrics-reporting.html",
+  "documentation": "https://solr.apache.org/guide/metrics-reporting.html",
   "description": "Metrics history handler allows retrieving samples of past metrics recorded in the .system collection.",
   "methods": [
     "GET"

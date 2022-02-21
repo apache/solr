@@ -97,8 +97,6 @@ This shortcoming may be addressed in a future release.
 
 |EnumField |Use EnumFieldType instead.
 
-|LatLonType |Consider using the LatLonPointSpatialField instead. A single-valued latitude/longitude coordinate pair. Usually it's specified as "lat,lon" order with a comma. See the section <<spatial-search.adoc#,Spatial Search>> for more information.
-
 |TrieDateField |Use DatePointField instead.
 
 |TrieDoubleField |Use DoublePointField instead.

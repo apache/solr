@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
-import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
+import org.apache.solr.client.solrj.request.ApiMapping.CommandMeta;
+import org.apache.solr.client.solrj.request.ApiMapping.V2EndPoint;
 import org.apache.solr.client.solrj.request.CoreApiMapping;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;

@@ -240,7 +240,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   /**
    * Behaves like Java 9's Arrays.equals
    *
-   * @see <a href="http://download.java.net/java/jdk9/docs/api/java/util/Arrays.html#equals-byte:A-int-int-byte:A-int-int-">Arrays.equals</a>
+   * @see <a href="https://docs.oracle.com/javase/9/docs/api/java/util/Arrays.html#equals-byte:A-int-int-byte:A-int-int-">Arrays.equals</a>
    */
   public static boolean _equals(byte[] a, int aFromIndex, int aToIndex, byte[] b, int bFromIndex, int bToIndex) {
     checkFromToIndex(aFromIndex, aToIndex, a.length);

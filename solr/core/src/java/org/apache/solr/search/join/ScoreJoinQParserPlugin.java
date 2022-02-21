@@ -48,24 +48,24 @@ import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.RefCounted;
 
 /**
- * Create a query-time join query with scoring. 
+ * Create a query-time join query with scoring.
  * It just calls  {@link JoinUtil#createJoinQuery(String, boolean, String, Query, org.apache.lucene.search.IndexSearcher, ScoreMode)}.
  * It runs subordinate query and collects values of "from"  field and scores, then it lookups these collected values in "to" field, and
  * yields aggregated scores.
- * Local parameters are similar to {@link JoinQParserPlugin} <a href="http://wiki.apache.org/solr/Join">{!join}</a>
- * This plugin doesn't have own name, and is called by specifying local parameter <code>{!join score=...}...</code>. 
+ * Local parameters are similar to {@link JoinQParserPlugin} <a href="https://solr.apache.org/guide/join-query-parser.html">{!join}</a>
+ * This plugin doesn't have own name, and is called by specifying local parameter <code>{!join score=...}...</code>.
  * Note: this parser is invoked even if you specify <code>score=none</code>.
  * <br>Example:<code>q={!join from=manu_id_s to=id score=total}foo</code>
  * <ul>
  *  <li>from - "foreign key" field name to collect values while enumerating subordinate query (denoted as <code>foo</code> in example above).
  *             it's better to have this field declared as <code>type="string" docValues="true"</code>.
- *             note: if <a href="http://wiki.apache.org/solr/DocValues">docValues</a> are not enabled for this field, it will work anyway, 
- *             but it costs some memory for {@link UninvertingReader}. 
+ *             note: if <a href="https://solr.apache.org/guide/docvalues.html">docValues</a> are not enabled for this field, it will work anyway,
+ *             but it costs some memory for {@link UninvertingReader}.
  *             Also, numeric doc values are not supported until <a href="https://issues.apache.org/jira/browse/LUCENE-5868">LUCENE-5868</a>.
  *             Thus, it only supports {@link DocValuesType#SORTED}, {@link DocValuesType#SORTED_SET}, {@link DocValuesType#BINARY}.  </li>
  *  <li>fromIndex - optional parameter, a core name where subordinate query should run (and <code>from</code> values are collected) rather than current core.
- *             <br>Example:<code>q={!join from=manu_id_s to=id score=total fromIndex=products}foo</code> 
- *  <li>to - "primary key" field name which is searched for values collected from subordinate query. 
+ *             <br>Example:<code>q={!join from=manu_id_s to=id score=total fromIndex=products}foo</code>
+ *  <li>to - "primary key" field name which is searched for values collected from subordinate query.
  *             it should be declared as <code>indexed="true"</code>. Now it's treated as a single value field.</li>
  *  <li>score - one of {@link ScoreMode}: <code>none,avg,total,max,min</code>. Capital case is also accepted.</li>
  * </ul>
@@ -346,6 +346,3 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     return fromReplica;
   }
 }
-
-
-

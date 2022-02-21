@@ -16,14 +16,12 @@
  */
 package org.apache.solr.analytics.function.reduction;
 
-import java.io.Serializable;
 import java.util.function.UnaryOperator;
 
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
 import org.apache.solr.analytics.function.ReductionFunction;
 import org.apache.solr.analytics.function.reduction.data.CountCollector;
 import org.apache.solr.analytics.function.reduction.data.CountCollector.ExpressionCountCollector;
-import org.apache.solr.analytics.function.reduction.data.ReductionData;
 import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
 import org.apache.solr.analytics.function.reduction.data.SumCollector;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
@@ -88,10 +86,5 @@ public class MeanFunction extends AbstractDoubleValue implements ReductionFuncti
   @Override
   public ExpressionType getExpressionType() {
     return ExpressionType.REDUCTION;
-  }
-
-  protected static class SumData extends ReductionData implements Serializable {
-    private static final long serialVersionUID = 5920718235872898338L;
-    double sum;
   }
 }

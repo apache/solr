@@ -17,10 +17,10 @@
 package org.apache.solr.common.util;
 
 
+import org.apache.solr.SolrTestCaseJ4;
+
 import java.util.List;
 import java.util.Map;
-
-import org.apache.solr.SolrTestCaseJ4;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
@@ -28,11 +28,7 @@ import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   public void testSchema() {
-    checkSchema("collections.collection.shards.Commands");
-    checkSchema("collections.collection.shards.shard.Commands");
-    checkSchema("cores.Commands");
     checkSchema("cores.core.Commands");
-    checkSchema("node.Commands");
     checkSchema("cluster.security.BasicAuth.Commands");
     checkSchema("cluster.security.RuleBasedAuthorization");
     checkSchema("core.config.Commands");
@@ -85,7 +81,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
           "   adult : {type: Boolean}," +
           "   name: {type: string}}}");
     });
-    assertTrue(e.getMessage().contains("Unknown type"));
+    assertTrue(e.getMessage().contains("Unknown type int"));
 
     e = expectThrows(Exception.class, () -> {
       new JsonSchemaValidator("{" +
@@ -120,6 +116,23 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
     errs = personWithEnumValidator.validateJson(Utils.fromJSONString("{name: 'Joe Average' , sex:m}"));
     assertEquals(1, errs.size());
     assertTrue(errs.get(0).contains("Value of enum"));
+
+    {
+      final JsonSchemaValidator durationValidator = new JsonSchemaValidator("{" +
+          "  type:object," +
+          "  properties: {" +
+          "   i : {type: integer}," +
+          "   l : {type: long}," +
+          "   name: {type: string}}}");
+      for (Long val : new Long[] { 30L, 30L*24, 30L*24*60, 30L*24*60*60, 30L*24*60*60*1000 }) { // month: days, hours, minutes, seconds, milliseconds
+        if (val <= Integer.MAX_VALUE) {
+          errs = durationValidator.validateJson(Utils.fromJSONString("{name: 'val', i:"+Integer.toString(val.intValue())+"}"));
+          assertNull("errs are " + errs, errs);
+        }
+        errs = durationValidator.validateJson(Utils.fromJSONString("{name: 'val', l:"+val.toString()+"}"));
+        assertNull("errs are " + errs, errs);
+      }
+    }
 
     String schema = "{\n" +
         "  'type': 'object',\n" +

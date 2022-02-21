@@ -422,7 +422,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
 
     securityJson = securityJson.replace("_MUTERULES_", "[" + StringUtils.join(muteRules, ",") + "]");
 
-    MiniSolrCloudCluster myCluster = new Builder(NUM_SERVERS, createTempDir())
+    MiniSolrCloudCluster myCluster = new MiniSolrCloudCluster.Builder(NUM_SERVERS, createTempDir())
         .withSecurityJson(securityJson)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .build();

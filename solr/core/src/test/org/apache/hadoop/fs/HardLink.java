@@ -46,20 +46,6 @@ public class HardLink {
     linkStats = new LinkStats();
   }
 
-  /**
-   * This abstract class bridges the OS-dependent implementations of the
-   * needed functionality for querying link counts.
-   * The particular implementation class is chosen during
-   * static initialization phase of the HardLink class.
-   * The "getter" methods construct shell command strings.
-   */
-  private static abstract class HardLinkCommandGetter {
-    /**
-     * Get the command string to query the hardlink count of a file
-     */
-    abstract String[] linkCount(File file) throws IOException;
-  }
-
   /*
    * ****************************************************
    * Complexity is above.  User-visible functionality is below

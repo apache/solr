@@ -18,7 +18,7 @@
 
 The Stats component returns simple statistics for numeric, string, and date fields within the document set.
 
-The sample queries in this section assume you are running the "```techproducts```" example included with Solr:
+The sample queries in this section assume you are running the "techproducts" example included with Solr:
 
 [source,bash]
 ----
@@ -141,7 +141,8 @@ This statistic is computed for numeric and date field types and is computed by d
 
 `percentiles`::
 A list of percentile values based on cut-off points specified by the parameter value, such as `1,99,99.9`.
-These values are an approximation, using the https://github.com/tdunning/t-digest/blob/master/docs/t-digest-paper/histo.pdf[t-digest algorithm]. This statistic is computed for numeric field types and is not computed by default.
+These values are an approximation, using the https://github.com/tdunning/t-digest/blob/master/docs/t-digest-paper/histo.pdf[t-digest algorithm].
+This statistic is computed for numeric field types and is not computed by default.
 
 `distinctValues`::
 The set of all distinct values for the field/function in all of the documents in the set.

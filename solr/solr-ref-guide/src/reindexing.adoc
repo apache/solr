@@ -22,7 +22,8 @@ These changes include editing properties of fields or field types; adding fields
 
 It's important to be aware that failing to reindex can have both obvious and subtle consequences for Solr or for users finding what they are looking for.
 
-"Reindex" in this context means _first delete the existing index and repeat the process you used to ingest the entire corpus from the system-of-record_. It is strongly recommended that Solr users have a consistent, repeatable process for indexing so that the indexes can be recreated as the need arises.
+"Reindex" in this context means _first delete the existing index and repeat the process you used to ingest the entire corpus from the system-of-record_.
+It is strongly recommended that Solr users have a consistent, repeatable process for indexing so that the indexes can be recreated as the need arises.
 
 [CAUTION]
 ====
@@ -76,7 +77,8 @@ Any change to the index-time analysis chain requires reindexing in almost all ca
 
 === Solrconfig Changes
 Identifying changes to solrconfig.xml that alter how data is ingested and thus require reindexing is less straightforward.
-The general rule is "anything that changes what gets stored in the index requires reindexing". Here are several known examples.
+The general rule is "anything that changes what gets stored in the index requires reindexing".
+Here are several known examples.
 
 The parameter `luceneMatchVersion` in solrconfig.xml controls the compatibility of Solr with Lucene.
 Since this parameter can change the rules for analysis behind the scenes, it's always recommended to reindex when changing it.
@@ -116,7 +118,8 @@ They allow you to recreate the Lucene index without having Lucene segments linge
 
 [CAUTION]
 ====
-A Lucene index is a _lossy abstraction designed for fast search_. Once a document is added to the index, the original data cannot be assumed to be available.
+A Lucene index is a _lossy abstraction designed for fast search_.
+Once a document is added to the index, the original data cannot be assumed to be available.
 Therefore it is not possible for Lucene to "fix up" existing documents to reflect changes to the schema, they must be indexed again.
 
 There are a number of technical reasons that make re-ingesting all documents correctly without deleting the entire corpus first difficult and error-prone to code and maintain.

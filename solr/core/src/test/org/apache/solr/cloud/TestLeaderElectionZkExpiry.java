@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ThreadLeakLingering(linger = 30)
 public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -64,7 +66,9 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
               server.expire(sessionId);
               try {
                 Thread.sleep(10);
-              } catch (InterruptedException e)  {}
+              } catch (InterruptedException e)  {
+                return;
+              }
             }
           }
         };
@@ -92,8 +96,8 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
         zkController.close();
       }
     } finally {
-      if (zc != null) zc.close();
       cc.shutdown();
+      if (zc != null) zc.close();
       server.shutdown();
     }
   }

@@ -32,7 +32,6 @@ import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -48,8 +47,8 @@ import org.apache.solr.common.util.XML;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
 /**
- * 
- * 
+ *
+ *
  * @since solr 1.3
  */
 public class UpdateRequest extends AbstractUpdateRequest {
@@ -305,10 +304,12 @@ public class UpdateRequest extends AbstractUpdateRequest {
         String deleteId = entry.getKey();
         Map<String,Object> map = entry.getValue();
         Long version = null;
+        String route = null;
         if (map != null) {
           version = (Long) map.get(VER);
+          route = (String) map.get(_ROUTE_);
         }
-        Slice slice = router.getTargetSlice(deleteId, null, null, null, col);
+        Slice slice = router.getTargetSlice(deleteId, null, route, null, col);
         if (slice == null) {
           return null;
         }
@@ -320,11 +321,11 @@ public class UpdateRequest extends AbstractUpdateRequest {
         T request = routes.get(leaderUrl);
         if (request != null) {
           UpdateRequest urequest = (UpdateRequest) request.getRequest();
-          urequest.deleteById(deleteId, version);
+          urequest.deleteById(deleteId, route, version);
         } else {
           UpdateRequest urequest = new UpdateRequest();
           urequest.setParams(params);
-          urequest.deleteById(deleteId, version);
+          urequest.deleteById(deleteId, route, version);
           urequest.setCommitWithin(getCommitWithin());
           urequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
           request = reqSupplier.get(urequest, urls);
@@ -348,22 +349,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
                                                              DocCollection col, Map<String,List<String>> urlMap,
                                                              ModifiableSolrParams params, String idField) {
     return getRoutes(router, col, urlMap, params, idField, LBSolrClient.Req::new);
-  }
-  
-  /**
-   * @param router to route updates with
-   * @param col DocCollection for the updates
-   * @param urlMap of the cluster
-   * @param params params to use
-   * @param idField the id field
-   * @return a Map of urls to requests
-   * @deprecated since 8.0, uses {@link #getRoutesToCollection(DocRouter, DocCollection, Map, ModifiableSolrParams, String)} instead
-   */
-  @Deprecated
-  public Map<String,LBHttpSolrClient.Req> getRoutes(DocRouter router,
-      DocCollection col, Map<String,List<String>> urlMap,
-      ModifiableSolrParams params, String idField) {
-    return getRoutes(router, col, urlMap, params, idField, LBHttpSolrClient.Req::new);
   }
   
   public void setDocIterator(Iterator<SolrInputDocument> docIterator) {
@@ -411,8 +396,9 @@ public class UpdateRequest extends AbstractUpdateRequest {
           overwrite = (Boolean) entry.getValue().get(OVERWRITE);
           commitWithin = (Integer) entry.getValue().get(COMMIT_WITHIN);
         }
-        if (overwrite != lastOverwrite || commitWithin != lastCommitWithin
-            || docLists.size() == 0) {
+        if (!Objects.equals(overwrite, lastOverwrite)
+                || !Objects.equals(commitWithin, lastCommitWithin)
+                || docLists.isEmpty()) {
           docList = new LinkedHashMap<>();
           docLists.add(docList);
         }

@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  *   Identifies the language of a set of input fields.
  *   Also supports mapping of field names based on detected language.
  * </p>
- * See <a href="https://solr.apache.org/guide/detecting-languages-during-indexing.html">Detecting Languages During Indexing</a> in reference guide
+ * See <a href="https://solr.apache.org/guide/language-detection.html">Detecting Languages During Indexing</a> in reference guide
  * @since 3.5
  * @lucene.experimental
  */

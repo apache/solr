@@ -57,7 +57,8 @@ The default `solr.xml` file looks like this:
 </solr>
 ----
 
-As you can see, the discovery Solr configuration is "SolrCloud friendly". However, the presence of the `<solrcloud>` element does _not_ mean that the Solr instance is running in SolrCloud mode.
+As you can see, the discovery Solr configuration is "SolrCloud friendly".
+However, the presence of the `<solrcloud>` element does _not_ mean that the Solr instance is running in SolrCloud mode.
 Unless the `-DzkHost` or `-DzkRun` are specified at startup time, this section is ignored.
 
 == Solr.xml Parameters

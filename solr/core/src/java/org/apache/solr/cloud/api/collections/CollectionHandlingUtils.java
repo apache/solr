@@ -374,7 +374,7 @@ public class CollectionHandlingUtils {
     do {
       sreq = new ShardRequest();
       params.set("qt", adminPath);
-      sreq.purpose = 1;
+      sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
       String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
       sreq.shards = new String[] {replica};
       sreq.actualShards = sreq.shards;
@@ -498,7 +498,7 @@ public class CollectionHandlingUtils {
 
       ShardRequest sreq = new ShardRequest();
       params.set("qt", adminPath);
-      sreq.purpose = 1;
+      sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
       String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
       sreq.shards = new String[] {replica};
       sreq.actualShards = sreq.shards;

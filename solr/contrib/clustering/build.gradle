@@ -25,6 +25,8 @@ dependencies {
 
   implementation "org.apache.lucene:lucene-analysis-common"
 
+  implementation 'commons-io:commons-io'
+
   implementation 'org.carrot2:carrot2-core'
 
   testImplementation project(':solr:test-framework')

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
@@ -32,10 +31,6 @@ import org.apache.http.cookie.CookieSpecProvider;
 public class SolrHttpClientBuilder {
   public static SolrHttpClientBuilder create() {
     return new SolrHttpClientBuilder();
-  }
-  
-  public interface HttpRequestInterceptorProvider {
-    HttpRequestInterceptor getHttpRequestInterceptor();
   }
   
   public interface CredentialsProviderProvider {

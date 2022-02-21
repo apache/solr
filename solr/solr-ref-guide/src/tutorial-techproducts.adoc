@@ -125,7 +125,7 @@ _default or sample_techproducts_configs [_default]
 We've reached another point where we will deviate from the default option.
 Solr has two sample sets of configuration files (called a configset) available out-of-the-box.
 
-A collection must have a configset, which at a minimum includes the two main configuration files for Solr: the schema file (named either `managed-schema` or `schema.xml`), and `solrconfig.xml`.
+A collection must have a configset, which at a minimum includes the two main configuration files for Solr: the schema file (named either `managed-schema.xml` or `schema.xml`), and `solrconfig.xml`.
 The question here is which configset you would like to start with.
 The `_default` is a bare-bones option, but note there's one whose name includes "techproducts", the same as we named our collection.
 This configset is specifically designed to support the sample data we want to use, so enter `sample_techproducts_configs` at the prompt and hit kbd:[enter].

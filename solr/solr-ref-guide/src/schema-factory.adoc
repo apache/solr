@@ -41,7 +41,7 @@ While the "read" features of the Schema API are supported for all schema types, 
 
 === ManagedIndexSchemaFactory
 
-When a `<schemaFactory/>` is not explicitly declared in a `solrconfig.xml` file, Solr implicitly uses a `ManagedIndexSchemaFactory`, which is by default `"mutable"` (editable) and keeps schema information in a `managed-schema` file.
+When a `<schemaFactory/>` is not explicitly declared in a `solrconfig.xml` file, Solr implicitly uses a `ManagedIndexSchemaFactory`, which is by default `"mutable"` (editable) and keeps schema information in a `managed-schema.xml` file.
 
 Using the Managed Schema is required to be able to use the Schema API to modify your schema.
 However, using Managed Schema does not mean you are also using Solr in Schemaless Mode (or "schema guessing" mode).
@@ -54,7 +54,7 @@ Below is an example of a `schemaFactory` that reflects Solr's defaults:
 ----
   <schemaFactory class="ManagedIndexSchemaFactory">
     <bool name="mutable">true</bool>
-    <str name="managedSchemaResourceName">managed-schema</str>
+    <str name="managedSchemaResourceName">managed-schema.xml</str>
   </schemaFactory>
 ----
 
@@ -76,7 +76,7 @@ With the default configuration shown above, you could use the <<schema-api.adoc#
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `managed-schema`
+|Optional |Default: `managed-schema.xml`
 |===
 +
 The name of the schema file.
@@ -101,7 +101,7 @@ This option takes no parameters.
 
 If you have an existing Solr collection that uses `ClassicIndexSchemaFactory`, and you wish to convert to use a managed schema, you can simply modify the `solrconfig.xml` to specify the use of the `ManagedIndexSchemaFactory`.
 
-Once Solr is restarted and it detects that a `schema.xml` file exists, but the `managedSchemaResourceName` file (i.e., "`managed-schema`") does not exist, the existing `schema.xml` file will be renamed to `schema.xml.bak` and the contents re-written to the managed schema file.
+Once Solr is restarted and it detects that a `schema.xml` file exists, but the `managedSchemaResourceName` file (i.e., "`managed-schema.xml`") does not exist, the existing `schema.xml` file will be renamed to `schema.xml.bak` and the contents re-written to the managed schema file.
 
 If you look at the resulting file, you'll see this at the top of the page:
 
@@ -116,7 +116,7 @@ You are now free to use the <<schema-api.adoc#,Schema API>> to make changes, and
 
 If you have started Solr with managed schema enabled and you would like to switch to manually editing a `schema.xml` file, you should take the following steps:
 
-. Rename the `managed-schema` file to `schema.xml`.
+. Rename the `managed-schema.xml` file to `schema.xml`.
 . Modify `solrconfig.xml` to replace the `schemaFactory` class.
 .. Remove any `ManagedIndexSchemaFactory` definition if it exists.
 .. Add a `ClassicIndexSchemaFactory` definition as shown above

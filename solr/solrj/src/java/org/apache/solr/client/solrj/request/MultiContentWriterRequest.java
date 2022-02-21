@@ -119,7 +119,7 @@ public class MultiContentWriterRequest extends AbstractUpdateRequest {
 
   public static ByteBuffer readByteBuffer(InputStream is) throws IOException {
     BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
-    org.apache.commons.io.IOUtils.copy(is, baos);
+    is.transferTo(baos);
     return ByteBuffer.wrap(baos.getbuf(), 0, baos.size());
   }
 }

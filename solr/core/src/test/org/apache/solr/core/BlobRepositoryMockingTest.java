@@ -19,13 +19,13 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.Before;
@@ -169,7 +169,7 @@ public class BlobRepositoryMockingTest {
       public String[][] decode(InputStream inputStream) {
         StringWriter writer = new StringWriter();
         try {
-          IOUtils.copy(inputStream, writer, UTF8);
+          new InputStreamReader(inputStream, UTF8).transferTo(writer);
         } catch (IOException e) {
           throw new RuntimeException(e);
         }

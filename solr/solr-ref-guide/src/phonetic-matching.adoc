@@ -38,7 +38,8 @@ Finally, it applies language-independent rules regarding such things as voiced a
 
 For example, assume that the matches found when searching for Stephen in a database are "Stefan", "Steph", "Stephen", "Steve", "Steven", "Stove", and "Stuffin". "Stefan", "Stephen", and "Steven" are probably relevant, and are names that you want to see.
 "Stuffin", however, is probably not relevant.
-Also rejected were "Steph", "Steve", and "Stove". Of those, "Stove" is probably not one that we would have wanted.
+Also rejected were "Steph", "Steve", and "Stove".
+Of those, "Stove" is probably not one that we would have wanted.
 But "Steph" and "Steve" are possibly ones that you might be interested in.
 
 For Solr, BMPM searching is available for the following languages:

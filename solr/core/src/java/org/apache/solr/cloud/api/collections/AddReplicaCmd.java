@@ -347,7 +347,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       int i = 0;
       for (Map.Entry<Replica.Type, Integer> entry : replicaTypeVsCount.entrySet()) {
         for (int j = 0; j < entry.getValue(); j++) {
-          positions.add(new ReplicaPosition(sliceName, i++, entry.getKey(), node));
+          positions.add(new ReplicaPosition(collectionName, sliceName, i++, entry.getKey(), node));
         }
       }
     }

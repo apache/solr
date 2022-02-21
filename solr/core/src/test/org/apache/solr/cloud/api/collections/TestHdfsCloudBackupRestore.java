@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -67,6 +68,7 @@ import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
     QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 30)
 public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   public static final String SOLR_XML = "<solr>\n" +
       "\n" +
@@ -195,7 +197,7 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     HdfsBackupRepository repo = new HdfsBackupRepository();
     repo.init(new NamedList<>(params));
 
-    URI baseLoc = repo.createURI("/backup");
+    URI baseLoc = repo.createDirectoryURI("/backup");
 
     BackupManager mgr = BackupManager.forRestore(repo, solrClient.getZkStateReader(), repo.resolve(baseLoc, backupName));
     BackupProperties props = mgr.readBackupProperties();

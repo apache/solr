@@ -32,6 +32,7 @@ dependencies {
   runtimeOnly ('org.apache.tika:tika-java7') { transitive = false }
   runtimeOnly ('org.apache.tika:tika-xmp') { transitive = false }
 
+  implementation 'commons-io:commons-io'
   implementation ('com.healthmarketscience.jackcess:jackcess') { transitive = false }
   implementation ('com.healthmarketscience.jackcess:jackcess-encrypt') { transitive = false }
   implementation ('org.gagravarr:vorbis-java-tika') { transitive = false }

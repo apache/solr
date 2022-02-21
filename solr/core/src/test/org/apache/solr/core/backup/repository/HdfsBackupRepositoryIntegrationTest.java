@@ -17,6 +17,7 @@
 
 package org.apache.solr.core.backup.repository;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -41,6 +42,7 @@ import org.junit.BeforeClass;
 @ThreadLeakFilters(defaultFilters = true, filters = {
         BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
+@ThreadLeakLingering(linger = 10)
 public class HdfsBackupRepositoryIntegrationTest extends AbstractBackupRepositoryTest {
     private static MiniDFSCluster dfsCluster;
     private static String hdfsUri;

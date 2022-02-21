@@ -17,6 +17,10 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * <p>Implemented by external plugins to control replica placement and movement on the search cluster (as well as other things
  * such as cluster elasticity?) when cluster changes are required (initiated elsewhere, most likely following a Collection
@@ -37,7 +41,29 @@ public interface PlacementPlugin {
    * @param placementRequest     request for placing new replicas or moving existing replicas on the cluster.
    * @return plan satisfying the placement request.
    */
-  PlacementPlan computePlacement(PlacementRequest placementRequest, PlacementContext placementContext) throws PlacementException, InterruptedException;
+  default PlacementPlan computePlacement(PlacementRequest placementRequest, PlacementContext placementContext) throws PlacementException, InterruptedException {
+    List<PlacementPlan> placementPlans = computePlacements(Collections.singletonList(placementRequest), placementContext);
+    if (placementPlans == null || placementPlans.isEmpty()) {
+      return null;
+    } else {
+      return placementPlans.get(0);
+    }
+  }
+
+  /**
+   * <p>Request from plugin code to compute multiple placements.
+   * If multiple placements are requested, then the {@link PlacementPlan} computed for each {@link PlacementRequest}
+   * will be used to affect the starting state for each subsequent {@link PlacementRequest} in the list.
+   * This means that each {@link PlacementRequest} is computed in the context of the previous
+   * {@link PlacementRequest}'s already having been implemented.
+   * Note this method must be reentrant as a plugin instance may (read will) get multiple such calls in parallel.
+   *
+   * <p>Configuration is passed upon creation of a new instance of this class by {@link PlacementPluginFactory#createPluginInstance}.
+   *
+   * @param placementRequests     requests for placing new replicas or moving existing replicas on the cluster.
+   * @return plan satisfying all placement requests.
+   */
+  List<PlacementPlan> computePlacements(Collection<PlacementRequest> placementRequests, PlacementContext placementContext) throws PlacementException, InterruptedException;
 
   /**
    * Verify that a collection layout modification doesn't violate constraints on replica placements

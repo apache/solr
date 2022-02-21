@@ -20,6 +20,7 @@ package org.apache.solr.servlet;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.UnavailableException;
 import javax.servlet.WriteListener;
 import java.io.IOException;
 import java.util.HashSet;
@@ -60,7 +61,7 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
     assertCoreChosen(NUM_SHARD * REPLICA_FACTOR, new TestRequest("/collection1/select"));
   }
 
-  private void assertCoreChosen(int numCores, TestRequest testRequest) {
+  private void assertCoreChosen(int numCores, TestRequest testRequest) throws UnavailableException {
     JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(0);
     Set<String> coreNames = new HashSet<>();
     SolrDispatchFilter dispatchFilter = jettySolrRunner.getSolrDispatchFilter();

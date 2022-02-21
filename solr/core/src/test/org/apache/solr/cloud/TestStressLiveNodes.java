@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,6 +47,7 @@ import org.slf4j.LoggerFactory;
  * Does bursts of adds to live_nodes using parallel threads to and verifies that after each 
  * burst a ZkStateReader detects the correct set.
  */
+@ThreadLeakLingering(linger = 10)
 @Slow
 public class TestStressLiveNodes extends SolrCloudTestCase {
 

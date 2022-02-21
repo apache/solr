@@ -388,7 +388,8 @@ As you can see in the examples above, the `cartesianProduct` function does suppo
 == classify
 
 The `classify` function classifies tuples using a logistic regression text classification model.
-It was designed specifically to work with models trained using the <<stream-source-reference.adoc#train,train function>>. The `classify` function uses the <<stream-source-reference.adoc#model,model function>> to retrieve a stored model and then scores a stream of tuples using the model.
+It was designed specifically to work with models trained using the <<stream-source-reference.adoc#train,train function>>.
+The `classify` function uses the <<stream-source-reference.adoc#model,model function>> to retrieve a stored model and then scores a stream of tuples using the model.
 The tuples read by the classifier must contain a text field that can be used for classification.
 The classify function uses a Lucene analyzer to extract the features from the text so the model can be applied.
 By default the `classify` function looks for the analyzer using the name of text field in the tuple.
@@ -542,28 +543,28 @@ The `/stream` handler supports a small <<stream-api.adoc#plugins,set of commands
 
 [source,text]
 ----
-http://localhost:8983/collection/stream?action=list
+http://localhost:8983/solr/collection/stream?action=list
 ----
 
 This command will provide a listing of the current daemons running on the specific node along with their current state.
 
 [source,text]
 ----
-http://localhost:8983/collection/stream?action=stop&id=daemonId
+http://localhost:8983/solr/collection/stream?action=stop&id=daemonId
 ----
 
 This command will stop a specific daemon function but leave it resident in memory.
 
 [source,text]
 ----
-http://localhost:8983/collection/stream?action=start&id=daemonId
+http://localhost:8983/solr/collection/stream?action=start&id=daemonId
 ----
 
 This command will start a specific daemon function that has been stopped.
 
 [source,text]
 ----
-http://localhost:8983/collection/stream?action=kill&id=daemonId
+http://localhost:8983/solr/collection/stream?action=kill&id=daemonId
 ----
 
 This command will stop a specific daemon function and remove it from memory.
@@ -1179,8 +1180,8 @@ This will cause the `rollup` function to be run in parallel across 20 worker nod
 ====
 The `parallel` function uses the hash query parser to split the data amongst the workers.
 It executes on all the documents and the result bitset is cached in the filterCache.
-+
-For a `parallel` stream with the same number of workers and `partitonKeys` the first query would be slower than subsequent queries.
+
+For a `parallel` stream with the same number of workers and `partitionKeys` the first query would be slower than subsequent queries.
 A trick to not pay the penalty for the first slow query would be to use a warmup query for every new searcher.
 The following is a `solrconfig.xml` snippet for 2 workers and "year_i" as the `partionKeys`.
 

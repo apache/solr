@@ -52,6 +52,5 @@ public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
     type = schema.getFieldType("textTurkishAnalyzerDefault");
     Analyzer ana1 = type.getIndexAnalyzer();
     assertTrue(ana1 instanceof TurkishAnalyzer);
-    assertEquals(DEFAULT_VERSION, ana1.getVersion());
   }
 }

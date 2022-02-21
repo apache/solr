@@ -86,7 +86,7 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
      *
      * @param schema for opening resources
      * @param fieldType Used for logging or error messages
-     * @param args the init args to comsume the enum name + config file from
+     * @param args the init args to consume the enum name + config file from
      */
     public EnumMapping(IndexSchema schema, FieldType fieldType, Map<String, String> args) {
       final String ftName = fieldType.getTypeName();

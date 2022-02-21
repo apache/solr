@@ -49,6 +49,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFI
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
@@ -205,15 +206,6 @@ public class CollectionsAPI {
                         break;
                 }
             }
-        }
-
-        private void flattenMapWithPrefix(Map<String, Object> toFlatten, Map<String, Object> destination,
-                                          String additionalPrefix) {
-            if (toFlatten == null || toFlatten.isEmpty() || destination == null) {
-                return;
-            }
-
-            toFlatten.forEach((k, v) -> destination.put(additionalPrefix + k, v));
         }
   }
 }

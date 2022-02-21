@@ -186,6 +186,7 @@ public class ClusterSingletons {
    * Stop all registered singletons.
    */
   public void stopClusterSingletons() {
+    readyLatch.countDown();
     singletonMap.forEach((name, singleton) -> {
       singleton.stop();
     });

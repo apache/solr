@@ -182,6 +182,8 @@ solrAdminServices.factory('System',
   ['$resource', function($resource) {
     return $resource(':core/admin/ping', {wt:'json', core: '@core', ts:Date.now(), _:Date.now()}, {
      "ping": {},
+     "enable": {params:{action:"enable"}, headers: {doNotIntercept: "true"}},
+     "disable": {params:{action:"disable"}, headers: {doNotIntercept: "true"}},
      "status": {params:{action:"status"}, headers: {doNotIntercept: "true"}
     }});
   }])
@@ -269,6 +271,12 @@ solrAdminServices.factory('System',
        postCsv: {headers: {'Content-type': 'application/csv'}, method: "POST", timeout: 90000},
        upload: {method: "POST", transformRequest: angular.identity, headers: {'Content-Type': undefined}, timeout: 90000}
      })
+}])
+.factory('Security',
+    ['$resource', function($resource) {
+          return $resource('/api/cluster/security/:path', {wt: 'json', path: '@path', _:Date.now()}, {
+            get: {method: "GET"}, post: {method: "POST", timeout: 90000}
+        })
 }])
 .factory('AuthenticationService',
     ['base64', function (base64) {

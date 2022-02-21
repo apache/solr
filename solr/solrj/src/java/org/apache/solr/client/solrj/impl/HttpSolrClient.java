@@ -16,32 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
-import java.net.MalformedURLException;
-import java.net.SocketTimeoutException;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.Principal;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpMessage;
@@ -79,7 +53,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -88,6 +61,33 @@ import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
+import java.net.ConnectException;
+import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.Principal;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
@@ -151,39 +151,10 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private volatile Set<String> queryParams = Collections.emptySet();
   private volatile Integer connectionTimeout;
   private volatile Integer soTimeout;
-  
-  /**
-   * @deprecated use {@link HttpSolrClient#HttpSolrClient(Builder)} instead, as it is a more extension/subclassing-friendly alternative
-   */
-  @Deprecated
-  protected HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression) {
-    this(new Builder(baseURL)
-        .withHttpClient(client)
-        .withResponseParser(parser)
-        .allowCompression(allowCompression));
-  }
 
   /**
-   * The constructor.
-   *
-   * @param baseURL The base url to communicate with the Solr server
-   * @param client Http client instance to use for communication
-   * @param parser Response parser instance to use to decode response from Solr server
-   * @param allowCompression Should compression be allowed ?
-   * @param invariantParams The parameters which should be included with every request.
-   * 
-   * @deprecated use {@link HttpSolrClient#HttpSolrClient(Builder)} instead, as it is a more extension/subclassing-friendly alternative
+   * Use the builder to create this client
    */
-  @Deprecated
-  protected HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression,
-      ModifiableSolrParams invariantParams) {
-    this(new Builder(baseURL)
-        .withHttpClient(client)
-        .withResponseParser(parser)
-        .allowCompression(allowCompression)
-        .withInvariantParams(invariantParams));
-  }
-  
   protected HttpSolrClient(Builder builder) {
     this.baseUrl = builder.baseSolrUrl;
     if (baseUrl.endsWith("/")) {
@@ -275,7 +246,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private void setBasicAuthHeader(SolrRequest<?> request, HttpRequestBase method) throws UnsupportedEncodingException {
     if (request.getBasicAuthUser() != null && request.getBasicAuthPassword() != null) {
       String userPass = request.getBasicAuthUser() + ":" + request.getBasicAuthPassword();
-      String encoded = Base64.byteArrayToBase64(userPass.getBytes(FALLBACK_CHARSET));
+      String encoded = Base64.getEncoder().encodeToString(userPass.getBytes(FALLBACK_CHARSET));
       method.setHeader(new BasicHeader("Authorization", "Basic " + encoded));
     }
   }
@@ -640,14 +611,15 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           }
 
           // unexpected mime type
-          String msg = "Expected mime type " + procMimeType + " but got " + mimeType + ".";
+          String prefix = "Expected mime type " + procMimeType + " but got " + mimeType + ". ";
           Charset exceptionCharset = charset != null? charset : FALLBACK_CHARSET;
           try {
-            msg = msg + " " + IOUtils.toString(respBody, exceptionCharset);
+            ByteArrayOutputStream body = new ByteArrayOutputStream();
+            respBody.transferTo(body);
+            throw new RemoteSolrException(baseUrl, httpStatus, prefix + body.toString(exceptionCharset), null);
           } catch (IOException e) {
             throw new RemoteSolrException(baseUrl, httpStatus, "Could not parse response with encoding " + exceptionCharset, e);
           }
-          throw new RemoteSolrException(baseUrl, httpStatus, msg, null);
         }
       }
       
@@ -810,34 +782,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   public HttpClient getHttpClient() {
     return httpClient;
   }
-  
-  /**
-   * HttpConnectionParams.setConnectionTimeout
-   * 
-   * @param timeout
-   *          Timeout in milliseconds
-   *          
-   * @deprecated since 7.0  Use {@link Builder} methods instead. 
-   */
-  @Deprecated
-  public void setConnectionTimeout(int timeout) {
-    this.connectionTimeout = timeout;
-  }
-  
-  /**
-   * Set SoTimeout (read timeout). This is desirable
-   * for queries, but probably not for indexing.
-   * 
-   * @param timeout
-   *          Timeout in milliseconds
-   *          
-s   * @deprecated since 7.0  Use {@link Builder} methods instead. 
-   */
-  @Deprecated
-  public void setSoTimeout(int timeout) {
-    this.soTimeout = timeout;
-  }
-  
+
   /**
    * Configure whether the client should follow redirects or not.
    * <p>

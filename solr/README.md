@@ -129,7 +129,7 @@ or linked from "docs/index.html" in a binary distribution.
 
 Also, there are Solr clients for many programming languages, see
 
-  * https://wiki.apache.org/solr/IntegratingSolr
+  * https://cwiki.apache.org/confluence/display/solr/IntegratingSolr
 
 
 Files included in an Apache Solr binary distribution

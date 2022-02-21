@@ -20,6 +20,9 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
@@ -27,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -711,6 +715,45 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + TRA + "2017-10-02_03"));
     assertEquals(Instant.parse("2017-10-02T00:00:00Z"),
       TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + TRA + "2017-10-02"));
+  }
+
+  @Test
+  public void testMaxFutureMs() throws Exception {
+    final Long maxFutureMs = 100L * 24L * 60L * 60L * 1000L; // 100 DAYS
+
+    ZonedDateTime a = ZonedDateTime.now(ZoneId.from(ZoneOffset.UTC));
+    ZonedDateTime b = a.plusMonths(2);
+    ZonedDateTime c = a.plusYears(1);
+    DateTimeFormatter SOLR_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT).withZone(ZoneId.from(ZoneOffset.UTC));
+
+
+    final String YYYY_MM_DD_a = SOLR_DATE_TIME_FORMATTER.format(a);
+    final String YYYY_MM_DD_b = SOLR_DATE_TIME_FORMATTER.format(b);
+    final String YYYY_MM_DD_c = SOLR_DATE_TIME_FORMATTER.format(c);
+
+    final int numShards = 1 + random().nextInt(4);
+    final int numReplicas = 1 + random().nextInt(3);
+    CollectionAdminRequest.createTimeRoutedAlias(alias, YYYY_MM_DD_a, "+180DAY", getTimeField(),
+        CollectionAdminRequest.createCollection("_unused_", "_default", numShards, numReplicas))
+        .setMaxFutureMs(maxFutureMs)
+        .process(solrClient);
+
+    final ModifiableSolrParams params = params();
+
+    final String dayB = DateTimeFormatter.ISO_INSTANT.format(DateMathParser.parseMath(new Date(), YYYY_MM_DD_b).toInstant());
+      assertUpdateResponse(add(alias, Arrays.asList(
+          sdoc("id", "2", "timestamp_dt", dayB)),
+          params));
+
+    final String dayC = DateTimeFormatter.ISO_INSTANT.format(DateMathParser.parseMath(new Date(), YYYY_MM_DD_c).toInstant());
+    try {
+      assertUpdateResponse(add(alias, Arrays.asList(
+          sdoc("id", "3", "timestamp_dt", dayC)),
+          params));
+      fail("expected update with " + dayC + " timestamp to fail");
+    } catch (Exception ex) {
+      assertTrue(ex.getMessage(), ex.getMessage().contains("The document's time routed key of " + dayC + " is too far in the future given router.maxFutureMs="+maxFutureMs));
+    }
   }
 
   @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13943")

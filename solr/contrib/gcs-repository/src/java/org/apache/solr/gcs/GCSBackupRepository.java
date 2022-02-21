@@ -134,6 +134,17 @@ public class GCSBackupRepository implements BackupRepository {
     }
 
     @Override
+    public URI createDirectoryURI(String location) {
+        Objects.requireNonNull(location);
+
+        if (!location.endsWith("/")) {
+            location += "/";
+        }
+
+        return createURI(location);
+    }
+
+    @Override
     public URI resolve(URI baseUri, String... pathComponents) {
         StringBuilder builder = new StringBuilder(baseUri.toString());
         for (String path : pathComponents) {
@@ -145,24 +156,41 @@ public class GCSBackupRepository implements BackupRepository {
             }
         }
 
-        return URI.create(builder.toString());
+        return URI.create(builder.toString()).normalize();
+    }
+
+    @Override
+    public URI resolveDirectory(URI baseUri, String... pathComponents) {
+        if (pathComponents.length > 0) {
+            if (!pathComponents[pathComponents.length - 1].endsWith("/")) {
+                pathComponents[pathComponents.length - 1] = pathComponents[pathComponents.length - 1] + "/";
+            }
+        } else {
+            if (!baseUri.getPath().endsWith("/")) {
+                baseUri = URI.create(baseUri + "/");
+            }
+        }
+        return resolve(baseUri, pathComponents);
     }
 
     @Override
     public boolean exists(URI path) throws IOException {
-        if (path.toString().equals(getConfigProperty(CoreAdminParams.BACKUP_LOCATION))) {
+        return exists(path.toString());
+    }
+
+    public boolean exists(String path) throws IOException {
+        if (path.equals(getConfigProperty(CoreAdminParams.BACKUP_LOCATION))) {
             return true;
         }
 
-        if (path.toString().endsWith("/")) {
-            return storage.get(bucketName, path.toString(), Storage.BlobGetOption.fields()) != null;
+        if (path.endsWith("/")) {
+            return storage.get(bucketName, path, Storage.BlobGetOption.fields()) != null;
         } else {
-            final String filePath = path.toString();
-            final String directoryPath = path.toString() + "/";
+            final String filePath = path;
+            final String directoryPath = path + "/";
             return storage.get(bucketName, filePath, Storage.BlobGetOption.fields()) != null ||
-                    storage.get(bucketName, directoryPath, Storage.BlobGetOption.fields()) != null;
+                storage.get(bucketName, directoryPath, Storage.BlobGetOption.fields()) != null;
         }
-
     }
 
     @Override
@@ -211,9 +239,7 @@ public class GCSBackupRepository implements BackupRepository {
     }
 
     private IndexInput openInput(URI dirPath, String fileName, IOContext ctx, int bufferSize) {
-        String blobName = dirPath.toString();
-        blobName = appendTrailingSeparatorIfNecessary(blobName);
-        blobName += fileName;
+        String blobName = resolve(dirPath, fileName).toString();
 
         final BlobId blobId = BlobId.of(bucketName, blobName);
         final Blob blob = storage.get(blobId, Storage.BlobGetOption.fields(Storage.BlobField.SIZE));
@@ -270,7 +296,9 @@ public class GCSBackupRepository implements BackupRepository {
     @Override
     public void createDirectory(URI path) throws IOException {
         final String name = appendTrailingSeparatorIfNecessary(path.toString());
-        storage.create(BlobInfo.newBuilder(bucketName, name).build()) ;
+        if (!exists(name)) {
+            storage.create(BlobInfo.newBuilder(bucketName, name).build());
+        }
     }
 
     @Override

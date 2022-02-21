@@ -94,7 +94,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     if (history.stream().filter(d -> "foobar".equals(d.getFirstValue("logger"))).count() == 0) {
       fail("No 'foobar' logs in: " + history.toString());
     }
-    if (history.stream().filter(d -> "x:collection1".equals(d.getFirstValue("core"))).count() == 0) {
+    if (history.stream().filter(d -> "collection1".equals(d.getFirstValue("core"))).count() == 0) {
       fail("No 'solr.core' or MDC context in logs: " + history.toString());
     }
   }

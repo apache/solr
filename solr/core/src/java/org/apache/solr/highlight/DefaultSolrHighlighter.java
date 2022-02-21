@@ -972,11 +972,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     }
   }
 
+
   /**
    * Wraps a DirectoryReader that caches the {@link LeafReader#getTermVectors(int)} so that
    * if the next call has the same ID, then it is reused.
    */
   static class TermVectorReusingLeafReader extends FilterLeafReader {
+
 
     private int lastDocId = -1;
     private Fields tvFields;
@@ -993,6 +995,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       }
       return tvFields;
     }
+
 
     @Override
     public CacheHelper getCoreCacheHelper() {

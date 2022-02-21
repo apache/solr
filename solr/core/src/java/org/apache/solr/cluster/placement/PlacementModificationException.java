@@ -60,19 +60,21 @@ public class PlacementModificationException extends PlacementException {
   }
 
   @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder(super.toString());
-    if (!rejectedModifications.isEmpty()) {
-        sb.append(": ")
-          .append(rejectedModifications.size())
-          .append(" rejections:");
-      rejectedModifications.forEach((modification, reason) ->
-          sb.append("\n")
-              .append(modification)
-              .append("\t")
-              .append(reason));
-
+  public String getMessage() {
+    if (rejectedModifications.isEmpty()) {
+      return super.getMessage();
     }
+
+    StringBuilder sb = new StringBuilder(super.getMessage());
+    sb.append(": ")
+      .append(rejectedModifications.size())
+      .append(" rejections:");
+    rejectedModifications.forEach((modification, reason) ->
+        sb.append("\n")
+            .append(modification)
+            .append("\t")
+            .append(reason));
+
     return sb.toString();
   }
 }

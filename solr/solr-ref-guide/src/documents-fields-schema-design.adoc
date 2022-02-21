@@ -20,7 +20,8 @@
 The fundamental premise of Solr is simple.
 You give it a lot of information, then later you can ask it questions and find the piece of information you want.
 
-The part where you feed in all the information is called _indexing_ or _updating_. When you ask a question, it's called a _query_.
+The part where you feed in all the information is called _indexing_ or _updating_.
+When you ask a question, it's called a _query_.
 
 One way to understand how Solr works is to think of a loose-leaf book of recipes.
 Every time you add a recipe to the book, you update the index at the back.
@@ -81,7 +82,7 @@ Field analysis is an important part of a field type.
 == Solr's Schema File
 
 Solr stores details about the field types and fields it is expected to understand in a schema file.
-This file is named either `managed-schema` or `schema.xml`.
+This file is named either `managed-schema.xml` or `schema.xml`.
 The difference is determined by how you plan to manage Solr's schema in your installation: either programmatically or by hand-editing.
 
 An important fact about the schema is that it is a Solr concept.

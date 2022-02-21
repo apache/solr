@@ -174,7 +174,7 @@ Notice that the `conv` function is simply correlating the sine wave with itself.
 
 The plot has a very distinct structure to it.
 As the sine wave is slid across a copy of itself the correlation moves up and down in increasing intensity until it reaches a peak.
-This peak is directly in the center and is the the point where the sine waves are directly lined up.
+This peak is directly in the center and is the point where the sine waves are directly lined up.
 Following the peak the correlation moves up and down in decreasing intensity as the sine wave slides farther away from being directly lined up.
 
 This is the autocorrelation plot of a pure signal.

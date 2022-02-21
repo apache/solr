@@ -17,6 +17,7 @@
 
 package org.apache.solr.prometheus.scraper;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,6 +48,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@ThreadLeakLingering(linger = 10)
 public class SolrCloudScraperTest extends PrometheusExporterTestBase {
 
   private MetricsConfiguration configuration;

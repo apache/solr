@@ -2,7 +2,8 @@
 :page-children: schema-elements, \
     schema-api, \
     schemaless-mode, \
-    schema-browser-screen
+    schema-browser-screen, \
+    schema-designer
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -34,7 +35,9 @@ Note, however, that many of the elements of a schema are covered in the section 
 | <<schema-elements.adoc#,Schema Elements>>: The structure of Solr's schema.
 | <<schema-api.adoc#,Schema API>>: An API to read a schema or create new fields and copyField rules.
 | <<schemaless-mode.adoc#,Schemaless Mode>>: Automatically add previously unknown fields using field type guessing.
+| <<schema-designer.adoc#,Schema Designer>>: Interactively create a schema using sample data.
 | <<schema-browser-screen.adoc#,Schema Browser>>: Schema details through the Admin UI.
+|
 |===
 // end::schema-sections[]
 ****

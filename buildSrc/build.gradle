@@ -15,11 +15,15 @@
  * limitations under the License.
  */
 
-
-// Make sure the build environment is consistent.
-apply from: file('../gradle/validation/check-environment.gradle')
+ext {
+  // Minimum Java version required to compile buildSrc.
+  minJavaVersion = JavaVersion.VERSION_11
+}
 
 dependencies {
   implementation gradleApi()
   implementation localGroovy()
 }
+
+// Make sure the build environment is consistent.
+apply from: file('../gradle/validation/check-environment.gradle')

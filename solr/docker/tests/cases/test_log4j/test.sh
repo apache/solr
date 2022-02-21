@@ -39,7 +39,12 @@ if ! grep -E -q 'One Dell Way Round Rock, Texas 78682' <<<"$data"; then
 fi
 data=$(docker exec --user=solr "$container_name" grep 'DEBUG (main)' /var/solr/logs/solr.log | wc -l)
 if (( data == 0 )); then
-  echo "missing DEBUG lines in the log"
+  echo "missing DEBUG lines in the solr.log"
+  exit 1
+fi
+data=$(docker exec --user=solr "$container_name" grep '"level":"DEBUG"' /var/solr/logs/solr.json.log | wc -l)
+if (( data == 0 )); then
+  echo "missing DEBUG lines in the solr.json.log"
   exit 1
 fi
 

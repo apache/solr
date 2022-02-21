@@ -27,6 +27,8 @@ public interface CommonAdminParams
   String IN_PLACE_MOVE = "inPlaceMove";
   /** Method to use for shard splitting. */
   String SPLIT_METHOD = "splitMethod";
+  /** Key to use during shard splitting */
+  String SPLIT_KEY = "split.key";
   /** Check distribution of documents to prefixes in shard to determine how to split */
   String SPLIT_BY_PREFIX = "splitByPrefix";
   /** Number of sub-shards to create. **/

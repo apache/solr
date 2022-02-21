@@ -18,7 +18,10 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,13 +64,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.query.SolrRangeQuery;
@@ -973,14 +974,25 @@ public abstract class FieldType extends FieldProperties {
    * @return The {@link org.apache.lucene.search.Query} instance.  This implementation returns a {@link org.apache.lucene.search.TermQuery} but overriding queries may not
    */
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    BytesRefBuilder br = new BytesRefBuilder();
-    readableToIndexed(externalVal, br);
     if (field.hasDocValues() && !field.indexed()) {
       // match-only
       return getRangeQuery(parser, field, externalVal, externalVal, true, true);
     } else {
+      BytesRefBuilder br = new BytesRefBuilder();
+      readableToIndexed(externalVal, br);
       return new TermQuery(new Term(field.getName(), br));
     }
+  }
+  
+  /**
+   * Returns a Query instance for doing a single term search against a field. This term will not be analyzed before searching.
+   * @param parser The {@link org.apache.solr.search.QParser} calling the method
+   * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
+   * @param externalVal The String representation of the term value to search
+   * @return The {@link org.apache.lucene.search.Query} instance.
+   */
+  public Query getFieldTermQuery(QParser parser, SchemaField field, String externalVal) {
+    return getFieldQuery(parser, field, externalVal);
   }
 
   /** @lucene.experimental  */
@@ -1262,9 +1274,6 @@ public abstract class FieldType extends FieldProperties {
       }
     } else { // analyzer is not instanceof TokenizerChain
       analyzerProps.add(CLASS_NAME, analyzer.getClass().getName());
-      if (analyzer.getVersion() != Version.LATEST) {
-        analyzerProps.add(LUCENE_MATCH_VERSION_PARAM, analyzer.getVersion().toString());
-      }
     }
     return analyzerProps;
   }
@@ -1327,7 +1336,7 @@ public abstract class FieldType extends FieldProperties {
       return null;
     }
     final BytesRef val = (BytesRef)value;
-    return Base64.byteArrayToBase64(val.bytes, val.offset, val.length);
+    return new String(Base64.getEncoder().encode(ByteBuffer.wrap(val.bytes, val.offset, val.length)).array(), StandardCharsets.ISO_8859_1);
   }
 
   /**
@@ -1338,7 +1347,7 @@ public abstract class FieldType extends FieldProperties {
       return null;
     }
     final String val = (String)value;
-    final byte[] bytes = Base64.base64ToByteArray(val);
+    final byte[] bytes = Base64.getDecoder().decode(val);
     return new BytesRef(bytes);
   }
 

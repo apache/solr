@@ -22,7 +22,6 @@ import com.google.common.collect.TreeMultimap;
 import org.apache.solr.cluster.*;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
@@ -202,69 +201,86 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
     @Override
     @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-    public PlacementPlan computePlacement(PlacementRequest request, PlacementContext placementContext) throws PlacementException {
-      Set<Node> nodes = request.getTargetNodes();
-      SolrCollection solrCollection = request.getCollection();
-
-      // Request all needed attributes
-      AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
-      attributeFetcher
-              .requestNodeSystemProperty(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP)
-              .requestNodeSystemProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP)
-              .requestNodeSystemProperty(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP);
-      attributeFetcher
-              .requestNodeMetric(NodeMetricImpl.NUM_CORES)
-              .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB);
-      attributeFetcher.fetchFrom(nodes);
-      final AttributeValues attrValues = attributeFetcher.fetchAttributes();
-      // filter out nodes that don't meet the `withCollection` constraint
-      nodes = filterNodesWithCollection(placementContext.getCluster(), request, attrValues, nodes);
-      // filter out nodes that don't match the "node types" specified in the collection props
-      nodes = filterNodesByNodeType(placementContext.getCluster(), request, attrValues, nodes);
-
-
-      // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can overlap if nodes accept multiple replica types)
-      // These subsets sets are actually maps, because we capture the number of cores (of any replica type) present on each node.
-      // Also get the number of currently existing cores per node, so we can keep update as we place new cores to not end up
-      // always selecting the same node(s).
-      Pair<EnumMap<Replica.ReplicaType, Set<Node>>, Map<Node, Integer>> p = getNodesPerReplicaType(nodes, attrValues);
-
-      EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes = p.first();
-      Map<Node, Integer> coresOnNodes = p.second();
-
-      // All available zones of live nodes. Due to some nodes not being candidates for placement, and some existing replicas
-      // being one availability zones that might be offline (i.e. their nodes are not live), this set might contain zones
-      // on which it is impossible to place replicas. That's ok.
-      Set<String> availabilityZones = getZonesFromNodes(nodes, attrValues);
-
-      // Build the replica placement decisions here
-      Set<ReplicaPlacement> replicaPlacements = new HashSet<>();
-
-      // Let's now iterate on all shards to create replicas for and start finding home sweet homes for the replicas
-      for (String shardName : request.getShardNames()) {
-        // Inventory nodes (if any) that already have a replica of any type for the shard, because we can't be placing
-        // additional replicas on these. This data structure is updated after each replica to node assign and is used to
-        // make sure different replica types are not allocated to the same nodes (protecting same node assignments within
-        // a given replica type is done "by construction" in makePlacementDecisions()).
-        Set<Node> nodesWithReplicas = new HashSet<>();
-        Shard shard = solrCollection.getShard(shardName);
-        if (shard != null) {
-          for (Replica r : shard.replicas()) {
-            nodesWithReplicas.add(r.getNode());
-          }
-        }
-
-        // Iterate on the replica types in the enum order. We place more strategic replicas first
-        // (NRT is more strategic than TLOG more strategic than PULL). This is in case we eventually decide that less
-        // strategic replica placement impossibility is not a problem that should lead to replica placement computation
-        // failure. Current code does fail if placement is impossible (constraint is at most one replica of a shard on any node).
-        for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
-          makePlacementDecisions(solrCollection, shardName, availabilityZones, replicaType, request.getCountReplicasToCreate(replicaType),
-              attrValues, replicaTypeToNodes, nodesWithReplicas, coresOnNodes, placementContext.getPlacementPlanFactory(), replicaPlacements);
-        }
+    public List<PlacementPlan> computePlacements(Collection<PlacementRequest> requests, PlacementContext placementContext) throws PlacementException {
+      List<PlacementPlan> placementPlans = new ArrayList<>(requests.size());
+      Set<Node> allNodes = new HashSet<>();
+      for (PlacementRequest request : requests) {
+        allNodes.addAll(request.getTargetNodes());
       }
 
-      return placementContext.getPlacementPlanFactory().createPlacementPlan(request, replicaPlacements);
+      // Fetch attributes for a superset of all nodes requested amongst the placementRequests
+      AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
+      attributeFetcher
+          .requestNodeSystemProperty(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP)
+          .requestNodeSystemProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP)
+          .requestNodeSystemProperty(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP);
+      attributeFetcher
+          .requestNodeMetric(NodeMetricImpl.NUM_CORES)
+          .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB);
+      attributeFetcher.fetchFrom(allNodes);
+      final AttributeValues attrValues = attributeFetcher.fetchAttributes();
+      // Get the number of currently existing cores per node, so we can update as we place new cores to not end up
+      // always selecting the same node(s). This is used across placement requests
+      Map<Node, Integer> allCoresOnNodes = getCoreCountPerNode(allNodes, attrValues);
+
+      // Keep track with nodesWithReplicas across requests
+      Map<String, Map<String, Set<Node>>> allNodesWithReplicas = new HashMap<>();
+      for (PlacementRequest request : requests) {
+        Set<Node> nodes = request.getTargetNodes();
+        SolrCollection solrCollection = request.getCollection();
+
+        // filter out nodes that don't meet the `withCollection` constraint
+        nodes = filterNodesWithCollection(placementContext.getCluster(), request, attrValues, nodes);
+        // filter out nodes that don't match the "node types" specified in the collection props
+        nodes = filterNodesByNodeType(placementContext.getCluster(), request, attrValues, nodes);
+
+        // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can overlap if nodes accept multiple replica types)
+        // These subsets sets are actually maps, because we capture the number of cores (of any replica type) present on each node.
+        EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes = getAvailableNodesForReplicaTypes(nodes, attrValues);
+
+        // All available zones of live nodes. Due to some nodes not being candidates for placement, and some existing replicas
+        // being one availability zones that might be offline (i.e. their nodes are not live), this set might contain zones
+        // on which it is impossible to place replicas. That's ok.
+        Set<String> availabilityZones = getZonesFromNodes(nodes, attrValues);
+
+        // Build the replica placement decisions here
+        Set<ReplicaPlacement> replicaPlacements = new HashSet<>();
+
+        // Let's now iterate on all shards to create replicas for and start finding home sweet homes for the replicas
+        for (String shardName : request.getShardNames()) {
+          // Inventory nodes (if any) that already have a replica of any type for the shard, because we can't be placing
+          // additional replicas on these. This data structure is updated after each replica to node assign and is used to
+          // make sure different replica types are not allocated to the same nodes (protecting same node assignments within
+          // a given replica type is done "by construction" in makePlacementDecisions()).
+          Set<Node> nodesWithReplicas =
+              allNodesWithReplicas
+                  .computeIfAbsent(solrCollection.getName(), col -> new HashMap<>())
+                  .computeIfAbsent(shardName, s -> {
+                    Set<Node> newNodeSet = new HashSet<>();
+                    Shard shard = solrCollection.getShard(s);
+                    if (shard != null) {
+                      // Prefill the set with the existing replicas
+                      for (Replica r : shard.replicas()) {
+                        newNodeSet.add(r.getNode());
+                      }
+                    }
+                    return newNodeSet;
+                  });
+
+
+          // Iterate on the replica types in the enum order. We place more strategic replicas first
+          // (NRT is more strategic than TLOG more strategic than PULL). This is in case we eventually decide that less
+          // strategic replica placement impossibility is not a problem that should lead to replica placement computation
+          // failure. Current code does fail if placement is impossible (constraint is at most one replica of a shard on any node).
+          for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
+            makePlacementDecisions(solrCollection, shardName, availabilityZones, replicaType, request.getCountReplicasToCreate(replicaType),
+                attrValues, replicaTypeToNodes, nodesWithReplicas, allCoresOnNodes, placementContext.getPlacementPlanFactory(), replicaPlacements);
+          }
+        }
+        placementPlans.add(placementContext.getPlacementPlanFactory().createPlacementPlan(request, replicaPlacements));
+      }
+
+      return placementPlans;
     }
 
     @Override
@@ -393,10 +409,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     }
 
     /**
-     * Given the set of all nodes on which to do placement and fetched attributes, builds the sets representing
-     * candidate nodes for placement of replicas of each replica type.
-     * These sets are packaged and returned in an EnumMap keyed by replica type (1st member of the Pair).
-     * Also builds the number of existing cores on each node present in the returned EnumMap (2nd member of the returned Pair).
+     * Builds the number of existing cores on each node returned in the attrValues.
      * Nodes for which the number of cores is not available for whatever reason are excluded from acceptable candidate nodes
      * as it would not be possible to make any meaningful placement decisions.
      *
@@ -404,9 +417,29 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
      * @param attrValues attributes fetched for the nodes. This method uses system property {@link AffinityPlacementConfig#REPLICA_TYPE_SYSPROP} as
      *                   well as the number of cores on each node.
      */
-    private Pair<EnumMap<Replica.ReplicaType, Set<Node>>, Map<Node, Integer>> getNodesPerReplicaType(Set<Node> nodes, final AttributeValues attrValues) {
-      EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes = new EnumMap<>(Replica.ReplicaType.class);
+    private Map<Node, Integer> getCoreCountPerNode(Set<Node> nodes, final AttributeValues attrValues) {
       Map<Node, Integer> coresOnNodes = new HashMap<>();
+
+      for (Node node : nodes) {
+        attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).ifPresent(count -> coresOnNodes.put(node, count));
+      }
+
+      return coresOnNodes;
+    }
+
+    /**
+     * Given the set of all nodes on which to do placement and fetched attributes, builds the sets representing
+     * candidate nodes for placement of replicas of each replica type.
+     * These sets are packaged and returned in an EnumMap keyed by replica type.
+     * Nodes for which the number of cores is not available for whatever reason are excluded from acceptable candidate nodes
+     * as it would not be possible to make any meaningful placement decisions.
+     *
+     * @param nodes      all nodes on which this plugin should compute placement
+     * @param attrValues attributes fetched for the nodes. This method uses system property {@link AffinityPlacementConfig#REPLICA_TYPE_SYSPROP} as
+     *                   well as the number of cores on each node.
+     */
+    private EnumMap<Replica.ReplicaType, Set<Node>> getAvailableNodesForReplicaTypes(Set<Node> nodes, final AttributeValues attrValues) {
+      EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes = new EnumMap<>(Replica.ReplicaType.class);
 
       for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
         replicaTypeToNodes.put(replicaType, new HashSet<>());
@@ -436,9 +469,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           continue;
         }
 
-        Integer coresCount = attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).get();
-        coresOnNodes.put(node, coresCount);
-
         String supportedReplicaTypes = attrValues.getSystemProperty(node, AffinityPlacementConfig.REPLICA_TYPE_SYSPROP).isPresent() ? attrValues.getSystemProperty(node, AffinityPlacementConfig.REPLICA_TYPE_SYSPROP).get() : null;
         // If property not defined or is only whitespace on a node, assuming node can take any replica type
         if (supportedReplicaTypes == null || supportedReplicaTypes.isBlank()) {
@@ -454,7 +484,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           }
         }
       }
-      return new Pair<>(replicaTypeToNodes, coresOnNodes);
+      return replicaTypeToNodes;
     }
 
     /**
@@ -466,7 +496,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
      *     <li>Balance as much as possible replicas of a given {@link org.apache.solr.cluster.Replica.ReplicaType} over available AZ's.
      *     This balancing takes into account existing replicas <b>of the corresponding replica type</b>, if any.</li>
      *     <li>Place replicas if possible on nodes having more than a certain amount of free disk space (note that nodes with a too small
-     *     amount of free disk space were eliminated as placement targets earlier, in {@link #getNodesPerReplicaType}). There's
+     *     amount of free disk space were eliminated as placement targets earlier, in {@link #getAvailableNodesForReplicaTypes(Set, AttributeValues)}). There's
      *     a threshold here rather than sorting on the amount of free disk space, because sorting on that value would in
      *     practice lead to never considering the number of cores on a node.</li>
      *     <li>Place replicas on nodes having a smaller number of cores (the number of cores considered

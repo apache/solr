@@ -215,7 +215,7 @@ curl -X DELETE http://localhost:8983/api/cluster/command-status/1000
 Flush out all stored completed and failed async request responses:
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/cluster/command-status
+curl -X DELETE http://localhost:8983/api/cluster/command-status?flush=true
 ----
 ====
 --
@@ -239,7 +239,6 @@ The request ID of the asynchronous call whose stored response should be cleared.
 |===
 +
 Set to `true` to clear all stored completed and failed async request responses.
-This is required only with the V1 API.
 
 === Examples using DELETESTATUS
 

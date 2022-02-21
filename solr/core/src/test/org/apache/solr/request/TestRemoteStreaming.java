@@ -97,7 +97,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
       InputStream inputStream = (InputStream) obj;
       try {
         StringWriter strWriter = new StringWriter();
-        IOUtils.copy(new InputStreamReader(inputStream, StandardCharsets.UTF_8),strWriter);
+        new InputStreamReader(inputStream, StandardCharsets.UTF_8).transferTo(strWriter);
         return strWriter.toString();
       } finally {
         IOUtils.closeQuietly(inputStream);

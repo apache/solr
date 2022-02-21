@@ -145,7 +145,7 @@ The films data we are going to index has a small number of fields for each movie
 
 If you look at one of the files in `example/films`, you'll see the first film is named _.45_, released in 2006.
 As the first document in the dataset, Solr is going to guess the field type based on the data in the record.
-If we go ahead and index this data, that first film name is going to indicate to Solr that that field type is a "float" numeric field, and will create a "name" field with a type `FloatPointField`.
+If we go ahead and index this data, that first film name is going to indicate to Solr that the field type is a "float" numeric field, and will create a "name" field with a type `FloatPointField`.
 All data after this record will be expected to be a float.
 
 Well, that's not going to work.

@@ -19,6 +19,19 @@
 <!-- The Solr schema file, version 1.6  -->
 
 <schema name="sql" version="1.6">
+
+  <field name="pdoublexmv" type="pdouble" multiValued="true" stored="true" docValues="true"/>s
+  <field name="pdoublesx" type="pdoubles" stored="true"/>
+  <field name="stringsx" type="strings" stored="true" indexed="true"/>
+  <field name="stringxmv" type="string" stored="true" multiValued="true" docValues="true"/>
+
+  <field name="booleans" type="boolean" stored="true" indexed="true" docValues="true" multiValued="true"/>
+  <field name="longs" type="plongx" stored="true" indexed="true" docValues="true" multiValued="true"/>
+
+  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
+
+
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        Applications should change this to reflect the nature of the search collection.
        version="x.y" is Solr's version number for the schema syntax and semantics.  It should
@@ -65,6 +78,10 @@
   <field name="textx" type="text" indexed="true" stored="true"/>
   <field name="pdatex" type="pdatex" indexed="true" stored="true"/>
   <field name="pdatexs" type="pdatex" indexed="true" stored="true" multiValued="true"/>
+
+  <field name="notstored" type="string" indexed="true" docValues="false" stored="false"/>
+  <field name="dvonly" type="string" docValues="true" stored="false"/>
+  <field name="textmv" type="text" multiValued="true"/>
 
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
@@ -116,6 +133,7 @@
 
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <fieldType name="strings" class="solr.StrField" sortMissingLast="true" multiValued="true" docValues="true" indexed="true"/>
 
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
@@ -186,15 +204,6 @@
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
 
-  <!-- Poly field -->
-  <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
-  <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
-  <fieldType name="geohash" class="solr.GeoHashField"/>
-
-  <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
-  <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
-  <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
-
   <fieldType class="org.apache.solr.schema.SortableBinaryField" name="sortable_binary"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" docValues="true" required="true"/>
@@ -241,12 +250,6 @@
   <field name="timestamp" type="date" indexed="true" stored="true" default="NOW"/>
   -->
   <field name="timestamp" type="date" indexed="true" stored="true"/>
-
-  <!-- Test a point field for distances -->
-  <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
-  <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
-  <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
-  <field name="store" type="location" indexed="true" stored="true"/>
 
   <!-- to test uniq fields -->
   <field name="uniq" type="string" indexed="true" stored="true" multiValued="true"/>

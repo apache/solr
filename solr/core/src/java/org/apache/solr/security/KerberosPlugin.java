@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.hadoop.security.authentication.util.KerberosName;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationHandler;
 import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
@@ -58,6 +59,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   private Filter kerberosFilter;
   
   public static final String NAME_RULES_PARAM = "solr.kerberos.name.rules";
+  public static final String NAME_RULES_MECHANISM_PARAM = "solr.kerberos.name.rules.mechanism";
   public static final String COOKIE_DOMAIN_PARAM = "solr.kerberos.cookie.domain";
   public static final String COOKIE_PATH_PARAM = "solr.kerberos.cookie.path";
   public static final String PRINCIPAL_PARAM = "solr.kerberos.principal";
@@ -105,6 +107,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     Map<String, String> params = new HashMap<>();
     params.put("type", "kerberos");
     putParam(params, "kerberos.name.rules", NAME_RULES_PARAM, "DEFAULT");
+    putParam(params, "kerberos.name.rules.mechanism", NAME_RULES_MECHANISM_PARAM, KerberosName.DEFAULT_MECHANISM);
     putParam(params, "token.valid", TOKEN_VALID_PARAM, "30");
     putParam(params, "cookie.path", COOKIE_PATH_PARAM, "/");
     if (!skipKerberosChecking) {

@@ -43,6 +43,111 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 
 If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> below.
 
+=== Solr 8.11
+
+See the https://cwiki.apache.org/confluence/display/SOLR/Release+Notes+8.11[8.11 Release Notes^]
+for an overview of the main new features of Solr 8.11.
+
+When upgrading to 8.11.x users should be aware of the following major changes from 8.10.
+
+*Support for Multiple Authentication Schemes*
+
+Two new authentication and authorization plugins provide support for configuring multiple authentication schemes.
+
+The `MultiAuthPlugin` allows combining two or more authentication approaches, such as JWT and Basic authentication.
+
+The `MultiAuthRuleBasedAuthorizationPlugin` is used when the `MultiAuthPlugin` is also in use, and combines the various roles defined for all plugins to determine the proper role assignment for the user account.
+
+For information on configuring these plugins, see the following sections:
+
+* <<basic-authentication-plugin.adoc#combining-basic-authentication-with-other-schemes,Combining Basic Authentication with Other Schemes>>
+* <<rule-based-authorization-plugin.adoc#multiple-authorization-plugins,Multiple Authorization Plugins>>
+
+
+*ZooKeeper chroot*
+
+It's now possible to create the ZooKeeper chroot at startup if it does not already exist.
+See the section <<zookeeper-ensemble.adoc#using-the-z-parameter-with-binsolr,Using the -z Parameter with bin/solr>> for an example.
+
+*Other Changes*
+
+A few other minor changes are worth noting:
+
+* The `config-read` pre-defined permission now correctly governs access for various configuration-related APIs. See also <<rule-based-authorization-plugin.adoc#predefined-permissions,Predefined Permissions>>.
+* The S3BackupRepository supports configuring the AWS Profile, if necessary. See also <<backup-restore.adoc#s3backuprepository,S3BackupRepository>>.
+* Additionally, backups will now properly succeed after SPLITSHARD operations, and will correctly handle incremental backup purges.
+* SolrJ now supports uploading configsets.
+
+
+
+=== Solr 8.10
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote8_10[8.10 Release Notes^]
+for an overview of the main new features of Solr 8.10.
+
+When upgrading to 8.10.x users should be aware of the following major changes from 8.9.
+
+*Schema Designer UI*
+
+A new screen has been added to the Admin UI that allows you to interactively design a Solr schema using your documents.
+
+The designer screen provides a safe environment for you to:
+
+* Upload or paste sample documents to identify fields.
+* Get a "first" guess at what Solr thinks the field types in the fields should be.
+* Edit fields, field types, dynamic fields, and supporting files.
+* See how a field's analysis will impact your text.
+* Test how schema changes will impact query-time behavior.
+* Save your changes to a configset to use with a new collection.
+
+See the section <<schema-designer.adoc#,Schema Designer>> for full details.
+
+*Backups in S3*
+
+Following the redesign of backups in Solr 8.8 that allowed storage of incremental backups in Google Cloud environments, Solr 8.10 provides support for storing backups in Amazon S3 buckets.
+
+See the section <<backup-restore.adoc#s3backuprepository,S3BackupRepository>> for how to configure.
+
+*Security Admin UI*
+
+Solr's Admin UI also got a new screen to support management of users, roles, and permissions.
+
+The new UI works when authentication and/or authorization has been enabled with `bin/solr auth` or by manually installing a `security.json` file.
+Before this, it provides a warning that your Solr instance is unsecured.
+
+See the section <<security-ui.adoc#,Security UI>> for details.
+
+*Solr SQL Improvements*
+
+A number of improvements have been made in Solr's SQL functionality:
+
+* Support added for `LIKE`, `IS NOT NULL`, `IS NULL`, and wildcards (for simplistic `LIKE` functionality).
+* Two new aggregation functions, `COUNT(DISTINCT field)` and `APPROX_COUNT_DISTINCT(field)`, have been added.
+* Queries using an `ORDER BY` clause can support `OFFSET` and `FETCH` operations.
+* Multi-valued fields can now be returned.
+* User permissions have been simplified so access to query endpoints `/sql`, `/select`, and `/export` is sufficient for full access for all SQL queries.
+
+*shards.preference*
+
+A new option for the `shards.preference` parameter allows selection of nodes based on whether or not the replica is a leader.
+Now adding `shards.preference=replica.leader:false` will limit queries only to replicas which are not currently their shard's leader.
+
+See the section <<solrcloud-distributed-requests.adoc#shards-preference-parameter,shards.preference Parameter>> for details and examples.
+
+*Metrics & Prometheus Exporter*
+
+A new `expr` option in the Metrics API allows for more advanced filtering of metrics based on regular expressions.
+See the section <<metrics-reporting.adoc#metrics-api,Metrics API>> for examples.
+
+The Prometheus Exporter's default `solr-exporter.config` has been improved to use the new `expr` option in the Metrics API to get a smaller set of metrics.
+The default metrics exported still include most metrics, but the configuration will be easier to trim as needed.
+This should help provide performance improvements in busy clusters being monitored by Prometheus.
+
+*ZooKeeper Credentials*
+
+ZooKeeper credentials can now be stored in a file whose location is defined with a system property instead of being passed in plain-text.
+See <<zookeeper-access-control.adoc#out-of-the-box-credential-implementations,Out of the Box Credential Implementations>> for how to set this up.
+
 === Solr 8.9
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote89[8.9 Release Notes^]
@@ -109,9 +214,6 @@ The Metrics History feature, which allowed long-term storage and aggregation of 
 When using EmbeddedSolrServer, it will no longer close CoreContainer instances that were passed to it.
 
 === Solr 8.8
-
-See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote88[8.8 Release Notes^]
-for an overview of the main new features of Solr 8.8.
 
 When upgrading to 8.8.x users should be aware of the following major changes from 8.7.
 
@@ -225,7 +327,8 @@ See the section <<json-facet-api.adoc#relatedness-options,relatedness() Options>
 
 *solr.in.sh / solr.in.cmd*
 
-* Solr has relied on the `SOLR_STOP_WAIT` parameter defined in `solr.in.sh` or `solr.in.cmd` to determine how long to wait on _startup_. A new parameter `SOLR_START_WAIT` allows defining how long Solr should wait for start up to complete.
+* Solr has relied on the `SOLR_STOP_WAIT` parameter defined in `solr.in.sh` or `solr.in.cmd` to determine how long to wait on _startup_.
+A new parameter `SOLR_START_WAIT` allows defining how long Solr should wait for start up to complete.
 +
 If the time set by this parameter is exceeded, Solr will exit the startup process and return the last few lines of the `solr.log` file to the terminal.
 +
@@ -746,7 +849,8 @@ If you prefer to use CMS or any other GC method, you can modify the `GC_TUNE` se
 == Upgrading from 7.x Releases
 
 The upgrade from 7.x to Solr 8.0 introduces several major changes that you should be aware of before upgrading.
-These changes are described in the section <<major-changes-in-solr-8.adoc#,Major Changes in Solr 8>>. It's strongly recommended that you do a thorough review of that section before starting your upgrade.
+These changes are described in the section <<major-changes-in-solr-8.adoc#,Major Changes in Solr 8>>.
+It's strongly recommended that you do a thorough review of that section before starting your upgrade.
 
 [NOTE]
 If you run in SolrCloud mode, you must be on Solr version 7.3 or higher in order to upgrade to 8.x.

@@ -177,7 +177,6 @@ See <<commits-transaction-logs.adoc#,Commits and Transaction Logs>> for defaults
 * `updateHandler.autoSoftCommit.maxDocs`
 * `updateHandler.autoSoftCommit.maxTime`
 * `updateHandler.commitWithin.softCommit`
-* `updateHandler.indexWriter.closeWaitsForMerges`
 
 *Query Settings*
 

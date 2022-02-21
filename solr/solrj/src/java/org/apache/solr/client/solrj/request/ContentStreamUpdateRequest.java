@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 
@@ -32,9 +31,9 @@ import org.apache.solr.common.util.ContentStreamBase;
  * Basic functionality to upload a File or {@link org.apache.solr.common.util.ContentStream} to a Solr Cell or some
  * other handler that takes ContentStreams (CSV)
  * <p>
- * See http://wiki.apache.org/solr/ExtractingRequestHandler<br>
- * See http://wiki.apache.org/solr/UpdateCSV
- * 
+ * See https://solr.apache.org/guide/indexing-with-tika.html<br>
+ * See https://solr.apache.org/guide/indexing-with-update-handlers.html
+ *
  *
  **/
 public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
@@ -62,7 +61,7 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
       @Override
       public void write(OutputStream os) throws IOException {
         try(var inStream = stream.getStream()) {
-          IOUtils.copy(inStream, os);
+          inStream.transferTo(os);
         }
       }
 
@@ -94,5 +93,5 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
   public void addContentStream(ContentStream contentStream){
     contentStreams.add(contentStream);
   }
-  
+
 }

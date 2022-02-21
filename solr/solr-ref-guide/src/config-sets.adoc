@@ -41,11 +41,11 @@ The structure should look something like this:
 /<configSetBaseDir>
     /configset1
         /conf
-            /managed-schema
+            /managed-schema.xml
             /solrconfig.xml
     /configset2
         /conf
-            /managed-schema
+            /managed-schema.xml
             /solrconfig.xml
 ----
 

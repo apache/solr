@@ -90,9 +90,9 @@ limitations under the License.
           <option>csv</option>
         </select>
 
-        <label for="indent" class="checkbox" title="Do not indent results.">
-          <input type="checkbox" ng-model="val['indent']" name="indent" id="indent" title="Do not indent results." ng-true-value="false" ng-false-value="true">
-          indent off
+        <label for="indent" class="checkbox" title="Enable indenting of results.">
+          <input type="checkbox" ng-model="val['indent']" name="indent" id="indent" title="Enable indenting of results." ng-true-value="true" ng-false-value="false">
+          indent on
         </label>
 
         </div>
@@ -120,14 +120,15 @@ limitations under the License.
           <label for="defType" class="checkbox" title="Choose defType">
             defType
             <select ng-model="val['defType']" name="defType" id="defType">
-              <option ng-selected="selected" value=''>lucene</option>
-              <option>dismax</option>
-              <option>edismax</option>
+              <option ng-selected="selected" value=''>------</option>
+              <option value="lucene">lucene</option>
+              <option value="dismax">dismax</option>
+              <option value="edismax">edismax</option>
             </select>
           </label>
         </legend>
 
-        <div class="fieldset" ng-show="val['defType']!=''">
+        <div class="fieldset" ng-show="val['defType']=='dismax' || val['defType']=='edismax'">
           <label for="q_alt" title="Alternate query when 'q' is absent.">q.alt</label>
           <input type="text" ng-model="val['q.alt']" name="q.alt" id="q_alt"  title="Alternate query when 'q' is absent.">
 
@@ -345,12 +346,19 @@ limitations under the License.
         <input type="text" ng-model="val['spellcheck.accuracy']" name="spellcheck.accuracy" id="spellcheck_accuracy">
        </div>
       </fieldset>
-      <fieldset class="additional optional">
-        <label for="custom_parameters">
-          <a rel="help">Raw Query Parameters</a>
-        </label>
-        <input type="text" ng-model="rawParams" id="custom_parameters" value="" placeholder="key1=val1&amp;key2=val2">
-      </fieldset>
+      <label for="custom_parameters" title="Raw Query Parameters">
+        <a rel="help">Raw Query Parameters</a>
+      </label>
+      <div class="multiple" id="custom_parameters">
+        <div class="row clearfix" ng-repeat="param in rawParams">
+          <input type="text" ng-model="param.rawParam" name="rawParamQuery" title="Raw param query.">
+          <div class="buttons">
+            <a class="rem" ng-click="removeRawParam($index)"><span></span></a>
+            <a class="add" ng-click="addRawParam($index)"><span></span></a>
+          </div>
+        </div>
+      </div>
+
 
       <button type="submit" ng-click="doQuery()">Execute Query</button>
     </form>

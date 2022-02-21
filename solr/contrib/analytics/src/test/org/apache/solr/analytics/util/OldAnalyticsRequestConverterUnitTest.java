@@ -17,6 +17,7 @@
 
 package org.apache.solr.analytics.util;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.solr.analytics.legacy.facet.LegacyAbstractAnalyticsFacetTest;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.BeforeClass;
@@ -29,6 +30,7 @@ import static org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsValueFac
 import org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsFacetRequest;
 import org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsRangeFacetRequest;
 
+@ThreadLeakLingering(linger = 10)
 public class OldAnalyticsRequestConverterUnitTest extends LegacyAbstractAnalyticsFacetTest {
   String fileName = "facetWithDottedFields.txt";
 

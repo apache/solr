@@ -83,7 +83,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
         }
         CoreContainer cc = ccc.getCoreContainer();
         try (BackupRepository repository = cc.newBackupRepository(repo)) {
-            URI location = repository.createURI(backupLocation);
+            URI location = repository.createDirectoryURI(backupLocation);
             final URI backupPath = BackupFilePaths.buildExistingBackupLocationURI(repository, location, backupName);
             if (repository.exists(repository.resolve(backupPath, BackupManager.TRADITIONAL_BACKUP_PROPS_FILE))) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The backup name [" + backupName + "] at " +
@@ -187,7 +187,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
         repository.delete(incBackupFiles.getIndexDir(), unusedFiles, true);
         try {
             for (BackupId backupId : backupIdsDeletes) {
-                repository.deleteDirectory(repository.resolve(backupUri, BackupFilePaths.getZkStateDir(backupId)));
+                repository.deleteDirectory(repository.resolveDirectory(backupUri, BackupFilePaths.getZkStateDir(backupId)));
             }
         } catch (FileNotFoundException e) {
             //ignore this
@@ -251,7 +251,8 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
 
         public void build(BackupRepository repository, URI backupPath) throws IOException {
             BackupFilePaths backupPaths = new BackupFilePaths(repository, backupPath);
-            buildLogicalGraph(repository, backupPath);
+            buildLogicalGraph(repository, backupPaths);
+
             findDeletableNodes(repository, backupPaths);
         }
 
@@ -262,6 +263,22 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
             // this may be a long running commands
             visitExistingNodes(repository.listAllOrEmpty(backupPaths.getIndexDir()),
                     indexFileNodeMap, indexFileDeletes);
+
+            // TODO Is this propagation logic really necessary?
+            // The intention seems to be that if some index files are only referenced by a shard-metadata file that
+            // is itself orphaned, then propagating the "orphaned" status down to each of these index files will allow
+            // them to be deleted.
+            //
+            // But that doesn't seem to hold up under closer inspection.
+            //
+            // The graph is populated by following links out from the set of valid backup-id's.  All files (shard-
+            // metadata, or index) that trace back to a valid backup-ID will appear in the graph.  If a shard-metadata
+            // file becomes orphaned, it will be ignored during graph construction and any index files that it alone
+            // references will not appear in the graph.  Since those index files will be unrepresented in the graph, the
+            // 'visitExistingNodes' calls above should be sufficient to detect them as orphaned.
+            //
+            // This all assumes though that propagation is intended to solve the scenario I think it does.  If that
+            // assumption is wrong, then this whole comment is wrong.
 
             // for nodes which are not existing, propagate that information to other nodes
             shardBackupMetadataNodeMap.values().forEach(Node::propagateNotExisting);
@@ -317,10 +334,12 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
             node2.addNeighbor(node1);
         }
 
-        private void buildLogicalGraph(BackupRepository repository, URI backupPath) throws IOException {
-            List<BackupId> backupIds = BackupFilePaths.findAllBackupIdsFromFileListing(repository.listAllOrEmpty(backupPath));
+        private void buildLogicalGraph(BackupRepository repository, BackupFilePaths backupPaths) throws IOException {
+            final URI baseBackupPath = backupPaths.getBackupLocation();
+
+            List<BackupId> backupIds = BackupFilePaths.findAllBackupIdsFromFileListing(repository.listAllOrEmpty(baseBackupPath));
             for (BackupId backupId : backupIds) {
-                BackupProperties backupProps = BackupProperties.readFrom(repository, backupPath,
+                BackupProperties backupProps = BackupProperties.readFrom(repository, baseBackupPath,
                         BackupFilePaths.getBackupPropsName(backupId));
 
                 Node backupIdNode = getBackupIdNode(BackupFilePaths.getBackupPropsName(backupId));
@@ -328,7 +347,8 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
                     Node shardBackupMetadataNode = getShardBackupIdNode(shardBackupMetadataFilename);
                     addEdge(backupIdNode, shardBackupMetadataNode);
 
-                    ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, backupPath,
+
+                    ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, backupPaths.getShardBackupMetadataDir(),
                             ShardBackupId.fromShardMetadataFilename(shardBackupMetadataFilename));
                     if (shardBackupMetadata == null)
                         continue;

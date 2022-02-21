@@ -656,7 +656,8 @@ curl 'http://localhost:8983/api/collections/techproducts/update/json'\
 ====
 --
 
-In the above example, we've said all of the fields should be added to a field in Solr named 'txt'. This will add multiple fields to a single field, so whatever field you choose should be multi-valued.
+In the above example, we've said all of the fields should be added to a field in Solr named 'txt'.
+This will add multiple fields to a single field, so whatever field you choose should be multi-valued.
 
 The default behavior is to use the fully qualified name (FQN) of the node.
 So, if we don't define any field mappings, like this:
@@ -860,7 +861,7 @@ It is possible to send any JSON to the `/update/json/docs` endpoint and the defa
   <lst name="defaults">
     <!-- this ensures that the entire JSON doc will be stored verbatim into one field -->
     <str name="srcField">_src_</str>
-    <!-- This means a the uniqueKeyField will be extracted from the fields and
+    <!-- This means the uniqueKeyField will be extracted from the fields and
          all fields go into the 'df' field. In this config df is already configured to be 'text'
      -->
     <str name="mapUniqueKeyOnly">true</str>

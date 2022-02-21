@@ -43,10 +43,4 @@
     <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
   </requestDispatcher>
 
-  <!-- config for the admin interface -->
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-  </admin>
-
 </config>
-

@@ -40,7 +40,6 @@ import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
@@ -94,7 +93,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       copyMinConf(new File(solrHomeDirectory, "collection" + idx));
     }
 
-    NodeConfig cfg = SolrDispatchFilter.loadNodeConfig(solrHomeDirectory.toPath(), null);
+    NodeConfig cfg = NodeConfig.loadNodeConfig(solrHomeDirectory.toPath(), null);
     return createCoreContainer(cfg, testCores);
   }
   

@@ -48,8 +48,8 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
           "ENABLED in bin/solr.in.sh or solr.in.cmd.");
       return;
     }
-    HttpServletRequest request = SolrDispatchFilter.closeShield(_request, false);
-    HttpServletResponse response = SolrDispatchFilter.closeShield(_response, false);
+    HttpServletRequest request = ServletUtils.closeShield(_request, false);
+    HttpServletResponse response = ServletUtils.closeShield(_response, false);
 
 
     response.addHeader("X-Frame-Options", "DENY"); // security: SOLR-7966 - avoid clickjacking for admin interface

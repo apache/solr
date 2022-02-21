@@ -210,7 +210,7 @@ public class JoinQParserPlugin extends QParserPlugin {
     };
   }
 
-  private static final EnumSet<Method> JOIN_METHOD_WHITELIST = EnumSet.of(Method.index, Method.topLevelDV, Method.dvWithScore);
+  private static final EnumSet<Method> JOIN_METHOD_ALLOWLIST = EnumSet.of(Method.index, Method.topLevelDV, Method.dvWithScore);
   /**
    * A helper method for other plugins to create (non-scoring) JoinQueries wrapped around arbitrary queries against the same core.
    * 
@@ -228,7 +228,7 @@ public class JoinQParserPlugin extends QParserPlugin {
 
 
     final Method joinMethod = parseMethodString(method);
-    if (! JOIN_METHOD_WHITELIST.contains(joinMethod)) {
+    if (! JOIN_METHOD_ALLOWLIST.contains(joinMethod)) {
       // TODO Throw something that the callers here (FacetRequest) can catch and produce a more domain-appropriate error message for?
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Join method " + method + " not supported for non-scoring, same-core joins");

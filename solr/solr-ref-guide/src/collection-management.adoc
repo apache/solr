@@ -284,7 +284,7 @@ If the status is anything other than "success", an error message will explain wh
 [[reload]]
 == RELOAD: Reload a Collection
 
-The RELOAD action is used when you have changed a configuration file in ZooKeeper, like uploading a new `schema.xml`.
+The RELOAD action is used when you have changed a configuration file in ZooKeeper, like uploading a new `solrconfig.xml`.
 Solr automatically reloads collections when certain files, monitored via a watch in ZooKeeper are changed,
 such as `security.json`.
 However, for changes to files in configsets, like uploading a new schema, you will need to manually trigger the RELOAD.
@@ -317,7 +317,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 '
 ----
 
-Additional parameters can be passed in via the the `reload` key:
+Additional parameters can be passed in via the `reload` key:
 
 [source,bash]
 ----
@@ -1195,7 +1195,7 @@ Data types shown in the response can be roughly divided into the following group
 For example, for UTF-8 strings this represents the aggregated sum of the number of bytes in the strings' UTF-8 representation, for long numbers this is 8 bytes per value, etc.
 
 * `terms_terms` - represents the aggregated size of the term dictionary.
-The size of this data is affected by the the number and length of unique terms, which in turn depends on the field size and the analysis chain.
+The size of this data is affected by the number and length of unique terms, which in turn depends on the field size and the analysis chain.
 
 * `terms_postings` - represents the aggregated size of all term position and offset information, if present.
 This information may be absent if position-based searching, such as phrase queries, is not needed.
@@ -1933,7 +1933,7 @@ See the parameter descriptions below for more information.
 
 *Input*
 
-The following API command deletes the the first backup (`backupId=0`) at the specified repository location.
+The following API command deletes the first backup (`backupId=0`) at the specified repository location.
 
 [.dynamic-tabs]
 --

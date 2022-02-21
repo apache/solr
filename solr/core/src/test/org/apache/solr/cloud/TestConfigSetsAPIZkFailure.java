@@ -83,7 +83,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     zkTestServer.run();
     zkTestServer.setZKDatabase(new FailureDuringCopyZKDatabase(zkTestServer.getZKDatabase(), zkTestServer));
     solrCluster = new MiniSolrCloudCluster(1, testDir,
-        MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML, buildJettyConfig("/solr"), zkTestServer);
+        MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML, buildJettyConfig("/solr"), zkTestServer, true);
   }
 
   @Override

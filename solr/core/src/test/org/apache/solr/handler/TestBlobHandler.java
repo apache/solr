@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -50,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
+@ThreadLeakLingering(linger = 0)
 public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

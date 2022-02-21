@@ -181,7 +181,7 @@ Instead it counts the occurrence of each discrete data value and returns a list 
 Below is an example of a frequency table built from a result set of rounded *differences* in daily opening stock prices for the stock ticker *amzn*.
 
 This example is interesting because it shows a multi-step process to arrive at the result.
-The first step is to *search* for records in the the *stocks* collection with a ticker of *amzn*.
+The first step is to *search* for records in the *stocks* collection with a ticker of *amzn*.
 Notice that the result set is sorted by date ascending and it returns the `open_d` field which is the opening price for the day.
 
 The `open_d` field is then vectorized and set to variable *b*, which now contains a vector of opening prices ordered by date ascending.

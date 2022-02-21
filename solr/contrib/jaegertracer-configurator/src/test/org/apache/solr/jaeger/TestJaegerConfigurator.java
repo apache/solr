@@ -17,6 +17,7 @@
 
 package org.apache.solr.jaeger;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import io.opentracing.util.GlobalTracer;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +26,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
@@ -34,6 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+@ThreadLeakLingering(linger = 10)
 public class TestJaegerConfigurator extends SolrTestCaseJ4 {
 
   @Rule public TestRule solrTestRules = new SystemPropertiesRestoreRule();
@@ -52,7 +53,7 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
   @Test
   public void testInjected() throws Exception {
     MiniSolrCloudCluster cluster =
-        new SolrCloudTestCase.Builder(2, createTempDir())
+        new MiniSolrCloudCluster.Builder(2, createTempDir())
             .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
             .withSolrXml(getFile("solr/solr.xml").toPath())
             .build();
