@@ -1832,8 +1832,15 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         // NOTE: we don't currently handle a core reload during recovery.  This would cause the core
         // to change underneath us.
 
+        // Use a pool of URPs using a ThreadLocal to have them per-thread.  URPs aren't threadsafe.
         UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(null);
-        UpdateRequestProcessor proc = processorChain.createProcessor(req, rsp);
+        Collection<UpdateRequestProcessor> procPool = Collections.synchronizedList(new ArrayList<>());
+        ThreadLocal<UpdateRequestProcessor> procThreadLocal = ThreadLocal.withInitial(() -> {
+          var proc = processorChain.createProcessor(req, rsp);
+          procPool.add(proc);
+          return proc;
+        });
+
         OrderedExecutor executor = inSortedOrder ? null : req.getCoreContainer().getReplayUpdatesExecutor();
         AtomicInteger pendingTasks = new AtomicInteger(0);
         AtomicReference<SolrException> exceptionOnExecuteUpdate = new AtomicReference<>();
@@ -1914,7 +1921,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
-                execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate);
+                execute(cmd, executor, pendingTasks, procThreadLocal, exceptionOnExecuteUpdate);
                 break;
               }
               case UpdateLog.DELETE: {
@@ -1925,7 +1932,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("delete {}", cmd);
-                execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate);
+                execute(cmd, executor, pendingTasks, procThreadLocal, exceptionOnExecuteUpdate);
                 break;
               }
 
@@ -1939,7 +1946,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 if (debug) log.debug("deleteByQuery {}", cmd);
                 waitForAllUpdatesGetExecuted(pendingTasks);
                 // DBQ will be executed in the same thread
-                execute(cmd, null, pendingTasks, proc, exceptionOnExecuteUpdate);
+                execute(cmd, null, pendingTasks, procThreadLocal, exceptionOnExecuteUpdate);
                 break;
               }
               case UpdateLog.COMMIT: {
@@ -1996,13 +2003,15 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           translog.writeCommit(cmd);
         }
 
-        try {
-          proc.finish();
-        } catch (IOException ex) {
-          recoveryInfo.errors.incrementAndGet();
-          loglog.error("Replay exception: finish()", ex);
-        } finally {
-          IOUtils.closeQuietly(proc);
+        for (UpdateRequestProcessor proc : procPool) {
+          try {
+            proc.finish();
+          } catch (IOException ex) {
+            recoveryInfo.errors.incrementAndGet();
+            loglog.error("Replay exception: finish()", ex);
+          } finally {
+            IOUtils.closeQuietly(proc);
+          }
         }
 
       } finally {
@@ -2044,7 +2053,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     private void execute(UpdateCommand cmd, OrderedExecutor executor,
-                         AtomicInteger pendingTasks, UpdateRequestProcessor proc,
+                         AtomicInteger pendingTasks, ThreadLocal<UpdateRequestProcessor> procTl,
                          AtomicReference<SolrException> exceptionHolder) {
       assert cmd instanceof AddUpdateCommand || cmd instanceof DeleteUpdateCommand;
 
@@ -2054,11 +2063,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           try {
             // fail fast
             if (exceptionHolder.get() != null) return;
-            if (cmd instanceof AddUpdateCommand) {
-              proc.processAdd((AddUpdateCommand) cmd);
-            } else {
-              proc.processDelete((DeleteUpdateCommand) cmd);
-            }
+            invokeCmdOnProc(cmd, procTl.get());
           } catch (IOException e) {
             recoveryInfo.errors.incrementAndGet();
             loglog.warn("REPLAY_ERR: IOException reading log", e);
@@ -2077,11 +2082,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         pendingTasks.incrementAndGet();
       } else {
         try {
-          if (cmd instanceof AddUpdateCommand) {
-            proc.processAdd((AddUpdateCommand) cmd);
-          } else {
-            proc.processDelete((DeleteUpdateCommand) cmd);
-          }
+          invokeCmdOnProc(cmd, procTl.get());
         } catch (IOException e) {
           recoveryInfo.errors.incrementAndGet();
           loglog.warn("REPLAY_ERR: IOException replaying log", e);
@@ -2096,6 +2097,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     }
 
+    private void invokeCmdOnProc(UpdateCommand cmd, UpdateRequestProcessor proc) throws IOException {
+      if (cmd instanceof AddUpdateCommand) {
+        proc.processAdd((AddUpdateCommand) cmd);
+      } else {
+        proc.processDelete((DeleteUpdateCommand) cmd);
+      }
+    }
 
   }
 
