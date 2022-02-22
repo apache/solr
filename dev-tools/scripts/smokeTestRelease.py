@@ -229,6 +229,8 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   artifacts = []
 
   for text, subURL in ents:
+    if text == '.gitrev':
+      continue # Allow this in the distribution build directory
     if text == 'KEYS':
       raise RuntimeError('solr: release dir should not contain a KEYS file - only toplevel /dist/solr/KEYS is used')
     elif text == 'maven/':
@@ -1102,9 +1104,14 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     print('  unshortened: %s' % newBaseURL)
     baseURL = newBaseURL
 
-  for text, subURL in getDirEntries(baseURL):
-    if text.lower().find('solr') != -1:
-      solrPath = subURL
+  if baseURL.endswith('distribution/build/release'):
+    # Used when buiding release locally in Jenkins
+    solrPath = baseURL
+  else:
+    # An ordinary release has a 'solr' sub folder
+    for text, subURL in getDirEntries(baseURL):
+      if text.lower() == 'solr/':
+        solrPath = subURL
 
   if solrPath is None:
     raise RuntimeError('could not find solr subdir')
