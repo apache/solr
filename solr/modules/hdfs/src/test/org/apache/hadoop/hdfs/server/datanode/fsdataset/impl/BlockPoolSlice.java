@@ -69,7 +69,7 @@ import org.apache.hadoop.util.DiskChecker;
 import org.apache.hadoop.util.DiskChecker.DiskErrorException;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.util.Timer;
-import org.apache.solr.cloud.hdfs.HdfsTestUtil;
+import org.apache.solr.hdfs.cloud.HdfsTestUtil;
 
 import com.google.common.annotations.VisibleForTesting;
 

@@ -75,18 +75,18 @@ public class TransactionLog implements Closeable {
   Path tlog;
   FileChannel channel;
   OutputStream os;
-  FastOutputStream fos;    // all accesses to this stream should be synchronized on "this" (The TransactionLog)
+  protected FastOutputStream fos;    // all accesses to this stream should be synchronized on "this" (The TransactionLog)
   int numRecords;
-  boolean isBuffer;
+  public boolean isBuffer;
 
   protected volatile boolean deleteOnClose = true;  // we can delete old tlogs since they are currently only used for real-time-get (and in the future, recovery)
 
-  AtomicInteger refcount = new AtomicInteger(1);
-  Map<String, Integer> globalStringMap = new HashMap<>();
-  List<String> globalStringList = new ArrayList<>();
+  protected AtomicInteger refcount = new AtomicInteger(1);
+  protected Map<String, Integer> globalStringMap = new HashMap<>();
+  protected List<String> globalStringList = new ArrayList<>();
 
   // write a BytesRef as a byte array
-  static final JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
+  protected static final JavaBinCodec.ObjectResolver resolver = new JavaBinCodec.ObjectResolver() {
     @Override
     public Object resolve(Object o, JavaBinCodec codec) throws IOException {
       if (o instanceof BytesRef) {
