@@ -383,6 +383,9 @@ public class Overseer implements SolrCloseable {
         zkWriteCommands = processMessage(clusterState, message, operation, zkStateWriter);
         if (zkWriteCommands instanceof CommandWithClusterState) {
           clusterState = ((CommandWithClusterState) zkWriteCommands).clusterState;
+          if(zkWriteCommands.isEmpty()) {
+            zkWriteCommands = null;
+          }
         }
 
         stats.success(operation);
@@ -454,7 +457,9 @@ public class Overseer implements SolrCloseable {
 
       CommandWithClusterState(ZkWriteCommand cmd, ClusterState state) {
         super(1);
-        super.add(cmd);
+        if(cmd != null) {
+          super.add(cmd);
+        }
         this.clusterState = state;
       }
     }
@@ -491,7 +496,13 @@ public class Overseer implements SolrCloseable {
             }  catch (Exception e) {
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to write updates");
             }
-            return new CommandWithClusterState(new CollectionMutator(getSolrCloudManager()).modifyCollection(clusterState,message), clusterState);
+            CollectionMutator collectionMutator = new CollectionMutator(getSolrCloudManager());
+            if(collectionMutator.isModifyPrs(message)) {
+               return new CommandWithClusterState(null, collectionMutator.doModifyPrs(message, clusterState));
+            } else {
+              return new CommandWithClusterState(collectionMutator.modifyCollection(clusterState, message), clusterState);
+            }
+
           default:
             throw new RuntimeException("unknown operation:" + operation
                 + " contents:" + message.getProperties());

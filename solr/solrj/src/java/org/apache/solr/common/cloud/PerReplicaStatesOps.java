@@ -44,7 +44,7 @@ public class PerReplicaStatesOps {
     List<PerReplicaStates.Operation> ops;
     final Function<PerReplicaStates, List<PerReplicaStates.Operation>> fun;
 
-    PerReplicaStatesOps(Function<PerReplicaStates, List<PerReplicaStates.Operation>> fun) {
+    public PerReplicaStatesOps(Function<PerReplicaStates, List<PerReplicaStates.Operation>> fun) {
         this.fun = fun;
     }
 
@@ -57,6 +57,18 @@ public class PerReplicaStatesOps {
             log.debug("Per-replica state being persisted for : '{}', ops: {}", znode, operations);
         }
 
+        List<Op> ops = getZkOps(operations, znode, zkClient);
+        try {
+            zkClient.multi(ops, true);
+        } catch (KeeperException e) {
+          log.error("Multi-op exception: {}", zkClient.getChildren(znode, null, true));
+          throw e;
+        }
+
+    }
+
+
+    protected List<Op> getZkOps(List<PerReplicaStates.Operation> operations, String znode, SolrZkClient zkClient) {
         List<Op> ops = new ArrayList<>(operations.size());
         for (PerReplicaStates.Operation op : operations) {
             // the state of the replica is being updated
@@ -65,13 +77,7 @@ public class PerReplicaStatesOps {
                     Op.create(path, null, zkClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT) :
                     Op.delete(path, -1));
         }
-        try {
-            zkClient.multi(ops, true);
-        } catch (KeeperException e) {
-          log.error("Multi-op exception: {}", zkClient.getChildren(znode, null, true));
-          throw e;
-        }
-
+        return ops;
     }
 
     /**
@@ -130,19 +136,8 @@ public class PerReplicaStatesOps {
         }).init(rs);
     }
 
-    /**
-     * Switch a collection from/to perReplicaState=true
-     */
-    public static PerReplicaStatesOps modifyCollection(DocCollection coll, boolean enable, PerReplicaStates rs) {
-        return new PerReplicaStatesOps(prs -> enable ?
-                enable(coll,prs) :
-                disable(prs))
-                .init(rs);
-
-    }
-
-    private static List<PerReplicaStates.Operation> enable(DocCollection coll, PerReplicaStates prs) {
-        log.info("ENABLING_PRS ");
+    public static List<PerReplicaStates.Operation> enablePrs(DocCollection coll, PerReplicaStates prs) {
+        log.info("Enabling PRS for {} ", coll.getName());
         List<PerReplicaStates.Operation> result = new ArrayList<>();
         coll.forEachReplica((s, r) -> {
             PerReplicaStates.State st = prs.get(r.getName());
@@ -158,7 +153,7 @@ public class PerReplicaStatesOps {
         return result;
     }
 
-    private static List<PerReplicaStates.Operation> disable(PerReplicaStates prs) {
+    public static List<PerReplicaStates.Operation> disablePrs(PerReplicaStates prs) {
         List<PerReplicaStates.Operation> result = new ArrayList<>();
         prs.states.forEachEntry((s, state) -> result.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.DELETE, state)));
         return result;
@@ -272,7 +267,7 @@ public class PerReplicaStatesOps {
         return result;
     }
 
-    PerReplicaStatesOps init(PerReplicaStates rs) {
+    public PerReplicaStatesOps init(PerReplicaStates rs) {
         if (rs == null) return null;
         get(rs);
         return this;
