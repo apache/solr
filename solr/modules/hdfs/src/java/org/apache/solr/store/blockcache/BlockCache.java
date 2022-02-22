@@ -16,24 +16,21 @@
  */
 package org.apache.solr.store.blockcache;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalCause;
-import com.github.benmanes.caffeine.cache.RemovalListener;
-
-/**
- * @lucene.experimental
- */
+/** @lucene.experimental */
 public class BlockCache {
-  
+
   public static final int _128M = 134217728;
   public static final int _32K = 32768;
-  private final Cache<BlockCacheKey,BlockCacheLocation> cache;
+  private final Cache<BlockCacheKey, BlockCacheLocation> cache;
   private final ByteBuffer[] banks;
   private final BlockLocks[] locks;
   private final AtomicInteger[] lockCounters;
@@ -46,22 +43,21 @@ public class BlockCache {
   public static interface OnRelease {
     public void release(BlockCacheKey blockCacheKey);
   }
-  
+
   public BlockCache(Metrics metrics, boolean directAllocation, long totalMemory) {
     this(metrics, directAllocation, totalMemory, _128M);
   }
-  
-  public BlockCache(Metrics metrics, boolean directAllocation,
-      long totalMemory, int slabSize) {
+
+  public BlockCache(Metrics metrics, boolean directAllocation, long totalMemory, int slabSize) {
     this(metrics, directAllocation, totalMemory, slabSize, _32K);
   }
-  
-  public BlockCache(Metrics metrics, boolean directAllocation,
-      long totalMemory, int slabSize, int blockSize) {
+
+  public BlockCache(
+      Metrics metrics, boolean directAllocation, long totalMemory, int slabSize, int blockSize) {
     this.metrics = metrics;
     numberOfBlocksPerBank = slabSize / blockSize;
     int numberOfBanks = (int) (totalMemory / slabSize);
-    
+
     banks = new ByteBuffer[numberOfBanks];
     locks = new BlockLocks[numberOfBanks];
     lockCounters = new AtomicInteger[numberOfBanks];
@@ -76,20 +72,20 @@ public class BlockCache {
       lockCounters[i] = new AtomicInteger();
     }
 
-    RemovalListener<BlockCacheKey,BlockCacheLocation> listener = (blockCacheKey, blockCacheLocation, removalCause) -> releaseLocation(blockCacheKey, blockCacheLocation, removalCause);
+    RemovalListener<BlockCacheKey, BlockCacheLocation> listener =
+        (blockCacheKey, blockCacheLocation, removalCause) ->
+            releaseLocation(blockCacheKey, blockCacheLocation, removalCause);
 
-    cache = Caffeine.newBuilder()
-        .removalListener(listener)
-        .maximumSize(maxEntries)
-        .build();
+    cache = Caffeine.newBuilder().removalListener(listener).maximumSize(maxEntries).build();
     this.blockSize = blockSize;
   }
-  
+
   public void release(BlockCacheKey key) {
     cache.invalidate(key);
   }
-  
-  private void releaseLocation(BlockCacheKey blockCacheKey, BlockCacheLocation location, RemovalCause removalCause) {
+
+  private void releaseLocation(
+      BlockCacheKey blockCacheKey, BlockCacheLocation location, RemovalCause removalCause) {
     if (location == null) {
       return;
     }
@@ -111,9 +107,10 @@ public class BlockCache {
   }
 
   /**
-   * This is only best-effort... it's possible for false to be returned, meaning the block was not able to be cached.
-   * NOTE: blocks may not currently be updated (false will be returned if the block is already cached)
-   * The blockCacheKey is cloned before it is inserted into the map, so it may be reused by clients if desired.
+   * This is only best-effort... it's possible for false to be returned, meaning the block was not
+   * able to be cached. NOTE: blocks may not currently be updated (false will be returned if the
+   * block is already cached) The blockCacheKey is cloned before it is inserted into the map, so it
+   * may be reused by clients if desired.
    *
    * @param blockCacheKey the key for the block
    * @param blockOffset the offset within the block
@@ -122,28 +119,39 @@ public class BlockCache {
    * @param length the number of bytes to write.
    * @return true if the block was cached/updated
    */
-  public boolean store(BlockCacheKey blockCacheKey, int blockOffset,
-      byte[] data, int offset, int length) {
+  public boolean store(
+      BlockCacheKey blockCacheKey, int blockOffset, byte[] data, int offset, int length) {
     if (length + blockOffset > blockSize) {
-      throw new RuntimeException("Buffer size exceeded, expecting max ["
-          + blockSize + "] got length [" + length + "] with blockOffset ["
-          + blockOffset + "]");
+      throw new RuntimeException(
+          "Buffer size exceeded, expecting max ["
+              + blockSize
+              + "] got length ["
+              + length
+              + "] with blockOffset ["
+              + blockOffset
+              + "]");
     }
     BlockCacheLocation location = cache.getIfPresent(blockCacheKey);
     if (location == null) {
       location = new BlockCacheLocation();
       if (!findEmptyLocation(location)) {
-        // YCS: it looks like when the cache is full (a normal scenario), then two concurrent writes will result in one of them failing
-        // because no eviction is done first.  The code seems to rely on leaving just a single block empty.
+        // YCS: it looks like when the cache is full (a normal scenario), then two concurrent writes
+        // will result in one of them failing
+        // because no eviction is done first.  The code seems to rely on leaving just a single block
+        // empty.
         // TODO: simplest fix would be to leave more than one block empty
         metrics.blockCacheStoreFail.incrementAndGet();
         return false;
       }
     } else {
-      // If we allocated a new block, then it has never been published and is thus never in danger of being concurrently removed.
-      // On the other hand, if this is an existing block we are updating, it may concurrently be removed and reused for another
-      // purpose (and then our write may overwrite that).  This can happen even if clients never try to update existing blocks,
-      // since two clients can try to cache the same block concurrently.  Because of this, the ability to update an existing
+      // If we allocated a new block, then it has never been published and is thus never in danger
+      // of being concurrently removed.
+      // On the other hand, if this is an existing block we are updating, it may concurrently be
+      // removed and reused for another
+      // purpose (and then our write may overwrite that).  This can happen even if clients never try
+      // to update existing blocks,
+      // since two clients can try to cache the same block concurrently.  Because of this, the
+      // ability to update an existing
       // block has been removed for the time being (see SOLR-10121).
 
       // No metrics to update: we don't count a redundant store as a store fail.
@@ -170,8 +178,8 @@ public class BlockCache {
    * @param length the number of bytes to read
    * @return true if the block was cached and the bytes were read
    */
-  public boolean fetch(BlockCacheKey blockCacheKey, byte[] buffer,
-      int blockOffset, int off, int length) {
+  public boolean fetch(
+      BlockCacheKey blockCacheKey, byte[] buffer, int blockOffset, int off, int length) {
     BlockCacheLocation location = cache.getIfPresent(blockCacheKey);
     if (location == null) {
       metrics.blockCacheMiss.incrementAndGet();
@@ -195,17 +203,18 @@ public class BlockCache {
     metrics.blockCacheHit.incrementAndGet();
     return true;
   }
-  
+
   public boolean fetch(BlockCacheKey blockCacheKey, byte[] buffer) {
     checkLength(buffer);
     return fetch(blockCacheKey, buffer, 0, 0, blockSize);
   }
-  
+
   private boolean findEmptyLocation(BlockCacheLocation location) {
     // This is a tight loop that will try and find a location to
     // place the block before giving up
     for (int j = 0; j < 10; j++) {
-      OUTER: for (int bankId = 0; bankId < banks.length; bankId++) {
+      OUTER:
+      for (int bankId = 0; bankId < banks.length; bankId++) {
         AtomicInteger bitSetCounter = lockCounters[bankId];
         BlockLocks bitSet = locks[bankId];
         if (bitSetCounter.get() == numberOfBlocksPerBank) {
@@ -215,7 +224,8 @@ public class BlockCache {
         // this check needs to spin, if a lock was attempted but not obtained
         // the rest of the bank should not be skipped
         int bit = bitSet.nextClearBit(0);
-        INNER: while (bit != -1) {
+        INNER:
+        while (bit != -1) {
           if (bit >= numberOfBlocksPerBank) {
             // bit set is full
             continue OUTER;
@@ -238,15 +248,18 @@ public class BlockCache {
     }
     return false;
   }
-  
+
   private void checkLength(byte[] buffer) {
     if (buffer.length != blockSize) {
-      throw new RuntimeException("Buffer wrong size, expecting [" + blockSize
-          + "] got [" + buffer.length + "]");
+      throw new RuntimeException(
+          "Buffer wrong size, expecting [" + blockSize + "] got [" + buffer.length + "]");
     }
   }
 
-  /** Returns a new copy of the ByteBuffer for the given bank, so it's safe to call position() on w/o additional synchronization */
+  /**
+   * Returns a new copy of the ByteBuffer for the given bank, so it's safe to call position() on w/o
+   * additional synchronization
+   */
   private ByteBuffer getBank(int bankId) {
     return banks[bankId].duplicate();
   }

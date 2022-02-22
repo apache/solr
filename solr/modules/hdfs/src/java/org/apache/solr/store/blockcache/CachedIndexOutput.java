@@ -17,13 +17,13 @@
 package org.apache.solr.store.blockcache;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.IndexOutput;
 
 /**
- * Cache the blocks as they are written. The cache file name is the name of
- * the file until the file is closed, at which point the cache is updated
- * to include the last modified date (which is unknown until that point).
+ * Cache the blocks as they are written. The cache file name is the name of the file until the file
+ * is closed, at which point the cache is updated to include the last modified date (which is
+ * unknown until that point).
+ *
  * @lucene.experimental
  */
 public class CachedIndexOutput extends ReusedBufferedIndexOutput {
@@ -33,9 +33,14 @@ public class CachedIndexOutput extends ReusedBufferedIndexOutput {
   private final String name;
   private final String location;
   private final Cache cache;
-  
-  public CachedIndexOutput(BlockDirectory directory, IndexOutput dest,
-      int blockSize, String name, Cache cache, int bufferSize) {
+
+  public CachedIndexOutput(
+      BlockDirectory directory,
+      IndexOutput dest,
+      int blockSize,
+      String name,
+      Cache cache,
+      int bufferSize) {
     super("dest=" + dest + " name=" + name, name, bufferSize);
     this.directory = directory;
     this.dest = dest;
@@ -50,25 +55,22 @@ public class CachedIndexOutput extends ReusedBufferedIndexOutput {
     dest.close();
     cache.renameCacheFile(location, directory.getFileCacheName(name));
   }
-  
-  private int writeBlock(long position, byte[] b, int offset, int length)
-      throws IOException {
+
+  private int writeBlock(long position, byte[] b, int offset, int length) throws IOException {
     // read whole block into cache and then provide needed data
     long blockId = BlockDirectory.getBlock(position);
     int blockOffset = (int) BlockDirectory.getPosition(position);
     int lengthToWriteInBlock = Math.min(length, blockSize - blockOffset);
-    
+
     // write the file and copy into the cache
     dest.writeBytes(b, offset, lengthToWriteInBlock);
-    cache.update(location, blockId, blockOffset, b, offset,
-        lengthToWriteInBlock);
-    
+    cache.update(location, blockId, blockOffset, b, offset, lengthToWriteInBlock);
+
     return lengthToWriteInBlock;
   }
-  
+
   @Override
-  public void writeInternal(byte[] b, int offset, int length)
-      throws IOException {
+  public void writeInternal(byte[] b, int offset, int length) throws IOException {
     long position = getBufferStart();
     while (length > 0) {
       int len = writeBlock(position, b, offset, length);

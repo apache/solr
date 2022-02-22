@@ -18,13 +18,11 @@ package org.apache.solr.analytics.facet.compare;
 
 import org.apache.solr.analytics.facet.SortableFacet.FacetBucket;
 
-/**
- * A results comparator that compares constants.
- */
+/** A results comparator that compares constants. */
 public class ConstantComparator extends FacetResultsComparator {
 
   @Override
   public int compare(FacetBucket b1, FacetBucket b2) {
-      return 0;
+    return 0;
   }
 }

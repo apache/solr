@@ -62,6 +62,7 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
   testImplementation project(':solr:solrj')
+  testRuntimeOnly project(':solr:modules:sql')
 
   testImplementation 'org.apache.lucene:lucene-analysis-common'
   testImplementation 'org.apache.lucene:lucene-core'

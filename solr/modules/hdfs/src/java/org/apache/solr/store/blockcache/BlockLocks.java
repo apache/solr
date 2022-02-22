@@ -17,28 +17,24 @@
 package org.apache.solr.store.blockcache;
 
 import java.util.concurrent.atomic.AtomicLongArray;
-
 import org.apache.lucene.util.LongBitSet;
 
-/**
- * @lucene.experimental
- */
+/** @lucene.experimental */
 public class BlockLocks {
-  
+
   private AtomicLongArray bits;
   private int wlen;
-  
+
   public BlockLocks(long numBits) {
     int length = LongBitSet.bits2words(numBits);
     bits = new AtomicLongArray(length);
     wlen = length;
   }
-  
+
   /**
    * Find the next clear bit in the bit set.
-   * 
-   * @param index
-   *          index
+   *
+   * @param index index
    * @return next next bit
    */
   public int nextClearBit(int index) {
@@ -46,7 +42,7 @@ public class BlockLocks {
     if (i >= wlen) return -1;
     int subIndex = index & 0x3f; // index within the word
     long word = ~bits.get(i) >> subIndex; // skip all the bits to the right of
-                                          // index
+    // index
     if (word != 0) {
       return (i << 6) + subIndex + Long.numberOfTrailingZeros(word);
     }
@@ -58,13 +54,11 @@ public class BlockLocks {
     }
     return -1;
   }
-  
+
   /**
-   * Thread safe set operation that will set the bit if and only if the bit was
-   * not previously set.
-   * 
-   * @param index
-   *          the index position to set.
+   * Thread safe set operation that will set the bit if and only if the bit was not previously set.
+   *
+   * @param index the index position to set.
    * @return returns true if the bit was set and false if it was already set.
    */
   public boolean set(int index) {
@@ -83,7 +77,7 @@ public class BlockLocks {
     } while (!bits.compareAndSet(wordNum, oword, word));
     return true;
   }
-  
+
   public void clear(int index) {
     int wordNum = index >> 6;
     int bit = index & 0x03f;

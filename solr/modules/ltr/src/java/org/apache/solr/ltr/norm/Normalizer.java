@@ -18,22 +18,20 @@ package org.apache.solr.ltr.norm;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- * A normalizer normalizes the value of a feature. After the feature values
- * have been computed, the {@link Normalizer#normalize(float)} methods will
- * be called and the resulting values will be used by the model.
+ * A normalizer normalizes the value of a feature. After the feature values have been computed, the
+ * {@link Normalizer#normalize(float)} methods will be called and the resulting values will be used
+ * by the model.
  */
 public abstract class Normalizer {
 
-
   public abstract float normalize(float value);
 
-  public abstract LinkedHashMap<String,Object> paramsToMap();
+  public abstract LinkedHashMap<String, Object> paramsToMap();
 
   public Explanation explain(Explanation explain) {
     final float normalized = normalize(explain.getValue().floatValue());
@@ -42,8 +40,8 @@ public abstract class Normalizer {
     return Explanation.match(normalized, explainDesc, explain);
   }
 
-  public static Normalizer getInstance(SolrResourceLoader solrResourceLoader,
-      String className, Map<String,Object> params) {
+  public static Normalizer getInstance(
+      SolrResourceLoader solrResourceLoader, String className, Map<String, Object> params) {
     final Normalizer f = solrResourceLoader.newInstance(className, Normalizer.class);
     if (params != null) {
       SolrPluginUtils.invokeSetters(f, params.entrySet());
@@ -53,12 +51,10 @@ public abstract class Normalizer {
   }
 
   /**
-   * As part of creation of a normalizer instance, this function confirms
-   * that the normalizer parameters are valid.
+   * As part of creation of a normalizer instance, this function confirms that the normalizer
+   * parameters are valid.
    *
-   * @throws NormalizerException
-   *             Normalizer Exception
+   * @throws NormalizerException Normalizer Exception
    */
   protected abstract void validate() throws NormalizerException;
-
 }

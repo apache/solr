@@ -109,6 +109,7 @@
     },
     "/sql": {
       "class": "solr.SQLHandler",
+      "startup": "lazy",
       "useParams":"_SQL",
       "invariants": {
         "distrib": false

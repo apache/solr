@@ -21,8 +21,8 @@ import org.apache.solr.analytics.function.ReductionCollectionManager.ReductionDa
 import org.apache.solr.analytics.value.AnalyticsValue;
 
 /**
- * A wrapper for a top-level analytics expression.
- * The expression must have a name and be single valued.
+ * A wrapper for a top-level analytics expression. The expression must have a name and be single
+ * valued.
  */
 public class AnalyticsExpression {
   private final AnalyticsValue expression;
@@ -42,10 +42,9 @@ public class AnalyticsExpression {
   }
 
   /**
-   * Get the current value of the expression.
-   * This method can, and will, be called multiple times to return different values.
-   * The value returned is based on the {@link ReductionDataCollection} given
-   * to the {@link ReductionCollectionManager#setData} method.
+   * Get the current value of the expression. This method can, and will, be called multiple times to
+   * return different values. The value returned is based on the {@link ReductionDataCollection}
+   * given to the {@link ReductionCollectionManager#setData} method.
    *
    * @return the current value of the expression
    */
@@ -54,7 +53,8 @@ public class AnalyticsExpression {
   }
 
   /**
-   * NOTE: Must be called after {@link #toObject()} is called, otherwise the value is not guaranteed to be correct.
+   * NOTE: Must be called after {@link #toObject()} is called, otherwise the value is not guaranteed
+   * to be correct.
    *
    * @return whether the current value of the expression exists.
    */

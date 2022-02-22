@@ -17,14 +17,11 @@
 package org.apache.solr.store.blockcache;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.solr.common.util.SuppressForbidden;
 
-/**
- * @lucene.experimental
- */
+/** @lucene.experimental */
 public class BlockCacheLocation {
-  
+
   private int block;
   private int bankId;
   private long lastAccess;
@@ -35,20 +32,20 @@ public class BlockCacheLocation {
     touch();
   }
 
-  /** The block within the bank.  This has no relationship to the blockId in BlockCacheKey */
+  /** The block within the bank. This has no relationship to the blockId in BlockCacheKey */
   public void setBlock(int block) {
     this.block = block;
   }
-  
+
   public void setBankId(int bankId) {
     this.bankId = bankId;
   }
 
-  /** The block within the bank.  This has no relationship to the blockId in BlockCacheKey */
+  /** The block within the bank. This has no relationship to the blockId in BlockCacheKey */
   public int getBlock() {
     return block;
   }
-  
+
   public int getBankId() {
     return bankId;
   }
@@ -62,17 +59,16 @@ public class BlockCacheLocation {
   public long getLastAccess() {
     return lastAccess;
   }
-  
+
   public long getNumberOfAccesses() {
     return accesses;
   }
-  
+
   public boolean isRemoved() {
     return removed.get();
   }
-  
+
   public void setRemoved(boolean removed) {
     this.removed.set(removed);
   }
-  
 }

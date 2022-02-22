@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.field;
 
 import java.io.IOException;
 import java.util.function.Consumer;
-
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
@@ -29,9 +28,7 @@ import org.apache.solr.analytics.value.StringValue.CastingStringValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.StrField;
 
-/**
- * An analytics wrapper for a single-valued {@link StrField} with DocValues enabled.
- */
+/** An analytics wrapper for a single-valued {@link StrField} with DocValues enabled. */
 public class StringField extends AnalyticsField implements CastingStringValue {
   private BinaryDocValues binaryDocValues;
   private SortedDocValues sortedDocValues;
@@ -60,7 +57,9 @@ public class StringField extends AnalyticsField implements CastingStringValue {
           sortedDocValues = DocValues.getSorted(context.reader(), fieldName);
           break;
         default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid doc values type " + fieldInfo.getDocValuesType());
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Invalid doc values type " + fieldInfo.getDocValuesType());
       }
     }
   }
@@ -84,10 +83,12 @@ public class StringField extends AnalyticsField implements CastingStringValue {
   public String getString() {
     return exists ? value : null;
   }
+
   @Override
   public Object getObject() {
     return exists ? value : null;
   }
+
   @Override
   public boolean exists() {
     return exists;
@@ -99,6 +100,7 @@ public class StringField extends AnalyticsField implements CastingStringValue {
       cons.accept(value);
     }
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     if (exists) {

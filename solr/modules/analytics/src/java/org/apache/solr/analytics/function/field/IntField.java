@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -32,7 +31,8 @@ import org.apache.solr.schema.IntPointField;
 import org.apache.solr.schema.TrieIntField;
 
 /**
- * An analytics wrapper for a single-valued {@link TrieIntField} or {@link IntPointField} with DocValues enabled.
+ * An analytics wrapper for a single-valued {@link TrieIntField} or {@link IntPointField} with
+ * DocValues enabled.
  */
 public class IntField extends AnalyticsField implements CastingIntValue {
   private NumericDocValues docValues;
@@ -52,7 +52,7 @@ public class IntField extends AnalyticsField implements CastingIntValue {
   public void collect(int doc) throws IOException {
     exists = docValues.advanceExact(doc);
     if (exists) {
-      value = (int)docValues.longValue();
+      value = (int) docValues.longValue();
     }
   }
 
@@ -60,26 +60,32 @@ public class IntField extends AnalyticsField implements CastingIntValue {
   public int getInt() {
     return value;
   }
+
   @Override
   public long getLong() {
-    return (long)value;
+    return (long) value;
   }
+
   @Override
   public float getFloat() {
-    return (float)value;
+    return (float) value;
   }
+
   @Override
   public double getDouble() {
-    return (double)value;
+    return (double) value;
   }
+
   @Override
   public String getString() {
     return exists ? Integer.toString(value) : null;
   }
+
   @Override
   public Object getObject() {
     return exists ? value : null;
   }
+
   @Override
   public boolean exists() {
     return exists;
@@ -91,30 +97,35 @@ public class IntField extends AnalyticsField implements CastingIntValue {
       cons.accept(value);
     }
   }
+
   @Override
   public void streamLongs(LongConsumer cons) {
     if (exists) {
-      cons.accept((long)value);
+      cons.accept((long) value);
     }
   }
+
   @Override
   public void streamFloats(FloatConsumer cons) {
     if (exists) {
-      cons.accept((float)value);
+      cons.accept((float) value);
     }
   }
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
     if (exists) {
-      cons.accept((double)value);
+      cons.accept((double) value);
     }
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     if (exists) {
       cons.accept(Integer.toString(value));
     }
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     if (exists) {

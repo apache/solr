@@ -16,37 +16,38 @@
  */
 package org.apache.solr.cloud.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
-
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.AbstractBasicDistributedZkTestBase;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
 @Slow
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
-@ThreadLeakLingering(linger = 40)
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
+@ThreadLeakLingering(
+    linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class HdfsNNFailoverTest extends AbstractBasicDistributedZkTestBase {
   private static final String COLLECTION = "collection";
   private static MiniDFSCluster dfsCluster;
-  
+
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath(), false, true);
   }
-  
+
   @AfterClass
   public static void teardownClass() throws Exception {
     try {
@@ -55,12 +56,12 @@ public class HdfsNNFailoverTest extends AbstractBasicDistributedZkTestBase {
       dfsCluster = null;
     }
   }
-  
+
   @Override
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
-  
+
   public HdfsNNFailoverTest() {
     super();
     sliceCount = 1;
@@ -75,12 +76,11 @@ public class HdfsNNFailoverTest extends AbstractBasicDistributedZkTestBase {
   @Override
   public void test() throws Exception {
     createCollection(COLLECTION, "conf1", 1, 1);
-    
-    waitForRecoveriesToFinish(COLLECTION, false);
-    
-    // TODO:  SOLR-7360 Enable HDFS NameNode failover testing. 
-//    dfsCluster.transitionToStandby(0);
-//    dfsCluster.transitionToActive(1);
-  }
 
+    waitForRecoveriesToFinish(COLLECTION, false);
+
+    // TODO:  SOLR-7360 Enable HDFS NameNode failover testing.
+    //    dfsCluster.transitionToStandby(0);
+    //    dfsCluster.transitionToActive(1);
+  }
 }

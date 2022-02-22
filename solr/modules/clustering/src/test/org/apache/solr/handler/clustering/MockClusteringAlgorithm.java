@@ -16,13 +16,6 @@
  */
 package org.apache.solr.handler.clustering;
 
-import org.carrot2.attrs.AttrComposite;
-import org.carrot2.attrs.AttrInteger;
-import org.carrot2.clustering.Cluster;
-import org.carrot2.clustering.ClusteringAlgorithm;
-import org.carrot2.clustering.Document;
-import org.carrot2.language.LanguageComponents;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -31,15 +24,20 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.carrot2.attrs.AttrComposite;
+import org.carrot2.attrs.AttrInteger;
+import org.carrot2.clustering.Cluster;
+import org.carrot2.clustering.ClusteringAlgorithm;
+import org.carrot2.clustering.Document;
+import org.carrot2.language.LanguageComponents;
 
-/**
- * Creates a stable set of synthetic clusters based on the provided parameters.
- */
+/** Creates a stable set of synthetic clusters based on the provided parameters. */
 public class MockClusteringAlgorithm extends AttrComposite implements ClusteringAlgorithm {
   public AttrInteger docsInCluster =
       attributes.register(
           "docsInCluster",
-          AttrInteger.builder().label("Number of documents in each cluster.")
+          AttrInteger.builder()
+              .label("Number of documents in each cluster.")
               .min(1)
               .max(5)
               .defaultValue(3));
@@ -47,7 +45,8 @@ public class MockClusteringAlgorithm extends AttrComposite implements Clustering
   public AttrInteger hierarchyDepth =
       attributes.register(
           "hierarchyDepth",
-          AttrInteger.builder().label("Levels of clusters hierarchy.")
+          AttrInteger.builder()
+              .label("Levels of clusters hierarchy.")
               .min(1)
               .max(3)
               .defaultValue(2));
@@ -55,7 +54,8 @@ public class MockClusteringAlgorithm extends AttrComposite implements Clustering
   public AttrInteger maxClusters =
       attributes.register(
           "maxClusters",
-          AttrInteger.builder().label("Maximum number of clusters at each hierarchy level.")
+          AttrInteger.builder()
+              .label("Maximum number of clusters at each hierarchy level.")
               .min(2)
               .max(100)
               .defaultValue(3));
@@ -63,7 +63,8 @@ public class MockClusteringAlgorithm extends AttrComposite implements Clustering
   public AttrInteger labelsPerCluster =
       attributes.register(
           "labelsPerCluster",
-          AttrInteger.builder().label("Number of labels generated for each cluster.")
+          AttrInteger.builder()
+              .label("Number of labels generated for each cluster.")
               .min(1)
               .max(5)
               .defaultValue(1));
@@ -79,30 +80,31 @@ public class MockClusteringAlgorithm extends AttrComposite implements Clustering
   }
 
   @Override
-  public <T extends Document> List<Cluster<T>> cluster(Stream<? extends T> documentStream,
-                                                       LanguageComponents languageComponents) {
+  public <T extends Document> List<Cluster<T>> cluster(
+      Stream<? extends T> documentStream, LanguageComponents languageComponents) {
     List<T> documents = documentStream.collect(Collectors.toList());
     if (docsInCluster.get() > documents.size()) {
       throw new AssertionError();
     }
 
-    Supplier<T> docSupplier = new Supplier<>() {
-      Iterator<T> i = documents.iterator();
+    Supplier<T> docSupplier =
+        new Supplier<>() {
+          Iterator<T> i = documents.iterator();
 
-      @Override
-      public T get() {
-        if (!i.hasNext()) {
-          i = documents.iterator();
-        }
-        return i.next();
-      }
-    };
+          @Override
+          public T get() {
+            if (!i.hasNext()) {
+              i = documents.iterator();
+            }
+            return i.next();
+          }
+        };
 
     return createClusters(hierarchyDepth.get(), "Cluster ", docSupplier);
   }
 
-  private <T extends Document> List<Cluster<T>> createClusters(int level, String prefix,
-                                                               Supplier<T> docSupplier) {
+  private <T extends Document> List<Cluster<T>> createClusters(
+      int level, String prefix, Supplier<T> docSupplier) {
     ArrayList<Cluster<T>> clusters = new ArrayList<>();
     for (int count = maxClusters.get(), idx = 1; count > 0; count--, idx++) {
       String label = prefix + (prefix.endsWith(" ") ? "" : ".") + idx;

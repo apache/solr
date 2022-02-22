@@ -39,32 +39,26 @@ public class TestModelManager extends TestRerankBase {
 
   @Test
   public void test() throws Exception {
-    final SolrResourceLoader loader = new SolrResourceLoader(
-        tmpSolrHome.toPath());
+    final SolrResourceLoader loader = new SolrResourceLoader(tmpSolrHome.toPath());
 
     final RestManager.Registry registry = loader.getManagedResourceRegistry();
     assertNotNull(
-        "Expected a non-null RestManager.Registry from the SolrResourceLoader!",
-        registry);
+        "Expected a non-null RestManager.Registry from the SolrResourceLoader!", registry);
 
     final String resourceId = "/schema/fstore1";
-    registry.registerManagedResource(resourceId, ManagedFeatureStore.class,
-        new LTRQParserPlugin());
+    registry.registerManagedResource(resourceId, ManagedFeatureStore.class, new LTRQParserPlugin());
 
     final String resourceId2 = "/schema/mstore1";
-    registry.registerManagedResource(resourceId2, ManagedModelStore.class,
-        new LTRQParserPlugin());
+    registry.registerManagedResource(resourceId2, ManagedModelStore.class, new LTRQParserPlugin());
 
     final NamedList<String> initArgs = new NamedList<>();
 
     final RestManager restManager = new RestManager();
-    restManager.init(loader, initArgs,
-        new ManagedResourceStorage.InMemoryStorageIO());
+    restManager.init(loader, initArgs, new ManagedResourceStorage.InMemoryStorageIO());
 
     final ManagedResource res = restManager.getManagedResource(resourceId);
     assertTrue(res instanceof ManagedFeatureStore);
     assertEquals(res.getResourceId(), resourceId);
-
   }
 
   @Test
@@ -77,59 +71,88 @@ public class TestModelManager extends TestRerankBase {
     final String valueFeatureClassName = ValueFeature.class.getName();
 
     // Add features
-    String feature = "{\"name\": \"test1\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} }";
-    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
-        "/responseHeader/status==0");
+    String feature =
+        "{\"name\": \"test1\", \"class\": \""
+            + valueFeatureClassName
+            + "\", \"params\": {\"value\": 1} }";
+    assertJPut(ManagedFeatureStore.REST_END_POINT, feature, "/responseHeader/status==0");
 
-    feature = "{\"name\": \"test2\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} }";
-    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
-        "/responseHeader/status==0");
+    feature =
+        "{\"name\": \"test2\", \"class\": \""
+            + valueFeatureClassName
+            + "\", \"params\": {\"value\": 1} }";
+    assertJPut(ManagedFeatureStore.REST_END_POINT, feature, "/responseHeader/status==0");
 
-    feature = "{\"name\": \"test3\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} }";
-    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
-        "/responseHeader/status==0");
+    feature =
+        "{\"name\": \"test3\", \"class\": \""
+            + valueFeatureClassName
+            + "\", \"params\": {\"value\": 1} }";
+    assertJPut(ManagedFeatureStore.REST_END_POINT, feature, "/responseHeader/status==0");
 
-    feature = "{\"name\": \"test33\", \"store\": \""+TEST_FEATURE_STORE_NAME+"\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} }";
-    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
-        "/responseHeader/status==0");
+    feature =
+        "{\"name\": \"test33\", \"store\": \""
+            + TEST_FEATURE_STORE_NAME
+            + "\", \"class\": \""
+            + valueFeatureClassName
+            + "\", \"params\": {\"value\": 1} }";
+    assertJPut(ManagedFeatureStore.REST_END_POINT, feature, "/responseHeader/status==0");
 
-    final String multipleFeatures = "[{\"name\": \"test4\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} }"
-        + ",{\"name\": \"test5\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} } ]";
-    assertJPut(ManagedFeatureStore.REST_END_POINT, multipleFeatures,
-        "/responseHeader/status==0");
+    final String multipleFeatures =
+        "[{\"name\": \"test4\", \"class\": \""
+            + valueFeatureClassName
+            + "\", \"params\": {\"value\": 1} }"
+            + ",{\"name\": \"test5\", \"class\": \""
+            + valueFeatureClassName
+            + "\", \"params\": {\"value\": 1} } ]";
+    assertJPut(ManagedFeatureStore.REST_END_POINT, multipleFeatures, "/responseHeader/status==0");
 
     final String fieldValueFeatureClassName = FieldValueFeature.class.getName();
 
     // Add bad feature (wrong params)_
-    final String badfeature = "{\"name\": \"fvalue\", \"class\": \""+fieldValueFeatureClassName+"\", \"params\": {\"value\": 1} }";
-    assertJPut(ManagedFeatureStore.REST_END_POINT, badfeature,
-        "/error/msg/=='No setter corrresponding to \\'value\\' in "+fieldValueFeatureClassName+"'");
+    final String badfeature =
+        "{\"name\": \"fvalue\", \"class\": \""
+            + fieldValueFeatureClassName
+            + "\", \"params\": {\"value\": 1} }";
+    assertJPut(
+        ManagedFeatureStore.REST_END_POINT,
+        badfeature,
+        "/error/msg/=='No setter corrresponding to \\'value\\' in "
+            + fieldValueFeatureClassName
+            + "'");
 
     final String linearModelClassName = LinearModel.class.getName();
 
     // Add models
-    String model = "{ \"name\":\"testmodel1\", \"class\":\""+linearModelClassName+"\", \"features\":[] }";
+    String model =
+        "{ \"name\":\"testmodel1\", \"class\":\"" + linearModelClassName + "\", \"features\":[] }";
     // fails since it does not have features
-    assertJPut(ManagedModelStore.REST_END_POINT, model,
-        "/responseHeader/status==400");
+    assertJPut(ManagedModelStore.REST_END_POINT, model, "/responseHeader/status==400");
     // fails since it does not have weights
-    model = "{ \"name\":\"testmodel2\", \"class\":\""+linearModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}] }";
-    assertJPut(ManagedModelStore.REST_END_POINT, model,
-        "/responseHeader/status==400");
+    model =
+        "{ \"name\":\"testmodel2\", \"class\":\""
+            + linearModelClassName
+            + "\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}] }";
+    assertJPut(ManagedModelStore.REST_END_POINT, model, "/responseHeader/status==400");
     // success
-    model = "{ \"name\":\"testmodel3\", \"class\":\""+linearModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}}}";
-    assertJPut(ManagedModelStore.REST_END_POINT, model,
-        "/responseHeader/status==0");
+    model =
+        "{ \"name\":\"testmodel3\", \"class\":\""
+            + linearModelClassName
+            + "\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}}}";
+    assertJPut(ManagedModelStore.REST_END_POINT, model, "/responseHeader/status==0");
     // success
-    final String multipleModels = "[{ \"name\":\"testmodel4\", \"class\":\""+linearModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}} }\n"
-        + ",{ \"name\":\"testmodel5\", \"class\":\""+linearModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}} } ]";
-    assertJPut(ManagedModelStore.REST_END_POINT, multipleModels,
-        "/responseHeader/status==0");
+    final String multipleModels =
+        "[{ \"name\":\"testmodel4\", \"class\":\""
+            + linearModelClassName
+            + "\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}} }\n"
+            + ",{ \"name\":\"testmodel5\", \"class\":\""
+            + linearModelClassName
+            + "\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}} } ]";
+    assertJPut(ManagedModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
     final String qryResult = JQ(ManagedModelStore.REST_END_POINT);
 
     assert (qryResult.contains("\"name\":\"testmodel3\"")
-        && qryResult.contains("\"name\":\"testmodel4\"") && qryResult
-          .contains("\"name\":\"testmodel5\""));
+        && qryResult.contains("\"name\":\"testmodel4\"")
+        && qryResult.contains("\"name\":\"testmodel5\""));
 
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/[0]/name=='testmodel3'");
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/[1]/name=='testmodel4'");
@@ -137,19 +160,27 @@ public class TestModelManager extends TestRerankBase {
     restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/testmodel3");
     restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/testmodel4");
     restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/testmodel5");
-    assertJQ(ManagedModelStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+    assertJQ(
+        ManagedModelStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
         "/models==[]'");
 
-    assertJQ(ManagedFeatureStore.REST_END_POINT,
-        "/featureStores==['"+TEST_FEATURE_STORE_NAME+"','"+FeatureStore.DEFAULT_FEATURE_STORE_NAME+"']");
-    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+    assertJQ(
+        ManagedFeatureStore.REST_END_POINT,
+        "/featureStores==['"
+            + TEST_FEATURE_STORE_NAME
+            + "','"
+            + FeatureStore.DEFAULT_FEATURE_STORE_NAME
+            + "']");
+    assertJQ(
+        ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
         "/features/[0]/name=='test1'");
-    assertJQ(ManagedFeatureStore.REST_END_POINT + "/"+TEST_FEATURE_STORE_NAME,
+    assertJQ(
+        ManagedFeatureStore.REST_END_POINT + "/" + TEST_FEATURE_STORE_NAME,
         "/features/[0]/name=='test33'");
-    restTestHarness.delete(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME);
-    restTestHarness.delete(ManagedFeatureStore.REST_END_POINT + "/"+TEST_FEATURE_STORE_NAME);
-    assertJQ(ManagedFeatureStore.REST_END_POINT,
-        "/featureStores==[]");
+    restTestHarness.delete(
+        ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME);
+    restTestHarness.delete(ManagedFeatureStore.REST_END_POINT + "/" + TEST_FEATURE_STORE_NAME);
+    assertJQ(ManagedFeatureStore.REST_END_POINT, "/featureStores==[]");
   }
 
   @Test
@@ -158,15 +189,16 @@ public class TestModelManager extends TestRerankBase {
     loadModels("linear-model.json");
 
     final String modelName = "6029760550880411648";
-    assertJQ(ManagedModelStore.REST_END_POINT,
-        "/models/[0]/name=='"+modelName+"'");
-    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+    assertJQ(ManagedModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+        ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
         "/features/[0]/name=='title'");
-    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
+    assertJQ(
+        ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
         "/features/[1]/name=='description'");
 
-    restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/"+modelName);
-    restTestHarness.delete(ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME);
+    restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/" + modelName);
+    restTestHarness.delete(
+        ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME);
   }
-
 }

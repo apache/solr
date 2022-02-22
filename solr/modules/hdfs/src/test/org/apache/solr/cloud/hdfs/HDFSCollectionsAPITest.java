@@ -29,16 +29,19 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
-@ThreadLeakLingering(linger = 10)
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
+@ThreadLeakLingering(
+    linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class HDFSCollectionsAPITest extends SolrCloudTestCase {
 
   private static MiniDFSCluster dfsCluster;
@@ -51,7 +54,6 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
 
     cluster.uploadConfigSet(configset("cloud-hdfs"), "conf1");
   }
-
 
   @AfterClass
   public static void teardownClass() throws Exception {
@@ -72,7 +74,8 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
     String collection = "test";
     cluster.getSolrClient().setDefaultCollection(collection);
     CollectionAdminRequest.createCollection(collection, "conf1", 1, 1)
-        .setCreateNodeSet(jettySolrRunner.getNodeName()).process(cluster.getSolrClient());
+        .setCreateNodeSet(jettySolrRunner.getNodeName())
+        .process(cluster.getSolrClient());
     waitForState("", collection, clusterShape(1, 1));
     cluster.getSolrClient().setDefaultCollection(collection);
     cluster.getSolrClient().add(new SolrInputDocument("id", "1"));
@@ -81,19 +84,22 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
     cluster.getSolrClient().add(new SolrInputDocument("id", "3"));
 
     jettySolrRunner.stop();
-    waitForState("", collection, (liveNodes, collectionState) -> {
-      Replica replica = collectionState.getSlice("shard1").getReplicas().iterator().next();
-      return replica.getState() == Replica.State.DOWN;
-    });
+    waitForState(
+        "",
+        collection,
+        (liveNodes, collectionState) -> {
+          Replica replica = collectionState.getSlice("shard1").getReplicas().iterator().next();
+          return replica.getState() == Replica.State.DOWN;
+        });
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
 
     jettySolrRunner.start();
 
     CollectionAdminRequest.createCollection(collection, "conf1", 1, 1)
-        .setCreateNodeSet(cluster.getJettySolrRunner(1).getNodeName()).process(cluster.getSolrClient());
+        .setCreateNodeSet(cluster.getJettySolrRunner(1).getNodeName())
+        .process(cluster.getSolrClient());
     waitForState("", collection, clusterShape(1, 1));
     QueryResponse response = cluster.getSolrClient().query(collection, new SolrQuery("*:*"));
     assertEquals(0L, response.getResults().getNumFound());
   }
-
 }

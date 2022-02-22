@@ -18,7 +18,6 @@
 package org.apache.solr.ltr.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.ltr.LTRRescorer;
@@ -27,9 +26,9 @@ import org.apache.solr.search.AbstractReRankQuery;
 import org.apache.solr.search.RankQuery;
 
 /**
- * A learning to rank Query, will incapsulate a learning to rank model, and delegate to it the rescoring
- * of the documents.
- **/
+ * A learning to rank Query, will incapsulate a learning to rank model, and delegate to it the
+ * rescoring of the documents.
+ */
 public class LTRQuery extends AbstractReRankQuery {
   private static final Query defaultQuery = new MatchAllDocsQuery();
   private final LTRScoringQuery scoringQuery;
@@ -55,7 +54,8 @@ public class LTRQuery extends AbstractReRankQuery {
 
   private boolean equalsTo(LTRQuery other) {
     return (mainQuery.equals(other.mainQuery)
-        && scoringQuery.equals(other.scoringQuery) && (reRankDocs == other.reRankDocs));
+        && scoringQuery.equals(other.scoringQuery)
+        && (reRankDocs == other.reRankDocs));
   }
 
   @Override
@@ -69,8 +69,13 @@ public class LTRQuery extends AbstractReRankQuery {
 
   @Override
   public String toString(String field) {
-    return "{!ltr mainQuery='" + mainQuery.toString() + "' scoringQuery='"
-        + scoringQuery.toString() + "' reRankDocs=" + reRankDocs + "}";
+    return "{!ltr mainQuery='"
+        + mainQuery.toString()
+        + "' scoringQuery='"
+        + scoringQuery.toString()
+        + "' reRankDocs="
+        + reRankDocs
+        + "}";
   }
 
   @Override

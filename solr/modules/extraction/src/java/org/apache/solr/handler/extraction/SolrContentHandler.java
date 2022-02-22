@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
@@ -38,14 +37,13 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-
 /**
- * The class responsible for handling Tika events and translating them into {@link org.apache.solr.common.SolrInputDocument}s.
- * <B>This class is not thread-safe.</B>
- * <p>
- * This class cannot be reused, you have to create a new instance per document!
- * <p>
- * User's may wish to override this class to provide their own functionality.
+ * The class responsible for handling Tika events and translating them into {@link
+ * org.apache.solr.common.SolrInputDocument}s. <B>This class is not thread-safe.</B>
+ *
+ * <p>This class cannot be reused, you have to create a new instance per document!
+ *
+ * <p>User's may wish to override this class to provide their own functionality.
  *
  * @see org.apache.solr.handler.extraction.SolrContentHandlerFactory
  * @see org.apache.solr.handler.extraction.ExtractingRequestHandler
@@ -67,14 +65,13 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
 
   protected final boolean captureAttribs;
   protected final boolean lowerNames;
-  
+
   protected final String unknownFieldPrefix;
   protected final String defaultField;
 
   private final boolean literalsOverride;
-  
-  private Set<String> literalFieldNames = null;
 
+  private Set<String> literalFieldNames = null;
 
   public SolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
     this.document = new SolrInputDocument();
@@ -87,7 +84,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     this.literalsOverride = params.getBool(LITERALS_OVERRIDE, true);
     this.unknownFieldPrefix = params.get(UNKNOWN_FIELD_PREFIX, "");
     this.defaultField = params.get(DEFAULT_FIELD, "");
-    
+
     String[] captureFields = params.getParams(CAPTURE_ELEMENTS);
     if (captureFields != null && captureFields.length > 0) {
       fieldBuilders = new HashMap<>();
@@ -100,30 +97,29 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     bldrStack.add(catchAllBuilder);
   }
 
-
   /**
-   * This is called by a consumer when it is ready to deal with a new SolrInputDocument.  Overriding
-   * classes can use this hook to add in or change whatever they deem fit for the document at that time.
-   * The base implementation adds the metadata as fields, allowing for potential remapping.
+   * This is called by a consumer when it is ready to deal with a new SolrInputDocument. Overriding
+   * classes can use this hook to add in or change whatever they deem fit for the document at that
+   * time. The base implementation adds the metadata as fields, allowing for potential remapping.
    *
    * @return The {@link org.apache.solr.common.SolrInputDocument}.
-   *
    * @see #addMetadata()
    * @see #addCapturedContent()
    * @see #addContent()
    * @see #addLiterals()
    */
   public SolrInputDocument newDocument() {
-    //handle the literals from the params. NOTE: This MUST be called before the others in order for literals to override other values
+    // handle the literals from the params. NOTE: This MUST be called before the others in order for
+    // literals to override other values
     addLiterals();
 
-    //handle the metadata extracted from the document
+    // handle the metadata extracted from the document
     addMetadata();
 
-    //add in the content
+    // add in the content
     addContent();
 
-    //add in the captured content
+    // add in the captured content
     addCapturedContent();
 
     if (log.isDebugEnabled()) {
@@ -133,26 +129,25 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   }
 
   /**
-   * Add the per field captured content to the Solr Document.  Default implementation uses the
-   * {@link #fieldBuilders} info
+   * Add the per field captured content to the Solr Document. Default implementation uses the {@link
+   * #fieldBuilders} info
    */
   protected void addCapturedContent() {
     for (Map.Entry<String, StringBuilder> entry : fieldBuilders.entrySet()) {
       if (entry.getValue().length() > 0) {
         String fieldName = entry.getKey();
-        if (literalsOverride && literalFieldNames.contains(fieldName))
-          continue;
-        addField(fieldName, entry.getValue().toString(), null);      }
+        if (literalsOverride && literalFieldNames.contains(fieldName)) continue;
+        addField(fieldName, entry.getValue().toString(), null);
+      }
     }
   }
 
   /**
-   * Add in the catch all content to the field.  Default impl. uses the {@link #contentFieldName}
-   * and the {@link #catchAllBuilder}
+   * Add in the catch all content to the field. Default impl. uses the {@link #contentFieldName} and
+   * the {@link #catchAllBuilder}
    */
   protected void addContent() {
-    if (literalsOverride && literalFieldNames.contains(contentFieldName))
-      return;
+    if (literalsOverride && literalFieldNames.contains(contentFieldName)) return;
     addField(contentFieldName, catchAllBuilder.toString(), null);
   }
 
@@ -172,13 +167,10 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     }
   }
 
-  /**
-   * Add in any metadata using {@link #metadata} as the source.
-   */
+  /** Add in any metadata using {@link #metadata} as the source. */
   protected void addMetadata() {
     for (String name : metadata.names()) {
-      if (literalsOverride && literalFieldNames.contains(name))
-        continue;
+      if (literalsOverride && literalFieldNames.contains(name)) continue;
       String[] vals = metadata.getValues(name);
       addField(name, null, vals);
     }
@@ -191,21 +183,24 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   protected void addField(String fname, String fval, String[] vals) {
     if (lowerNames) {
       StringBuilder sb = new StringBuilder();
-      for (int i=0; i<fname.length(); i++) {
+      for (int i = 0; i < fname.length(); i++) {
         char ch = fname.charAt(i);
-        if (!Character.isLetterOrDigit(ch)) ch='_';
-        else ch=Character.toLowerCase(ch);
+        if (!Character.isLetterOrDigit(ch)) ch = '_';
+        else ch = Character.toLowerCase(ch);
         sb.append(ch);
       }
       fname = sb.toString();
-    }    
+    }
 
     String name = findMappedName(fname);
     SchemaField sf = schema.getFieldOrNull(name);
-    if (sf==null && unknownFieldPrefix.length() > 0) {
+    if (sf == null && unknownFieldPrefix.length() > 0) {
       name = unknownFieldPrefix + name;
       sf = schema.getFieldOrNull(name);
-    } else if (sf == null && defaultField.length() > 0 && name.equals(TikaMetadataKeys.RESOURCE_NAME_KEY) == false /*let the fall through below handle this*/){
+    } else if (sf == null
+        && defaultField.length() > 0
+        && name.equals(TikaMetadataKeys.RESOURCE_NAME_KEY)
+            == false /*let the fall through below handle this*/) {
       name = defaultField;
       sf = schema.getFieldOrNull(name);
     }
@@ -215,12 +210,14 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     // ExtractingDocumentLoader.load(). You shouldn't have to define a mapping for this
     // field just because you specified a resource.name parameter to the handler, should
     // you?
-    if (sf == null && unknownFieldPrefix.length()==0 && name == TikaMetadataKeys.RESOURCE_NAME_KEY) {
+    if (sf == null
+        && unknownFieldPrefix.length() == 0
+        && name == TikaMetadataKeys.RESOURCE_NAME_KEY) {
       return;
     }
 
     // normalize val params so vals.length>1
-    if (vals != null && vals.length==1) {
+    if (vals != null && vals.length == 1) {
       fval = vals[0];
       vals = null;
     }
@@ -228,17 +225,17 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     // single valued field with multiple values... catenate them.
     if (sf != null && !sf.multiValued() && vals != null) {
       StringBuilder builder = new StringBuilder();
-      boolean first=true;
+      boolean first = true;
       for (String val : vals) {
         if (first) {
-          first=false;
+          first = false;
         } else {
           builder.append(' ');
         }
         builder.append(val);
       }
       fval = builder.toString();
-      vals=null;
+      vals = null;
     }
 
     if (fval != null) {
@@ -256,10 +253,11 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   }
 
   @Override
-  public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+  public void startElement(String uri, String localName, String qName, Attributes attributes)
+      throws SAXException {
     StringBuilder theBldr = fieldBuilders.get(localName);
     if (theBldr != null) {
-      //we need to switch the currentBuilder
+      // we need to switch the currentBuilder
       bldrStack.add(theBldr);
     }
     if (captureAttribs == true) {
@@ -278,22 +276,19 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   public void endElement(String uri, String localName, String qName) throws SAXException {
     StringBuilder theBldr = fieldBuilders.get(localName);
     if (theBldr != null) {
-      //pop the stack
+      // pop the stack
       bldrStack.removeLast();
       assert (bldrStack.size() >= 1);
     }
     bldrStack.getLast().append(' ');
   }
 
-
   @Override
   public void characters(char[] chars, int offset, int length) throws SAXException {
     bldrStack.getLast().append(chars, offset, length);
   }
 
-  /**
-   * Treat the same as any other characters
-   */
+  /** Treat the same as any other characters */
   @Override
   public void ignorableWhitespace(char[] chars, int offset, int length) throws SAXException {
     characters(chars, offset, length);
@@ -308,5 +303,4 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   protected String findMappedName(String name) {
     return params.get(MAP_PREFIX + name, name);
   }
-
 }

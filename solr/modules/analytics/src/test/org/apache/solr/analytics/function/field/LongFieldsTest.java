@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.analytics.ExpressionFactory;
 import org.junit.Test;
 
@@ -39,15 +38,18 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void singleValuedTrieLongTest() throws IOException {
     LongField valueField = new LongField("long_l_t");
-    Map<String,Long> values = new HashMap<>();
+    Map<String, Long> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      long value = valueField.getLong();
-      if (valueField.exists()) {
-        values.put(id, value);
-      }
-      return valueField.exists();
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              long value = valueField.getLong();
+              if (valueField.exists()) {
+                values.put(id, value);
+              }
+              return valueField.exists();
+            });
 
     checkSingleFieldValues(singleLongs, values, missing);
   }
@@ -55,15 +57,18 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void singleValuedPointLongTest() throws IOException {
     LongField valueField = new LongField("long_l_p");
-    Map<String,Long> values = new HashMap<>();
+    Map<String, Long> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      long value = valueField.getLong();
-      if (valueField.exists()) {
-        values.put(id, value);
-      }
-      return valueField.exists();
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              long value = valueField.getLong();
+              if (valueField.exists()) {
+                values.put(id, value);
+              }
+              return valueField.exists();
+            });
 
     checkSingleFieldValues(singleLongs, values, missing);
   }
@@ -71,18 +76,22 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void multiValuedTrieLongTest() throws IOException {
     LongMultiTrieField valueField = new LongMultiTrieField("long_lm_t");
-    Map<String,Map<Long,Integer>> values = new HashMap<>();
+    Map<String, Map<Long, Integer>> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      Map<Long, Integer> doc = new HashMap<>();
-      valueField.streamLongs( value -> {
-        doc.put(value, doc.getOrDefault(value, 0) + 1);
-      });
-      if (doc.size() > 0) {
-        values.put(id, doc);
-      }
-      return doc.size() > 0;
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              Map<Long, Integer> doc = new HashMap<>();
+              valueField.streamLongs(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
+              if (doc.size() > 0) {
+                values.put(id, doc);
+              }
+              return doc.size() > 0;
+            });
 
     checkMultiFieldValues(multiLongs, values, missing, true);
   }
@@ -90,18 +99,22 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void multiValuedPointLongTest() throws IOException {
     LongMultiPointField valueField = new LongMultiPointField("long_lm_p");
-    Map<String,Map<Long,Integer>> values = new HashMap<>();
+    Map<String, Map<Long, Integer>> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      Map<Long, Integer> doc = new HashMap<>();
-      valueField.streamLongs( value -> {
-        doc.put(value, doc.getOrDefault(value, 0) + 1);
-      });
-      if (doc.size() > 0) {
-        values.put(id, doc);
-      }
-      return doc.size() > 0;
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              Map<Long, Integer> doc = new HashMap<>();
+              valueField.streamLongs(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
+              if (doc.size() > 0) {
+                values.put(id, doc);
+              }
+              return doc.size() > 0;
+            });
 
     checkMultiFieldValues(multiLongs, values, missing, false);
   }

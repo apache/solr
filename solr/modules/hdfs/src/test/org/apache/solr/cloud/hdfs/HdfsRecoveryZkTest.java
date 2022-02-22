@@ -25,29 +25,32 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.AbstractRecoveryZkTestBase;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 @Slow
 @Nightly
 @LuceneTestCase.AwaitsFix(bugUrl = "SOLR-15405")
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
-@ThreadLeakLingering(linger = 10)
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
+@ThreadLeakLingering(
+    linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class HdfsRecoveryZkTest extends AbstractRecoveryZkTestBase {
   private static MiniDFSCluster dfsCluster;
-  
+
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
     cluster.uploadConfigSet(configset("cloud-hdfs"), "conf");
   }
-  
+
   @AfterClass
   public static void teardownClass() throws Exception {
     try {
@@ -60,5 +63,4 @@ public class HdfsRecoveryZkTest extends AbstractRecoveryZkTestBase {
       }
     }
   }
-
 }

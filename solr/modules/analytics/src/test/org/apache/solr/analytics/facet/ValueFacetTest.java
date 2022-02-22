@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -29,50 +28,69 @@ public class ValueFacetTest extends SolrAnalyticsFacetTestCase {
   @BeforeClass
   public static void populate() throws Exception {
     for (int j = 0; j < NUM_LOOPS; ++j) {
-      int i = j%INT;
-      long l = j%LONG;
-      float f = j%FLOAT;
-      double d = j%DOUBLE;
-      String dt = (1800+j%DATE) + "-12-31T23:59:59Z";
-      String dtm = (1800+j%DATE + 10) + "-12-31T23:59:59Z";
-      String s = "str" + (j%STRING);
+      int i = j % INT;
+      long l = j % LONG;
+      float f = j % FLOAT;
+      double d = j % DOUBLE;
+      String dt = (1800 + j % DATE) + "-12-31T23:59:59Z";
+      String dtm = (1800 + j % DATE + 10) + "-12-31T23:59:59Z";
+      String s = "str" + (j % STRING);
       List<String> fields = new ArrayList<>();
-      fields.add("id"); fields.add("1000"+j);
+      fields.add("id");
+      fields.add("1000" + j);
 
-      if ( i != 0 ) {
-        fields.add("int_i"); fields.add("" + i);
-        fields.add("int_im"); fields.add("" + i);
-        fields.add("int_im"); fields.add("" + (i+10));
+      if (i != 0) {
+        fields.add("int_i");
+        fields.add("" + i);
+        fields.add("int_im");
+        fields.add("" + i);
+        fields.add("int_im");
+        fields.add("" + (i + 10));
       }
 
-      if ( l != 0l ) {
-        fields.add("long_l"); fields.add("" + l);
-        fields.add("long_lm"); fields.add("" + l);
-        fields.add("long_lm"); fields.add("" + (l+10));
+      if (l != 0l) {
+        fields.add("long_l");
+        fields.add("" + l);
+        fields.add("long_lm");
+        fields.add("" + l);
+        fields.add("long_lm");
+        fields.add("" + (l + 10));
       }
 
-      if ( f != 0.0f ) {
-        fields.add("float_f"); fields.add("" + f);
-        fields.add("float_fm"); fields.add("" + f);
-        fields.add("float_fm"); fields.add("" + (f+10));
+      if (f != 0.0f) {
+        fields.add("float_f");
+        fields.add("" + f);
+        fields.add("float_fm");
+        fields.add("" + f);
+        fields.add("float_fm");
+        fields.add("" + (f + 10));
       }
 
-      if ( d != 0.0d ) {
-        fields.add("double_d"); fields.add("" + d);
-        fields.add("double_dm"); fields.add("" + d);
-        fields.add("double_dm"); fields.add("" + (d+10));
+      if (d != 0.0d) {
+        fields.add("double_d");
+        fields.add("" + d);
+        fields.add("double_dm");
+        fields.add("" + d);
+        fields.add("double_dm");
+        fields.add("" + (d + 10));
       }
 
-      if ( (j%DATE) != 0 ) {
-        fields.add("date_dt"); fields.add(dt);
-        fields.add("date_dtm"); fields.add(dt);
-        fields.add("date_dtm"); fields.add(dtm);
+      if ((j % DATE) != 0) {
+        fields.add("date_dt");
+        fields.add(dt);
+        fields.add("date_dtm");
+        fields.add(dt);
+        fields.add("date_dtm");
+        fields.add(dtm);
       }
 
-      if ( (j%STRING) != 0 ) {
-        fields.add("string_s"); fields.add(s);
-        fields.add("string_sm"); fields.add(s);
-        fields.add("string_sm"); fields.add(s + "_second");
+      if ((j % STRING) != 0) {
+        fields.add("string_s");
+        fields.add(s);
+        fields.add("string_sm");
+        fields.add(s);
+        fields.add("string_sm");
+        fields.add(s + "_second");
       }
 
       addDoc(fields);
@@ -80,13 +98,13 @@ public class ValueFacetTest extends SolrAnalyticsFacetTestCase {
     commitDocs();
   }
 
-  static public final int INT = 7;
-  static public final int LONG = 2;
-  static public final int FLOAT = 6;
-  static public final int DOUBLE = 5;
-  static public final int DATE = 3;
-  static public final int STRING = 4;
-  static public final int NUM_LOOPS = 20;
+  public static final int INT = 7;
+  public static final int LONG = 2;
+  public static final int FLOAT = 6;
+  public static final int DOUBLE = 5;
+  public static final int DATE = 3;
+  public static final int STRING = 4;
+  public static final int NUM_LOOPS = 20;
 
   @Test
   public void countTest() throws Exception {
@@ -95,7 +113,8 @@ public class ValueFacetTest extends SolrAnalyticsFacetTestCase {
     expressions.put("multi", "count(string_sm)");
 
     // Value Facet "with_missing"
-    addFacet("with_missing", "{ 'type':'value', 'expression':'fill_missing(long_l,\\'No Long\\')' }");
+    addFacet(
+        "with_missing", "{ 'type':'value', 'expression':'fill_missing(long_l,\\'No Long\\')' }");
 
     addFacetValue("1");
     addFacetResult("single", 10L);
@@ -115,7 +134,9 @@ public class ValueFacetTest extends SolrAnalyticsFacetTestCase {
     expressions.put("multi", "doc_count(float_fm)");
 
     // Value Facet "with_missing"
-    addFacet("with_missing", "{ 'type':'value', 'expression':'fill_missing(string_sm,\\'No Values\\')' }");
+    addFacet(
+        "with_missing",
+        "{ 'type':'value', 'expression':'fill_missing(string_sm,\\'No Values\\')' }");
 
     addFacetValue("str1");
     addFacetResult("single", 4L);
@@ -162,7 +183,9 @@ public class ValueFacetTest extends SolrAnalyticsFacetTestCase {
     expressions.put("multi", "missing(float_fm)");
 
     // Value Facet "with_missing"
-    addFacet("with_missing", "{ 'type':'value', 'expression':'fill_missing(string_sm,\\'No Values\\')' }");
+    addFacet(
+        "with_missing",
+        "{ 'type':'value', 'expression':'fill_missing(string_sm,\\'No Values\\')' }");
 
     addFacetValue("str1");
     addFacetResult("single", 1L);
@@ -328,12 +351,12 @@ public class ValueFacetTest extends SolrAnalyticsFacetTestCase {
     addFacet("without_missing", "{ 'type':'value', 'expression':'date_dt' }");
 
     addFacetValue("1801-12-31T23:59:59Z");
-    addFacetResult("single", 16.0/7.0);
-    addFacetResult("multi", 90.0/12.0);
+    addFacetResult("single", 16.0 / 7.0);
+    addFacetResult("multi", 90.0 / 12.0);
 
     addFacetValue("1802-12-31T23:59:59Z");
-    addFacetResult("single", 21.0/6.0);
-    addFacetResult("multi", 74.0/10.0);
+    addFacetResult("single", 21.0 / 6.0);
+    addFacetResult("multi", 74.0 / 10.0);
 
     testGrouping(expressions, "multi", true);
   }

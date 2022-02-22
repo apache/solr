@@ -17,35 +17,37 @@
 package org.apache.solr.analytics.function.reduction;
 
 import java.util.function.UnaryOperator;
-
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
 import org.apache.solr.analytics.function.ReductionFunction;
 import org.apache.solr.analytics.function.reduction.data.CountCollector;
 import org.apache.solr.analytics.function.reduction.data.CountCollector.ExpressionCountCollector;
 import org.apache.solr.analytics.function.reduction.data.CountCollector.TotalCountCollector;
+import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.LongValue.AbstractLongValue;
-import org.apache.solr.analytics.function.reduction.data.ReductionDataCollector;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
- * A reduction function which either counts the number of values that the parameter expression contains,
- * or the number of documents returned if no parameter is given.
+ * A reduction function which either counts the number of values that the parameter expression
+ * contains, or the number of documents returned if no parameter is given.
  */
 public class CountFunction extends AbstractLongValue implements ReductionFunction {
   private CountCollector collector;
   public static final String name = "count";
   private final String exprStr;
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length == 0) {
-      return new CountFunction();
-    }
-    if (params.length == 1) {
-      return new CountFunction(params[0]);
-    }
-    throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function a max of 1 paramater, " + params.length + " given.");
-  });
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length == 0) {
+          return new CountFunction();
+        }
+        if (params.length == 1) {
+          return new CountFunction(params[0]);
+        }
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "The " + name + " function a max of 1 paramater, " + params.length + " given.");
+      });
 
   public CountFunction() {
     this.collector = new TotalCountCollector();
@@ -54,13 +56,14 @@ public class CountFunction extends AbstractLongValue implements ReductionFunctio
 
   public CountFunction(AnalyticsValueStream param) {
     this.collector = new ExpressionCountCollector(param);
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    this.exprStr = AnalyticsValueStream.createExpressionString(name, param);
   }
 
   @Override
   public long getLong() {
     return collector.count();
   }
+
   @Override
   public boolean exists() {
     return true;
@@ -68,13 +71,14 @@ public class CountFunction extends AbstractLongValue implements ReductionFunctio
 
   @Override
   public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (CountCollector)sync.apply(collector);
+    collector = (CountCollector) sync.apply(collector);
   }
 
   @Override
   public String getExpressionStr() {
     return exprStr;
   }
+
   @Override
   public String getName() {
     return name;

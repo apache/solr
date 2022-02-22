@@ -21,7 +21,8 @@ import java.io.IOException;
 import java.util.function.IntConsumer;
 
 /**
- * Abstract class to manage the reading and application of array data from a {@link DataInput} stream.
+ * Abstract class to manage the reading and application of array data from a {@link DataInput}
+ * stream.
  */
 public abstract class ReductionDataArrayReader<A> extends ReductionDataReader<A> {
   protected final IntConsumer signal;
@@ -34,7 +35,8 @@ public abstract class ReductionDataArrayReader<A> extends ReductionDataReader<A>
 
   @Override
   /**
-   * Read an array of data from the input stream and feed it to the applier, first signaling the size of the array.
+   * Read an array of data from the input stream and feed it to the applier, first signaling the
+   * size of the array.
    *
    * @throws IOException if an exception occurs while reading from the input stream
    */

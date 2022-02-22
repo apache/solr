@@ -17,18 +17,13 @@
 package org.apache.solr.analytics.facet.compare;
 
 import java.util.Comparator;
-
 import org.apache.solr.analytics.facet.SortableFacet.FacetBucket;
 
-/**
- * A comparator used to sort the buckets of facet.
- */
+/** A comparator used to sort the buckets of facet. */
 public abstract class FacetResultsComparator implements Comparator<FacetBucket> {
   protected int resultMult;
 
-  /**
-   * Create a results comparator assuming an ascending ordering.
-   */
+  /** Create a results comparator assuming an ascending ordering. */
   public FacetResultsComparator() {
     setDirection(true);
   }

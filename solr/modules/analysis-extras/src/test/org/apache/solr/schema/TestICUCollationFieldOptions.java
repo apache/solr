@@ -16,21 +16,19 @@
  */
 package org.apache.solr.schema;
 
+import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
-import java.io.File;
-
-/**
- * Tests expert options of {@link ICUCollationField}.
- */
+/** Tests expert options of {@link ICUCollationField}. */
 public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     File testHome = createTempDir().toFile();
     FileUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
-    initCore("solrconfig-icucollate.xml","schema-icucollateoptions.xml", testHome.getAbsolutePath());
+    initCore(
+        "solrconfig-icucollate.xml", "schema-icucollateoptions.xml", testHome.getAbsolutePath());
     // add some docs
     assertU(adoc("id", "1", "text", "foo-bar"));
     assertU(adoc("id", "2", "text", "foo bar"));
@@ -43,77 +41,77 @@ public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
     assertU(adoc("id", "9", "text", "résumé"));
     assertU(commit());
   }
-  
+
   /*
    * Setting alternate=shifted to shift whitespace, punctuation and symbols
-   * to quaternary level 
+   * to quaternary level
    */
-  public void testIgnorePunctuation() { 
-    assertQ("Collated TQ: ",
-        req("fl", "id", "q", "sort_ignore_punctuation:foobar", "sort", "id asc" ),
-               "//*[@numFound='3']",
-               "//result/doc[1]/str[@name='id'][.=1]",
-               "//result/doc[2]/str[@name='id'][.=2]",
-               "//result/doc[3]/str[@name='id'][.=3]"
-     );
+  public void testIgnorePunctuation() {
+    assertQ(
+        "Collated TQ: ",
+        req("fl", "id", "q", "sort_ignore_punctuation:foobar", "sort", "id asc"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.=1]",
+        "//result/doc[2]/str[@name='id'][.=2]",
+        "//result/doc[3]/str[@name='id'][.=3]");
   }
-  
+
   /*
-   * Setting alternate=shifted and variableTop to shift whitespace, but not 
-   * punctuation or symbols, to quaternary level 
+   * Setting alternate=shifted and variableTop to shift whitespace, but not
+   * punctuation or symbols, to quaternary level
    */
   public void testIgnoreWhitespace() {
-    assertQ("Collated TQ: ",
-        req("fl", "id", "q", "sort_ignore_space:\"foo bar\"", "sort", "id asc" ),
-               "//*[@numFound='2']",
-               "//result/doc[1]/str[@name='id'][.=2]",
-               "//result/doc[2]/str[@name='id'][.=3]"
-     );
+    assertQ(
+        "Collated TQ: ",
+        req("fl", "id", "q", "sort_ignore_space:\"foo bar\"", "sort", "id asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.=2]",
+        "//result/doc[2]/str[@name='id'][.=3]");
   }
-  
+
   /*
    * Setting numeric to encode digits with numeric value, so that
    * foobar-9 sorts before foobar-10
    */
   public void testNumerics() {
-    assertQ("Collated sort: ",
-        req("fl", "id", "q", "id:[4 TO 5]", "sort", "sort_numerics asc" ),
-               "//*[@numFound='2']",
-               "//result/doc[1]/str[@name='id'][.=5]",
-               "//result/doc[2]/str[@name='id'][.=4]"
-     );
+    assertQ(
+        "Collated sort: ",
+        req("fl", "id", "q", "id:[4 TO 5]", "sort", "sort_numerics asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.=5]",
+        "//result/doc[2]/str[@name='id'][.=4]");
   }
-  
+
   /*
    * Setting caseLevel=true to create an additional case level between
    * secondary and tertiary
    */
   public void testIgnoreAccentsButNotCase() {
-    assertQ("Collated TQ: ",
-        req("fl", "id", "q", "sort_ignore_accents:resume", "sort", "id asc" ),
-               "//*[@numFound='2']",
-               "//result/doc[1]/str[@name='id'][.=6]",
-               "//result/doc[2]/str[@name='id'][.=9]"
-     );
-    
-    assertQ("Collated TQ: ",
-        req("fl", "id", "q", "sort_ignore_accents:Resume", "sort", "id asc" ),
-               "//*[@numFound='2']",
-               "//result/doc[1]/str[@name='id'][.=7]",
-               "//result/doc[2]/str[@name='id'][.=8]"
-     );
+    assertQ(
+        "Collated TQ: ",
+        req("fl", "id", "q", "sort_ignore_accents:resume", "sort", "id asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.=6]",
+        "//result/doc[2]/str[@name='id'][.=9]");
+
+    assertQ(
+        "Collated TQ: ",
+        req("fl", "id", "q", "sort_ignore_accents:Resume", "sort", "id asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.=7]",
+        "//result/doc[2]/str[@name='id'][.=8]");
   }
-  
+
   /*
    * Setting caseFirst=upper to cause uppercase strings to sort
    * before lowercase ones.
    */
   public void testUpperCaseFirst() {
-    assertQ("Collated sort: ",
-        req("fl", "id", "q", "id:6 OR id:8", "sort", "sort_uppercase_first asc" ),
-               "//*[@numFound='2']",
-               "//result/doc[1]/str[@name='id'][.=8]",
-               "//result/doc[2]/str[@name='id'][.=6]"
-     );
+    assertQ(
+        "Collated sort: ",
+        req("fl", "id", "q", "id:6 OR id:8", "sort", "sort_uppercase_first asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.=8]",
+        "//result/doc[2]/str[@name='id'][.=6]");
   }
 }

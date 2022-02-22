@@ -72,28 +72,30 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
     for (Map.Entry<String, String> entry : FIELD_TYPE_INVARIANTS.entrySet()) {
       final String key = entry.getKey();
       final String hardcodedValue = entry.getValue();
-      final String userConfiguredValue = args.get(entry.getKey());
+      final String userConfiguredValue = args.remove(key);
 
-      if (args.containsKey(key)) {
-        if (userConfiguredValue.equals(hardcodedValue)) {
-          log.warn("FieldType {} does not allow {} to be specified in schema, hardcoded behavior is {}={}",
-                  getClass().getSimpleName(), key, key, hardcodedValue);
-        } else {
-          final String message = String.format(Locale.ROOT, "FieldType %s is incompatible with %s=%s; hardcoded " +
-                          "behavior is %s=%s.  Remove specification in schema",
-                  getClass().getSimpleName(), key, userConfiguredValue, key, hardcodedValue);
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
-        }
+      if (hardcodedValue.equals(userConfiguredValue)) {
+        // If this is coming from the schema API, can we pass it back to the user without causing a failure?
+        log.warn("FieldType {} does not allow {} to be specified in schema, hardcoded behavior is {}={}",
+            getClass().getSimpleName(), key, key, hardcodedValue);
+      } else if (userConfiguredValue != null) {
+        final String message = String.format(Locale.ROOT,
+            "FieldType %s is incompatible with %s=%s; hardcoded behavior is %s=%s. Remove specification in schema",
+            getClass().getSimpleName(), key, userConfiguredValue, key, hardcodedValue);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
       }
     }
-    args.putAll(FIELD_TYPE_INVARIANTS);
-
     super.setArgs(schema, args);
   }
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
+
+    //set STORE_ property flags to be always false
+    properties &= ~(STORE_TERMPOSITIONS | STORE_TERMOFFSETS);
+    //set OMIT_ property flags to be always true
+    properties |= (OMIT_TF_POSITIONS | OMIT_NORMS | OMIT_POSITIONS);
 
     args.putIfAbsent(SpatialPrefixTreeFactory.VERSION, schema.getDefaultLuceneMatchVersion().toString());
 
