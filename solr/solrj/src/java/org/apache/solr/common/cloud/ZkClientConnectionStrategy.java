@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCredentialsProvider.ZkCredentials;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +41,8 @@ public abstract class ZkClientConnectionStrategy {
   private List<DisconnectedListener> disconnectedListeners = new ArrayList<>();
   private List<ConnectedListener> connectedListeners = new ArrayList<>();
 
-  public abstract void connect(String zkServerAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException;
-  public abstract void reconnect(String serverAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException;
+  public abstract void connect(String zkServerAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException, KeeperException.SessionExpiredException;
+  public abstract void reconnect(String serverAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException, KeeperException.SessionExpiredException;
 
   public ZkClientConnectionStrategy() {
     zkCredentialsToAddAutomaticallyUsed = false;
@@ -89,7 +90,7 @@ public abstract class ZkClientConnectionStrategy {
   }
 
   public interface ZkUpdate {
-    void update(SolrZooKeeper zooKeeper) throws InterruptedException, TimeoutException, IOException;
+    void update(SolrZooKeeper zooKeeper) throws InterruptedException, TimeoutException, IOException, KeeperException.SessionExpiredException;
   }
 
   public void setZkCredentialsToAddAutomatically(ZkCredentialsProvider zkCredentialsToAddAutomatically) {

@@ -152,25 +152,12 @@ public class ConnectionManager implements Watcher {
           connectionStrategy.reconnect(zkServerAddress,
               client.getZkClientTimeout(), this,
               keeper -> {
-                try {
-                  waitForConnected(Long.MAX_VALUE);
+                waitForConnected(Long.MAX_VALUE);
 
-                  client.updateKeeper(keeper);
+                client.updateKeeper(keeper);
 
-                  if (onReconnect != null) {
-                    onReconnect.command();
-                  }
-
-                } catch (InterruptedException e) {
-                  closeKeeper(keeper);
-                  Thread.currentThread().interrupt();
-                  throw e;
-                } catch (Exception e1) {
-                  // if there was a problem creating the new SolrZooKeeper
-                  // or if we cannot run our reconnect command, close the keeper
-                  // our retry loop will try to create one again
-                  closeKeeper(keeper);
-                  throw new RuntimeException(e1);
+                if (onReconnect != null) {
+                  onReconnect.command();
                 }
               });
 
@@ -185,7 +172,6 @@ public class ConnectionManager implements Watcher {
           log.info("Could not connect due to error, sleeping for 1s and trying again");
           waitSleep(1000);
         }
-
       } while (!isClosed());
       log.info("zkClient Connected: {}", connected);
     } else if (state == KeeperState.Disconnected) {

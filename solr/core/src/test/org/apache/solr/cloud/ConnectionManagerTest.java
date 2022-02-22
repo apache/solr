@@ -28,6 +28,7 @@ import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
@@ -150,7 +151,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
     
     @Override
     public void reconnect(final String serverAddress, final int zkClientTimeout,
-        final Watcher watcher, final ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
+        final Watcher watcher, final ZkUpdate updater) throws IOException, InterruptedException, TimeoutException, KeeperException.SessionExpiredException {
       
       if(called++ < 1) {
         exceptionThrown = true;
