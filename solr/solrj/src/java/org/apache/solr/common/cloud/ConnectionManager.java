@@ -151,37 +151,36 @@ public class ConnectionManager implements Watcher {
         try {
           connectionStrategy.reconnect(zkServerAddress,
               client.getZkClientTimeout(), this,
-              new ZkClientConnectionStrategy.ZkUpdate() {
-                @Override
-                public void update(SolrZooKeeper keeper) {
-                  try {
-                    waitForConnected(Long.MAX_VALUE);
+              keeper -> {
+                try {
+                  waitForConnected(Long.MAX_VALUE);
 
-                    try {
-                      client.updateKeeper(keeper);
-                    } catch (InterruptedException e) {
-                      closeKeeper(keeper);
-                      Thread.currentThread().interrupt();
-                      // we must have been asked to stop
-                      throw new RuntimeException(e);
-                    }
+                  client.updateKeeper(keeper);
 
-                    if (onReconnect != null) {
-                      onReconnect.command();
-                    }
-
-                  } catch (Exception e1) {
-                    // if there was a problem creating the new SolrZooKeeper
-                    // or if we cannot run our reconnect command, close the keeper
-                    // our retry loop will try to create one again
-                    closeKeeper(keeper);
-                    throw new RuntimeException(e1);
+                  if (onReconnect != null) {
+                    onReconnect.command();
                   }
+
+                } catch (InterruptedException e) {
+                  closeKeeper(keeper);
+                  Thread.currentThread().interrupt();
+                  // we must have been asked to stop
+                  throw new RuntimeException(e);
+                } catch (Exception e1) {
+                  // if there was a problem creating the new SolrZooKeeper
+                  // or if we cannot run our reconnect command, close the keeper
+                  // our retry loop will try to create one again
+                  closeKeeper(keeper);
+                  throw new RuntimeException(e1);
                 }
               });
 
           break;
 
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          // we must have been asked to stop
+          throw new RuntimeException(e);
         } catch (Exception e) {
           SolrException.log(log, "", e);
           log.info("Could not connect due to error, sleeping for 1s and trying again");

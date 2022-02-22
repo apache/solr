@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -31,7 +30,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ThreadLeakLingering(linger = 30)
 public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -47,7 +45,6 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
     CoreContainer cc = createCoreContainer(ccDir, SOLRXML);
     final ZkTestServer server = new ZkTestServer(zkDir);
     server.setTheTickTime(1000);
-    SolrZkClient zc = null;
     try {
       server.run();
 
@@ -55,49 +52,43 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
           .setLeaderConflictResolveWait(180000)
           .setLeaderVoteWait(180000)
           .build();
-      final ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, cloudConfig, () -> Collections.emptyList());
-      try {
-        Thread killer = new Thread() {
-          @Override
-          public void run() {
-            long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
-            while (System.nanoTime() < timeout) {
-              long sessionId = zkController.getZkClient().getSolrZooKeeper().getSessionId();
-              server.expire(sessionId);
-              try {
-                Thread.sleep(10);
-              } catch (InterruptedException e)  {
-                return;
-              }
+      try (ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, cloudConfig, Collections::emptyList)) {
+        Thread killer = new Thread(() -> {
+          long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
+          while (System.nanoTime() < timeout) {
+            long sessionId = zkController.getZkClient().getSolrZooKeeper().getSessionId();
+            server.expire(sessionId);
+            try {
+              Thread.sleep(10);
+            } catch (InterruptedException e) {
+              return;
             }
           }
-        };
+        });
         killer.start();
         killer.join();
-        long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
-        zc = new SolrZkClient(server.getZkAddress(), LeaderElectionTest.TIMEOUT);
-        boolean found = false;
-        while (System.nanoTime() < timeout) {
-          try {
-            String leaderNode = OverseerCollectionConfigSetProcessor.getLeaderNode(zc);
-            if (leaderNode != null && !leaderNode.trim().isEmpty()) {
-              if (log.isInfoEnabled()) {
-                log.info("Time={} Overseer leader is = {}", System.nanoTime(), leaderNode);
+        long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
+        try (SolrZkClient zc = new SolrZkClient(server.getZkAddress(), LeaderElectionTest.TIMEOUT)) {
+          boolean found = false;
+          while (System.nanoTime() < timeout) {
+            try {
+              String leaderNode = OverseerCollectionConfigSetProcessor.getLeaderNode(zc);
+              if (leaderNode != null && !leaderNode.trim().isEmpty()) {
+                if (log.isInfoEnabled()) {
+                  log.info("Time={} Overseer leader is = {}", System.nanoTime(), leaderNode);
+                }
+                found = true;
+                break;
               }
-              found = true;
-              break;
+            } catch (KeeperException.NoNodeException nne) {
+              // ignore
             }
-          } catch (KeeperException.NoNodeException nne) {
-            // ignore
           }
+          assertTrue(found);
         }
-        assertTrue(found);
-      } finally {
-        zkController.close();
       }
     } finally {
       cc.shutdown();
-      if (zc != null) zc.close();
       server.shutdown();
     }
   }
