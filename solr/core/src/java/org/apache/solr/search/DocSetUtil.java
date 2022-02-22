@@ -274,4 +274,40 @@ public class DocSetUtil {
     }
   }
 
+  /**
+   * Utility method to copy a specified range of {@link Bits} to a specified offset in a destination
+   * {@link FixedBitSet}. This can be useful, e.g., for translating per-segment bits ranges to composite
+   * DocSet bits ranges.
+   * @param src source Bits
+   * @param srcOffset start offset (inclusive) in source Bits
+   * @param srcLimit end offset (exclusive) in source Bits
+   * @param dest destination FixedBitSet
+   * @param destOffset start offset of range in destination
+   */
+  static void copyTo(Bits src, final int srcOffset, int srcLimit, FixedBitSet dest, int destOffset) {
+    // NOTE: `adjustedSegDocBase` +1 to compensate for the fact that `segOrd` always has to "read ahead" by 1.
+    // Adding 1 to set `adjustedSegDocBase` once allows us to use `segOrd` as-is (with no "pushback") for
+    // both `startIndex` and `endIndex` args to `dest.set(startIndex, endIndex)`
+    final int adjustedSegDocBase = destOffset - srcOffset + 1;
+    int segOrd = srcLimit;
+    do {
+      // NOTE: we check deleted range before live range in the outer loop in order to not have
+      // to explicitly guard against `dest.set(maxDoc, maxDoc)` in the event that the global max doc is
+      // a delete (this case would trigger a bounds-checking AssertionError in
+      // `FixedBitSet.set(int, int)`).
+      do {
+        // consume deleted range
+        if (--segOrd < srcOffset) {
+          // we're currently in a "deleted" run, so just return; no need to do anything further
+          return;
+        }
+      } while (!src.get(segOrd));
+      final int limit = segOrd; // set highest ord (inclusive) of live range
+      while (segOrd-- > srcOffset && src.get(segOrd)) {
+        // consume live range
+      }
+      dest.set(adjustedSegDocBase + segOrd, adjustedSegDocBase + limit);
+    } while (segOrd > srcOffset);
+  }
+
 }
