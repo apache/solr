@@ -131,7 +131,6 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   private void handleGET(SolrQueryRequest req, SolrQueryResponse rsp) {
     try {
       String path = (String) req.getContext().get("path");
-      log.info("In SchemaHandler.handleGET and path is: " + path);
       switch (path) {
         case "/schema":
           rsp.add(IndexSchema.SCHEMA, req.getSchema().getNamedPropertyValues());
