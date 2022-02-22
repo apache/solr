@@ -77,6 +77,26 @@ public class TestFiltersQueryCaching extends SolrTestCaseJ4 {
     assertEquals(1, lookupFilterCacheInserts(h.getCore()));
 
     h.reload();
+    assertJQ(req("q", "*:*", "indent", "true", "fq", "{!cache=false}field_s:d0"),
+            expectNumFoundXPath);
+    assertEquals(0, lookupFilterCacheInserts(h.getCore()));
+
+    h.reload();
+    assertJQ(req("q", "*:*", "indent", "true", "fq", "{!cache=true}field_s:d0"),
+            expectNumFoundXPath);
+    assertEquals(1, lookupFilterCacheInserts(h.getCore()));
+
+    h.reload();
+    assertJQ(req("q", "*:*", "indent", "true", "fq", "{!cache=false}filter(field_s:d0)"),
+            expectNumFoundXPath);
+    assertEquals(1, lookupFilterCacheInserts(h.getCore()));
+
+    h.reload();
+    assertJQ(req("q", "*:*", "indent", "true", "fq", "{!cache=true}filter(field_s:d0)"),
+            expectNumFoundXPath);
+    assertEquals(1, lookupFilterCacheInserts(h.getCore()));
+
+    h.reload();
     assertJQ(req("q", "*:*", "indent", "true", "fq", termQuery),
             expectNumFoundXPath);
     assertEquals(1, lookupFilterCacheInserts(h.getCore()));
