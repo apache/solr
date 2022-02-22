@@ -70,6 +70,7 @@ public class KerberosUtils {
     Files.writeString(jaasFile, jaas);
     System.setProperty("java.security.auth.login.config", jaasFile.toString());
     System.setProperty("solr.kerberos.jaas.appname", appName);
+    System.setProperty("solr.kerberos.cookie.domain", "127.0.0.1");
 
     System.setProperty("solr.kerberos.principal", solrServerPrincipal);
     System.setProperty("solr.kerberos.keytab", keytabFile.getAbsolutePath());
@@ -80,6 +81,11 @@ public class KerberosUtils {
             + "\nRULE:[2:$2@$0](.*EXAMPLE.COM)s/@.*//"
             + "\nDEFAULT");
 
+    // more debugging, if needed
+    // System.setProperty("sun.security.jgss.debug", "true");
+    // System.setProperty("sun.security.krb5.debug", "true");
+    // System.setProperty("sun.security.jgss.debug", "true");
+    // System.setProperty("java.security.debug", "logincontext,policy,scl,gssloginconfig");
     return tmp;
   }
 
@@ -90,11 +96,20 @@ public class KerberosUtils {
    * @param kerberosTestServices An instance of Hadoop mini-kdc
    */
   public static void cleanupMiniKdc(KerberosTestServices kerberosTestServices) {
+    System.clearProperty("solr.jaas.debug");
     System.clearProperty("java.security.auth.login.config");
+    System.clearProperty("solr.kerberos.jaas.appname");
+    System.clearProperty("solr.kerberos.cookie.domain");
     System.clearProperty("solr.kerberos.principal");
     System.clearProperty("solr.kerberos.keytab");
     System.clearProperty("solr.kerberos.name.rules");
-    System.clearProperty("solr.jaas.debug");
+
+    // more debugging, if needed
+    System.clearProperty("sun.security.jgss.debug");
+    System.clearProperty("sun.security.krb5.debug");
+    System.clearProperty("sun.security.jgss.debug");
+    System.clearProperty("java.security.debug");
+
     if (kerberosTestServices != null) {
       kerberosTestServices.stop();
     }
