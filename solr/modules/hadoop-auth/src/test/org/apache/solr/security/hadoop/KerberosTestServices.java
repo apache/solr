@@ -198,10 +198,10 @@ public class KerberosTestServices {
    * These Locales don't generate dates that are compatible with Hadoop MiniKdc. See LocaleTest.java
    * and https://issues.apache.org/jira/browse/DIRKRB-753
    */
-  private static final List<String> incompatibleLanguagesWithMiniKdc =
+  static final List<String> incompatibleLanguagesWithMiniKdc =
       Arrays.asList(
           "mzn", "ps", "mr", "uz", "ks", "bn", "my", "sd", "pa", "ar", "th", "dz", "ja", "ne",
-          "ckb", "fa", "lrc", "ur", "ig");
+          "ckb", "fa", "lrc", "ur", "ig", "sat", "mni", "sa", "as");
 
   public static class Builder {
     private File kdcWorkDir;
