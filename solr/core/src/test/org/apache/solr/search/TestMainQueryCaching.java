@@ -47,11 +47,8 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // TODO: figure out why the line below (accepting this property as overridden on test invocation) isn't working
-    //  as expected.
-    final String uffsq = System.getProperty(TEST_UFFSQ_PROPNAME, Boolean.toString(random().nextBoolean()));
-    USE_FILTER_FOR_SORTED_QUERY = Boolean.parseBoolean(uffsq);
-    RESTORE_UFFSQ_PROP = System.setProperty(TEST_UFFSQ_PROPNAME, uffsq);
+    USE_FILTER_FOR_SORTED_QUERY = random().nextBoolean();
+    RESTORE_UFFSQ_PROP = System.setProperty(TEST_UFFSQ_PROPNAME, Boolean.toString(USE_FILTER_FOR_SORTED_QUERY));
     initCore("solrconfig-deeppaging.xml", "schema-sorts.xml");
     createIndex();
   }
