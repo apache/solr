@@ -26,8 +26,8 @@ allprojects {
   repositories {
     mavenCentral()
     maven {
-      name "Hadoop 3.3.2 RC4"
-      url "https://repository.apache.org/content/repositories/orgapachehadoop-1334/"
+      name "Hadoop 3.3.2 RC5"
+      url "https://repository.apache.org/content/repositories/orgapachehadoop-1335/"
     }
     /* Reenable this if we need it again in future
     maven {
