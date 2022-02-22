@@ -164,8 +164,7 @@ public class ConnectionManager implements Watcher {
                 } catch (InterruptedException e) {
                   closeKeeper(keeper);
                   Thread.currentThread().interrupt();
-                  // we must have been asked to stop
-                  throw new RuntimeException(e);
+                  throw e;
                 } catch (Exception e1) {
                   // if there was a problem creating the new SolrZooKeeper
                   // or if we cannot run our reconnect command, close the keeper
