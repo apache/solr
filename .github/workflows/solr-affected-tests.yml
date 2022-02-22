@@ -32,5 +32,7 @@ jobs:
           ${{ runner.os }}-gradle-
     - name: Initialize gradle settings
       run: ./gradlew localSettings
+    - name: Fetch the main branch
+      run: git fetch origin main:main
     - name: Test modules affected by this PR
       run: ./gradlew runAffectedUnitTests -Paffected_module_detector.enable
