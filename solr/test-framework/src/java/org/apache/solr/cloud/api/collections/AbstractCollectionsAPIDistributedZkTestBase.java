@@ -86,7 +86,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  abstract String getConfigSet();
+  protected abstract String getConfigSet();
 
   @Before
   public void setupCluster() throws Exception {

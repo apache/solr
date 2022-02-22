@@ -107,6 +107,8 @@ New Features
 
 * SOLR-14660: Move HDFS support to a new HDFS module (Istvan Farkas, Kevin Risden)
 
+* SOLR-16040: Fix split packages in hdfs module (Kevin Risden)
+
 * SOLR-13989: Move Hadoop Authentication support to a new hadoop-auth module (Kevin Risden)
 
 * SOLR-15904: Move SQL support to new sql module (Kevin Risden)
