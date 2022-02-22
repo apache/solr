@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    name: Run SolrJ Tests
+    name: Run Tests for Affected Modules
 
     runs-on: ubuntu-latest
 
