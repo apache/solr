@@ -642,12 +642,6 @@ public class SolrRequestParsers {
       return params;
     }
 
-    static boolean isMultipart(HttpServletRequest req) {
-      // Jetty utilities
-      String ct = req.getContentType();
-      return ct != null && ct.startsWith("multipart/form-data");
-    }
-
     /** Wrap a MultiPart-{@link Part} as a {@link ContentStream} */
     static class PartContentStream extends ContentStreamBase {
       private final Part part;
@@ -667,7 +661,7 @@ public class SolrRequestParsers {
     }
   }
 
-  static boolean isMultipart(HttpServletRequest req) {
+  public static boolean isMultipart(HttpServletRequest req) {
     // Jetty utilities
     String ct = req.getContentType();
     return ct != null && ct.startsWith("multipart/form-data");
@@ -675,7 +669,7 @@ public class SolrRequestParsers {
 
   /** Clean up any files created by MultiPartInputStream. */
   static void cleanupMultipartFiles(HttpServletRequest request) {
-    if (!MultipartRequestParser.isMultipart(request)) {
+    if (!SolrRequestParsers.isMultipart(request)) {
       return;
     }
 
@@ -875,7 +869,7 @@ public class SolrRequestParsers {
         return formdata.parseParamsAndFillStreams(req, streams, input);
       }
 
-      if (MultipartRequestParser.isMultipart(req)) {
+      if (isMultipart(req)) {
         return multipart.parseParamsAndFillStreams(req, streams);
       }
 

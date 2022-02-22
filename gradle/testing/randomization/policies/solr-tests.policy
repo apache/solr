@@ -43,8 +43,6 @@ grant {
   // indicated there may be a way to supply a custom AliasChecker
   permission java.io.FilePermission "/", "read";
 
-  permission java.io.FilePermission "/tmp/inst1/conf/solrcore.properties", "read";
-
   permission java.nio.file.LinkPermission "hard";
 
   permission java.security.SecurityPermission "putProviderProperty.SolrTestNonSecure";

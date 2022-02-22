@@ -178,6 +178,7 @@ public class HdfsTestUtil {
     conf.set("hdfs.minidfs.basedir", dir + File.separator + "hdfsBaseDir");
     String hdfsBaseDir = dir + File.separator + "hdfsBaseDir";
     conf.set("hdfs.minidfs.basedir.provided", hdfsBaseDir);
+    conf.set("dfs.webhdfs.enabled", "false");
     if (log.isInfoEnabled()) {
       log.info("setting minidfs basedir to {}", hdfsBaseDir);
     }
@@ -189,7 +190,6 @@ public class HdfsTestUtil {
     conf.setInt("dfs.datanode.metrics.logger.period.seconds", 0);
     // Disable GcTimeMonitor - HDFS-15176 introduced in Hadoop 3.3.0 - causes thead leaks
     conf.setBoolean("dfs.namenode.gc.time.monitor.enable", false);
-
 
     System.setProperty("test.build.data", dir + File.separator + "hdfs" + File.separator + "build");
     System.setProperty("test.cache.data", dir + File.separator + "hdfs" + File.separator + "cache");

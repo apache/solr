@@ -16,7 +16,7 @@
  */
 
 
-// Force versions of certain components to align them with ant build.
+// Force slf4j version so that it does not get auto promoted from 1x to 2-alpha due to Jetty dependency.
 
 project(":solr").subprojects {
   plugins.withType(JavaPlugin) {

@@ -32,7 +32,7 @@ public class SolrBasicAuthentication implements Authentication {
   private final String value;
 
   public SolrBasicAuthentication(String user, String password) {
-    this.value = "Basic " + Base64.getEncoder().encodeToString((user + ":" + password + "").getBytes(StandardCharsets.ISO_8859_1));
+    this.value = "Basic " + Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.ISO_8859_1));
   }
 
   @Override

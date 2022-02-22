@@ -16,6 +16,8 @@
  */
 package org.apache.solr.s3;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Collections;
@@ -91,7 +93,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
             "Getting length on a dir should throw exception",
             S3Exception.class,
             () -> client.length("/directory"));
-    assertTrue(exception.getMessage(), exception.getMessage().contains("Path is Directory"));
+    assertThat(exception.getMessage(), exception.getMessage(), containsString("Path is Directory"));
   }
 
   /** Check various method throws the expected exception of a missing S3 key. */
