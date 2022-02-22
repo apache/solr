@@ -20,11 +20,12 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-import java.util.stream.Collectors;
+import java.util.Set;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
@@ -82,19 +83,30 @@ public class LocaleTest extends SolrTestCase {
           }
         };
 
-    List<Locale> locales = new ArrayList<>();
+    Set<String> locales = new HashSet<>();
     for (Locale locale : Locale.getAvailableLocales()) {
       try {
         Locale.setDefault(locale);
         new LoginContext("Server", null, null, configuration).login();
       } catch (LoginException e) {
-        locales.add(locale);
+        locales.add(locale.getLanguage());
       }
     }
-    log.error(
-        "Could not login with locales {}",
-        locales.stream().collect(Collectors.groupingBy(Locale::getLanguage)));
 
     kdc.stop();
+
+    log.info("Could not login with locales {}", locales);
+
+    List<String> missingLanguages = new ArrayList<>();
+    for (String locale : locales) {
+      if (!KerberosTestServices.incompatibleLanguagesWithMiniKdc.contains(locale)) {
+        missingLanguages.add(locale);
+      }
+    }
+
+    assertTrue(
+        "KerberosTestServices#incompatibleLanguagesWithMiniKdc is missing languages: "
+            + missingLanguages,
+        missingLanguages.isEmpty());
   }
 }
