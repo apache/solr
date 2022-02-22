@@ -24,7 +24,6 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.Feature;
@@ -37,7 +36,7 @@ import org.junit.Test;
 
 public class TestDefaultWrapperModel extends TestRerankBase {
 
-  final private static String featureStoreName = "test";
+  private static final String featureStoreName = "test";
   private static File baseModelFile = null;
 
   static List<Feature> features = null;
@@ -52,25 +51,30 @@ public class TestDefaultWrapperModel extends TestRerankBase {
     assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity", "5"));
     assertU(commit());
 
-    loadFeature("popularity", FieldValueFeature.class.getName(), "test", "{\"field\":\"popularity\"}");
+    loadFeature(
+        "popularity", FieldValueFeature.class.getName(), "test", "{\"field\":\"popularity\"}");
     loadFeature("const", ValueFeature.class.getName(), "test", "{\"value\":5}");
     features = new ArrayList<>();
     features.add(getManagedFeatureStore().getFeatureStore("test").get("popularity"));
     features.add(getManagedFeatureStore().getFeatureStore("test").get("const"));
 
-    final String baseModelJson = getModelInJson("linear", LinearModel.class.getName(),
-        new String[] {"popularity", "const"},
-        featureStoreName,
-        "{\"weights\":{\"popularity\":-1.0, \"const\":1.0}}");
+    final String baseModelJson =
+        getModelInJson(
+            "linear",
+            LinearModel.class.getName(),
+            new String[] {"popularity", "const"},
+            featureStoreName,
+            "{\"weights\":{\"popularity\":-1.0, \"const\":1.0}}");
     // prepare the base model as a file resource
     baseModelFile = new File(tmpConfDir, "baseModel.json");
-    try (BufferedWriter writer = new BufferedWriter(
-        new OutputStreamWriter(new FileOutputStream(baseModelFile), StandardCharsets.UTF_8))) {
+    try (BufferedWriter writer =
+        new BufferedWriter(
+            new OutputStreamWriter(new FileOutputStream(baseModelFile), StandardCharsets.UTF_8))) {
       writer.write(baseModelJson);
     }
     baseModelFile.deleteOnExit();
   }
-  
+
   @After
   public void cleanup() throws Exception {
     features = null;
@@ -78,16 +82,17 @@ public class TestDefaultWrapperModel extends TestRerankBase {
     aftertest();
   }
 
-  private static String getDefaultWrapperModelInJson(String wrapperModelName, String[] features, String params) {
-    return getModelInJson(wrapperModelName, DefaultWrapperModel.class.getName(),
-        features, featureStoreName, params);
+  private static String getDefaultWrapperModelInJson(
+      String wrapperModelName, String[] features, String params) {
+    return getModelInJson(
+        wrapperModelName, DefaultWrapperModel.class.getName(), features, featureStoreName, params);
   }
 
   @Test
   public void testLoadModelFromResource() throws Exception {
-    String wrapperModelJson = getDefaultWrapperModelInJson("fileWrapper",
-        new String[0],
-        "{\"resource\":\"" + baseModelFile.getName() + "\"}");
+    String wrapperModelJson =
+        getDefaultWrapperModelInJson(
+            "fileWrapper", new String[0], "{\"resource\":\"" + baseModelFile.getName() + "\"}");
     assertJPut(ManagedModelStore.REST_END_POINT, wrapperModelJson, "/responseHeader/status==0");
 
     final SolrQuery query = new SolrQuery();
@@ -95,58 +100,73 @@ public class TestDefaultWrapperModel extends TestRerankBase {
     query.add("rows", "3");
     query.add("fl", "*,score");
     query.add("rq", "{!ltr reRankDocs=3 model=fileWrapper}");
-    assertJQ("/query" + query.toQueryString(),
-             "/response/docs/[0]/id==\"3\"", "/response/docs/[0]/score==2.0",
-             "/response/docs/[1]/id==\"4\"", "/response/docs/[1]/score==1.0",
-             "/response/docs/[2]/id==\"5\"", "/response/docs/[2]/score==0.0");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/id==\"3\"",
+        "/response/docs/[0]/score==2.0",
+        "/response/docs/[1]/id==\"4\"",
+        "/response/docs/[1]/score==1.0",
+        "/response/docs/[2]/id==\"5\"",
+        "/response/docs/[2]/score==0.0");
   }
 
   @Test
   public void testLoadNestedWrapperModel() throws Exception {
-    String otherWrapperModelJson = getDefaultWrapperModelInJson("otherNestedWrapper",
-        new String[0],
-        "{\"resource\":\"" + baseModelFile.getName() + "\"}");
+    String otherWrapperModelJson =
+        getDefaultWrapperModelInJson(
+            "otherNestedWrapper",
+            new String[0],
+            "{\"resource\":\"" + baseModelFile.getName() + "\"}");
     File otherWrapperModelFile = new File(tmpConfDir, "nestedWrapperModel.json");
-    try (BufferedWriter writer = new BufferedWriter(
-        new OutputStreamWriter(new FileOutputStream(otherWrapperModelFile), StandardCharsets.UTF_8))) {
+    try (BufferedWriter writer =
+        new BufferedWriter(
+            new OutputStreamWriter(
+                new FileOutputStream(otherWrapperModelFile), StandardCharsets.UTF_8))) {
       writer.write(otherWrapperModelJson);
     }
 
-    String wrapperModelJson = getDefaultWrapperModelInJson("nestedWrapper",
-        new String[0],
-        "{\"resource\":\"" + otherWrapperModelFile.getName() + "\"}");
+    String wrapperModelJson =
+        getDefaultWrapperModelInJson(
+            "nestedWrapper",
+            new String[0],
+            "{\"resource\":\"" + otherWrapperModelFile.getName() + "\"}");
     assertJPut(ManagedModelStore.REST_END_POINT, wrapperModelJson, "/responseHeader/status==0");
     final SolrQuery query = new SolrQuery();
     query.setQuery("{!func}pow(popularity,2)");
     query.add("rows", "3");
     query.add("fl", "*,score");
     query.add("rq", "{!ltr reRankDocs=3 model=nestedWrapper}");
-    assertJQ("/query" + query.toQueryString(),
-             "/response/docs/[0]/id==\"3\"", "/response/docs/[0]/score==2.0",
-             "/response/docs/[1]/id==\"4\"", "/response/docs/[1]/score==1.0",
-             "/response/docs/[2]/id==\"5\"", "/response/docs/[2]/score==0.0");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/id==\"3\"",
+        "/response/docs/[0]/score==2.0",
+        "/response/docs/[1]/id==\"4\"",
+        "/response/docs/[1]/score==1.0",
+        "/response/docs/[2]/id==\"5\"",
+        "/response/docs/[2]/score==0.0");
   }
 
   @Test
   public void testLoadModelFromUnknownResource() throws Exception {
-    String wrapperModelJson = getDefaultWrapperModelInJson("unknownWrapper",
-        new String[0],
-        "{\"resource\":\"unknownModel.json\"}");
-    assertJPut(ManagedModelStore.REST_END_POINT, wrapperModelJson,
-               "/responseHeader/status==400",
-               "/error/msg==\"org.apache.solr.ltr.model.ModelException: "
-               + "Failed to fetch the wrapper model from given resource (unknownModel.json)\"");
+    String wrapperModelJson =
+        getDefaultWrapperModelInJson(
+            "unknownWrapper", new String[0], "{\"resource\":\"unknownModel.json\"}");
+    assertJPut(
+        ManagedModelStore.REST_END_POINT,
+        wrapperModelJson,
+        "/responseHeader/status==400",
+        "/error/msg==\"org.apache.solr.ltr.model.ModelException: "
+            + "Failed to fetch the wrapper model from given resource (unknownModel.json)\"");
   }
 
   @Test
   public void testLoadModelWithEmptyParams() throws Exception {
-    String wrapperModelJson = getDefaultWrapperModelInJson("invalidWrapper",
-        new String[0],
-        "{}");
-    assertJPut(ManagedModelStore.REST_END_POINT, wrapperModelJson,
-               "/responseHeader/status==400",
-               "/error/msg==\"org.apache.solr.ltr.model.ModelException: "
-               + "no resource configured for model invalidWrapper\"");
+    String wrapperModelJson = getDefaultWrapperModelInJson("invalidWrapper", new String[0], "{}");
+    assertJPut(
+        ManagedModelStore.REST_END_POINT,
+        wrapperModelJson,
+        "/responseHeader/status==400",
+        "/error/msg==\"org.apache.solr.ltr.model.ModelException: "
+            + "no resource configured for model invalidWrapper\"");
   }
-
 }
