@@ -111,14 +111,10 @@ def load(urlString):
   return content
 
 
-jar_allowed_re = re.compile(r'^jakarta.xml.bind-api|jakarta.activation|jakarta.annotation-api|jakarta.xml.bind-api|unit-api')
 sheisty_classes_re = re.compile(r'^java/|^javax/')
 
 
 def noJavaPackageClasses(desc, file):
-  if jar_allowed_re.match(file.split('/').pop()):
-    print('      Skipping explicitly allowed jar %s' % file)
-    return
   with zipfile.ZipFile(file) as z2:
     for name2 in z2.namelist():
       if name2.endswith('.class') and sheisty_classes_re.match(name2):
@@ -207,12 +203,13 @@ def checkAllJARs(topDir, gitRevision, version):
     if normRoot.endswith('/server/lib'):
       # Solr's example intentionally ships servlet JAR:
       continue
-    
+
+    jar_allowed_re = re.compile(r'^jakarta.xml.bind-api|jakarta.activation|jakarta.annotation-api|jakarta.xml.bind-api|unit-api')
     for file in files:
       if file.lower().endswith('.jar'):
         if ((normRoot.endswith('/test-framework/lib') and file.startswith('jersey-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('xml-apis-'))):
-          print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
+            or (normRoot.endswith('/modules/extraction/lib') and jar_allowed_re.match(file))):
+          print('      **WARNING**: skipping check of %s/%s: it has approved javax.* classes' % (root, file))
           continue
         fullPath = '%s/%s' % (root, file)
         noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
@@ -723,7 +720,7 @@ def testSolrExample(unpackPath, javaPath, isSrc):
       if not cygwin:
         subprocess.call(['bin/solr','stop','-p','8983'])
       else:
-        subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True) 
+        subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
   except:
       print('      Stop failed due to: '+sys.exc_info()[0])
 
@@ -732,8 +729,8 @@ def testSolrExample(unpackPath, javaPath, isSrc):
     if not cygwin:
       runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
     else:
-      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True) 
-      
+      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True)
+
     if runExampleStatus != 0:
       raise RuntimeError('Failed to run the techproducts example, check log for previous errors.')
 
@@ -756,17 +753,17 @@ def testSolrExample(unpackPath, javaPath, isSrc):
       os.chdir(unpackPath+'/solr')
     else:
       os.chdir(unpackPath)
-    
+
     if not cygwin:
       subprocess.call(['bin/solr','stop','-p','8983'])
     else:
-      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True) 
+      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
 
   if isSrc:
     os.chdir(unpackPath+'/solr')
   else:
     os.chdir(unpackPath)
-    
+
 
 def removeTrailingZeros(version):
   return re.sub(r'(\.0)*$', '', version)
