@@ -38,7 +38,7 @@ final class OverseerElectionContext extends ElectionContext {
   private volatile boolean isClosed = false;
 
   public OverseerElectionContext(SolrZkClient zkClient, Overseer overseer, final String zkNodeName) {
-    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", null, zkClient);
+    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT_LEADER, null, zkClient);
     this.overseer = overseer;
     this.zkClient = zkClient;
     try {
