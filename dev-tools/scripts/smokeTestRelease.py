@@ -111,13 +111,10 @@ def load(urlString):
   return content
 
 
-sheisty_classes_re = re.compile(r'^java/|^javax/')
-
-
 def noJavaPackageClasses(desc, file):
   with zipfile.ZipFile(file) as z2:
     for name2 in z2.namelist():
-      if name2.endswith('.class') and sheisty_classes_re.match(name2):
+      if name2.endswith('.class') and (name2.startswith('java/') or name2.startswith('javax/')):
         raise RuntimeError('%s contains sheisty class "%s"' % (desc, name2))
 
 
@@ -204,12 +201,11 @@ def checkAllJARs(topDir, gitRevision, version):
       # Solr's example intentionally ships servlet JAR:
       continue
 
-    jar_allowed_re = re.compile(r'^jakarta.xml.bind-api|jakarta.activation|jakarta.annotation-api|jakarta.xml.bind-api|unit-api')
     for file in files:
       if file.lower().endswith('.jar'):
         if ((normRoot.endswith('/test-framework/lib') and file.startswith('jersey-'))
-            or (normRoot.endswith('/modules/extraction/lib') and jar_allowed_re.match(file))):
-          print('      **WARNING**: skipping check of %s/%s: it has approved javax.* classes' % (root, file))
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('xml-apis-'))):
+          print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
           continue
         fullPath = '%s/%s' % (root, file)
         noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
