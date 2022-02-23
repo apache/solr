@@ -123,7 +123,7 @@ def prepare(root, version, gpg_key_id, gpg_password, gpg_home=None, sign_gradle=
   if dev_mode:
     cmd += ' -Pvalidation.git.failOnModified=false'
   if gpg_key_id is None:
-    cmd += ' -Psign=false'  # Disable signing if no key provided to script
+    cmd += ' -Psign=false -x signJarsPublication'  # Disable signing if no key provided to script
   else:
     cmd += ' -Psign --max-workers 2'
     if sign_gradle:
