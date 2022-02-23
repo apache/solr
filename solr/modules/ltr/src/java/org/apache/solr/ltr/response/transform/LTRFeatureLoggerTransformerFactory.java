@@ -184,7 +184,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private FeatureLogger featureLogger;
     private boolean docsWereNotReranked;
 
-    /** @param name Name of the field to be added in a document representing the feature vectors */
+    /**
+     * @param name Name of the field to be added in a document representing the feature vectors
+     */
     public FeatureTransformer(
         String name,
         SolrParams localparams,

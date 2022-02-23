@@ -25,7 +25,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ */
 public class BlockCache {
 
   public static final int _128M = 134217728;

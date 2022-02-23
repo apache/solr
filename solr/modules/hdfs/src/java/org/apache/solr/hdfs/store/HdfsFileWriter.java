@@ -27,7 +27,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.lucene.store.OutputStreamIndexOutput;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ */
 public class HdfsFileWriter extends OutputStreamIndexOutput {
 
   public static final String HDFS_SYNC_BLOCK = "solr.hdfs.sync.block";

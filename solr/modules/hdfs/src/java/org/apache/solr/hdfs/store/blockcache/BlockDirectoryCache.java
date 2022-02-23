@@ -23,7 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.hdfs.store.blockcache.BlockCache.OnRelease;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ */
 public class BlockDirectoryCache implements Cache {
   private final BlockCache blockCache;
   private final AtomicInteger counter = new AtomicInteger();

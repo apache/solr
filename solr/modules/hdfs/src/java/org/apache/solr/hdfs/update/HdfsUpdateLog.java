@@ -46,7 +46,9 @@ import org.apache.solr.update.VersionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ */
 public class HdfsUpdateLog extends UpdateLog {
 
   private final Object fsLock = new Object();

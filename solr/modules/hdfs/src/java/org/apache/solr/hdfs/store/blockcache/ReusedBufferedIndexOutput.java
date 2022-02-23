@@ -19,7 +19,9 @@ package org.apache.solr.hdfs.store.blockcache;
 import java.io.IOException;
 import org.apache.lucene.store.IndexOutput;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ */
 public abstract class ReusedBufferedIndexOutput extends IndexOutput {
 
   public static final int BUFFER_SIZE = 1024;
