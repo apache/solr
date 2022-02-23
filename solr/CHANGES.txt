@@ -42,6 +42,8 @@ Build
 ---------------------
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
 
+* SOLR-16050: Upgrade to errorprone 2.11.0 (Kevin Risden)
+
 ==================  9.0.0 ==================
 
 New Features
