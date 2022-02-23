@@ -18,11 +18,9 @@ package org.apache.solr.security.hadoop;
 
 import java.io.IOException;
 import java.util.Properties;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.authentication.server.AuthenticationToken;
@@ -55,12 +53,13 @@ public class RequestContinuesRecorderAuthenticationHandler implements Authentica
     authHandler.destroy();
   }
 
-  public boolean managementOperation(AuthenticationToken token,
-                                     HttpServletRequest request,
-                                     HttpServletResponse response)
+  public boolean managementOperation(
+      AuthenticationToken token, HttpServletRequest request, HttpServletResponse response)
       throws IOException, AuthenticationException {
     boolean result = authHandler.managementOperation(token, request, response);
-    request.setAttribute(RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR, Boolean.toString(result));
+    request.setAttribute(
+        RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR,
+        Boolean.toString(result));
     return result;
   }
 

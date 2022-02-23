@@ -18,7 +18,6 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.util.ArrayList;
-
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
@@ -50,11 +49,12 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * Handler for Analytics shard requests. This handler should only be called by the {@link AnalyticsComponent}
- * since the response is written in a bit-stream, formatted by the {@link AnalyticsShardResponseWriter}
- * that can only be read by the {@link AnalyticsShardResponseParser}.
+ * Handler for Analytics shard requests. This handler should only be called by the {@link
+ * AnalyticsComponent} since the response is written in a bit-stream, formatted by the {@link
+ * AnalyticsShardResponseWriter} that can only be read by the {@link AnalyticsShardResponseParser}.
  */
-public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
+public class AnalyticsHandler extends RequestHandlerBase
+    implements SolrCoreAware, PermissionNameProvider {
   public static final String NAME = "/analytics";
   private IndexSchema indexSchema;
 
@@ -65,7 +65,8 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
 
   @Override
   public void inform(SolrCore core) {
-    core.registerResponseWriter(AnalyticsShardResponseWriter.NAME, new AnalyticsShardResponseWriter());
+    core.registerResponseWriter(
+        AnalyticsShardResponseWriter.NAME, new AnalyticsShardResponseWriter());
     indexSchema = core.getLatestSchema();
     AnalyticsRequestParser.init();
   }
@@ -82,9 +83,11 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
       }
       // The olap-style requests are converted to the current format in the AnalyticsComponent
       // so the AnalyticsHandler only needs to handle current format requests.
-      AnalyticsRequestManager manager = AnalyticsRequestParser.parse(req.getParams().get(AnalyticsRequestParser.analyticsParamName),
-                                                                new ExpressionFactory(indexSchema),
-                                                                false);
+      AnalyticsRequestManager manager =
+          AnalyticsRequestParser.parse(
+              req.getParams().get(AnalyticsRequestParser.analyticsParamName),
+              new ExpressionFactory(indexSchema),
+              false);
       // Collect the reduction data for the request
       SolrIndexSearcher searcher = req.getSearcher();
       AnalyticsDriver.drive(manager, searcher, docs, req);
@@ -113,7 +116,7 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
     ArrayList<Query> queries = new ArrayList<>();
 
     // Query Param
-    String queryString = params.get( CommonParams.Q );
+    String queryString = params.get(CommonParams.Q);
 
     String defType = params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE);
 
@@ -127,9 +130,9 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
 
     // Filter Params
     String[] fqs = req.getParams().getParams(CommonParams.FQ);
-    if (fqs!=null) {
+    if (fqs != null) {
       for (String fq : fqs) {
-        if (fq != null && fq.trim().length()!=0) {
+        if (fq != null && fq.trim().length() != 0) {
           QParser fqp = QParser.getParser(fq, req);
           queries.add(fqp.getQuery());
         }

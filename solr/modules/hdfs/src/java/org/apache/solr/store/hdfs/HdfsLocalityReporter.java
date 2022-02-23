@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -46,7 +45,7 @@ public class HdfsLocalityReporter implements SolrInfoBean {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String hostname;
-  private final ConcurrentMap<HdfsDirectory,ConcurrentMap<FileStatus,BlockLocation[]>> cache;
+  private final ConcurrentMap<HdfsDirectory, ConcurrentMap<FileStatus, BlockLocation[]>> cache;
 
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private SolrMetricsContext solrMetricsContext;
@@ -57,12 +56,13 @@ public class HdfsLocalityReporter implements SolrInfoBean {
 
   /**
    * Set the host name to use when determining locality
+   *
    * @param hostname The name of this host; should correspond to what HDFS Data Nodes think this is.
    */
   public void setHost(String hostname) {
     this.hostname = hostname;
   }
-  
+
   @Override
   public String getName() {
     return "hdfs-locality";
@@ -83,70 +83,72 @@ public class HdfsLocalityReporter implements SolrInfoBean {
     return solrMetricsContext;
   }
 
-  /**
-   * Provide statistics on HDFS block locality, both in terms of bytes and block counts.
-   */
+  /** Provide statistics on HDFS block locality, both in terms of bytes and block counts. */
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
-    MetricsMap metricsMap = new MetricsMap(map -> {
-      long totalBytes = 0;
-      long localBytes = 0;
-      int totalCount = 0;
-      int localCount = 0;
+    MetricsMap metricsMap =
+        new MetricsMap(
+            map -> {
+              long totalBytes = 0;
+              long localBytes = 0;
+              int totalCount = 0;
+              int localCount = 0;
 
-      for (Iterator<HdfsDirectory> iterator = cache.keySet().iterator(); iterator.hasNext();) {
-        HdfsDirectory hdfsDirectory = iterator.next();
+              for (Iterator<HdfsDirectory> iterator = cache.keySet().iterator();
+                  iterator.hasNext(); ) {
+                HdfsDirectory hdfsDirectory = iterator.next();
 
-        if (hdfsDirectory.isClosed()) {
-          iterator.remove();
-        } else {
-          try {
-            refreshDirectory(hdfsDirectory);
-            Map<FileStatus,BlockLocation[]> blockMap = cache.get(hdfsDirectory);
+                if (hdfsDirectory.isClosed()) {
+                  iterator.remove();
+                } else {
+                  try {
+                    refreshDirectory(hdfsDirectory);
+                    Map<FileStatus, BlockLocation[]> blockMap = cache.get(hdfsDirectory);
 
-            // For every block in every file in this directory, count it
-            for (BlockLocation[] locations : blockMap.values()) {
-              for (BlockLocation bl : locations) {
-                totalBytes += bl.getLength();
-                totalCount++;
+                    // For every block in every file in this directory, count it
+                    for (BlockLocation[] locations : blockMap.values()) {
+                      for (BlockLocation bl : locations) {
+                        totalBytes += bl.getLength();
+                        totalCount++;
 
-                if (Arrays.asList(bl.getHosts()).contains(hostname)) {
-                  localBytes += bl.getLength();
-                  localCount++;
+                        if (Arrays.asList(bl.getHosts()).contains(hostname)) {
+                          localBytes += bl.getLength();
+                          localCount++;
+                        }
+                      }
+                    }
+                  } catch (IOException e) {
+                    log.warn(
+                        "Could not retrieve locality information for {} due to exception: {}",
+                        hdfsDirectory.getHdfsDirPath(),
+                        e);
+                  }
                 }
               }
-            }
-          } catch (IOException e) {
-            log.warn("Could not retrieve locality information for {} due to exception: {}",
-                hdfsDirectory.getHdfsDirPath(), e);
-          }
-        }
-      }
-      map.put(LOCALITY_BYTES_TOTAL, totalBytes);
-      map.put(LOCALITY_BYTES_LOCAL, localBytes);
-      if (localBytes == 0) {
-        map.put(LOCALITY_BYTES_RATIO, 0);
-      } else {
-        map.put(LOCALITY_BYTES_RATIO, localBytes / (double) totalBytes);
-      }
-      map.put(LOCALITY_BLOCKS_TOTAL, totalCount);
-      map.put(LOCALITY_BLOCKS_LOCAL, localCount);
-      if (localCount == 0) {
-        map.put(LOCALITY_BLOCKS_RATIO, 0);
-      } else {
-        map.put(LOCALITY_BLOCKS_RATIO, localCount / (double) totalCount);
-      }
-    });
+              map.put(LOCALITY_BYTES_TOTAL, totalBytes);
+              map.put(LOCALITY_BYTES_LOCAL, localBytes);
+              if (localBytes == 0) {
+                map.put(LOCALITY_BYTES_RATIO, 0);
+              } else {
+                map.put(LOCALITY_BYTES_RATIO, localBytes / (double) totalBytes);
+              }
+              map.put(LOCALITY_BLOCKS_TOTAL, totalCount);
+              map.put(LOCALITY_BLOCKS_LOCAL, localCount);
+              if (localCount == 0) {
+                map.put(LOCALITY_BLOCKS_RATIO, 0);
+              } else {
+                map.put(LOCALITY_BLOCKS_RATIO, localCount / (double) totalCount);
+              }
+            });
     solrMetricsContext.gauge(metricsMap, true, "hdfsLocality", getCategory().toString(), scope);
   }
 
   /**
-   * Add a directory for block locality reporting. This directory will continue to be checked until its close method has
-   * been called.
-   * 
-   * @param dir
-   *          The directory to keep metrics on.
+   * Add a directory for block locality reporting. This directory will continue to be checked until
+   * its close method has been called.
+   *
+   * @param dir The directory to keep metrics on.
    */
   public void registerDirectory(HdfsDirectory dir) {
     if (log.isInfoEnabled()) {
@@ -158,16 +160,14 @@ public class HdfsLocalityReporter implements SolrInfoBean {
   }
 
   /**
-   * Update the cached block locations for the given directory. This includes deleting any files that no longer exist in
-   * the file system and adding any new files that have shown up.
-   * 
-   * @param dir
-   *          The directory to refresh
-   * @throws IOException
-   *           If there is a problem getting info from HDFS
+   * Update the cached block locations for the given directory. This includes deleting any files
+   * that no longer exist in the file system and adding any new files that have shown up.
+   *
+   * @param dir The directory to refresh
+   * @throws IOException If there is a problem getting info from HDFS
    */
   private void refreshDirectory(HdfsDirectory dir) throws IOException {
-    Map<FileStatus,BlockLocation[]> directoryCache = cache.get(dir);
+    Map<FileStatus, BlockLocation[]> directoryCache = cache.get(dir);
     Set<FileStatus> cachedStatuses = directoryCache.keySet();
 
     FileSystem fs = dir.getFileSystem();
@@ -187,5 +187,4 @@ public class HdfsLocalityReporter implements SolrInfoBean {
       }
     }
   }
-
 }

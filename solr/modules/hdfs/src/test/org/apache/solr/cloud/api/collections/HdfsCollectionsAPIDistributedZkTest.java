@@ -25,19 +25,22 @@ import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TimeUnits;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 @Slow
 @Nightly
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
 @TimeoutSuite(millis = TimeUnits.HOUR)
-public class HdfsCollectionsAPIDistributedZkTest extends AbstractCollectionsAPIDistributedZkTestBase {
+public class HdfsCollectionsAPIDistributedZkTest
+    extends AbstractCollectionsAPIDistributedZkTestBase {
   private static MiniDFSCluster dfsCluster;
 
   @BeforeClass

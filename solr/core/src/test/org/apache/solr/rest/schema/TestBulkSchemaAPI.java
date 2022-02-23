@@ -38,8 +38,10 @@ import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.AbstractSpatialPrefixTreeFieldType;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
+import org.apache.solr.util.LogListener;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
@@ -50,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.util.Utils.fromJSONString;
+import static org.hamcrest.Matchers.containsString;
 
 
 public class TestBulkSchemaAPI extends RestTestBase {
@@ -1177,6 +1180,50 @@ public class TestBulkSchemaAPI extends RestTestBase {
     query.addFacetField("newstringtestfield");
     int size = getSolrClient().query(query).getResults().size();
     assertEquals(1, size);
+  }
+
+  @Test
+  public void testDateRangeFieldDefaults() throws Exception {
+    try (LogListener listener = LogListener.warn(AbstractSpatialPrefixTreeFieldType.class)) {
+      // Add a default date range field and verify success
+      assertJPost("/schema", "{\n"
+          + "  \"add-field-type\":{\n"
+          + "     \"name\":\"dr-field1\",\n"
+          + "     \"class\":\"solr.DateRangeField\"}\n"
+          + "}", "/responseHeader/status==0");
+      assertJQ(
+          "/schema/fieldtypes/dr-field1",
+          "fieldType=={\n"
+              + "    \"name\":\"dr-field1\",\n"
+              + "    \"class\":\"solr.DateRangeField\"\n"
+              + "}");
+
+      assertEquals(0, listener.getCount());
+
+      // Add a date range field with redundant invariants
+      assertJPost("/schema", "{\n"
+          + "  \"add-field-type\":{\n"
+          + "     \"name\":\"dr-redundant\",\n"
+          + "     \"omitNorms\":\"true\",\n"
+          + "     \"termOffsets\":\"false\",\n"
+          + "     \"class\":\"solr.DateRangeField\"}\n"
+          + "}", "/responseHeader/status==0");
+
+      assertEquals(2, listener.getCount());
+      assertThat(listener.pollMessage(), containsString("hardcoded behavior is omitNorms=true"));
+      assertThat(listener.pollMessage(), containsString("hardcoded behavior is termOffsets=false"));
+
+      // Add a date range field with violated invariants
+      assertJPost("/schema", "{\n"
+          + "  \"add-field-type\":{\n"
+          + "     \"name\":\"dr-invalid\",\n"
+          + "     \"omitNorms\":\"false\",\n"
+          + "     \"termOffsets\":\"true\",\n"
+          + "     \"class\":\"solr.DateRangeField\"}\n"
+          + "}", "/responseHeader/status==400");
+
+      // could assert no more listener events but listener's close() gives us a better error message
+    }
   }
 
   public void testSimilarityParser() throws Exception {

@@ -16,40 +16,28 @@
  */
 package org.apache.solr.handler.clustering;
 
+import java.util.function.Supplier;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 
-import java.util.function.Supplier;
-
-/**
- * Parses each clustering engine configuration
- * initialization parameters.
- */
+/** Parses each clustering engine configuration initialization parameters. */
 final class EngineEntry implements Supplier<Engine> {
-  /**
-   * Marks the engine as optional (if unavailable).
-   */
+  /** Marks the engine as optional (if unavailable). */
   private static final String PARAM_OPTIONAL = "optional";
 
-  /**
-   * Unique engine name parameter.
-   */
+  /** Unique engine name parameter. */
   private static final String PARAM_NAME = "name";
 
   final boolean optional;
   final String engineName;
   final EngineParameters defaults;
 
-  /**
-   * Preinitialized instance of a clustering engine.
-   */
+  /** Preinitialized instance of a clustering engine. */
   private Engine engine;
 
-  /**
-   * {@code true} if the engine has been initialized properly and is available.
-   */
+  /** {@code true} if the engine has been initialized properly and is available. */
   private boolean available;
 
   EngineEntry(SolrParams params) {
@@ -62,8 +50,10 @@ final class EngineEntry implements Supplier<Engine> {
   boolean initialize(SolrCore core) {
     SchemaField uniqueField = core.getLatestSchema().getUniqueKeyField();
     if (uniqueField == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          ClusteringComponent.class.getSimpleName() + " requires the declaration of uniqueKeyField in the schema.");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          ClusteringComponent.class.getSimpleName()
+              + " requires the declaration of uniqueKeyField in the schema.");
     }
     String docIdField = uniqueField.getName();
     defaults.setDocIdField(docIdField);

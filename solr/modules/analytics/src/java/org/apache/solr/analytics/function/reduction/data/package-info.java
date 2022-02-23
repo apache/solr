@@ -16,9 +16,7 @@
  */
 
 /**
- * Reduction data collectors to use while computing analytics expressions.
- * For multi-sharded collections, this is the data that is sent from shard to shard.
+ * Reduction data collectors to use while computing analytics expressions. For multi-sharded
+ * collections, this is the data that is sent from shard to shard.
  */
 package org.apache.solr.analytics.function.reduction.data;
-
-

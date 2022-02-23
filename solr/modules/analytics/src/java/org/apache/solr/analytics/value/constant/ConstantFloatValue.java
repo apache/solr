@@ -18,14 +18,14 @@ package org.apache.solr.analytics.value.constant;
 
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-
 import org.apache.solr.analytics.facet.compare.ConstantComparator;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.FloatValue;
 import org.apache.solr.analytics.value.FloatValue.CastingFloatValue;
 
 /**
- * A constant {@link FloatValue}. Every call to {@link #getFloat()} and other methods will return the same constant value.
+ * A constant {@link FloatValue}. Every call to {@link #getFloat()} and other methods will return
+ * the same constant value.
  */
 public class ConstantFloatValue extends ConstantValue implements CastingFloatValue {
   private final float value;
@@ -43,18 +43,22 @@ public class ConstantFloatValue extends ConstantValue implements CastingFloatVal
   public float getFloat() {
     return value;
   }
+
   @Override
   public double getDouble() {
     return value;
   }
+
   @Override
   public String getString() {
     return valueStr;
   }
+
   @Override
   public Object getObject() {
     return value;
   }
+
   @Override
   public boolean exists() {
     return true;
@@ -64,14 +68,17 @@ public class ConstantFloatValue extends ConstantValue implements CastingFloatVal
   public void streamFloats(FloatConsumer cons) {
     cons.accept(value);
   }
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
     cons.accept(value);
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     cons.accept(valueStr);
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     cons.accept(value);

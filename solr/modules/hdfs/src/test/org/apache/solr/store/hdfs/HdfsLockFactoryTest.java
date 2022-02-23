@@ -16,8 +16,9 @@
  */
 package org.apache.solr.store.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.IOException;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -27,22 +28,21 @@ import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
-import org.apache.solr.util.BadHdfsThreadsFilter;
+import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.Nightly;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
 @Nightly
 public class HdfsLockFactoryTest extends SolrTestCaseJ4 {
-  
+
   private static MiniDFSCluster dfsCluster;
 
   @BeforeClass
@@ -58,14 +58,14 @@ public class HdfsLockFactoryTest extends SolrTestCaseJ4 {
       dfsCluster = null;
     }
   }
-  
+
   @Test
   public void testBasic() throws IOException {
     String uri = HdfsTestUtil.getURI(dfsCluster);
     Path lockPath = new Path(uri, "/basedir/lock");
     Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
     HdfsDirectory dir = new HdfsDirectory(lockPath, conf);
-    
+
     try (Lock lock = dir.obtainLock("testlock")) {
       assert lock != null;
       try (Lock lock2 = dir.obtainLock("testlock")) {

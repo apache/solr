@@ -17,21 +17,18 @@
 
 package org.apache.solr.util.configuration.providers.hadoop;
 
+import static org.apache.hadoop.security.alias.CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.EnumMap;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.util.configuration.providers.AbstractSSLCredentialProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.hadoop.security.alias.CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH;
-
-/**
- * System property based SSL configuration provider
- */
+/** System property based SSL configuration provider */
 public class HadoopSSLCredentialProvider extends AbstractSSLCredentialProvider {
 
   private Configuration hadoopConfigurationProvider;
@@ -44,10 +41,14 @@ public class HadoopSSLCredentialProvider extends AbstractSSLCredentialProvider {
 
   public HadoopSSLCredentialProvider(Configuration hadoopConfigurationProvider) {
     if (StringUtils.isEmpty(System.getProperty(CREDENTIAL_PROVIDER_PATH))) {
-      throw new RuntimeException("Cannot initialize Hadoop configuration provider without credential provider path. Use " + CREDENTIAL_PROVIDER_PATH + " system property to configure.");
+      throw new RuntimeException(
+          "Cannot initialize Hadoop configuration provider without credential provider path. Use "
+              + CREDENTIAL_PROVIDER_PATH
+              + " system property to configure.");
     }
     this.hadoopConfigurationProvider = hadoopConfigurationProvider;
-    hadoopConfigurationProvider.set(CREDENTIAL_PROVIDER_PATH, System.getProperty(CREDENTIAL_PROVIDER_PATH));
+    hadoopConfigurationProvider.set(
+        CREDENTIAL_PROVIDER_PATH, System.getProperty(CREDENTIAL_PROVIDER_PATH));
   }
 
   @Override

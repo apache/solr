@@ -16,14 +16,12 @@
  */
 package org.apache.solr.store.blockcache;
 
+import com.github.benmanes.caffeine.cache.*;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
-import com.github.benmanes.caffeine.cache.*;
 import org.apache.solr.SolrTestCase;
-
 import org.junit.Test;
 
 public class BlockCacheTest extends SolrTestCase {
@@ -65,7 +63,8 @@ public class BlockCacheTest extends SolrTestCase {
       long t1 = System.nanoTime();
       boolean success = blockCache.store(blockCacheKey, 0, testData, 0, blockSize);
       storeTime += (System.nanoTime() - t1);
-      if (!success) continue;  // for now, updating existing blocks is not supported... see SOLR-10121
+      if (!success)
+        continue; // for now, updating existing blocks is not supported... see SOLR-10121
 
       long t3 = System.nanoTime();
       if (blockCache.fetch(blockCacheKey, buffer)) {
@@ -86,7 +85,8 @@ public class BlockCacheTest extends SolrTestCase {
   }
 
   // given a position, return the appropriate byte.
-  // always returns the same thing so we don't actually have to store the bytes redundantly to check them.
+  // always returns the same thing so we don't actually have to store the bytes redundantly to check
+  // them.
   private static byte getByte(long pos) {
     // knuth multiplicative hash method, then take top 8 bits
     return (byte) ((((int) pos) * (int) (2654435761L)) >> 24);
@@ -99,25 +99,31 @@ public class BlockCacheTest extends SolrTestCase {
   public void testBlockCacheConcurrent() throws Exception {
     Random rnd = random();
 
-    final int blocksInTest = 400;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
+    final int blocksInTest =
+        400; // pick something bigger than 256, since that would lead to a slab size of 64 blocks
+    // and the bitset locks would consist of a single word.
     final int blockSize = 64;
     final int slabSize = blocksInTest * blockSize / 4;
-    final long totalMemory = 2 * slabSize;  // 2 slabs of memory, so only half of what is needed for all blocks
+    final long totalMemory =
+        2 * slabSize; // 2 slabs of memory, so only half of what is needed for all blocks
 
     /***
-     final int blocksInTest = 16384;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
-     final int blockSize = 1024;
-     final int slabSize = blocksInTest * blockSize / 4;
-     final long totalMemory = 2 * slabSize;  // 2 slabs of memory, so only half of what is needed for all blocks
+     * final int blocksInTest = 16384;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
+     * final int blockSize = 1024;
+     * final int slabSize = blocksInTest * blockSize / 4;
+     * final long totalMemory = 2 * slabSize;  // 2 slabs of memory, so only half of what is needed for all blocks
      ***/
 
     final int nThreads = 64;
     final int nReads = 1000000;
     final int readsPerThread = nReads / nThreads;
-    final int readLastBlockOdds = 10; // odds (1 in N) of the next block operation being on the same block as the previous operation... helps flush concurrency issues
+    final int readLastBlockOdds =
+        10; // odds (1 in N) of the next block operation being on the same block as the previous
+    // operation... helps flush concurrency issues
     final int showErrors = 50; // show first 50 validation failures
 
-    final BlockCache blockCache = new BlockCache(new Metrics(), true, totalMemory, slabSize, blockSize);
+    final BlockCache blockCache =
+        new BlockCache(new Metrics(), true, totalMemory, slabSize, blockSize);
 
     final AtomicBoolean failed = new AtomicBoolean(false);
     final AtomicLong hitsInCache = new AtomicLong();
@@ -128,82 +134,95 @@ public class BlockCacheTest extends SolrTestCase {
 
     final int file = 0;
 
-
     Thread[] threads = new Thread[nThreads];
     for (int i = 0; i < threads.length; i++) {
       final int threadnum = i;
       final long seed = rnd.nextLong();
 
-      threads[i] = new Thread() {
-        Random r;
-        BlockCacheKey blockCacheKey;
-        byte[] buffer = new byte[blockSize];
+      threads[i] =
+          new Thread() {
+            Random r;
+            BlockCacheKey blockCacheKey;
+            byte[] buffer = new byte[blockSize];
 
-        @Override
-        public void run() {
-          try {
-            r = new Random(seed);
-            blockCacheKey = new BlockCacheKey();
-            blockCacheKey.setFile(file);
-            blockCacheKey.setPath("/foo.txt");
+            @Override
+            public void run() {
+              try {
+                r = new Random(seed);
+                blockCacheKey = new BlockCacheKey();
+                blockCacheKey.setFile(file);
+                blockCacheKey.setPath("/foo.txt");
 
-            test(readsPerThread);
+                test(readsPerThread);
 
-          } catch (Throwable e) {
-            failed.set(true);
-            e.printStackTrace();
-          }
-        }
-
-        public void test(int iter) {
-          for (int i = 0; i < iter; i++) {
-            test();
-          }
-        }
-
-        public void test() {
-          long block = r.nextInt(blocksInTest);
-          if (r.nextInt(readLastBlockOdds) == 0)
-            block = lastBlock.get();  // some percent of the time, try to read the last block another thread was just reading/writing
-          lastBlock.set(block);
-
-
-          int blockOffset = r.nextInt(blockSize);
-          long globalOffset = block * blockSize + blockOffset;
-          int len = r.nextInt(blockSize - blockOffset) + 1;  // TODO: bias toward smaller reads?
-
-          blockCacheKey.setBlock(block);
-
-          if (blockCache.fetch(blockCacheKey, buffer, blockOffset, 0, len)) {
-            hitsInCache.incrementAndGet();
-            // validate returned bytes
-            for (int i = 0; i < len; i++) {
-              long globalPos = globalOffset + i;
-              if (buffer[i] != getByte(globalPos)) {
+              } catch (Throwable e) {
                 failed.set(true);
-                if (validateFails.incrementAndGet() <= showErrors)
-                  System.out.println("ERROR: read was " + "block=" + block + " blockOffset=" + blockOffset + " len=" + len + " globalPos=" + globalPos + " localReadOffset=" + i + " got=" + buffer[i] + " expected=" + getByte(globalPos));
-                break;
+                e.printStackTrace();
               }
             }
-          } else {
-            missesInCache.incrementAndGet();
 
-            // OK, we should "get" the data and then cache the block
-            for (int i = 0; i < blockSize; i++) {
-              buffer[i] = getByte(block * blockSize + i);
+            public void test(int iter) {
+              for (int i = 0; i < iter; i++) {
+                test();
+              }
             }
-            boolean cached = blockCache.store(blockCacheKey, 0, buffer, 0, blockSize);
-            if (!cached) {
-              storeFails.incrementAndGet();
+
+            public void test() {
+              long block = r.nextInt(blocksInTest);
+              if (r.nextInt(readLastBlockOdds) == 0)
+                block =
+                    lastBlock.get(); // some percent of the time, try to read the last block another
+              // thread was just reading/writing
+              lastBlock.set(block);
+
+              int blockOffset = r.nextInt(blockSize);
+              long globalOffset = block * blockSize + blockOffset;
+              int len = r.nextInt(blockSize - blockOffset) + 1; // TODO: bias toward smaller reads?
+
+              blockCacheKey.setBlock(block);
+
+              if (blockCache.fetch(blockCacheKey, buffer, blockOffset, 0, len)) {
+                hitsInCache.incrementAndGet();
+                // validate returned bytes
+                for (int i = 0; i < len; i++) {
+                  long globalPos = globalOffset + i;
+                  if (buffer[i] != getByte(globalPos)) {
+                    failed.set(true);
+                    if (validateFails.incrementAndGet() <= showErrors)
+                      System.out.println(
+                          "ERROR: read was "
+                              + "block="
+                              + block
+                              + " blockOffset="
+                              + blockOffset
+                              + " len="
+                              + len
+                              + " globalPos="
+                              + globalPos
+                              + " localReadOffset="
+                              + i
+                              + " got="
+                              + buffer[i]
+                              + " expected="
+                              + getByte(globalPos));
+                    break;
+                  }
+                }
+              } else {
+                missesInCache.incrementAndGet();
+
+                // OK, we should "get" the data and then cache the block
+                for (int i = 0; i < blockSize; i++) {
+                  buffer[i] = getByte(block * blockSize + i);
+                }
+                boolean cached = blockCache.store(blockCacheKey, 0, buffer, 0, blockSize);
+                if (!cached) {
+                  storeFails.incrementAndGet();
+                }
+              }
             }
-          }
-
-        }
-
-      };
+          };
     }
-
 
     for (Thread thread : threads) {
       thread.start();
@@ -222,13 +241,13 @@ public class BlockCacheTest extends SolrTestCase {
     assertFalse("cached bytes differ from expected", failed.get());
   }
 
-
   static class Val {
     long key;
     AtomicBoolean live = new AtomicBoolean(true);
   }
 
-  // Sanity test the underlying concurrent map that BlockCache is using, in the same way that we use it.
+  // Sanity test the underlying concurrent map that BlockCache is using, in the same way that we use
+  // it.
   @Test
   public void testCacheConcurrent() throws Exception {
     Random rnd = random();
@@ -240,36 +259,47 @@ public class BlockCacheTest extends SolrTestCase {
     final int nThreads = 64;
     final int nReads = 1000000;
     final int readsPerThread = nReads / nThreads;
-    final int readLastBlockOdds = 10; // odds (1 in N) of the next block operation being on the same block as the previous operation... helps flush concurrency issues
-    final int updateAnywayOdds = 3; // sometimes insert a new entry for the key even if one was found
+    final int readLastBlockOdds =
+        10; // odds (1 in N) of the next block operation being on the same block as the previous
+    // operation... helps flush concurrency issues
+    final int updateAnywayOdds =
+        3; // sometimes insert a new entry for the key even if one was found
     final int invalidateOdds = 20; // sometimes invalidate an entry
 
     final AtomicLong hits = new AtomicLong();
     final AtomicLong removals = new AtomicLong();
     final AtomicLong inserts = new AtomicLong();
 
-    RemovalListener<Long, Val> listener = (k, v, removalCause) -> {
-      removals.incrementAndGet();
-      if (v == null) {
-        if (removalCause != RemovalCause.COLLECTED) {
-          throw new RuntimeException("Null value for key " + k + ", removalCause=" + removalCause);
-        } else {
-          return;
-        }
-      }
-      assertEquals("cache key differs from value's key", k, (Long) v.key);
-      if (!v.live.compareAndSet(true, false)) {
-        throw new RuntimeException("listener called more than once! k=" + k + " v=" + v + " removalCause=" + removalCause);
-        // return;  // use this variant if listeners may be called more than once
-      }
-    };
+    RemovalListener<Long, Val> listener =
+        (k, v, removalCause) -> {
+          removals.incrementAndGet();
+          if (v == null) {
+            if (removalCause != RemovalCause.COLLECTED) {
+              throw new RuntimeException(
+                  "Null value for key " + k + ", removalCause=" + removalCause);
+            } else {
+              return;
+            }
+          }
+          assertEquals("cache key differs from value's key", k, (Long) v.key);
+          if (!v.live.compareAndSet(true, false)) {
+            throw new RuntimeException(
+                "listener called more than once! k="
+                    + k
+                    + " v="
+                    + v
+                    + " removalCause="
+                    + removalCause);
+            // return;  // use this variant if listeners may be called more than once
+          }
+        };
 
-
-    com.github.benmanes.caffeine.cache.Cache<Long, Val> cache = Caffeine.newBuilder()
-        .removalListener(listener)
-        .maximumSize(maxEntries)
-        .executor(Runnable::run)
-        .build();
+    com.github.benmanes.caffeine.cache.Cache<Long, Val> cache =
+        Caffeine.newBuilder()
+            .removalListener(listener)
+            .maximumSize(maxEntries)
+            .executor(Runnable::run)
+            .build();
 
     final AtomicBoolean failed = new AtomicBoolean(false);
     final AtomicLong lastBlock = new AtomicLong();
@@ -279,71 +309,76 @@ public class BlockCacheTest extends SolrTestCase {
     for (int i = 0; i < threads.length; i++) {
       final long seed = rnd.nextLong();
 
-      threads[i] = new Thread() {
-        Random r;
+      threads[i] =
+          new Thread() {
+            Random r;
 
-        @Override
-        public void run() {
-          try {
-            r = new Random(seed);
-            test(readsPerThread);
-          } catch (Throwable e) {
-            failed.set(true);
-            e.printStackTrace();
-          }
-        }
+            @Override
+            public void run() {
+              try {
+                r = new Random(seed);
+                test(readsPerThread);
+              } catch (Throwable e) {
+                failed.set(true);
+                e.printStackTrace();
+              }
+            }
 
-        public void test(int iter) {
-          for (int i = 0; i < iter; i++) {
-            test();
-          }
-        }
+            public void test(int iter) {
+              for (int i = 0; i < iter; i++) {
+                test();
+              }
+            }
 
-        boolean odds(int odds) {
-          return odds > 0 && r.nextInt(odds) == 0;
-        }
+            boolean odds(int odds) {
+              return odds > 0 && r.nextInt(odds) == 0;
+            }
 
-        long getBlock() {
-          long block;
-          if (odds(readLastBlockOdds)) {
-            block = lastBlock.get();  // some percent of the time, try to read the last block another thread was just reading/writing
-          } else {
-            block = r.nextInt(blocksInTest);
-            lastBlock.set(block);
-          }
-          return block;
-        }
+            long getBlock() {
+              long block;
+              if (odds(readLastBlockOdds)) {
+                block =
+                    lastBlock.get(); // some percent of the time, try to read the last block another
+                // thread was just reading/writing
+              } else {
+                block = r.nextInt(blocksInTest);
+                lastBlock.set(block);
+              }
+              return block;
+            }
 
-        public void test() {
-          Long k = getBlock();
+            public void test() {
+              Long k = getBlock();
 
-          if (odds(invalidateOdds)) {
-            // This tests that invalidate always ends up calling the removal listener exactly once
-            // even if the entry may be in the process of concurrent removal in a different thread.
-            // This also inadvertently tests concurrently inserting, getting, and invalidating the same key, which we don't need in Solr's BlockCache.
-            cache.invalidate(k);
-          }
+              if (odds(invalidateOdds)) {
+                // This tests that invalidate always ends up calling the removal listener exactly
+                // once
+                // even if the entry may be in the process of concurrent removal in a different
+                // thread.
+                // This also inadvertently tests concurrently inserting, getting, and invalidating
+                // the same key, which we don't need in Solr's BlockCache.
+                cache.invalidate(k);
+              }
 
-          Val v = cache.getIfPresent(k);
-          if (v != null) {
-            hits.incrementAndGet();
-            assertEquals("cache key differs from value's key", k, (Long) v.key);
-          }
+              Val v = cache.getIfPresent(k);
+              if (v != null) {
+                hits.incrementAndGet();
+                assertEquals("cache key differs from value's key", k, (Long) v.key);
+              }
 
-          if (v == null || odds(updateAnywayOdds)) {
-            v = new Val();
-            v.key = k;
-            cache.put(k, v);
-            inserts.incrementAndGet();
-          }
+              if (v == null || odds(updateAnywayOdds)) {
+                v = new Val();
+                v.key = k;
+                cache.put(k, v);
+                inserts.incrementAndGet();
+              }
 
-          long sz = cache.estimatedSize();
-          if (sz > maxObservedSize.get()) maxObservedSize.set(sz);  // race condition here, but an estimate is OK
-
-        }
-      };
+              long sz = cache.estimatedSize();
+              if (sz > maxObservedSize.get())
+                maxObservedSize.set(sz); // race condition here, but an estimate is OK
+            }
+          };
     }
-
 
     for (Thread thread : threads) {
       thread.start();
@@ -353,13 +388,21 @@ public class BlockCacheTest extends SolrTestCase {
       thread.join();
     }
 
-
     // Thread.sleep(1000); // need to wait if executor is used for listener?
     long cacheSize = cache.estimatedSize();
-    System.out.println("Done! # of Elements = " + cacheSize + " inserts=" + inserts.get() + " removals=" + removals.get() + " hits=" + hits.get() + " maxObservedSize=" + maxObservedSize);
-    assertEquals("cache size different from (inserts - removal)", cacheSize,  inserts.get() - removals.get());
+    System.out.println(
+        "Done! # of Elements = "
+            + cacheSize
+            + " inserts="
+            + inserts.get()
+            + " removals="
+            + removals.get()
+            + " hits="
+            + hits.get()
+            + " maxObservedSize="
+            + maxObservedSize);
+    assertEquals(
+        "cache size different from (inserts - removal)", cacheSize, inserts.get() - removals.get());
     assertFalse(failed.get());
   }
-
-
 }

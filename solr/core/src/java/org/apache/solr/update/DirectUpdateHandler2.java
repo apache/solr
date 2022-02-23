@@ -937,7 +937,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       // can't use cmd.getIndexedId because it will be a root doc if this doc is a child
       Term updateTerm = new Term(idField.getName(),
-          core.getLatestSchema().indexableUniqueKey(cmd.getChildDocIdStr()));
+          core.getLatestSchema().indexableUniqueKey(cmd.getSelfOrNestedDocIdStr()));
       List<IndexableField> fields = cmd.makeLuceneDocForInPlaceUpdate().getFields(); // skips uniqueKey and _root_
       log.debug("updateDocValues({})", cmd);
       writer.updateDocValues(updateTerm, fields.toArray(new Field[fields.size()]));

@@ -19,12 +19,12 @@ package org.apache.solr.analytics.stream.reservation.write;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.function.IntSupplier;
-
 import org.apache.solr.analytics.util.function.FloatSupplier;
 
 public class FloatDataArrayWriter extends ReductionDataArrayWriter<FloatSupplier> {
 
-  public FloatDataArrayWriter(DataOutput output, FloatSupplier extractor, IntSupplier sizeSupplier) {
+  public FloatDataArrayWriter(
+      DataOutput output, FloatSupplier extractor, IntSupplier sizeSupplier) {
     super(output, extractor, sizeSupplier);
   }
 

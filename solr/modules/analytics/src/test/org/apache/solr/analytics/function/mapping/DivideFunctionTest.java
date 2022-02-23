@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.mapping;
 
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.DoubleValue;
@@ -35,7 +34,8 @@ public class DivideFunctionTest extends SolrTestCaseJ4 {
     TestIntValue dividend = new TestIntValue();
     TestFloatValue divisor = new TestFloatValue();
 
-    AnalyticsValueStream uncasted = DivideFunction.creatorFunction.apply(new AnalyticsValueStream[] {dividend, divisor});
+    AnalyticsValueStream uncasted =
+        DivideFunction.creatorFunction.apply(new AnalyticsValueStream[] {dividend, divisor});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
 
@@ -63,32 +63,36 @@ public class DivideFunctionTest extends SolrTestCaseJ4 {
     TestLongValueStream dividend = new TestLongValueStream();
     TestDoubleValue divisor = new TestDoubleValue();
 
-    AnalyticsValueStream uncasted = DivideFunction.creatorFunction.apply(new AnalyticsValueStream[] {dividend, divisor});
+    AnalyticsValueStream uncasted =
+        DivideFunction.creatorFunction.apply(new AnalyticsValueStream[] {dividend, divisor});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
 
     // No values, One value
     dividend.setValues();
     divisor.setValue(21.56F).setExists(true);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, no value
     dividend.setValues(4L, 10023L);
     divisor.setExists(false);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, one value
     dividend.setValues(20L, 5L, -234L);
     divisor.setValue(44.56F).setExists(true);
     Iterator<Double> values = Arrays.asList(0.448833, 0.112208, -5.251346).iterator();
-    func.streamDoubles( value -> {
-      assertTrue(values.hasNext());
-      assertEquals(values.next(), value, 0.00001);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value, 0.00001);
+        });
     assertFalse(values.hasNext());
   }
 
@@ -97,32 +101,36 @@ public class DivideFunctionTest extends SolrTestCaseJ4 {
     TestDoubleValue dividend = new TestDoubleValue();
     TestLongValueStream divisor = new TestLongValueStream();
 
-    AnalyticsValueStream uncasted = DivideFunction.creatorFunction.apply(new AnalyticsValueStream[] {dividend, divisor});
+    AnalyticsValueStream uncasted =
+        DivideFunction.creatorFunction.apply(new AnalyticsValueStream[] {dividend, divisor});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
 
     // No values, One value
     dividend.setValue(21.56F).setExists(true);
     divisor.setValues();
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, no value
     dividend.setExists(false);
     divisor.setValues(4L, 10023L);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, one value
     dividend.setValue(44.56F).setExists(true);
     divisor.setValues(20L, 5L, -234L);
     Iterator<Double> values = Arrays.asList(2.228, 8.912, -0.190427).iterator();
-    func.streamDoubles( value -> {
-      assertTrue(values.hasNext());
-      assertEquals(values.next(), value, 0.00001);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value, 0.00001);
+        });
     assertFalse(values.hasNext());
   }
 }

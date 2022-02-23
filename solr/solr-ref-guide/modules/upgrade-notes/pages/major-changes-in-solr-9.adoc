@@ -128,6 +128,9 @@ changes, however the module needs to be installed - see the section xref:deploym
 * SOLR-13989: Hadoop authentication support has been moved to the hadoop-auth module. Existing Solr configurations do not need any Hadoop authentication related
 changes, however the module needs to be installed - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
 
+* SOLR-15904: SQL support has been moved to the sql module. Existing Solr configurations do not need any SQL related
+changes, however the module needs to be installed - see the section xref:query-guide:sql-query.adoc[].
+
 * SOLR-15950: The folder $SOLR_HOME/userfiles, used by the "cat" streaming expression, is no longer created automatically on startup. The user must create this folder.
 
 * SOLR-15097: JWTAuthPlugin has been moved to a module. Users need to add the module to classpath. The plugin has also
@@ -333,3 +336,6 @@ where they really belong: /admin/threads, /admin/properties, /admin/logging
 
 * SOLR-15949: Docker: the official image now uses Java 17 provided by Eclipse Temurin.  Formerly it was Java 11 from OpenJDK.
 (janhoy, David Smiley)
+
+* Atomic/partial updates to nested documents now _require_ the `\_root_` field to clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.
+

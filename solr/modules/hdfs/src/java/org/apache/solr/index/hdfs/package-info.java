@@ -14,9 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/**
- * An HDFS CheckIndex implementation.
- */
-package org.apache.solr.index.hdfs;
 
+/** An HDFS CheckIndex implementation. */
+package org.apache.solr.index.hdfs;

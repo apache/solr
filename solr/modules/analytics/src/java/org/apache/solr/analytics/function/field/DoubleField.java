@@ -19,7 +19,6 @@ package org.apache.solr.analytics.function.field;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -29,7 +28,8 @@ import org.apache.solr.schema.DoublePointField;
 import org.apache.solr.schema.TrieDoubleField;
 
 /**
- * An analytics wrapper for a single-valued {@link TrieDoubleField} or {@link DoublePointField} with DocValues enabled.
+ * An analytics wrapper for a single-valued {@link TrieDoubleField} or {@link DoublePointField} with
+ * DocValues enabled.
  */
 public class DoubleField extends AnalyticsField implements CastingDoubleValue {
   private NumericDocValues docValues;
@@ -57,14 +57,17 @@ public class DoubleField extends AnalyticsField implements CastingDoubleValue {
   public double getDouble() {
     return value;
   }
+
   @Override
   public String getString() {
     return exists ? Double.toString(value) : null;
   }
+
   @Override
   public Object getObject() {
     return exists ? value : null;
   }
+
   @Override
   public boolean exists() {
     return exists;
@@ -76,12 +79,14 @@ public class DoubleField extends AnalyticsField implements CastingDoubleValue {
       cons.accept(value);
     }
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     if (exists) {
       cons.accept(Double.toString(value));
     }
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     if (exists) {

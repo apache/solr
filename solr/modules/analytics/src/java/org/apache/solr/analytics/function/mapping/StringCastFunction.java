@@ -28,15 +28,20 @@ import org.apache.solr.common.SolrException.ErrorCode;
  */
 public class StringCastFunction {
   public static final String name = "string";
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length != 1) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 1 paramater, " + params.length + " found.");
-    }
-    AnalyticsValueStream param = params[0];
-    if (param instanceof StringValueStream) {
-      return LambdaFunction.createStringLambdaFunction(name, a -> a, (StringValueStream)param);
-    } else {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a string-castable parameter.");
-    }
-  });
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length != 1) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The " + name + " function requires 1 paramater, " + params.length + " found.");
+        }
+        AnalyticsValueStream param = params[0];
+        if (param instanceof StringValueStream) {
+          return LambdaFunction.createStringLambdaFunction(name, a -> a, (StringValueStream) param);
+        } else {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The " + name + " function requires a string-castable parameter.");
+        }
+      });
 }

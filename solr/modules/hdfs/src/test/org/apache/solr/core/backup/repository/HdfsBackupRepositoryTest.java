@@ -17,21 +17,20 @@
 
 package org.apache.solr.core.backup.repository;
 
-import java.io.IOException;
+import static org.junit.Assert.assertEquals;
 
+import java.io.IOException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 public class HdfsBackupRepositoryTest {
 
   @Test(expected = NullPointerException.class)
   public void testHdfsHomePropertyMissing() throws IOException {
-    try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository())  {
+    try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
       NamedList<Object> namedList = new SimpleOrderedMap<>();
       hdfsBackupRepository.init(namedList);
     }

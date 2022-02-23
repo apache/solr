@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Value types for analytics expressions.
- */
+/** Value types for analytics expressions. */
 package org.apache.solr.analytics.value;
-
-
