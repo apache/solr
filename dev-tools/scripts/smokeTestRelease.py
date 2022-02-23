@@ -203,8 +203,10 @@ def checkAllJARs(topDir, gitRevision, version):
 
     for file in files:
       if file.lower().endswith('.jar'):
-        if ((normRoot.endswith('/test-framework/lib') and file.startswith('jersey-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('xml-apis-'))):
+        if ((normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.activation-'))
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.annotation-api-'))
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.xml.bind-api-'))
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))):
           print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
           continue
         fullPath = '%s/%s' % (root, file)
