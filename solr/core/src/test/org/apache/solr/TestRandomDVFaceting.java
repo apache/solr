@@ -254,10 +254,6 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
       List<String> responses = new ArrayList<>(methods.size());
       for (String method : methods) {
         if (method.equals("dv")) {
-          // SOLR-16051: Remove this if-statement when Solr begins to use Lucene 9.1
-          if (params.get("facet.prefix", "").length() > 5) {
-            continue;
-          }
           params.set("facet.field", "{!key="+facet_field+"}"+facet_field+"_dv");
           params.set("facet.method",(String) null);
         } else {
