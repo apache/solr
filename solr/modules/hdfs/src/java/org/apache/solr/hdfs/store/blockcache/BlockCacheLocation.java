@@ -19,7 +19,9 @@ package org.apache.solr.hdfs.store.blockcache;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.common.util.SuppressForbidden;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ */
 public class BlockCacheLocation {
 
   private int block;
