@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.codahale.metrics.Counter;
@@ -396,7 +395,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     // test multiple expressions producing overlapping metrics - should be no dupes
 
-    // this key matches also sub-metrics of /select, eg. /select.distrib, /select.local, ...
+    // this key matches also sub-metrics of /select, eg. /select[shard], ...
     String key3 = "solr\\.core\\..*:.*/select.*\\.requestTimes:count";
     resp = new SolrQueryResponse();
     // ORDER OF PARAMS MATTERS HERE! see the refguide
@@ -407,19 +406,15 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     // for requestTimes only the full set of values from the first expr should be present
     assertNotNull(val);
     SimpleOrderedMap<Object> values = (SimpleOrderedMap<Object>) val;
-    assertEquals(values.jsonStr(), 4, values.size());
-    List<Object> multipleVals = values.getAll("QUERY./select.requestTimes");
-    assertEquals(multipleVals.toString(), 1, multipleVals.size());
-    v = values.get("QUERY./select.local.requestTimes");
+    assertEquals(values.jsonStr(), 3, values.size());
+    v = values.get("QUERY./select.requestTimes");
     assertTrue(v instanceof MapWriter);
     ((MapWriter) v).toMap(map);
-    assertEquals(map.toString(), 1, map.size());
     assertTrue(map.toString(), map.containsKey("count"));
     map.clear();
-    v = values.get("QUERY./select.distrib.requestTimes");
+    v = values.get("QUERY./select[shard].requestTimes");
     assertTrue(v instanceof MapWriter);
     ((MapWriter) v).toMap(map);
-    assertEquals(map.toString(), 1, map.size());
     assertTrue(map.toString(), map.containsKey("count"));
   }
 
