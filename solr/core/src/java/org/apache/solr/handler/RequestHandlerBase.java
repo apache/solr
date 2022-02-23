@@ -62,8 +62,8 @@ public abstract class RequestHandlerBase implements
   protected boolean httpCaching = true;
   
   protected SolrMetricsContext solrMetricsContext;
-  protected RhMetrics metrics = RhMetrics.NO_OP;
-  protected RhMetrics metricsShard = RhMetrics.NO_OP;
+  protected HandlerMetrics metrics = HandlerMetrics.NO_OP;
+  protected HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
   private final long handlerStart;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -138,9 +138,9 @@ public abstract class RequestHandlerBase implements
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
-    metrics = new RhMetrics(solrMetricsContext, getCategory().toString(), scope);
+    metrics = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
     if (supportsDistribedRequests()) {
-      metricsShard = new RhMetrics(solrMetricsContext, getCategory().toString(), scope + "[shard]");
+      metricsShard = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope + "[shard]");
     }
     solrMetricsContext.gauge(() -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
@@ -154,13 +154,14 @@ public abstract class RequestHandlerBase implements
     return false;
   }
 
-  protected static class RhMetrics {
-    static final RhMetrics NO_OP;
-    static {
-      var metricsConfig = new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build();
-      var ctx = new SolrMetricsContext(new SolrMetricManager(null, metricsConfig), "dummy", "dummy");
-      NO_OP = new RhMetrics(ctx, "dummy", "dummy");
-    }
+  protected static class HandlerMetrics {
+    static final HandlerMetrics NO_OP =
+        new HandlerMetrics(
+            new SolrMetricsContext(
+                new SolrMetricManager(
+                    null, new MetricsConfig.MetricsConfigBuilder().setEnabled(false).build()),
+                "NO_OP",
+                "NO_OP"));
 
     private final Meter numErrors;
     private final Meter numServerErrors;
@@ -170,7 +171,7 @@ public abstract class RequestHandlerBase implements
     private final Timer requestTimes;
     private final Counter totalTime;
 
-    RhMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
+    HandlerMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
       numErrors = solrMetricsContext.meter("errors", metricPath);
       numServerErrors = solrMetricsContext.meter("serverErrors", metricPath);
       numClientErrors = solrMetricsContext.meter("clientErrors", metricPath);
@@ -198,7 +199,7 @@ public abstract class RequestHandlerBase implements
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    RhMetrics metrics = req.getParams().getBool(ShardParams.IS_SHARD, false) ? this.metricsShard : this.metrics;
+    HandlerMetrics metrics = req.getParams().getBool(ShardParams.IS_SHARD, false) ? this.metricsShard : this.metrics;
     metrics.requests.inc();
     
     Timer.Context timer = metrics.requestTimes.time();
