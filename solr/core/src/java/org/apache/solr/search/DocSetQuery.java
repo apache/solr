@@ -40,7 +40,7 @@ class DocSetQuery extends Query implements DocSetProducer{
     private final DocSet docSet;
 
     DocSetQuery(DocSet docSet) {
-        this.docSet = docSet;
+        this.docSet = Objects.requireNonNull(docSet);
     }
 
     @Override
@@ -64,7 +64,7 @@ class DocSetQuery extends Query implements DocSetProducer{
 
     @Override
     public int hashCode() {
-        return classHash() * 31 + (docSet != null ? docSet.hashCode() : 0);
+        return classHash() * 31 + docSet.hashCode();
     }
 
     /**
@@ -81,9 +81,6 @@ class DocSetQuery extends Query implements DocSetProducer{
         return new ConstantScoreWeight(this, boost) {
             @Override
             public Scorer scorer(LeafReaderContext context) {
-                if (docSet == null) {
-                    return null;
-                }
                 DocIdSetIterator disi = docSet.iterator(context);
                 if (disi == null) {
                     return null;

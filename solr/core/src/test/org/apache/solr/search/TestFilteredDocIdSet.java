@@ -131,26 +131,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
     
     // Now search w/ a Query which returns a null Scorer
-    DocSetQuery f = new DocSetQuery(null) {
-
-      @Override
-      public String toString(String s) {
-        return "nullDocIdSetFilter";
-      }
-
-      @Override
-      public void visit(QueryVisitor queryVisitor) {}
-
-      @Override
-      public boolean equals(Object o) {
-        return o == this;
-      }
-
-      @Override
-      public int hashCode() {
-        return System.identityHashCode(this);
-      }
-    };
+    DocSetQuery f = new DocSetQuery(DocSet.empty());
 
     Query filtered = new BooleanQuery.Builder()
         .add(new MatchAllDocsQuery(), Occur.MUST)
