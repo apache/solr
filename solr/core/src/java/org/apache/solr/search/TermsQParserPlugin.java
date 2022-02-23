@@ -23,9 +23,13 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
 import org.apache.lucene.search.*;
@@ -33,6 +37,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LongBitSet;
+import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.solr.common.SolrException;
@@ -40,6 +45,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
+import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +69,14 @@ public class TermsQParserPlugin extends QParserPlugin {
 
   /** Choose the internal algorithm */
   private static final String METHOD = "method";
+
+  /** Do we require a certain number of terms to match? */
+  private static final String MIN_SHOULD_MATCH = "minShouldMatch";
+  private static final int DEFAULT_MIN_SHOULD_MATCH = 1;
+
+  /** Do we tolerate terms that are _not_ enumerated? */
+  private static final String TOLERATE_OTHER_TERMS = "tolerateOtherTerms";
+  private static final int DEFAULT_TOLERATE_OTHER_TERMS = Integer.MAX_VALUE;
 
   private static enum Method {
     termsFilter {
@@ -99,7 +113,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     docValuesTermsFilterTopLevel {
       @Override
       Query makeFilter(String fname, BytesRef[] byteRefs) {
-        return disableCacheByDefault(new TopLevelDocValuesTermsQuery(fname, byteRefs));
+        return disableCacheByDefault(new TopLevelDocValuesTermsQuery(fname, DEFAULT_MIN_SHOULD_MATCH, DEFAULT_TOLERATE_OTHER_TERMS, byteRefs));
       }
     },
     docValuesTermsFilterPerSegment {
@@ -131,6 +145,14 @@ public class TermsQParserPlugin extends QParserPlugin {
         String separator = localParams.get(SEPARATOR, ",");
         String qstr = localParams.get(QueryParsing.V);//never null
         Method method = Method.valueOf(localParams.get(METHOD, Method.termsFilter.name()));
+        final int minShouldMatch = localParams.getInt(MIN_SHOULD_MATCH, DEFAULT_MIN_SHOULD_MATCH);
+        final int tolerateOtherTerms = localParams.getInt(TOLERATE_OTHER_TERMS, DEFAULT_TOLERATE_OTHER_TERMS);
+        if (minShouldMatch < DEFAULT_MIN_SHOULD_MATCH) {
+          throw new IllegalArgumentException(MIN_SHOULD_MATCH + " must be >= " + DEFAULT_MIN_SHOULD_MATCH + "; found "+minShouldMatch);
+        }
+        if (tolerateOtherTerms < 0) {
+          throw new IllegalArgumentException(TOLERATE_OTHER_TERMS + " must be >= 0; found "+tolerateOtherTerms);
+        }
         //TODO pick the default method based on various heuristics from benchmarks
         //TODO pick the default using FieldType.getSetQuery
 
@@ -164,21 +186,76 @@ public class TermsQParserPlugin extends QParserPlugin {
           bytesRefs[i] = term.toBytesRef();
         }
 
+        if (minShouldMatch > DEFAULT_MIN_SHOULD_MATCH || tolerateOtherTerms < DEFAULT_TOLERATE_OTHER_TERMS) {
+          return new TopLevelDocValuesTermsQuery(fname, minShouldMatch, tolerateOtherTerms, bytesRefs);
+        }
         return method.makeFilter(fname, bytesRefs);
       }
     };
   }
 
   private static class TopLevelDocValuesTermsQuery extends DocValuesTermsQuery {
+    private static final LongBitSet NO_TERMS_IN_INDEX = new LongBitSet(0);
     private final String fieldName;
-    private SortedSetDocValues topLevelDocValues;
+    private final int minShouldMatch;
+    private final int tolerateOtherTerms;
     private LongBitSet topLevelTermOrdinals;
-    private boolean matchesAtLeastOneTerm = false;
+    private boolean matchIsPossible = false;
 
+    boolean multiValuedField;
+    OrdinalMap ordinalMap = null; // maps per-segment ords to global ords
 
-    public TopLevelDocValuesTermsQuery(String field, BytesRef... terms) {
+    public TopLevelDocValuesTermsQuery(String field, int minShouldMatch, int tolerateOtherTerms, BytesRef... terms) {
       super(field, terms);
       this.fieldName = field;
+      this.minShouldMatch = minShouldMatch;
+      this.tolerateOtherTerms = tolerateOtherTerms;
+    }
+
+    private void init(SolrIndexSearcher searcher) throws IOException {
+      // NOTE: all access to OrdinalMap from Solr goes via `SlowCompositeReaderWrapper`,
+      // (mainly for caching reasons?) so we do all this even though we could do everything
+      // we need with only OrdinalMap.
+      LeafReader topLevelReader = searcher.getSlowAtomicReader();
+      SchemaField sf = searcher.getSchema().getField(fieldName);
+      multiValuedField = sf.multiValued() || sf.getType().multiValuedFieldCache();
+      SortedSetDocValues topLevelDocValues;
+      if (multiValuedField) {
+        topLevelDocValues = topLevelReader.getSortedSetDocValues(fieldName);
+        if (topLevelDocValues instanceof MultiDocValues.MultiSortedSetDocValues) {
+          ordinalMap = ((MultiDocValues.MultiSortedSetDocValues)topLevelDocValues).mapping;
+        }
+      } else {
+        // multi-valued view for simpler term lookup
+        SortedDocValues single = topLevelReader.getSortedDocValues(fieldName);
+        topLevelDocValues = single == null ? null : DocValues.singleton(single);
+        if (single instanceof MultiDocValues.MultiSortedDocValues) {
+          ordinalMap = ((MultiDocValues.MultiSortedDocValues)single).mapping;
+        }
+      }
+
+      if (topLevelDocValues == null) {
+        topLevelTermOrdinals = NO_TERMS_IN_INDEX;
+        return;
+      }
+
+      topLevelTermOrdinals = new LongBitSet(ordinalMap != null ? ordinalMap.getValueCount() : topLevelDocValues.getValueCount());
+      PrefixCodedTerms.TermIterator iterator = getTerms().iterator();
+
+      int numberOfMatches = 0;
+      long lowOrdInclusive = 0;
+      for(BytesRef term = iterator.next(); term != null; term = iterator.next()) {
+        long currentTermOrd = lookupTerm(topLevelDocValues, term, lowOrdInclusive);
+        if (currentTermOrd < 0) {
+          // we didn't find the term, but we still know the point we need to seek from
+          lowOrdInclusive = ~currentTermOrd;
+        } else {
+          numberOfMatches++;
+          topLevelTermOrdinals.set(currentTermOrd);
+          lowOrdInclusive = currentTermOrd + 1; // +1 because we already found this term
+        }
+      }
+      matchIsPossible = numberOfMatches >= minShouldMatch;
     }
 
     public Weight createWeight(IndexSearcher searcher, final ScoreMode scoreMode, float boost) throws IOException {
@@ -187,42 +264,96 @@ public class TermsQParserPlugin extends QParserPlugin {
         return super.createWeight(searcher, scoreMode, boost);
       }
 
-      topLevelDocValues = DocValues.getSortedSet(((SolrIndexSearcher)searcher).getSlowAtomicReader(), fieldName);
-      topLevelTermOrdinals = new LongBitSet(topLevelDocValues.getValueCount());
-      PrefixCodedTerms.TermIterator iterator = getTerms().iterator();
-
-      long lastTermOrdFound = 0;
-      for(BytesRef term = iterator.next(); term != null; term = iterator.next()) {
-        long currentTermOrd = lookupTerm(topLevelDocValues, term, lastTermOrdFound);
-        if (currentTermOrd >= 0L) {
-          matchesAtLeastOneTerm = true;
-          topLevelTermOrdinals.set(currentTermOrd);
-          lastTermOrdFound = currentTermOrd;
-        }
+      if (topLevelTermOrdinals == null) {
+        init((SolrIndexSearcher) searcher);
       }
 
       return new ConstantScoreWeight(this, boost) {
         public Scorer scorer(LeafReaderContext context) throws IOException {
-          if (! matchesAtLeastOneTerm) {
+          final SortedDocValues singleDv;
+          final SortedSetDocValues multiDv;
+          final int localTolerateOtherTerms;
+          if (!matchIsPossible) {
             return null;
+          } else if (multiValuedField) {
+            multiDv = context.reader().getSortedSetDocValues(fieldName);
+            if (multiDv == null) {
+              return null;
+            }
+            // multiValued fields that are single-valued in practice for a given segment may be optimized
+            singleDv = DocValues.unwrapSingleton(multiDv);
+            final long valueCount = multiDv.getValueCount();
+            if (minShouldMatch > (singleDv != null ? 1 : valueCount)) {
+              // there's no way to meet the requirement
+              return null;
+            } else if (singleDv == null // this won't matter if singleDv != null
+                    && tolerateOtherTerms != DEFAULT_TOLERATE_OTHER_TERMS // this won't matter if already the default
+                    && minShouldMatch <= tolerateOtherTerms // want to shortcircuit based on the _smaller_ of these
+                    && valueCount <= (long) tolerateOtherTerms + minShouldMatch) { // avoid overflow
+              // there's no way to exceed `tolerateOtherTerms`, and we benefit by simplifying
+              localTolerateOtherTerms = DEFAULT_TOLERATE_OTHER_TERMS;
+            } else {
+              localTolerateOtherTerms = tolerateOtherTerms;
+            }
+          } else {
+            multiDv = null;
+            singleDv = context.reader().getSortedDocValues(fieldName);
+            if (singleDv == null) {
+              return null;
+            }
+            localTolerateOtherTerms = DEFAULT_TOLERATE_OTHER_TERMS; // doesn't matter for the single-valued case
           }
 
-          SortedSetDocValues segmentDocValues = DocValues.getSortedSet(context.reader(), fieldName);
-          if (segmentDocValues == null) {
-            return null;
-          }
+          final LongValues toGlobal = ordinalMap == null ? null : ordinalMap.getGlobalOrds(context.ord);
 
-          final int docBase = context.docBase;
-          return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(segmentDocValues) {
-            public boolean matches() throws IOException {
-              topLevelDocValues.advanceExact(docBase + approximation.docID());
-              for(long ord = topLevelDocValues.nextOrd(); ord != -1L; ord = topLevelDocValues.nextOrd()) {
-                if (topLevelTermOrdinals.get(ord)) {
-                  return true;
-                }
+          if (singleDv != null) {
+            return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(singleDv) {
+              public boolean matches() throws IOException {
+                final long ord = singleDv.ordValue();
+                return topLevelTermOrdinals.get(toGlobal == null ? ord : toGlobal.get(ord));
               }
 
-              return false;
+              public float matchCost() {
+                return 10.0F;
+              }
+            });
+          }
+
+          if (localTolerateOtherTerms == DEFAULT_TOLERATE_OTHER_TERMS) {
+            // we could special-case `minShouldMatch==1`, but probably not worth it
+            return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(multiDv) {
+              public boolean matches() throws IOException {
+                int matches = 0;
+                long ord = multiDv.nextOrd();
+                do {
+                  if (topLevelTermOrdinals.get(toGlobal == null ? ord : toGlobal.get(ord)) && ++matches >= minShouldMatch) {
+                    return true;
+                  }
+                } while ((ord = multiDv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS);
+
+                return false;
+              }
+
+              public float matchCost() {
+                return 10.0F;
+              }
+            });
+          }
+
+          return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(multiDv) {
+            public boolean matches() throws IOException {
+              int matches = 0;
+              int otherTerms = 0;
+              long ord = multiDv.nextOrd();
+              do {
+                if (topLevelTermOrdinals.get(toGlobal == null ? ord : toGlobal.get(ord))) {
+                  matches++;
+                } else if (++otherTerms > localTolerateOtherTerms) {
+                  return false;
+                }
+              } while ((ord = multiDv.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS);
+
+              return matches >= minShouldMatch;
             }
 
             public float matchCost() {
