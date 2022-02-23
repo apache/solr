@@ -34,7 +34,7 @@ import org.apache.solr.handler.admin.api.SchemaGetFieldAPI;
 import org.apache.solr.handler.admin.api.SchemaGetDynamicFieldAPI;
 import org.apache.solr.handler.admin.api.SchemaGetFieldTypeAPI;
 import org.apache.solr.handler.admin.api.SchemaInfoAPI;
-import org.apache.solr.handler.admin.api.SchemaKeyAPI;
+import org.apache.solr.handler.admin.api.SchemaUniqueKeyAPI;
 import org.apache.solr.handler.admin.api.SchemaListAllFieldsAPI;
 import org.apache.solr.handler.admin.api.SchemaListAllCopyFieldsAPI;
 import org.apache.solr.handler.admin.api.SchemaListAllDynamicFieldsAPI;
@@ -297,7 +297,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     mutList.addAll(immList);
     mutList.addAll(AnnotatedApi.getApis(new SchemaNameAPI(this)));
     mutList.addAll(AnnotatedApi.getApis(new SchemaInfoAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaKeyAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaUniqueKeyAPI(this)));
     mutList.addAll(AnnotatedApi.getApis(new SchemaVersionAPI(this)));
     mutList.addAll(AnnotatedApi.getApis(new SchemaSimilarityAPI(this)));
     mutList.addAll(AnnotatedApi.getApis(new SchemaZkVersionAPI(this)));

@@ -31,10 +31,10 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
  * This API (GET /v2/collections/collectionName/schema/uniquekey) is analogous to the v1
  * /solr/collectionName/schema/uniquekey API.
  */
-public class SchemaKeyAPI {
+public class SchemaUniqueKeyAPI {
     private final SchemaHandler schemaHandler;
 
-    public SchemaKeyAPI(SchemaHandler schemaHandler) {
+    public SchemaUniqueKeyAPI(SchemaHandler schemaHandler) {
         this.schemaHandler = schemaHandler;
     }
 
