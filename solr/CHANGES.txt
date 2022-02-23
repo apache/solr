@@ -230,6 +230,7 @@ Improvements
 
 * SOLR-15982: Add end time value to backup response, standardize backup response key names and date formats (Artem Abeleshev, Christine Poerschke, Houston Putman)
 
+<<<<<<< HEAD
 * SOLR-14401: Metrics: Only SearchHandler and subclasses have "local" metrics now.
   It's now tracked as if it's another handler with a "[shard]" suffix, e.g. "/select[shard]".
   There are no longer ".distrib." named metrics; all metrics are assumed to be such except
@@ -238,6 +239,10 @@ Improvements
   (David Smiley)
 
 * SOLR-16088: De-couple Http2SolrClient and ContentStreamBase from org.apache.http (janhoy)
+=======
+* SOLR-15286: A brand new follower in the legacy mode should wait to replicate index before reporting
+  healthy (Pushkar Raste, Anshum Gupta)
+>>>>>>> 9fb40b57b97 (SOLR-15286: Add missing changelog entry)
 
 Build
 ---------------------
