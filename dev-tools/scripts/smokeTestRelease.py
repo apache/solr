@@ -111,10 +111,14 @@ def load(urlString):
   return content
 
 
-sheisty_classes_re = re.compile(r'^java/|^javax/(?!measure/|activation/|annotation/|xml/bind/)')
+jar_allowed_re = re.compile(r'^jakarta.xml.bind-api|jakarta.activation|jakarta.annotation-api|jakarta.xml.bind-api|unit-api')
+sheisty_classes_re = re.compile(r'^java/|^javax/')
 
 
 def noJavaPackageClasses(desc, file):
+  if jar_allowed_re.match(file.split('/').pop()):
+    print('      Skipping explicitly allowed jar %s' % file)
+    return
   with zipfile.ZipFile(file) as z2:
     for name2 in z2.namelist():
       if name2.endswith('.class') and sheisty_classes_re.match(name2):
