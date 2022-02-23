@@ -179,7 +179,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
-  long id = -1;
+  protected long id = -1;
   protected volatile State state = State.ACTIVE;
 
   protected TransactionLog bufferTlog;
@@ -238,9 +238,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   protected SyncLevel defaultSyncLevel = SyncLevel.FLUSH;
 
-  volatile UpdateHandler uhandler;    // a core reload can change this reference!
+  protected volatile UpdateHandler uhandler;    // a core reload can change this reference!
   protected volatile boolean cancelApplyBufferUpdate;
-  List<Long> startingVersions;
+  protected List<Long> startingVersions;
 
   // metrics
   protected Gauge<Integer> bufferedOpsGauge;
@@ -723,7 +723,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
 
-  void trackDeleteByQuery(String q, long version) {
+  protected void trackDeleteByQuery(String q, long version) {
     version = Math.abs(version);
     DBQ dbq = new DBQ();
     dbq.q = q;
@@ -1393,16 +1393,16 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
 
-  static class Update {
-    TransactionLog log;
+  protected static class Update {
+    public TransactionLog log;
     long version;
     long previousVersion; // for in-place updates
-    long pointer;
+    public long pointer;
   }
 
-  static class DeleteUpdate {
-    long version;
-    byte[] id;
+  protected static class DeleteUpdate {
+    public long version;
+    public byte[] id;
 
     public DeleteUpdate(long version, byte[] id) {
       this.version = version;
@@ -1411,12 +1411,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   public class RecentUpdates implements Closeable {
-
     final Deque<TransactionLog> logList;    // newest first
     List<List<Update>> updateList;
     HashMap<Long, Update> updates;
-    List<Update> deleteByQueryList;
-    List<DeleteUpdate> deleteList;
+    public List<Update> deleteByQueryList;
+    public List<DeleteUpdate> deleteList;
     Set<Long> bufferUpdates = new HashSet<>();
 
     public RecentUpdates(Deque<TransactionLog> logList) {

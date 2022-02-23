@@ -402,8 +402,8 @@ public class Utils {
     }
   }
 
-  public static Object fromJSONResource(String resourceName) {
-    final URL resource = Utils.class.getClassLoader().getResource(resourceName);
+  public static Object fromJSONResource(ClassLoader loader, String resourceName) {
+    final URL resource = loader.getResource(resourceName);
     if (null == resource) {
       throw new IllegalArgumentException("invalid resource name: " + resourceName);
     }

@@ -1569,9 +1569,13 @@ The BACKUP command will backup Solr indexes and configurations for a specified c
 The BACKUP command xref:backup-restore.adoc[takes one copy from each shard for the indexes].
 For configurations, it backs up the configset that was associated with the collection and metadata.
 
-Backup data is stored in the repository based on the provided `name` and `location`.
+Solr ships with backup support for a number of repositories.
+Please refer to the xref:backup-restore.adoc#backuprestore-storage-repositories[Backup Storage Repositories] section for a complete list.
+
+Backup data is stored in a directory in the specified repository based on the provided `name` and `location`.
 Each backup location can hold multiple backups for the same collection, allowing users to later restore from any of these "backup points" as desired.
 Within a location backups are done incrementally, so that index files uploaded previously are skipped and not duplicated in the backup repository.
+Multiple collections cannot be backed up to the same location.
 
 [NOTE]
 ====
@@ -1616,6 +1620,8 @@ Since any node can take the overseer role at any time, a best practice to avoid 
 +
 Each backup location can only hold a backup for one collection, however the same location can be used for repeated backups of the same collection.
 Repeated backups of the same collection are done incrementally, so that files unchanged since the last backup are not duplicated in the backup repository.
++
+If you are using the xref:backup-restore.adoc#s3backuprepository[S3 Backup Repository], then please read the S3-specific warnings about the `location` option.
 
 `async`::
 +
@@ -1727,6 +1733,8 @@ This parameter is required, unless a default location is defined on the reposito
 +
 If the location path is on a mounted drive, the mount must be available on the node that serves as the overseer, even if the overseer node does not host a replica of the collection being backed up.
 Since any node can take the overseer role at any time, a best practice to avoid possible backup failures is to ensure the mount point is available on all nodes of the cluster.
++
+This must be the same value as was given as the `location` option when <<#backup,creating the backup>>.
 
 `repository`::
 +
@@ -1893,7 +1901,9 @@ The name of the existing backup that you want to restore.
 |===
 +
 The location on a shared drive for the RESTORE command to read from.
-Alternately it can be set as a xref:cluster-node-management.adoc#clusterprop[cluster property].
+Alternately it can be set as a xref:cluster-node-management.adoc#clusterprop[cluster property].+
++
+This must be the same value as was given as the `location` option when <<#backup,creating the backup>>.
 
 `async`::
 +
@@ -2033,6 +2043,8 @@ This parameter is required, unless a default location is defined on the reposito
 +
 If the location path is on a mounted drive, the mount must be available on the node that serves as the overseer, even if the overseer node does not host a replica of the collection being backed up.
 Since any node can take the overseer role at any time, a best practice to avoid possible backup failures is to ensure the mount point is available on all nodes of the cluster.
++
+This must be the same value as was given as the `location` option when <<#backup,creating the backup>>.
 
 `repository`::
 +

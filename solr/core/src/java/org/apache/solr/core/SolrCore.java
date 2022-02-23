@@ -3218,7 +3218,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     static {
       @SuppressWarnings("unchecked")
-      Map<String,?> implicitPluginsInfo = (Map<String,?>) Utils.fromJSONResource("ImplicitPlugins.json");
+      Map<String,?> implicitPluginsInfo = (Map<String,?>) Utils.fromJSONResource(SolrCore.class.getClassLoader(), "ImplicitPlugins.json");
       @SuppressWarnings("unchecked")
       Map<String, Map<String,Object>> requestHandlers = (Map<String, Map<String, Object>>) implicitPluginsInfo.get(SolrRequestHandler.TYPE);
 
