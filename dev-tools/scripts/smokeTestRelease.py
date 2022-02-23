@@ -111,11 +111,14 @@ def load(urlString):
   return content
 
 
+sheisty_classes_re = re.compile(r'^java/|^javax/(?!measure/|activation/|annotation/|xml/bind/)')
+
+
 def noJavaPackageClasses(desc, file):
   with zipfile.ZipFile(file) as z2:
     for name2 in z2.namelist():
-      if name2.endswith('.class') and (name2.startswith('java/') or name2.startswith('javax/')):
-        raise RuntimeError('%s contains sheisty class "%s"' %  (desc, name2))
+      if name2.endswith('.class') and sheisty_classes_re.match(name2):
+        raise RuntimeError('%s contains sheisty class "%s"' % (desc, name2))
 
 
 def decodeUTF8(bytes):
