@@ -103,7 +103,7 @@ public class DocValuesFacets {
     }
     
     int startTermIndex, endTermIndex;
-    if (prefix!=null) {
+    if (prefix!=null && si.getValueCount() > 0) {
       startTermIndex = (int) si.lookupTerm(prefixRef.get());
       if (startTermIndex<0) startTermIndex=-startTermIndex-1;
       prefixRef.append(UnicodeUtil.BIG_TERM);
