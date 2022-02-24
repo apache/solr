@@ -63,6 +63,7 @@ dependencies {
 }
 
 def distTarTask = rootProject.getTasksByName("distTar", true)[0]
+def distZipTask = rootProject.getTasksByName("distZip", true)[0]
 
 // Compute checksums for release archives.
 task computeChecksums(type: Checksum) {
@@ -72,6 +73,7 @@ task computeChecksums(type: Checksum) {
   [
       tasks.assembleSourceTgz,
       distTarTask,
+      distZipTask,
   ].each { dep ->
     dependsOn dep
     files += dep.outputs.files
@@ -83,6 +85,9 @@ task computeChecksums(type: Checksum) {
 task signBinaryTgz(type: Sign) {
   sign distTarTask
 }
+task signBinaryZip(type: Sign) {
+  sign distZipTask
+}
 task signSourceTgz(type: Sign) {
   // The source tgz is not an archive task so be explicit about the outputs to sign.
   dependsOn tasks.assembleSourceTgz
@@ -91,6 +96,7 @@ task signSourceTgz(type: Sign) {
 
 task signReleaseArchives(type: Sync) {
   from tasks.signBinaryTgz
+  from tasks.signBinaryZip
   from tasks.signSourceTgz
 
   into "${buildDir}/signatures"
@@ -131,6 +137,7 @@ task assembleRelease(type: Sync) {
   from tasks.prepareGitRev
   from tasks.assembleSourceTgz
   from distTarTask
+  from distZipTask
 
   from tasks.computeChecksums
 
