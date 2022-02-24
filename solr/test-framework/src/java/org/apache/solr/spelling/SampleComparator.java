@@ -15,21 +15,15 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
-import org.apache.lucene.search.spell.SuggestWord;
 
 import java.util.Comparator;
+import org.apache.lucene.search.spell.SuggestWord;
 
-
-/**
- * Comparator for testing purposes
- *
- **/
+/** Comparator for testing purposes */
 public class SampleComparator implements Comparator<SuggestWord> {
-
 
   @Override
   public int compare(SuggestWord suggestWord, SuggestWord suggestWord1) {
     return suggestWord.string.compareTo(suggestWord1.string);
   }
-
 }
