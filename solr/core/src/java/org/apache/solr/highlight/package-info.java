@@ -14,12 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * {@link org.apache.solr.highlight.SolrHighlighter} API and related implementations and utilities
- * <p>
- * See {@link org.apache.lucene.search.highlight} for addition information.
+ *
+ * <p>See {@link org.apache.lucene.search.highlight} for addition information.
  */
 package org.apache.solr.highlight;
-
-

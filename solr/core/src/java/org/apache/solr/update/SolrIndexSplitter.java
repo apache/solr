@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.index.CodecReader;
 import org.apache.lucene.index.FilterCodecReader;
 import org.apache.lucene.index.IndexReader;
@@ -41,6 +40,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.misc.store.HardlinkCopyDirectoryWrapper;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -51,7 +51,6 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.misc.store.HardlinkCopyDirectoryWrapper;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.BitSetIterator;
@@ -121,18 +120,18 @@ public class SolrIndexSplitter {
     ranges = cmd.ranges;
     paths = cmd.paths;
     cores = cmd.cores;
-    hashRouter = cmd.router instanceof HashBasedRouter ? (HashBasedRouter)cmd.router : null;
+    hashRouter = cmd.router instanceof HashBasedRouter ? (HashBasedRouter) cmd.router : null;
 
     if (ranges == null) {
-      numPieces =  paths != null ? paths.size() : cores.size();
-    } else  {
+      numPieces = paths != null ? paths.size() : cores.size();
+    } else {
       numPieces = ranges.size();
       rangesArr = ranges.toArray(new DocRouter.Range[ranges.size()]);
     }
     routeFieldName = cmd.routeFieldName;
     if (routeFieldName == null) {
       field = searcher.getSchema().getUniqueKeyField();
-    } else  {
+    } else {
       field = searcher.getSchema().getField(routeFieldName);
     }
     if (cmd.splitKey != null) {
@@ -151,7 +150,8 @@ public class SolrIndexSplitter {
     Lock parentDirectoryLock = null;
     UpdateLog ulog = parentCore.getUpdateHandler().getUpdateLog();
     if (ulog == null && splitMethod == SplitMethod.LINK) {
-      log.warn("No updateLog in parent core, switching to use potentially slower 'splitMethod=rewrite'");
+      log.warn(
+          "No updateLog in parent core, switching to use potentially slower 'splitMethod=rewrite'");
       splitMethod = SplitMethod.REWRITE;
     }
     if (splitMethod == SplitMethod.LINK) {
@@ -174,9 +174,15 @@ public class SolrIndexSplitter {
         } catch (Exception e1) {
           log.error("Error reopening IndexWriter after failed close", e1);
           log.error("Original error closing IndexWriter:", e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reopening IndexWriter after failed close", e1);
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Error reopening IndexWriter after failed close",
+              e1);
         }
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error closing current IndexWriter, aborting 'link' split...", e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Error closing current IndexWriter, aborting 'link' split...",
+            e);
       }
     }
     boolean success = false;
@@ -198,7 +204,9 @@ public class SolrIndexSplitter {
         ulog.applyBufferedUpdates();
         t.stop();
         if (log.isInfoEnabled()) {
-          log.info("Splitting in 'link' mode {}: re-opened parent IndexWriter.", (success ? "finished" : "FAILED"));
+          log.info(
+              "Splitting in 'link' mode {}: re-opened parent IndexWriter.",
+              (success ? "finished" : "FAILED"));
         }
       }
     }
@@ -224,13 +232,21 @@ public class SolrIndexSplitter {
     if (splitMethod != SplitMethod.LINK) {
       t = timings.sub("findDocSetsPerLeaf");
       for (LeafReaderContext readerContext : leaves) {
-        assert readerContext.ordInParent == segmentDocSets.size();  // make sure we're going in order
-        FixedBitSet[] docSets = split(readerContext, numPieces, field, rangesArr, splitKey, hashRouter, currentPartition, false);
+        assert readerContext.ordInParent == segmentDocSets.size(); // make sure we're going in order
+        FixedBitSet[] docSets =
+            split(
+                readerContext,
+                numPieces,
+                field,
+                rangesArr,
+                splitKey,
+                hashRouter,
+                currentPartition,
+                false);
         segmentDocSets.add(docSets);
       }
       t.stop();
     }
-
 
     Map<IndexReader.CacheKey, FixedBitSet[]> docsToDeleteCache = new ConcurrentHashMap<>();
 
@@ -238,8 +254,13 @@ public class SolrIndexSplitter {
     // - need to worry about number of open descriptors
     // - need to worry about if IW.addIndexes does a sync or not...
     // - would be more efficient on the read side, but prob less efficient merging
-    for (int partitionNumber=0; partitionNumber<numPieces; partitionNumber++) {
-      String partitionName = "SolrIndexSplitter:partition=" + partitionNumber + ",partitionCount=" + numPieces + (ranges != null ? ",range=" + ranges.get(partitionNumber) : "");
+    for (int partitionNumber = 0; partitionNumber < numPieces; partitionNumber++) {
+      String partitionName =
+          "SolrIndexSplitter:partition="
+              + partitionNumber
+              + ",partitionCount="
+              + numPieces
+              + (ranges != null ? ",range=" + ranges.get(partitionNumber) : "");
       log.info(partitionName);
 
       boolean success = false;
@@ -257,7 +278,13 @@ public class SolrIndexSplitter {
           t = timings.sub("hardLinkCopy");
           t.resume();
           // copy by hard-linking
-          Directory splitDir = subCore.getDirectoryFactory().get(path, DirectoryFactory.DirContext.DEFAULT, subCore.getSolrConfig().indexConfig.lockType);
+          Directory splitDir =
+              subCore
+                  .getDirectoryFactory()
+                  .get(
+                      path,
+                      DirectoryFactory.DirContext.DEFAULT,
+                      subCore.getSolrConfig().indexConfig.lockType);
           // the wrapper doesn't hold any resources itself so it doesn't need closing
           HardlinkCopyDirectoryWrapper hardLinkedDir = new HardlinkCopyDirectoryWrapper(splitDir);
           boolean copiedOk = false;
@@ -291,9 +318,17 @@ public class SolrIndexSplitter {
           String path = paths.get(partitionNumber);
           t = timings.sub("createSubIW");
           t.resume();
-          iw = SolrIndexWriter.create(core, partitionName, path,
-              core.getDirectoryFactory(), true, core.getLatestSchema(),
-              core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec());
+          iw =
+              SolrIndexWriter.create(
+                  core,
+                  partitionName,
+                  path,
+                  core.getDirectoryFactory(),
+                  true,
+                  core.getLatestSchema(),
+                  core.getSolrConfig().indexConfig,
+                  core.getDeletionPolicy(),
+                  core.getCodec());
           t.pause();
         }
       }
@@ -302,28 +337,45 @@ public class SolrIndexSplitter {
         if (splitMethod == SplitMethod.LINK) {
           t = timings.sub("deleteDocuments");
           t.resume();
-          // apply deletions specific to this partition. As a side-effect on the first call this also populates
-          // a cache of docsets to delete per leaf reader per partition, which is reused for subsequent partitions.
-          iw.deleteDocuments(new SplittingQuery(partitionNumber, field, rangesArr, hashRouter, splitKey, docsToDeleteCache, currentPartition));
+          // apply deletions specific to this partition. As a side-effect on the first call this
+          // also populates
+          // a cache of docsets to delete per leaf reader per partition, which is reused for
+          // subsequent partitions.
+          iw.deleteDocuments(
+              new SplittingQuery(
+                  partitionNumber,
+                  field,
+                  rangesArr,
+                  hashRouter,
+                  splitKey,
+                  docsToDeleteCache,
+                  currentPartition));
           t.pause();
         } else {
-          // This removes deletions but optimize might still be needed because sub-shards will have the same number of segments as the parent shard.
+          // This removes deletions but optimize might still be needed because sub-shards will have
+          // the same number of segments as the parent shard.
           t = timings.sub("addIndexes");
           t.resume();
-          for (int segmentNumber = 0; segmentNumber<leaves.size(); segmentNumber++) {
+          for (int segmentNumber = 0; segmentNumber < leaves.size(); segmentNumber++) {
             if (log.isInfoEnabled()) {
-              log.info("SolrIndexSplitter: partition # {} partitionCount={} {} segment #={} segmentCount={}", partitionNumber, numPieces
-                  , (ranges != null ? " range=" + ranges.get(partitionNumber) : ""), segmentNumber, leaves.size()); // nowarn
+              log.info(
+                  "SolrIndexSplitter: partition # {} partitionCount={} {} segment #={} segmentCount={}",
+                  partitionNumber,
+                  numPieces,
+                  (ranges != null ? " range=" + ranges.get(partitionNumber) : ""),
+                  segmentNumber,
+                  leaves.size()); // nowarn
             }
             CodecReader subReader = SlowCodecReaderWrapper.wrap(leaves.get(segmentNumber).reader());
-            iw.addIndexes(new LiveDocsReader(subReader, segmentDocSets.get(segmentNumber)[partitionNumber]));
+            iw.addIndexes(
+                new LiveDocsReader(subReader, segmentDocSets.get(segmentNumber)[partitionNumber]));
           }
           t.pause();
         }
         // we commit explicitly instead of sending a CommitUpdateCommand through the processor chain
         // because the sub-shard cores will just ignore such a commit because the update log is not
         // in active state at this time.
-        //TODO no commitUpdateCommand
+        // TODO no commitUpdateCommand
         SolrIndexWriter.setCommitData(iw, -1);
         t = timings.sub("subIWCommit");
         t.resume();
@@ -365,7 +417,8 @@ public class SolrIndexSplitter {
           subCore.getUpdateHandler().newIndexWriter(false);
           openNewSearcher(subCore);
         } catch (Exception e) {
-          log.error("Failed to switch sub-core {} to {}, split will fail", indexDirPath, hardLinkPath, e);
+          log.error(
+              "Failed to switch sub-core {} to {}, split will fail", indexDirPath, hardLinkPath, e);
           switchOk = false;
           break;
         }
@@ -378,8 +431,13 @@ public class SolrIndexSplitter {
           SolrCore subCore = cores.get(partitionNumber);
           Directory dir = null;
           try {
-            dir = subCore.getDirectoryFactory().get(subCore.getDataDir(), DirectoryFactory.DirContext.META_DATA,
-                subCore.getSolrConfig().indexConfig.lockType);
+            dir =
+                subCore
+                    .getDirectoryFactory()
+                    .get(
+                        subCore.getDataDir(),
+                        DirectoryFactory.DirContext.META_DATA,
+                        subCore.getSolrConfig().indexConfig.lockType);
             dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
           } finally {
             if (dir != null) {
@@ -389,8 +447,13 @@ public class SolrIndexSplitter {
           // switch back if necessary and remove the hardlinked dir
           String hardLinkPath = subCore.getDataDir() + INDEX_PREFIX + timestamp;
           try {
-            dir = subCore.getDirectoryFactory().get(hardLinkPath, DirectoryFactory.DirContext.DEFAULT,
-                subCore.getSolrConfig().indexConfig.lockType);
+            dir =
+                subCore
+                    .getDirectoryFactory()
+                    .get(
+                        hardLinkPath,
+                        DirectoryFactory.DirContext.DEFAULT,
+                        subCore.getSolrConfig().indexConfig.lockType);
             subCore.getDirectoryFactory().doneWithDirectory(dir);
             subCore.getDirectoryFactory().remove(dir);
           } finally {
@@ -406,7 +469,8 @@ public class SolrIndexSplitter {
           }
         }
         t.stop();
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "There were errors during index split");
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "There were errors during index split");
       } else {
         // complete the switch - remove original index
         t = timings.sub("cleanSubIndex");
@@ -415,8 +479,13 @@ public class SolrIndexSplitter {
           String oldIndexPath = subCore.getDataDir() + "index";
           Directory indexDir = null;
           try {
-            indexDir = subCore.getDirectoryFactory().get(oldIndexPath,
-                DirectoryFactory.DirContext.DEFAULT, subCore.getSolrConfig().indexConfig.lockType);
+            indexDir =
+                subCore
+                    .getDirectoryFactory()
+                    .get(
+                        oldIndexPath,
+                        DirectoryFactory.DirContext.DEFAULT,
+                        subCore.getSolrConfig().indexConfig.lockType);
             subCore.getDirectoryFactory().doneWithDirectory(indexDir);
             subCore.getDirectoryFactory().remove(indexDir);
           } finally {
@@ -448,8 +517,14 @@ public class SolrIndexSplitter {
     private final Map<IndexReader.CacheKey, FixedBitSet[]> docsToDelete;
     private final AtomicInteger currentPartition;
 
-    SplittingQuery(int partition, SchemaField field, DocRouter.Range[] rangesArr, HashBasedRouter hashRouter, String splitKey,
-                   Map<IndexReader.CacheKey, FixedBitSet[]> docsToDelete, AtomicInteger currentPartition) {
+    SplittingQuery(
+        int partition,
+        SchemaField field,
+        DocRouter.Range[] rangesArr,
+        HashBasedRouter hashRouter,
+        String splitKey,
+        Map<IndexReader.CacheKey, FixedBitSet[]> docsToDelete,
+        AtomicInteger currentPartition) {
       this.partition = partition;
       this.field = field;
       this.rangesArr = rangesArr;
@@ -460,7 +535,8 @@ public class SolrIndexSplitter {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       return new ConstantScoreWeight(this, boost) {
 
         @Override
@@ -470,9 +546,14 @@ public class SolrIndexSplitter {
           FixedBitSet set = findDocsToDelete(context);
           t.pause();
           if (log.isInfoEnabled()) {
-            log.info("### partition={}, leaf={}, maxDoc={}, numDels={}, setLen={}, setCard={}"
-            , partition, context, context.reader().maxDoc()
-            ,context.reader().numDeletedDocs(), set.length(), set.cardinality());
+            log.info(
+                "### partition={}, leaf={}, maxDoc={}, numDels={}, setLen={}, setCard={}",
+                partition,
+                context,
+                context.reader().maxDoc(),
+                context.reader().numDeletedDocs(),
+                set.length(),
+                set.cardinality());
           }
           Bits liveDocs = context.reader().getLiveDocs();
           if (liveDocs != null) {
@@ -484,7 +565,8 @@ public class SolrIndexSplitter {
               log.error("### INVALID DELS {}", dels.cardinality());
             }
           }
-          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(set, set.length()));
+          return new ConstantScoreScorer(
+              this, score(), scoreMode, new BitSetIterator(set, set.length()));
         }
 
         @Override
@@ -501,7 +583,8 @@ public class SolrIndexSplitter {
 
     private FixedBitSet findDocsToDelete(LeafReaderContext readerContext) throws IOException {
       // check whether a cached copy of bitsets already exists for this reader
-      FixedBitSet[] perPartition = docsToDelete.get(readerContext.reader().getCoreCacheHelper().getKey());
+      FixedBitSet[] perPartition =
+          docsToDelete.get(readerContext.reader().getCoreCacheHelper().getKey());
       if (perPartition != null) {
         return perPartition[partition];
       }
@@ -511,7 +594,16 @@ public class SolrIndexSplitter {
           return perPartition[partition];
         }
 
-        perPartition = split(readerContext, numPieces, field, rangesArr, splitKey, hashRouter, currentPartition, true);
+        perPartition =
+            split(
+                readerContext,
+                numPieces,
+                field,
+                rangesArr,
+                splitKey,
+                hashRouter,
+                currentPartition,
+                true);
         docsToDelete.put(readerContext.reader().getCoreCacheHelper().getKey(), perPartition);
         return perPartition[partition];
       }
@@ -533,7 +625,7 @@ public class SolrIndexSplitter {
       if (!(obj instanceof SplittingQuery)) {
         return false;
       }
-      SplittingQuery q = (SplittingQuery)obj;
+      SplittingQuery q = (SplittingQuery) obj;
       return partition == q.partition;
     }
 
@@ -548,11 +640,19 @@ public class SolrIndexSplitter {
     }
   }
 
-  static FixedBitSet[] split(LeafReaderContext readerContext, int numPieces, SchemaField field, DocRouter.Range[] rangesArr,
-                             String splitKey, HashBasedRouter hashRouter, AtomicInteger currentPartition, boolean delete) throws IOException {
+  static FixedBitSet[] split(
+      LeafReaderContext readerContext,
+      int numPieces,
+      SchemaField field,
+      DocRouter.Range[] rangesArr,
+      String splitKey,
+      HashBasedRouter hashRouter,
+      AtomicInteger currentPartition,
+      boolean delete)
+      throws IOException {
     LeafReader reader = readerContext.reader();
     FixedBitSet[] docSets = new FixedBitSet[numPieces];
-    for (int i=0; i<docSets.length; i++) {
+    for (int i = 0; i < docSets.length; i++) {
       docSets[i] = new FixedBitSet(reader.maxDoc());
       if (delete) {
         docSets[i].set(0, reader.maxDoc());
@@ -567,7 +667,7 @@ public class SolrIndexSplitter {
     }
 
     Terms terms = reader.terms(field.getName());
-    TermsEnum termsEnum = terms==null ? null : terms.iterator();
+    TermsEnum termsEnum = terms == null ? null : terms.iterator();
     if (termsEnum == null) return docSets;
 
     BytesRef term = null;
@@ -576,11 +676,11 @@ public class SolrIndexSplitter {
     int[] docsMatchingRanges = null;
     if (rangesArr != null) {
       // +1 because documents can belong to *zero*, one, several or all ranges in rangesArr
-      docsMatchingRanges = new int[rangesArr.length+1];
+      docsMatchingRanges = new int[rangesArr.length + 1];
     }
 
     CharsRefBuilder idRef = new CharsRefBuilder();
-    for (;;) {
+    for (; ; ) {
       term = termsEnum.next();
       if (term == null) break;
 
@@ -594,9 +694,8 @@ public class SolrIndexSplitter {
       if (splitKey != null) {
         // todo have composite routers support these kind of things instead
         String part1 = getRouteKey(idString);
-        if (part1 == null)
-          continue;
-        if (!splitKey.equals(part1))  {
+        if (part1 == null) continue;
+        if (!splitKey.equals(part1)) {
           continue;
         }
       }
@@ -608,7 +707,7 @@ public class SolrIndexSplitter {
 
       postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
       postingsEnum = BitsFilteredPostingsEnum.wrap(postingsEnum, liveDocs);
-      for (;;) {
+      for (; ; ) {
         int doc = postingsEnum.nextDoc();
         if (doc == DocIdSetIterator.NO_MORE_DOCS) break;
         if (rangesArr == null) {
@@ -618,9 +717,11 @@ public class SolrIndexSplitter {
             docSets[currentPartition.get()].set(doc);
           }
           currentPartition.set((currentPartition.get() + 1) % numPieces);
-        } else  {
+        } else {
           int matchingRangesCount = 0;
-          for (int i=0; i < rangesArr.length; i++) {      // inner-loop: use array here for extra speed.
+          for (int i = 0;
+              i < rangesArr.length;
+              i++) { // inner-loop: use array here for extra speed.
             if (rangesArr[i].includes(hash)) {
               if (delete) {
                 docSets[i].clear(doc);
@@ -641,18 +742,25 @@ public class SolrIndexSplitter {
         switch (ii) {
           case 0:
             // document loss
-            log.error("Splitting {}: {} documents belong to no shards and will be dropped",
-                reader, docsMatchingRanges[ii]);
+            log.error(
+                "Splitting {}: {} documents belong to no shards and will be dropped",
+                reader,
+                docsMatchingRanges[ii]);
             break;
           case 1:
             // normal case, each document moves to one of the sub-shards
-            log.info("Splitting {}: {} documents will move into a sub-shard",
-                reader, docsMatchingRanges[ii]);
+            log.info(
+                "Splitting {}: {} documents will move into a sub-shard",
+                reader,
+                docsMatchingRanges[ii]);
             break;
           default:
             // document duplication
-            log.error("Splitting {}: {} documents will be moved to multiple ({}) sub-shards",
-                reader, docsMatchingRanges[ii], ii);
+            log.error(
+                "Splitting {}: {} documents will be moved to multiple ({}) sub-shards",
+                reader,
+                docsMatchingRanges[ii],
+                ii);
             break;
         }
       }
@@ -666,7 +774,7 @@ public class SolrIndexSplitter {
     if (idx <= 0) return null;
     String part1 = idString.substring(0, idx);
     int commaIdx = part1.indexOf(CompositeIdRouter.bitsSeparator);
-    if (commaIdx > 0 && commaIdx + 1 < part1.length())  {
+    if (commaIdx > 0 && commaIdx + 1 < part1.length()) {
       char ch = part1.charAt(commaIdx + 1);
       if (ch >= '0' && ch <= '9') {
         part1 = part1.substring(0, commaIdx);
@@ -674,7 +782,6 @@ public class SolrIndexSplitter {
     }
     return part1;
   }
-
 
   // change livedocs on the reader to delete those docs we don't want
   static class LiveDocsReader extends FilterCodecReader {
@@ -707,5 +814,4 @@ public class SolrIndexSplitter {
       return null;
     }
   }
-
 }

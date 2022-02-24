@@ -17,32 +17,32 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-
 /**
  * V2 API for listing all field-type definitions in an in-use schema.
  *
- * This API (GET /v2/collections/collectionName/schema/fieldtypes) is analogous to the v1
+ * <p>This API (GET /v2/collections/collectionName/schema/fieldtypes) is analogous to the v1
  * /solr/collectionName/schema/fieldtypes API.
  */
 public class SchemaListAllFieldTypesAPI {
-    private final SchemaHandler schemaHandler;
+  private final SchemaHandler schemaHandler;
 
-    public SchemaListAllFieldTypesAPI(SchemaHandler schemaHandler) {
-        this.schemaHandler = schemaHandler;
-    }
+  public SchemaListAllFieldTypesAPI(SchemaHandler schemaHandler) {
+    this.schemaHandler = schemaHandler;
+  }
 
-    @EndPoint(
-            path = {"/schema/fieldtypes"},
-            method = GET,
-            permission = PermissionNameProvider.Name.SCHEMA_READ_PERM)
-    public void listFieldTypes(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        schemaHandler.handleRequestBody(req, rsp);
-    }
+  @EndPoint(
+      path = {"/schema/fieldtypes"},
+      method = GET,
+      permission = PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public void listFieldTypes(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    schemaHandler.handleRequestBody(req, rsp);
+  }
 }

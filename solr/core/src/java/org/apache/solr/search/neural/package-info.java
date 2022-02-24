@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * APIs and classes for implementing Neural (Dense Retrieval) QueryParsers.
- */
+
+/** APIs and classes for implementing Neural (Dense Retrieval) QueryParsers. */
 package org.apache.solr.search.neural;
-
-

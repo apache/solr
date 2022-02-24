@@ -27,17 +27,16 @@ public class SimpleBoundaryScanner extends SolrBoundaryScanner {
     int maxScan = params.getFieldInt(fieldName, HighlightParams.BS_MAX_SCAN, 10);
     String str = params.getFieldParam(fieldName, HighlightParams.BS_CHARS, ".,!? \t\n");
     Character[] chars = new Character[str.length()];
-    for(int i = 0; i < str.length(); i++){
+    for (int i = 0; i < str.length(); i++) {
       chars[i] = str.charAt(i);
     }
     return new org.apache.lucene.search.vectorhighlight.SimpleBoundaryScanner(maxScan, chars);
   }
 
-
   ///////////////////////////////////////////////////////////////////////
   //////////////////////// SolrInfoMBeans methods ///////////////////////
   ///////////////////////////////////////////////////////////////////////
-  
+
   @Override
   public String getDescription() {
     return "SimpleBoundaryScanner";

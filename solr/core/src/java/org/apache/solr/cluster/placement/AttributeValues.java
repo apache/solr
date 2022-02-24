@@ -17,23 +17,19 @@
 
 package org.apache.solr.cluster.placement;
 
-import org.apache.solr.cluster.Node;
-
 import java.util.Optional;
+import org.apache.solr.cluster.Node;
 
 public interface AttributeValues {
   /**
-   * For the given node: system property value (system properties are passed to Java using {@code -Dname=value}
+   * For the given node: system property value (system properties are passed to Java using {@code
+   * -Dname=value}
    */
   Optional<String> getSystemProperty(Node node, String name);
 
-  /**
-   * For the given node: metric identified by an instance of {@link NodeMetric}
-   */
+  /** For the given node: metric identified by an instance of {@link NodeMetric} */
   <T> Optional<T> getNodeMetric(Node node, NodeMetric<T> metric);
 
-  /**
-   * Get collection metrics.
-   */
+  /** Get collection metrics. */
   Optional<CollectionMetrics> getCollectionMetrics(String collectionName);
 }

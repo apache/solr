@@ -17,10 +17,8 @@
 
 package org.apache.solr.search;
 
-
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
@@ -43,8 +41,10 @@ import org.apache.solr.schema.SchemaField;
  * @lucene.experimental
  */
 public class PointMerger {
-  public static int TOTAL_BUFFER_SIZE = 1000000;  // target number of elements to cache across all segments
-  public static int MIN_SEG_BUFFER_SIZE = 100;    // minimum buffer size on any segment (to limit unnecessary exception throws)
+  public static int TOTAL_BUFFER_SIZE =
+      1000000; // target number of elements to cache across all segments
+  public static int MIN_SEG_BUFFER_SIZE =
+      100; // minimum buffer size on any segment (to limit unnecessary exception throws)
 
   public static class ValueIterator {
     PQueue queue;
@@ -54,19 +54,26 @@ public class PointMerger {
       this(field, readers, TOTAL_BUFFER_SIZE, MIN_SEG_BUFFER_SIZE);
     }
 
-    public ValueIterator(SchemaField field, List<LeafReaderContext> readers, int totalBufferSize, int minSegBufferSize) throws IOException {
+    public ValueIterator(
+        SchemaField field,
+        List<LeafReaderContext> readers,
+        int totalBufferSize,
+        int minSegBufferSize)
+        throws IOException {
       assert field.getType().isPointField();
       queue = new PQueue(readers.size());
       if (readers.isEmpty()) {
         return;
       }
-      long ndocs = readers.get(readers.size()-1).docBase + readers.get(readers.size()-1).reader().maxDoc();
+      long ndocs =
+          readers.get(readers.size() - 1).docBase
+              + readers.get(readers.size() - 1).reader().maxDoc();
       for (LeafReaderContext ctx : readers) {
         PointValues pv = ctx.reader().getPointValues(field.getName());
         if (pv == null) continue;
         BaseSeg seg = null;
         // int capacity = 2;
-        int capacity = (int)((long)totalBufferSize * ctx.reader().maxDoc() / ndocs);
+        int capacity = (int) ((long) totalBufferSize * ctx.reader().maxDoc() / ndocs);
         capacity = Math.max(capacity, minSegBufferSize);
 
         switch (field.getType().getNumberType()) {
@@ -95,7 +102,8 @@ public class PointMerger {
     }
 
     // gets the mutable value that is updated after every call to getNextCount().
-    // getMutableValue only needs to be called a single time since the instance is reused for every call to getNextCount().
+    // getMutableValue only needs to be called a single time since the instance is reused for every
+    // call to getNextCount().
     public MutableValue getMutableValue() {
       return topVal;
     }
@@ -121,7 +129,6 @@ public class PointMerger {
 
       return count;
     }
-
   }
 
   static class PQueue extends PriorityQueue<BaseSeg> {
@@ -131,19 +138,17 @@ public class PointMerger {
 
     @Override
     protected boolean lessThan(BaseSeg a, BaseSeg b) {
-      return BaseSeg.lessThan(a,b);
+      return BaseSeg.lessThan(a, b);
     }
   }
-
-
 
   abstract static class BaseSeg implements PointValues.IntersectVisitor {
     final PointValues points;
     final int[] count;
-    int pos = -1;  // index of the last valid entry
-    int readPos = -1;  // last position read from
+    int pos = -1; // index of the last valid entry
+    int readPos = -1; // last position read from
 
-    MutableValue currentValue;  // subclass constructor will fill this in
+    MutableValue currentValue; // subclass constructor will fill this in
     int currentCount;
 
     BaseSeg(PointValues points, int capacity) {
@@ -167,8 +172,8 @@ public class PointMerger {
     // sets the next value and returns getCurrentCount()
     public int setNextValue() throws IOException {
       return 0;
-    };
-
+    }
+    ;
 
     void refill() throws IOException {
       assert readPos >= pos;
@@ -185,11 +190,9 @@ public class PointMerger {
     public void visit(int docID) throws IOException {
       throw new UnsupportedOperationException();
     }
-
   }
 
-
-  static class IntSeg extends BaseSeg  {
+  static class IntSeg extends BaseSeg {
     final int[] values;
     int last = Integer.MIN_VALUE;
     final MutableValueInt mval;
@@ -219,7 +222,6 @@ public class PointMerger {
       return currentCount;
     }
 
-
     @Override
     public void visit(int docID, byte[] packedValue) throws IOException {
       // TODO: handle filter or deleted documents?
@@ -229,7 +231,7 @@ public class PointMerger {
       if (v == last && pos >= 0) {
         count[pos]++;
       } else {
-        if (pos+1 < values.length) {
+        if (pos + 1 < values.length) {
           last = v;
           ++pos;
           values[pos] = v;
@@ -252,7 +254,7 @@ public class PointMerger {
     }
   }
 
-  static class LongSeg extends BaseSeg  {
+  static class LongSeg extends BaseSeg {
     final long[] values;
     long last = Long.MIN_VALUE;
     MutableValueLong mval;
@@ -282,7 +284,6 @@ public class PointMerger {
       return currentCount;
     }
 
-
     @Override
     public void visit(int docID, byte[] packedValue) throws IOException {
       // TODO: handle filter or deleted documents?
@@ -292,7 +293,7 @@ public class PointMerger {
       if (v == last && pos >= 0) {
         count[pos]++;
       } else {
-        if (pos+1 < values.length) {
+        if (pos + 1 < values.length) {
           last = v;
           ++pos;
           values[pos] = v;
@@ -315,7 +316,7 @@ public class PointMerger {
     }
   }
 
-  static class FloatSeg extends BaseSeg  {
+  static class FloatSeg extends BaseSeg {
     final float[] values;
     float last = -Float.MAX_VALUE;
     final MutableValueFloat mval;
@@ -345,7 +346,6 @@ public class PointMerger {
       return currentCount;
     }
 
-
     @Override
     public void visit(int docID, byte[] packedValue) throws IOException {
       // TODO: handle filter or deleted documents?
@@ -355,7 +355,7 @@ public class PointMerger {
       if (v == last && pos >= 0) {
         count[pos]++;
       } else {
-        if (pos+1 < values.length) {
+        if (pos + 1 < values.length) {
           last = v;
           ++pos;
           values[pos] = v;
@@ -378,7 +378,7 @@ public class PointMerger {
     }
   }
 
-  static class DoubleSeg extends BaseSeg  {
+  static class DoubleSeg extends BaseSeg {
     final double[] values;
     double last = -Double.MAX_VALUE;
     final MutableValueDouble mval;
@@ -408,7 +408,6 @@ public class PointMerger {
       return currentCount;
     }
 
-
     @Override
     public void visit(int docID, byte[] packedValue) throws IOException {
       // TODO: handle filter or deleted documents?
@@ -418,7 +417,7 @@ public class PointMerger {
       if (v == last && pos >= 0) {
         count[pos]++;
       } else {
-        if (pos+1 < values.length) {
+        if (pos + 1 < values.length) {
           last = v;
           ++pos;
           values[pos] = v;
@@ -456,5 +455,4 @@ public class PointMerger {
   }
 
   static BreakException breakException = new BreakException();
-
 }

@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -66,15 +65,18 @@ public class StreamingSolrClients {
     String url = getFullUrl(req.node.getUrl());
     ConcurrentUpdateHttp2SolrClient client = solrClients.get(url);
     if (client == null) {
-      // NOTE: increasing to more than 1 threadCount for the client could cause updates to be reordered
-      // on a greater scale since the current behavior is to only increase the number of connections/Runners when
+      // NOTE: increasing to more than 1 threadCount for the client could cause updates to be
+      // reordered
+      // on a greater scale since the current behavior is to only increase the number of
+      // connections/Runners when
       // the queue is more than half full.
-      client = new ErrorReportingConcurrentUpdateSolrClient.Builder(url, httpClient, req, errors)
-          .withQueueSize(100)
-          .withThreadCount(runnerCount)
-          .withExecutorService(updateExecutor)
-          .alwaysStreamDeletes()
-          .build();
+      client =
+          new ErrorReportingConcurrentUpdateSolrClient.Builder(url, httpClient, req, errors)
+              .withQueueSize(100)
+              .withThreadCount(runnerCount)
+              .withExecutorService(updateExecutor)
+              .alwaysStreamDeletes()
+              .build();
       client.setPollQueueTime(pollQueueTime); // minimize connections created
       solrClients.put(url, client);
     }
@@ -139,6 +141,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
       req.trackRequestResult(null, null, false);
     }
   }
+
   @Override
   public void onSuccess(Response resp, InputStream respBody) {
     req.trackRequestResult(resp, respBody, true);
@@ -148,7 +151,11 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
     protected SolrCmdDistributor.Req req;
     protected List<Error> errors;
 
-    public Builder(String baseSolrUrl, Http2SolrClient client, SolrCmdDistributor.Req req, List<Error> errors) {
+    public Builder(
+        String baseSolrUrl,
+        Http2SolrClient client,
+        SolrCmdDistributor.Req req,
+        List<Error> errors) {
       super(baseSolrUrl, client);
       this.req = req;
       this.errors = errors;

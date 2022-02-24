@@ -18,7 +18,6 @@
 package org.apache.solr.cluster.placement.impl;
 
 import java.util.Set;
-
 import org.apache.solr.cluster.placement.PlacementPlan;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;

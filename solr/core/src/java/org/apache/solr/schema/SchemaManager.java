@@ -16,6 +16,16 @@
  */
 package org.apache.solr.schema;
 
+import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.schema.FieldType.CLASS_NAME;
+import static org.apache.solr.schema.IndexSchema.DESTINATION;
+import static org.apache.solr.schema.IndexSchema.MAX_CHARS;
+import static org.apache.solr.schema.IndexSchema.NAME;
+import static org.apache.solr.schema.IndexSchema.SOURCE;
+import static org.apache.solr.schema.IndexSchema.TYPE;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -26,7 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -43,20 +52,9 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.schema.FieldType.CLASS_NAME;
-import static org.apache.solr.schema.IndexSchema.DESTINATION;
-import static org.apache.solr.schema.IndexSchema.MAX_CHARS;
-import static org.apache.solr.schema.IndexSchema.NAME;
-import static org.apache.solr.schema.IndexSchema.SOURCE;
-import static org.apache.solr.schema.IndexSchema.TYPE;
-
 /**
- * A utility class to manipulate schema using the bulk mode.
- * This class takes in all the commands and processes them completely.
- * It is an all or nothing operation.
+ * A utility class to manipulate schema using the bulk mode. This class takes in all the commands
+ * and processes them completely. It is an all or nothing operation.
  */
 public class SchemaManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -65,20 +63,22 @@ public class SchemaManager {
   ManagedIndexSchema managedIndexSchema;
   int timeout;
 
-  public SchemaManager(SolrQueryRequest req){
+  public SchemaManager(SolrQueryRequest req) {
     this.req = req;
-    //The default timeout is 10 minutes when no BaseSolrResource.UPDATE_TIMEOUT_SECS is specified
+    // The default timeout is 10 minutes when no BaseSolrResource.UPDATE_TIMEOUT_SECS is specified
     timeout = req.getParams().getInt(BaseSolrResource.UPDATE_TIMEOUT_SECS, 600);
 
-    //If BaseSolrResource.UPDATE_TIMEOUT_SECS=0 or -1 then end time then we'll try for 10 mins ( default timeout )
+    // If BaseSolrResource.UPDATE_TIMEOUT_SECS=0 or -1 then end time then we'll try for 10 mins (
+    // default timeout )
     if (timeout < 1) {
       timeout = 600;
     }
   }
 
   /**
-   * Take in a JSON command set and execute them. It tries to capture as many errors
-   * as possible instead of failing at the first error it encounters
+   * Take in a JSON command set and execute them. It tries to capture as many errors as possible
+   * instead of failing at the first error it encounters
+   *
    * @return List of errors. If the List is empty then the operation was successful.
    */
   public List<Map<String, Object>> performOperations() throws Exception {
@@ -94,11 +94,12 @@ public class SchemaManager {
     }
   }
 
-  private List<Map<String, Object>> doOperations(List<CommandOperation> operations) throws InterruptedException, IOException, KeeperException {
+  private List<Map<String, Object>> doOperations(List<CommandOperation> operations)
+      throws InterruptedException, IOException, KeeperException {
     TimeOut timeOut = new TimeOut(timeout, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     SolrCore core = req.getCore();
     String errorMsg = "Unable to persist managed schema. ";
-    List<Map<String,Object>> errors = Collections.emptyList();
+    List<Map<String, Object>> errors = Collections.emptyList();
     int latestVersion = -1;
 
     synchronized (req.getSchema().getSchemaUpdateLock()) {
@@ -121,36 +122,46 @@ public class SchemaManager {
           try {
             managedIndexSchema.persist(sw);
           } catch (IOException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to serialize schema");
-            //unlikely
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR, "unable to serialize schema");
+            // unlikely
           }
 
           try {
-            latestVersion = ZkController.persistConfigResourceToZooKeeper
-                (zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(),
-                 sw.toString().getBytes(StandardCharsets.UTF_8), true);
-            req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
+            latestVersion =
+                ZkController.persistConfigResourceToZooKeeper(
+                    zkLoader,
+                    managedIndexSchema.getSchemaZkVersion(),
+                    managedIndexSchema.getResourceName(),
+                    sw.toString().getBytes(StandardCharsets.UTF_8),
+                    true);
+            req.getCore()
+                .getCoreContainer()
+                .reload(req.getCore().getName(), req.getCore().uniqueId);
             break;
           } catch (ZkController.ResourceModifiedInZkException e) {
             log.info("Schema was modified by another node. Retrying..");
           }
         } else {
           try {
-            //only for non cloud stuff
+            // only for non cloud stuff
             managedIndexSchema.persistManagedSchema(false);
             core.setLatestSchema(managedIndexSchema);
             core.getCoreContainer().reload(core.getName(), core.uniqueId);
           } catch (SolrException e) {
             log.warn(errorMsg);
-            errors = singletonList(singletonMap(CommandOperation.ERR_MSGS, errorMsg + e.getMessage()));
+            errors =
+                singletonList(singletonMap(CommandOperation.ERR_MSGS, errorMsg + e.getMessage()));
           }
           break;
         }
       }
     }
     if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
-      // Don't block further schema updates while waiting for a pending update to propagate to other replicas.
-      // This reduces the likelihood of a (time-limited) distributed deadlock during concurrent schema updates.
+      // Don't block further schema updates while waiting for a pending update to propagate to other
+      // replicas.
+      // This reduces the likelihood of a (time-limited) distributed deadlock during concurrent
+      // schema updates.
       waitForOtherReplicasToUpdate(timeOut, latestVersion);
     }
     if (errors.isEmpty() && timeOut.hasTimedOut()) {
@@ -166,24 +177,31 @@ public class SchemaManager {
     String collection = cd.getCollectionName();
     if (collection != null) {
       if (timeOut.hasTimedOut()) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
             "Not enough time left to update replicas. However, the schema is updated already.");
       }
-      ManagedIndexSchema.waitForSchemaZkVersionAgreement(collection, cd.getCloudDescriptor().getCoreNodeName(),
-          latestVersion, core.getCoreContainer().getZkController(), (int) timeOut.timeLeft(TimeUnit.SECONDS));
+      ManagedIndexSchema.waitForSchemaZkVersionAgreement(
+          collection,
+          cd.getCloudDescriptor().getCoreNodeName(),
+          latestVersion,
+          core.getCoreContainer().getZkController(),
+          (int) timeOut.timeLeft(TimeUnit.SECONDS));
     }
   }
 
   public enum OpType {
     ADD_FIELD_TYPE("add-field-type") {
-      @Override public boolean perform(CommandOperation op, SchemaManager mgr) {
+      @Override
+      public boolean perform(CommandOperation op, SchemaManager mgr) {
         String name = op.getStr(NAME);
         String className = op.getStr(CLASS_NAME);
-        if (op.hasError())
-          return false;
+        if (op.hasError()) return false;
         try {
-          FieldType fieldType = mgr.managedIndexSchema.newFieldType(name, className, op.getDataMap());
-          mgr.managedIndexSchema = mgr.managedIndexSchema.addFieldTypes(singletonList(fieldType), false);
+          FieldType fieldType =
+              mgr.managedIndexSchema.newFieldType(name, className, op.getDataMap());
+          mgr.managedIndexSchema =
+              mgr.managedIndexSchema.addFieldTypes(singletonList(fieldType), false);
           return true;
         } catch (Exception e) {
           log.error("Could not add field type.", e);
@@ -193,28 +211,36 @@ public class SchemaManager {
       }
     },
     ADD_COPY_FIELD("add-copy-field") {
-      @Override public boolean perform(CommandOperation op, SchemaManager mgr) {
-        String src  = op.getStr(SOURCE);
+      @Override
+      public boolean perform(CommandOperation op, SchemaManager mgr) {
+        String src = op.getStr(SOURCE);
         List<String> dests = op.getStrs(DESTINATION);
 
-        int maxChars = CopyField.UNLIMITED; // If maxChars is not specified, there is no limit on copied chars
+        int maxChars =
+            CopyField.UNLIMITED; // If maxChars is not specified, there is no limit on copied chars
         String maxCharsStr = op.getStr(MAX_CHARS, null);
         if (null != maxCharsStr) {
           try {
             maxChars = Integer.parseInt(maxCharsStr);
           } catch (NumberFormatException e) {
-            op.addError("Exception parsing " + MAX_CHARS + " '" + maxCharsStr + "': " + getErrorStr(e));
+            op.addError(
+                "Exception parsing " + MAX_CHARS + " '" + maxCharsStr + "': " + getErrorStr(e));
           }
           if (maxChars < 0) {
             op.addError(MAX_CHARS + " '" + maxCharsStr + "' is negative.");
           }
         }
 
-        if (op.hasError())
-          return false;
-        if ( ! op.getValuesExcluding(SOURCE, DESTINATION, MAX_CHARS).isEmpty()) {
-          op.addError("Only the '" + SOURCE + "', '" + DESTINATION + "' and '" + MAX_CHARS
-              + "' params are allowed with the 'add-copy-field' operation");
+        if (op.hasError()) return false;
+        if (!op.getValuesExcluding(SOURCE, DESTINATION, MAX_CHARS).isEmpty()) {
+          op.addError(
+              "Only the '"
+                  + SOURCE
+                  + "', '"
+                  + DESTINATION
+                  + "' and '"
+                  + MAX_CHARS
+                  + "' params are allowed with the 'add-copy-field' operation");
           return false;
         }
         try {
@@ -228,15 +254,16 @@ public class SchemaManager {
       }
     },
     ADD_FIELD("add-field") {
-      @Override public boolean perform(CommandOperation op, SchemaManager mgr) {
+      @Override
+      public boolean perform(CommandOperation op, SchemaManager mgr) {
         String name = op.getStr(NAME);
         String type = op.getStr(TYPE);
-        if (op.hasError())
-          return false;
+        if (op.hasError()) return false;
         try {
-          SchemaField field = mgr.managedIndexSchema.newField(name, type, op.getValuesExcluding(NAME, TYPE));
-          mgr.managedIndexSchema
-              = mgr.managedIndexSchema.addFields(singletonList(field), Collections.emptyMap(), false);
+          SchemaField field =
+              mgr.managedIndexSchema.newField(name, type, op.getValuesExcluding(NAME, TYPE));
+          mgr.managedIndexSchema =
+              mgr.managedIndexSchema.addFields(singletonList(field), Collections.emptyMap(), false);
           return true;
         } catch (Exception e) {
           log.error("Could not add field", e);
@@ -246,15 +273,17 @@ public class SchemaManager {
       }
     },
     ADD_DYNAMIC_FIELD("add-dynamic-field") {
-      @Override public boolean perform(CommandOperation op, SchemaManager mgr) {
+      @Override
+      public boolean perform(CommandOperation op, SchemaManager mgr) {
         String name = op.getStr(NAME);
         String type = op.getStr(TYPE);
-        if (op.hasError())
-          return false;
+        if (op.hasError()) return false;
         try {
-          SchemaField field = mgr.managedIndexSchema.newDynamicField(name, type, op.getValuesExcluding(NAME, TYPE));
-          mgr.managedIndexSchema
-              = mgr.managedIndexSchema.addDynamicFields(singletonList(field), Collections.emptyMap(), false);
+          SchemaField field =
+              mgr.managedIndexSchema.newDynamicField(name, type, op.getValuesExcluding(NAME, TYPE));
+          mgr.managedIndexSchema =
+              mgr.managedIndexSchema.addDynamicFields(
+                  singletonList(field), Collections.emptyMap(), false);
           return true;
         } catch (Exception e) {
           log.error("Could not add dynamic field", e);
@@ -264,12 +293,13 @@ public class SchemaManager {
       }
     },
     DELETE_FIELD_TYPE("delete-field-type") {
-      @Override public boolean perform(CommandOperation op, SchemaManager mgr) {
+      @Override
+      public boolean perform(CommandOperation op, SchemaManager mgr) {
         String name = op.getStr(NAME);
-        if (op.hasError())
-          return false;
-        if ( ! op.getValuesExcluding(NAME).isEmpty()) {
-          op.addError("Only the '" + NAME + "' param is allowed with the 'delete-field-type' operation");
+        if (op.hasError()) return false;
+        if (!op.getValuesExcluding(NAME).isEmpty()) {
+          op.addError(
+              "Only the '" + NAME + "' param is allowed with the 'delete-field-type' operation");
           return false;
         }
         try {
@@ -283,18 +313,23 @@ public class SchemaManager {
       }
     },
     DELETE_COPY_FIELD("delete-copy-field") {
-      @Override public boolean perform(CommandOperation op, SchemaManager mgr) {
+      @Override
+      public boolean perform(CommandOperation op, SchemaManager mgr) {
         String source = op.getStr(SOURCE);
         List<String> dests = op.getStrs(DESTINATION);
-        if (op.hasError())
-          return false;
-        if ( ! op.getValuesExcluding(SOURCE, DESTINATION).isEmpty()) {
-          op.addError("Only the '" + SOURCE + "' and '" + DESTINATION
-              + "' params are allowed with the 'delete-copy-field' operation");
+        if (op.hasError()) return false;
+        if (!op.getValuesExcluding(SOURCE, DESTINATION).isEmpty()) {
+          op.addError(
+              "Only the '"
+                  + SOURCE
+                  + "' and '"
+                  + DESTINATION
+                  + "' params are allowed with the 'delete-copy-field' operation");
           return false;
         }
         try {
-          mgr.managedIndexSchema = mgr.managedIndexSchema.deleteCopyFields(singletonMap(source, dests));
+          mgr.managedIndexSchema =
+              mgr.managedIndexSchema.deleteCopyFields(singletonMap(source, dests));
           return true;
         } catch (Exception e) {
           log.error("Could not delete copy field", e);
@@ -304,11 +339,11 @@ public class SchemaManager {
       }
     },
     DELETE_FIELD("delete-field") {
-      @Override public boolean perform(CommandOperation op, SchemaManager mgr) {
+      @Override
+      public boolean perform(CommandOperation op, SchemaManager mgr) {
         String name = op.getStr(NAME);
-        if (op.hasError())
-          return false;
-        if ( ! op.getValuesExcluding(NAME).isEmpty()) {
+        if (op.hasError()) return false;
+        if (!op.getValuesExcluding(NAME).isEmpty()) {
           op.addError("Only the '" + NAME + "' param is allowed with the 'delete-field' operation");
           return false;
         }
@@ -323,12 +358,13 @@ public class SchemaManager {
       }
     },
     DELETE_DYNAMIC_FIELD("delete-dynamic-field") {
-      @Override public boolean perform(CommandOperation op, SchemaManager mgr) {
+      @Override
+      public boolean perform(CommandOperation op, SchemaManager mgr) {
         String name = op.getStr(NAME);
-        if (op.hasError())
-          return false;
-        if ( ! op.getValuesExcluding(NAME).isEmpty()) {
-          op.addError("Only the '" + NAME + "' param is allowed with the 'delete-dynamic-field' operation");
+        if (op.hasError()) return false;
+        if (!op.getValuesExcluding(NAME).isEmpty()) {
+          op.addError(
+              "Only the '" + NAME + "' param is allowed with the 'delete-dynamic-field' operation");
           return false;
         }
         try {
@@ -342,13 +378,14 @@ public class SchemaManager {
       }
     },
     REPLACE_FIELD_TYPE("replace-field-type") {
-      @Override public boolean perform(CommandOperation op, SchemaManager mgr) {
+      @Override
+      public boolean perform(CommandOperation op, SchemaManager mgr) {
         String name = op.getStr(NAME);
         String className = op.getStr(CLASS_NAME);
-        if (op.hasError())
-          return false;
+        if (op.hasError()) return false;
         try {
-          mgr.managedIndexSchema = mgr.managedIndexSchema.replaceFieldType(name, className, op.getDataMap());
+          mgr.managedIndexSchema =
+              mgr.managedIndexSchema.replaceFieldType(name, className, op.getDataMap());
           return true;
         } catch (Exception e) {
           log.error("Could not replace field type", e);
@@ -358,18 +395,19 @@ public class SchemaManager {
       }
     },
     REPLACE_FIELD("replace-field") {
-      @Override public boolean perform(CommandOperation op, SchemaManager mgr) {
+      @Override
+      public boolean perform(CommandOperation op, SchemaManager mgr) {
         String name = op.getStr(NAME);
         String type = op.getStr(TYPE);
-        if (op.hasError())
-          return false;
+        if (op.hasError()) return false;
         FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
         if (ft == null) {
           op.addError("No such field type '" + type + "'");
           return false;
         }
         try {
-          mgr.managedIndexSchema = mgr.managedIndexSchema.replaceField(name, ft, op.getValuesExcluding(NAME, TYPE));
+          mgr.managedIndexSchema =
+              mgr.managedIndexSchema.replaceField(name, ft, op.getValuesExcluding(NAME, TYPE));
           return true;
         } catch (Exception e) {
           log.error("Could not replace field", e);
@@ -379,18 +417,20 @@ public class SchemaManager {
       }
     },
     REPLACE_DYNAMIC_FIELD("replace-dynamic-field") {
-      @Override public boolean perform(CommandOperation op, SchemaManager mgr) {
+      @Override
+      public boolean perform(CommandOperation op, SchemaManager mgr) {
         String name = op.getStr(NAME);
         String type = op.getStr(TYPE);
-        if (op.hasError())
-          return false;
+        if (op.hasError()) return false;
         FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
         if (ft == null) {
           op.addError("No such field type '" + type + "'");
-          return  false;
+          return false;
         }
         try {
-          mgr.managedIndexSchema = mgr.managedIndexSchema.replaceDynamicField(name, ft, op.getValuesExcluding(NAME, TYPE));
+          mgr.managedIndexSchema =
+              mgr.managedIndexSchema.replaceDynamicField(
+                  name, ft, op.getValuesExcluding(NAME, TYPE));
           return true;
         } catch (Exception e) {
           log.error("Could not replace dynamic field", e);
@@ -407,7 +447,7 @@ public class SchemaManager {
     }
 
     private static class Nested { // Initializes contained static map before any enum ctor
-      static final Map<String,OpType> OP_TYPES = new HashMap<>();
+      static final Map<String, OpType> OP_TYPES = new HashMap<>();
     }
 
     private OpType(String label) {
@@ -418,7 +458,7 @@ public class SchemaManager {
   public static String getErrorStr(Exception e) {
     StringBuilder sb = new StringBuilder();
     Throwable cause = e;
-    for (int i = 0 ; i < 5 ; i++) {
+    for (int i = 0; i < 5; i++) {
       sb.append(cause.getMessage()).append("\n");
       if (cause.getCause() == null || cause.getCause() == cause) break;
       cause = cause.getCause();
@@ -426,20 +466,24 @@ public class SchemaManager {
     return sb.toString();
   }
 
-  private ManagedIndexSchema getFreshManagedSchema(SolrCore core) throws IOException,
-      KeeperException, InterruptedException {
+  private ManagedIndexSchema getFreshManagedSchema(SolrCore core)
+      throws IOException, KeeperException, InterruptedException {
 
     SolrResourceLoader resourceLoader = core.getResourceLoader();
     String schemaResourceName = core.getLatestSchema().getResourceName();
     if (resourceLoader instanceof ZkSolrResourceLoader) {
-      final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)resourceLoader;
+      final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) resourceLoader;
       SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
       String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + schemaResourceName;
       try {
         if (!zkClient.exists(managedSchemaPath, true)) {
-          String backupName = schemaResourceName + ManagedIndexSchemaFactory.UPGRADED_SCHEMA_EXTENSION;
+          String backupName =
+              schemaResourceName + ManagedIndexSchemaFactory.UPGRADED_SCHEMA_EXTENSION;
           if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + backupName, true)) {
-            log.warn("Unable to retrieve fresh managed schema, neither {} nor {} exist.", schemaResourceName, backupName);
+            log.warn(
+                "Unable to retrieve fresh managed schema, neither {} nor {} exist.",
+                schemaResourceName,
+                backupName);
             // use current schema
             return (ManagedIndexSchema) core.getLatestSchema();
           } else {
@@ -451,13 +495,21 @@ public class SchemaManager {
         // use current schema
         return (ManagedIndexSchema) core.getLatestSchema();
       }
-      schemaResourceName = managedSchemaPath.substring(managedSchemaPath.lastIndexOf("/")+1);
+      schemaResourceName = managedSchemaPath.substring(managedSchemaPath.lastIndexOf("/") + 1);
       InputStream in = resourceLoader.openResource(schemaResourceName);
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("managed schema loaded . version : {} ", version);
-        return new ManagedIndexSchema(core.getSolrConfig(), schemaResourceName, () -> IndexSchemaFactory.getParsedSchema(in, zkLoader,  core.getLatestSchema().getResourceName()), true, schemaResourceName, version,
-                core.getLatestSchema().getSchemaUpdateLock());
+        return new ManagedIndexSchema(
+            core.getSolrConfig(),
+            schemaResourceName,
+            () ->
+                IndexSchemaFactory.getParsedSchema(
+                    in, zkLoader, core.getLatestSchema().getResourceName()),
+            true,
+            schemaResourceName,
+            version,
+            core.getLatestSchema().getSchemaUpdateLock());
       } else {
         return (ManagedIndexSchema) core.getLatestSchema();
       }

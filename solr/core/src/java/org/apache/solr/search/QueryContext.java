@@ -20,7 +20,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.IdentityHashMap;
-
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrRequestInfo;
@@ -38,7 +37,7 @@ public class QueryContext extends IdentityHashMap implements Closeable {
   // private IdentityHashMap map;  // we are the map for now (for compat w/ ValueSource)
   private final SolrIndexSearcher searcher;
   private final IndexSearcher indexSearcher;
-  private IdentityHashMap<Closeable,String> closeHooks;
+  private IdentityHashMap<Closeable, String> closeHooks;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -50,11 +49,10 @@ public class QueryContext extends IdentityHashMap implements Closeable {
 
   @SuppressWarnings({"unchecked"})
   public QueryContext(IndexSearcher searcher) {
-    this.searcher = searcher instanceof SolrIndexSearcher ? (SolrIndexSearcher)searcher : null;
+    this.searcher = searcher instanceof SolrIndexSearcher ? (SolrIndexSearcher) searcher : null;
     indexSearcher = searcher;
     this.put("searcher", searcher); // see ValueSource.newContext()  // TODO: move check to "get"?
   }
-
 
   public SolrIndexSearcher searcher() {
     return searcher;
@@ -65,17 +63,17 @@ public class QueryContext extends IdentityHashMap implements Closeable {
   }
 
   /***  implementations obtained via inheritance
-  public Object get(Object key) {
-    return map.get(key);
-  }
-
-  public Object put(Object key, Object val) {
-    if (map == null) {
-      map = new IdentityHashMap();
-    }
-    return map.put(key, val);
-  }
-  ***/
+   * public Object get(Object key) {
+   * return map.get(key);
+   * }
+   *
+   * public Object put(Object key, Object val) {
+   * if (map == null) {
+   * map = new IdentityHashMap();
+   * }
+   * return map.put(key, val);
+   * }
+   ***/
 
   public void addCloseHook(Closeable closeable) {
     if (closeHooks == null) {
@@ -91,7 +89,7 @@ public class QueryContext extends IdentityHashMap implements Closeable {
     return closeHooks.remove(closeable) != null;
   }
 
-  /** Don't call close explicitly!  This will be automatically closed at the end of the request */
+  /** Don't call close explicitly! This will be automatically closed at the end of the request */
   @Override
   public void close() throws IOException {
     if (closeHooks != null) {
@@ -107,5 +105,4 @@ public class QueryContext extends IdentityHashMap implements Closeable {
     closeHooks = null;
     // map = null;
   }
-
 }

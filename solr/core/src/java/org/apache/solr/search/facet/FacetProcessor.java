@@ -25,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -45,14 +44,15 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 
 /** Base abstraction for a class that computes facets. This is fairly internal to the module. */
-public abstract class FacetProcessor<T extends FacetRequest>  {
+public abstract class FacetProcessor<T extends FacetRequest> {
   SimpleOrderedMap<Object> response;
   FacetContext fcontext;
   // TODO : I'm not sure this needs to be generic but come back to this later
   T freq;
 
-  DocSet filter;  // additional filters specified by "filter"  // TODO: do these need to be on the context to support recomputing during multi-select?
-  LinkedHashMap<String,SlotAcc> accMap;
+  DocSet filter; // additional filters specified by "filter"  // TODO: do these need to be on the
+  // context to support recomputing during multi-select?
+  LinkedHashMap<String, SlotAcc> accMap;
   SlotAcc[] accs;
   SlotAcc.CountSlotAcc countAcc;
 
@@ -72,10 +72,12 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
 
   private void evalFilters() throws IOException {
     if (freq.domain.filters == null || freq.domain.filters.isEmpty()) return;
-    this.filter = fcontext.searcher.getDocSet(evalJSONFilterQueryStruct(fcontext, freq.domain.filters));
+    this.filter =
+        fcontext.searcher.getDocSet(evalJSONFilterQueryStruct(fcontext, freq.domain.filters));
   }
-  
-  private static List<Query> evalJSONFilterQueryStruct(FacetContext fcontext, List<Object> filters) throws IOException {
+
+  private static List<Query> evalJSONFilterQueryStruct(FacetContext fcontext, List<Object> filters)
+      throws IOException {
     List<Query> qlist = new ArrayList<>(filters.size());
     // TODO: prevent parsing filters each time!
     for (Object rawFilter : filters) {
@@ -84,7 +86,7 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
       } else if (rawFilter instanceof Map) {
 
         @SuppressWarnings({"unchecked"})
-        Map<String,Object> m = (Map<String, Object>) rawFilter;
+        Map<String, Object> m = (Map<String, Object>) rawFilter;
         String type;
         Object args;
 
@@ -93,18 +95,22 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
           type = entry.getKey();
           args = entry.getValue();
         } else {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't convert map to query:" + rawFilter);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Can't convert map to query:" + rawFilter);
         }
 
         if (!"param".equals(type)) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown type. Can't convert map to query:" + rawFilter);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Unknown type. Can't convert map to query:" + rawFilter);
         }
 
         String tag;
         if (!(args instanceof String)) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't retrieve non-string param:" + args);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Can't retrieve non-string param:" + args);
         }
-        tag = (String)args;
+        tag = (String) args;
 
         String[] qstrings = fcontext.req.getParams().getParams(tag);
 
@@ -117,9 +123,9 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         }
 
       } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad query (expected a string):" + rawFilter);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Bad query (expected a string):" + rawFilter);
       }
-
     }
     return qlist;
   }
@@ -131,8 +137,9 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
       parser.setIsFilter(true);
       Query symbolicFilter = parser.getQuery();
       if (symbolicFilter == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "QParser yields null, perhaps unresolved parameter reference in: "+rawFilter);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "QParser yields null, perhaps unresolved parameter reference in: " + rawFilter);
       }
       return symbolicFilter;
     } catch (SyntaxError syntaxError) {
@@ -145,17 +152,22 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
 
     if (null != freq.domain.explicitQueries) {
       try {
-        final List<Query> domainQs = evalJSONFilterQueryStruct(fcontext, freq.domain.explicitQueries);
+        final List<Query> domainQs =
+            evalJSONFilterQueryStruct(fcontext, freq.domain.explicitQueries);
         if (domainQs.isEmpty()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                  "'query' domain must not evaluate to an empty list of queries");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "'query' domain must not evaluate to an empty list of queries");
         }
         fcontext.base = fcontext.searcher.getDocSet(domainQs);
       } catch (SolrException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                "Unable to parse domain 'query': " + freq.domain.explicitQueries +
-                                " -- reason: " + e.getMessage(),
-                                e);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Unable to parse domain 'query': "
+                + freq.domain.explicitQueries
+                + " -- reason: "
+                + e.getMessage(),
+            e);
       }
     } else {
       // mutualy exclusive to freq.domain.explicitQueries
@@ -172,7 +184,7 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
     boolean appliedFilters = handleBlockJoin();
 
     if (this.filter != null && !appliedFilters) {
-      fcontext.base = fcontext.base.intersection( filter );
+      fcontext.base = fcontext.base.intersection(filter);
     }
   }
 
@@ -183,20 +195,20 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
       return;
     }
 
-    Map<?,?> tagMap = (Map<?,?>) fcontext.req.getContext().get("tags");
+    Map<?, ?> tagMap = (Map<?, ?>) fcontext.req.getContext().get("tags");
     if (tagMap == null) {
       // no filters were tagged
       return;
     }
 
-    IdentityHashMap<Query,Boolean> excludeSet = new IdentityHashMap<>();
+    IdentityHashMap<Query, Boolean> excludeSet = new IdentityHashMap<>();
     for (String excludeTag : excludeTags) {
       Object olst = tagMap.get(excludeTag);
       // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
       if (!(olst instanceof Collection)) continue;
-      for (Object o : (Collection<?>)olst) {
+      for (Object o : (Collection<?>) olst) {
         if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser)o;
+        QParser qp = (QParser) o;
         try {
           excludeSet.put(qp.getQuery(), Boolean.TRUE);
         } catch (SyntaxError syntaxError) {
@@ -230,7 +242,7 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
     // TODO: we lose parent exclusions...
     for (FacetContext curr = fcontext; curr != null; curr = curr.parent) {
       if (curr.filter != null) {
-        qlist.add( curr.filter );
+        qlist.add(curr.filter);
       }
     }
 
@@ -267,7 +279,9 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
       parser.setIsFilter(true);
       parentQuery = parser.getQuery();
     } catch (SyntaxError err) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing block join parent specification: " + parentStr);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Error parsing block join parent specification: " + parentStr);
     }
 
     BitDocSet parents = fcontext.searcher.getDocSetBits(parentQuery);
@@ -292,13 +306,21 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
     return appliedFilters;
   }
 
-  protected void processStats(SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, long docCount) throws IOException {
+  protected void processStats(
+      SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, long docCount)
+      throws IOException {
     if (docCount == 0 && !freq.processEmpty || freq.getFacetStats().size() == 0) {
       bucket.add("count", docCount);
       return;
     }
     createAccs(docCount, 1);
-    long collected = collect(docs, 0, slotNum -> { return new SlotContext(bucketQ); });
+    long collected =
+        collect(
+            docs,
+            0,
+            slotNum -> {
+              return new SlotContext(bucketQ);
+            });
     countAcc.incrementCount(0, collected);
     assert collected == docCount;
     addStats(bucket, 0);
@@ -312,14 +334,14 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
       countAcc = new SlotAcc.CountSlotArrAcc(fcontext, slotCount);
     }
 
-    for (Map.Entry<String,AggValueSource> entry : freq.getFacetStats().entrySet()) {
+    for (Map.Entry<String, AggValueSource> entry : freq.getFacetStats().entrySet()) {
       SlotAcc acc = entry.getValue().createSlotAcc(fcontext, docCount, slotCount);
       acc.key = entry.getKey();
       accMap.put(acc.key, acc);
     }
 
     accs = new SlotAcc[accMap.size()];
-    int i=0;
+    int i = 0;
     for (SlotAcc acc : accMap.values()) {
       accs[i++] = acc;
     }
@@ -348,7 +370,7 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
       }
       return count;
     }
-    
+
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
     LeafReaderContext ctx = null;
@@ -372,7 +394,7 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         setNextReader(ctx);
       }
       count++;
-      collect(doc - segBase, slot, slotContext);  // per-seg collectors
+      collect(doc - segBase, slot, slotContext); // per-seg collectors
     }
     return count;
   }
@@ -402,9 +424,16 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
     }
   }
 
-  void fillBucket(SimpleOrderedMap<Object> bucket, Query q, DocSet result, boolean skip, Map<String,Object> facetInfo) throws IOException {
+  void fillBucket(
+      SimpleOrderedMap<Object> bucket,
+      Query q,
+      DocSet result,
+      boolean skip,
+      Map<String, Object> facetInfo)
+      throws IOException {
 
-    boolean needDocSet = (skip==false && freq.getFacetStats().size() > 0) || freq.getSubFacets().size() > 0;
+    boolean needDocSet =
+        (skip == false && freq.getFacetStats().size() > 0) || freq.getSubFacets().size() > 0;
 
     long count;
 
@@ -417,7 +446,7 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
       } else {
         result = fcontext.searcher.getDocSet(q, fcontext.base);
       }
-      count = result.size();  // don't really need this if we are skipping, but it's free.
+      count = result.size(); // don't really need this if we are skipping, but it's free.
     } else {
       if (q == null) {
         count = fcontext.base.size();
@@ -440,11 +469,17 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
   }
 
   @SuppressWarnings({"unchecked"})
-  void processSubs(SimpleOrderedMap<Object> response, Query filter, DocSet domain, boolean skip, Map<String,Object> facetInfo) throws IOException {
+  void processSubs(
+      SimpleOrderedMap<Object> response,
+      Query filter,
+      DocSet domain,
+      boolean skip,
+      Map<String, Object> facetInfo)
+      throws IOException {
 
     boolean emptyDomain = domain == null || domain.size() == 0;
 
-    for (Map.Entry<String,FacetRequest> sub : freq.getSubFacets().entrySet()) {
+    for (Map.Entry<String, FacetRequest> sub : freq.getSubFacets().entrySet()) {
       FacetRequest subRequest = sub.getValue();
 
       // This includes a static check if a sub-facet can possibly produce something from
@@ -455,20 +490,24 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
         continue;
       }
 
-      Map<String,Object>facetInfoSub = null;
+      Map<String, Object> facetInfoSub = null;
       if (facetInfo != null) {
-        facetInfoSub = (Map<String,Object>)facetInfo.get(sub.getKey());
+        facetInfoSub = (Map<String, Object>) facetInfo.get(sub.getKey());
       }
 
-      // If we're skipping this node, then we only need to process sub-facets that have facet info specified.
+      // If we're skipping this node, then we only need to process sub-facets that have facet info
+      // specified.
       if (skip && facetInfoSub == null) continue;
 
       // make a new context for each sub-facet since they can change the domain
       FacetContext subContext = fcontext.sub(filter, domain);
       subContext.facetInfo = facetInfoSub;
-      if (!skip) subContext.flags &= ~FacetContext.SKIP_FACET;  // turn off the skip flag if we're not skipping this bucket
+      if (!skip)
+        subContext.flags &=
+            ~FacetContext.SKIP_FACET; // turn off the skip flag if we're not skipping this bucket
 
-      if (fcontext.getDebugInfo() != null) {   // if fcontext.debugInfo != null, it means rb.debug() == true
+      if (fcontext.getDebugInfo()
+          != null) { // if fcontext.debugInfo != null, it means rb.debug() == true
         FacetDebugInfo fdebug = new FacetDebugInfo();
         subContext.setDebugInfo(fdebug);
         fcontext.getDebugInfo().addChild(fdebug);
@@ -476,25 +515,27 @@ public abstract class FacetProcessor<T extends FacetRequest>  {
 
       Object result = subRequest.process(subContext);
 
-      response.add( sub.getKey(), result);
+      response.add(sub.getKey(), result);
     }
   }
 
   @SuppressWarnings("unused")
-  static DocSet getFieldMissing(SolrIndexSearcher searcher, DocSet docs, String fieldName) throws IOException {
+  static DocSet getFieldMissing(SolrIndexSearcher searcher, DocSet docs, String fieldName)
+      throws IOException {
     SchemaField sf = searcher.getSchema().getField(fieldName);
-    DocSet hasVal = searcher.getDocSet(sf.getType().getRangeQuery(null, sf, null, null, false, false));
+    DocSet hasVal =
+        searcher.getDocSet(sf.getType().getRangeQuery(null, sf, null, null, false, false));
     DocSet answer = docs.andNot(hasVal);
     // hasVal.decref(); // OFF-HEAP
     return answer;
   }
 
-  static Query getFieldMissingQuery(SolrIndexSearcher searcher, String fieldName) throws IOException {
+  static Query getFieldMissingQuery(SolrIndexSearcher searcher, String fieldName)
+      throws IOException {
     SchemaField sf = searcher.getSchema().getField(fieldName);
     Query hasVal = sf.getType().getRangeQuery(null, sf, null, null, false, false);
     BooleanQuery.Builder noVal = new BooleanQuery.Builder();
     noVal.add(hasVal, BooleanClause.Occur.MUST_NOT);
     return noVal.build();
   }
-
 }

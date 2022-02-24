@@ -16,11 +16,6 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.util.StrUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -31,10 +26,15 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Parses the list of modules the user has requested in solr.xml, property solr.modules or environment SOLR_MODULES.
- * Then resolves the lib folder for each, so they can be added to class path.
+ * Parses the list of modules the user has requested in solr.xml, property solr.modules or
+ * environment SOLR_MODULES. Then resolves the lib folder for each, so they can be added to class
+ * path.
  */
 public class ModuleUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -43,6 +43,7 @@ public class ModuleUtils {
 
   /**
    * Returns a path to a module's lib folder
+   *
    * @param moduleName name of module
    * @return the path to the module's lib folder
    */
@@ -52,6 +53,7 @@ public class ModuleUtils {
 
   /**
    * Finds list of module names requested by system property or environment variable
+   *
    * @return set of raw volume names from sysprop and/or env.var
    */
   static Set<String> resolveFromSyspropOrEnv() {
@@ -68,22 +70,20 @@ public class ModuleUtils {
     return mods.stream().map(String::trim).collect(Collectors.toSet());
   }
 
-  /**
-   * Returns true if a module name is valid and exists in the system
-   */
+  /** Returns true if a module name is valid and exists in the system */
   public static boolean moduleExists(Path solrInstallDirPath, String moduleName) {
     if (!isValidName(moduleName)) return false;
     Path modPath = getModulesPath(solrInstallDirPath).resolve(moduleName);
     return Files.isDirectory(modPath);
   }
 
-  /**
-   * Returns nam of all existing modules
-   */
+  /** Returns nam of all existing modules */
   public static Set<String> listAvailableModules(Path solrInstallDirPath) {
     try (var moduleFilesStream = Files.list(getModulesPath(solrInstallDirPath))) {
-      return moduleFilesStream.filter(Files::isDirectory)
-          .map(p -> p.getFileName().toString()).collect(Collectors.toSet());
+      return moduleFilesStream
+          .filter(Files::isDirectory)
+          .map(p -> p.getFileName().toString())
+          .collect(Collectors.toSet());
     } catch (IOException e) {
       log.warn("Found no modules in {}", getModulesPath(solrInstallDirPath), e);
       return Collections.emptySet();
@@ -91,14 +91,16 @@ public class ModuleUtils {
   }
 
   /**
-   * Parses comma separated string of module names, in practice found in solr.xml.
-   * If input string is empty (nothing configured) or null (e.g. tag not present in solr.xml),
-   * we continue to resolve from system property <code>-Dsolr.modules</code> and if still empty,
-   * fall back to environment variable <code>SOLR_MODULES</code>.
+   * Parses comma separated string of module names, in practice found in solr.xml. If input string
+   * is empty (nothing configured) or null (e.g. tag not present in solr.xml), we continue to
+   * resolve from system property <code>-Dsolr.modules</code> and if still empty, fall back to
+   * environment variable <code>SOLR_MODULES</code>.
+   *
    * @param modulesFromString raw string of comma-separated module names
    * @return a set of module
    */
-  public static Collection<String> resolveModulesFromStringOrSyspropOrEnv(String modulesFromString) {
+  public static Collection<String> resolveModulesFromStringOrSyspropOrEnv(
+      String modulesFromString) {
     Collection<String> moduleNames;
     if (modulesFromString != null && !modulesFromString.isBlank()) {
       moduleNames = StrUtils.splitSmart(modulesFromString, ',', true);
@@ -109,16 +111,12 @@ public class ModuleUtils {
     return moduleNames.stream().map(String::trim).collect(Collectors.toSet());
   }
 
-  /**
-   * Returns true if module name is valid
-   */
+  /** Returns true if module name is valid */
   public static boolean isValidName(String moduleName) {
     return validModNamesPattern.matcher(moduleName).matches();
   }
 
-  /**
-   * Returns path for modules directory, given the solr install dir path
-   */
+  /** Returns path for modules directory, given the solr install dir path */
   public static Path getModulesPath(Path solrInstallDirPath) {
     return solrInstallDirPath.resolve(MODULES_FOLDER_NAME);
   }

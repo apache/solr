@@ -18,19 +18,17 @@ package org.apache.solr.update;
 
 import org.apache.solr.request.SolrQueryRequest;
 
-/**
- *
- */
+/** */
 public class CommitUpdateCommand extends UpdateCommand {
   public boolean optimize;
-  public boolean openSearcher=true;     // open a new searcher as part of a hard commit
-  public boolean waitSearcher=true;
+  public boolean openSearcher = true; // open a new searcher as part of a hard commit
+  public boolean waitSearcher = true;
   public boolean expungeDeletes = false;
   public boolean softCommit = false;
   public boolean prepareCommit = false;
 
   /**
-   * During optimize, optimize down to &lt;= this many segments.  Must be &gt;= 1
+   * During optimize, optimize down to &lt;= this many segments. Must be &gt;= 1
    *
    * @see org.apache.lucene.index.IndexWriter#forceMerge(int)
    */
@@ -38,7 +36,7 @@ public class CommitUpdateCommand extends UpdateCommand {
 
   public CommitUpdateCommand(SolrQueryRequest req, boolean optimize) {
     super(req);
-    this.optimize=optimize;
+    this.optimize = optimize;
   }
 
   @Override
@@ -48,12 +46,19 @@ public class CommitUpdateCommand extends UpdateCommand {
 
   @Override
   public String toString() {
-    return super.toString() + ",optimize="+optimize
-            +",openSearcher="+openSearcher
-            +",waitSearcher="+waitSearcher
-            +",expungeDeletes="+expungeDeletes
-            +",softCommit="+softCommit
-            +",prepareCommit="+prepareCommit
-            +'}';
+    return super.toString()
+        + ",optimize="
+        + optimize
+        + ",openSearcher="
+        + openSearcher
+        + ",waitSearcher="
+        + waitSearcher
+        + ",expungeDeletes="
+        + expungeDeletes
+        + ",softCommit="
+        + softCommit
+        + ",prepareCommit="
+        + prepareCommit
+        + '}';
   }
 }

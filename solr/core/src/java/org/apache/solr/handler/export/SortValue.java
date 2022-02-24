@@ -18,21 +18,26 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 interface SortValue extends Comparable<SortValue> {
   void setCurrentValue(int docId) throws IOException;
+
   void setNextReader(LeafReaderContext context) throws IOException;
+
   void setCurrentValue(SortValue value);
+
   void toGlobalValue(SortValue previousValue);
+
   void reset();
+
   SortValue copy();
+
   Object getCurrentValue() throws IOException;
+
   String getField();
 
   /**
-   *
    * @return true if document has a value for the specified field
    */
   boolean isPresent();

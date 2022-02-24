@@ -26,16 +26,14 @@ import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
 
-/**
- * Concrete implementation for processing the stored field values from shard responses.
- */
+/** Concrete implementation for processing the stored field values from shard responses. */
 public class StoredFieldsShardResponseProcessor implements ShardResponseProcessor {
 
   @Override
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
     boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;
     ShardResponse srsp = shardRequest.responses.get(0);
-    SolrDocumentList docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
+    SolrDocumentList docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
     String uniqueIdFieldName = rb.req.getSchema().getUniqueKeyField().getName();
 
     if (rb.rsp.getReturnFields().getFieldRenames().get(uniqueIdFieldName) != null) {
@@ -48,7 +46,7 @@ public class StoredFieldsShardResponseProcessor implements ShardResponseProcesso
       FieldDoc fieldDoc = (FieldDoc) shardDoc;
       if (shardDoc != null) {
         if (returnScores && !Float.isNaN(fieldDoc.score)) {
-            doc.setField("score", fieldDoc.score);
+          doc.setField("score", fieldDoc.score);
         }
         rb.retrievedDocuments.put(id, doc);
       }

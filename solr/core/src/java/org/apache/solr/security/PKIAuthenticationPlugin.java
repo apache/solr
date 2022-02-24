@@ -16,9 +16,9 @@
  */
 package org.apache.solr.security;
 
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -33,8 +33,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import com.google.common.annotations.VisibleForTesting;
+import javax.servlet.FilterChain;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
@@ -60,19 +61,18 @@ import org.eclipse.jetty.client.api.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-public class PKIAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
+public class PKIAuthenticationPlugin extends AuthenticationPlugin
+    implements HttpClientBuilderPlugin {
 
   public static final String ACCEPT_VERSIONS = "solr.pki.acceptVersions";
   public static final String SEND_VERSION = "solr.pki.sendVersion";
 
   /**
-   * Mark the current thread as a server thread and set a flag in SolrRequestInfo to indicate you want
-   * to send a request as the server identity instead of as the authenticated user.
+   * Mark the current thread as a server thread and set a flag in SolrRequestInfo to indicate you
+   * want to send a request as the server identity instead of as the authenticated user.
    *
    * @param enabled If true, enable the current thread to make requests with the server identity.
-   * @see SolrRequestInfo#setUseServerToken(boolean) 
+   * @see SolrRequestInfo#setUseServerToken(boolean)
    */
   public static void withServerIdentity(final boolean enabled) {
     SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
@@ -84,14 +84,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /**
-   * If a number has less than this number of digits, it'll not be considered a timestamp.
-   */
+  /** If a number has less than this number of digits, it'll not be considered a timestamp. */
   private static final int MIN_TIMESTAMP_DIGITS = 10; // a timestamp of 9999999999 is year 1970
-  /**
-   * If a number has more than this number of digits, it'll not be considered a timestamp.
-   */
+  /** If a number has more than this number of digits, it'll not be considered a timestamp. */
   private static final int MAX_TIMESTAMP_DIGITS = 13; // a timestamp of 9999999999999 is year 2286
+
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final PublicKeyHandler publicKeyHandler;
   private final CoreContainer cores;
@@ -102,11 +99,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   private boolean acceptPkiV1 = false;
 
-  public boolean isInterceptorRegistered(){
+  public boolean isInterceptorRegistered() {
     return interceptorRegistered;
   }
 
-  public PKIAuthenticationPlugin(CoreContainer cores, String nodeName, PublicKeyHandler publicKeyHandler) {
+  public PKIAuthenticationPlugin(
+      CoreContainer cores, String nodeName, PublicKeyHandler publicKeyHandler) {
     this.publicKeyHandler = publicKeyHandler;
     this.cores = cores;
     myNodeName = nodeName;
@@ -119,21 +117,23 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         log.warn("Unknown protocol version [{}] specified in {}", version, ACCEPT_VERSIONS);
       }
       if ("v1".equals(version)) {
-        log.warn("System setting {} includes the deprecated v1, which should only be used for compatibility during rolling upgrades. " +
-                "After all servers have been upgraded, consider disabling this compatability layer.", ACCEPT_VERSIONS);
+        log.warn(
+            "System setting {} includes the deprecated v1, which should only be used for compatibility during rolling upgrades. "
+                + "After all servers have been upgraded, consider disabling this compatability layer.",
+            ACCEPT_VERSIONS);
         acceptPkiV1 = true;
       }
     }
   }
 
   @Override
-  public void init(Map<String, Object> pluginConfig) {
-  }
-
+  public void init(Map<String, Object> pluginConfig) {}
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to compare against time in header")
   @Override
-  public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
+  public boolean doAuthenticate(
+      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+      throws Exception {
     // Getting the received time must be the first thing we do, processing the request can take time
     long receivedTime = System.currentTimeMillis();
 
@@ -175,9 +175,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       return sendError(response, true, "Expired key request timestamp, elapsed=" + elapsed);
     }
 
-    final Principal principal = "$".equals(headerData.userName) ?
-        SU :
-        new BasicUserPrincipal(headerData.userName);
+    final Principal principal =
+        "$".equals(headerData.userName) ? SU : new BasicUserPrincipal(headerData.userName);
 
     numAuthenticated.inc();
     filterChain.doFilter(wrapWithPrincipal(request, principal), response);
@@ -185,13 +184,17 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   /**
-   * Set the response header errors, possibly log something and return false for failed authentication
+   * Set the response header errors, possibly log something and return false for failed
+   * authentication
+   *
    * @param response the response to set error status with
    * @param v2 whether this authentication used the v1 or v2 header (true if v2)
-   * @param message the message to log and send back to client. do not include anyhting sensitive here about server state
+   * @param message the message to log and send back to client. do not include anyhting sensitive
+   *     here about server state
    * @return false to chain with calls from authenticate
    */
-  private boolean sendError(HttpServletResponse response, boolean v2, String message) throws IOException {
+  private boolean sendError(HttpServletResponse response, boolean v2, String message)
+      throws IOException {
     numErrors.mark();
     log.error(message);
     response.setHeader(HttpHeaders.WWW_AUTHENTICATE, v2 ? HEADER_V2 : HEADER);
@@ -205,10 +208,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
     @Override
     public String toString() {
-      return "PKIHeaderData{" +
-          "userName='" + userName + '\'' +
-          ", timestamp=" + timestamp +
-          '}';
+      return "PKIHeaderData{" + "userName='" + userName + '\'' + ", timestamp=" + timestamp + '}';
     }
   }
 
@@ -288,7 +288,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     String s = new String(bytes, UTF_8).trim();
     int splitPoint = s.lastIndexOf(' ');
     int timestampDigits = s.length() - 1 - splitPoint;
-    if (splitPoint == -1 || timestampDigits < MIN_TIMESTAMP_DIGITS || timestampDigits > MAX_TIMESTAMP_DIGITS) {
+    if (splitPoint == -1
+        || timestampDigits < MIN_TIMESTAMP_DIGITS
+        || timestampDigits > MAX_TIMESTAMP_DIGITS) {
       log.warn("Invalid cipher {} deciphered data {}", cipher, s);
       return null;
     }
@@ -305,20 +307,30 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   /**
-   * Fetch the public key for a remote Solr node and store it in our key cache, replacing any existing entries.
+   * Fetch the public key for a remote Solr node and store it in our key cache, replacing any
+   * existing entries.
+   *
    * @param nodename the node to fetch a key from
    * @return the public key
    */
   PublicKey getRemotePublicKey(String nodename) {
-    if (!cores.getZkController().getZkStateReader().getClusterState().getLiveNodes().contains(nodename)) return null;
+    if (!cores
+        .getZkController()
+        .getZkStateReader()
+        .getClusterState()
+        .getLiveNodes()
+        .contains(nodename)) return null;
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
     HttpEntity entity = null;
     try {
       String uri = url + PublicKeyHandler.PATH + "?wt=json&omitHeader=true";
       log.debug("Fetching fresh public key from: {}", uri);
-      HttpResponse rsp = cores.getUpdateShardHandler().getDefaultHttpClient()
-          .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
-      entity  = rsp.getEntity();
+      HttpResponse rsp =
+          cores
+              .getUpdateShardHandler()
+              .getDefaultHttpClient()
+              .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
+      entity = rsp.getEntity();
       byte[] bytes = EntityUtils.toByteArray(entity);
       Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(bytes);
       String key = (String) m.get("key");
@@ -337,35 +349,37 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     } finally {
       Utils.consumeFully(entity);
     }
-
   }
 
   @Override
   public void setup(Http2SolrClient client) {
-    final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
-      @Override
-      public void onQueued(Request request) {
-        log.trace("onQueued: {}", request);
-        if (cores.getAuthenticationPlugin() == null) {
-          log.trace("no authentication plugin, skipping");
-          return;
-        }
-        if (!cores.getAuthenticationPlugin().interceptInternodeRequest(request)) {
-          if (log.isDebugEnabled()) {
-            log.debug("{} secures this internode request", this.getClass().getSimpleName());
+    final HttpListenerFactory.RequestResponseListener listener =
+        new HttpListenerFactory.RequestResponseListener() {
+          @Override
+          public void onQueued(Request request) {
+            log.trace("onQueued: {}", request);
+            if (cores.getAuthenticationPlugin() == null) {
+              log.trace("no authentication plugin, skipping");
+              return;
+            }
+            if (!cores.getAuthenticationPlugin().interceptInternodeRequest(request)) {
+              if (log.isDebugEnabled()) {
+                log.debug("{} secures this internode request", this.getClass().getSimpleName());
+              }
+              if ("v1".equals(System.getProperty(SEND_VERSION))) {
+                generateToken().ifPresent(s -> request.header(HEADER, s));
+              } else {
+                generateTokenV2().ifPresent(s -> request.header(HEADER_V2, s));
+              }
+            } else {
+              if (log.isDebugEnabled()) {
+                log.debug(
+                    "{} secures this internode request",
+                    cores.getAuthenticationPlugin().getClass().getSimpleName());
+              }
+            }
           }
-          if ("v1".equals(System.getProperty(SEND_VERSION))) {
-            generateToken().ifPresent(s -> request.header(HEADER, s));
-          } else {
-            generateTokenV2().ifPresent(s -> request.header(HEADER_V2, s));
-          }
-        } else {
-          if (log.isDebugEnabled()) {
-            log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
-          }
-        }
-      }
-    };
+        };
     client.addListenerFactory(() -> listener);
   }
 
@@ -382,11 +396,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   private class HttpHeaderClientInterceptor implements HttpRequestInterceptor {
 
-    public HttpHeaderClientInterceptor() {
-    }
+    public HttpHeaderClientInterceptor() {}
 
     @Override
-    public void process(HttpRequest httpRequest, HttpContext httpContext) throws HttpException, IOException {
+    public void process(HttpRequest httpRequest, HttpContext httpContext)
+        throws HttpException, IOException {
       if (cores.getAuthenticationPlugin() == null) {
         return;
       }
@@ -397,7 +411,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         setHeader(httpRequest);
       } else {
         if (log.isDebugEnabled()) {
-          log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
+          log.debug(
+              "{} secures this internode request",
+              cores.getAuthenticationPlugin().getClass().getSimpleName());
         }
       }
     }
@@ -409,8 +425,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       Principal principal = reqInfo.getUserPrincipal();
       if (principal == null) {
         log.debug("generateToken: principal is null");
-        //this had a request but not authenticated
-        //so we don't not need to set a principal
+        // this had a request but not authenticated
+        // so we don't not need to set a principal
         return null;
       } else {
         assert principal.getName() != null;
@@ -418,13 +434,13 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       }
     } else {
       if (!isSolrThread()) {
-        //if this is not running inside a Solr threadpool (as in testcases)
+        // if this is not running inside a Solr threadpool (as in testcases)
         // then no need to add any header
         log.debug("generateToken: not a solr (server) thread");
         return null;
       }
-      //this request seems to be originated from Solr itself
-      return "$"; //special name to denote the user is the node itself
+      // this request seems to be originated from Solr itself
+      return "$"; // special name to denote the user is the node itself
     }
   }
 
