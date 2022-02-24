@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.search.Query;
 import org.apache.solr.analytics.facet.AbstractSolrQueryFacet;
 import org.apache.solr.analytics.facet.AbstractSolrQueryFacet.FacetValueQueryExecuter;
 import org.apache.solr.analytics.facet.StreamingFacet;

@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
 
-import org.apache.lucene.search.Query;
 import org.apache.solr.analytics.facet.AnalyticsFacet;
 import org.apache.solr.analytics.facet.PivotFacet;
 import org.apache.solr.analytics.facet.AbstractSolrQueryFacet;
