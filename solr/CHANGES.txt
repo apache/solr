@@ -59,6 +59,10 @@ Other Changes
 
 * SOLR-15886: Remove deprecated showItems configuration value from solrconfig.xml files (Andy Lester via Eric Pugh)
 
+Build
+---------------------
+* SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
+
 ==================  9.0.0 ==================
 
 New Features
@@ -611,6 +615,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 * SOLR-15989: Upgrade to Tika 1.28.1 (Kevin Risden)
 
 * SOLR-16042: Fix TestSolrCloudWithKerberosAlt.testBasics failure due to minikdc locale (Kevin Risden)
+
+* SOLR-16043: Fix HDFS tests - "Command processor" thread leak (Mike Drob, Kevin Risden)
 
 Bug Fixes
 ---------------------

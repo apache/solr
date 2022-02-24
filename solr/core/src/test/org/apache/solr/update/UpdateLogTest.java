@@ -60,7 +60,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
 
   @Test
   /**
-   * @see org.apache.solr.update.UpdateLog#applyPartialUpdates(BytesRef,long,long,SolrDocumentBase)
+   * @see org.apache.solr.update.UpdateLog#applyPartialUpdates
    */
   public void testApplyPartialUpdatesOnMultipleInPlaceUpdatesInSequence() {    
     // Add a full update, two in-place updates and verify applying partial updates is working

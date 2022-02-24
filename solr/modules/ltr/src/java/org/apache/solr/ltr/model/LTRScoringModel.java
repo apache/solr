@@ -168,17 +168,23 @@ public abstract class LTRScoringModel implements Accountable {
     }
   }
 
-  /** @return the norms */
+  /**
+   * @return the norms
+   */
   public List<Normalizer> getNorms() {
     return norms;
   }
 
-  /** @return the name */
+  /**
+   * @return the name
+   */
   public String getName() {
     return name;
   }
 
-  /** @return the features */
+  /**
+   * @return the features
+   */
   public List<Feature> getFeatures() {
     return features;
   }

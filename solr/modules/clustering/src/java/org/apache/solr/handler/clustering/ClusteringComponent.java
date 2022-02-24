@@ -495,7 +495,9 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     return engine;
   }
 
-  /** @return A map of initialized clustering engines, exposed for tests only. */
+  /**
+   * @return A map of initialized clustering engines, exposed for tests only.
+   */
   Set<String> getEngineNames() {
     return engines.keySet();
   }

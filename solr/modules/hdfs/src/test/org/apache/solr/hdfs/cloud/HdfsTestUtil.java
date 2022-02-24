@@ -205,7 +205,7 @@ public class HdfsTestUtil {
       System.setProperty("tests.hdfs.numdatanodes", "1");
     }
 
-    int dataNodes = Integer.getInteger("tests.hdfs.numdatanodes", 2);
+    int dataNodes = Integer.getInteger("tests.hdfs.numdatanodes", 1);
     final MiniDFSCluster.Builder dfsClusterBuilder =
         new MiniDFSCluster.Builder(conf).numDataNodes(dataNodes).format(true);
     if (haTesting) {
@@ -331,15 +331,13 @@ public class HdfsTestUtil {
           }
         }
         try {
-          dfsCluster.getDataNodes().forEach(dataNode -> dataNode.shutdown());
-          dfsCluster.shutdownNameNodes();
           dfsCluster.shutdown(true);
         } catch (Error e) {
           // Added in SOLR-7134
           // Rarely, this can fail to either a NullPointerException
           // or a class not found exception. The later may fixable
           // by adding test dependencies.
-          log.warn("Exception shutting down dfsCluster", e);
+          log.error("Exception shutting down dfsCluster", e);
         }
       }
     } finally {
