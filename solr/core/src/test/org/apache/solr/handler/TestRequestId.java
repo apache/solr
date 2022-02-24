@@ -23,7 +23,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.util.LogListener;
 import org.apache.solr.SolrTestCaseJ4;
 

@@ -452,7 +452,7 @@ An example configuration using these properties can be found below:
 [source,xml]
 ----
 <backup>
-  <repository name="hdfs" class="org.apache.solr.core.backup.repository.HdfsBackupRepository" default="false">
+  <repository name="hdfs" class="org.apache.solr.hdfs.backup.repository.HdfsBackupRepository" default="false">
     <str name="solr.hdfs.home">hdfs://some_hdfs_host:1234/solr/backup/data</str>
     <int name="solr.hdfs.buffer.size">8192</int>
     <str name="solr.hdfs.permissions.umask-mode">0022</str>
