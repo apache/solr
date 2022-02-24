@@ -225,8 +225,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   private static final int DEFAULT_MAX_SHARD_COUNT = 3;
 
-  private int shardCount =
-      -1; // the actual number of solr cores that will be created in the cluster
+  // the actual number of solr cores that will be created in the cluster
+  private int shardCount = -1;
 
   public int getShardCount() {
     return shardCount;

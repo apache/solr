@@ -53,10 +53,15 @@ import org.slf4j.LoggerFactory;
 /**
  * The monkey can stop random or specific jetties used with SolrCloud.
  *
- * <p>It can also run in a background thread and start and stop jetties randomly. TODO: expire
- * multiple sessions / connectionloss at once TODO: kill multiple jetties at once TODO: ? add random
- * headhunter mode that always kills the leader TODO: chaosmonkey should be able to do cluster
- * stop/start tests
+ * <p>It can also run in a background thread and start and stop jetties randomly.
+ *
+ * <p>TODO: expire multiple sessions / connectionloss at once
+ *
+ * <p>TODO: kill multiple jetties at once
+ *
+ * <p>TODO: ? add random headhunter mode that always kills the leader
+ *
+ * <p>TODO: chaosmonkey should be able to do cluster stop/start tests
  */
 public class ChaosMonkey {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

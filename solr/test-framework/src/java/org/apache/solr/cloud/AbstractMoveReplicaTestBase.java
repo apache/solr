@@ -101,9 +101,6 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on:
-  // 24-Dec-2018
   public void test() throws Exception {
     String coll = getTestClass().getSimpleName() + "_coll_" + inPlaceMove;
     if (log.isInfoEnabled()) {
@@ -258,17 +255,7 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
         100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
 
-  // Commented out 5-Dec-2017
-  // @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11458")
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
-  // This JIRA is fixed, but this test still fails
-  // 17-Aug-2018 commented
-  // @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // 2-Aug-2018
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on:
-  // 24-Dec-2018
   public void testFailedMove() throws Exception {
     String coll = getTestClass().getSimpleName() + "_failed_coll_" + inPlaceMove;
     int REPLICATION = 2;

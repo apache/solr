@@ -2339,8 +2339,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.toPath().resolve("solr.xml"));
   }
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf
-  // and copies
-  // the stock files in there.
+  // and copies the stock files in there.
 
   public static void copySolrHomeToTemp(File dstRoot, String collection) throws IOException {
     Path subHome = dstRoot.toPath().resolve(collection).resolve("conf");

@@ -44,10 +44,10 @@ public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
    * <p>We also don't want to initialize this in a <code>@BeforeClass</code> method because that
    * will run <em>after</em> the <code>@BeforeClass</code> logic of our super class {@link
    * SolrTestCaseJ4} where the <code>@LogLevel</code> annotation on this class will be parsed and
-   * evaluated -- modifying the log4j run time configuration. There is no reason why the <code>
-   * @LogLevel</code> configuration of this class <em>should</em> affect the "root" Logger, but
-   * setting this in static class initialization protect us (as best we can) against the possibility
-   * that it <em>might</em> due to an unforseen (future) bug.
+   * evaluated -- modifying the log4j run time configuration. The <code>@LogLevel</code>
+   * configuration of this class <em>should</em> not affect the "root" Logger, but setting this in
+   * static class initialization protect us (as best we can) against the possibility that it
+   * <em>might</em> due to an unforseen (future) bug.
    *
    * @see #checkLogLevelsBeforeClass
    */
@@ -94,8 +94,8 @@ public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
    *
    * <p><b>NOTE:</b> We only validate <code>@LogLevel</code> modifications made at the {@link
    * #testMethodLogLevels} level, not at the 'class' level, because of the lifecycle of junit
-   * methods: This <code>@AfterClass</code> will run before the <code>SolrTestCaseJ4</code> <code>
-   * @AfterClass</code> method where the 'class' <code>@LogLevel</code> modifications will be reset.
+   * methods: This <code>@AfterClass</code> will run before the <code>SolrTestCaseJ4#@AfterClass
+   * </code> method where the 'class' <code>@LogLevel</code> modifications will be reset.
    *
    * @see #checkLogLevelsBeforeClass
    * @see #testWhiteBoxMethods

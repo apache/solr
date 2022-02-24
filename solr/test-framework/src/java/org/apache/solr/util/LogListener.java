@@ -46,7 +46,9 @@ import org.apache.solr.common.util.SuppressForbidden;
 /**
  * Helper code to listen for {@link LogEvent} messages (via a {@link Queue}) that you expect as a
  * result of the things you are testing, So you can make assertions about when a particular action
- * should/shouldn't cause Solr to produce a particular Log message <code>
+ * should/shouldn't cause Solr to produce a particular Log message
+ *
+ * <p><code>
  * // simplest possible usage...
  * // Listen for any erors from the SolrCore logger, and assert that there are none...
  * try (LogListener errLog = LogListener.error(SolrCore.class)) {

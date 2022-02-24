@@ -162,8 +162,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   @Override
   protected boolean useTlogReplicas() {
-    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug
-    // and it's TestInjection use
+    // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's
+    // TestInjection use
+    return false;
   }
 
   @Override
@@ -184,9 +185,6 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   @Test
   @ShardsFixed(num = 4)
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on:
-  // 24-Dec-2018
   protected void test() throws Exception {
     // setLoggingLevel(null);
 

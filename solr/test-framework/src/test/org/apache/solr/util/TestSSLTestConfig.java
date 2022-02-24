@@ -86,10 +86,8 @@ public class TestSSLTestConfig extends SolrTestCase {
 
   public void testFailIfUserRunsTestsWithJVMThatHasKnownSSLBugs() {
     // NOTE: If there is some future JVM version, where all available "ea" builds are known to be
-    // buggy,
-    // but we still want to be able to use for running tests (ie: via jenkins) to look for *other*
-    // bugs,
-    // then those -ea versions can be "white listed" here...
+    // buggy, but we still want to be able to use for running tests (ie: via jenkins) to look for
+    // *other* bugs, then those -ea versions can be "white listed" here...
 
     try {
       SSLTestConfig.assumeSslIsSafeToTest();
