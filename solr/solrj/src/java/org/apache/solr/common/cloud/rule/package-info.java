@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Classes for managing Replica placement strategy when operating in SolrCloud mode.
- */
+/** Classes for managing Replica placement strategy when operating in SolrCloud mode. */
 package org.apache.solr.common.cloud.rule;

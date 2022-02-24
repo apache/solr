@@ -18,64 +18,97 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
-import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.distribution.AbstractRealDistribution;
+import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class ProbabilityEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public ProbabilityEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public ProbabilityEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
-  public Object doWork(Object... values) throws IOException{
+  public Object doWork(Object... values) throws IOException {
 
     Object first = null;
     Object second = null;
     Object third = null;
 
-    if(values.length == 2) {
+    if (values.length == 2) {
       first = values[0];
       second = values[1];
 
       if (null == first) {
-        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - null found for the first value", toExpression(constructingFactory)));
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - null found for the first value",
+                toExpression(constructingFactory)));
       }
       if (null == second) {
-        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - null found for the second value", toExpression(constructingFactory)));
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - null found for the second value",
+                toExpression(constructingFactory)));
       }
       if (!(first instanceof IntegerDistribution)) {
-        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the first value, expecting a IntegerDistributionm for probability at a specific value.", toExpression(constructingFactory), first.getClass().getSimpleName()));
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - found type %s for the first value, expecting a IntegerDistributionm for probability at a specific value.",
+                toExpression(constructingFactory),
+                first.getClass().getSimpleName()));
       }
       if (!(second instanceof Number)) {
-        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the second value, expecting a Number", toExpression(constructingFactory), first.getClass().getSimpleName()));
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - found type %s for the second value, expecting a Number",
+                toExpression(constructingFactory),
+                first.getClass().getSimpleName()));
       }
 
       IntegerDistribution d = (IntegerDistribution) first;
       Number predictOver = (Number) second;
       return d.probability(predictOver.intValue());
 
-    } else if(values.length == 3) {
+    } else if (values.length == 3) {
       first = values[0];
       second = values[1];
       third = values[2];
 
       if (!(first instanceof AbstractRealDistribution)) {
-        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the first value, expecting a RealDistribution for probability ranges", toExpression(constructingFactory), first.getClass().getSimpleName()));
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - found type %s for the first value, expecting a RealDistribution for probability ranges",
+                toExpression(constructingFactory),
+                first.getClass().getSimpleName()));
       }
       if (!(second instanceof Number)) {
-        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the second value, expecting a Number", toExpression(constructingFactory), first.getClass().getSimpleName()));
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - found type %s for the second value, expecting a Number",
+                toExpression(constructingFactory),
+                first.getClass().getSimpleName()));
       }
 
       if (!(third instanceof Number)) {
-        throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the second value, expecting a Number", toExpression(constructingFactory), first.getClass().getSimpleName()));
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - found type %s for the second value, expecting a Number",
+                toExpression(constructingFactory),
+                first.getClass().getSimpleName()));
       }
 
-      AbstractRealDistribution realDistribution = (AbstractRealDistribution)first;
+      AbstractRealDistribution realDistribution = (AbstractRealDistribution) first;
       Number start = (Number) second;
       Number end = (Number) third;
       return realDistribution.probability(start.doubleValue(), end.doubleValue());

@@ -45,7 +45,6 @@ configure(project(":solr").subprojects) { prj ->
         // Exclude certain files (generated ones, mostly).
         switch (project.path) {
           case ":solr:core":
-          case ":solr:solrj":
           case ":solr:test-framework":
             targetExclude "src/**/*.java"
             break

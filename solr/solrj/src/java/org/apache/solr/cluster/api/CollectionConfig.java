@@ -17,11 +17,9 @@
 
 package org.apache.solr.cluster.api;
 
-
 public interface CollectionConfig {
 
   String name();
 
   SimpleMap<Resource> resources();
-
 }

@@ -21,15 +21,12 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder;
 import org.junit.Test;
 
-/**
- * Unit tests for {@link Builder}.
- */
+/** Unit tests for {@link Builder}. */
 public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
 
   @Test(expected = IllegalArgumentException.class)
@@ -40,28 +37,34 @@ public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
   @Test
   @SuppressWarnings({"try"})
   public void testMissingQueueSize() {
-    try (ConcurrentUpdateSolrClient client = new Builder("someurl").build()){
-      // Do nothing as we just need to test that the only mandatory parameter for building the client
+    try (ConcurrentUpdateSolrClient client = new Builder("someurl").build()) {
+      // Do nothing as we just need to test that the only mandatory parameter for building the
+      // client
       // is the baseSolrUrl
     }
   }
 
   /**
-   * Test that connection timeout information is passed to the HttpSolrClient that handles non add operations.
+   * Test that connection timeout information is passed to the HttpSolrClient that handles non add
+   * operations.
    */
   @Test(timeout = 10000)
   public void testSocketTimeoutOnCommit() throws IOException, SolrServerException {
     InetAddress localHost = InetAddress.getLocalHost();
     try (ServerSocket server = new ServerSocket(0, 1, localHost);
-         ConcurrentUpdateSolrClient client = new ConcurrentUpdateSolrClient.Builder(
-             "http://" + localHost.getHostAddress() + ":" + server.getLocalPort() + "/noOneThere")
-             .withSocketTimeout(1)
-             .build()){
+        ConcurrentUpdateSolrClient client =
+            new ConcurrentUpdateSolrClient.Builder(
+                    "http://"
+                        + localHost.getHostAddress()
+                        + ":"
+                        + server.getLocalPort()
+                        + "/noOneThere")
+                .withSocketTimeout(1)
+                .build()) {
       // Expecting an exception
       client.commit();
       fail();
-    }
-    catch (SolrServerException e) {
+    } catch (SolrServerException e) {
       if (!(e.getCause() instanceof SocketTimeoutException)) {
         throw e;
       }

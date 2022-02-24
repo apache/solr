@@ -20,47 +20,70 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class ExclusiveOrEvaluator extends RecursiveBooleanEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public ExclusiveOrEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public ExclusiveOrEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
-    
-    if(containedEvaluators.size() < 2){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least two values but found %d",expression,containedEvaluators.size()));
+
+    if (containedEvaluators.size() < 2) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting at least two values but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
-  
-  public Object doWork(Object ... values) throws IOException {
-    if(values.length < 2){
+
+  public Object doWork(Object... values) throws IOException {
+    if (values.length < 2) {
       String message = null;
-      if(1 == values.length){
-        message = String.format(Locale.ROOT,"%s(...) only works with at least 2 values but 1 was provided", constructingFactory.getFunctionName(getClass())); 
-      }
-      else{
-        message = String.format(Locale.ROOT,"%s(...) only works with at least 2 values but 0 were provided", constructingFactory.getFunctionName(getClass()));
+      if (1 == values.length) {
+        message =
+            String.format(
+                Locale.ROOT,
+                "%s(...) only works with at least 2 values but 1 was provided",
+                constructingFactory.getFunctionName(getClass()));
+      } else {
+        message =
+            String.format(
+                Locale.ROOT,
+                "%s(...) only works with at least 2 values but 0 were provided",
+                constructingFactory.getFunctionName(getClass()));
       }
       throw new IOException(message);
     }
-    
+
     Checker checker = constructChecker(values[0]);
-    if(Arrays.stream(values).anyMatch(result -> null == result)){
-      throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) because a null value was found", constructingFactory.getFunctionName(getClass())));
+    if (Arrays.stream(values).anyMatch(result -> null == result)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Unable to check %s(...) because a null value was found",
+              constructingFactory.getFunctionName(getClass())));
     }
-    if(Arrays.stream(values).anyMatch(result -> !checker.isCorrectType(result))){
-      throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) of differing types [%s]", constructingFactory.getFunctionName(getClass()), Arrays.stream(values).map(item -> item.getClass().getSimpleName()).collect(Collectors.joining(","))));
+    if (Arrays.stream(values).anyMatch(result -> !checker.isCorrectType(result))) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Unable to check %s(...) of differing types [%s]",
+              constructingFactory.getFunctionName(getClass()),
+              Arrays.stream(values)
+                  .map(item -> item.getClass().getSimpleName())
+                  .collect(Collectors.joining(","))));
     }
 
-    return 1 == Arrays.stream(values).filter(result -> (boolean)result).count();
+    return 1 == Arrays.stream(values).filter(result -> (boolean) result).count();
   }
 
   @Override
   protected Checker constructChecker(Object value) throws IOException {
-    return new BooleanChecker(){
+    return new BooleanChecker() {
       @Override
       public boolean test(Object left, Object right) {
         // does nothing useful
@@ -68,5 +91,4 @@ public class ExclusiveOrEvaluator extends RecursiveBooleanEvaluator implements M
       }
     };
   }
-
 }

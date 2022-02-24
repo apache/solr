@@ -18,31 +18,40 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class NormalDistributionEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
+public class NormalDistributionEvaluator extends RecursiveNumericEvaluator
+    implements TwoValueWorker {
 
   private static final long serialVersionUID = 1;
 
-  public NormalDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public NormalDistributionEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
-  public Object doWork(Object first, Object second) throws IOException{
-    if(null == first){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
+  public Object doWork(Object first, Object second) throws IOException {
+    if (null == first) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - null found for the first value",
+              toExpression(constructingFactory)));
     }
-    if(null == second){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
+    if (null == second) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - null found for the second value",
+              toExpression(constructingFactory)));
     }
 
-    Number mean = (Number)first;
-    Number standardDeviation = (Number)second;
-    
+    Number mean = (Number) first;
+    Number standardDeviation = (Number) second;
+
     return new NormalDistribution(mean.doubleValue(), standardDeviation.doubleValue());
   }
 }

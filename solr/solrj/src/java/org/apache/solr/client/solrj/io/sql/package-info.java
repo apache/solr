@@ -18,7 +18,8 @@
 /**
  * JDBC Driver Package
  *
- * Sample usage
+ * <p>Sample usage
+ *
  * <pre>
  * Connection con = null;
  * Statement stmt = null;
@@ -41,11 +42,10 @@
  *
  * Connection properties can also be passed in using a Properties object.
  *
- * The <b>collection</b> parameter is mandatory and should point to a SolrCloud collection that is configured with the /sql
- * request handler.
+ * <p>The <b>collection</b> parameter is mandatory and should point to a SolrCloud collection that
+ * is configured with the /sql request handler.
  *
- * The aggregationMode parameter is optional. It can be used to switch between Map/Reduce (map_reduce) or the JSON Facet API (facet) for
- * group by aggregations. The default is "facet".
- **/
-
+ * <p>The aggregationMode parameter is optional. It can be used to switch between Map/Reduce
+ * (map_reduce) or the JSON Facet API (facet) for group by aggregations. The default is "facet".
+ */
 package org.apache.solr.client.solrj.io.sql;

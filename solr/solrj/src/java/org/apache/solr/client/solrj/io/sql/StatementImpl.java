@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.common.cloud.Replica;
@@ -51,26 +50,26 @@ class StatementImpl implements Statement {
   }
 
   private void checkClosed() throws SQLException {
-    if(isClosed()) {
+    if (isClosed()) {
       throw new SQLException("Statement is closed.");
     }
   }
 
   private ResultSet executeQueryImpl(String sql) throws SQLException {
     try {
-      if(this.currentResultSet != null) {
+      if (this.currentResultSet != null) {
         this.currentResultSet.close();
         this.currentResultSet = null;
       }
 
-      if(maxRows > 0 && !containsLimit(sql)) {
-        sql = sql + " limit "+Integer.toString(maxRows);
+      if (maxRows > 0 && !containsLimit(sql)) {
+        sql = sql + " limit " + Integer.toString(maxRows);
       }
 
-      closed = false;  // If closed reopen so Statement can be reused.
+      closed = false; // If closed reopen so Statement can be reused.
       this.currentResultSet = new ResultSetImpl(this, constructStream(sql));
       return this.currentResultSet;
-    } catch(Exception e) {
+    } catch (Exception e) {
       throw new SQLException(e);
     }
   }
@@ -78,10 +77,11 @@ class StatementImpl implements Statement {
   protected SolrStream constructStream(String sql) throws IOException {
     try {
       ZkStateReader zkStateReader = this.connection.getClient().getZkStateReader();
-      Slice[] slices = CloudSolrStream.getSlices(this.connection.getCollection(), zkStateReader, true);
+      Slice[] slices =
+          CloudSolrStream.getSlices(this.connection.getCollection(), zkStateReader, true);
 
       List<Replica> shuffler = new ArrayList<>();
-      for(Slice slice : slices) {
+      for (Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
         for (Replica replica : replicas) {
           shuffler.add(replica);
@@ -93,7 +93,7 @@ class StatementImpl implements Statement {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CommonParams.QT, "/sql");
       params.set("stmt", sql);
-      for(String propertyName : this.connection.getProperties().stringPropertyNames()) {
+      for (String propertyName : this.connection.getProperties().stringPropertyNames()) {
         params.set(propertyName, this.connection.getProperties().getProperty(propertyName));
       }
 
@@ -118,13 +118,13 @@ class StatementImpl implements Statement {
 
   @Override
   public void close() throws SQLException {
-    if(closed) {
+    if (closed) {
       return;
     }
 
     this.closed = true;
 
-    if(this.currentResultSet != null) {
+    if (this.currentResultSet != null) {
       this.currentResultSet.close();
     }
   }
@@ -191,7 +191,7 @@ class StatementImpl implements Statement {
   @Override
   public boolean execute(String sql) throws SQLException {
 
-    if(this.currentResultSet != null) {
+    if (this.currentResultSet != null) {
       this.currentResultSet.close();
       this.currentResultSet = null;
     }
@@ -227,7 +227,7 @@ class StatementImpl implements Statement {
   public void setFetchDirection(int direction) throws SQLException {
     checkClosed();
 
-    if(direction != ResultSet.FETCH_FORWARD) {
+    if (direction != ResultSet.FETCH_FORWARD) {
       throw new SQLException("Direction must be ResultSet.FETCH_FORWARD currently");
     }
   }
@@ -243,7 +243,7 @@ class StatementImpl implements Statement {
   public void setFetchSize(int rows) throws SQLException {
     checkClosed();
 
-    if(rows < 0) {
+    if (rows < 0) {
       throw new SQLException("Rows must be >= 0");
     }
   }
@@ -371,7 +371,7 @@ class StatementImpl implements Statement {
 
   private boolean containsLimit(String sql) {
     String[] tokens = sql.split("\\s+");
-    String secondToLastToken = tokens[tokens.length-2];
+    String secondToLastToken = tokens[tokens.length - 2];
     return ("limit").equalsIgnoreCase(secondToLastToken);
   }
 }
