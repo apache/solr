@@ -233,7 +233,7 @@ public class CommandHandler {
       collector = MultiCollector.wrap(collector, hitCountCollector);
     }
 
-    query = QueryUtils.combineQueryAndFilter(query, filter.filter);
+    query = QueryUtils.combineQueryAndFilter(query, filter.answer);
 
     if (filter.postFilter != null) {
       filter.postFilter.setLastDelegate(collector);

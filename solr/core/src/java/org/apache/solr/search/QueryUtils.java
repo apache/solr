@@ -150,21 +150,27 @@ public class QueryUtils {
    * If only {@code filterQuery} is present then return it wrapped with constant scoring.
    * If neither are null then we combine with a BooleanQuery.
    */
-  public static Query combineQueryAndFilter(Query scoreQuery, Query filterQuery) {
+  public static Query combineQueryAndFilter(Query scoreQuery, DocSet filterQuery) {
     // check for *:* is simple and avoids needless BooleanQuery wrapper even though BQ.rewrite optimizes this away
+
+    if (filterQuery == null) {
+      return null;
+    }
+    Query fq = filterQuery.makeQuery();
+
     if (scoreQuery == null || scoreQuery instanceof MatchAllDocsQuery) {
       if (filterQuery == null) {
         return new MatchAllDocsQuery(); // default if nothing -- match everything
       } else {
-        return new ConstantScoreQuery(filterQuery);
+        return new ConstantScoreQuery(fq);
       }
     } else {
-      if (filterQuery == null || filterQuery instanceof MatchAllDocsQuery) {
+      if (fq == null || fq instanceof MatchAllDocsQuery) {
         return scoreQuery;
       } else {
         return new BooleanQuery.Builder()
             .add(scoreQuery, Occur.MUST)
-            .add(filterQuery, Occur.FILTER)
+            .add(fq, Occur.FILTER)
             .build();
       }
     }

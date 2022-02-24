@@ -46,7 +46,7 @@ public class AnalyticsDriver {
     ReductionCollectionManager collectionManager = streamingInfo.streamingCollectionManager;
 
     Query fq = filter.makeQuery(); //TODO: passing this along as a DocSet would affect a lot of APIs
-    Iterable<FacetValueQueryExecuter> facetExecuters = manager.getFacetExecuters(fq, queryRequest);
+    Iterable<FacetValueQueryExecuter> facetExecuters = manager. getFacetExecuters(filter, queryRequest);
 
     // Streaming phase (Overall results & Value/Pivot Facets)
     // Loop through all documents and collect reduction data for streaming facets and overall results

@@ -157,6 +157,7 @@ public class SolrFeature extends Feature {
         }
 
         // Build the filter queries
+        DocSet filtersDocSet = null;
         Query filterDocSetQuery = null;
         if (fq != null) {
           List<Query> filterQueries = new ArrayList<>(); // If there are no fqs we just want an empty list
@@ -173,13 +174,13 @@ public class SolrFeature extends Feature {
             }
           }
 
-          DocSet filtersDocSet = searcher.getDocSet(filterQueries); // execute
+          filtersDocSet = searcher.getDocSet(filterQueries); // execute
           if (filtersDocSet != searcher.getLiveDocSet()) {
             filterDocSetQuery = filtersDocSet.makeQuery();
           }
         }
 
-        Query query = QueryUtils.combineQueryAndFilter(scoreQuery, filterDocSetQuery);
+        Query query = QueryUtils.combineQueryAndFilter(scoreQuery, filtersDocSet);
 
         solrQueryWeight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE, 1);
 

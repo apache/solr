@@ -409,7 +409,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       collector = groupExpandCollector;
     }
 
-    searcher.search(QueryUtils.combineQueryAndFilter(query, pfilter.filter), collector);
+    searcher.search(QueryUtils.combineQueryAndFilter(query, pfilter.answer), collector);
 
     rb.rsp.add("expanded", groupExpandCollector.getGroups(searcher, rb.rsp.getReturnFields()));
   }

@@ -28,6 +28,7 @@ import org.apache.solr.common.params.FacetParams.FacetRangeInclude;
 import org.apache.solr.common.params.FacetParams.FacetRangeOther;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QueryUtils;
 
 /**
@@ -53,7 +54,7 @@ public class RangeFacet extends AbstractSolrQueryFacet {
   }
 
   @Override
-  public void createFacetValueExecuters(final Query filter, SolrQueryRequest queryRequest, Consumer<FacetValueQueryExecuter> consumer) {
+  public void createFacetValueExecuters(final DocSet filter, SolrQueryRequest queryRequest, Consumer<FacetValueQueryExecuter> consumer) {
     // Computes the end points of the ranges in the rangeFacet
     final FacetRangeGenerator<? extends Comparable<?>> rec = FacetRangeGenerator.create(this);
     final SchemaField sf = field;

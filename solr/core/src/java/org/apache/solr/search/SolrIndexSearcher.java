@@ -1540,7 +1540,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
-    final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
+    final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.answer);
     Relation hitsRelation;
 
     // handle zero case...
@@ -1652,7 +1652,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     cmd.setMinExactCount(Integer.MAX_VALUE);// We need the full DocSet
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilter(), cmd.getFilterList());
-    final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
+    final Query query = QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.answer);
 
     // handle zero case...
     if (lastDocRequested <= 0) {

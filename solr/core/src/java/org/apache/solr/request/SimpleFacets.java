@@ -334,7 +334,7 @@ public class SimpleFacets {
     }
 
     AllGroupsCollector<?> collector = new AllGroupsCollector<>(new TermGroupSelector(groupField));
-    searcher.search(QueryUtils.combineQueryAndFilter(facetQuery, docSet.makeQuery()), collector);
+    searcher.search(QueryUtils.combineQueryAndFilter(facetQuery, docSet), collector);
     return collector.getGroupCount();
   }
 

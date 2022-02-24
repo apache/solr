@@ -442,7 +442,8 @@ public class Grouping {
       collector = timeLimitingCollector;
     }
     try {
-      searcher.search(QueryUtils.combineQueryAndFilter(query, filterQuery), collector);
+      DocSet dfq = searcher.getDocSet(filterQuery);
+      searcher.search(QueryUtils.combineQueryAndFilter(query, dfq), collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException x) {
       log.warn("Query: {}; ", query, x);
       qr.setPartialResults(true);

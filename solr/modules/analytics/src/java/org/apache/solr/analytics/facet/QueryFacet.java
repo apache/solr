@@ -24,6 +24,7 @@ import org.apache.solr.analytics.function.ReductionCollectionManager.ReductionDa
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
 
@@ -39,7 +40,7 @@ public class QueryFacet extends AbstractSolrQueryFacet {
   }
 
   @Override
-  public void createFacetValueExecuters(final Query filter, SolrQueryRequest queryRequest, Consumer<FacetValueQueryExecuter> consumer) {
+  public void createFacetValueExecuters(final DocSet filter, SolrQueryRequest queryRequest, Consumer<FacetValueQueryExecuter> consumer) {
     queries.forEach( (queryName, query) -> {
       final Query q;
       try {
