@@ -55,7 +55,8 @@ public class CollectionMutator {
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
     if (slice == null) {
-      Map<String, Replica> replicas = Collections.emptyMap();
+      @SuppressWarnings({"unchecked"})
+      Map<String, Replica> replicas = Collections.EMPTY_MAP;
       Map<String, Object> sliceProps = new HashMap<>();
       String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
       String shardState = message.getStr(ZkStateReader.SHARD_STATE_PROP);
@@ -113,9 +114,12 @@ public class CollectionMutator {
           log.error("trying to set perReplicaState to {} from {}", val, coll.isPerReplicaState());
           continue;
         }
-        replicaOps = PerReplicaStatesOps.modifyCollection(coll, enable, PerReplicaStates.fetch(coll.getZNode(), zkClient, null));
+        PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, null);
+        replicaOps = PerReplicaStatesOps.modifyCollection(coll, enable, prs);
+        if(!enable) {
+          coll = updateReplicasFromPrs(coll, prs);
+        }
       }
-
 
       if (message.containsKey(prop)) {
         hasAnyOps = true;
@@ -160,6 +164,38 @@ public class CollectionMutator {
     }
   }
 
+  /**
+   *  Update the state/leader of replicas in state.json from PRS data
+   */
+  public static DocCollection updateReplicasFromPrs(DocCollection coll, PerReplicaStates prs) {
+    //we are disabling PRS. Update the replica states
+    Map<String, Slice> modifiedSlices = new LinkedHashMap<>();
+    coll.forEachReplica((s, replica) -> {
+      PerReplicaStates.State prsState = prs.states.get(replica.getName());
+      if (prsState != null) {
+        if (prsState.state != replica.getState()) {
+          Slice slice = modifiedSlices.getOrDefault(replica.shard, coll.getSlice(replica.shard));
+          replica = ReplicaMutator.setState(replica, prsState.state.toString());
+          modifiedSlices.put(replica.shard, slice.copyWith(replica));
+        }
+        if (prsState.isLeader != replica.isLeader()) {
+          Slice slice = modifiedSlices.getOrDefault(replica.shard, coll.getSlice(replica.shard));
+          replica = prsState.isLeader ?
+                  ReplicaMutator.setLeader(replica) :
+                  ReplicaMutator.unsetLeader(replica);
+          modifiedSlices.put(replica.shard, slice.copyWith(replica));
+        }
+      }
+    });
+
+    if(!modifiedSlices.isEmpty()) {
+      Map<String,Slice> slices = new LinkedHashMap<>(coll.getSlicesMap());
+      slices.putAll(modifiedSlices);
+      return coll.copyWithSlices(slices);
+    }
+    return coll;
+  }
+
   public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {
     Map<String, Slice> slices = new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy
     slices.put(slice.getName(), slice);
@@ -179,4 +215,3 @@ public class CollectionMutator {
     return true;
   }
 }
-
