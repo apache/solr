@@ -68,14 +68,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.UrlScheme;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -401,12 +394,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                  .createCollection(DEFAULT_COLLECTION, "conf1", sliceCount, 1) // not real rep factor!
                  .setCreateNodeSet("") // empty node set prevents creation of cores
                  .process(cloudClient).getStatus());
-    
-    cloudClient.waitForState(DEFAULT_COLLECTION, 30, TimeUnit.SECONDS,
-                             // expect sliceCount active shards, but no active replicas
-                             SolrCloudTestCase.activeClusterShape(sliceCount, 0));
-    
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
+
+      // expect sliceCount active shards, but no active replicas
+      CloudSolrClientUtils.waitForState(cloudClient, DEFAULT_COLLECTION, (long) 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(sliceCount, 0));
+
+      ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     int numOtherReplicas = numJettys - getPullReplicaCount() * sliceCount;
 
@@ -1811,8 +1803,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     
     try {
-      cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(numShards,
-          numShards * (numNrtReplicas + numTlogReplicas + numPullReplicas)));
+        CloudSolrClientUtils.waitForState(cloudClient, collectionName, (long) 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(numShards,
+              numShards * (numNrtReplicas + numTlogReplicas + numPullReplicas)));
     } catch (TimeoutException e) {
       throw new RuntimeException("Timeout waiting for " + numShards + " shards and " + (numNrtReplicas + numTlogReplicas + numPullReplicas) + " replicas.", e);
     }

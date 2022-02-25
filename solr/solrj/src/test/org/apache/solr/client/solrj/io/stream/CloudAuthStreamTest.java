@@ -32,8 +32,10 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -131,8 +133,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     }
     
     for (String collection : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
-      cluster.getSolrClient().waitForState(collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-                                           (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+      CloudSolrClientUtils.waitForState(cluster.getSolrClient(), collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
     }
 
     solrUrl = cluster.getRandomJetty(random()).getProxyBaseUrl().toString();

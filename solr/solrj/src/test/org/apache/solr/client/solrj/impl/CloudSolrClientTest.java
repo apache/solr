@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -757,7 +758,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   @Test
   public void testShutdown() throws IOException {
     try (CloudSolrClient client = getCloudSolrClient(DEAD_HOST_1)) {
-      client.setZkConnectTimeout(100);
+      CloudSolrClientUtils.setZkConnectTimeout(client, 100);
       SolrException ex = expectThrows(SolrException.class, client::connect);
       assertTrue(ex.getCause() instanceof TimeoutException);
     }
@@ -769,7 +770,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   @Test
   public void testWrongZkChrootTest() throws IOException {
     try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
-      client.setZkClientTimeout(1000 * 60);
+      CloudSolrClientUtils.setZkConnectTimeout(client, 1000 * 60);
       SolrException ex = expectThrows(SolrException.class, client::connect);
       MatcherAssert.assertThat("Wrong error message for empty chRoot", ex.getMessage(), Matchers.containsString("cluster not found/not ready"));
       MatcherAssert.assertThat("Wrong node missing message for empty chRoot", ex.getMessage(), Matchers.containsString("Expected node '" + ZkStateReader.ALIASES + "' does not exist"));

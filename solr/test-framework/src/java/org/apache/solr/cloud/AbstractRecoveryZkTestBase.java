@@ -126,7 +126,7 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
     new UpdateRequest()
         .commit(cluster.getSolrClient(), collection);
 
-    cluster.getSolrClient().waitForState(collection, 120, TimeUnit.SECONDS, clusterShape(1, 2));
+    CloudSolrClientUtils.waitForState(cluster.getSolrClient(), collection, (long) 120, TimeUnit.SECONDS, clusterShape(1, 2));
 
     // test that leader and replica have same doc count
     state = getCollectionState(collection);

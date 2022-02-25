@@ -43,9 +43,9 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
   volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = true;
-  String zkHost;
-  int zkConnectTimeout = 15000;
-  int zkClientTimeout = 45000;
+  public String zkHost;
+  public int zkConnectTimeout = 15000;
+  public int zkClientTimeout = 45000;
 
 
   private volatile boolean isClosed = false;
@@ -217,6 +217,11 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
     final String zkHostString = zkBuilder.toString();
     log.debug("Final constructed zkHost string: {}", zkHostString);
     return zkHostString;
+  }
+
+  @Override
+  public String getQuorumHosts() {
+    return zkStateReader.getZkClient().getZkServerAddress();
   }
 
   @Override

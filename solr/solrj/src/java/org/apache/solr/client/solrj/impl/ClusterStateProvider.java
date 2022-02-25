@@ -109,4 +109,6 @@ public interface ClusterStateProvider extends SolrCloseable {
   String getPolicyNameByCollection(String coll);
 
   void connect();
+
+  String getQuorumHosts();
 }

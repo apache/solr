@@ -29,7 +29,9 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
@@ -64,10 +66,9 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, sliceCount, 1));
+    CloudSolrClientUtils.waitForState(cluster.getSolrClient(), COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, sliceCount, 1));
 
-    new UpdateRequest()
+      new UpdateRequest()
         .add(sdoc(id, "1", "text", "a", "test_sS", "21", "payload", ByteBuffer.wrap(new byte[]{0x12, 0x62, 0x15})))
         .add(sdoc(id, "2", "text", "b", "test_sS", "22", "payload", ByteBuffer.wrap(new byte[]{0x25, 0x21, 0x16})))                  //  5
         .add(sdoc(id, "3", "text", "a", "test_sS", "23", "payload", ByteBuffer.wrap(new byte[]{0x35, 0x32, 0x58})))                  //  8

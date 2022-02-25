@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -111,8 +112,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     indexThread.safeStop();
     indexThread.join();
 
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
+    CloudSolrClientUtils.waitForState(cluster.getSolrClient(), COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
 
     assertTrue(!oldIndexDir1.isDirectory());
     assertTrue(!oldIndexDir2.isDirectory());

@@ -176,7 +176,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public String getCatalog() throws SQLException {
-    return this.client.getZkHost();
+      return client.getClusterStateProvider().getQuorumHosts();
   }
 
   @Override

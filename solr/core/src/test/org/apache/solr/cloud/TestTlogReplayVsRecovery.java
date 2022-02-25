@@ -176,17 +176,15 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     // Sanity check that a new (out of sync) replica doesn't come up in our place...
     expectThrows(TimeoutException.class,
                  "Did not time out waiting for new leader, out of sync replica became leader",
-                 () -> {
-                   cluster.getSolrClient().waitForState(COLLECTION, 10, TimeUnit.SECONDS, (state) -> {
-            Replica newLeader = state.getSlice("shard1").getLeader();
-            if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
-              // this is is the bad case, our "bad" state was found before timeout
-              log.error("WTF: New Leader={}", newLeader);
-              return true;
-            }
-            return false; // still no bad state, wait for timeout
-          });
-      });
+                 () -> CloudSolrClientUtils.waitForState(cluster.getSolrClient(), COLLECTION, 10, TimeUnit.SECONDS, (state) -> {
+          Replica newLeader = state.getSlice("shard1").getLeader();
+          if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
+            // this is is the bad case, our "bad" state was found before timeout
+            log.error("WTF: New Leader={}", newLeader);
+            return true;
+          }
+          return false; // still no bad state, wait for timeout
+        }));
 
     log.info("Enabling TestInjection.updateLogReplayRandomPause");
     TestInjection.updateLogReplayRandomPause = "true:100";

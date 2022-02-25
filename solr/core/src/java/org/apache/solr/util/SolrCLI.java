@@ -1557,8 +1557,8 @@ public class SolrCLI implements CLIO {
         Path confPath = ConfigSetService.getConfigsetPath(confdir,
             configsetsDir);
 
-        echoIfVerbose("Uploading " + confPath.toAbsolutePath().toString() +
-            " for config " + confname + " to ZooKeeper at " + cloudSolrClient.getZkHost(), cli);
+          echoIfVerbose("Uploading " + confPath.toAbsolutePath() +
+            " for config " + confname + " to ZooKeeper at " + cloudSolrClient.getClusterStateProvider().getQuorumHosts(), cli);
         ZkMaintenanceUtils.uploadToZK(ZkStateReader.from(cloudSolrClient).getZkClient(),
               confPath, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confname,
               ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);

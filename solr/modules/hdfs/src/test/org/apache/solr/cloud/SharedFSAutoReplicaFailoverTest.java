@@ -409,7 +409,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
       }
       Thread.sleep(200);
     }
-    fail("Expected numSlices=" + numSlices + " numReplicas=" + numReplicas + " but found " + ZkStateReader.from(cloudClient).getClusterState().getCollection(collection) + " with /live_nodes: " + ZkStateReader.from(solrClient).getClusterState().getLiveNodes());
+    fail("Expected numSlices=" + numSlices + " numReplicas=" + numReplicas + " but found " + ZkStateReader.from(cloudClient).getClusterState().getCollection(collection) + " with /live_nodes: " + ZkStateReader.from(cloudClient).getClusterState().getLiveNodes());
   }
 
 }

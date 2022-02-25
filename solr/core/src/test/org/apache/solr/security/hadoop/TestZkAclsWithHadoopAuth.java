@@ -95,7 +95,7 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
       checkSecurityACLs(keeper, "/security");
 
       // Now test all ZK tree.
-      String zkHost = cluster.getSolrClient().getZkHost();
+      String zkHost = cluster.getSolrClient().getClusterStateProvider().getQuorumHosts();
       String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf("/")) : null;
       walkZkTree(keeper, zkChroot, "/");
     }

@@ -49,13 +49,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
@@ -376,9 +370,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-    
-    cluster.getSolrClient().waitForState(collectionName, 30, TimeUnit.SECONDS, (l,c) -> c != null && c.getSlice("shardC") != null); 
-    
+
+    CloudSolrClientUtils.waitForState(cluster.getSolrClient(), collectionName, 30, TimeUnit.SECONDS, (l, c) -> c != null && c.getSlice("shardC") != null);
+
     coresStatus = response.getCollectionCoresStatus();
     assertEquals(3, coresStatus.size());
     int replicaTlog = 0;

@@ -214,7 +214,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
     final String collection = "deleted_collection";
     try (CloudSolrClient client = createCloudClient(null)) {
-      copyConfigUp(TEST_PATH().resolve("configsets"), "cloud-minimal", configSet, client.getZkHost());
+        copyConfigUp(TEST_PATH().resolve("configsets"), "cloud-minimal", configSet, client.getClusterStateProvider().getQuorumHosts());
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());

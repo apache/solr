@@ -35,13 +35,7 @@ import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocCollectionWatcher;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZkStateReaderAccessor;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ZkContainer;
@@ -459,7 +453,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     }
 
     try {
-      cluster.getSolrClient().waitForState(collectionName, 20, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState.getReplicas().size() == 1);
+      CloudSolrClientUtils.waitForState(cluster.getSolrClient(), collectionName, 20, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState.getReplicas().size() == 1);
     } catch (TimeoutException e) {
       if (log.isInfoEnabled()) {
         log.info("Timeout wait for state {}", getCollectionState(collectionName));

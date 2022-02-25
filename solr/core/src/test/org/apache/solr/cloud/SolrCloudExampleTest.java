@@ -164,7 +164,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     doTestConfigUpdate(testCollectionName, solrUrl);
 
     log.info("Running healthcheck for {}", testCollectionName);
-    doTestHealthcheck(testCollectionName, cloudClient.getZkHost());
+      doTestHealthcheck(testCollectionName, cloudClient.getClusterStateProvider().getQuorumHosts());
 
     // verify the delete action works too
     log.info("Running delete for {}", testCollectionName);

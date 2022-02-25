@@ -1087,7 +1087,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
       commit();
 
-        try (ZkShardTerms zkShardTerms = new ZkShardTerms(DEFAULT_COLLECTION, SHARD1, ZkStateReader.from(solrClient).getZkClient())) {
+      try (ZkShardTerms zkShardTerms = new ZkShardTerms(DEFAULT_COLLECTION, SHARD1, ZkStateReader.from(cloudClient).getZkClient())) {
         for (int i=0; i<100; i++) {
           Thread.sleep(10);
           ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_COLLECTION);

@@ -759,7 +759,7 @@ public class MiniSolrCloudCluster {
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-      getSolrClient().waitForState(collection, wait, unit, (n, c) -> {
+      CloudSolrClientUtils.waitForState(getSolrClient(), collection, wait, unit, (CollectionStatePredicate) (n, c) -> {
         state.set(c);
         liveNodesLastSeen.set(n);
 
@@ -783,7 +783,7 @@ public class MiniSolrCloudCluster {
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-      getSolrClient().waitForState(collection, wait, unit, (n, c) -> {
+      CloudSolrClientUtils.waitForState(getSolrClient(), collection, wait, unit, (CollectionStatePredicate) (n, c) -> {
         state.set(c);
         liveNodesLastSeen.set(n);
 
