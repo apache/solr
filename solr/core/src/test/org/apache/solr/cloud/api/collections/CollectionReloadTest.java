@@ -23,6 +23,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.RetryUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -54,7 +55,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     Replica leader
-        = cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", DEFAULT_TIMEOUT);
+      = ZkStateReader.from(cluster.getSolrClient()).getLeaderRetry(testCollectionName, "shard1", DEFAULT_TIMEOUT);
 
     long coreStartTime = getCoreStatus(leader).getCoreStartTime().getTime();
     CollectionAdminRequest.reloadCollection(testCollectionName).process(cluster.getSolrClient());

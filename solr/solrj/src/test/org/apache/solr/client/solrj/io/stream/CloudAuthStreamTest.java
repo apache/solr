@@ -36,6 +36,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
@@ -823,8 +824,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
    * Sigh.  DaemonStream requires polling the same core where the stream was exectured.
    */
   protected static String getRandomCoreUrl(final String collection) throws Exception {
-    final List<String> replicaUrls = 
-      cluster.getSolrClient().getZkStateReader().getClusterState()
+      final List<String> replicaUrls =
+      ZkStateReader.from(cluster.getSolrClient()).getClusterState()
       .getCollectionOrNull(collection).getReplicas().stream()
       .map(Replica::getCoreUrl).collect(Collectors.toList());
     Collections.shuffle(replicaUrls, random());

@@ -82,10 +82,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static volatile MiniSolrCloudCluster cluster;
 
   protected static SolrZkClient zkClient() {
-    ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
+    ZkStateReader reader = ZkStateReader.from(cluster.getSolrClient());
     if (reader == null)
       cluster.getSolrClient().connect();
-    return cluster.getSolrClient().getZkStateReader().getZkClient();
+    return ZkStateReader.from(cluster.getSolrClient()).getZkClient();
   }
 
   /**
@@ -127,7 +127,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * Get the collection state for a particular collection
    */
   protected static DocCollection getCollectionState(String collectionName) {
-    return cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
+    return ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(collectionName);
   }
 
   protected static void waitForState(String message, String collection, CollectionStatePredicate predicate) {

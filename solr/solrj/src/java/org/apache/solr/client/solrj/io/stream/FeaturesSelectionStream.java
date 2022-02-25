@@ -257,7 +257,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
   private List<String> getShardUrls() throws IOException {
     try {
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
 
       Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 

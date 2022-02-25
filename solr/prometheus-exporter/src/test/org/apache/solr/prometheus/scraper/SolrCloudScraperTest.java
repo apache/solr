@@ -31,10 +31,7 @@ import java.util.stream.Collectors;
 import io.prometheus.client.Collector;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.prometheus.PrometheusExporterTestBase;
@@ -73,7 +70,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
   }
 
   private ClusterState getClusterState() {
-    return cluster.getSolrClient().getZkStateReader().getClusterState();
+      return ZkStateReader.from(cluster.getSolrClient()).getClusterState();
   }
 
   private DocCollection getCollectionState() {

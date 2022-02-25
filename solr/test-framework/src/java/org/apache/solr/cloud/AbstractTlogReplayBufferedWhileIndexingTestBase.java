@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -93,7 +94,7 @@ public abstract class AbstractTlogReplayBufferedWhileIndexingTestBase extends Ab
 
     Thread.sleep(2000);
 
-    waitForRecoveriesToFinish(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), false, true);
+    waitForRecoveriesToFinish(DEFAULT_COLLECTION, ZkStateReader.from(cloudClient), false, true);
 
     for (StoppableIndexingThread thread : threads) {
       thread.safeStop();

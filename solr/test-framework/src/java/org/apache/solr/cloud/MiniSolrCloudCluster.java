@@ -357,7 +357,7 @@ public class MiniSolrCloudCluster {
     }
     log.info("waitForNode: {}", nodeName);
 
-    ZkStateReader reader = getSolrClient().getZkStateReader();
+    ZkStateReader reader = ZkStateReader.from(solrClient);
 
     reader.waitForLiveNodes(timeoutSeconds, TimeUnit.SECONDS, (o, n) -> n != null && n.contains(nodeName));
   }
@@ -538,7 +538,7 @@ public class MiniSolrCloudCluster {
 
   /** Delete all collections (and aliases) */
   public void deleteAllCollections() throws Exception {
-    try (ZkStateReader reader = new ZkStateReader(solrClient.getZkStateReader().getZkClient())) {
+    try (ZkStateReader reader = new ZkStateReader(ZkStateReader.from(solrClient).getZkClient())) {
       final CountDownLatch latch = new CountDownLatch(1);
       reader.registerCloudCollectionsListener(new CloudCollectionsListener() {
         
@@ -642,7 +642,7 @@ public class MiniSolrCloudCluster {
   }
 
   public SolrZkClient getZkClient() {
-    return solrClient.getZkStateReader().getZkClient();
+    return ZkStateReader.from(solrClient).getZkClient();
   }
   
   protected CloudSolrClient buildSolrClient() {
@@ -847,7 +847,7 @@ public class MiniSolrCloudCluster {
 
     log.info("waitForJettyToStop: {}", nodeName);
 
-    ZkStateReader reader = getSolrClient().getZkStateReader();
+    ZkStateReader reader = ZkStateReader.from(solrClient);
     try {
       reader.waitForLiveNodes(15, TimeUnit.SECONDS, (o, n) -> ! n.contains(nodeName));
     } catch (InterruptedException e) {
@@ -1109,7 +1109,7 @@ public class MiniSolrCloudCluster {
       }
 
       if (clusterProperties.size() > 0) {
-        ClusterProperties props = new ClusterProperties(cluster.getSolrClient().getZkStateReader().getZkClient());
+        ClusterProperties props = new ClusterProperties(ZkStateReader.from(client).getZkClient());
         for (Map.Entry<String, Object> entry : clusterProperties.entrySet()) {
           props.setClusterProperty(entry.getKey(), entry.getValue());
         }

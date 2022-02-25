@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -79,7 +80,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, ZkStateReader.from(cluster.getSolrClient()),
         false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());

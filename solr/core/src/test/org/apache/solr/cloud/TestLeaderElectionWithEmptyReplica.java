@@ -32,6 +32,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -66,7 +67,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     solrClient.commit();
 
     // find the leader node
-    Replica replica = solrClient.getZkStateReader().getLeaderRetry(COLLECTION_NAME, "shard1");
+    Replica replica = ZkStateReader.from(cluster).getLeaderRetry(COLLECTION_NAME, "shard1");
     JettySolrRunner replicaJetty = null;
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
     for (JettySolrRunner jettySolrRunner : jettySolrRunners) {
@@ -95,7 +96,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
         (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
 
     // now query each replica and check for consistency
-    assertConsistentReplicas(solrClient, solrClient.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlice("shard1"));
+    assertConsistentReplicas(solrClient, ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION_NAME).getSlice("shard1"));
 
     // sanity check that documents still exist
     QueryResponse response = solrClient.query(new SolrQuery("*:*"));

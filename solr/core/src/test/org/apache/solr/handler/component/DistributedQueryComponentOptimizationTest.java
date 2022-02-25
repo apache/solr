@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -308,7 +309,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
 
   private void assertParamsEquals(TrackingShardHandlerFactory.RequestTrackingQueue trackingQueue, String collection, String shard, String paramName, int purpose, String... values) {
     TrackingShardHandlerFactory.ShardRequestAndParams getByIdRequest
-        = trackingQueue.getShardRequestByPurpose(cluster.getSolrClient().getZkStateReader(), collection, shard, purpose);
+      = trackingQueue.getShardRequestByPurpose(ZkStateReader.from(cluster.getSolrClient()), collection, shard, purpose);
     assertParamsEquals(getByIdRequest, paramName, values);
   }
 

@@ -309,7 +309,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     cloudClient = createCloudClient(DEFAULT_COLLECTION);
     cloudClient.connect();
 
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
 
     chaosMonkey = new ChaosMonkey(zkServer, zkStateReader, DEFAULT_COLLECTION,
         shardToJetty, shardToLeaderJetty);
@@ -562,8 +562,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     this.jettys.addAll(jettys);
     this.clients.addAll(clients);
 
-    
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     // make sure we have a leader for each shard
     for (int i = 1; i <= sliceCount; i++) {
       zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + i, 10000);
@@ -590,14 +590,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (log.isInfoEnabled()) {
       log.info("waitForLiveNode: {}", j.getNodeName());
     }
-    cloudClient.getZkStateReader().waitForLiveNodes(30, TimeUnit.SECONDS, SolrCloudTestCase.containsLiveNode(j.getNodeName()));
+    ZkStateReader.from(cloudClient).waitForLiveNodes(30, TimeUnit.SECONDS, SolrCloudTestCase.containsLiveNode(j.getNodeName()));
   }
 
   protected void waitForActiveReplicaCount(CloudSolrClient client, String collection, int expectedNumReplicas) throws TimeoutException, NotInClusterStateException {
     log.info("Waiting to see {} active replicas in collection: {}", expectedNumReplicas, collection);
     AtomicInteger nReplicas = new AtomicInteger();
     try {
-      client.getZkStateReader().waitForState(collection, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+      ZkStateReader.from(cloudClient).waitForState(collection, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
           if (collectionState == null) {
             return false;
           }
@@ -819,7 +819,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
   
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys, List<SolrClient> clients, boolean allowOverSharding) throws Exception {
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
     cloudJettys.clear();
     shardToJetty.clear();
@@ -1023,7 +1023,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
   
   protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
-    ClusterState clusterState = getCommonCloudSolrClient().getZkStateReader().getClusterState();
+      getCommonCloudSolrClient();
+    ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection != null && docCollection.getLeader(slice) != null) {
       return new ZkCoreNodeProps(docCollection.getLeader(slice));
@@ -1047,19 +1048,19 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected void waitForRecoveriesToFinish(boolean verbose)
       throws Exception {
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     super.waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, verbose);
   }
 
   protected void waitForRecoveriesToFinish(String collection, boolean verbose)
       throws Exception {
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     super.waitForRecoveriesToFinish(collection, zkStateReader, verbose);
   }
 
   protected void waitForRecoveriesToFinish(boolean verbose, long timeoutSeconds)
       throws Exception {
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, verbose, true, timeoutSeconds);
   }
 
@@ -1251,7 +1252,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ArrayList<SolrClient> shardClients = new ArrayList<>(7);
 
     updateMappingsFromZk(jettys, clients);
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     List<CloudJettyRunner> solrJetties = shardToJetty.get(shard);
     assertNotNull("no jetties found for shard: " + shard, solrJetties);
 
@@ -1315,7 +1316,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     String failMessage = null;
     if (verbose) System.err.println("check const of " + shard);
     int cnt = 0;
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     assertEquals(
         "The client count does not match up with the shard count for slice:"
             + shard,
@@ -1401,7 +1402,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         }
         boolean live = false;
         String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
-        ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+        ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
         if (zkStateReader.getClusterState().liveNodesContain(nodeName)) {
           live = true;
         }
@@ -1572,7 +1573,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           }
         }
       }
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
       long count = 0;
       final Replica.State currentState = Replica.State.getState(cjetty.info.getStr(ZkStateReader.STATE_PROP));
       if (currentState == Replica.State.ACTIVE
@@ -1906,7 +1907,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   private String checkCollectionExpectations(String collectionName, List<Integer> numShardsNumReplicaList, List<String> nodesAllowedToRunShards) {
-    ClusterState clusterState = getCommonCloudSolrClient().getZkStateReader().getClusterState();
+    getCommonCloudSolrClient();
+    ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
     
     int expectedSlices = numShardsNumReplicaList.get(0);
     // The Math.min thing is here, because we expect replication-factor to be reduced to if there are not enough live nodes to spread all shards of a collection over different nodes
@@ -2064,7 +2066,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     while (System.nanoTime() < timeout) {
       Replica tmp = null;
       try {
-        tmp = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
+        tmp = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, shardId);
       } catch (Exception exc) {}
       if (tmp != null && "active".equals(tmp.getStr(ZkStateReader.STATE_PROP))) {
         leader = tmp;
@@ -2084,7 +2086,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     Map<String,Replica> notLeaders = new HashMap<>();
 
-    ZkStateReader zkr = cloudClient.getZkStateReader();
+    ZkStateReader zkr = ZkStateReader.from(cloudClient);
     zkr.forceUpdateCollection(testCollectionName); // force the state to be fresh
 
     ClusterState cs = zkr.getClusterState();
@@ -2093,10 +2095,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     boolean allReplicasUp = false;
     long waitMs = 0L;
     long maxWaitMs = maxWaitSecs * 1000L;
-    Replica leader = null;
-    ZkShardTerms zkShardTerms = new ZkShardTerms(testCollectionName, shardId, cloudClient.getZkStateReader().getZkClient());
+    Replica leader;
+    ZkShardTerms zkShardTerms = new ZkShardTerms(testCollectionName, shardId, ZkStateReader.from(cloudClient).getZkClient());
     while (waitMs < maxWaitMs && !allReplicasUp) {
-      cs = cloudClient.getZkStateReader().getClusterState();
+      cs = ZkStateReader.from(cloudClient).getClusterState();
       assertNotNull(cs);
       final DocCollection docCollection = cs.getCollectionOrNull(testCollectionName);
       assertNotNull("No collection found for " + testCollectionName, docCollection);
@@ -2156,9 +2158,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected String printClusterStateInfo(String collection) throws Exception {
-    cloudClient.getZkStateReader().forceUpdateCollection(collection);
-    String cs = null;
-    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    ZkStateReader.from(cloudClient).forceUpdateCollection(collection);
+    String cs;
+    ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
     if (collection != null) {
       cs = clusterState.getCollection(collection).toString();
     } else {

@@ -1000,7 +1000,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertEquals(1,resp.getResults().getNumFound());
 
     // now knock out the collection backing our alias
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(solrClient);
     Aliases aliases = zkStateReader.getAliases();
     List<String> collections = aliases.getCollectionAliasListMap().get(alias);
     for (String collection : collections) {

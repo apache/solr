@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
@@ -270,10 +271,9 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   private void assertDocsExistInAllReplicas(List<Replica> notLeaders,
                                               String testCollectionName, int firstDocId, int lastDocId) throws Exception {
     Replica leader =
-        cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
+      ZkStateReader.from(cluster.getSolrClient()).getLeaderRetry(testCollectionName, "shard1", 10000);
     HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
-    List<HttpSolrClient> replicas =
-        new ArrayList<HttpSolrClient>(notLeaders.size());
+    List<HttpSolrClient> replicas = new ArrayList<>(notLeaders.size());
 
     for (Replica r : notLeaders) {
       replicas.add(getHttpSolrClient(r, testCollectionName));

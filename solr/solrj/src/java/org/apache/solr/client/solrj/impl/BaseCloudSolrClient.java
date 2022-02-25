@@ -280,15 +280,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return assertZKStateProvider().zkHost;
   }
 
-  public ZkStateReader getZkStateReader() {
-    if (getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
-      ZkClientClusterStateProvider provider = (ZkClientClusterStateProvider) getClusterStateProvider();
-      getClusterStateProvider().connect();
-      return provider.zkStateReader;
-    }
-    throw new IllegalStateException("This has no Zk stateReader");
-  }
-
   /** Sets the default collection for request */
   public void setDefaultCollection(String collection) {
     this.defaultCollection = collection;

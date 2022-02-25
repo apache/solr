@@ -44,6 +44,8 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrCloseable;
@@ -217,6 +219,15 @@ public class ZkStateReader implements SolrCloseable {
   private static final long LAZY_CACHE_TIME = TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
 
   private Future<?> collectionPropsCacheCleaner; // only kept to identify if the cleaner has already been started.
+
+  public static ZkStateReader from(BaseCloudSolrClient solrClient) {
+    if (solrClient.getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
+      ZkClientClusterStateProvider provider = (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
+      solrClient.getClusterStateProvider().connect();
+      return provider.getZkStateReader();
+    }
+    throw new IllegalStateException("This has no Zk stateReader");
+  }
 
   private static class CollectionWatch<T> {
 

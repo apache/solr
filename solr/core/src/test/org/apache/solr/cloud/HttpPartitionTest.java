@@ -178,7 +178,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       // indexing during a partition
       int achievedRf = sendDoc(2, leaderJetty);
       assertEquals("Unexpected achieved replication factor", 1, achievedRf);
-      try (ZkShardTerms zkShardTerms = new ZkShardTerms(testCollectionName, "shard1", cloudClient.getZkStateReader().getZkClient())) {
+      try (ZkShardTerms zkShardTerms = new ZkShardTerms(testCollectionName, "shard1", ZkStateReader.from(cloudClient).getZkClient())) {
         assertFalse(zkShardTerms.canBecomeLeader(notLeaders.get(0).getName()));
       }
       waitForState(testCollectionName, notLeaders.get(0).getName(), DOWN, 10000);
@@ -193,8 +193,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       JettySolrRunner notLeaderJetty = getJettyOnPort(getReplicaPort(notLeaders.get(0)));
       String notLeaderNodeName = notLeaderJetty.getNodeName();
       notLeaderJetty.stop();
-      
-      cloudClient.getZkStateReader().waitForLiveNodes(15, TimeUnit.SECONDS, SolrCloudTestCase.missingLiveNode(notLeaderNodeName));
+
+      ZkStateReader.from(cloudClient).waitForLiveNodes(15, TimeUnit.SECONDS, SolrCloudTestCase.missingLiveNode(notLeaderNodeName));
 
       notLeaderJetty.start();
       ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, 130);
@@ -314,7 +314,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     TimeOut timeOut = new TimeOut(ms, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     Replica.State replicaState = Replica.State.ACTIVE;
     while (!timeOut.hasTimedOut()) {
-      ZkStateReader zkr = cloudClient.getZkStateReader();
+      ZkStateReader zkr = ZkStateReader.from(cloudClient);
       zkr.forceUpdateCollection(collection); // force the state to be fresh
       ClusterState cs = zkr.getClusterState();
       Collection<Slice> slices = cs.getCollection(collection).getActiveSlices();
@@ -398,7 +398,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         notLeaders.size() == 1);
 
     Replica leader =
-        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+      ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     String leaderNode = leader.getNodeName();
     assertNotNull("Could not find leader for shard1 of "+
         testCollectionName+"; clusterState: "+printClusterStateInfo(testCollectionName), leader);
@@ -418,7 +418,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       String currentLeaderName = null;
       try {
         Replica currentLeader =
-            cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+          ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
         currentLeaderName = currentLeader.getName();
       } catch (Exception exc) {}
 
@@ -429,7 +429,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     }
 
     Replica currentLeader =
-        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+      ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     assertEquals(expectedNewLeaderCoreNodeName, currentLeader.getName());
 
     // TODO: This test logic seems to be timing dependent and fails on Jenkins
@@ -468,8 +468,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   protected List<Replica> getActiveOrRecoveringReplicas(String testCollectionName, String shardId) throws Exception {    
-    Map<String,Replica> activeReplicas = new HashMap<String,Replica>();    
-    ZkStateReader zkr = cloudClient.getZkStateReader();
+    Map<String,Replica> activeReplicas = new HashMap<>();
+    ZkStateReader zkr = ZkStateReader.from(cloudClient);
     ClusterState cs = zkr.getClusterState();
     assertNotNull(cs);
     for (Slice shard : cs.getCollection(testCollectionName).getActiveSlices()) {
@@ -495,7 +495,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       String testCollectionName, int firstDocId, int lastDocId)
       throws Exception {
     Replica leader =
-        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
+      ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1", 10000);
     HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
     List<HttpSolrClient> replicas =
         new ArrayList<HttpSolrClient>(notLeaders.size());
@@ -582,14 +582,13 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected void waitToSeeReplicasActive(String testCollectionName, String shardId, Set<String> replicasToCheck, int maxWaitSecs) throws Exception {
     final RTimer timer = new RTimer();
 
-    ZkStateReader zkr = cloudClient.getZkStateReader();
+    ZkStateReader zkr = ZkStateReader.from(cloudClient);
     zkr.forceUpdateCollection(testCollectionName);
-    ClusterState cs = zkr.getClusterState();
     boolean allReplicasUp = false;
     long waitMs = 0L;
     long maxWaitMs = maxWaitSecs * 1000L;
     while (waitMs < maxWaitMs && !allReplicasUp) {
-      cs = cloudClient.getZkStateReader().getClusterState();
+      ClusterState cs = zkr.getClusterState();
       assertNotNull(cs);
       final DocCollection docCollection = cs.getCollectionOrNull(testCollectionName);
       assertNotNull(docCollection);

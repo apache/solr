@@ -121,7 +121,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     
     cluster.waitForActiveCollection(COLLECTION_NAME, NUM_SHARDS, REPLICATION_FACTOR * NUM_SHARDS);
 
-    ZkStateReader zkStateReader = CLOUD_CLIENT.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
     // really hackish way to get a URL for specific nodes based on shard/replica hosting
     // inspired by TestMiniSolrCloudCluster
     HashMap<String, String> urlMap = new HashMap<>();

@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -46,8 +47,8 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", 1,2)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
-        false, true, 30);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, ZkStateReader.from(cluster.getSolrClient()),
+      false, true, 30);
   }
 
   @Test
