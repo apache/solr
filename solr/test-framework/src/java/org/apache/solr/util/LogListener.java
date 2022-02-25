@@ -368,9 +368,8 @@ public final class LogListener implements Closeable, AutoCloseable {
     // TODO: could probably refactor to share some code with ErrorLogMuter
 
     // This could probably be implemented with a combination of "LevelMatchFilter" and
-    // "ConjunctionFilter" if "ConjunctionFilter" existed
-    // Since it doesn't, we write our own more specialized impl instead of writing & combining
-    // multiple generalized versions
+    // "ConjunctionFilter" if "ConjunctionFilter" existed. Since it doesn't, we write our own more
+    // specialized impl instead of writing & combining multiple generalized versions
 
     // may be mutated in main thread while background thread is actively logging
     public final AtomicReference<Predicate<String>> predicate =
@@ -385,11 +384,9 @@ public final class LogListener implements Closeable, AutoCloseable {
     }
 
     // NOTE: This is inspired by log4j's RegexFilter, but with an eye to being more "garbage-free"
-    // friendly
-    // Oddly, StringMatchFilter does things differnetly and acts like it needs to (re?) format msgs
-    // when params are provided
-    // Since RegexFilter has tests, and StringMatchFilter doesn't, we assume RegexFilter knows what
-    // it's doing...
+    // friendly. Oddly, StringMatchFilter does things differently and acts like it needs to (re?)
+    // format msgs when params are provided. Since RegexFilter has tests, and StringMatchFilter
+    // doesn't, we assume RegexFilter knows what it's doing...
 
     /**
      * The main logic of our filter: Evaluate predicate against log msg &amp; throwable msg(s) if

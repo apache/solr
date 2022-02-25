@@ -177,8 +177,8 @@ import org.xml.sax.SAXException;
  * #initCore(String, String, String, String)} method.
  */
 @SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
-@SuppressFileSystems(
-    "ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
+// ExtrasFS might be ok, the failures with e.g. nightly runs might be "normal"
+@SuppressFileSystems("ExtrasFS")
 @RandomizeSSL()
 public abstract class SolrTestCaseJ4 extends SolrTestCase {
 

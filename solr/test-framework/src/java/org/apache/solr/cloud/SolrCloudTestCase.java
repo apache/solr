@@ -75,8 +75,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   public static final Boolean USE_PER_REPLICA_STATE =
       Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));
 
-  public static final int DEFAULT_TIMEOUT =
-      45; // this is an important timeout for test stability - can't be too short
+  // this is an important timeout for test stability - can't be too short
+  public static final int DEFAULT_TIMEOUT = 45;
 
   /** The cluster */
   protected static volatile MiniSolrCloudCluster cluster;
@@ -96,11 +96,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    */
   protected static MiniSolrCloudCluster.Builder configureCluster(int nodeCount) {
     // By default the MiniSolrCloudCluster being built will randomly (seed based) decide which
-    // collection API strategy
-    // to use (distributed or Overseer based) and which cluster update strategy to use (distributed
-    // if collection API
-    // is distributed, but Overseer based or distributed randomly chosen if Collection API is
-    // Overseer based)
+    // collection API strategy to use (distributed or Overseer based) and which cluster update
+    // strategy to use (distributed if collection API is distributed, but Overseer based or
+    // distributed randomly chosen if Collection API is Overseer based)
 
     boolean useDistributedCollectionConfigSetExecution = LuceneTestCase.random().nextInt(2) == 0;
     boolean useDistributedClusterStateUpdate =

@@ -43,9 +43,8 @@ import org.junit.Test;
  * This test simply does a bunch of basic things in solrcloud mode and asserts things work as
  * expected.
  */
-@LuceneTestCase.SuppressCodecs({
-  "SimpleText"
-}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+// Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs({"SimpleText"})
 public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDistribZkTestBase {
   private static final String SHARD2 = "shard2";
   private static final String SHARD1 = "shard1";

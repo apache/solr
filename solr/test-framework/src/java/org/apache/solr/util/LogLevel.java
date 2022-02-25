@@ -92,8 +92,8 @@ public @interface LogLevel {
               }
             } else {
               // there is no existing configuration for the exact loggerName, logConfig is some
-              // ancestor
-              // record an 'old' level of 'null' to track the lack of any configured level...
+              // ancestor record an 'old' level of 'null' to track the lack of any configured
+              // level...
               oldLevels.put(loggerName, null);
               // ...and now create a new logger config wih our new level
               final LoggerConfig newLoggerConfig = new LoggerConfig(loggerName, newLevel, true);

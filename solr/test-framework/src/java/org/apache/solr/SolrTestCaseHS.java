@@ -136,13 +136,8 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     Object realResponse = ObjectBuilder.fromJSON(strResponse);
     String err = JSONTestUtil.matchObj(path, realResponse, model);
     if (err != null) {
-      log.error(
-          "RESPONSE MISMATCH: {}\n\trequest={}\n\tresult={}" + "\n\texpected={}\n\tmodel={}",
-          err,
-          req,
-          strResponse,
-          JSONUtil.toJSON(model),
-          fullModel);
+      String msg = "RESPONSE MISMATCH: {}\n\trequest={}\n\tresult={}\n\texpected={}\n\tmodel={}";
+      log.error(msg, err, req, strResponse, JSONUtil.toJSON(model), fullModel);
 
       // re-execute the request... good for putting a breakpoint here for debugging
       String rsp = h.query(req);
@@ -216,13 +211,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
     }
   }
-
-  /***
-   * public static void clearNCache() {
-   * SolrQueryRequest req = req();
-   * req.getSearcher().getnCache().clear();  // OFF-HEAP
-   * req.close();
-   * }***/
 
   public static void clearQueryCache() {
     SolrQueryRequest req = req();

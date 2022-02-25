@@ -108,15 +108,13 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
   public void testSolrHomeAndResourceLoaders() throws Exception {
     final String SOLR_HOME_PROP = "solr.solr.home";
     // regardless of what sys prop may be set, everything in the cluster should use solr home dirs
-    // under the
-    // configured base dir -- and nothing in the call stack should be "setting" the sys prop to make
-    // that work...
+    // under the configured base dir -- and nothing in the call stack should be "setting" the sys
+    // prop to make that work...
     final String fakeSolrHome = createTempDir().toAbsolutePath().toString();
     System.setProperty(SOLR_HOME_PROP, fakeSolrHome);
 
     // mock FS from createTempDir don't play nice using 'startsWith' when the solr stack
-    // reconsistutes the path from string
-    // so we have to go the string route here as well...
+    // reconsistutes the path from string so we have to go the string route here as well...
     final Path workDir = Paths.get(createTempDir().toAbsolutePath().toString());
 
     final MiniSolrCloudCluster cluster =
