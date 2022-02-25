@@ -31,8 +31,6 @@ import org.junit.Test;
 
 public class TestNamedListCodec extends SolrTestCase {
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSimple() throws Exception {
 
     NamedList<Object> nl = new NamedList<>();
@@ -94,8 +92,6 @@ public class TestNamedListCodec extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIterator() throws Exception {
 
     NamedList<Object> nl = new NamedList<>();
@@ -136,8 +132,6 @@ public class TestNamedListCodec extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIterable() throws Exception {
     NamedList<Object> r = new NamedList<>();
 
@@ -254,8 +248,6 @@ public class TestNamedListCodec extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testRandom() throws Exception {
     // Random r = random;
     // let's keep it deterministic since just the wrong

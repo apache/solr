@@ -124,8 +124,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       req.process(client);
 
       // Show that the newly-created core has values for load on startup and transient different
-      // than defaults due to the
-      // above.
+      // than defaults due to the above.
       File logDir;
       try (SolrCore coreProveIt = cores.getCore("collection1");
           SolrCore core = cores.getCore("newcore")) {

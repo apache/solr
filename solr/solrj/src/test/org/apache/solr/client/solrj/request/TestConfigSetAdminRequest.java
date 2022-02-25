@@ -99,5 +99,4 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
       return new ConfigSetAdminResponse();
     }
   }
-  ;
 }

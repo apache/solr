@@ -282,9 +282,8 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
       InputStream is = getClass().getResourceAsStream(SOLRJ_JAVABIN_BACKCOMPAT_BIN_CHILD_DOCS);
       byte[] currentFormatBytes = IOUtils.toByteArray(is);
 
-      for (int i = 1;
-          i < currentFormatBytes.length;
-          i++) { // ignore the first byte. It is version information
+      // ignore the first byte. It is version information
+      for (int i = 1; i < currentFormatBytes.length; i++) {
         assertEquals(newFormatBytes[i], currentFormatBytes[i]);
       }
     } catch (IOException e) {
@@ -334,13 +333,11 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     assertEquals("same map entry references should be equal", entryFromBinFileA, entryFromBinFileA);
 
     // Commenting-out this test as it may have inadvertent effect on someone changing this in future
-    // but keeping this in code to make a point, that even the same exact bin file,
-    // there could be sub-objects in the key or value of the maps, with types that do not implement
-    // equals
-    // and in these cases equals would fail as these sub-objects would be equated on their
-    // memory-references which is highly probbale to be unique
-    // and hence the top-level map's equals will also fail
-    // assertNotEquals("2 different references even though from same source are
+    // but keeping this in code to make a point, that even the same exact bin file, there could be
+    // sub-objects in the key or value of the maps, with types that do not implement equals and in
+    // these cases equals would fail as these sub-objects would be equated on their
+    // memory-references which is highly probbale to be unique and hence the top-level map's equals
+    // will also fail assertNotEquals("2 different references even though from same source are
     // un-equal",entryFromBinFileA,entryFromBinFileA_clone);
 
     // read in a different binary file and this should definitely not be equal to the other bi file

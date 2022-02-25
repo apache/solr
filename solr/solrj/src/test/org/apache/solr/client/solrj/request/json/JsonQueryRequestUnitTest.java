@@ -374,8 +374,8 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
       writer.write(os);
       final String rawJsonString = new String(os.toByteArray(), StandardCharsets.UTF_8);
       // Trimming whitespace makes our assertions in these tests more stable (independent of JSON
-      // formatting) so we do
-      // it by default.  But we leave the option open in case the JSON fields have spaces.
+      // formatting) so we do it by default.  But we leave the option open in case the JSON fields
+      // have spaces.
       if (trimWhitespace) {
         return rawJsonString.replaceAll("\n", "").replaceAll(" ", "");
       } else {

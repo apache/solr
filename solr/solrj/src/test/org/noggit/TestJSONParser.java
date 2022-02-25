@@ -77,11 +77,19 @@ public class TestJSONParser extends SolrTestCaseJ4 {
     return parser;
   }
 
-  /**
-   * for debugging purposes public void testSpecific() throws Exception { JSONParser parser =
-   * getParser("[0",1,1); for (;;) { int ev = parser.nextEvent(); if (ev == JSONParser.EOF) { break;
-   * } else { System.out.println("got " + JSONParser.getEventString(ev)); } } }
-   */
+  // for debugging purposes
+  //  public void testSpecific() throws Exception {
+  //    JSONParser parser = getParser("[0", 1, 1);
+  //    for (; ; ) {
+  //      int ev = parser.nextEvent();
+  //      if (ev == JSONParser.EOF) {
+  //        break;
+  //      } else {
+  //        System.out.println("got " + JSONParser.getEventString(ev));
+  //      }
+  //    }
+  //  }
+
   public static byte[] events = new byte[256];
 
   static {
@@ -657,8 +665,7 @@ public class TestJSONParser extends SolrTestCaseJ4 {
     parse("[" + t + "," + "-" + t + "]", new Object[] {a, bn(t), bn("-" + t), A, e});
 
     // check that overflow detection is working properly w/ numbers that don't cause a wrap to
-    // negatives
-    // when multiplied by 10
+    // negatives when multiplied by 10
     t = "1910151821265210155" + "0";
     parse("[" + t + "," + "-" + t + "]", new Object[] {a, bn(t), bn("-" + t), A, e});
 

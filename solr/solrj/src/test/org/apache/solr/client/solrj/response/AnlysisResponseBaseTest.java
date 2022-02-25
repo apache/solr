@@ -112,8 +112,7 @@ public class AnlysisResponseBaseTest extends SolrTestCase {
     assertEquals(1, phases.size());
   }
 
-  // ================================================ Helper Methods
-  // ==================================================
+  // ===== Helper Methods =====
 
   private List<NamedList<?>> buildFakeTokenInfoList(int numberOfTokens) {
     List<NamedList<?>> list = new ArrayList<>(numberOfTokens);

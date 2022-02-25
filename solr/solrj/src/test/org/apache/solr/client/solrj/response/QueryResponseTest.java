@@ -44,8 +44,6 @@ import org.junit.Test;
 @Limit(bytes = 20000)
 public class QueryResponseTest extends SolrTestCase {
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testRangeFacets() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;
@@ -110,8 +108,6 @@ public class QueryResponseTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testGroupResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;
@@ -217,8 +213,6 @@ public class QueryResponseTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSimpleGroupResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;
@@ -264,8 +258,6 @@ public class QueryResponseTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIntervalFacetsResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath())) {

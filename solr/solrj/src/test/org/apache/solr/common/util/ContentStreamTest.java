@@ -109,10 +109,9 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
         FileInputStream fis2 = new FileInputStream(file);
         InputStreamReader isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
         Reader r = stream.getReader()) {
-      // For File URLs, the content type is determined automatically by the mime type
-      // associated with the file extension,
-      // This is inconsistent from the FileStream as that code tries to guess the content based on
-      // the 1st character.
+      // For File URLs, the content type is determined automatically by the mime type associated
+      // with the file extension. This is inconsistent from the FileStream as that code tries to
+      // guess the content based on the 1st character.
       //
       // HTTP URLS, the content type is determined by the headers.  Those are not tested here.
       //

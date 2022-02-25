@@ -37,8 +37,7 @@ public class DocumentAnalysisResponseTest extends SolrTestCase {
   public void testSetResponse() throws Exception {
 
     // the parsing of the analysis phases is already tested in the AnalysisResponseBaseTest. So we
-    // can just fake
-    // the phases list here and use it.
+    // can just fake the phases list here and use it.
     final List<AnalysisResponseBase.AnalysisPhase> phases = new ArrayList<>(1);
     AnalysisResponseBase.AnalysisPhase expectedPhase =
         new AnalysisResponseBase.AnalysisPhase("Tokenizer");
@@ -96,8 +95,7 @@ public class DocumentAnalysisResponseTest extends SolrTestCase {
     assertSame(expectedPhase, phase);
   }
 
-  // ================================================ Helper Methods
-  // ==================================================
+  // ===== Helper Methods =====
 
   private NamedList<Object> buildResponse() {
 

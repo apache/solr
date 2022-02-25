@@ -26,8 +26,6 @@ import org.junit.Test;
 public class TestCollectionAdminRequest extends SolrTestCase {
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testInvalidCollectionNameRejectedWhenCreatingCollection() {
     final SolrException e =
         expectThrows(
@@ -44,8 +42,6 @@ public class TestCollectionAdminRequest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testInvalidShardNamesRejectedWhenCreatingImplicitCollection() {
     final SolrException e =
         expectThrows(
@@ -63,8 +59,6 @@ public class TestCollectionAdminRequest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testInvalidShardNamesRejectedWhenCallingSetShards() {
     CollectionAdminRequest.Create request =
         CollectionAdminRequest.createCollectionWithImplicitRouter("fine", null, "fine", 1);
@@ -83,8 +77,6 @@ public class TestCollectionAdminRequest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testInvalidAliasNameRejectedWhenCreatingAlias() {
     final SolrException e =
         expectThrows(
@@ -102,8 +94,6 @@ public class TestCollectionAdminRequest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testInvalidShardNameRejectedWhenCreatingShard() {
     final SolrException e =
         expectThrows(

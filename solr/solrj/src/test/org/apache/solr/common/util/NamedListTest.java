@@ -75,8 +75,6 @@ public class NamedListTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testRemoveArgs() {
     NamedList<Object> nl = new NamedList<>();
     nl.add("key1", "value1-1");
@@ -196,8 +194,6 @@ public class NamedListTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testShallowMap() {
     NamedList<String> nl = new NamedList<>();
     nl.add("key1", "Val1");

@@ -54,8 +54,6 @@ public class TestToleratedUpdateError extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testParseMapErrorChecking() {
     SimpleOrderedMap<String> bogus = new SimpleOrderedMap<>();
     SolrException e = expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));

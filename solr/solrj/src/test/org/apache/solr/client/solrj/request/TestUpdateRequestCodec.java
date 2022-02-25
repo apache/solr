@@ -49,8 +49,6 @@ import org.junit.Test;
 public class TestUpdateRequestCodec extends SolrTestCase {
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void simple() throws IOException {
     UpdateRequest updateRequest = new UpdateRequest();
     updateRequest.deleteById("*:*");
@@ -116,8 +114,6 @@ public class TestUpdateRequestCodec extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIteratable() throws IOException {
     final List<String> values = new ArrayList<>();
     values.add("iterItem1");
@@ -213,8 +209,6 @@ public class TestUpdateRequestCodec extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testBackCompat4_5() throws IOException {
 
     UpdateRequest updateRequest = new UpdateRequest();
