@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexNotFoundException;
@@ -60,10 +59,13 @@ import org.slf4j.LoggerFactory;
 /**
  * Tests for index backing up and restoring index snapshots.
  *
- * These tests use the deprecated "full-snapshot" based backup method.  For tests that cover similar snapshot
- * functionality incrementally, see {@link org.apache.solr.handler.TestIncrementalCoreBackup}
+ * <p>These tests use the deprecated "full-snapshot" based backup method. For tests that cover
+ * similar snapshot functionality incrementally, see {@link
+ * org.apache.solr.handler.TestIncrementalCoreBackup}
  */
-@LuceneTestCase.SuppressCodecs({"SimpleText"}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs({
+  "SimpleText"
+}) // Backups do checksum validation against a footer value not present in 'SimpleText'
 @SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
 @Slow
 public class TestSolrCoreSnapshots extends SolrCloudTestCase {
@@ -74,8 +76,9 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   public static void setupClass() throws Exception {
     System.setProperty("solr.allowPaths", "*");
     useFactory("solr.StandardDirectoryFactory");
-    configureCluster(1)// nodes
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+    configureCluster(1) // nodes
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
     docsSeed = random().nextLong();
   }
@@ -91,13 +94,15 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   public void testBackupRestore() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String collectionName = "SolrCoreSnapshots";
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
     create.process(solrClient);
 
     String location = createTempDir().toFile().getAbsolutePath();
     int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
 
-    DocCollection collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    DocCollection collectionState =
+        solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
     assertEquals(1, collectionState.getActiveSlices().size());
     Slice shard = collectionState.getActiveSlices().iterator().next();
     assertEquals(1, shard.getReplicas().size());
@@ -109,8 +114,8 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     String commitName = TestUtil.randomSimpleString(random(), 1, 5);
     String duplicateName = commitName.concat("_duplicate");
 
-    try (
-        SolrClient adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    try (SolrClient adminClient =
+            getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
         SolrClient leaderClient = getHttpSolrClient(replica.getCoreUrl())) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
@@ -118,15 +123,16 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       // reference counting implementation during snapshot deletion.
       SnapshotMetaData duplicateCommit = createSnapshot(adminClient, coreName, duplicateName);
 
-      assertEquals (metaData.getIndexDirPath(), duplicateCommit.getIndexDirPath());
-      assertEquals (metaData.getGenerationNumber(), duplicateCommit.getGenerationNumber());
+      assertEquals(metaData.getIndexDirPath(), duplicateCommit.getIndexDirPath());
+      assertEquals(metaData.getGenerationNumber(), duplicateCommit.getGenerationNumber());
 
       // Delete all documents
       leaderClient.deleteByQuery("*:*");
       leaderClient.commit();
       BackupRestoreUtils.verifyDocs(0, cluster.getSolrClient(), collectionName);
 
-      // Verify that the index directory contains at least 2 index commits - one referred by the snapshots
+      // Verify that the index directory contains at least 2 index commits - one referred by the
+      // snapshots
       // and the other containing document deletions.
       {
         List<IndexCommit> commits = listCommits(metaData.getIndexDirPath());
@@ -135,25 +141,29 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
 
       // Backup the earlier created snapshot.
       {
-        Map<String,String> params = new HashMap<>();
+        Map<String, String> params = new HashMap<>();
         params.put("name", backupName);
         params.put("commitName", commitName);
         params.put("location", location);
         params.put("incremental", "false");
-        BackupRestoreUtils.runCoreAdminCommand(replicaBaseUrl, coreName, CoreAdminAction.BACKUPCORE.toString(), params);
+        BackupRestoreUtils.runCoreAdminCommand(
+            replicaBaseUrl, coreName, CoreAdminAction.BACKUPCORE.toString(), params);
       }
 
       // Restore the backup
       {
-        Map<String,String> params = new HashMap<>();
+        Map<String, String> params = new HashMap<>();
         params.put("name", "snapshot." + backupName);
         params.put("location", location);
-        BackupRestoreUtils.runCoreAdminCommand(replicaBaseUrl, coreName, CoreAdminAction.RESTORECORE.toString(), params);
+        BackupRestoreUtils.runCoreAdminCommand(
+            replicaBaseUrl, coreName, CoreAdminAction.RESTORECORE.toString(), params);
         BackupRestoreUtils.verifyDocs(nDocs, cluster.getSolrClient(), collectionName);
       }
 
-      // Verify that the old index directory (before restore) contains only those index commits referred by snapshots.
-      // The IndexWriter (used to cleanup index files) creates an additional commit during closing. Hence we expect 2 commits (instead
+      // Verify that the old index directory (before restore) contains only those index commits
+      // referred by snapshots.
+      // The IndexWriter (used to cleanup index files) creates an additional commit during closing.
+      // Hence we expect 2 commits (instead
       // of 1).
       {
         List<IndexCommit> commits = listCommits(metaData.getIndexDirPath());
@@ -173,7 +183,8 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       // Verify that corresponding index files have been deleted. Ideally this directory should
       // be removed immediately. But the current DirectoryFactory impl waits until the
       // closing the core (or the directoryFactory) for actual removal. Since the IndexWriter
-      // (used to cleanup index files) creates an additional commit during closing, we expect a single
+      // (used to cleanup index files) creates an additional commit during closing, we expect a
+      // single
       // commit (instead of 0).
       assertEquals(1, listCommits(duplicateCommit.getIndexDirPath()).size());
     }
@@ -183,12 +194,14 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   public void testIndexOptimization() throws Exception {
     CloudSolrClient solrClient = cluster.getSolrClient();
     String collectionName = "SolrCoreSnapshots_IndexOptimization";
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
     create.process(solrClient);
 
     int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
 
-    DocCollection collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    DocCollection collectionState =
+        solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
     assertEquals(1, collectionState.getActiveSlices().size());
     Slice shard = collectionState.getActiveSlices().iterator().next();
     assertEquals(1, shard.getReplicas().size());
@@ -197,24 +210,24 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
     String commitName = TestUtil.randomSimpleString(random(), 1, 5);
 
-    try (
-        SolrClient adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    try (SolrClient adminClient =
+            getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
         SolrClient leaderClient = getHttpSolrClient(replica.getCoreUrl())) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
 
       int numTests = nDocs > 0 ? TestUtil.nextInt(random(), 1, 5) : 1;
-      for (int attempt=0; attempt<numTests; attempt++) {
-        //Modify existing index before we call optimize.
+      for (int attempt = 0; attempt < numTests; attempt++) {
+        // Modify existing index before we call optimize.
         if (nDocs > 0) {
-          //Delete a few docs
+          // Delete a few docs
           int numDeletes = TestUtil.nextInt(random(), 1, nDocs);
-          for(int i=0; i<numDeletes; i++) {
+          for (int i = 0; i < numDeletes; i++) {
             leaderClient.deleteByQuery("id:" + i);
           }
-          //Add a few more
+          // Add a few more
           int moreAdds = TestUtil.nextInt(random(), 1, 100);
-          for (int i=0; i<moreAdds; i++) {
+          for (int i = 0; i < moreAdds; i++) {
             SolrInputDocument doc = new SolrInputDocument();
             doc.addField("id", i + nDocs);
             doc.addField("name", "name = " + (i + nDocs));
@@ -224,25 +237,35 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
         }
       }
 
-      // Before invoking optimize command, verify that the index directory contains multiple commits (including the one we snapshotted earlier).
+      // Before invoking optimize command, verify that the index directory contains multiple commits
+      // (including the one we snapshotted earlier).
       {
         Collection<IndexCommit> commits = listCommits(metaData.getIndexDirPath());
         // Verify that multiple index commits are stored in this directory.
         assertTrue(commits.size() > 0);
         // Verify that the snapshot commit is present in this directory.
-        assertTrue(commits.stream().filter(x -> x.getGeneration() == metaData.getGenerationNumber()).findFirst().isPresent());
+        assertTrue(
+            commits.stream()
+                .filter(x -> x.getGeneration() == metaData.getGenerationNumber())
+                .findFirst()
+                .isPresent());
       }
 
       // Optimize the index.
       leaderClient.optimize(true, true, 1);
 
-      // After invoking optimize command, verify that the index directory contains multiple commits (including the one we snapshotted earlier).
+      // After invoking optimize command, verify that the index directory contains multiple commits
+      // (including the one we snapshotted earlier).
       {
         List<IndexCommit> commits = listCommits(metaData.getIndexDirPath());
         // Verify that multiple index commits are stored in this directory.
         assertTrue(commits.size() > 1);
         // Verify that the snapshot commit is present in this directory.
-        assertTrue(commits.stream().filter(x -> x.getGeneration() == metaData.getGenerationNumber()).findFirst().isPresent());
+        assertTrue(
+            commits.stream()
+                .filter(x -> x.getGeneration() == metaData.getGenerationNumber())
+                .findFirst()
+                .isPresent());
       }
 
       // Delete the snapshot
@@ -251,7 +274,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       // Add few documents. Without this the optimize command below does not take effect.
       {
         int moreAdds = TestUtil.nextInt(random(), 1, 100);
-        for (int i=0; i<moreAdds; i++) {
+        for (int i = 0; i < moreAdds; i++) {
           SolrInputDocument doc = new SolrInputDocument();
           doc.addField("id", i + nDocs);
           doc.addField("name", "name = " + (i + nDocs));
@@ -263,46 +286,57 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       // Optimize the index.
       leaderClient.optimize(true, true, 1);
 
-      // Verify that the index directory contains only 1 index commit (which is not the same as the snapshotted commit).
+      // Verify that the index directory contains only 1 index commit (which is not the same as the
+      // snapshotted commit).
       Collection<IndexCommit> commits = listCommits(metaData.getIndexDirPath());
       assertTrue(commits.size() == 1);
-      assertFalse(commits.stream().filter(x -> x.getGeneration() == metaData.getGenerationNumber()).findFirst().isPresent());
+      assertFalse(
+          commits.stream()
+              .filter(x -> x.getGeneration() == metaData.getGenerationNumber())
+              .findFirst()
+              .isPresent());
     }
   }
 
-  private SnapshotMetaData createSnapshot (SolrClient adminClient, String coreName, String commitName) throws Exception {
+  private SnapshotMetaData createSnapshot(
+      SolrClient adminClient, String coreName, String commitName) throws Exception {
     CreateSnapshot req = new CreateSnapshot(commitName);
     req.setCoreName(coreName);
     adminClient.request(req);
 
     Collection<SnapshotMetaData> snapshots = listSnapshots(adminClient, coreName);
-    Optional<SnapshotMetaData> metaData = snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();
+    Optional<SnapshotMetaData> metaData =
+        snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();
     assertTrue(metaData.isPresent());
 
     return metaData.get();
   }
 
-  private void deleteSnapshot(SolrClient adminClient, String coreName, String commitName) throws Exception {
+  private void deleteSnapshot(SolrClient adminClient, String coreName, String commitName)
+      throws Exception {
     DeleteSnapshot req = new DeleteSnapshot(commitName);
     req.setCoreName(coreName);
     adminClient.request(req);
 
     Collection<SnapshotMetaData> snapshots = listSnapshots(adminClient, coreName);
-    assertFalse(snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst().isPresent());
+    assertFalse(
+        snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst().isPresent());
   }
 
-  private Collection<SnapshotMetaData> listSnapshots(SolrClient adminClient, String coreName) throws Exception {
+  private Collection<SnapshotMetaData> listSnapshots(SolrClient adminClient, String coreName)
+      throws Exception {
     ListSnapshots req = new ListSnapshots();
     req.setCoreName(coreName);
     NamedList<?> resp = adminClient.request(req);
-    assertTrue( resp.get("snapshots") instanceof NamedList );
+    assertTrue(resp.get("snapshots") instanceof NamedList);
     NamedList<?> apiResult = (NamedList<?>) resp.get("snapshots");
 
     List<SnapshotMetaData> result = new ArrayList<>(apiResult.size());
-    for(int i = 0 ; i < apiResult.size(); i++) {
+    for (int i = 0; i < apiResult.size(); i++) {
       String commitName = apiResult.getName(i);
-      String indexDirPath = (String)((NamedList<?>)apiResult.get(commitName)).get("indexDirPath");
-      long genNumber = Long.parseLong((String)((NamedList<?>)apiResult.get(commitName)).get("generation"));
+      String indexDirPath = (String) ((NamedList<?>) apiResult.get(commitName)).get("indexDirPath");
+      long genNumber =
+          Long.parseLong((String) ((NamedList<?>) apiResult.get(commitName)).get("generation"));
       result.add(new SnapshotMetaData(commitName, indexDirPath, genNumber));
     }
     return result;
@@ -313,7 +347,8 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     try {
       return DirectoryReader.listCommits(dir);
     } catch (IndexNotFoundException ex) {
-      // This can happen when the delete snapshot functionality cleans up the index files (when the directory
+      // This can happen when the delete snapshot functionality cleans up the index files (when the
+      // directory
       // storing these files is not the *current* index directory).
       return Collections.emptyList();
     }

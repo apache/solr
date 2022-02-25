@@ -16,6 +16,11 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -29,19 +34,16 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 // Collect useful operations for testing assigning properties to individual replicas
 // Could probably expand this to do something creative with getting random slices
 // and shards, but for now this will do.
 public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBase {
 
-  public static NamedList<Object> doPropertyAction(CloudSolrClient client, String... paramsIn) throws IOException, SolrServerException {
-    assertTrue("paramsIn must be an even multiple of 2, it is: " + paramsIn.length, (paramsIn.length % 2) == 0);
+  public static NamedList<Object> doPropertyAction(CloudSolrClient client, String... paramsIn)
+      throws IOException, SolrServerException {
+    assertTrue(
+        "paramsIn must be an even multiple of 2, it is: " + paramsIn.length,
+        (paramsIn.length % 2) == 0);
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int idx = 0; idx < paramsIn.length; idx += 2) {
       params.set(paramsIn[idx], paramsIn[idx + 1]);
@@ -51,8 +53,8 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
     return client.request(request);
   }
 
-  public static void verifyPropertyNotPresent(CloudSolrClient client, String collectionName, String replicaName,
-                                String property)
+  public static void verifyPropertyNotPresent(
+      CloudSolrClient client, String collectionName, String replicaName, String property)
       throws KeeperException, InterruptedException {
     ClusterState clusterState = null;
     Replica replica = null;
@@ -66,23 +68,36 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
       if (StringUtils.isBlank(replica.getProperty(property))) return;
       Thread.sleep(100);
     }
-    fail("Property " + property + " not set correctly for collection/replica pair: " +
-        collectionName + "/" + replicaName + ". Replica props: " + replica.getProperties().toString() +
-        ". Cluster state is " + clusterState.toString());
-
+    fail(
+        "Property "
+            + property
+            + " not set correctly for collection/replica pair: "
+            + collectionName
+            + "/"
+            + replicaName
+            + ". Replica props: "
+            + replica.getProperties().toString()
+            + ". Cluster state is "
+            + clusterState.toString());
   }
 
   // The params are triplets,
   // collection
   // shard
   // replica
-  public static void verifyPropertyVal(CloudSolrClient client, String collectionName,
-                         String replicaName, String property, String val)
+  public static void verifyPropertyVal(
+      CloudSolrClient client,
+      String collectionName,
+      String replicaName,
+      String property,
+      String val)
       throws InterruptedException, KeeperException {
     Replica replica = null;
     ClusterState clusterState = null;
 
-    for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
+    for (int idx = 0;
+        idx < 300;
+        ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
       clusterState = client.getZkStateReader().getClusterState();
       final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
       replica = (docCollection == null) ? null : docCollection.getReplica(replicaName);
@@ -93,26 +108,37 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
       Thread.sleep(100);
     }
 
-    fail("Property '" + property + "' with value " + replica.getProperty(property) +
-        " not set correctly for collection/replica pair: " + collectionName + "/" + replicaName + " property map is " +
-        replica.getProperties().toString() + ".");
-
+    fail(
+        "Property '"
+            + property
+            + "' with value "
+            + replica.getProperty(property)
+            + " not set correctly for collection/replica pair: "
+            + collectionName
+            + "/"
+            + replicaName
+            + " property map is "
+            + replica.getProperties().toString()
+            + ".");
   }
 
   // Verify that
   // 1> the property is only set once in all the replicas in a slice.
   // 2> the property is balanced evenly across all the nodes hosting collection
-  public static void verifyUniqueAcrossCollection(CloudSolrClient client, String collectionName,
-                                    String property) throws KeeperException, InterruptedException {
+  public static void verifyUniqueAcrossCollection(
+      CloudSolrClient client, String collectionName, String property)
+      throws KeeperException, InterruptedException {
     verifyUnique(client, collectionName, property, true);
   }
 
-  public static void verifyUniquePropertyWithinCollection(CloudSolrClient client, String collectionName,
-                            String property) throws KeeperException, InterruptedException {
+  public static void verifyUniquePropertyWithinCollection(
+      CloudSolrClient client, String collectionName, String property)
+      throws KeeperException, InterruptedException {
     verifyUnique(client, collectionName, property, false);
   }
 
-  public static void verifyUnique(CloudSolrClient client, String collectionName, String property, boolean balanced)
+  public static void verifyUnique(
+      CloudSolrClient client, String collectionName, String property, boolean balanced)
       throws KeeperException, InterruptedException {
 
     DocCollection col = null;
@@ -165,14 +191,19 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
         }
 
         if (doSleep == false) {
-          assertTrue("We really shouldn't be calling this if there is no node with the property " + property,
+          assertTrue(
+              "We really shouldn't be calling this if there is no node with the property "
+                  + property,
               counts.size() > 0);
           return;
         }
       }
       Thread.sleep(100);
     }
-    fail("Collection " + collectionName + " does not have roles evenly distributed. Collection is: " + col.toString());
+    fail(
+        "Collection "
+            + collectionName
+            + " does not have roles evenly distributed. Collection is: "
+            + col.toString());
   }
-
 }

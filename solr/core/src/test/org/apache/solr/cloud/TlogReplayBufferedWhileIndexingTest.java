@@ -28,7 +28,8 @@ import org.junit.Test;
  * Implementation moved to AbstractTlogReplayBufferedWhileIndexingTestBase as it is also used by HDFS contrib
  * module tests
  */
-public class TlogReplayBufferedWhileIndexingTest extends AbstractTlogReplayBufferedWhileIndexingTestBase {
+public class TlogReplayBufferedWhileIndexingTest
+    extends AbstractTlogReplayBufferedWhileIndexingTestBase {
 
   public TlogReplayBufferedWhileIndexingTest() throws Exception {
     super();
@@ -39,5 +40,4 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractTlogReplayBuffe
   public void test() throws Exception {
     super.test();
   }
-
 }

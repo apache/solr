@@ -21,52 +21,51 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.junit.BeforeClass;
 
-/**
- * Tests per-field similarity support in the schema
- */
+/** Tests per-field similarity support in the schema */
 public class TestPerFieldSimilarity extends BaseSimilarityTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-sim.xml");
+    initCore("solrconfig-basic.xml", "schema-sim.xml");
   }
-  
+
   /** test a field where the sim is specified directly */
   public void testDirect() throws Exception {
     assertEquals(SweetSpotSimilarity.class, getSimilarity("sim1text").getClass());
   }
-  
+
   /** ... and for a dynamic field */
   public void testDirectDynamic() throws Exception {
     assertEquals(SweetSpotSimilarity.class, getSimilarity("text_sim1").getClass());
   }
-  
+
   /** test a field where a configurable sim factory is defined */
   public void testFactory() throws Exception {
     Similarity sim = getSimilarity("sim2text");
     assertEquals(MockConfigurableSimilarity.class, sim.getClass());
-    assertEquals("is there an echo?", ((MockConfigurableSimilarity)sim).getPassthrough());
+    assertEquals("is there an echo?", ((MockConfigurableSimilarity) sim).getPassthrough());
   }
-  
+
   /** ... and for a dynamic field */
   public void testFactoryDynamic() throws Exception {
     Similarity sim = getSimilarity("text_sim2");
     assertEquals(MockConfigurableSimilarity.class, sim.getClass());
-    assertEquals("is there an echo?", ((MockConfigurableSimilarity)sim).getPassthrough());
+    assertEquals("is there an echo?", ((MockConfigurableSimilarity) sim).getPassthrough());
   }
-  
+
   /** test a field where no similarity is specified */
   public void testDefaults() throws Exception {
     Similarity sim = getSimilarity("sim3text");
-    assertEquals(BM25Similarity.class, sim.getClass());;
+    assertEquals(BM25Similarity.class, sim.getClass());
+    ;
   }
-  
+
   /** ... and for a dynamic field */
   public void testDefaultsDynamic() throws Exception {
     Similarity sim = getSimilarity("text_sim3");
     assertEquals(BM25Similarity.class, sim.getClass());
   }
-  
+
   /** test a field that does not exist */
   public void testNonexistent() throws Exception {
     Similarity sim = getSimilarity("sdfdsfdsfdswr5fsdfdsfdsfs");

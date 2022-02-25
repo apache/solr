@@ -31,40 +31,75 @@ public class BooleanFieldTest extends SolrTestCaseJ4 {
   @Test
   public void testBoolField() {
 
-    // found an odd case when adding booleans to docValues and noticed that we didn't have any boolean
+    // found an odd case when adding booleans to docValues and noticed that we didn't have any
+    // boolean
     // specific tests. Only caught the odd case by accident so let's have a place for explicit tests
     assertU(adoc("id", "0")); // missing
-    assertU(adoc("id", "1", "bind", "true", "bsto", "true", "bindsto", "true", "bindstom", "true", "bindstom", "false"));
-    assertU(adoc("id", "2", "bind", "false", "bsto", "false", "bindsto", "false", "bindstom", "false", "bindstom", "true"));
+    assertU(
+        adoc(
+            "id",
+            "1",
+            "bind",
+            "true",
+            "bsto",
+            "true",
+            "bindsto",
+            "true",
+            "bindstom",
+            "true",
+            "bindstom",
+            "false"));
+    assertU(
+        adoc(
+            "id",
+            "2",
+            "bind",
+            "false",
+            "bsto",
+            "false",
+            "bindsto",
+            "false",
+            "bindstom",
+            "false",
+            "bindstom",
+            "true"));
     assertU(adoc("id", "3", "bind", "false"));
     assertU(adoc("id", "4", "bsto", "false"));
     assertU(adoc("id", "5", "bindsto", "true"));
     assertU(adoc("id", "6", "bindstom", "true"));
     assertU(commit());
 
-    assertQ(req("q", "*:*", "sort", "id asc", "fl", "id,bind,bsto,bindsto,bindstom")
-        ,"count(//result/doc[1]/bool[@name='bind'])=0"
-        ,"count(//result/doc[1]/bool[@name='bsto'])=0"
-        ,"count(//result/doc[1]/bool[@name='bindsto'])=0"
-        ,"count(//result/doc[2]/bool[@name='bind'])=0"
-        ,"count(//result/doc[3]/bool[@name='bind'])=0"
-        ,"//result/doc[2]/bool[@name='bsto'][.='true']"
-        ,"//result/doc[2]/bool[@name='bindsto'][.='true']"
-        ,"//result/doc[3]/bool[@name='bsto'][.='false']"
-        ,"//result/doc[3]/bool[@name='bindsto'][.='false']"
-        ,"//result/doc[2]/arr[@name='bindstom']/bool[1][.='true']"
-        ,"//result/doc[2]/arr[@name='bindstom']/bool[2][.='false']"
-        ,"//result/doc[3]/arr[@name='bindstom']/bool[1][.='false']"
-        ,"//result/doc[3]/arr[@name='bindstom']/bool[2][.='true']"
+    assertQ(
+        req("q", "*:*", "sort", "id asc", "fl", "id,bind,bsto,bindsto,bindstom"),
+        "count(//result/doc[1]/bool[@name='bind'])=0",
+        "count(//result/doc[1]/bool[@name='bsto'])=0",
+        "count(//result/doc[1]/bool[@name='bindsto'])=0",
+        "count(//result/doc[2]/bool[@name='bind'])=0",
+        "count(//result/doc[3]/bool[@name='bind'])=0",
+        "//result/doc[2]/bool[@name='bsto'][.='true']",
+        "//result/doc[2]/bool[@name='bindsto'][.='true']",
+        "//result/doc[3]/bool[@name='bsto'][.='false']",
+        "//result/doc[3]/bool[@name='bindsto'][.='false']",
+        "//result/doc[2]/arr[@name='bindstom']/bool[1][.='true']",
+        "//result/doc[2]/arr[@name='bindstom']/bool[2][.='false']",
+        "//result/doc[3]/arr[@name='bindstom']/bool[1][.='false']",
+        "//result/doc[3]/arr[@name='bindstom']/bool[2][.='true']");
 
-    );
-    
     // Make sure faceting is behaving.
-    assertQ(req("q", "*:*", "facet", "true", 
-        "facet.field", "bind", 
-        "facet.field", "bsto",
-        "facet.field", "bindsto",
-        "facet.field", "bindstom"),
+    assertQ(
+        req(
+            "q",
+            "*:*",
+            "facet",
+            "true",
+            "facet.field",
+            "bind",
+            "facet.field",
+            "bsto",
+            "facet.field",
+            "bindsto",
+            "facet.field",
+            "bindstom"),
         "//lst[@name='bind']/int[@name='false'][.='2']",
         "//lst[@name='bind']/int[@name='true'][.='1']",
         "//lst[@name='bsto'][not(node())]",
@@ -74,5 +109,4 @@ public class BooleanFieldTest extends SolrTestCaseJ4 {
         "//lst[@name='bindstom']/int[@name='false'][.='2']",
         "//lst[@name='bindstom']/int[@name='true'][.='3']");
   }
-
 }

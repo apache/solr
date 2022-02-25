@@ -18,7 +18,6 @@
 package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
-
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -55,33 +54,42 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
 
   @Test
   public void basicTest() throws Exception {
-    try (Http2SolrClient client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
-        .build()){
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+            .build()) {
 
-      // SOLR-13510, this will be failed if the listener (handling inject credential in header) is called in another
+      // SOLR-13510, this will be failed if the listener (handling inject credential in header) is
+      // called in another
       // thread since SolrRequestInfo will return null in that case.
       for (int i = 0; i < 30; i++) {
-        assertNotNull(new QueryRequest(params("q", "*:*"))
-                      .setBasicAuthCredentials("solr", "solr").process(client, COLLECTION));
+        assertNotNull(
+            new QueryRequest(params("q", "*:*"))
+                .setBasicAuthCredentials("solr", "solr")
+                .process(client, COLLECTION));
       }
     }
   }
 
   @Test
   public void testDeleteSecurityJsonZnode() throws Exception {
-    try (Http2SolrClient client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
-        .build()){
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+            .build()) {
       try {
         new QueryRequest(params("q", "*:*")).process(client, COLLECTION);
         fail("Should throw exception due to authentication needed");
-      } catch (Exception e) { /* Ignore */ }
+      } catch (Exception e) {
+        /* Ignore */
+      }
 
-      // Deleting security.json will disable security - before SOLR-9679 it would instead cause an exception
+      // Deleting security.json will disable security - before SOLR-9679 it would instead cause an
+      // exception
       cluster.getZkClient().delete("/security.json", -1, false);
 
       int count = 0;
       boolean done = false;
-      // Assert that security is turned off. This is async, so we retry up to 5s before failing the test
+      // Assert that security is turned off. This is async, so we retry up to 5s before failing the
+      // test
       while (!done) {
         try {
           Thread.sleep(500);
@@ -97,22 +105,21 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
     }
   }
 
-  protected static final String STD_CONF = "{\n" +
-      "  \"authentication\":{\n" +
-      "   \"blockUnknown\": true,\n" +
-      "   \"class\":\"solr.BasicAuthPlugin\",\n" +
-      "   \"credentials\":{\"solr\":\"EEKn7ywYk5jY8vG9TyqlG2jvYuvh1Q7kCCor6Hqm320= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n" +
-      "  },\n" +
-      "  \"authorization\":{\n" +
-      "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n" +
-      "   \"permissions\":[\n" +
-      " {\"name\":\"security-edit\", \"role\":\"admin\"},\n" +
-      " {\"name\":\"collection-admin-edit\", \"role\":\"admin\"},\n" +
-      " {\"name\":\"core-admin-edit\", \"role\":\"admin\"}\n" +
-      "   ],\n" +
-      "   \"user-role\":{\"solr\":\"admin\"}\n" +
-      "  }\n" +
-      "}";
+  protected static final String STD_CONF =
+      "{\n"
+          + "  \"authentication\":{\n"
+          + "   \"blockUnknown\": true,\n"
+          + "   \"class\":\"solr.BasicAuthPlugin\",\n"
+          + "   \"credentials\":{\"solr\":\"EEKn7ywYk5jY8vG9TyqlG2jvYuvh1Q7kCCor6Hqm320= 6zkmjMjkMKyJX6/f0VarEWQujju5BzxZXub6WOrEKCw=\"}\n"
+          + "  },\n"
+          + "  \"authorization\":{\n"
+          + "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n"
+          + "   \"permissions\":[\n"
+          + " {\"name\":\"security-edit\", \"role\":\"admin\"},\n"
+          + " {\"name\":\"collection-admin-edit\", \"role\":\"admin\"},\n"
+          + " {\"name\":\"core-admin-edit\", \"role\":\"admin\"}\n"
+          + "   ],\n"
+          + "   \"user-role\":{\"solr\":\"admin\"}\n"
+          + "  }\n"
+          + "}";
 }
-
-
