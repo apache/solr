@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.SortedMap;
+import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.common.SolrException;
@@ -27,13 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import javax.xml.xpath.XPathExpressionException;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import java.util.SortedMap;
-
-abstract public class RestTestBase extends SolrJettyTestBase {
+public abstract class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static RestTestHarness restTestHarness;
 
@@ -45,41 +45,42 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     restTestHarness = null;
   }
 
-  public static void createJettyAndHarness
-      (String solrHome, String configFile, String schemaFile, String context,
-       boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets) throws Exception {
+  public static void createJettyAndHarness(
+      String solrHome,
+      String configFile,
+      String schemaFile,
+      String context,
+      boolean stopAtShutdown,
+      SortedMap<ServletHolder, String> extraServlets)
+      throws Exception {
 
     createAndStartJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
 
-    restTestHarness = new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME);
+    restTestHarness =
+        new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME);
   }
 
-  /** Validates an update XML String is successful
-   */
+  /** Validates an update XML String is successful */
   public static void assertU(String update) {
     assertU(null, update);
   }
 
-  /** Validates an update XML String is successful
-   */
+  /** Validates an update XML String is successful */
   public static void assertU(String message, String update) {
     checkUpdateU(message, update, true);
   }
 
-  /** Validates an update XML String failed
-   */
+  /** Validates an update XML String failed */
   public static void assertFailedU(String update) {
     assertFailedU(null, update);
   }
 
-  /** Validates an update XML String failed
-   */
+  /** Validates an update XML String failed */
   public static void assertFailedU(String message, String update) {
     checkUpdateU(message, update, false);
   }
 
-  /** Checks the success or failure of an update message
-   */
+  /** Checks the success or failure of an update message */
   private static void checkUpdateU(String message, String update, boolean shouldSucceed) {
     try {
       String m = (null == message) ? "" : message + " ";
@@ -95,10 +96,10 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     }
   }
 
-  /** 
+  /**
    * Validates a query matches some XPath test expressions
-   * 
-   * @param request a URL path with optional query params, e.g. "/schema/fields?fl=id,_version_" 
+   *
+   * @param request a URL path with optional query params, e.g. "/schema/fields?fl=id,_version_"
    */
   public static void assertQ(String request, String... tests) {
     try {
@@ -112,7 +113,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
         query = request.substring(queryStartPos + 1);
         path = request.substring(0, queryStartPos);
       }
-      if ( ! query.matches(".*wt=schema\\.xml.*")) { // don't overwrite wt=schema.xml
+      if (!query.matches(".*wt=schema\\.xml.*")) { // don't overwrite wt=schema.xml
         query = setParam(query, "wt", "xml");
       }
       request = path + '?' + setParam(query, "indent", "on");
@@ -134,9 +135,13 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       String results = TestHarness.validateXPath(response, tests);
 
       if (null != results) {
-        String msg = "REQUEST FAILED: xpath=" + results
-            + "\n\txml response was: " + response
-            + "\n\trequest was:" + request;
+        String msg =
+            "REQUEST FAILED: xpath="
+                + results
+                + "\n\txml response was: "
+                + response
+                + "\n\trequest was:"
+                + request;
 
         log.error(msg);
         throw new RuntimeException(msg);
@@ -151,9 +156,9 @@ abstract public class RestTestBase extends SolrJettyTestBase {
   }
 
   /**
-   *  Makes a query request and returns the JSON string response 
+   * Makes a query request and returns the JSON string response
    *
-   * @param request a URL path with optional query params, e.g. "/schema/fields?fl=id,_version_" 
+   * @param request a URL path with optional query params, e.g. "/schema/fields?fl=id,_version_"
    */
   public static String JQ(String request) throws Exception {
     int queryStartPos = request.indexOf('?');
@@ -167,10 +172,10 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       path = request.substring(0, queryStartPos);
     }
     query = setParam(query, "wt", "json");
-    request = path + '?' + setParam(query, "indent", "on"); 
+    request = path + '?' + setParam(query, "indent", "on");
 
     String response;
-    boolean failed=true;
+    boolean failed = true;
     try {
       response = restTestHarness.query(request);
       failed = false;
@@ -185,6 +190,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
   /**
    * Validates a query matches some JSON test expressions using the default double delta tolerance.
+   *
    * @see org.apache.solr.JSONTestUtil#DEFAULT_DELTA
    * @see #assertJQ(String,double,String...)
    */
@@ -193,15 +199,13 @@ abstract public class RestTestBase extends SolrJettyTestBase {
   }
 
   /**
-   * Validates a query matches some JSON test expressions and closes the
-   * query. The text expression is of the form path:JSON.  To facilitate
-   * easy embedding in Java strings, the JSON can have double quotes
-   * replaced with single quotes.
-   * <p>
-   * Please use this with care: this makes it easy to match complete
-   * structures, but doing so can result in fragile tests if you are
-   * matching more than what you want to test.
-   * </p>
+   * Validates a query matches some JSON test expressions and closes the query. The text expression
+   * is of the form path:JSON. To facilitate easy embedding in Java strings, the JSON can have
+   * double quotes replaced with single quotes.
+   *
+   * <p>Please use this with care: this makes it easy to match complete structures, but doing so can
+   * result in fragile tests if you are matching more than what you want to test.
+   *
    * @param request a URL path with optional query params, e.g. "/schema/fields?fl=id,_version_"
    * @param delta tolerance allowed in comparing float/double values
    * @param tests JSON path expression + '==' + expected value
@@ -240,26 +244,31 @@ abstract public class RestTestBase extends SolrJettyTestBase {
         String err = JSONTestUtil.match(response, testJSON, delta);
         failed = false;
         if (err != null) {
-          log.error("query failed JSON validation. error={}"
-              + "\n expected ={}\n response = {}\n request = {}\n"
-              , err, testJSON, response, request);
+          log.error(
+              "query failed JSON validation. error={}"
+                  + "\n expected ={}\n response = {}\n request = {}\n",
+              err,
+              testJSON,
+              response,
+              request);
           throw new RuntimeException(err);
         }
       } finally {
         if (failed) {
-          log.error("JSON query validation threw an exception."
-              +"\n expected ={}\n response = {}\n request = {}\n"
-              , testJSON, response, request);
+          log.error(
+              "JSON query validation threw an exception."
+                  + "\n expected ={}\n response = {}\n request = {}\n",
+              testJSON,
+              response,
+              request);
         }
       }
     }
   }
 
-  
-  
   /**
    * Validates the response from a PUT request matches some JSON test expressions
-   * 
+   *
    * @see org.apache.solr.JSONTestUtil#DEFAULT_DELTA
    * @see #assertJQ(String,double,String...)
    */
@@ -267,23 +276,21 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     assertJPut(request, content, JSONTestUtil.DEFAULT_DELTA, tests);
   }
 
-
   /**
-   * Validates the response from a PUT request matches some JSON test expressions
-   * and closes the query. The text expression is of the form path==JSON.
-   * To facilitate easy embedding in Java strings, the JSON can have double
-   * quotes replaced with single quotes.
-   * <p>
-   * Please use this with care: this makes it easy to match complete
-   * structures, but doing so can result in fragile tests if you are
-   * matching more than what you want to test.
-   * </p>
+   * Validates the response from a PUT request matches some JSON test expressions and closes the
+   * query. The text expression is of the form path==JSON. To facilitate easy embedding in Java
+   * strings, the JSON can have double quotes replaced with single quotes.
+   *
+   * <p>Please use this with care: this makes it easy to match complete structures, but doing so can
+   * result in fragile tests if you are matching more than what you want to test.
+   *
    * @param request a URL path with optional query params, e.g. "/schema/fields?fl=id,_version_"
    * @param content The content to include with the PUT request
    * @param delta tolerance allowed in comparing float/double values
    * @param tests JSON path expression + '==' + expected value
    */
-  public static void assertJPut(String request, String content, double delta, String... tests) throws Exception {
+  public static void assertJPut(String request, String content, double delta, String... tests)
+      throws Exception {
     int queryStartPos = request.indexOf('?');
     String query;
     String path;
@@ -317,16 +324,23 @@ abstract public class RestTestBase extends SolrJettyTestBase {
         String err = JSONTestUtil.match(response, testJSON, delta);
         failed = false;
         if (err != null) {
-          log.error("query failed JSON validation. error={}"
-              + "\n expected ={}\n response = {}\n request = {}\n"
-              ,err, testJSON, response, request);
+          log.error(
+              "query failed JSON validation. error={}"
+                  + "\n expected ={}\n response = {}\n request = {}\n",
+              err,
+              testJSON,
+              response,
+              request);
           throw new RuntimeException(err);
         }
       } finally {
         if (failed) {
-          log.error("JSON query validation threw an exception."
-              + "\n expected ={}\n response = {}\n request = {}"
-              , testJSON, response, request);
+          log.error(
+              "JSON query validation threw an exception."
+                  + "\n expected ={}\n response = {}\n request = {}",
+              testJSON,
+              response,
+              request);
         }
       }
     }
@@ -342,23 +356,21 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     assertJPost(request, content, JSONTestUtil.DEFAULT_DELTA, tests);
   }
 
-
   /**
-   * Validates the response from a PUT request matches some JSON test expressions
-   * and closes the query. The text expression is of the form path==JSON.
-   * To facilitate easy embedding in Java strings, the JSON can have double
-   * quotes replaced with single quotes.
-   * <p>
-   * Please use this with care: this makes it easy to match complete
-   * structures, but doing so can result in fragile tests if you are
-   * matching more than what you want to test.
-   * </p>
+   * Validates the response from a PUT request matches some JSON test expressions and closes the
+   * query. The text expression is of the form path==JSON. To facilitate easy embedding in Java
+   * strings, the JSON can have double quotes replaced with single quotes.
+   *
+   * <p>Please use this with care: this makes it easy to match complete structures, but doing so can
+   * result in fragile tests if you are matching more than what you want to test.
+   *
    * @param request a URL path with optional query params, e.g. "/schema/fields?fl=id,_version_"
    * @param content The content to include with the PUT request
    * @param delta tolerance allowed in comparing float/double values
    * @param tests JSON path expression + '==' + expected value
    */
-  public static void assertJPost(String request, String content, double delta, String... tests) throws Exception {
+  public static void assertJPost(String request, String content, double delta, String... tests)
+      throws Exception {
     int queryStartPos = request.indexOf('?');
     String query;
     String path;
@@ -392,24 +404,32 @@ abstract public class RestTestBase extends SolrJettyTestBase {
         String err = JSONTestUtil.match(response, testJSON, delta);
         failed = false;
         if (err != null) {
-          log.error("query failed JSON validation. error={}"
-              + "\n expected ={}\n response = {}\n request = {}\n"
-              , err, testJSON, response, request);
+          log.error(
+              "query failed JSON validation. error={}"
+                  + "\n expected ={}\n response = {}\n request = {}\n",
+              err,
+              testJSON,
+              response,
+              request);
           throw new RuntimeException(err);
         }
       } finally {
         if (failed) {
-          log.error("JSON query validation threw an exception." +
-              "\n expected ={}\n response = {}\n request = {}\n"
-              ,testJSON, response, request);
+          log.error(
+              "JSON query validation threw an exception."
+                  + "\n expected ={}\n response = {}\n request = {}\n",
+              testJSON,
+              response,
+              request);
         }
       }
     }
   }
-  
+
   /**
-   * Deletes a resource and then matches some JSON test expressions against the 
-   * response using the default double delta tolerance.
+   * Deletes a resource and then matches some JSON test expressions against the response using the
+   * default double delta tolerance.
+   *
    * @see org.apache.solr.JSONTestUtil#DEFAULT_DELTA
    * @see #assertJDelete(String,double,String...)
    */
@@ -418,8 +438,8 @@ abstract public class RestTestBase extends SolrJettyTestBase {
   }
 
   /**
-   * Deletes a resource and then matches some JSON test expressions against the 
-   * response using the specified double delta tolerance.
+   * Deletes a resource and then matches some JSON test expressions against the response using the
+   * specified double delta tolerance.
    */
   public static void assertJDelete(String request, double delta, String... tests) throws Exception {
     int queryStartPos = request.indexOf('?');
@@ -455,17 +475,23 @@ abstract public class RestTestBase extends SolrJettyTestBase {
         String err = JSONTestUtil.match(response, testJSON, delta);
         failed = false;
         if (err != null) {
-          log.error("query failed JSON validation. error={}\n expected ={}"
-              + "\n response = {}\n request = {}"
-              , err, testJSON, response, request);
+          log.error(
+              "query failed JSON validation. error={}\n expected ={}"
+                  + "\n response = {}\n request = {}",
+              err,
+              testJSON,
+              response,
+              request);
           throw new RuntimeException(err);
         }
       } finally {
         if (failed) {
-          log.error("JSON query validation threw an exception.\n expected ={}\n"
-              + "\n response = {}\n request = {}"
-              , testJSON, response, request
-          );
+          log.error(
+              "JSON query validation threw an exception.\n expected ={}\n"
+                  + "\n response = {}\n request = {}",
+              testJSON,
+              response,
+              request);
         }
       }
     }
@@ -475,18 +501,20 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * Insures that the given param is included in the query with the given value.
    *
    * <ol>
-   *   <li>If the param is already included with the given value, the request is returned unchanged.</li>
-   *   <li>If the param is not already included, it is added with the given value.</li>
-   *   <li>If the param is already included, but with a different value, the value is replaced with the given value.</li>
-   *   <li>If the param is already included multiple times, they are replaced with a single param with given value.</li>
+   *   <li>If the param is already included with the given value, the request is returned unchanged.
+   *   <li>If the param is not already included, it is added with the given value.
+   *   <li>If the param is already included, but with a different value, the value is replaced with
+   *       the given value.
+   *   <li>If the param is already included multiple times, they are replaced with a single param
+   *       with given value.
    * </ol>
    *
    * The passed-in valueToSet should NOT be URL encoded, as it will be URL encoded by this method.
    *
    * @param query The query portion of a request URL, e.g. "wt=xml&indent=off&fl=id,_version_"
-   * @param paramToSet The parameter name to insure the presence of in the returned request 
+   * @param paramToSet The parameter name to insure the presence of in the returned request
    * @param valueToSet The parameter value to insure in the returned request
-   * @return The query with the given param set to the given value 
+   * @return The query with the given param set to the given value
    */
   private static String setParam(String query, String paramToSet, String valueToSet) {
     if (null == valueToSet) {
@@ -519,11 +547,11 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       // More than one value for paramToSet on the request, or paramToSet's value is not valueToSet
       // -> rebuild the query
       boolean isFirst = true;
-      for (Map.Entry<String,String[]> entry : requestParams.getMap().entrySet()) {
+      for (Map.Entry<String, String[]> entry : requestParams.getMap().entrySet()) {
         String key = entry.getKey();
         String[] valarr = entry.getValue();
 
-        if ( ! key.equals(paramToSet)) {
+        if (!key.equals(paramToSet)) {
           for (String val : valarr) {
             builder.append(isFirst ? "" : '&');
             isFirst = false;
@@ -542,4 +570,4 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       throw new RuntimeException(e);
     }
   }
-}  
+}

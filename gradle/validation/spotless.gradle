@@ -46,7 +46,6 @@ configure(project(":solr").subprojects) { prj ->
         switch (project.path) {
           case ":solr:core":
           case ":solr:solrj":
-          case ":solr:test-framework":
             targetExclude "src/**/*.java"
             break
           case ":solr:modules:hdfs":
