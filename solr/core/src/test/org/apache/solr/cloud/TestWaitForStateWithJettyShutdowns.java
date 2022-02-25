@@ -52,7 +52,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).process(cluster.getSolrClient());
       
       log.info("Sanity check that our collection has come online");
-        CloudSolrClientUtils.waitForState(cluster.getSolrClient(), col_name, (long) 30, TimeUnit.SECONDS, clusterShape(1, 1));
+        ZkStateReader.waitForState(cluster.getSolrClient(), col_name, (long) 30, TimeUnit.SECONDS, clusterShape(1, 1));
 
         log.info("Shutdown 1 node");
       final JettySolrRunner nodeToStop = cluster.getJettySolrRunner(0);
@@ -63,7 +63,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       // now that we're confident that node has stoped, check if a waitForState
       // call will detect the missing replica -- shouldn't need long wait times (we know it's down)...
       log.info("Now check if waitForState will recognize we already have the exepcted state");
-        CloudSolrClientUtils.waitForState(cluster.getSolrClient(), col_name, (long) 500, TimeUnit.MILLISECONDS, clusterShape(1, 0));
+        ZkStateReader.waitForState(cluster.getSolrClient(), col_name, (long) 500, TimeUnit.MILLISECONDS, clusterShape(1, 0));
 
 
     } finally {
@@ -82,7 +82,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).process(cluster.getSolrClient());
       
       log.info("Sanity check that our collection has come online");
-        CloudSolrClientUtils.waitForState(cluster.getSolrClient(), col_name, (long) 30, TimeUnit.SECONDS, SolrCloudTestCase.clusterShape(1, 1));
+        ZkStateReader.waitForState(cluster.getSolrClient(), col_name, (long) 30, TimeUnit.SECONDS, SolrCloudTestCase.clusterShape(1, 1));
 
 
         // HACK implementation detail...
@@ -98,7 +98,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       final Future<?> backgroundWaitForState = executor.submit
         (() -> {
           try {
-              CloudSolrClientUtils.waitForState(cluster.getSolrClient(), col_name, (long) 180, TimeUnit.SECONDS, (CollectionStatePredicate) new LatchCountingPredicateWrapper(latch,
+              ZkStateReader.waitForState(cluster.getSolrClient(), col_name, (long) 180, TimeUnit.SECONDS, (CollectionStatePredicate) new LatchCountingPredicateWrapper(latch,
                       clusterShape(1, 0)));
           } catch (Exception e) {
             log.error("background thread got exception", e);

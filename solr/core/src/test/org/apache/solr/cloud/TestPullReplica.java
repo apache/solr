@@ -333,7 +333,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 0));
     addDocs(500);
     List<Replica.State> statesSeen = new ArrayList<>(3);
-    CloudSolrClientUtils.registerCollectionStateWatcher(cluster.getSolrClient(), collectionName, (liveNodes, collectionState) -> {
+    ZkStateReader.registerCollectionStateWatcher(cluster.getSolrClient(), collectionName, (liveNodes, collectionState) -> {
       Replica r = collectionState.getSlice("shard1").getReplica("core_node2");
       log.info("CollectionStateWatcher state change: {}", r);
       if (r == null) {

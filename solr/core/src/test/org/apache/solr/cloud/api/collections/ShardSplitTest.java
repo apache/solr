@@ -46,6 +46,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.*;
+import org.apache.solr.cloud.ZkStateReader;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.CollectionParams;
@@ -125,8 +126,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
     create.setCreateNodeSet(nodeName); // we want to create the leader on a fixed node so that we know which one to restart later
     create.process(cloudClient);
-    
-    CloudSolrClientUtils.waitForState(cloudClient, collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 1));
+
+    ZkStateReader.waitForState(cloudClient, collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 1));
     
     try (CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), true, cloudClient.getLbClient().getHttpClient())) {
       client.setDefaultCollection(collectionName);
@@ -198,7 +199,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
             state = addReplica.processAndWait(control, 30);
           }
 
-          CloudSolrClientUtils.waitForState(client, collectionName, (long) 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 4));
+          ZkStateReader.waitForState(client, collectionName, (long) 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 4));
 
             if (state == RequestStatusState.COMPLETED)  {
             CountDownLatch newReplicaLatch = new CountDownLatch(1);
@@ -343,7 +344,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2, 0, 2); // TODO tlog replicas disabled right now.
     create.process(cloudClient);
 
-    CloudSolrClientUtils.waitForState(cloudClient, collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 4));
+    ZkStateReader.waitForState(cloudClient, collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 4));
     
     waitForRecoveriesToFinish(collectionName, false);
 
@@ -358,7 +359,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     CollectionAdminResponse rsp = splitShard.process(cloudClient);
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
-    CloudSolrClientUtils.waitForState(cloudClient, collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 12));
+    ZkStateReader.waitForState(cloudClient, collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 12));
 
     ZkStateReader.from(cloudClient).forceUpdateCollection(collectionName);
     ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
@@ -552,8 +553,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     String collectionName = "testSplitLocking";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2);
     create.process(cloudClient);
-    
-    CloudSolrClientUtils.waitForState(cloudClient, collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 2));
+
+    ZkStateReader.waitForState(cloudClient, collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 2));
     
     waitForRecoveriesToFinish(collectionName, false);
 
@@ -628,7 +629,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     assertEquals(0, response.getStatus());
     
     try {
-      CloudSolrClientUtils.waitForState(cloudClient, collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 2));
+      ZkStateReader.waitForState(cloudClient, collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 2));
     } catch (TimeoutException e) {
       new RuntimeException("Timeout waiting for 1shards and 2 replicas.", e);
     }

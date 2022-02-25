@@ -220,7 +220,10 @@ public class ZkStateReader implements SolrCloseable {
 
   private Future<?> collectionPropsCacheCleaner; // only kept to identify if the cleaner has already been started.
 
+  private static BaseCloudSolrClient client;
+
   public static ZkStateReader from(BaseCloudSolrClient solrClient) {
+    client = solrClient;
     if (solrClient.getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
       ZkClientClusterStateProvider provider = (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
       solrClient.getClusterStateProvider().connect();
@@ -1556,10 +1559,13 @@ public class ZkStateReader implements SolrCloseable {
    * ZooKeeper watchers needed, and reduce the amount of network/cpu used.
    * </p>
    *
+   * @param collection the collection to watch
+   * @param stateWatcher    a watcher that will be called when the state changes
    * @see #registerDocCollectionWatcher
    * @see #registerLiveNodesListener
    */
   public void registerCollectionStateWatcher(String collection, CollectionStateWatcher stateWatcher) {
+    client.getClusterStateProvider().connect();
     final DocCollectionAndLiveNodesWatcherWrapper wrapper
         = new DocCollectionAndLiveNodesWatcherWrapper(collection, stateWatcher);
 
@@ -1573,14 +1579,19 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   /**
-   * Register a DocCollectionWatcher to be called when the state of a collection changes
+   * Register a DocCollectionWatcher to be called when the cluster state for a collection changes.
    *
    * <p>
    * The Watcher will automatically be removed when it's
    * <code>onStateChanged</code> returns <code>true</code>
    * </p>
+   *
+   * @param collection the collection to watch
+   * @param stateWatcher    a watcher that will be called when the state changes
+   * @see #registerDocCollectionWatcher
    */
   public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
+    client.getClusterStateProvider().connect();
     AtomicBoolean watchSet = new AtomicBoolean(false);
     collectionWatches.compute(collection, (k, v) -> {
       if (v == null) {
@@ -1643,6 +1654,7 @@ public class ZkStateReader implements SolrCloseable {
    */
   public void waitForState(final String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
       throws InterruptedException, TimeoutException {
+    client.getClusterStateProvider().connect();
 
     if (closed) {
       throw new AlreadyClosedException();
@@ -1691,6 +1703,7 @@ public class ZkStateReader implements SolrCloseable {
    */
   public DocCollection waitForState(final String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
       throws InterruptedException, TimeoutException {
+    client.getClusterStateProvider().connect();
     if (log.isDebugEnabled()) {
       log.debug("Waiting up to {}ms for state {}", unit.toMillis(wait), predicate);
     }
@@ -2257,5 +2270,4 @@ public class ZkStateReader implements SolrCloseable {
   public DocCollection getCollection(String collection) {
     return clusterState == null ? null : clusterState.getCollectionOrNull(collection);
   }
-
 }

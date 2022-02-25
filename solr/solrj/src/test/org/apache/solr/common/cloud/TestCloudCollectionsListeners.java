@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.After;
@@ -100,7 +99,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    CloudSolrClientUtils.waitForState(client, "testcollection1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    ZkStateReader.waitForState(client, "testcollection1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
 
       assertFalse("CloudCollectionsListener has new collection in old set of collections", oldResults.get(1).contains("testcollection1"));
     assertFalse("CloudCollectionsListener has new collection in old set of collections", oldResults.get(2).contains("testcollection1"));

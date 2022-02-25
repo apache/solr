@@ -28,9 +28,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
-import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.CollectionStatePredicate;
+import org.apache.solr.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.DocCollection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -49,7 +48,7 @@ public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
     configureCluster(NUM_SHARDS).addConfig(CONFIG, configset(CONFIG)).configure();
     CollectionAdminRequest.createCollection(COLLECTION, CONFIG, NUM_SHARDS, 1)
         .process(cluster.getSolrClient());
-    CloudSolrClientUtils.waitForState(cluster.getSolrClient(), COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, NUM_SHARDS, 1));
+      ZkStateReader.waitForState(cluster.getSolrClient(), COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, NUM_SHARDS, 1));
   }
 
   @AfterClass

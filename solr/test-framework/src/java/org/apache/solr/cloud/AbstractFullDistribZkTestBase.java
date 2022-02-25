@@ -396,9 +396,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                  .process(cloudClient).getStatus());
 
       // expect sliceCount active shards, but no active replicas
-      CloudSolrClientUtils.waitForState(cloudClient, DEFAULT_COLLECTION, (long) 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(sliceCount, 0));
+    ZkStateReader.from(cloudClient).waitForState(DEFAULT_COLLECTION, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(sliceCount, 0));
 
-      ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
+    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     int numOtherReplicas = numJettys - getPullReplicaCount() * sliceCount;
 
@@ -1803,7 +1803,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     
     try {
-        CloudSolrClientUtils.waitForState(cloudClient, collectionName, (long) 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(numShards,
+      ZkStateReader.from(cloudClient).waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(numShards,
               numShards * (numNrtReplicas + numTlogReplicas + numPullReplicas)));
     } catch (TimeoutException e) {
       throw new RuntimeException("Timeout waiting for " + numShards + " shards and " + (numNrtReplicas + numTlogReplicas + numPullReplicas) + " replicas.", e);
@@ -1898,7 +1898,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return doc;
   }
 
-  private String checkCollectionExpectations(String collectionName, List<Integer> numShardsNumReplicaList, List<String> nodesAllowedToRunShards) {
+  private String checkCollectionExpectations(String collectionName, List<Integer> numShardsNumReplicaList, List<String> nodesAllowedToRunShards) throws IOException {
     getCommonCloudSolrClient();
     ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
     

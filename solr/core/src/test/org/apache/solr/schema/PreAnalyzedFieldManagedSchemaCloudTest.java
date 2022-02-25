@@ -26,9 +26,8 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.UpdateResponse;
-import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.CollectionStatePredicate;
+import org.apache.solr.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.DocCollection;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -43,7 +42,7 @@ public class PreAnalyzedFieldManagedSchemaCloudTest extends SolrCloudTestCase {
     configureCluster(2).addConfig(CONFIG, configset(CONFIG)).configure();
     CollectionAdminRequest.createCollection(COLLECTION, CONFIG, 2, 1)
         .process(cluster.getSolrClient());
-    CloudSolrClientUtils.waitForState(cluster.getSolrClient(), COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
+      ZkStateReader.waitForState(cluster.getSolrClient(), COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
   }
 
   @Test

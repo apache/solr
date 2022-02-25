@@ -371,7 +371,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 
-    CloudSolrClientUtils.waitForState(cluster.getSolrClient(), collectionName, 30, TimeUnit.SECONDS, (l, c) -> c != null && c.getSlice("shardC") != null);
+      ZkStateReader.waitForState(cluster.getSolrClient(), collectionName, 30, TimeUnit.SECONDS, (l, c) -> c != null && c.getSlice("shardC") != null);
 
     coresStatus = response.getCollectionCoresStatus();
     assertEquals(3, coresStatus.size());
