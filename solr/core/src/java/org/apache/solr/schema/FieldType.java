@@ -502,24 +502,51 @@ public abstract class FieldType extends FieldProperties {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
       Tokenizer ts = new Tokenizer() {
+        private boolean done = false;
+        private int finalOffset;
+
         final char[] cbuf = new char[maxChars];
         final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
         final BytesTermAttribute bytesAtt = isPointField() ? addAttribute(BytesTermAttribute.class) : null;
         final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+
         @Override
         public boolean incrementToken() throws IOException {
-          clearAttributes();
-          int n = input.read(cbuf,0,maxChars);
-          if (n<=0) return false;
-          if (isPointField()) {
-            BytesRef b = ((PointField)FieldType.this).toInternalByteRef(new String(cbuf, 0, n));
-            bytesAtt.setBytesRef(b);
-          } else {
-            String s = toInternal(new String(cbuf, 0, n));
-            termAtt.setEmpty().append(s);
+          if (!done) {
+            clearAttributes();
+
+            int max = maxChars;
+            int n = 0;
+            while (true) {
+              int len = input.read(cbuf, n, max);
+              if (len < 0) break;
+              max -= len;
+              n += len;
+            }
+
+            if (n == 0) {
+              return false;
+            }
+
+            if (isPointField()) {
+              BytesRef b = ((PointField)FieldType.this).toInternalByteRef(new String(cbuf, 0, n));
+              bytesAtt.setBytesRef(b);
+            } else {
+              String s = toInternal(new String(cbuf, 0, n));
+              termAtt.setEmpty().append(s);
+            }
+
+            finalOffset = correctOffset(n);
+            offsetAtt.setOffset(correctOffset(0), finalOffset);
+            return true;
           }
-          offsetAtt.setOffset(correctOffset(0),correctOffset(n));
-          return true;
+          return false;
+        }
+
+        @Override
+        public void end() throws IOException {
+          super.end();
+          offsetAtt.setOffset(finalOffset, finalOffset);
         }
       };
 
