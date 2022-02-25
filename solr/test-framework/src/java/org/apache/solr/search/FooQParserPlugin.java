@@ -16,16 +16,16 @@
  */
 package org.apache.solr.search;
 
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.request.SolrQueryRequest;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.index.Term;
-
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
 
 public class FooQParserPlugin extends QParserPlugin {
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new FooQParser(qstr, localParams, params, req);
   }
 }
@@ -37,6 +37,7 @@ class FooQParser extends QParser {
 
   @Override
   public Query parse() throws SyntaxError {
-    return new TermQuery(new Term(localParams.get(QueryParsing.F), localParams.get(QueryParsing.V)));
+    return new TermQuery(
+        new Term(localParams.get(QueryParsing.F), localParams.get(QueryParsing.V)));
   }
 }
