@@ -98,6 +98,18 @@ public class NodeRoles {
       public String modeWhenRoleIsAbsent() {
         return MODE_DISALLOWED;
       }
+    },
+
+    COORDINATOR("coordinator") {
+      @Override
+      public String  modeWhenRoleIsAbsent() {
+        return MODE_OFF;
+      }
+
+      @Override
+      public Set<String> supportedModes() {
+        return Set.of(MODE_ON, MODE_OFF);
+      }
     };
 
     public final String roleName;

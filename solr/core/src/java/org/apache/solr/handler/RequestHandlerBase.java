@@ -190,7 +190,7 @@ public abstract class RequestHandlerBase implements
     requests.inc();
     // requests are distributed by default when ZK is in use, unless indicated otherwise
     boolean distrib = req.getParams().getBool(CommonParams.DISTRIB,
-        req.getCore() != null ? req.getCore().getCoreContainer().isZooKeeperAware() : false);
+        req.getCoreContainer() != null ? req.getCoreContainer().isZooKeeperAware() : false);
     if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
       shardPurposes.computeIfAbsent("total", name -> new Counter()).inc();
       int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
