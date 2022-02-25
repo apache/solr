@@ -1107,7 +1107,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     baseURL = newBaseURL
 
   if baseURL.endswith('distribution/build/release'):
-    # Used when buiding release locally in Jenkins
+    # Used when building release locally in Jenkins
     solrPath = baseURL
   else:
     # An ordinary release has a 'solr' sub folder
