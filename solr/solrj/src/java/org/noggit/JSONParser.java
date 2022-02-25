@@ -130,9 +130,8 @@ public class JSONParser {
 
   protected int event; // last event read
 
-  protected int
-      stringTerm; // The terminator for the last string we read: single quote, double quote, or 0
-  // for unterminated.
+  // The terminator for the last string we read: single quote, double quote, or 0 for unterminated.
+  protected int stringTerm;
 
   protected boolean missingOpeningBrace = false;
 
@@ -266,22 +265,20 @@ public class JSONParser {
     for (; ; ) {
       int ch = getChar();
       // getCharNWS is normally called in the context of expecting certain JSON special characters
-      // such as ":}"],"
-      // all of these characters are below 64 (including comment chars '/' and '#', so we can make
-      // this the fast path
-      // even w/o checking the range first.  We'll only get some false-positives while using bare
-      // strings (chars "IJMc")
+      // such as ":}"]," all of these characters are below 64 (including comment chars '/' and '#',
+      // so we can make this the fast path even w/o checking the range first.  We'll only get some
+      // false-positives while using bare strings (chars "IJMc")
       if (((WS_MASK >> ch) & 0x01) == 0) {
         return ch;
-      } else if (ch <= ' ') { // this will only be true if one of the whitespace bits was set
+      } else if (ch <= ' ') {
+        // this will only be true if one of the whitespace bits was set
         continue;
       } else if (ch == '/') {
         getSlashComment();
       } else if (ch == '#') {
         getNewlineComment();
-      } else if (!isWhitespace(
-          ch)) { // we'll only reach here with certain bare strings, errors, or strange whitespace
-        // like 0xa0
+      } else if (!isWhitespace(ch)) {
+        // we'll only reach here with certain bare strings, errors, or strange whitespace like 0xa0
         return ch;
       }
 
@@ -313,22 +310,20 @@ public class JSONParser {
   protected int getCharNWS(int ch) throws IOException {
     for (; ; ) {
       // getCharNWS is normally called in the context of expecting certain JSON special characters
-      // such as ":}"],"
-      // all of these characters are below 64 (including comment chars '/' and '#', so we can make
-      // this the fast path
-      // even w/o checking the range first.  We'll only get some false-positives while using bare
-      // strings (chars "IJMc")
+      // such as ":}"]," all of these characters are below 64 (including comment chars '/' and '#',
+      // so we can make this the fast path even w/o checking the range first.  We'll only get some
+      // false-positives while using bare strings (chars "IJMc")
       if (((WS_MASK >> ch) & 0x01) == 0) {
         return ch;
-      } else if (ch <= ' ') { // this will only be true if one of the whitespace bits was set
-        // whitespace... get new char at bottom of loop
+      } else if (ch <= ' ') {
+        // this will only be true if one of the whitespace bits was set whitespace... get new char
+        // at bottom of loop
       } else if (ch == '/') {
         getSlashComment();
       } else if (ch == '#') {
         getNewlineComment();
-      } else if (!isWhitespace(
-          ch)) { // we'll only reach here with certain bare strings, errors, or strange whitespace
-        // like 0xa0
+      } else if (!isWhitespace(ch)) {
+        // we'll only reach here with certain bare strings, errors, or strange whitespace like 0xa0
         return ch;
       }
       ch = getChar();
@@ -878,13 +873,13 @@ public class JSONParser {
     // implementation?
     for (; ; ) {
       switch (ch) {
-        case ' ': // this is not the exclusive list of whitespace chars... the rest are handled in
-          // default:
+          // this is not the exclusive list of whitespace chars... the rest are handled in default:
+        case ' ':
         case '\t':
         case '\r':
         case '\n':
-          ch = getCharNWS(); // calling getCharNWS here seems faster than letting the switch handle
-          // it
+          // calling getCharNWS here seems faster than letting the switch handle it
+          ch = getCharNWS();
           break;
         case '"':
           stringTerm = '"';

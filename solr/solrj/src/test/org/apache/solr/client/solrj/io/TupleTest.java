@@ -201,10 +201,8 @@ public class TupleTest extends SolrTestCase {
       final TupleEntryWriter writer = new TupleEntryWriter();
       tupleThree.writeMap(writer);
       assertEquals(3, writer.tuple.getFields().size());
-      assertEquals(
-          "1",
-          writer.tuple.get(
-              "field a")); // field-two label in tupleTwo replaced field-two label from tupleOne
+      // field-two label in tupleTwo replaced field-two label from tupleOne
+      assertEquals("1", writer.tuple.get("field a"));
       assertEquals("3", writer.tuple.get("field c")); // field-three label from tupleOne
       assertEquals("4", writer.tuple.get("field d")); // field-four label from tupleTwo
     }

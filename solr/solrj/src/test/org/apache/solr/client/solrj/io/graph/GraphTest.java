@@ -72,9 +72,6 @@ public class GraphTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented 15-Sep-2018
-  // @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // 2-Aug-2018
   public void testShortestPathStream() throws Exception {
 
     new UpdateRequest()

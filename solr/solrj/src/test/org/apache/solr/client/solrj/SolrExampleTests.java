@@ -669,9 +669,8 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
 
     // the df=text here is a kluge for the test to supply a default field in case there is none in
-    // schema.xml
-    // alternatively, the resulting assertion could be modified to assert that no default field is
-    // specified.
+    // schema.xml. alternatively, the resulting assertion could be modified to assert that no
+    // default field is specified.
     ex =
         expectThrows(
             SolrException.class, () -> client.deleteByQuery("{!df=text} ??::?? ignore_exception"));
@@ -2370,8 +2369,8 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     doc.addField(field, oper);
     try {
       client.add(doc);
-      if (client
-          instanceof HttpSolrClient) { // XXX concurrent client reports exceptions differently
+      if (client instanceof HttpSolrClient) {
+        // XXX concurrent client reports exceptions differently
         fail("Operation should throw an exception!");
       } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
         client.commit(); // just to be sure the client has sent the doc

@@ -94,9 +94,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented 4-Sep-2018
-  // @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // 2-Aug-2018
   @SuppressWarnings({"unchecked"})
   public void testShortestPathStream() throws Exception {
 

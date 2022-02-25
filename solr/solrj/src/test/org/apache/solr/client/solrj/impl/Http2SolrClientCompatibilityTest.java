@@ -91,9 +91,8 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
 
   public void testConnectToOldNodesUsingHttp2() throws Exception {
     // if this test some how failure, this mean that Jetty client now be able to switch between
-    // HTTP/1
-    // and HTTP/2.2 protocol dynamically therefore rolling updates will be easier we should then
-    // notify this to users
+    // HTTP/1 and HTTP/2.2 protocol dynamically therefore rolling updates will be easier we should
+    // then notify this to users
     JettyConfig jettyConfig =
         JettyConfig.builder()
             .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")

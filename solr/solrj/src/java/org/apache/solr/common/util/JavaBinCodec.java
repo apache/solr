@@ -268,8 +268,7 @@ public class JavaBinCodec implements PushWriter {
     }
     // Fallback to do *something*.
     // note: if the user of this codec doesn't want this (e.g. UpdateLog) it can supply an
-    // ObjectResolver that does
-    //  something else like throw an exception.
+    // ObjectResolver that does something else like throw an exception.
     writeVal(val.getClass().getName() + ':' + val.toString());
   }
 
@@ -357,8 +356,8 @@ public class JavaBinCodec implements PushWriter {
       writeNamedList((NamedList<?>) val);
       return true;
     }
-    if (val
-        instanceof SolrDocumentList) { // SolrDocumentList is a List, so must come before List check
+    if (val instanceof SolrDocumentList) {
+      // SolrDocumentList is a List, so must come before List check
       writeSolrDocumentList((SolrDocumentList) val);
       return true;
     }

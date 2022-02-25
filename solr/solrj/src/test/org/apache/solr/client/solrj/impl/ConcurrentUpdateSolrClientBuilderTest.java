@@ -39,8 +39,7 @@ public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
   public void testMissingQueueSize() {
     try (ConcurrentUpdateSolrClient client = new Builder("someurl").build()) {
       // Do nothing as we just need to test that the only mandatory parameter for building the
-      // client
-      // is the baseSolrUrl
+      // client is the baseSolrUrl
     }
   }
 

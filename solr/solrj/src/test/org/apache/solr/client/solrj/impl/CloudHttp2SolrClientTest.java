@@ -438,9 +438,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
    * limits the distributed query to locally hosted shards only
    */
   @Test
-  // commented 4-Sep-2018
-  // @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // 2-Aug-2018
   public void queryWithLocalShardsPreferenceRulesTest() throws Exception {
 
     String collectionName = "localShardsTestColl";
@@ -1038,9 +1035,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
    * query to locally hosted shards only
    */
   @Test
-  // commented 15-Sep-2018
-  // @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // 2-Aug-2018
   public void preferReplicaTypesTest() throws Exception {
 
     String collectionName = "replicaTypesTestColl";

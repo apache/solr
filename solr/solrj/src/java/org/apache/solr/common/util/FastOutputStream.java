@@ -92,8 +92,8 @@ public class FastOutputStream extends OutputStream implements DataOutput {
       // write whatever we can fit, then flush and iterate.
 
       System.arraycopy(arr, off, buf, pos, space);
-      written +=
-          buf.length; // important to do this first, since buf.length can change after a flush!
+      // important to do this first, since buf.length can change after a flush!
+      written += buf.length;
       flush(buf, 0, buf.length);
       pos = 0;
       off += space;

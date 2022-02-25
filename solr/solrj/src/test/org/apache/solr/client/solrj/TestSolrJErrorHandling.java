@@ -268,10 +268,8 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @Test
   public void testHttpURLConnection() throws Exception {
 
-    String bodyString =
-        getJsonDocs(
-            200000); // sometimes succeeds with this size, but larger can cause OOM from command
-    // line
+    // sometimes succeeds with this size, but larger can cause OOM from command line
+    String bodyString = getJsonDocs(200000);
 
     HttpSolrClient client = (HttpSolrClient) getSolrClient();
 
@@ -366,10 +364,9 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       out.write(whitespace); // whitespace
       out.flush();
 
-      String rbody =
-          getResponse(
-              in); // This will throw a connection reset exception if you try to read past the end
-      // of the HTTP response
+      // This will throw a connection reset exception if you try to read past the end of the HTTP
+      // response
+      String rbody = getResponse(in);
       log.info("RESPONSE BODY: {}", rbody);
       assertTrue(rbody.contains("unknown_field"));
 
