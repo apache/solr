@@ -122,8 +122,7 @@ public class FieldAnalysisResponse extends AnalysisResponseBase {
     return analysisByFieldName.entrySet();
   }
 
-  // ================================================= Inner Classes
-  // ==================================================
+  // ===== Inner Classes =====
 
   /**
    * The analysis of a field. Holds a list of all the query time analysis phases (if a query

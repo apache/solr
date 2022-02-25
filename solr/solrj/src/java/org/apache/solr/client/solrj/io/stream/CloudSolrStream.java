@@ -249,11 +249,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     this.params = new ModifiableSolrParams(params);
 
     // If the comparator is null then it was not explicitly set so we will create one using the sort
-    // parameter
-    // of the query. While doing this we will also take into account any aliases such that if we are
-    // sorting on
-    // fieldA but fieldA is aliased to alias.fieldA then the comparator will be against
-    // alias.fieldA.
+    // parameter of the query. While doing this we will also take into account any aliases such that
+    // if we are sorting on fieldA but fieldA is aliased to alias.fieldA then the comparator will be
+    // against alias.fieldA.
 
     if (params.get("q") == null) {
       throw new IOException("q param expected for search function");
@@ -317,8 +315,8 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     for (int i = 0; i < sorts.length; i++) {
       String s = sorts[i];
 
-      String[] spec =
-          s.trim().split("\\s+"); // This should take into account spaces in the sort spec.
+      // This should take into account spaces in the sort spec.
+      String[] spec = s.trim().split("\\s+");
 
       if (spec.length != 2) {
         throw new IOException("Invalid sort spec:" + s);

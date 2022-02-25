@@ -466,9 +466,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   public void setStreamContext(StreamContext context) {
     this.traversal = (Traversal) context.get("traversal");
     if (traversal == null) {
-      // No traversal in the context. So create a new context and a new traversal.
-      // This ensures that two separate traversals in the same expression don't pollute each others
-      // traversal.
+      // No traversal in the context. So create a new context and a new traversal. This ensures that
+      // two separate traversals in the same expression don't pollute each others traversal.
       StreamContext localContext = new StreamContext();
 
       localContext.numWorkers = context.numWorkers;

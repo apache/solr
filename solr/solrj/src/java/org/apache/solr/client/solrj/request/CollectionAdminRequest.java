@@ -1946,11 +1946,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   public static class CreateTimeRoutedAlias extends AsyncCollectionAdminRequest
       implements RoutedAliasAdminRequest {
     // TODO: This and other commands in this file seem to need to share some sort of constants class
-    // with core
-    // to allow this stuff not to be duplicated. (this is pasted from CreateAliasCmd.java), however
-    // I think
-    // a comprehensive cleanup of this for all the requests in this class should be done as a
-    // separate ticket.
+    // with core to allow this stuff not to be duplicated. (this is pasted from
+    // CreateAliasCmd.java), however I think a comprehensive cleanup of this for all the requests in
+    // this class should be done as a separate ticket.
 
     public static final String ROUTER_START = "router.start";
     public static final String ROUTER_INTERVAL = "router.interval";

@@ -185,12 +185,9 @@ public class MergeStream extends TupleStream implements Expressible {
   public Tuple read() throws IOException {
 
     // might be able to optimize this by sorting the streams based on the next to read tuple from
-    // each.
-    // if we can ensure the sort of the streams and update it in less than linear time then there
-    // would
-    // be some performance gain. But, assuming the # of streams is kinda small then this might not
-    // be
-    // worth it
+    // each. if we can ensure the sort of the streams and update it in less than linear time then
+    // there would be some performance gain. But, assuming the # of streams is kinda small then this
+    // might not be worth it
 
     Tuple minimum = null;
     PushBackStream minimumStream = null;

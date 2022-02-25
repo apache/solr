@@ -190,9 +190,7 @@ public abstract class JoinStream extends TupleStream implements Expressible {
 
   protected boolean isValidTupleOrder() {
     // Validate that the equalitor is derivable from the comparator in each stream. If it is, then
-    // we know all stream
-    // comparators are
-    // derivable with each other stream
+    // we know all stream comparators are derivable with each other stream
     for (TupleStream stream : streams) {
       if (!eq.isDerivedFrom(stream.getStreamSort())) {
         return false;

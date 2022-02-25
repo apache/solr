@@ -28,12 +28,21 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 /**
  * Replaces some tuple value with another. The replacement value can be either a given value or the
  * value of another field in the tuple. The expression for a replace operation can be of multiple
- * forms: replace(fieldA, 0, withValue=100) // for fieldA if equals 0 then set to 100
- * replace(fieldA, null, withValue=0) // for fieldA if null then set to 0 replace(fieldA, null,
- * withField=fieldB) // for fieldA if null then set to the value of fieldB (if fieldB is null then
- * fieldA will end up as null) replace(fieldA, 0, withField=fieldB) // for fieldA if 0 then set to
- * the value of fieldB (if fieldB is 0 then fieldA will end up as 0) replace(fieldA, "Izzy and
- * Kayden", withValue="my kids")
+ * forms:
+ *
+ * <p>
+ *
+ * <p>replace(fieldA, 0, withValue=100) // for fieldA if equals 0 then set to 100
+ *
+ * <p>replace(fieldA, null, withValue=0) // for fieldA if null then set to 0
+ *
+ * <p>replace(fieldA, null, withField=fieldB) // for fieldA if null then set to the value of fieldB
+ * (if fieldB is null then fieldA will end up as null)
+ *
+ * <p>replace(fieldA, 0, withField=fieldB) // for fieldA if 0 then set to the value of fieldB (if
+ * fieldB is 0 then fieldA will end up as 0)
+ *
+ * <p>replace(fieldA, "Izzy and Kayden", withValue="my kids")
  *
  * <p>You can also construct these without the field name in the expression but that does require
  * that you provide the field name during construction. This is most useful during metric

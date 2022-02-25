@@ -341,9 +341,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       Runner r = new Runner();
       runners.add(r);
       try {
-        scheduler.execute(
-            r); // this can throw an exception if the scheduler has been shutdown, but that should
+        // this can throw an exception if the scheduler has been shutdown, but that should
         // be fine.
+        scheduler.execute(r);
       } catch (RuntimeException e) {
         runners.remove(r);
         throw e;
@@ -482,10 +482,8 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       synchronized (runners) {
 
         // NOTE: if the executor is shut down, runners may never become empty (a scheduled task may
-        // never be run,
-        // which means it would never remove itself from the runners list. This is why we don't wait
-        // forever
-        // and periodically check if the scheduler is shutting down.
+        // never be run, which means it would never remove itself from the runners list. This is why
+        // we don't wait forever and periodically check if the scheduler is shutting down.
         int loopCount = 0;
         while (!runners.isEmpty()) {
 

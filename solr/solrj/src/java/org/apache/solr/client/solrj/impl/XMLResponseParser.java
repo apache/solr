@@ -330,8 +330,8 @@ public class XMLResponseParser extends ResponseParser {
           nl.add(name, type.read(builder.toString().trim()));
           break;
 
-        case XMLStreamConstants
-            .SPACE: // TODO?  should this be trimmed? make sure it only gets one/two space?
+        case XMLStreamConstants.SPACE:
+          // TODO?  should this be trimmed? make sure it only gets one/two space?
         case XMLStreamConstants.CDATA:
         case XMLStreamConstants.CHARACTERS:
           builder.append(parser.getText());

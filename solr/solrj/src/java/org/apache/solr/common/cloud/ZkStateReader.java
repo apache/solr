@@ -218,8 +218,8 @@ public class ZkStateReader implements SolrCloseable {
   private static final long LAZY_CACHE_TIME =
       TimeUnit.NANOSECONDS.convert(STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
 
-  private Future<?>
-      collectionPropsCacheCleaner; // only kept to identify if the cleaner has already been started.
+  // only kept to identify if the cleaner has already been started.
+  private Future<?> collectionPropsCacheCleaner;
 
   private static class CollectionWatch<T> {
 
@@ -1130,9 +1130,8 @@ public class ZkStateReader implements SolrCloseable {
             watchedCollectionProps.put(collection, vcp);
           } else {
             // we're synchronized on watchedCollectionProps and we can only get here if we have
-            // found an expired
-            // vprops above, so it is safe to remove the cached value and let the GC free up some
-            // mem a bit sooner.
+            // found an expired vprops above, so it is safe to remove the cached value and let the
+            // GC free up some mem a bit sooner.
             if (!collectionPropsObservers.containsKey(collection)) {
               watchedCollectionProps.remove(collection);
             }
@@ -1192,8 +1191,7 @@ public class ZkStateReader implements SolrCloseable {
           Stat exists = zkClient.exists(znodePath, watcher, true);
           if (exists != null) {
             // Rare race condition, we tried to fetch the data and couldn't find it, then we found
-            // it exists.
-            // Loop and try again.
+            // it exists. Loop and try again.
             continue;
           }
         }
@@ -1415,9 +1413,8 @@ public class ZkStateReader implements SolrCloseable {
               collectionPropsObservers.remove(coll);
 
               // This is the one time we know it's safe to throw this out. We just failed to set the
-              // watch
-              // due to an NoNodeException, so it isn't held by ZK and can't re-set itself due to an
-              // update.
+              // watch due to an NoNodeException, so it isn't held by ZK and can't re-set itself due
+              // to an update.
               collectionPropsWatchers.remove(coll);
             }
           }
@@ -1562,8 +1559,7 @@ public class ZkStateReader implements SolrCloseable {
           Stat exists = zkClient.exists(collectionPath, watcher, true);
           if (exists != null) {
             // Rare race condition, we tried to fetch the data and couldn't find it, then we found
-            // it exists.
-            // Loop and try again.
+            // it exists. Loop and try again.
             continue;
           }
         }
@@ -2175,14 +2171,11 @@ public class ZkStateReader implements SolrCloseable {
             log.warn(
                 "Couldn't save aliases due to race with another modification; will update and retry until timeout");
             // considered a backoff here, but we really do want to compete strongly since the normal
-            // case is
-            // that we will do one update and succeed. This is left as a hot loop for limited tries
-            // intentionally.
-            // More failures than that here probably indicate a bug or a very strange high write
-            // frequency usage for
-            // aliases.json, timeouts mean zk is being very slow to respond, or this node is being
-            // crushed
-            // by other processing and just can't find any cpu cycles at all.
+            // case is that we will do one update and succeed. This is left as a hot loop for
+            // limited tries intentionally. More failures than that here probably indicate a bug or
+            // a very strange high write frequency usage for aliases.json, timeouts mean zk is being
+            // very slow to respond, or this node is being crushed by other processing and just
+            // can't find any cpu cycles at all.
             update();
             if (deadlineNanos < System.nanoTime()) {
               throw new SolrException(

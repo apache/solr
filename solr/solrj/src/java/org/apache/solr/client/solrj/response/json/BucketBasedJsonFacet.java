@@ -72,9 +72,8 @@ public class BucketBasedJsonFacet {
         betweenAllBucketsCount = ((Number) ((NamedList) value).get("count")).longValue();
       } else {
         // We don't recognize the key.  Possible JSON faceting schema has changed without updating
-        // client.
-        // Silently ignore for now, though we may want to consider throwing an error if this proves
-        // problematic.
+        // client. Silently ignore for now, though we may want to consider throwing an error if this
+        // proves problematic.
       }
     }
   }

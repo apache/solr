@@ -252,9 +252,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                         SolrParams currentParams = new ModifiableSolrParams(req.getParams());
                         if (!origParams.toNamedList().equals(currentParams.toNamedList())
                             || !StringUtils.equals(origTargetCollection, upd.getCollection())) {
-                          queue.add(
-                              upd); // Request has different params or destination core/collection,
-                          // return to queue
+                          // Request has different params or destination core/collection, return to
+                          // queue
+                          queue.add(upd);
                           break;
                         }
 
@@ -431,9 +431,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       Runner r = new Runner();
       runners.add(r);
       try {
-        scheduler.execute(
-            r); // this can throw an exception if the scheduler has been shutdown, but that should
-        // be fine.
+        // this can throw an exception if the scheduler has been shutdown, but that should be fine.
+        scheduler.execute(r);
       } catch (RuntimeException e) {
         runners.remove(r);
         throw e;
@@ -605,10 +604,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       synchronized (runners) {
 
         // NOTE: if the executor is shut down, runners may never become empty (a scheduled task may
-        // never be run,
-        // which means it would never remove itself from the runners list. This is why we don't wait
-        // forever
-        // and periodically check if the scheduler is shutting down.
+        // never be run, which means it would never remove itself from the runners list. This is why
+        // we don't wait forever and periodically check if the scheduler is shutting down.
         int loopCount = 0;
         while (!runners.isEmpty()) {
 

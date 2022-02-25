@@ -130,8 +130,7 @@ public abstract class SolrParams
     return StreamSupport.stream(spliterator(), false);
   }
   // Do we add Map.forEach equivalent too?  But it eager-fetches the value, and Iterable<Map.Entry>
-  // allows the user
-  //  to only get the value when needed.
+  // allows the user to only get the value when needed.
 
   /** returns a RequiredSolrParams wrapping this */
   public RequiredSolrParams required() {
@@ -572,8 +571,6 @@ public abstract class SolrParams
    * Generates a local-params string of the form
    *
    * <pre>{! name=value name2=value2}</pre>
-   *
-   * .
    */
   public String toLocalParamsString() {
     final StringBuilder sb = new StringBuilder(128);

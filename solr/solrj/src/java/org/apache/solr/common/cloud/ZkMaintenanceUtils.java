@@ -167,9 +167,8 @@ public class ZkMaintenanceUtils {
     }
 
     // Copying individual files from ZK requires special handling since downloadFromZK assumes the
-    // node has children.
-    // This is kind of a weak test for the notion of "directory" on Zookeeper.
-    // ZK -> local copy where ZK is a parent node
+    // node has children. This is kind of a weak test for the notion of "directory" on Zookeeper. ZK
+    // -> local copy where ZK is a parent node
     if (zkClient.getChildren(src, null, true).size() > 0) {
       downloadFromZK(zkClient, src, Paths.get(dst));
       return;
@@ -199,9 +198,8 @@ public class ZkMaintenanceUtils {
     String dstSeparator = (dstIsZk) ? "/" : File.separator;
     String srcSeparator = (srcIsZk) ? "/" : File.separator;
 
-    if (dstName.endsWith(
-        dstSeparator)) { // Dest is a directory or non-leaf znode, append last element of the src
-      // path.
+    // Dest is a directory or non-leaf znode, append last element of the src path.
+    if (dstName.endsWith(dstSeparator)) {
       int pos = srcName.lastIndexOf(srcSeparator);
       if (pos < 0) {
         dstName += srcName;
@@ -226,17 +224,15 @@ public class ZkMaintenanceUtils {
       traverseZkTree(zkClient, src, VISIT_ORDER.VISIT_PRE, new ZkCopier(zkClient, src, destName));
     }
 
-    // Insure all source znodes are present in dest before deleting the source.
-    // throws error if not all there so the source is left intact. Throws error if source and dest
-    // don't match.
+    // Insure all source znodes are present in dest before deleting the source. throws error if not
+    // all there so the source is left intact. Throws error if source and dest don't match.
     checkAllZnodesThere(zkClient, src, destName);
 
     clean(zkClient, src);
   }
 
   // Insure that all the nodes in one path match the nodes in the other as a safety check before
-  // removing
-  // the source in a 'mv' command.
+  // removing the source in a 'mv' command.
   private static void checkAllZnodesThere(SolrZkClient zkClient, String src, String dst)
       throws KeeperException, InterruptedException, SolrServerException {
 
@@ -424,15 +420,14 @@ public class ZkMaintenanceUtils {
       // Otherwise, continue recursing, but write the associated data to a special file if any
       if (children.size() == 0) {
         // If we didn't copy data down, then we also didn't create the file. But we still need a
-        // marker on the local
-        // disk so create an empty file.
+        // marker on the local disk so create an empty file.
         if (copyDataDown(zkClient, zkPath, file) == 0) {
           Files.createFile(file);
         }
       } else {
         Files.createDirectories(file); // Make parent dir.
-        // ZK nodes, whether leaf or not can have data. If it's a non-leaf node and
-        // has associated data write it into the special file.
+        // ZK nodes, whether leaf or not can have data. If it's a non-leaf node and has associated
+        // data write it into the special file.
         copyDataDown(zkClient, zkPath, file.resolve(ZKNODE_DATA_FILE));
 
         for (String child : children) {

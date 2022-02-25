@@ -281,9 +281,8 @@ public class HashJoinStream extends TupleStream implements Expressible {
       workngHashSetIdx = 0;
     }
 
-    // At this point we know we have at least one doc to match on
-    // Due to the check at the end, before returning, we know we have at least one to match with
-    // left
+    // At this point we know we have at least one doc to match on due to the check at the end,
+    // before returning, we know we have at least one to match with left
     List<Tuple> matches = hashedTuples.get(workingFullHash);
     Tuple returnTuple = workingFullTuple.clone();
     returnTuple.merge(matches.get(workngHashSetIdx));

@@ -529,9 +529,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return postOrPut;
   }
 
-  private static final List<String> errPath =
-      Arrays.asList(
-          "metadata", "error-class"); // Utils.getObjectByPath(err, false,"metadata/error-class")
+  // Utils.getObjectByPath(err, false,"metadata/error-class")
+  private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   protected NamedList<Object> executeMethod(
@@ -564,10 +563,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       HttpClientContext httpClientRequestContext =
           HttpClientUtil.createNewHttpClientRequestContext();
       if (userPrincipal != null) {
-        // Normally the context contains a static userToken to enable reuse resources.
-        // However, if a personal Principal object exists, we use that instead, also as a means
-        // to transfer authentication information to Auth plugins that wish to intercept the request
-        // later
+        // Normally the context contains a static userToken to enable reuse resources. However, if a
+        // personal Principal object exists, we use that instead, also as a means to transfer
+        // authentication information to Auth plugins that wish to intercept the request later
         httpClientRequestContext.setUserToken(userPrincipal);
       }
       final HttpResponse response = httpClient.execute(method, httpClientRequestContext);
@@ -730,10 +728,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   }
 
   // When raising an error using HTTP sendError, mime types can be mismatched. This is specifically
-  // true when
-  // SolrDispatchFilter uses the sendError mechanism since the expected MIME type of response is not
-  // HTML but
-  // HTTP sendError generates a HTML output, which can lead to mismatch
+  // true when SolrDispatchFilter uses the sendError mechanism since the expected MIME type of
+  // response is not HTML but HTTP sendError generates a HTML output, which can lead to mismatch
   private boolean isUnmatchedErrorCode(String mimeType, int httpStatus) {
     if (mimeType == null) {
       return false;

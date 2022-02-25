@@ -173,8 +173,7 @@ public class ConnectionManager implements Watcher {
 
       do {
         // This loop will break if a valid connection is made. If a connection is not made then it
-        // will repeat and
-        // try again to create a new connection.
+        // will repeat and try again to create a new connection.
         try {
           connectionStrategy.reconnect(
               zkServerAddress,

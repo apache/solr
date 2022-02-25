@@ -292,11 +292,10 @@ public class SelectStream extends TupleStream implements Expressible {
     Tuple workingForEvaluators = new Tuple();
 
     // Clear the TupleContext before running the evaluators.
-    // The TupleContext allows evaluators to cache values within the scope of a single tuple.
-    // For example a LocalDateTime could be parsed by one evaluator and used by other evaluators
-    // within the scope of the tuple.
-    // This avoids the need to create multiple LocalDateTime instances for the same tuple to satisfy
-    // a select expression.
+    // The TupleContext allows evaluators to cache values within the scope of a single tuple. For
+    // example a LocalDateTime could be parsed by one evaluator and used by other evaluators within
+    // the scope of the tuple. This avoids the need to create multiple LocalDateTime instances for
+    // the same tuple to satisfy a select expression.
 
     streamContext.getTupleContext().clear();
 

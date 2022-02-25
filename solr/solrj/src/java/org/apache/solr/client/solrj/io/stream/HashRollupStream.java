@@ -96,9 +96,8 @@ public class HashRollupStream extends TupleStream implements Expressible {
 
     // Construct the buckets.
     // Buckets are nothing more than equalitors (I think). We can use equalitors as helpers for
-    // creating the buckets, but because
-    // I feel I'm missing something wrt buckets I don't want to change the use of buckets in this
-    // class to instead be equalitors.
+    // creating the buckets, but because I feel I'm missing something wrt buckets I don't want to
+    // change the use of buckets in this class to instead be equalitors.
     StreamEqualitor streamEqualitor =
         factory.constructEqualitor(
             ((StreamExpressionValue) overExpression.getParameter()).getValue(),
@@ -107,8 +106,7 @@ public class HashRollupStream extends TupleStream implements Expressible {
     Bucket[] buckets = new Bucket[flattenedEqualitors.size()];
     for (int idx = 0; idx < flattenedEqualitors.size(); ++idx) {
       buckets[idx] = new Bucket(flattenedEqualitors.get(idx).getLeftFieldName());
-      // while we're using equalitors we don't support those of the form a=b. Only single field
-      // names.
+      // while we're using equalitors we don't support the form a=b. Only single field names.
     }
 
     init(factory.constructStream(streamExpressions.get(0)), buckets, metrics);

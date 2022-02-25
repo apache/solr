@@ -37,9 +37,9 @@ import org.apache.solr.common.params.TermsParams;
  * @since solr 1.3
  */
 public class SolrQuery extends ModifiableSolrParams {
-  public static final String DOCID =
-      "_docid_"; // duplicate of org.apache.solr.search.SortSpecParsing.DOCID which is not
+  // duplicate of org.apache.solr.search.SortSpecParsing.DOCID which is not
   // accessible from here
+  public static final String DOCID = "_docid_";
 
   public enum ORDER {
     desc,

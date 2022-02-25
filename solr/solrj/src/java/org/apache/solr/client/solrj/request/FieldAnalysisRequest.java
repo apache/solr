@@ -87,8 +87,7 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
     return SolrRequestType.QUERY.toString();
   }
 
-  // ================================================ Helper Methods
-  // ==================================================
+  // ===== Helper Methods =====
 
   /**
    * Convers the given list of string to a comma-separated string.
@@ -107,8 +106,7 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
     return result.toString();
   }
 
-  // ============================================ Setter/Getter Methods
-  // ===============================================
+  // ===== Setter/Getter Methods =====
 
   /**
    * Sets the field value to be analyzed.

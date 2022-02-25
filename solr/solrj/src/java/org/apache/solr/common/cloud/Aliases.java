@@ -49,9 +49,8 @@ public class Aliases {
 
   // These two constants correspond to the top level elements in aliases.json. The first one denotes
   // a section containing a list of aliases and their attendant collections, the second contains a
-  // list of
-  // aliases and their attendant properties (metadata) They probably should be
-  // named "aliases" and "alias_properties" but for back compat reasons, we cannot change them
+  // list of aliases and their attendant properties (metadata) They probably should be named
+  // "aliases" and "alias_properties" but for back compat reasons, we cannot change them
   private static final String COLLECTION = "collection";
   private static final String COLLECTION_METADATA = "collection_metadata";
 

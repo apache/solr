@@ -94,8 +94,7 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
     return params;
   }
 
-  // ================================================ Helper Methods
-  // ==================================================
+  // ===== Helper Methods =====
 
   /**
    * Returns the xml be be set as the request body.
@@ -116,8 +115,7 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
     return (xml.length() > 0) ? xml : null;
   }
 
-  // ============================================ Setter/Getter Methods
-  // ===============================================
+  // ===== Setter/Getter Methods =====
 
   /**
    * Adds a document to be analyzed.

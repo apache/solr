@@ -103,9 +103,8 @@ public class OuterHashJoinStream extends HashJoinStream implements Expressible {
       }
 
       // If fullTuple doesn't have a valid hash or the hash cannot be found in the hashedTuples then
-      // return the tuple from fullStream.
-      // This is an outer join so there is no requirement there be a matching value in the hashed
-      // stream
+      // return the tuple from fullStream. This is an outer join so there is no requirement there be
+      // a matching value in the hashed stream
       String fullHash = computeHash(fullTuple, leftHashOn);
       if (null == fullHash || !hashedTuples.containsKey(fullHash)) {
         return fullTuple.clone();
@@ -116,9 +115,8 @@ public class OuterHashJoinStream extends HashJoinStream implements Expressible {
       workngHashSetIdx = 0;
     }
 
-    // At this point we know we have at least one doc to match on
-    // Due to the check at the end, before returning, we know we have at least one to match with
-    // left
+    // At this point we know we have at least one doc to match on due to the check at the end,
+    // before returning, we know we have at least one to match with left
     List<Tuple> matches = hashedTuples.get(workingFullHash);
     Tuple returnTuple = workingFullTuple.clone();
     returnTuple.merge(matches.get(workngHashSetIdx));

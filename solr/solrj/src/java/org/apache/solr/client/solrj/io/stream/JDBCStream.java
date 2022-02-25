@@ -727,11 +727,9 @@ public class JDBCStream extends TupleStream implements Expressible {
   @Override
   public StreamComparator getStreamSort() {
     // TODO: Need to somehow figure out the sort applied to the incoming data. This is not something
-    // you can ask a JDBC stream
-    // Possibly we can ask the creator to tell us the fields the data is sorted by. This would be
-    // duplicate information because
-    // it's already in the sqlQuery but there's no way we can reliably determine the sort from the
-    // query.
+    // you can ask a JDBC stream. Possibly we can ask the creator to tell us the fields the data is
+    // sorted by. This would be duplicate information because it's already in the sqlQuery but
+    // there's no way we can reliably determine the sort from the query.
     return definedSort;
   }
 

@@ -185,13 +185,17 @@ public interface FacetParams {
    * point will use the exact endpoint specified -- this includes the 'between' and 'after' counts
    * as well as the last range computed using the 'gap'. If the value is false, then 'gap' is used
    * to compute the effective endpoint closest to the 'end' param which results in the range between
-   * 'start' and 'end' being evenly divisible by 'gap'. The default is false. Can be overridden on a
-   * per field basis.
+   * 'start' and 'end' being evenly divisible by 'gap'.
+   *
+   * <p>The default is false.
+   *
+   * <p>Can be overridden on a per field basis.
    */
   public static final String FACET_DATE_HARD_END = FACET_DATE + ".hardend";
   /**
    * String indicating what "other" ranges should be computed for a date facet range (multi-value).
-   * Can be overridden on a per field basis.
+   *
+   * <p>Can be overridden on a per field basis.
    *
    * @see FacetRangeOther
    */
@@ -237,8 +241,11 @@ public interface FacetParams {
    * point will use the exact endpoint specified -- this includes the 'between' and 'after' counts
    * as well as the last range computed using the 'gap'. If the value is false, then 'gap' is used
    * to compute the effective endpoint closest to the 'end' param which results in the range between
-   * 'start' and 'end' being evenly divisible by 'gap'. The default is false. Can be overridden on a
-   * per field basis.
+   * 'start' and 'end' being evenly divisible by 'gap'.
+   *
+   * <p>The default is false.
+   *
+   * <p>Can be overridden on a per field basis.
    */
   public static final String FACET_RANGE_HARD_END = FACET_RANGE + ".hardend";
   /**

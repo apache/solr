@@ -199,9 +199,9 @@ public class StreamFactory implements Serializable {
     for (StreamExpressionParameter parameter : expression.getParameters()) {
       for (Class<?> clazz : clazzes) {
         if (!clazz.isAssignableFrom(parameter.getClass())) {
-          continue
-              parameterLoop; // go to the next parameter since this parameter cannot be assigned to
-          // at least one of the classes
+          // go to the next parameter since this parameter cannot be assigned to at least one of the
+          // classes
+          continue parameterLoop;
         }
       }
       parameters.add(parameter);

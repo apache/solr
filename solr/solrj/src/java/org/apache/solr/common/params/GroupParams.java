@@ -44,8 +44,7 @@ public interface GroupParams {
   public static final String GROUP_CACHE_PERCENTAGE = GROUP + ".cache.percent";
 
   // Note: Since you can supply multiple fields to group on, but only have a facets for the whole
-  // result. It only makes
-  // sense to me to support these parameters for the first group.
+  // result. It only makes sense to me to support these parameters for the first group.
   /**
    * Whether the docSet (for example for faceting) should be based on plain documents (a.k.a
    * UNGROUPED) or on the groups (a.k.a GROUPED). The docSet will only the most relevant documents

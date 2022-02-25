@@ -129,15 +129,15 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   public static final String REPLICAS = "replicas";
   public static final String RANGE = "range";
-  public static final String LEADER =
-      "leader"; // FUTURE: do we want to record the leader as a slice property in the JSON (as
-  // opposed to isLeader as a replica property?)
+  // FUTURE: do we want to record the leader as a slice property in the JSON (as opposed to isLeader
+  // as a replica property?)
+  public static final String LEADER = "leader";
   public static final String PARENT = "parent";
 
   private final String name;
   private final DocRouter.Range range;
-  private final Integer
-      replicationFactor; // FUTURE: optional per-slice override of the collection replicationFactor
+  // FUTURE: optional per-slice override of the collection replicationFactor
+  private final Integer replicationFactor;
   private final Map<String, Replica> replicas;
   private final Replica leader;
   private final State state;

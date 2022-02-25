@@ -64,10 +64,9 @@ public abstract class BiJoinStream extends JoinStream implements Expressible {
     rightStream = getStream(1);
 
     // iterationComparator is a combination of the equalitor and the comp from each stream. This can
-    // easily be done by
-    // grabbing the first N parts of each comp where N is the number of parts in the equalitor.
-    // Because we've already
-    // validated tuple order (the comps) then we know this can be done.
+    // easily be done by grabbing the first N parts of each comp where N is the number of parts in
+    // the equalitor. Because we've already validated tuple order (the comps) then we know this can
+    // be done.
     iterationComparator = createIterationComparator(eq, leftStream.getStreamSort());
     leftStreamComparator = createSideComparator(eq, leftStream.getStreamSort());
     rightStreamComparator = createSideComparator(eq, rightStream.getStreamSort());

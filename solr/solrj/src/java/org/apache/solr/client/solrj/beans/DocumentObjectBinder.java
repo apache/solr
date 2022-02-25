@@ -220,8 +220,8 @@ public class DocumentObjectBinder {
             name = setter.getName();
           }
         }
-      } else if (annotation.value().indexOf('*')
-          >= 0) { // dynamic fields are annotated as @Field("categories_*")
+      } else if (annotation.value().indexOf('*') >= 0) {
+        // dynamic fields are annotated as @Field("categories_*")
         // if the field was annotated as a dynamic field, convert the name into a pattern
         // the wildcard (*) is supposed to be either a prefix or a suffix, hence the use of
         // replaceFirst

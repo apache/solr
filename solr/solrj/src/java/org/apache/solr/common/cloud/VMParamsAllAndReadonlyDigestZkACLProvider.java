@@ -111,9 +111,8 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
       List<ACL> result = new ArrayList<>(2);
 
       // Not to have to provide too much credentials and ACL information to the process it is
-      // assumed that you want "ALL"-acls
-      // added to the user you are using to connect to ZK (if you are using
-      // VMParamsSingleSetCredentialsDigestZkCredentialsProvider)
+      // assumed that you want "ALL"-acls added to the user you are using to connect to ZK (if you
+      // are using VMParamsSingleSetCredentialsDigestZkCredentialsProvider)
       if (!StringUtils.isEmpty(digestAllUsername) && !StringUtils.isEmpty(digestAllPassword)) {
         result.add(
             new ACL(

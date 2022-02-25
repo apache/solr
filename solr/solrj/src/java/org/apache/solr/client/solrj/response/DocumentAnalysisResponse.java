@@ -101,8 +101,7 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase
     return documentAnalysisByKey.entrySet().iterator();
   }
 
-  // ================================================= Inner Classes
-  // ==================================================
+  // ===== Inner Classes =====
 
   /**
    * An analysis process breakdown of a document. Holds a map of field analyses by the field name.

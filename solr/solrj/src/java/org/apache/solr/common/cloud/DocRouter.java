@@ -157,10 +157,8 @@ public abstract class DocRouter {
     int middle = range.indexOf('-');
     String minS = range.substring(0, middle);
     String maxS = range.substring(middle + 1);
-    long min =
-        Long.parseLong(
-            minS, 16); // use long to prevent the parsing routines from potentially worrying about
-    // overflow
+    // use long to prevent the parsing routines from potentially worrying about overflow
+    long min = Long.parseLong(minS, 16);
     long max = Long.parseLong(maxS, 16);
     return new Range((int) min, (int) max);
   }
