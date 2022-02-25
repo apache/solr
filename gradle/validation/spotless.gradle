@@ -48,6 +48,9 @@ configure(project(":solr").subprojects) { prj ->
           case ":solr:test-framework":
             targetExclude "src/**/*.java"
             break
+          case ":solr:solrj":
+            targetExclude "src/test/org/apache/solr/client/solrj/io/stream/*.java"
+            break
           case ":solr:modules:hdfs":
             // Exclude Hadoop copied files to make upgrades easier
             targetExclude "src/**/org/apache/hadoop/**"
