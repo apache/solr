@@ -80,7 +80,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     }
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    Set<String> liveNodes = ZkStateReader.from(cloudClient).getClusterState().getLiveNodes();
+    Set<String> liveNodes = cloudClient.getClusterStateProvider().getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String emptyNode = l.remove(0);
@@ -105,7 +105,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(coll, 5, 5 * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
 
-    DocCollection collection = ZkStateReader.from(cloudClient).getClusterState().getCollection(coll);
+    DocCollection collection = cloudClient.getClusterStateProvider().getClusterState().getCollection(coll);
     log.debug("### Before decommission: {}", collection);
     log.info("excluded_node : {}  ", emptyNode);
     createReplaceNodeRequest(node2bdecommissioned, emptyNode, null).processAndWait("000", cloudClient, 15);
@@ -115,7 +115,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     }
 
     Thread.sleep(5000);
-    collection = ZkStateReader.from(cloudClient).getClusterState().getCollection(coll);
+    collection = cloudClient.getClusterStateProvider().getClusterState().getCollection(coll);
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
     List<Replica> replicas = collection.getReplicas(node2bdecommissioned);
@@ -200,7 +200,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     }
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    Set<String> liveNodes = ZkStateReader.from(cloudClient).getClusterState().getLiveNodes();
+    Set<String> liveNodes = cloudClient.getClusterStateProvider().getClusterState().getLiveNodes();
     List<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     List<String> emptyNodes = l.subList(0, 2);
@@ -214,13 +214,13 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(coll, 4, 4 * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
 
-    DocCollection initialCollection = ZkStateReader.from(cloudClient).getClusterState().getCollection(coll);
+    DocCollection initialCollection = cloudClient.getClusterStateProvider().getClusterState().getCollection(coll);
     log.debug("### Before decommission: {}", initialCollection);
     log.info("excluded_nodes : {}  ", emptyNodes);
     List<Integer> initialReplicaCounts = l.stream().map(node -> initialCollection.getReplicas(node).size()).collect(Collectors.toList());
     createReplaceNodeRequest(node2bdecommissioned, null, true).processAndWait("000", cloudClient, 15);
 
-    DocCollection collection = ZkStateReader.from(cloudClient).getClusterState().getCollection(coll);
+    DocCollection collection = cloudClient.getClusterStateProvider().getClusterState().getCollection(coll);
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
     List<Replica> replicas = collection.getReplicas(node2bdecommissioned);
@@ -252,7 +252,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(coll, 5, 5);
 
-    String liveNode = ZkStateReader.from(cloudClient).getClusterState().getLiveNodes().iterator().next();
+    String liveNode = cloudClient.getClusterStateProvider().getClusterState().getLiveNodes().iterator().next();
     expectThrows(SolrException.class, () -> createReplaceNodeRequest(liveNode, null, null).process(cloudClient));
   }
 

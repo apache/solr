@@ -504,8 +504,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     
     cluster.waitForActiveCollection(collectionName, 1, 2);
 
-    ArrayList<String> nodeList
-      = new ArrayList<>(ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes());
+    ArrayList<String> nodeList = new ArrayList<>(cluster.getSolrClient().getClusterStateProvider().getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
     final String node = nodeList.get(0);
 
@@ -755,7 +754,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         Collections.singletonMap(ZkStateReader.READ_ONLY, "true"))
         .process(solrClient);
 
-    DocCollection coll = ZkStateReader.from(solrClient).getClusterState().getCollection(collectionName);
+    DocCollection coll = solrClient.getClusterStateProvider().getClusterState().getCollection(collectionName);
     assertNotNull(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY));
     assertEquals(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY).toString(), "true");
 
@@ -821,7 +820,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminRequest.modifyCollection(collectionName,
         Collections.singletonMap(ZkStateReader.READ_ONLY, ""))
         .process(cluster.getSolrClient());
-    coll = ZkStateReader.from(solrClient).getClusterState().getCollection(collectionName);
+    coll = solrClient.getClusterStateProvider().getClusterState().getCollection(collectionName);
     assertNull(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY));
 
     // wait for the expected collection reload

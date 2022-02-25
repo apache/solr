@@ -1014,9 +1014,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     controlClient.add(doc);
   }
   
-  protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
-      getCommonCloudSolrClient();
-    ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+  protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) throws IOException {
+    getCommonCloudSolrClient();
+    ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection != null && docCollection.getLeader(slice) != null) {
       return new ZkCoreNodeProps(docCollection.getLeader(slice));
@@ -1900,7 +1900,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   private String checkCollectionExpectations(String collectionName, List<Integer> numShardsNumReplicaList, List<String> nodesAllowedToRunShards) {
     getCommonCloudSolrClient();
-    ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+    ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
     
     int expectedSlices = numShardsNumReplicaList.get(0);
     // The Math.min thing is here, because we expect replication-factor to be reduced to if there are not enough live nodes to spread all shards of a collection over different nodes
@@ -2090,7 +2090,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     Replica leader;
     ZkShardTerms zkShardTerms = new ZkShardTerms(testCollectionName, shardId, ZkStateReader.from(cloudClient).getZkClient());
     while (waitMs < maxWaitMs && !allReplicasUp) {
-      cs = ZkStateReader.from(cloudClient).getClusterState();
+      cs = cloudClient.getClusterStateProvider().getClusterState();
       assertNotNull(cs);
       final DocCollection docCollection = cs.getCollectionOrNull(testCollectionName);
       assertNotNull("No collection found for " + testCollectionName, docCollection);
@@ -2152,7 +2152,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected String printClusterStateInfo(String collection) throws Exception {
     ZkStateReader.from(cloudClient).forceUpdateCollection(collection);
     String cs;
-    ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+    ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
     if (collection != null) {
       cs = clusterState.getCollection(collection).toString();
     } else {

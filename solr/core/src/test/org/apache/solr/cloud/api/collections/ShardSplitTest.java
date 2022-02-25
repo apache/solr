@@ -117,7 +117,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   private void doSplitStaticIndexReplication(SolrIndexSplitter.SplitMethod splitMethod) throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
-    DocCollection defCol = ZkStateReader.from(cloudClient).getClusterState().getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
+    DocCollection defCol = cloudClient.getClusterStateProvider().getClusterState().getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
     Replica replica = defCol.getReplicas().get(0);
     String nodeName = replica.getNodeName();
 
@@ -361,7 +361,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     CloudSolrClientUtils.waitForState(cloudClient, collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 12));
 
     ZkStateReader.from(cloudClient).forceUpdateCollection(collectionName);
-    ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+    ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
     DocCollection coll = clusterState.getCollection(collectionName);
     log.info("coll: {}", coll);
 
@@ -533,7 +533,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       // check consistency of sub-shard replica explicitly because checkShardConsistency methods doesn't
       // handle new shards/replica so well.
       if (areSubShardsActive.get()) {
-        ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+        ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
         DocCollection collection = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
         int numReplicasChecked = assertConsistentReplicas(collection.getSlice(SHARD1_0));
         assertEquals("We should have checked consistency for exactly 2 replicas of shard1_0", 2, numReplicasChecked);
@@ -640,7 +640,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   private void incompleteOrOverlappingCustomRangeTest() throws Exception  {
-    ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+    ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
     final DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
     Slice shard1 = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getSlice(SHARD1);
     DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
@@ -684,7 +684,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   private void splitByUniqueKeyTest() throws Exception {
-    ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+    ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
     final DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
     Slice shard1 = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getSlice(SHARD1);
     DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
@@ -703,7 +703,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     int numReplicas = shard1.getReplicas().size();
 
     ZkStateReader.from(cloudClient).forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
-    clusterState = ZkStateReader.from(cloudClient).getClusterState();
+    clusterState = cloudClient.getClusterStateProvider().getClusterState();
     if (log.isDebugEnabled()) {
       log.debug("-- COLLECTION: {}", clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION));
     }
@@ -796,12 +796,12 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     waitForRecoveriesToFinish(false);
 
-      getCommonCloudSolrClient();
-    String url = getUrlFromZk(ZkStateReader.from(cloudClient).getClusterState(), collectionName);
+    getCommonCloudSolrClient();
+    String url = getUrlFromZk(cloudClient.getClusterStateProvider().getClusterState(), collectionName);
 
     try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
 
-      ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+      ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
       final DocRouter router = clusterState.getCollection(collectionName).getRouter();
       Slice shard1 = clusterState.getCollection(collectionName).getSlice(SHARD1);
       DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
@@ -855,14 +855,14 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     waitForRecoveriesToFinish(false);
 
-      getCommonCloudSolrClient();
-    String url = getUrlFromZk(ZkStateReader.from(cloudClient).getClusterState(), collectionName);
+    getCommonCloudSolrClient();
+    String url = getUrlFromZk(cloudClient.getClusterStateProvider().getClusterState(), collectionName);
 
     try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
 
       String splitKey = "b!";
 
-      ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+      ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
       final DocRouter router = clusterState.getCollection(collectionName).getRouter();
       Slice shard1 = clusterState.getCollection(collectionName).getSlice(SHARD1);
       DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
@@ -925,7 +925,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   protected void checkDocCountsAndShardStates(int[] docCounts, int numReplicas, Set<String> documentIds) throws Exception {
-    ClusterState clusterState = null;
+    ClusterState clusterState;
     Slice slice1_0 = null, slice1_1 = null;
     int i = 0;
     for (i = 0; i < 10; i++) {
@@ -982,7 +982,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     SolrQuery query = new SolrQuery("*:*").setRows(1000).setFields("id", "_version_");
     query.set("distrib", false);
 
-    ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+    ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
     Slice slice = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getSlice(shard);
     long[] numFound = new long[slice.getReplicasMap().size()];
     int c = 0;

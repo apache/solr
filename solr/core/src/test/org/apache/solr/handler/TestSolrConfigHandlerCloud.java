@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -80,8 +81,8 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     TestSolrConfigHandler.reqhandlertests(writeHarness, testServerBaseUrl , cloudClient);
   }
 
-  public static String getRandomServer(CloudSolrClient cloudClient, String collName) {
-    DocCollection coll = ZkStateReader.from(cloudClient).getClusterState().getCollection(collName);
+  public static String getRandomServer(CloudSolrClient cloudClient, String collName) throws IOException {
+    DocCollection coll = cloudClient.getClusterStateProvider().getClusterState().getCollection(collName);
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
@@ -91,7 +92,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
   }
 
   private void testReqParams() throws Exception{
-    DocCollection coll = ZkStateReader.from(cloudClient).getClusterState().getCollection("collection1");
+    DocCollection coll = cloudClient.getClusterStateProvider().getClusterState().getCollection("collection1");
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())

@@ -36,6 +36,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -104,10 +105,10 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     }
   }
   
-  private List<Replica> getReplicas() {
+  private List<Replica> getReplicas() throws IOException {
     List<Replica> replicas = new ArrayList<>();
 
-    DocCollection collection = ZkStateReader.from(cloudClient).getClusterState().getCollection(DEFAULT_COLLECTION);
+    DocCollection collection = cloudClient.getClusterStateProvider().getClusterState().getCollection(DEFAULT_COLLECTION);
     for(Slice slice : collection.getSlices()) {
       replicas.addAll(slice.getReplicas());
     }

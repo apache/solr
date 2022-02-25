@@ -482,7 +482,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
 
     // assure ourselves that the old colletion is, indeed, still there.
-    assertNotNull("collection_old should exist!", ZkStateReader.from(solrClient).getClusterState().getCollectionOrNull("collection_old"));
+    assertNotNull("collection_old should exist!", solrClient.getClusterStateProvider().getClusterState().getCollectionOrNull("collection_old"));
 
     // Now we should still succeed using the alias collection_old which points to collection_new
     // aliase: collection_old -> collection_new, collection_old_reserve -> collection_old -> collection_new
@@ -507,10 +507,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertNull("collection_old should be gone", ZkStateReader.from(solrClient).getAliases().getCollectionAliasMap().get("collection_old"));
 
     assertFalse("collection_new should be gone",
-      ZkStateReader.from(solrClient).getClusterState().hasCollection("collection_new"));
+    solrClient.getClusterStateProvider().getClusterState().hasCollection("collection_new"));
 
     assertFalse("collection_old should be gone",
-      ZkStateReader.from(solrClient).getClusterState().hasCollection("collection_old"));
+    solrClient.getClusterStateProvider().getClusterState().hasCollection("collection_old"));
   }
 
   // While writing the above test I wondered what happens when an alias points to two collections and one of them
@@ -603,17 +603,15 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     // Clean up
     CollectionAdminRequest.deleteAlias("collection_alias_pair").processAndWait(cluster.getSolrClient(), 60);
     CollectionAdminRequest.deleteCollection("collection_two").processAndWait(cluster.getSolrClient(), 60);
-    // collection_one already deleted
-    lastVersion = waitForAliasesUpdate(lastVersion, zkStateReader);
 
     assertNull("collection_alias_pair should be gone",
-      ZkStateReader.from(solrClient).getAliases().getCollectionAliasMap().get("collection_alias_pair"));
+    zkStateReader.getAliases().getCollectionAliasMap().get("collection_alias_pair"));
 
     assertFalse("collection_one should be gone",
-      ZkStateReader.from(solrClient).getClusterState().hasCollection("collection_one"));
+    zkStateReader.getClusterState().hasCollection("collection_one"));
 
     assertFalse("collection_two should be gone",
-      ZkStateReader.from(solrClient).getClusterState().hasCollection("collection_two"));
+    zkStateReader.getClusterState().hasCollection("collection_two"));
 
   }
 

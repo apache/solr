@@ -389,8 +389,8 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
 
-      getCommonCloudSolrClient();
-    ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+    getCommonCloudSolrClient();
+    ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
     DocCollection dColl = clusterState.getCollection(DEFAULT_COLLECTION);
 
     assertSliceCounts("should have found 2 docs, 300 and 301", before + 2, dColl);
@@ -810,9 +810,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     return res;
   }
 
-  protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
-      getCommonCloudSolrClient();
-      ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+  protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) throws IOException {
+    getCommonCloudSolrClient();
+    ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
     ZkNodeProps leader = clusterState.getCollection(collection).getLeader(slice);
     if (leader == null) {
       throw new RuntimeException("Could not find leader:" + collection + " " + slice);
@@ -1020,7 +1020,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     assertNotNull(slices);
 
     getCommonCloudSolrClient();
-    ZkCoreNodeProps props = new ZkCoreNodeProps(ZkStateReader.from(cloudClient).getClusterState()
+    ZkCoreNodeProps props = new ZkCoreNodeProps(cloudClient.getClusterStateProvider().getClusterState()
       .getCollection(oneInstanceCollection2).getLeader("shard1"));
 
     // now test that unloading a core gets us a new leader

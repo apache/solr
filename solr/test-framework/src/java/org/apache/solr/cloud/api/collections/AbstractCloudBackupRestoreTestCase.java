@@ -179,8 +179,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     String backupLocation = getBackupLocation();
     String backupName = BACKUPNAME_PREFIX + testSuffix;
 
-    DocCollection backupCollection = ZkStateReader.from(solrClient).getClusterState().getCollection(getCollectionName());
-
     log.info("Triggering Backup command");
 
     {

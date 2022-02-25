@@ -194,9 +194,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   
   private void mapReplicasToClients() throws KeeperException, InterruptedException {
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-    ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_COLLECTION);
-    ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
-    Replica leader = null;
+    zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
+    ClusterState clusterState = zkStateReader.getClusterState();
+    Replica leader;
     Slice shard1 = clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1);
     leader = shard1.getLeader();
 
@@ -1018,7 +1018,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     for (int i=0; i<100; i++) {
       Thread.sleep(10);
       ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_COLLECTION);
-      ClusterState state = ZkStateReader.from(cloudClient).getClusterState();
+      ClusterState state = cloudClient.getClusterStateProvider().getClusterState();
 
       int numActiveReplicas = 0;
       for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas())
@@ -1091,7 +1091,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         for (int i=0; i<100; i++) {
           Thread.sleep(10);
           ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_COLLECTION);
-          ClusterState state = ZkStateReader.from(cloudClient).getClusterState();
+          ClusterState state = cloudClient.getClusterStateProvider().getClusterState();
 
           int numActiveReplicas = 0;
           for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas()) {
@@ -1202,8 +1202,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     return ur;
   }
 
-  private String getBaseUrl(String id) {
-    DocCollection collection = ZkStateReader.from(cloudClient).getClusterState().getCollection(DEFAULT_COLLECTION);
+  private String getBaseUrl(String id) throws IOException {
+    DocCollection collection = cloudClient.getClusterStateProvider().getClusterState().getCollection(DEFAULT_COLLECTION);
     Slice slice = collection.getRouter().getTargetSlice(id, null, null, null, collection);
     String baseUrl = slice.getLeader().getCoreUrl();
     return baseUrl;
@@ -1344,7 +1344,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     for (int i=0; i<100; i++) {
       Thread.sleep(10);
       ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_COLLECTION);
-      ClusterState state = ZkStateReader.from(cloudClient).getClusterState();
+      ClusterState state = cloudClient.getClusterStateProvider().getClusterState();
 
       int numActiveReplicas = 0;
       for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas())

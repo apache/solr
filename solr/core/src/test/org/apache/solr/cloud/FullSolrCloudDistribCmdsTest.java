@@ -145,7 +145,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     CloudSolrClientUtils.waitForState(cloudClient, name, (long) DEFAULT_TIMEOUT, TimeUnit.SECONDS, (CollectionStatePredicate) (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
     cloudClient.setDefaultCollection(name);
 
-    final DocCollection docCol =  ZkStateReader.from(cloudClient).getClusterState().getCollection(name);
+    final DocCollection docCol = cloudClient.getClusterStateProvider().getClusterState().getCollection(name);
     try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
          SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
          
@@ -240,7 +240,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     CloudSolrClientUtils.waitForState(cloudClient, name, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
     cloudClient.setDefaultCollection(name);
 
-    final DocCollection docCol =  ZkStateReader.from(cloudClient).getClusterState().getCollection(name);
+    final DocCollection docCol = cloudClient.getClusterStateProvider().getClusterState().getCollection(name);
     try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
          SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
 

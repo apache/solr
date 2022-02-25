@@ -312,9 +312,9 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   /**
    * After failover, ulogDir should not be changed.
    */
-  private void assertUlogDir(String... collections) {
+  private void assertUlogDir(String... collections) throws IOException {
     for (String collection : collections) {
-      Collection<Slice> slices = ZkStateReader.from(cloudClient).getClusterState().getCollection(collection).getSlices();
+      Collection<Slice> slices = cloudClient.getClusterStateProvider().getClusterState().getCollection(collection).getSlices();
       for (Slice slice : slices) {
         for (Replica replica : slice.getReplicas()) {
           Map<String, Object> properties = replica.getProperties();
@@ -387,10 +387,10 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     return success;
   }
 
-  private void assertSliceAndReplicaCount(String collection, int numSlices, int numReplicas, int timeOutInMs) throws InterruptedException {
+  private void assertSliceAndReplicaCount(String collection, int numSlices, int numReplicas, int timeOutInMs) throws InterruptedException, IOException {
     TimeOut timeOut = new TimeOut(timeOutInMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
-      ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
+      ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
       Collection<Slice> slices = clusterState.getCollection(collection).getActiveSlices();
       if (slices.size() == numSlices) {
         boolean isMatch = true;
@@ -409,7 +409,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
       }
       Thread.sleep(200);
     }
-    fail("Expected numSlices=" + numSlices + " numReplicas=" + numReplicas + " but found " + ZkStateReader.from(cloudClient).getClusterState().getCollection(collection) + " with /live_nodes: " + ZkStateReader.from(cloudClient).getClusterState().getLiveNodes());
+    fail("Expected numSlices=" + numSlices + " numReplicas=" + numReplicas + " but found " + cloudClient.getClusterStateProvider().getClusterState().getCollection(collection) + " with /live_nodes: " + cloudClient.getClusterStateProvider().getClusterState().getLiveNodes());
   }
 
 }

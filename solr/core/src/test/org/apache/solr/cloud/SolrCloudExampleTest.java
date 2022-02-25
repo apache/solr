@@ -81,7 +81,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     File defaultConfigs = new File(ExternalPaths.DEFAULT_CONFIGSET);
     assertTrue(defaultConfigs.getAbsolutePath()+" not found!", defaultConfigs.isDirectory());
 
-    Set<String> liveNodes = ZkStateReader.from(cloudClient).getClusterState().getLiveNodes();
+    Set<String> liveNodes = cloudClient.getClusterStateProvider().getClusterState().getLiveNodes();
     if (liveNodes.isEmpty())
       fail("No live nodes found! Cannot create a collection until there is at least 1 live node in the cluster.");
     String firstLiveNode = liveNodes.iterator().next();
@@ -105,7 +105,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     log.info("Creating the '{}' collection using SolrCLI with: {}", testCollectionName, solrUrl);
     tool.runTool(cli);
     assertTrue("Collection '" + testCollectionName + "' doesn't exist after trying to create it!",
-      ZkStateReader.from(cloudClient).getClusterState().hasCollection(testCollectionName));
+      cloudClient.getClusterStateProvider().getClusterState().hasCollection(testCollectionName));
 
     // verify the collection is usable ...
     ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 20);
@@ -239,7 +239,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         "explicit", SolrCLI.atPath("/config/requestHandler/\\/query/defaults/echoParams", configJson));
 
     if (log.isInfoEnabled()) {
-      log.info("live_nodes_count :  {}", ZkStateReader.from(cloudClient).getClusterState().getLiveNodes());
+      log.info("live_nodes_count :  {}", cloudClient.getClusterStateProvider().getClusterState().getLiveNodes());
     }
 
     // Since it takes some time for this command to complete we need to make sure all the reloads for
@@ -266,7 +266,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   // Collect all of the autoSoftCommit intervals.
   private Map<String, Long> getSoftAutocommitInterval(String collection) throws Exception {
     Map<String, Long> ret = new HashMap<>();
-    DocCollection coll = ZkStateReader.from(cloudClient).getClusterState().getCollection(collection);
+    DocCollection coll = cloudClient.getClusterStateProvider().getClusterState().getCollection(collection);
     for (Slice slice : coll.getActiveSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String uri = "" + replica.get(ZkStateReader.BASE_URL_PROP) + "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config";

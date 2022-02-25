@@ -75,7 +75,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase { // used t
 
   @Test
   public void doRootShardRoutingTest() throws Exception {
-    assertEquals(4, ZkStateReader.from(cloudClient).getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    assertEquals(4, cloudClient.getClusterStateProvider().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     final String[] ids = {"3", "4", "5", "6"};
 
     assertEquals("size of ids to index should be the same as the number of clients", clients.size(), ids.length);
@@ -135,7 +135,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase { // used t
 
   @Test
   public void doNestedInplaceUpdateTest() throws Exception {
-    assertEquals(4, ZkStateReader.from(cloudClient).getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    assertEquals(4, cloudClient.getClusterStateProvider().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     final String[] ids = {"3", "4", "5", "6"};
 
     assertEquals("size of ids to index should be the same as the number of clients", clients.size(), ids.length);
@@ -236,7 +236,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase { // used t
 
   @Test
   public void sendWrongRouteParam() throws Exception {
-      assertEquals(4, ZkStateReader.from(cloudClient).getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    assertEquals(4, cloudClient.getClusterStateProvider().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     final String rootId = "1";
 
     SolrInputDocument doc = sdoc("id", rootId, "level_s", "root");

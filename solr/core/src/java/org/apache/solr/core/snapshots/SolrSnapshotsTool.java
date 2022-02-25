@@ -200,7 +200,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
           + " is not found for collection " + collectionName);
     }
 
-    DocCollection collectionState = ZkStateReader.from(solrClient).getClusterState().getCollection(collectionName);
+    DocCollection collectionState = solrClient.getClusterStateProvider().getClusterState().getCollection(collectionName);
     for (Slice s : collectionState.getSlices()) {
       List<CoreSnapshotMetaData> replicaSnaps = meta.getReplicaSnapshotsForShard(s.getName());
       // Prepare a list of *existing* replicas (since one or more replicas could have been deleted after the snapshot creation).

@@ -175,7 +175,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
 
     int nDocs = BackupRestoreUtils.indexDocs(solrClient, collectionName, docsSeed);
 
-    DocCollection collectionState = ZkStateReader.from(solrClient).getClusterState().getCollection(collectionName);
+    DocCollection collectionState = solrClient.getClusterStateProvider().getClusterState().getCollection(collectionName);
     assertEquals(1, collectionState.getActiveSlices().size());
     Slice shard = collectionState.getActiveSlices().iterator().next();
     assertEquals(1, shard.getReplicas().size());

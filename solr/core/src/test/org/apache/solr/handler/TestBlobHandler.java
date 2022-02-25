@@ -65,7 +65,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       response1 = createCollectionRequest.process(client);
       assertEquals(0, response1.getStatus());
       assertTrue(response1.isSuccess());
-      DocCollection sysColl = ZkStateReader.from(cloudClient).getClusterState().getCollection(".system");
+      DocCollection sysColl = cloudClient.getClusterStateProvider().getClusterState().getCollection(".system");
       Replica replica = sysColl.getActiveSlicesMap().values().iterator().next().getLeader();
 
       String baseUrl = replica.getBaseUrl();

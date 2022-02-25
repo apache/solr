@@ -140,7 +140,7 @@ public class TestDistribDocBasedVersion extends AbstractFullDistribZkTestBase {
 
   private void doTestDocVersions() throws Exception {
     log.info("### STARTING doTestDocVersions");
-    assertEquals(2, ZkStateReader.from(cloudClient).getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    assertEquals(2, cloudClient.getClusterStateProvider().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
 
     solrClient = cloudClient;
 
