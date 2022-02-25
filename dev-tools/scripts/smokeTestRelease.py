@@ -115,7 +115,7 @@ def noJavaPackageClasses(desc, file):
   with zipfile.ZipFile(file) as z2:
     for name2 in z2.namelist():
       if name2.endswith('.class') and (name2.startswith('java/') or name2.startswith('javax/')):
-        raise RuntimeError('%s contains sheisty class "%s"' % (desc, name2))
+        raise RuntimeError('%s contains java or javax class "%s"' % (desc, name2))
 
 
 def decodeUTF8(bytes):
