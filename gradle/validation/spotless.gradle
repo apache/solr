@@ -56,6 +56,7 @@ configure(project(":solr").subprojects) { prj ->
           case ":solr:prometheus-exporter":
           case ":solr:core":
           case ":solr:solrj":
+          case ":solr:solrj-zookeeper":
           case ":solr:solr-ref-guide":
           case ":solr:test-framework":
             targetExclude "src/**/*.java"

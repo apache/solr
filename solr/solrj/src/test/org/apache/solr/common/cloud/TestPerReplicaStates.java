@@ -85,7 +85,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
       cluster.getZkClient().create(root + "/" + state, null, CreateMode.PERSISTENT, true);
     }
 
-      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
     PerReplicaStates rs = PerReplicaStatesFetcher.fetch (root, zkStateReader.getZkClient(),null);
     assertEquals(3, rs.states.size());
     assertTrue(rs.cversion >= 5);

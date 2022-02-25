@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -473,7 +474,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       params.add("id",idsToRequest.get(0));
     }
 
-    String wt = params.get(CommonParams.WT, "javabin");
+    String WT ="wt"; // nocommit : to move this from CommonParams
+    String wt = params.get(WT, "javabin");
     final ResponseParser restoreResponseParser;
     if (client instanceof HttpSolrClient) {
       restoreResponseParser = modifyParser((HttpSolrClient) client, wt);
@@ -600,7 +602,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assert null != client.getDefaultCollection();
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        client.getZkStateReader(),
+                                                        ZkStateReader.from(client),
                                                         true, true, 330);
   }
 
@@ -747,6 +749,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * in the response, regardless of cloud/RTG/uncommited state of the document.
    */
   private static class RawFieldValueValidator extends RenameFieldValueValidator {
+    String WT ="wt"; // nocommit : to move this from CommonParams
     final String type;
     final String alias;
     final SolrParams extraParams;
@@ -755,7 +758,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       super(fieldName, null == alias ? "["+type+"]" : alias);
       this.type = type;
       this.alias = alias;
-      this.extraParams = new ModifiableSolrParams().set(CommonParams.WT, type);
+      this.extraParams = new ModifiableSolrParams().set(WT, type);
     }
     public RawFieldValueValidator(final String type, final String fieldName) {
       this(type, fieldName, null);

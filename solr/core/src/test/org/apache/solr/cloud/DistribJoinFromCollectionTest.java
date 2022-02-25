@@ -87,7 +87,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
 
     // get the set of nodes where replicas for the "to" collection exist
     Set<String> nodeSet = new HashSet<>();
-      ZkStateReader zkStateReader = (ZkStateReader) ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
     ClusterState cs = zkStateReader.getClusterState();
     for (Slice slice : cs.getCollection(toColl).getActiveSlices())
       for (Replica replica : slice.getReplicas())

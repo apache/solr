@@ -83,13 +83,13 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
       oldResults.put(1, oldCollections);
       newResults.put(1, newCollections);
     };
-      ((ZkStateReader) ZkStateReader.from(client)).registerCloudCollectionsListener(watcher1);
+    ZkStateReader.from(client).registerCloudCollectionsListener(watcher1);
     CloudCollectionsListener watcher2 = (oldCollections, newCollections) -> {
       log.info("New set of collections: {}, {}", oldCollections, newCollections);
       oldResults.put(2, oldCollections);
       newResults.put(2, newCollections);
     };
-      ((ZkStateReader) ZkStateReader.from(client)).registerCloudCollectionsListener(watcher2);
+    ZkStateReader.from(client).registerCloudCollectionsListener(watcher2);
 
     assertFalse("CloudCollectionsListener not triggered after registration", oldResults.get(1).contains("testcollection1"));
     assertFalse("CloudCollectionsListener not triggered after registration", oldResults.get(2).contains("testcollection1"));
@@ -109,7 +109,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     assertTrue("CloudCollectionsListener doesn't have new collection in new set of collections", newResults.get(1).contains("testcollection1"));
     assertTrue("CloudCollectionsListener doesn't have new collection in new set of collections", newResults.get(2).contains("testcollection1"));
 
-      ((ZkStateReader) ZkStateReader.from(client)).removeCloudCollectionsListener(watcher1);
+    ZkStateReader.from(client).removeCloudCollectionsListener(watcher1);
 
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
@@ -129,7 +129,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
     CollectionAdminRequest.deleteCollection("testcollection2").processAndWait(client, MAX_WAIT_TIMEOUT);
 
-      ((ZkStateReader) ZkStateReader.from(client)).removeCloudCollectionsListener(watcher2);
+    ZkStateReader.from(client).removeCloudCollectionsListener(watcher2);
   }
 
   @Test
@@ -156,13 +156,13 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
       oldResults.put(1, oldCollections);
       newResults.put(1, newCollections);
     };
-      ((ZkStateReader) ZkStateReader.from(client)).registerCloudCollectionsListener(watcher1);
+    ZkStateReader.from(client).registerCloudCollectionsListener(watcher1);
     CloudCollectionsListener watcher2 = (oldCollections, newCollections) -> {
       log.info("New set of collections: {}, {}", oldCollections, newCollections);
       oldResults.put(2, oldCollections);
       newResults.put(2, newCollections);
     };
-      ((ZkStateReader) ZkStateReader.from(client)).registerCloudCollectionsListener(watcher2);
+    ZkStateReader.from(client).registerCloudCollectionsListener(watcher2);
 
 
     assertEquals("CloudCollectionsListener has old collection with size > 0 after registration", 0, oldResults.get(1).size());
@@ -183,7 +183,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     assertFalse("CloudCollectionsListener notifies with collection that no longer exists", newResults.get(2).contains("testcollection1"));
     assertTrue("CloudCollectionsListener doesn't notify of collection that exists", newResults.get(2).contains("testcollection2"));
 
-      ((ZkStateReader) ZkStateReader.from(client)).removeCloudCollectionsListener(watcher2);
+    ZkStateReader.from(client).removeCloudCollectionsListener(watcher2);
 
     CollectionAdminRequest.deleteCollection("testcollection2").processAndWait(client, MAX_WAIT_TIMEOUT);
 
@@ -196,6 +196,6 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     assertFalse("CloudCollectionsListener called after removal", newResults.get(2).contains("testcollection1"));
     assertTrue("CloudCollectionsListener called after removal", newResults.get(2).contains("testcollection2"));
 
-      ((ZkStateReader) ZkStateReader.from(client)).removeCloudCollectionsListener(watcher1);
+    ZkStateReader.from(client).removeCloudCollectionsListener(watcher1);
   }
 }

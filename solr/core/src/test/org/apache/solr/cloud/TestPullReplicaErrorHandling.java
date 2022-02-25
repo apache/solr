@@ -116,7 +116,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
 
   @Override
   public void tearDown() throws Exception {
-      if (((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).getClusterState().getCollectionOrNull(collectionName) != null) {
+    if (ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollectionOrNull(collectionName) != null) {
       log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
       log.info("Collection deleted");
@@ -275,7 +275,7 @@ public void testCantConnectToPullReplica() throws Exception {
   
   private DocCollection assertNumberOfReplicas(int numWriter, int numActive, int numPassive, boolean updateCollection, boolean activeOnly) throws KeeperException, InterruptedException {
     if (updateCollection) {
-        ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).forceUpdateCollection(collectionName);
+      ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection(collectionName);
     }
     DocCollection docCollection = getCollectionState(collectionName);
     assertNotNull(docCollection);
@@ -314,14 +314,14 @@ public void testCantConnectToPullReplica() throws Exception {
   
   private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
     TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      while (((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).getClusterState().hasCollection(collection)) {
+    while (ZkStateReader.from(cluster.getSolrClient()).getClusterState().hasCollection(collection)) {
       log.info("Collection not yet deleted");
       try {
         Thread.sleep(100);
         if (t.hasTimedOut()) {
           fail("Timed out waiting for collection " + collection + " to be deleted.");
         }
-          ((ZkStateReader) ZkStateReader.from(cluster.getSolrClient())).forceUpdateCollection(collection);
+        ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection(collection);
       } catch(SolrException e) {
         return;
       }

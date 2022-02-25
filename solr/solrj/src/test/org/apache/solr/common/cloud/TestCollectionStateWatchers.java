@@ -163,7 +163,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     waitFor("CollectionStateWatcher wasn't cleared after completion",
             MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-            () -> ((ZkStateReader) ZkStateReader.from(client)).getStateWatchers("testcollection").isEmpty());
+            () -> ZkStateReader.from(client).getStateWatchers("testcollection").isEmpty());
 
   }
 
@@ -184,7 +184,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     assertTrue("CollectionStateWatcher isn't called on new registration",
                latch.await(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS));
       assertEquals("CollectionStateWatcher should be retained",
-                 1, ((ZkStateReader) ZkStateReader.from(client)).getStateWatchers("currentstate").size());
+               1, ZkStateReader.from(client).getStateWatchers("currentstate").size());
 
     final CountDownLatch latch2 = new CountDownLatch(1);
     CloudSolrClientUtils.registerCollectionStateWatcher(client, "currentstate", (n, c) -> {
@@ -195,7 +195,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     assertTrue("CollectionStateWatcher isn't called when registering for already-watched collection",
                latch.await(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS));
     waitFor("CollectionStateWatcher should be removed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-            () -> ((ZkStateReader) ZkStateReader.from(client)).getStateWatchers("currentstate").size() == 1);
+          () -> ZkStateReader.from(client).getStateWatchers("currentstate").size() == 1);
   }
 
   @Test
@@ -244,7 +244,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     });
     waitFor("Watchers for collection should be removed after timeout",
             MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-            () -> ((ZkStateReader) ZkStateReader.from(client)).getStateWatchers("nosuchcollection").isEmpty());
+            () -> ZkStateReader.from(client).getStateWatchers("nosuchcollection").isEmpty());
 
   }
 
@@ -292,7 +292,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   public void testWatcherIsRemovedAfterTimeout() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
       assertTrue("There should be no watchers for a non-existent collection!",
-               ((ZkStateReader) ZkStateReader.from(client)).getStateWatchers("no-such-collection").isEmpty());
+             ZkStateReader.from(client).getStateWatchers("no-such-collection").isEmpty());
 
     expectThrows(TimeoutException.class, () -> {
       CloudSolrClientUtils.waitForState(client, "no-such-collection", 10, TimeUnit.MILLISECONDS,
@@ -301,7 +301,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     waitFor("Watchers for collection should be removed after timeout",
             MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-            () -> ((ZkStateReader) ZkStateReader.from(client)).getStateWatchers("no-such-collection").isEmpty());
+            () -> ZkStateReader.from(client).getStateWatchers("no-such-collection").isEmpty());
 
   }
 
@@ -334,7 +334,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     assertTrue("CollectionStateWatcher not notified of new node", future.get());
     
     waitFor("CollectionStateWatcher should be removed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-            () -> ((ZkStateReader) ZkStateReader.from(client)).getStateWatchers("test_collection").size() == 0);
+          () -> ZkStateReader.from(client).getStateWatchers("test_collection").size() == 0);
 
     future = waitInBackground("test_collection", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
                               (l, c) -> (l.size() == CLUSTER_SIZE));
@@ -344,7 +344,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     assertTrue("CollectionStateWatcher not notified of node lost", future.get());
     
     waitFor("CollectionStateWatcher should be removed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-            () -> ((ZkStateReader) ZkStateReader.from(client)).getStateWatchers("test_collection").size() == 0);
+            () -> ZkStateReader.from(client).getStateWatchers("test_collection").size() == 0);
     
   }
 }

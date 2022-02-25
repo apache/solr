@@ -245,7 +245,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     ChaosMonkey.stop(stoppedJetties);
     controlJetty.stop();
 
-      assertTrue("Timeout waiting for all not live", waitingForReplicasNotLive((ZkStateReader) ZkStateReader.from(cloudClient), 45000, stoppedJetties));
+    assertTrue("Timeout waiting for all not live", waitingForReplicasNotLive(ZkStateReader.from(cloudClient), 45000, stoppedJetties));
 
     ChaosMonkey.start(stoppedJetties);
     controlJetty.start();
@@ -314,7 +314,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
    */
   private void assertUlogDir(String... collections) {
     for (String collection : collections) {
-        Collection<Slice> slices = ((ZkStateReader) ZkStateReader.from(cloudClient)).getClusterState().getCollection(collection).getSlices();
+      Collection<Slice> slices = ZkStateReader.from(cloudClient).getClusterState().getCollection(collection).getSlices();
       for (Slice slice : slices) {
         for (Replica replica : slice.getReplicas()) {
           Map<String, Object> properties = replica.getProperties();
@@ -390,7 +390,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   private void assertSliceAndReplicaCount(String collection, int numSlices, int numReplicas, int timeOutInMs) throws InterruptedException {
     TimeOut timeOut = new TimeOut(timeOutInMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
-        ClusterState clusterState = ((ZkStateReader) ZkStateReader.from(cloudClient)).getClusterState();
+      ClusterState clusterState = ZkStateReader.from(cloudClient).getClusterState();
       Collection<Slice> slices = clusterState.getCollection(collection).getActiveSlices();
       if (slices.size() == numSlices) {
         boolean isMatch = true;
@@ -409,7 +409,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
       }
       Thread.sleep(200);
     }
-      fail("Expected numSlices=" + numSlices + " numReplicas=" + numReplicas + " but found " + ((ZkStateReader) ZkStateReader.from(cloudClient)).getClusterState().getCollection(collection) + " with /live_nodes: " + ((ZkStateReader) ZkStateReader.from(cloudClient)).getClusterState().getLiveNodes());
+    fail("Expected numSlices=" + numSlices + " numReplicas=" + numReplicas + " but found " + ZkStateReader.from(cloudClient).getClusterState().getCollection(collection) + " with /live_nodes: " + ZkStateReader.from(cloudClient).getClusterState().getLiveNodes());
   }
 
 }
