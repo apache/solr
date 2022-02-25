@@ -30,8 +30,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  * value of another field in the tuple. The expression for a replace operation can be of multiple
  * forms:
  *
- * <p>
- *
  * <p>replace(fieldA, 0, withValue=100) // for fieldA if equals 0 then set to 100
  *
  * <p>replace(fieldA, null, withValue=0) // for fieldA if null then set to 0
