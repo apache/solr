@@ -21,34 +21,27 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.SolrSpellChecker;
 import org.apache.solr.spelling.SpellingOptions;
 import org.apache.solr.spelling.SpellingResult;
 import org.apache.solr.spelling.Token;
-/**
- * A Dummy SpellChecker for testing purposes
- *
- **/
+
+/** A Dummy SpellChecker for testing purposes */
 public class DummyCustomParamSpellChecker extends SolrSpellChecker {
 
   @Override
-  public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
-
-  }
+  public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {}
 
   @Override
-  public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
-
-  }
+  public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {}
 
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
 
     SpellingResult result = new SpellingResult();
-    //just spit back out the results
+    // just spit back out the results
 
     // sort the keys to make ordering predictable
     Iterator<String> iterator = options.customParams.getParameterNamesIterator();
@@ -61,9 +54,9 @@ public class DummyCustomParamSpellChecker extends SolrSpellChecker {
     int i = 0;
     for (String name : lst) {
       String value = options.customParams.get(name);
-      result.add(new Token(name, i, i+1),  Collections.singletonList(value));
+      result.add(new Token(name, i, i + 1), Collections.singletonList(value));
       i += 2;
-    }    
+    }
     return result;
   }
 }

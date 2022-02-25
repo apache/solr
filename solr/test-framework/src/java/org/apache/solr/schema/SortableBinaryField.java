@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
@@ -29,9 +28,7 @@ import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * Custom field representing a {@link BinaryField} that's sortable.
- */
+/** Custom field representing a {@link BinaryField} that's sortable. */
 public class SortableBinaryField extends BinaryField {
 
   @Override
@@ -45,8 +42,11 @@ public class SortableBinaryField extends BinaryField {
       IndexableField storedField = createField(field, value);
       fields.add(storedField);
       ByteBuffer byteBuffer = toObject(storedField);
-      BytesRef bytes = new BytesRef
-          (byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), byteBuffer.remaining());
+      BytesRef bytes =
+          new BytesRef(
+              byteBuffer.array(),
+              byteBuffer.arrayOffset() + byteBuffer.position(),
+              byteBuffer.remaining());
       if (field.multiValued()) {
         fields.add(new SortedSetDocValuesField(field.getName(), bytes));
       } else {
@@ -66,20 +66,27 @@ public class SortableBinaryField extends BinaryField {
 
   private static class BinarySortField extends SortField {
     public BinarySortField(final String field, final boolean reverse) {
-      super(field, new FieldComparatorSource() {
-        @Override
-        public FieldComparator.TermOrdValComparator newComparator
-            (final String fieldname, final int numHits, final int sortPos, final boolean reversed) {
-          return new FieldComparator.TermOrdValComparator(numHits, fieldname);
-        }}, reverse);
+      super(
+          field,
+          new FieldComparatorSource() {
+            @Override
+            public FieldComparator.TermOrdValComparator newComparator(
+                final String fieldname,
+                final int numHits,
+                final int sortPos,
+                final boolean reversed) {
+              return new FieldComparator.TermOrdValComparator(numHits, fieldname);
+            }
+          },
+          reverse);
     }
   }
-  
+
   @Override
   public Object marshalSortValue(Object value) {
     return marshalBase64SortValue(value);
   }
-  
+
   @Override
   public Object unmarshalSortValue(Object value) {
     return unmarshalBase64SortValue(value);
