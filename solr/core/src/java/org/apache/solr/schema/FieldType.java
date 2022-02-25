@@ -517,7 +517,7 @@ public abstract class FieldType extends FieldProperties {
 
             int max = maxChars;
             int n = 0;
-            while (true) {
+            while (max > 0) {
               int len = input.read(cbuf, n, max);
               if (len < 0) break;
               max -= len;
