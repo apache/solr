@@ -18,7 +18,6 @@ package org.apache.solr.analytics.stream.reservation.read;
 
 import java.io.DataInput;
 import java.io.IOException;
-
 import org.apache.solr.analytics.util.function.FloatConsumer;
 
 public class FloatCheckedDataReader extends ReductionCheckedDataReader<FloatConsumer> {
@@ -26,6 +25,7 @@ public class FloatCheckedDataReader extends ReductionCheckedDataReader<FloatCons
   public FloatCheckedDataReader(DataInput inputStream, FloatConsumer applier) {
     super(inputStream, applier);
   }
+
   @Override
   public void checkedRead() throws IOException {
     applier.accept(inputStream.readFloat());

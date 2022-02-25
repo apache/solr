@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Mapping functions to use for analytics expressions.
- */
+/** Mapping functions to use for analytics expressions. */
 package org.apache.solr.analytics.function.mapping;
-
-

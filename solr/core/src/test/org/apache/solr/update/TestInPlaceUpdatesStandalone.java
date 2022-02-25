@@ -1305,7 +1305,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
 
   @Test
   /**
-   *  Test the @see {@link AtomicUpdateDocumentMerger#doInPlaceUpdateMerge(AddUpdateCommand,Set<String>)} 
+   *  Test the @see {@link AtomicUpdateDocumentMerger#doInPlaceUpdateMerge(AddUpdateCommand,Set)}
    *  method is working fine
    */
   public void testDoInPlaceUpdateMerge() throws Exception {

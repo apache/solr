@@ -19,12 +19,12 @@ package org.apache.solr.analytics.function.field;
 import java.time.Instant;
 import java.util.Date;
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.value.DateValueStream.CastingDateValueStream;
 import org.apache.solr.schema.TrieDateField;
 
 /**
  * An analytics wrapper for a multi-valued {@link TrieDateField} with DocValues enabled.
+ *
  * @deprecated Trie fields are deprecated as of Solr 7.0
  */
 @Deprecated
@@ -38,10 +38,12 @@ public class DateMultiTrieField extends LongMultiTrieField implements CastingDat
   public void streamDates(Consumer<Date> cons) {
     streamLongs(value -> cons.accept(new Date(value)));
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     streamLongs(value -> cons.accept(Instant.ofEpochMilli(value).toString()));
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     streamLongs(value -> cons.accept(new Date(value)));

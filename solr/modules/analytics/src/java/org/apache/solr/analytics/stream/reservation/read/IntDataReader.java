@@ -25,6 +25,7 @@ public class IntDataReader extends ReductionDataReader<IntConsumer> {
   public IntDataReader(DataInput inputStream, IntConsumer applier) {
     super(inputStream, applier);
   }
+
   @Override
   public void read() throws IOException {
     applier.accept(inputStream.readInt());

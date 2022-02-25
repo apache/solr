@@ -23,9 +23,11 @@ import java.util.function.IntConsumer;
 
 public class StringDataArrayReader extends ReductionDataArrayReader<Consumer<String>> {
 
-  public StringDataArrayReader(DataInput inputStream, Consumer<String> applier, IntConsumer signal) {
+  public StringDataArrayReader(
+      DataInput inputStream, Consumer<String> applier, IntConsumer signal) {
     super(inputStream, applier, signal);
   }
+
   @Override
   public void read(int size) throws IOException {
     for (int i = 0; i < size; ++i) {

@@ -16,8 +16,6 @@
  */
 package org.apache.solr.handler.clustering;
 
-import org.carrot2.util.ResourceLookup;
-
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,10 +23,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.carrot2.util.ResourceLookup;
 
-/**
- * Carrot2 resource provider from the provided list of filesystem paths.
- */
+/** Carrot2 resource provider from the provided list of filesystem paths. */
 final class PathResourceLookup implements ResourceLookup {
   private final List<Path> locations;
 

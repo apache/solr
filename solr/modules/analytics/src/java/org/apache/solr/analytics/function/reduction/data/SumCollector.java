@@ -17,15 +17,12 @@
 package org.apache.solr.analytics.function.reduction.data;
 
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.stream.reservation.DoubleCheckedReservation;
 import org.apache.solr.analytics.stream.reservation.ReductionDataReservation;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.DoubleValueStream;
 
-/**
- * Collects the sum of the given {@link DoubleValueStream} parameter.
- */
+/** Collects the sum of the given {@link DoubleValueStream} parameter. */
 public class SumCollector extends ReductionDataCollector<SumCollector.SumData> {
   private final DoubleValueStream param;
   public static final String name = "sum";
@@ -33,7 +30,7 @@ public class SumCollector extends ReductionDataCollector<SumCollector.SumData> {
 
   public SumCollector(DoubleValueStream param) {
     this.param = param;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    this.exprStr = AnalyticsValueStream.createExpressionString(name, param);
   }
 
   private double sum;
@@ -49,9 +46,8 @@ public class SumCollector extends ReductionDataCollector<SumCollector.SumData> {
   }
 
   /**
-   * Return whether a sum exists.
-   * A sum will always exist if there is at least one existing value for the parameter,
-   * otherwise the sum does not exist.
+   * Return whether a sum exists. A sum will always exist if there is at least one existing value
+   * for the parameter, otherwise the sum does not exist.
    *
    * @return whether a sum exists
    */
@@ -69,15 +65,18 @@ public class SumCollector extends ReductionDataCollector<SumCollector.SumData> {
 
   double tempSum;
   boolean tempExists;
+
   @Override
   public void collect() {
     tempSum = 0;
     tempExists = false;
-    param.streamDoubles( val -> {
-      tempSum += val;
-      tempExists = true;
-    });
+    param.streamDoubles(
+        val -> {
+          tempSum += val;
+          tempExists = true;
+        });
   }
+
   @Override
   protected void apply(SumData data) {
     data.sum += tempSum;
@@ -85,26 +84,26 @@ public class SumCollector extends ReductionDataCollector<SumCollector.SumData> {
   }
 
   @Override
-  public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-    consumer.accept(new DoubleCheckedReservation(
-        value -> {
-          ioData.sum += value;
-          ioData.exists = true;
-        },
-        ()-> ioData.sum,
-        ()-> ioData.exists
-      ));
+  public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+    consumer.accept(
+        new DoubleCheckedReservation(
+            value -> {
+              ioData.sum += value;
+              ioData.exists = true;
+            },
+            () -> ioData.sum,
+            () -> ioData.exists));
   }
 
   @Override
   public void setMergedData(ReductionData data) {
-    sum = ((SumData)data).sum;
+    sum = ((SumData) data).sum;
     exists = data.exists;
   }
 
   @Override
   public void setData(ReductionData data) {
-    sum = ((SumData)data).sum;
+    sum = ((SumData) data).sum;
     exists = data.exists;
   }
 
@@ -112,6 +111,7 @@ public class SumCollector extends ReductionDataCollector<SumCollector.SumData> {
   public String getName() {
     return name;
   }
+
   @Override
   public String getExpressionStr() {
     return exprStr;

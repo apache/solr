@@ -20,7 +20,8 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 /**
- * Abstract public class to manage the extraction and writing of data to a {@link DataOutput} stream.
+ * Abstract public class to manage the extraction and writing of data to a {@link DataOutput}
+ * stream.
  */
 public abstract class ReductionDataWriter<E> {
   protected final DataOutput output;

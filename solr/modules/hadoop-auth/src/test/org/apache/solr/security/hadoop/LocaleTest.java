@@ -16,6 +16,20 @@
  */
 package org.apache.solr.security.hadoop;
 
+import java.io.File;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
@@ -23,20 +37,6 @@ import org.apache.solr.util.LogLevel;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.security.auth.login.AppConfigurationEntry;
-import javax.security.auth.login.Configuration;
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
-import java.io.File;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.stream.Collectors;
 
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "https://issues.apache.org/jira/browse/DIRKRB-753")
 @LogLevel("org.apache.kerby=WARN")
@@ -56,35 +56,57 @@ public class LocaleTest extends SolrTestCase {
     kdc.start();
     kdc.createPrincipal(keytabFile, principal);
 
-    AppConfigurationEntry appConfigEntry = new AppConfigurationEntry(
-        KerberosTestServices.krb5LoginModuleName,
-        AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-        Map.of("principal", principal,
-            "storeKey", "true",
-            "useKeyTab", "true",
-            "useTicketCache", "false",
-            "refreshKrb5Config", "true",
-            "keyTab", keytabFile.getAbsolutePath(),
-            "keytab", keytabFile.getAbsolutePath())
-    );
-    Configuration configuration = new Configuration() {
-      @Override
-      public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-        return new AppConfigurationEntry[]{appConfigEntry};
-      }
-    };
+    AppConfigurationEntry appConfigEntry =
+        new AppConfigurationEntry(
+            KerberosTestServices.krb5LoginModuleName,
+            AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+            Map.of(
+                "principal",
+                principal,
+                "storeKey",
+                "true",
+                "useKeyTab",
+                "true",
+                "useTicketCache",
+                "false",
+                "refreshKrb5Config",
+                "true",
+                "keyTab",
+                keytabFile.getAbsolutePath(),
+                "keytab",
+                keytabFile.getAbsolutePath()));
+    Configuration configuration =
+        new Configuration() {
+          @Override
+          public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+            return new AppConfigurationEntry[] {appConfigEntry};
+          }
+        };
 
-    List<Locale> locales = new ArrayList<>();
+    Set<String> locales = new HashSet<>();
     for (Locale locale : Locale.getAvailableLocales()) {
       try {
         Locale.setDefault(locale);
         new LoginContext("Server", null, null, configuration).login();
       } catch (LoginException e) {
-        locales.add(locale);
+        locales.add(locale.getLanguage());
       }
     }
-    log.error("Could not login with locales {}", locales.stream().collect(Collectors.groupingBy(Locale::getLanguage)));
 
     kdc.stop();
+
+    log.info("Could not login with locales {}", locales);
+
+    List<String> missingLanguages = new ArrayList<>();
+    for (String locale : locales) {
+      if (!KerberosTestServices.incompatibleLanguagesWithMiniKdc.contains(locale)) {
+        missingLanguages.add(locale);
+      }
+    }
+
+    assertTrue(
+        "KerberosTestServices#incompatibleLanguagesWithMiniKdc is missing languages: "
+            + missingLanguages,
+        missingLanguages.isEmpty());
   }
 }

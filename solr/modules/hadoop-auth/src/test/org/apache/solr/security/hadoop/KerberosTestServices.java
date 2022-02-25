@@ -16,8 +16,6 @@
  */
 package org.apache.solr.security.hadoop;
 
-import javax.security.auth.login.AppConfigurationEntry;
-import javax.security.auth.login.Configuration;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
@@ -28,7 +26,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
@@ -37,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 public class KerberosTestServices {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private volatile MiniKdc kdc;
   private final JaasConfiguration jaasConfiguration;
   private final Configuration savedConfig;
@@ -46,10 +45,8 @@ public class KerberosTestServices {
 
   private final File workDir;
 
-  private KerberosTestServices(File workDir,
-                               JaasConfiguration jaasConfiguration,
-                               Configuration savedConfig,
-                               boolean debug) {
+  private KerberosTestServices(
+      File workDir, JaasConfiguration jaasConfiguration, Configuration savedConfig, boolean debug) {
     this.jaasConfiguration = jaasConfiguration;
     this.savedConfig = savedConfig;
     this.workDir = workDir;
@@ -104,8 +101,8 @@ public class KerberosTestServices {
   }
 
   /**
-   * Returns a MiniKdc that can be used for creating kerberos principals
-   * and keytabs.  Caller is responsible for starting/stopping the kdc.
+   * Returns a MiniKdc that can be used for creating kerberos principals and keytabs. Caller is
+   * responsible for starting/stopping the kdc.
    */
   private static MiniKdc getKdc(File workDir, boolean debug) throws Exception {
     Properties conf = MiniKdc.createConf();
@@ -115,8 +112,8 @@ public class KerberosTestServices {
   }
 
   /**
-   * Programmatic version of a jaas.conf file suitable for connecting
-   * to a SASL-configured zookeeper.
+   * Programmatic version of a jaas.conf file suitable for connecting to a SASL-configured
+   * zookeeper.
    */
   private static class JaasConfiguration extends Configuration {
 
@@ -125,16 +122,16 @@ public class KerberosTestServices {
     private String clientAppName = "Client", serverAppName = "Server";
 
     /**
-     * Add an entry to the jaas configuration with the passed in name,
-     * principal, and keytab. The other necessary options will be set for you.
+     * Add an entry to the jaas configuration with the passed in name, principal, and keytab. The
+     * other necessary options will be set for you.
      *
      * @param clientPrincipal The principal of the client
      * @param clientKeytab The location of the keytab with the clientPrincipal
      * @param serverPrincipal The principal of the server
      * @param serverKeytab The location of the keytab with the serverPrincipal
      */
-    public JaasConfiguration(String clientPrincipal, File clientKeytab,
-                             String serverPrincipal, File serverKeytab) {
+    public JaasConfiguration(
+        String clientPrincipal, File clientKeytab, String serverPrincipal, File serverKeytab) {
       Map<String, String> clientOptions = new HashMap<>();
       clientOptions.put("principal", clientPrincipal);
       clientOptions.put("keyTab", clientKeytab.getAbsolutePath());
@@ -146,24 +143,30 @@ public class KerberosTestServices {
       if (jaasProp != null && "true".equalsIgnoreCase(jaasProp)) {
         clientOptions.put("debug", "true");
       }
-      clientEntry = new AppConfigurationEntry[]{
-          new AppConfigurationEntry(krb5LoginModuleName,
-              AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-              clientOptions)};
-      if(serverPrincipal!=null && serverKeytab!=null) {
+      clientEntry =
+          new AppConfigurationEntry[] {
+            new AppConfigurationEntry(
+                krb5LoginModuleName,
+                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                clientOptions)
+          };
+      if (serverPrincipal != null && serverKeytab != null) {
         Map<String, String> serverOptions = new HashMap<>(clientOptions);
         serverOptions.put("principal", serverPrincipal);
         serverOptions.put("keytab", serverKeytab.getAbsolutePath());
-        serverEntry =  new AppConfigurationEntry[]{
-            new AppConfigurationEntry(krb5LoginModuleName,
-                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-                serverOptions)};
+        serverEntry =
+            new AppConfigurationEntry[] {
+              new AppConfigurationEntry(
+                  krb5LoginModuleName,
+                  AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                  serverOptions)
+            };
       }
     }
 
     /**
-     * Add an entry to the jaas configuration with the passed in principal and keytab,
-     * along with the app name.
+     * Add an entry to the jaas configuration with the passed in principal and keytab, along with
+     * the app name.
      *
      * @param principal The principal
      * @param keytab The keytab containing credentials for the principal
@@ -186,17 +189,19 @@ public class KerberosTestServices {
     }
   }
 
-  public final static String krb5LoginModuleName =
-    System.getProperty("java.vendor").contains("IBM") ?
-      "com.ibm.security.auth.module.Krb5LoginModule" :
-      "com.sun.security.auth.module.Krb5LoginModule";
+  public static final String krb5LoginModuleName =
+      System.getProperty("java.vendor").contains("IBM")
+          ? "com.ibm.security.auth.module.Krb5LoginModule"
+          : "com.sun.security.auth.module.Krb5LoginModule";
 
   /**
-   *  These Locales don't generate dates that are compatible with Hadoop MiniKdc.
-   *  See LocaleTest.java and https://issues.apache.org/jira/browse/DIRKRB-753
+   * These Locales don't generate dates that are compatible with Hadoop MiniKdc. See LocaleTest.java
+   * and https://issues.apache.org/jira/browse/DIRKRB-753
    */
-  private final static List<String> incompatibleLanguagesWithMiniKdc = Arrays.asList(
-    "mzn", "ps", "mr", "uz", "ks", "bn", "my", "sd", "pa", "ar", "th", "dz", "ja", "ne", "ckb", "fa", "lrc", "ur", "ig");
+  static final List<String> incompatibleLanguagesWithMiniKdc =
+      Arrays.asList(
+          "mzn", "ps", "mr", "uz", "ks", "bn", "my", "sd", "pa", "ar", "th", "dz", "ja", "ne",
+          "ckb", "fa", "lrc", "ur", "ig", "sat", "mni", "sa", "as");
 
   public static class Builder {
     private File kdcWorkDir;
@@ -207,7 +212,7 @@ public class KerberosTestServices {
     private String appName;
     private boolean debug = false;
 
-    public Builder() { }
+    public Builder() {}
 
     public Builder withKdc(File kdcWorkDir) {
       this.kdcWorkDir = kdcWorkDir;
@@ -219,8 +224,8 @@ public class KerberosTestServices {
       return this;
     }
 
-    public Builder withJaasConfiguration(String clientPrincipal, File clientKeytab,
-                                         String serverPrincipal, File serverKeytab) {
+    public Builder withJaasConfiguration(
+        String clientPrincipal, File clientKeytab, String serverPrincipal, File serverKeytab) {
       this.clientPrincipal = Objects.requireNonNull(clientPrincipal);
       this.clientKeytab = Objects.requireNonNull(clientKeytab);
       this.serverPrincipal = serverPrincipal;
@@ -239,12 +244,15 @@ public class KerberosTestServices {
     }
 
     public KerberosTestServices build() throws Exception {
-      final Configuration oldConfig = clientPrincipal != null ? Configuration.getConfiguration() : null;
+      final Configuration oldConfig =
+          clientPrincipal != null ? Configuration.getConfiguration() : null;
       JaasConfiguration jaasConfiguration = null;
       if (clientPrincipal != null) {
-        jaasConfiguration = (appName == null) ?
-            new JaasConfiguration(clientPrincipal, clientKeytab, serverPrincipal, serverKeytab) :
-            new JaasConfiguration(clientPrincipal, clientKeytab, appName);
+        jaasConfiguration =
+            (appName == null)
+                ? new JaasConfiguration(
+                    clientPrincipal, clientKeytab, serverPrincipal, serverKeytab)
+                : new JaasConfiguration(clientPrincipal, clientKeytab, appName);
       }
       return new KerberosTestServices(kdcWorkDir, jaasConfiguration, oldConfig, debug);
     }

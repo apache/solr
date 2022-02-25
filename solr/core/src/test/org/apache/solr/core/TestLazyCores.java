@@ -25,13 +25,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -910,17 +913,40 @@ public class TestLazyCores extends SolrTestCaseJ4 {
         .substring("NOT evicting transient core [" + transientCoreNames[0] + "]")) {
       cc.waitForLoadingCoresToFinish(1000);
       var solr = new EmbeddedSolrServer(cc, null);
-      final var longReqTimeMs = 2000; // if lower too much, the test will fail on a slow/busy CI
+      final var longReqTimeMs = 5000; // plenty of time for a slow/busy CI
 
-      // First, start a long request on the first transient core
-      var thread = new Thread(() -> {
-        try {
-          // TODO Solr ought to have a query test "latch" mechanism so we don't sleep arbitrarily
-          solr.query(transientCoreNames[0], params("q", "{!func}sleep(" + longReqTimeMs + ",1)"));
-        } catch (SolrServerException | IOException e) {
-          fail(e.toString());
-        }
-      }, "longRequest");
+      // First, start a long request on the first transient core.
+      //  We do this via relying on EmbeddedSolrServer to keep the core open as it works with
+      //  this streaming callback mechanism.
+      var longRequestLatch = new CountDownLatch(1);
+      var thread =
+          new Thread("longRequest") {
+            @Override
+            public void run() {
+              try {
+                solr.queryAndStreamResponse(
+                    transientCoreNames[0],
+                    params("q", "*:*"),
+                    new StreamingResponseCallback() {
+                      @Override
+                      public void streamSolrDocument(SolrDocument doc) {}
+
+                      @Override
+                      public void streamDocListInfo(long numFound, long start, Float maxScore) {
+                        try {
+                          // the core remains open until the test calls countDown()
+                          longRequestLatch.await();
+                        } catch (InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                          throw new RuntimeException(e);
+                        }
+                      }
+                    });
+              } catch (SolrServerException | IOException e) {
+                fail(e.toString());
+              }
+            }
+          };
       thread.start();
 
       System.out.println("Inducing pressure on cache by querying many cores...");
@@ -941,7 +967,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       // Do another request on the first core
       solr.query(transientCoreNames[0], params("q", "id:wakeUp"));
 
-      //thread.interrupt();
+      longRequestLatch.countDown();
       thread.join(longReqTimeMs);
       assertFalse(thread.isAlive());
 

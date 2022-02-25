@@ -17,9 +17,7 @@
 package org.apache.solr.security.hadoop;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.servlet.http.HttpServletRequest;
-
 import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -28,8 +26,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Assert;
 
 /**
- * This class extends {@linkplain CollectionsHandler} and implements extra validations
- * for verifying proxy users support in {@linkplain HadoopAuthPlugin}
+ * This class extends {@linkplain CollectionsHandler} and implements extra validations for verifying
+ * proxy users support in {@linkplain HadoopAuthPlugin}
  */
 public class ImpersonatorCollectionsHandler extends CollectionsHandler {
   static AtomicBoolean called = new AtomicBoolean(false);
@@ -48,7 +46,7 @@ public class ImpersonatorCollectionsHandler extends CollectionsHandler {
     super.handleRequestBody(req, rsp);
     String doAs = req.getParams().get(KerberosPlugin.IMPERSONATOR_DO_AS_HTTP_PARAM);
     if (doAs != null) {
-      HttpServletRequest httpRequest = (HttpServletRequest)req.getContext().get("httpRequest");
+      HttpServletRequest httpRequest = (HttpServletRequest) req.getContext().get("httpRequest");
       Assert.assertNotNull(httpRequest);
       String user = req.getParams().get(PseudoAuthenticator.USER_NAME);
       Assert.assertNotNull(user);

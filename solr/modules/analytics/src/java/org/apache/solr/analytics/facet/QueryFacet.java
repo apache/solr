@@ -18,7 +18,6 @@ package org.apache.solr.analytics.facet;
 
 import java.util.Map;
 import java.util.function.Consumer;
-
 import org.apache.lucene.search.Query;
 import org.apache.solr.analytics.function.ReductionCollectionManager.ReductionDataCollection;
 import org.apache.solr.common.SolrException;
@@ -27,11 +26,9 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
 
-/**
- * A facet that breaks down the data by additional Solr Queries.
- */
+/** A facet that breaks down the data by additional Solr Queries. */
 public class QueryFacet extends AbstractSolrQueryFacet {
-  private final Map<String,String> queries;
+  private final Map<String, String> queries;
 
   public QueryFacet(String name, Map<String, String> queries) {
     super(name);
@@ -39,21 +36,28 @@ public class QueryFacet extends AbstractSolrQueryFacet {
   }
 
   @Override
-  public void createFacetValueExecuters(final Query filter, SolrQueryRequest queryRequest, Consumer<FacetValueQueryExecuter> consumer) {
-    queries.forEach( (queryName, query) -> {
-      final Query q;
-      try {
-        q = QParser.getParser(query, queryRequest).getQuery();
-      } catch( Exception e ){
-        throw new SolrException(ErrorCode.BAD_REQUEST,"Invalid query '"+query+"' in query facet '" + getName() + "'",e);
-      }
-      // The searcher sends docIds to the QueryFacetAccumulator which forwards
-      // them to <code>collectQuery()</code> in this class for collection.
-      Query queryQuery = QueryUtils.combineQueryAndFilter(q, filter);
+  public void createFacetValueExecuters(
+      final Query filter,
+      SolrQueryRequest queryRequest,
+      Consumer<FacetValueQueryExecuter> consumer) {
+    queries.forEach(
+        (queryName, query) -> {
+          final Query q;
+          try {
+            q = QParser.getParser(query, queryRequest).getQuery();
+          } catch (Exception e) {
+            throw new SolrException(
+                ErrorCode.BAD_REQUEST,
+                "Invalid query '" + query + "' in query facet '" + getName() + "'",
+                e);
+          }
+          // The searcher sends docIds to the QueryFacetAccumulator which forwards
+          // them to <code>collectQuery()</code> in this class for collection.
+          Query queryQuery = QueryUtils.combineQueryAndFilter(q, filter);
 
-      ReductionDataCollection dataCol = collectionManager.newDataCollection();
-      reductionData.put(queryName, dataCol);
-      consumer.accept(new FacetValueQueryExecuter(dataCol, queryQuery));
-    });
+          ReductionDataCollection dataCol = collectionManager.newDataCollection();
+          reductionData.put(queryName, dataCol);
+          consumer.accept(new FacetValueQueryExecuter(dataCol, queryQuery));
+        });
   }
 }

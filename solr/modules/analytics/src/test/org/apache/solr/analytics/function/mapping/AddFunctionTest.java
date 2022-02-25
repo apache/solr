@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.mapping;
 
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.DoubleValue;
@@ -37,7 +36,8 @@ public class AddFunctionTest extends SolrTestCaseJ4 {
     TestIntValue val1 = new TestIntValue();
     TestFloatValue val2 = new TestFloatValue();
 
-    AnalyticsValueStream uncasted = AddFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
+    AnalyticsValueStream uncasted =
+        AddFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
 
@@ -64,7 +64,8 @@ public class AddFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiValueParameterTest() {
     TestLongValueStream val = new TestLongValueStream();
 
-    AnalyticsValueStream uncasted = AddFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        AddFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
 
@@ -89,32 +90,36 @@ public class AddFunctionTest extends SolrTestCaseJ4 {
     TestLongValueStream val1 = new TestLongValueStream();
     TestDoubleValue val2 = new TestDoubleValue();
 
-    AnalyticsValueStream uncasted = AddFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
+    AnalyticsValueStream uncasted =
+        AddFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
 
     // No values, One value
     val1.setValues();
     val2.setValue(21.56F).setExists(true);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, no value
     val1.setValues(4L, 10023L);
     val2.setExists(false);
-    func.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple values, one value
     val1.setValues(4L, 10023L, 48L);
     val2.setValue(21.56F).setExists(true);
     Iterator<Double> values = Arrays.asList(25.56, 10044.56, 69.56).iterator();
-    func.streamDoubles( value -> {
-      assertTrue(values.hasNext());
-      assertEquals(values.next(), value, 0.000001);
-    });
+    func.streamDoubles(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value, 0.000001);
+        });
     assertFalse(values.hasNext());
   }
 
@@ -125,7 +130,8 @@ public class AddFunctionTest extends SolrTestCaseJ4 {
     TestFloatValue val3 = new TestFloatValue();
     TestIntValue val4 = new TestIntValue();
 
-    AnalyticsValueStream uncasted = AddFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
+    AnalyticsValueStream uncasted =
+        AddFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
 

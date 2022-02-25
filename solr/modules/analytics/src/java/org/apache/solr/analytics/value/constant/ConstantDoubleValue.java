@@ -18,13 +18,13 @@ package org.apache.solr.analytics.value.constant;
 
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
-
 import org.apache.solr.analytics.facet.compare.ConstantComparator;
 import org.apache.solr.analytics.value.DoubleValue;
 import org.apache.solr.analytics.value.DoubleValue.CastingDoubleValue;
 
 /**
- * A constant {@link DoubleValue}. Every call to {@link #getDouble()} and other methods will return the same constant value.
+ * A constant {@link DoubleValue}. Every call to {@link #getDouble()} and other methods will return
+ * the same constant value.
  */
 public class ConstantDoubleValue extends ConstantValue implements CastingDoubleValue {
   private final double value;
@@ -42,14 +42,17 @@ public class ConstantDoubleValue extends ConstantValue implements CastingDoubleV
   public double getDouble() {
     return value;
   }
+
   @Override
   public String getString() {
     return valueStr;
   }
+
   @Override
   public Object getObject() {
     return value;
   }
+
   @Override
   public boolean exists() {
     return true;
@@ -59,10 +62,12 @@ public class ConstantDoubleValue extends ConstantValue implements CastingDoubleV
   public void streamDoubles(DoubleConsumer cons) {
     cons.accept(value);
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     cons.accept(valueStr);
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     cons.accept(value);

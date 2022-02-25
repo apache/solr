@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * A solr component to compute complex analytics over search results.
- */
+/** A solr component to compute complex analytics over search results. */
 package org.apache.solr.analytics;
-
-
