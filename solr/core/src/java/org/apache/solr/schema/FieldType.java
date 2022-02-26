@@ -514,6 +514,7 @@ public abstract class FieldType extends FieldProperties {
         public boolean incrementToken() throws IOException {
           if (!done) {
             clearAttributes();
+            done = true;
 
             int max = maxChars;
             int n = 0;
