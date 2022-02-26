@@ -15,10 +15,5 @@
  * limitations under the License.
  */
 
-
-
-/**
- * Metrics package
- **/
+/** Metrics package */
 package org.apache.solr.client.solrj.io.stream.metrics;
-

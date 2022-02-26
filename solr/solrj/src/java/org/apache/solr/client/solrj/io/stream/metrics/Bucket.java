@@ -28,10 +28,9 @@ public class Bucket {
     this.bucketKey = bucketKey;
   }
 
-  public Object getBucketValue(Tuple tuple)
-  {
+  public Object getBucketValue(Tuple tuple) {
     Object o = tuple.get(bucketKey);
-    if(o == null) {
+    if (o == null) {
       return NULL_VALUE;
     } else {
       return o;

@@ -45,8 +45,46 @@ configure(project(":solr").subprojects) { prj ->
         // Exclude certain files (generated ones, mostly).
         switch (project.path) {
           case ":solr:core":
-          case ":solr:solrj":
             targetExclude "src/**/*.java"
+            break
+          case ":solr:solrj":
+            targetExclude  "src/java/org/apache/solr/client/solrj/io/ClassificationEvaluation.java",
+            "src/java/org/apache/solr/client/solrj/io/Tuple.java",
+            "src/java/org/apache/solr/client/solrj/io/Lang.java",
+            "src/java/org/apache/solr/client/solrj/io/ModelCache.java",
+            "src/java/org/apache/solr/client/solrj/io/package-info.java",
+            "src/java/org/apache/solr/client/solrj/io/graph/**/*.java",
+            "src/java/org/apache/solr/client/solrj/io/SolrClientCache.java",
+            "src/java/org/apache/solr/client/solrj/io/comp/**/*.java",
+            "src/java/org/apache/solr/client/solrj/io/ops/**/*.java",
+            "src/java/org/apache/solr/client/solrj/io/eq/**/*.java",
+            "src/java/org/apache/solr/client/solrj/io/eval/**/*.java",
+            "src/java/org/apache/solr/client/solrj/io/sql/**/*.java",
+            "src/java/org/apache/solr/client/solrj/FastStreamingDocsCallback.java",
+            "src/java/org/apache/solr/client/solrj/SolrRequest.java",
+            "src/java/org/apache/solr/client/solrj/package-info.java",
+            "src/java/org/apache/solr/client/solrj/ResponseParser.java",
+            "src/java/org/apache/solr/client/solrj/SolrResponse.java",
+            "src/java/org/apache/solr/client/solrj/RoutedAliasTypes.java",
+            "src/java/org/apache/solr/client/solrj/SolrServerException.java",
+            "src/java/org/apache/solr/client/solrj/SolrClient.java",
+            "src/java/org/apache/solr/client/solrj/StreamingResponseCallback.java",
+            "src/java/org/apache/solr/client/solrj/SolrQuery.java",
+            "src/java/org/apache/solr/client/solrj/V2RequestSupport.java",
+            "src/java/org/apache/solr/client/solrj/beans/**/*.java",
+            "src/java/org/apache/solr/client/solrj/cloud/**/*.java",
+            "src/java/org/apache/solr/client/solrj/request/**/*.java",
+            "src/java/org/apache/solr/client/solrj/embedded/**/*.java",
+            "src/java/org/apache/solr/client/solrj/response/**/*.java",
+            "src/java/org/apache/solr/client/solrj/impl/**/*.java",
+            "src/java/org/apache/solr/client/solrj/routing/**/*.java",
+            "src/java/org/apache/solr/client/solrj/util/**/*.java",
+            "src/java/org/apache/solr/client/client/**/*.java",
+            "src/java/org/apache/solr/cluster/**/*.java",
+            "src/java/org/apache/solr/common/**/*.java",
+            "src/java/org/apache/solr/common/**/*.java",
+            "src/java/org/noggit/**/*.java",
+            "src/test/**/*.java"
             break
           case ":solr:modules:hdfs":
             // Exclude Hadoop copied files to make upgrades easier
