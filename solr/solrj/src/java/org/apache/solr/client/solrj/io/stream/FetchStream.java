@@ -45,9 +45,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  * Iterates over a stream and fetches additional fields from a specified collection. Fetches are
  * done in batches.
  *
- * <p>Syntax:
- *
- * <p>fetch(collection, stream, on="a=b", fl="c,d,e", batchSize="50")
+ * <p>Syntax: fetch(collection, stream, on="a=b", fl="c,d,e", batchSize="50")
  *
  * @since 6.3.0
  */

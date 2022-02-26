@@ -288,8 +288,8 @@ public class JDBCStream extends TupleStream implements Expressible {
     }
 
     // See if we can figure out the driver based on the url, if not then tell the user they most
-    // likely want to provide the driverClassName.
-    // Not being able to find a driver generally means the driver has not been loaded.
+    // likely want to provide the driverClassName. Not being able to find a driver generally means
+    // the driver has not been loaded.
     try {
       if (null == DriverManager.getDriver(connectionUrl)) {
         throw new SQLException("DriverManager.getDriver(url) returned null");
@@ -604,8 +604,7 @@ public class JDBCStream extends TupleStream implements Expressible {
   /** Closes the JDBCStream */
   public void close() throws IOException {
     try {
-      // it's not required in JDBC that ResultSet implements the isClosed() function
-      if (null != resultSet) {
+      if (null != resultSet) { // it's not required in JDBC that ResultSet implements isClosed()
         resultSet.close();
       }
       if (null != statement && !statement.isClosed()) {
@@ -723,9 +722,9 @@ public class JDBCStream extends TupleStream implements Expressible {
   @Override
   public StreamComparator getStreamSort() {
     // TODO: Need to somehow figure out the sort applied to the incoming data. This is not something
-    // you can ask a JDBC stream. Possibly we can ask the creator to tell us the fields the data is
+    // you can ask a JDBC stream Possibly we can ask the creator to tell us the fields the data is
     // sorted by. This would be duplicate information because it's already in the sqlQuery but
-    // there's no way we can reliably determine the sort from the query.
+    // there's no way we can reliably determine the sort from the query
     return definedSort;
   }
 

@@ -183,8 +183,8 @@ public class TupStream extends TupleStream implements Expressible {
   public void open() throws IOException {
     Map<String, Object> values = new HashMap<>();
 
-    // add all string based params
-    // these could come from the context, or they will just be treated as straight strings
+    // add all string based params these could come from the context, or they will just be treated
+    // as straight strings
     for (Entry<String, String> param : stringParams.entrySet()) {
       if (streamContext.getLets().containsKey(param.getValue())) {
         values.put(param.getKey(), streamContext.getLets().get(param.getValue()));
