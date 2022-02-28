@@ -329,8 +329,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     params.add(CommonParams.Q, "peac");
 
     // SpellCheckCompRH has no "qf" defined.  It will not find "peace" from "peac" despite it being
-    // in the dictionary
-    // because requrying against this Request Handler results in 0 hits.
+    // in the dictionary because requrying against this Request Handler results in 0 hits.
     SolrRequestHandler handler = core.getRequestHandler("/spellCheckCompRH");
     SolrQueryResponse rsp = new SolrQueryResponse();
     rsp.addResponseHeader(new SimpleOrderedMap());
@@ -344,8 +343,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
     assertNull(singleCollation);
 
     // SpellCheckCompRH1 has "lowerfilt1" defined in the "qf" param.  It will find "peace" from
-    // "peac" because
-    // requrying field "lowerfilt1" returns the hit.
+    // "peac" because requrying field "lowerfilt1" returns the hit.
     params.remove(SpellingParams.SPELLCHECK_BUILD);
     handler = core.getRequestHandler("/spellCheckCompRH1");
     rsp = new SolrQueryResponse();
@@ -689,8 +687,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
         hitsXPath += "[" + min + " <= . and . <= " + max + "]";
       } else {
         // we've asked for a number greater then what can possibly be found in our tiny index, which
-        // should
-        // force it to scan all docs so our hits should be exact
+        // should force it to scan all docs so our hits should be exact
         hitsXPath += "[.=" + NUM_DOCS_WITH_TERM_EVERYOTHER + "]";
       }
       assertQ(

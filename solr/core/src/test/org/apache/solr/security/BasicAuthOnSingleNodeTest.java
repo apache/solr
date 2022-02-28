@@ -59,8 +59,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
             .build()) {
 
       // SOLR-13510, this will be failed if the listener (handling inject credential in header) is
-      // called in another
-      // thread since SolrRequestInfo will return null in that case.
+      // called in another thread since SolrRequestInfo will return null in that case.
       for (int i = 0; i < 30; i++) {
         assertNotNull(
             new QueryRequest(params("q", "*:*"))

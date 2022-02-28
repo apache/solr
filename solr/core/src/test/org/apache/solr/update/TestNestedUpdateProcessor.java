@@ -423,8 +423,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
               allOfAncestorsDescendentIds.contains(descendentId));
 
           // now we should be able to assert that a 'parent' query wrapped around a query for the
-          // descendentId
-          // using the ancestor_path should match exactly one doc: our ancestorId...
+          // descendentId using the ancestor_path should match exactly one doc: our ancestorId...
           assertQ(
               req(
                   parentQueryMaker(ancestor_path, "id:" + descendentId),
@@ -438,10 +437,8 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
               "//doc/str[@name='id'][.='" + ancestorId + "']");
 
           // meanwhile, a 'child' query wrapped arround a query for the ancestorId, using the
-          // ancestor_path,
-          // should match all of it's descendents (for simplicity we'll check just the numFound and
-          // the
-          // 'descendentId' we started with)
+          // ancestor_path, should match all of it's descendents (for simplicity we'll check just
+          // the numFound and the 'descendentId' we started with)
           assertQ(
               req(
                   childQueryMaker(ancestor_path, "id:" + ancestorId),
@@ -458,9 +455,8 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
         }
 
         // regardless of wether doc_id has an ancestor or not, a 'parent' query with a path that
-        // isn't a
-        // prefix of the path of the (child) doc_id in the wrapped query should match 0 docs w/o
-        // failing
+        // isn't a prefix of the path of the (child) doc_id in the wrapped query should match 0 docs
+        // w/o failing
         assertQ(
             req(
                 parentQueryMaker("/xxx/yyy", "id:" + doc_id),
@@ -471,9 +467,8 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
             "//result/@numFound=0");
 
         // likewise: a 'child' query wrapped around a query for our doc_id (regardless of wether if
-        // has
-        // any kids), using a path that doesn't start with the same prefix as doc_id, should match 0
-        // docs w/o failing
+        // has any kids), using a path that doesn't start with the same prefix as doc_id, should
+        // match 0 docs w/o failing
         assertQ(
             req(
                 childQueryMaker("/xxx/yyy", "id:" + doc_id),

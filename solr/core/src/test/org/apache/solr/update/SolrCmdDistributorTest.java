@@ -494,12 +494,9 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       cmdDistrib.distribAdd(cmd, nodes, params, false, rollupReqTracker, leaderReqTracker);
       cmdDistrib.finish();
       assertEquals(3, retries.get());
-      assertEquals(
-          2,
-          leaderReqTracker
-              .getAchievedRf()); // "2" here is because one would be the leader, that creates the
-      // instance of LeaderRequestReplicationTracker, the second one is
-      // the node
+      // "2" here is because one would be the leader, that creates the instance of
+      // LeaderRequestReplicationTracker, the second one is the node
+      assertEquals(2, leaderReqTracker.getAchievedRf());
 
       assertEquals(0, cmdDistrib.getErrors().size());
     }

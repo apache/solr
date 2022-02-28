@@ -40,9 +40,8 @@ public class TestInPlaceUpdatesRequiredField extends SolrTestCaseJ4 {
     // do an in place update that hits off the tlog
     version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_int", map("inc", 1));
     version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_int", map("inc", 1));
-    version1 =
-        addAndAssertVersion(
-            version1, "id", "1", "inplace_updatable_int", map("inc", 1)); // new value should be 4
+    // new value should be 4
+    version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_int", map("inc", 1));
     assertU(commit("softCommit", "false"));
     assertQ(
         req("q", "id:1", "fl", "*,[docid]"),

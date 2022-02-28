@@ -96,8 +96,8 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     final int softCommitMaxDocs = 5;
     final int hardCommitMaxDocs = 7;
 
-    assert softCommitMaxDocs
-        < hardCommitMaxDocs; // remainder of test designed with these assumptions
+    // remainder of test designed with these assumptions
+    assert softCommitMaxDocs < hardCommitMaxDocs;
 
     CommitTracker hardTracker = updater.commitTracker;
     CommitTracker softTracker = updater.softCommitTracker;

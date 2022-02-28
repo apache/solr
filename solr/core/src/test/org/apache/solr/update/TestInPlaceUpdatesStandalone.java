@@ -1224,8 +1224,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     // of if the number of total commands is relatively small.
     //
     // (in theory, there's no reason to check the committed model unless we know there's been a
-    // commit
-    // but for smaller tests the overhead of doing so is tiny, so we might as well)
+    // commit but for smaller tests the overhead of doing so is tiny, so we might as well)
     //
     // if some test seed fails, and you want to force the committed model to be checked
     // after every command, just temporaribly force this variable to true...

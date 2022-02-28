@@ -242,8 +242,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
         "{!join_nonrouted method=crossCollection fromIndex=products from=product_id_s to=product_id_s}size_s:M",
         true);
     // But if we set routed=true, we are now assuming again that the collection was routed on
-    // product_id,
-    // so we should get incomplete results.
+    // product_id, so we should get incomplete results.
     testCcJoinQuery(
         "{!join_nonrouted method=crossCollection fromIndex=products from=product_id_s to=product_id_s routed=true}size_s:M",
         false);

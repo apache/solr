@@ -124,8 +124,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap(
             firstCol,
             // lower dimensions are fleshed out because we need to maintain the order of the TRA dim
-            // and
-            // not fail if we get an older document later
+            // and not fail if we get an older document later
             timeCatDraColFor("2019-07-01", "tabby"),
             timeCatDraColFor("2019-07-02", "tabby")),
         ap("tabby"));

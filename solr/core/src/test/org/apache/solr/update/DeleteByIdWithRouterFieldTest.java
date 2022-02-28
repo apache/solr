@@ -294,8 +294,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
     final DocCollection docCol =
         cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLL);
     // we don't need "real" urls for all replicas, just something we can use as lookup keys for
-    // verification
-    // so we'll use the shard names as "leader urls"
+    // verification so we'll use the shard names as "leader urls"
     final Map<String, List<String>> urlMap =
         docCol.getActiveSlices().stream()
             .collect(

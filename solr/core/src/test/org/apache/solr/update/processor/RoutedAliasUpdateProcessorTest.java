@@ -374,9 +374,8 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       }
       // wait until it's committed
       Thread.sleep(commitWithin);
-      for (int idx = 0;
-          idx < 100;
-          ++idx) { // Loop for up to 10 seconds waiting for commit to catch up
+      // Loop for up to 10 seconds waiting for commit to catch up
+      for (int idx = 0; idx < 100; ++idx) {
         numDocs = queryNumDocs(docsQ);
         if (numDocs == solrInputDocuments.length) break;
         Thread.sleep(100);

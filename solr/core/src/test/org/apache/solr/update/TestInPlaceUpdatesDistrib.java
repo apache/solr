@@ -108,8 +108,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
   @Override
   protected boolean useTlogReplicas() {
-    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug
-    // and it's TestInjection use
+    // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's
+    // TestInjection use
+    return false;
   }
 
   public TestInPlaceUpdatesDistrib() throws Exception {
@@ -123,14 +124,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
   @Test
   @ShardsFixed(num = 3)
-  // 28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // 21-May-2018
-  // commented 4-Sep-2018
-  // @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // 2-Aug-2018
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on:
-  // 24-Dec-2018
   public void test() throws Exception {
     waitForRecoveriesToFinish(true);
 
@@ -355,9 +348,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           new AsyncUpdateWithRandomCommit(update, NONLEADERS.get(0), random().nextLong());
       updateResponses.add(threadpool.submit(task));
       // while we can't guarantee/trust what order the updates are executed in, since multiple
-      // threads
-      // are involved, but we're trying to bias the thread scheduling to run them in the order
-      // submitted
+      // threads are involved, but we're trying to bias the thread scheduling to run them in the
+      // order submitted
       Thread.sleep(10);
     }
 
@@ -432,9 +424,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           new AsyncUpdateWithRandomCommit(update, NONLEADERS.get(0), random().nextLong());
       updateResponses.add(threadpool.submit(task));
       // while we can't guarantee/trust what order the updates are executed in, since multiple
-      // threads
-      // are involved, but we're trying to bias the thread scheduling to run them in the order
-      // submitted
+      // threads are involved, but we're trying to bias the thread scheduling to run them in the
+      // order submitted
       Thread.sleep(100);
     }
 
@@ -750,8 +741,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     assertTrue(currentVersion > version);
 
     // do an initial (non-inplace) update to ensure both the float & int fields we care about have
-    // (any) value
-    // that way all subsequent atomic updates will be inplace
+    // (any) value that way all subsequent atomic updates will be inplace
     currentVersion =
         addDocAndGetVersion(
             "id", 100,
@@ -944,9 +934,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           new AsyncUpdateWithRandomCommit(update, NONLEADERS.get(0), random().nextLong());
       updateResponses.add(threadpool.submit(task));
       // while we can't guarantee/trust what order the updates are executed in, since multiple
-      // threads
-      // are involved, but we're trying to bias the thread scheduling to run them in the order
-      // submitted
+      // threads are involved, but we're trying to bias the thread scheduling to run them in the
+      // order submitted
       Thread.sleep(10);
     }
 
@@ -1049,9 +1038,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           new AsyncUpdateWithRandomCommit(update, NONLEADERS.get(0), random().nextLong());
       updateResponses.add(threadpool.submit(task));
       // while we can't guarantee/trust what order the updates are executed in, since multiple
-      // threads
-      // are involved, but we're trying to bias the thread scheduling to run them in the order
-      // submitted
+      // threads are involved, but we're trying to bias the thread scheduling to run them in the
+      // order submitted
       Thread.sleep(10);
     }
 
@@ -1161,9 +1149,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           new AsyncUpdateWithRandomCommit(update, NONLEADERS.get(0), random().nextLong());
       updateResponses.add(threadpool.submit(task));
       // while we can't guarantee/trust what order the updates are executed in, since multiple
-      // threads
-      // are involved, but we're trying to bias the thread scheduling to run them in the order
-      // submitted
+      // threads are involved, but we're trying to bias the thread scheduling to run them in the
+      // order submitted
       Thread.sleep(10);
     }
 
@@ -1261,9 +1248,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       threadpool.submit(task);
 
       // while we can't guarantee/trust what order the updates are executed in, since multiple
-      // threads
-      // are involved, but we're trying to bias the thread scheduling to run them in the order
-      // submitted
+      // threads are involved, but we're trying to bias the thread scheduling to run them in the
+      // order submitted
       Thread.sleep(100);
     }
 
@@ -1364,9 +1350,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         threadpool.submit(task);
 
         // while we can't guarantee/trust what order the updates are executed in, since multiple
-        // threads
-        // are involved, but we're trying to bias the thread scheduling to run them in the order
-        // submitted
+        // threads are involved, but we're trying to bias the thread scheduling to run them in the
+        // order submitted
         Thread.sleep(100);
       }
 
@@ -1642,8 +1627,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     updates.add(regularDeleteByQueryRequest("inplace_updatable_float:14"));
 
     // The second request will be delayed very very long, so that the next update actually gives up
-    // waiting for this
-    // and fetches a full update from the leader.
+    // waiting for this and fetches a full update from the leader.
     shardToJetty
         .get(SHARD1)
         .get(1)
@@ -1660,9 +1644,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       threadpool.submit(task);
 
       // while we can't guarantee/trust what order the updates are executed in, since multiple
-      // threads
-      // are involved, but we're trying to bias the thread scheduling to run them in the order
-      // submitted
+      // threads are involved, but we're trying to bias the thread scheduling to run them in the
+      // order submitted
       Thread.sleep(100);
     }
 

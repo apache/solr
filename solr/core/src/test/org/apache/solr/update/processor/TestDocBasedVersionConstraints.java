@@ -617,8 +617,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     assertJQ(req("q", "id:b"), "/response/numFound==1");
 
     // Try updating both with a new version and using the enforced version chain, expect id=b to
-    // fail bc old
-    // doc is missing the version field
+    // fail bc old doc is missing the version field
     String newVersion = "3";
     updateJ(
         json("[{\"id\": \"a\", \"name\": \"a1\", \"my_version_l\": " + newVersion + "}]"),
@@ -646,8 +645,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
         "=={'doc':{'id':'b'}}"); // no version, because update failed
 
     // Try to update again using the external version enforcement, but allowing old docs to not have
-    // the version
-    // field. Expect id=a to fail because version is lower, expect id=b to succeed.
+    // the version field. Expect id=a to fail because version is lower, expect id=b to succeed.
     version = "1";
     updateJ(
         json("[{\"id\": \"a\", \"name\": \"a1\", \"my_version_l\": " + version + "}]"),

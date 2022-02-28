@@ -94,10 +94,8 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
   }
 
   // Requests which have multiple copies of the same param should be parsed so that the first param
-  // value only is
-  // indexed, since the log schema expects many of these to be single-valued fields and will throw
-  // errors if multiple
-  // values are received.
+  // value only is indexed, since the log schema expects many of these to be single-valued fields
+  // and will throw errors if multiple values are received.
   @Test
   public void testRecordsFirstInstanceOfSingleValuedParams() throws Exception {
     final String record =

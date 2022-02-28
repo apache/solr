@@ -231,8 +231,8 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
 
   public void testMoveLargestLast() {
     SolrInputDocument inDoc = new SolrInputDocument();
-    String TEXT_FLD =
-        "text"; // not stored.  It won't be moved.  This value is the longest, however.
+    // not stored.  It won't be moved.  This value is the longest, however.
+    String TEXT_FLD = "text";
     inDoc.addField(
         TEXT_FLD,
         "NOT STORED|"

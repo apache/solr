@@ -109,15 +109,12 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   @Slow
   @Test
   @LogLevel("org.apache.solr.update.processor.TimeRoutedAlias=DEBUG;org.apache.solr.cloud=DEBUG")
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void test() throws Exception {
     String configName = getSaferTestName();
     createConfigSet(configName);
 
     // Start with one collection manually created (and use higher numShards & replicas than we'll
-    // use for others)
-    //  This tests we may pre-create the collection and it's acceptable.
+    // use for others) This tests we may pre-create the collection and it's acceptable.
     final String col23rd = alias + TRA + "2017-10-23";
     CollectionAdminRequest.createCollection(col23rd, configName, 2, 2)
         .withProperty(ROUTED_ALIAS_NAME_CORE_PROP, alias)
@@ -159,8 +156,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     testFailedDocument(Instant.now().plus(30, ChronoUnit.MINUTES), "too far in the future");
 
     // add another collection with the precise name we expect, but don't add to alias explicitly.
-    // When we add a document
-    //   destined for this collection, Solr will see it already exists and add it to the alias.
+    // When we add a document destined for this collection, Solr will see it already exists and add
+    // it to the alias.
     final String col24th = alias + TRA + "2017-10-24";
     CollectionAdminRequest.createCollection(
             col24th, configName, 1, 1) // more shards and replicas now
@@ -212,10 +209,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertInvariants(alias + TRA + "2017-10-26", alias + TRA + "2017-10-25", col24th);
 
     // verify that collection properties are set when the collections are created. Note: first 2
-    // collections in
-    // this test have a core property instead, of a collection property but that MUST continue to
-    // work as well
-    // for back compatibility's reasons.
+    // collections in this test have a core property instead, of a collection property but that MUST
+    // continue to work as well for back compatibility's reasons.
     Thread.sleep(1000);
     byte[] data =
         cluster
@@ -293,13 +288,10 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     waitColAndAlias(alias, TRA, "2017-10-25", numShards);
 
     // at this point we now have 3 collections with 4 shards each, and 3 replicas per shard for a
-    // total of
-    // 36 total replicas, 1/3 of which are leaders. We will add 3 docs and each has a 33% chance of
-    // hitting a
-    // leader randomly and not causing a failure if the code is broken, but as a whole this test
-    // will therefore only have
-    // about a 3.6% false positive rate (0.33^3). If that's not good enough, add more docs or more
-    // replicas per shard :).
+    // total of 36 total replicas, 1/3 of which are leaders. We will add 3 docs and each has a 33%
+    // chance of hitting a leader randomly and not causing a failure if the code is broken, but as a
+    // whole this test will therefore only have about a 3.6% false positive rate (0.33^3). If that's
+    // not good enough, add more docs or more replicas per shard :).
 
     final String trackGroupName = getTrackUpdatesGroupName();
     final List<UpdateCommand> updateCommands;
@@ -416,10 +408,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     waitColAndAlias(alias2, TRA, "2017-10-26", numShards);
 
     // these next checks will be checking that a collection DID NOT get created asynchronously,
-    // there's
-    // no way to wait for something that should never exist to not exist... so all we can do is
-    // sleep
-    // a good while before checking
+    // there's no way to wait for something that should never exist to not exist... so all we can do
+    // is sleep a good while before checking
     Thread.sleep(5000);
 
     // after this we can ignore alias2
@@ -427,16 +417,11 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     checkPreemptiveCase1(alias2);
 
     // Some designs contemplated with close hooks were not properly restricted to the core and would
-    // have
-    // failed after other cores with other TRAs were stopped. Make sure that we don't fall into that
-    // trap in
-    // the future. The basic problem with a close hook solution is that one either winds up putting
-    // the
-    // executor on the TRAUP where it's duplicated/initiated for every request, or putting it at the
-    // class level
-    // in which case the hook will remove it for all TRA's which can pass a single TRA test nicely
-    // but is not safe
-    // where multiple TRA's might come and go.
+    // have failed after other cores with other TRAs were stopped. Make sure that we don't fall into
+    // that trap in the future. The basic problem with a close hook solution is that one either
+    // winds up puttingthe executor on the TRAUP where it's duplicated/initiated for every request,
+    // or putting it at the class level in which case the hook will remove it for all TRA's which
+    // can pass a single TRA test nicely but is not safe where multiple TRA's might come and go.
     //
     // Start and stop some cores that have TRA's... 2x2 used to ensure every jetty gets at least one
 
@@ -475,8 +460,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     }
 
     // if the design for terminating our executor is correct create/delete above will not cause
-    // failures below
-    // continue testing...
+    // failures below continue testing...
 
     cols =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
@@ -557,18 +541,14 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
                     "2017-10-27T23:01:00Z"), // should cause preemptive creation
 
                 // If these are not ignored properly this test will fail during cleanup with a
-                // message about router.name being
-                // required. This happens because the test finishes while overseer threads are still
-                // trying to invoke maintain
-                // after the @After method has deleted collections and emptied out the aliases....
-                // this leaves the maintain
-                // command cloning alias properties Aliases.EMPTY and thus not getting a value from
-                // router.name
-                // (normally router.name == 'time') The check for non-blank router.name  happens to
-                // be the first validation.
-                // There is a small chance this could slip through without a fail occasionally, but
-                // it was 100% with just one
-                // of these.
+                // message about router.name being required. This happens because the test finishes
+                // while overseer threads are still trying to invoke maintain after the @After
+                // method has deleted collections and emptied out the aliases.... this leaves the
+                // maintain command cloning alias properties Aliases.EMPTY and thus not getting a
+                // value from router.name (normally router.name == 'time') The check for non-blank
+                // router.name  happens to be the first validation. There is a small chance this
+                // could slip through without a fail occasionally, but it was 100% with just one of
+                // these.
                 sdoc(
                     "id",
                     "10",
@@ -619,10 +599,9 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     waitColAndAlias(alias, TRA, "2017-10-30", numShards);
 
     // removed support for this case because it created a LOT of complexity for the benefit of
-    // attempting to
-    // (maybe) not pause again after already hitting a synchronous creation (but only if asynch gets
-    // it done first,
-    // otherwise we have a race... not enough benefit to justify the support/complexity.
+    // attempting to (maybe) not pause again after already hitting a synchronous creation (but only
+    // if asynch gets it done first, otherwise we have a race... not enough benefit to justify the
+    // support/complexity.
     //
     // Now we just let the next doc take care of it...
     //
@@ -717,14 +696,11 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   private void concurrentUpdates(ModifiableSolrParams params, String alias)
       throws SolrServerException, IOException {
     // In this method we intentionally rely on timing of a race condition but the gap in collection
-    // creation time vs
-    // requesting the list of aliases and adding a single doc should be very large (1-2 seconds vs a
-    // few ms so we
-    // should always win the race) This is necessary  because we are testing that we can guard
-    // against specific race
-    // conditions that happen while a collection is being created. To test this without timing
-    // sensitivity we would
-    // need a means to pass a semaphore to the server that it can use to delay collection creation
+    // creation time vs requesting the list of aliases and adding a single doc should be very large
+    // (1-2 seconds vs a few ms so we should always win the race) This is necessary  because we are
+    // testing that we can guard against specific race conditions that happen while a collection is
+    // being created. To test this without timing sensitivity we would need a means to pass a
+    // semaphore to the server that it can use to delay collection creation
     //
     // This method must NOT gain any Thread.sleep() statements, nor should it gain any long running
     // operations
@@ -755,12 +731,9 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     assertNumDocs("2017-10-25", 3, alias);
 
     // Here we quickly add another doc in a separate request, before the collection creation has
-    // completed.
-    // This has the potential to incorrectly cause preemptive collection creation to run twice and
-    // create a
-    // second collection. MaintainRoutedAliasCmd is meant to guard against this race condition by
-    // acquiring
-    // a lock on the collection name.
+    // completed. This has the potential to incorrectly cause preemptive collection creation to run
+    // twice and create a second collection. MaintainRoutedAliasCmd is meant to guard against this
+    // race condition by acquiring a lock on the collection name.
     assertUpdateResponse(
         add(
             alias,
@@ -1053,8 +1026,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             params));
 
     // this process should have lead to the modification of the start time for the alias, converting
-    // it into
-    // a parsable date, removing the DateMath
+    // it into a parsable date, removing the DateMath
 
     // what we test next happens in a separate thread, so we have to give it some time to happen
     aliasUpdate.await();
@@ -1249,8 +1221,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   }
 
   // here we do things not to be emulated elsewhere to create a legacy condition and ensure that we
-  // can
-  // work with both old and new formats.
+  // can work with both old and new formats.
   @SuppressWarnings({"unchecked", "rawtypes"})
   private void manuallyConstructLegacyTRA() throws Exception {
     // first create a "modern" alias

@@ -88,8 +88,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     assertEquals("title1", partialDoc.getFieldValue("title_s"));
 
     // Add a full update, commit, then two in-place updates, and verify that applying partial
-    // updates is working (since
-    // the prevTlog and prevTlog2 are retained after a commit
+    // updates is working (since the prevTlog and prevTlog2 are retained after a commit
     ulogCommit(ulog);
     if (random().nextBoolean()) { // sometimes also try a second commit
       ulogCommit(ulog);

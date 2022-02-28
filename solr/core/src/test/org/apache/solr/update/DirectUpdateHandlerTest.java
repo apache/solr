@@ -383,9 +383,8 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
   public void testPrepareCommit() throws Exception {
     assertU(adoc("id", "999"));
     assertU(optimize("maxSegments", "1")); // make sure there's just one segment
-    assertU(
-        commit()); // commit a second time to make sure index files aren't still referenced by the
-    // old searcher
+    // commit a second time to make sure index files aren't still referenced by the old searcher
+    assertU(commit());
 
     SolrQueryRequest sr = req();
     DirectoryReader r = sr.getSearcher().getIndexReader();

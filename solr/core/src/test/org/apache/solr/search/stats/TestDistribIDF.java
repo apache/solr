@@ -96,8 +96,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
       String cat = TestUtil.randomSimpleString(random());
       if (!cat.equals("football")) { // Making sure no other document has the query term in it.
         doc.setField("cat", cat);
-        if (rarely()) { // Put most documents in shard b so that 'football' becomes 'rare' in shard
-          // b
+        // Put most documents in shard b so that 'football' becomes 'rare' in shard b
+        if (rarely()) {
           doc.addField(ShardParams._ROUTE_, "a");
         } else {
           doc.addField(ShardParams._ROUTE_, "b");
@@ -144,11 +144,6 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   }
 
   @Test
-  // commented 4-Sep-2018
-  // @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // 2-Aug-2018
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testMultiCollectionQuery() throws Exception {
     // collection1 and collection2 are collections which have distributed idf enabled
     // collection1_local and collection2_local don't have distributed idf available
@@ -156,9 +151,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     // When doing queries across collections we want to test that the query takes into account
     // distributed idf for the collection=collection1,collection2 query.
     // The way we verify is that score should be the same when querying across collection1 and
-    // collection2
-    // But should be different when querying across collection1_local and collection2_local
-    // since the idf is calculated per shard
+    // collection2. But should be different when querying across collection1_local and
+    // collection2_local since the idf is calculated per shard
 
     createCollection("collection1", "conf1");
     createCollection("collection1_local", "conf2");
@@ -246,8 +240,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
       String cat = TestUtil.randomSimpleString(random());
       if (!cat.equals("football")) { // Making sure no other document has the query term in it.
         doc.setField("cat", cat);
-        if (rarely()) { // Put most documents in collection2* so that 'football' becomes 'rare' in
-          // collection2*
+        // Put most documents in collection2* so that 'football' becomes 'rare' in collection2*
+        if (rarely()) {
           solrCluster.getSolrClient().add("collection1", doc);
           solrCluster.getSolrClient().add("collection1_local", doc);
           collection1Count++;

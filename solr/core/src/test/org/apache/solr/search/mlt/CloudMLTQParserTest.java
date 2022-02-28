@@ -318,8 +318,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   public void testUnstoredAndUnanalyzedFieldsAreIgnored() throws Exception {
 
     // Assert that {!mlt}id does not throw an exception i.e. implicitly, only fields that are stored
-    // + have explicit
-    // analyzer are used for MLT Query construction.
+    // + have explicit analyzer are used for MLT Query construction.
     QueryResponse queryResponse =
         cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt}20"));
     SolrDocumentList solrDocuments = queryResponse.getResults();

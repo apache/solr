@@ -217,12 +217,9 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     String uninitialized = getAlias() + "__CRA__" + CategoryRoutedAlias.UNINITIALIZED;
 
     // important to test that we don't try to delete the temp collection on the first document. If
-    // we did so
-    // we would be at risk of out of order execution of the deletion/creation which would leave a
-    // window
-    // of time where there were no collections in the alias. That would likely break all manner of
-    // other
-    // parts of solr.
+    // we did so we would be at risk of out of order execution of the deletion/creation which would
+    // leave a window of time where there were no collections in the alias. That would likely break
+    // all manner of other parts of solr.
     assertInvariants(colVogon, uninitialized);
 
     addDocsAndCommit(true, newDoc(SHIPS[1]), newDoc(SHIPS[2]), newDoc(SHIPS[3]), newDoc(SHIPS[4]));
@@ -434,13 +431,10 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     waitColAndAlias(getAlias(), "__CRA__", noSpaces(SHIPS[2]), numShards);
 
     // at this point we now have 3 collections with 4 shards each, and 3 replicas per shard for a
-    // total of
-    // 36 total replicas, 1/3 of which are leaders. We will add 3 docs and each has a 33% chance of
-    // hitting a
-    // leader randomly and not causing a failure if the code is broken, but as a whole this test
-    // will therefore only have
-    // about a 3.6% false positive rate (0.33^3). If that's not good enough, add more docs or more
-    // replicas per shard :).
+    // total of 36 total replicas, 1/3 of which are leaders. We will add 3 docs and each has a 33%
+    // chance of hitting a leader randomly and not causing a failure if the code is broken, but as a
+    // whole this test will therefore only have about a 3.6% false positive rate (0.33^3). If that's
+    // not good enough, add more docs or more replicas per shard :).
 
     final String trackGroupName = getTrackUpdatesGroupName();
     final List<UpdateCommand> updateCommands;
