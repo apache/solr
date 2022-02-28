@@ -512,42 +512,49 @@ public abstract class FieldType extends FieldProperties {
 
         @Override
         public boolean incrementToken() throws IOException {
-          if (!done) {
-            clearAttributes();
-            done = true;
-
-            int max = maxChars;
-            int n = 0;
-            while (max > 0) {
-              int len = input.read(cbuf, n, max);
-              if (len < 0) break;
-              max -= len;
-              n += len;
-            }
-
-            if (n == 0) {
-              return false;
-            }
-
-            if (isPointField()) {
-              BytesRef b = ((PointField)FieldType.this).toInternalByteRef(new String(cbuf, 0, n));
-              bytesAtt.setBytesRef(b);
-            } else {
-              String s = toInternal(new String(cbuf, 0, n));
-              termAtt.setEmpty().append(s);
-            }
-
-            finalOffset = correctOffset(n);
-            offsetAtt.setOffset(correctOffset(0), finalOffset);
-            return true;
+          if (done) {
+            return false;
           }
-          return false;
+
+          clearAttributes();
+          done = true;
+
+          int max = maxChars;
+          int n = 0;
+          while (max > 0) {
+            int len = input.read(cbuf, n, max);
+            if (len < 0) break;
+            max -= len;
+            n += len;
+          }
+
+          if (n == 0) {
+            return false;
+          }
+
+          if (isPointField()) {
+            BytesRef b = ((PointField)FieldType.this).toInternalByteRef(new String(cbuf, 0, n));
+            bytesAtt.setBytesRef(b);
+          } else {
+            String s = toInternal(new String(cbuf, 0, n));
+            termAtt.setEmpty().append(s);
+          }
+
+          finalOffset = correctOffset(n);
+          offsetAtt.setOffset(correctOffset(0), finalOffset);
+          return true;
         }
 
         @Override
         public void end() throws IOException {
           super.end();
           offsetAtt.setOffset(finalOffset, finalOffset);
+        }
+
+        @Override
+        public void reset() throws IOException {
+          super.reset();
+          this.done = false;
         }
       };
 
