@@ -275,11 +275,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     this.streamContext = context;
   }
 
-  /**
-   * Opens the JDBCStream
-   *
-   * <p>*
-   */
+  /** Opens the JDBCStream */
   public void open() throws IOException {
 
     try {
@@ -608,8 +604,8 @@ public class JDBCStream extends TupleStream implements Expressible {
   /** Closes the JDBCStream */
   public void close() throws IOException {
     try {
-      if (null != resultSet) { // it's not required in JDBC that ResultSet implements the isClosed()
-        // function
+      // it's not required in JDBC that ResultSet implements the isClosed() function
+      if (null != resultSet) {
         resultSet.close();
       }
       if (null != statement && !statement.isClosed()) {

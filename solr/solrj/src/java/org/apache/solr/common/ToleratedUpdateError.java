@@ -109,8 +109,8 @@ public final class ToleratedUpdateError {
     }
     final int typeEnd = metadataKey.indexOf(':', META_PRE_LEN);
     if (typeEnd < 0) {
-      return null; // has our prefix, but not our format -- must not be a key we (actually) care
-      // about
+      // has our prefix, but not our format -- must not be a key we (actually) care about
+      return null;
     }
     return new ToleratedUpdateError(
         CmdType.valueOf(metadataKey.substring(META_PRE_LEN, typeEnd)),

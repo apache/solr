@@ -194,10 +194,10 @@ public class FieldComparator implements StreamComparator {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     FieldComparator that = (FieldComparator) o;
+    // comparator is based on the other fields so is not needed in this compare
     return leftFieldName.equals(that.leftFieldName)
         && rightFieldName.equals(that.rightFieldName)
-        && order == that.order; // comparator is based on the other fields so is not needed in this
-    // compare
+        && order == that.order;
   }
 
   @Override

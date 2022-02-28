@@ -112,8 +112,7 @@ public class ShardTerms implements MapWriter {
     }
 
     // We should skip the optimization if there are no replicasNeedingRecovery present in local
-    // terms,
-    // this may indicate that the current value is stale
+    // terms, this may indicate that the current value is stale
     if (!saveChanges && foundReplicasInLowerTerms) return null;
     return new ShardTerms(newValues, version);
   }

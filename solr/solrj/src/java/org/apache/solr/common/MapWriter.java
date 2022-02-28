@@ -70,8 +70,7 @@ public interface MapWriter extends MapSerializable, NavigableObject {
               }
               map.put(k == null ? null : k.toString(), v);
               // note: It'd be nice to assert that there is no previous value at 'k' but it's
-              // possible the passed in
-              // map is already populated and the intention is to overwrite.
+              // possible the passed map is already populated and the intention is to overwrite.
               return this;
             }
           });

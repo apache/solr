@@ -132,8 +132,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
           return sdoc("id", "test", "count_i", map("inc", 1));
         }
         // include "ignore_exception" so the log doesn't fill up with known exceptions, and change
-        // the values for each doc
-        // so binary format won't compress too much
+        // the values for each doc so binary format won't compress too much
         return sdoc(
             "id",
             Integer.toString(id),

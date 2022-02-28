@@ -35,8 +35,7 @@ public interface AnalysisParams {
    */
   static final String SHOW_MATCH = PREFIX + ".showmatch";
 
-  // ===================================== FieldAnalysisRequestHandler Params
-  // =========================================
+  // ===== FieldAnalysisRequestHandler Params =====
 
   /** Holds the value of the field which should be analyzed. */
   static final String FIELD_NAME = PREFIX + ".fieldname";

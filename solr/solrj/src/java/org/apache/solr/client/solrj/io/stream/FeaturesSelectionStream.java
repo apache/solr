@@ -259,11 +259,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     this.streamContext = context;
   }
 
-  /**
-   * Opens the CloudSolrStream
-   *
-   * <p>*
-   */
+  /** Opens the CloudSolrStream */
   public void open() throws IOException {
     if (cache == null) {
       isCloseCache = true;

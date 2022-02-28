@@ -372,8 +372,7 @@ public class UpdateStream extends TupleStream implements Expressible {
       // continue
       //
       // TODO: The summary batches (and/or stream error) should also pay attention to the error
-      // metadata
-      // from the SolrServerException ... and ideally also any TolerantUpdateProcessor metadata
+      // metadata from the SolrServerException and ideally also any TolerantUpdateProcessor metadata
 
       log.warn("Unable to add documents to collection due to unexpected error.", e);
       String className = e.getClass().getName();

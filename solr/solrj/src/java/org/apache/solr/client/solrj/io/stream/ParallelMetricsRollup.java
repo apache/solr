@@ -130,8 +130,8 @@ public interface ParallelMetricsRollup {
         if (count != null) {
           nextRollup = new WeightedSumMetric(next.getIdentifier(), count.getIdentifier());
         } else {
-          return Optional.empty(); // can't properly rollup mean metrics w/o a count (reqd by
-          // WeightedSumMetric)
+          // can't properly rollup mean metrics w/o a count (reqd by WeightedSumMetric)
+          return Optional.empty();
         }
       } else if (next instanceof CountDistinctMetric) {
         // rollup of count distinct is the max across the tiers

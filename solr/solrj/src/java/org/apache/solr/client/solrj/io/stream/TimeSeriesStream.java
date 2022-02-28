@@ -320,8 +320,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
     StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
     child.setFunctionName(String.format(Locale.ROOT, "solr (%s)", collection));
     // TODO: fix this so we know the # of workers - check with Joel about a Topic's ability to be in
-    // a
-    // parallel stream.
+    // a parallel stream.
 
     child.setImplementingClass("Solr/Lucene");
     child.setExpressionType(ExpressionType.DATASTORE);

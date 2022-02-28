@@ -399,8 +399,7 @@ public class JSONParser {
     }
 
     // if we don't allow bare strings, we don't need to check that the string actually terminates...
-    // just
-    // let things fail as the parser tries to continue
+    // just let things fail as the parser tries to continue
     if ((flags & ALLOW_UNQUOTED_STRING_VALUES) == 0) {
       return true;
     }

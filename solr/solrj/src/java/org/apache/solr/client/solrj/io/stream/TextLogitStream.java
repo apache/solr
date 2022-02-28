@@ -361,11 +361,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     this.termsStream.setStreamContext(context);
   }
 
-  /**
-   * Opens the CloudSolrStream
-   *
-   * <p>*
-   */
+  /** Opens the CloudSolrStream */
   public void open() throws IOException {
     if (cache == null) {
       isCloseCache = true;

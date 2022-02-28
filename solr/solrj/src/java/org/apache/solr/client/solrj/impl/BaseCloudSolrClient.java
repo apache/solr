@@ -468,8 +468,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
 
     // Check to see if the collection is an alias. Updates to multi-collection aliases are ok as
-    // long
-    // as they are routed aliases
+    // long as they are routed aliases
     List<String> aliasedCollections = getClusterStateProvider().resolveAlias(collection);
     if (getClusterStateProvider().isRoutedAlias(collection) || aliasedCollections.size() == 1) {
       collection = aliasedCollections.get(0); // pick 1st (consistent with HttpSolrCall behavior)
@@ -757,9 +756,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         // cumulative errors are too high, we need to throw a client exception w/correct metadata
 
         // NOTE: it shouldn't be possible for 1 == toleratedErrors.size(), because if that were the
-        // case
-        // then at least one shard should have thrown a real error before this, so we don't worry
-        // about having a more "singular" exception msg for that situation
+        // case then at least one shard should have thrown a real error before this, so we don't
+        // worry about having a more "singular" exception msg for that situation
         StringBuilder msgBuf =
             new StringBuilder()
                 .append(toleratedErrors.size())

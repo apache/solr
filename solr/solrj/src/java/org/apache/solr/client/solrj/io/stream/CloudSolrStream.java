@@ -281,11 +281,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     this.streamContext = context;
   }
 
-  /**
-   * Opens the CloudSolrStream
-   *
-   * <p>*
-   */
+  /** Opens the CloudSolrStream */
   public void open() throws IOException {
     this.tuples = new TreeSet<>();
     this.solrStreams = new ArrayList<>();

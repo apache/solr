@@ -126,8 +126,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
         text, rawText, type, start, end, position, (match == null ? false : match));
   }
 
-  // ================================================= Inner Classes
-  // ==================================================
+  // ===== Inner Classes =====
 
   /**
    * A phase in the analysis process. The phase holds the tokens produced in this phase and the name

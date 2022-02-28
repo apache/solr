@@ -231,9 +231,8 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
               while (upd != null) {
                 UpdateRequest req = upd.getRequest();
                 if (!out.belongToThisStream(req, upd.getCollection())) {
-                  queue.add(
-                      upd); // Request has different params or destination core/collection, return
-                  // to queue
+                  // Request has different params or destination core/collection, return to queue
+                  queue.add(upd);
                   break;
                 }
                 client.send(out, upd.getRequest(), upd.getCollection());

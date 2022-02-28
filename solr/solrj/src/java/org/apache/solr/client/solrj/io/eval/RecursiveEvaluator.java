@@ -127,8 +127,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
           .stream().map(innerValue -> normalizeOutputType(innerValue)).collect(Collectors.toList());
     } else if (value instanceof Tuple && value.getClass().getEnclosingClass() == null) {
       // If its a tuple and not a inner class that has extended tuple, which is done in a number of
-      // cases so that mathematical models
-      // can be contained within a tuple.
+      // cases so that mathematical models can be contained within a tuple.
 
       Tuple tuple = (Tuple) value;
       Tuple newTuple = new Tuple();

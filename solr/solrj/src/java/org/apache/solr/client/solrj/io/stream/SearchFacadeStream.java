@@ -118,11 +118,7 @@ public class SearchFacadeStream extends TupleStream implements Expressible {
     this.innerStream.setStreamContext(context);
   }
 
-  /**
-   * Opens the CloudSolrStream
-   *
-   * <p>*
-   */
+  /** Opens the CloudSolrStream */
   public void open() throws IOException {
     innerStream.open();
   }

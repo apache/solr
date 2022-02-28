@@ -631,8 +631,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
     child.setFunctionName(String.format(Locale.ROOT, "solr (%s)", collection));
     // TODO: fix this so we know the # of workers - check with Joel about a Topic's ability to be in
-    // a
-    // parallel stream.
+    // a parallel stream.
 
     child.setImplementingClass("Solr/Lucene");
     child.setExpressionType(ExpressionType.DATASTORE);
@@ -680,9 +679,10 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
         Optional<TupleStream> maybeParallelize = openParallelStream(context, resolved, metrics);
         if (maybeParallelize.isPresent()) {
           this.parallelizedStream = maybeParallelize.get();
-          return; // we're using a plist to parallelize the facet operation
-        } // else, there's a metric that we can't rollup over the plist results safely ... no plist
-        // for you!
+          return;
+          // we're using a plist to parallelize the facet operation else, there's a metric that
+          // we can't rollup over the plist results safely. no plist for you!
+        }
       }
     }
 
