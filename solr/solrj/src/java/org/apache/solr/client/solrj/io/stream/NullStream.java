@@ -18,9 +18,8 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Date;
-
+import java.util.List;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -30,14 +29,13 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-
 /**
- *  The NullStream Iterates over a TupleStream and eats the tuples. It returns the tuple count in the EOF tuple.
- *  Because the NullStreaam eats all the Tuples it see's it can be used as a simple tool for performance analysis of
- *  underlying streams.
+ * The NullStream Iterates over a TupleStream and eats the tuples. It returns the tuple count in the
+ * EOF tuple. Because the NullStreaam eats all the Tuples it see's it can be used as a simple tool
+ * for performance analysis of underlying streams.
+ *
  * @since 6.4.0
- **/
-
+ */
 public class NullStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
@@ -53,35 +51,37 @@ public class NullStream extends TupleStream implements Expressible {
 
   public NullStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
 
     init(stream);
   }
 
-  private void init(TupleStream tupleStream) throws IOException{
+  private void init(TupleStream tupleStream) throws IOException {
     this.stream = tupleStream;
   }
 
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     return toExpression(factory, true);
   }
 
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
 
-    if(includeStreams){
+    if (includeStreams) {
       // stream
-      if(stream instanceof Expressible){
-        expression.addParameter(((Expressible)stream).toExpression(factory));
+      if (stream instanceof Expressible) {
+        expression.addParameter(((Expressible) stream).toExpression(factory));
+      } else {
+        throw new IOException(
+            "This RankStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
-      else{
-        throw new IOException("This RankStream contains a non-expressible TupleStream - it cannot be converted to an expression");
-      }
-    }
-    else{
+    } else {
       expression.addParameter("<stream>");
     }
 
@@ -92,9 +92,7 @@ public class NullStream extends TupleStream implements Expressible {
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
     return new StreamExplanation(getStreamNodeId().toString())
-        .withChildren(new Explanation[]{
-            stream.toExplanation(factory)
-        })
+        .withChildren(new Explanation[] {stream.toExplanation(factory)})
         .withFunctionName(factory.getFunctionName(this.getClass()))
         .withImplementingClass(this.getClass().getName())
         .withExpressionType(ExpressionType.STREAM_DECORATOR)
@@ -106,7 +104,7 @@ public class NullStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<TupleStream>();
+    List<TupleStream> l = new ArrayList<TupleStream>();
     l.add(stream);
     return l;
   }
@@ -123,18 +121,18 @@ public class NullStream extends TupleStream implements Expressible {
 
   public Tuple read() throws IOException {
 
-    if(eof != null) {
+    if (eof != null) {
       return eof;
     }
 
-    while(true) {
-      Tuple tuple  = stream.read();
-      if(tuple.EOF) {
+    while (true) {
+      Tuple tuple = stream.read();
+      if (tuple.EOF) {
         eof = tuple;
         long end = new Date().getTime();
         Tuple t = new Tuple();
         t.put("nullCount", count);
-        t.put("timer", end-start);
+        t.put("timer", end - start);
         return t;
       } else {
         ++count;
@@ -143,13 +141,11 @@ public class NullStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
-  public StreamComparator getStreamSort(){
+  public StreamComparator getStreamSort() {
     return stream.getStreamSort();
   }
 
   public int getCost() {
     return 0;
   }
-
-
 }

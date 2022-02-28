@@ -15,10 +15,5 @@
  * limitations under the License.
  */
 
-
-
-/**
- * Streaming Aggregation API
- **/
+/** Streaming Aggregation API */
 package org.apache.solr.client.solrj.io;
-

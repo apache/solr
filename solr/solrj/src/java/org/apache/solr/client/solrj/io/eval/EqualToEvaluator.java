@@ -19,55 +19,61 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class EqualToEvaluator extends RecursiveBooleanEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public EqualToEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public EqualToEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
-    if(containedEvaluators.size() < 2){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least two values but found %d",expression,containedEvaluators.size()));
+
+    if (containedEvaluators.size() < 2) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting at least two values but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
-  
-  protected Checker constructChecker(Object fromValue) throws IOException{
-    if(null == fromValue){
+
+  protected Checker constructChecker(Object fromValue) throws IOException {
+    if (null == fromValue) {
       return new NullChecker() {
         @Override
         public boolean test(Object left, Object right) {
           return null == left && null == right;
         }
       };
-    }
-    else if(fromValue instanceof Boolean){
-      return new BooleanChecker(){
+    } else if (fromValue instanceof Boolean) {
+      return new BooleanChecker() {
         @Override
         public boolean test(Object left, Object right) {
-          return (boolean)left == (boolean)right;
+          return (boolean) left == (boolean) right;
         }
       };
-    }
-    else if(fromValue instanceof Number){
-      return new NumberChecker(){
+    } else if (fromValue instanceof Number) {
+      return new NumberChecker() {
         @Override
         public boolean test(Object left, Object right) {
           return 0 == (new BigDecimal(left.toString())).compareTo(new BigDecimal(right.toString()));
         }
       };
-    }
-    else if(fromValue instanceof String){
-      return new StringChecker(){
+    } else if (fromValue instanceof String) {
+      return new StringChecker() {
         @Override
         public boolean test(Object left, Object right) {
           return left.equals(right);
         }
       };
     }
-    
-    throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) for values of type '%s'", constructingFactory.getFunctionName(getClass()), fromValue.getClass().getSimpleName()));
+
+    throw new IOException(
+        String.format(
+            Locale.ROOT,
+            "Unable to check %s(...) for values of type '%s'",
+            constructingFactory.getFunctionName(getClass()),
+            fromValue.getClass().getSimpleName()));
   }
 }

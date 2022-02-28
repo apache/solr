@@ -24,21 +24,19 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.util.ContentStream;
 
 /**
  * A RequestWriter is used to write requests to Solr.
- * <p>
- * A subclass can override the methods in this class to supply a custom format in which a request can be sent.
  *
+ * <p>A subclass can override the methods in this class to supply a custom format in which a request
+ * can be sent.
  *
  * @since solr 1.4
  */
 public class RequestWriter {
-
 
   public interface ContentWriter {
 
@@ -48,9 +46,9 @@ public class RequestWriter {
   }
 
   /**
-   * Use this to do a push writing instead of pull. If this method returns null
-   * {@link org.apache.solr.client.solrj.request.RequestWriter#getContentStreams(SolrRequest)} is
-   * invoked to do a pull write.
+   * Use this to do a push writing instead of pull. If this method returns null {@link
+   * org.apache.solr.client.solrj.request.RequestWriter#getContentStreams(SolrRequest)} is invoked
+   * to do a pull write.
    */
   public ContentWriter getContentWriter(SolrRequest<?> req) {
     if (req instanceof UpdateRequest) {
@@ -85,10 +83,10 @@ public class RequestWriter {
   }
 
   protected boolean isEmpty(UpdateRequest updateRequest) {
-    return isNull(updateRequest.getDocuments()) &&
-            isNull(updateRequest.getDeleteByIdMap()) &&
-            isNull(updateRequest.getDeleteQuery()) &&
-            updateRequest.getDocIterator() == null;
+    return isNull(updateRequest.getDocuments())
+        && isNull(updateRequest.getDeleteByIdMap())
+        && isNull(updateRequest.getDeleteQuery())
+        && updateRequest.getDocIterator() == null;
   }
 
   public String getPath(SolrRequest<?> req) {
@@ -98,7 +96,8 @@ public class RequestWriter {
   public void write(SolrRequest<?> request, OutputStream os) throws IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
-      BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
+      BufferedWriter writer =
+          new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
       updateRequest.writeXML(writer);
       writer.flush();
     }
@@ -132,8 +131,8 @@ public class RequestWriter {
   protected boolean isNull(List<?> l) {
     return l == null || l.isEmpty();
   }
-  
-  protected boolean isNull(Map<?,?> l) {
+
+  protected boolean isNull(Map<?, ?> l) {
     return l == null || l.isEmpty();
   }
 }

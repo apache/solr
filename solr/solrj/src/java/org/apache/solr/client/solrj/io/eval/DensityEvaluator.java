@@ -17,9 +17,8 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.Locale;
 import java.util.List;
-
+import java.util.Locale;
 import org.apache.commons.math3.distribution.MultivariateRealDistribution;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -27,27 +26,38 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class DensityEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public DensityEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public DensityEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
   @Override
-  public Object doWork(Object first, Object second) throws IOException{
+  public Object doWork(Object first, Object second) throws IOException {
 
     if (!(first instanceof MultivariateRealDistribution)) {
-      throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the first value, expecting a MultiVariateRealDistribution for density", toExpression(constructingFactory), first.getClass().getSimpleName()));
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for the first value, expecting a MultiVariateRealDistribution for density",
+              toExpression(constructingFactory),
+              first.getClass().getSimpleName()));
     }
     if (!(second instanceof List)) {
-      throw new IOException(String.format(Locale.ROOT, "Invalid expression %s - found type %s for the second value, expecting a numeric array.", toExpression(constructingFactory), first.getClass().getSimpleName()));
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for the second value, expecting a numeric array.",
+              toExpression(constructingFactory),
+              first.getClass().getSimpleName()));
     }
 
-    MultivariateRealDistribution multivariateRealDistribution = (MultivariateRealDistribution) first;
+    MultivariateRealDistribution multivariateRealDistribution =
+        (MultivariateRealDistribution) first;
     @SuppressWarnings({"unchecked"})
     List<Number> nums = (List<Number>) second;
 
     double[] vec = new double[nums.size()];
 
-    for(int i=0; i<vec.length; i++) {
+    for (int i = 0; i < vec.length; i++) {
       vec[i] = nums.get(i).doubleValue();
     }
 

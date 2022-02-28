@@ -19,34 +19,44 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.List;
-
+import java.util.Locale;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class SetRowLabelsEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   private static final long serialVersionUID = 1;
 
-  public SetRowLabelsEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public SetRowLabelsEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
-    if(!(value1 instanceof Matrix)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a Matrix",toExpression(constructingFactory), value1.getClass().getSimpleName()));
-    } else if(!(value2 instanceof List)) {
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting an array of labels.",toExpression(constructingFactory), value2.getClass().getSimpleName()));
+    if (!(value1 instanceof Matrix)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting a Matrix",
+              toExpression(constructingFactory),
+              value1.getClass().getSimpleName()));
+    } else if (!(value2 instanceof List)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting an array of labels.",
+              toExpression(constructingFactory),
+              value2.getClass().getSimpleName()));
     } else {
-      Matrix matrix = (Matrix)value1;
-      List<?> rowlabels =  (List<?>)value2;
+      Matrix matrix = (Matrix) value1;
+      List<?> rowlabels = (List<?>) value2;
 
-      //Convert numeric labels to strings.
+      // Convert numeric labels to strings.
 
       List<String> strLabels = new ArrayList<>(rowlabels.size());
 
-      for(Object o : rowlabels) {
+      for (Object o : rowlabels) {
         strLabels.add(o.toString());
       }
 

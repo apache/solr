@@ -19,23 +19,28 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class ColumnCountEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   private static final long serialVersionUID = 1;
 
-  public ColumnCountEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public ColumnCountEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if(!(value instanceof Matrix)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a Matrix",toExpression(constructingFactory), value.getClass().getSimpleName()));
+    if (!(value instanceof Matrix)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting a Matrix",
+              toExpression(constructingFactory),
+              value.getClass().getSimpleName()));
     } else {
-      Matrix matrix = (Matrix)value;
+      Matrix matrix = (Matrix) value;
       return matrix.getColumnCount();
     }
   }

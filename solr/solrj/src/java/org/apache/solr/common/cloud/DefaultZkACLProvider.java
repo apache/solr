@@ -17,14 +17,13 @@
 package org.apache.solr.common.cloud;
 
 import java.util.List;
-
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 
 public class DefaultZkACLProvider implements ZkACLProvider {
 
   private List<ACL> globalACLsToAdd;
-  
+
   @Override
   public List<ACL> getACLsToAdd(String zNodePath) {
     // In default (simple) implementation use the same set of ACLs for all znodes
@@ -34,11 +33,9 @@ public class DefaultZkACLProvider implements ZkACLProvider {
       }
     }
     return globalACLsToAdd;
-
   }
-  
+
   protected List<ACL> createGlobalACLsToAdd() {
     return ZooDefs.Ids.OPEN_ACL_UNSAFE;
   }
-
 }

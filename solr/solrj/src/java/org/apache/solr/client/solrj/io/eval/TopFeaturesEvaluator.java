@@ -17,63 +17,67 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
-
+import java.util.TreeSet;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.TreeSet;
 
 public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public TopFeaturesEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public TopFeaturesEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
 
-    if(2 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 2 values but found %d",expression,containedEvaluators.size()));
+    if (2 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 2 values but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
 
-    int k = ((Number)value2).intValue();
+    int k = ((Number) value2).intValue();
 
-    if(value1 instanceof Matrix) {
+    if (value1 instanceof Matrix) {
 
       Matrix matrix = (Matrix) value1;
       List<String> features = matrix.getColumnLabels();
 
-      if(features == null) {
+      if (features == null) {
         throw new IOException("Matrix column labels cannot be null for topFeatures function.");
       }
 
       double[][] data = matrix.getData();
       List<List<String>> topFeatures = new ArrayList<>();
 
-      for(int i=0; i<data.length; i++) {
+      for (int i = 0; i < data.length; i++) {
         double[] row = data[i];
         List<String> featuresRow = new ArrayList<>();
         List<Integer> indexes = getMaxIndexes(row, k);
-        for(int index : indexes) {
+        for (int index : indexes) {
           featuresRow.add(features.get(index));
         }
         topFeatures.add(featuresRow);
       }
 
       return topFeatures;
-    }  else {
+    } else {
       throw new IOException("The topFeatures function expects a matrix as the first parameter");
     }
   }
 
   private List<Integer> getMaxIndexes(double[] values, int k) {
     TreeSet<Pair> set = new TreeSet<>();
-    for(int i=0; i<values.length; i++) {
-      if(values[i] > 0){
+    for (int i = 0; i < values.length; i++) {
+      if (values[i] > 0) {
         set.add(new Pair(i, values[i]));
         if (set.size() > k) {
           set.pollFirst();
@@ -82,7 +86,7 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
     }
 
     List<Integer> top = new ArrayList<>(k);
-    while(set.size() > 0) {
+    while (set.size() > 0) {
       top.add(set.pollLast().getIndex());
     }
 
@@ -102,7 +106,7 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
     public int compareTo(Pair pair) {
 
       int c = value.compareTo(pair.value);
-      if(c==0) {
+      if (c == 0) {
         return index.compareTo(pair.index);
       } else {
         return c;
