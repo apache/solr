@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -32,10 +31,15 @@ public class GetPhaseEvaluator extends RecursiveObjectEvaluator implements OneVa
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if(!(value instanceof VectorFunction)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a Vector Function",toExpression(constructingFactory), value.getClass().getSimpleName()));
+    if (!(value instanceof VectorFunction)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting a Vector Function",
+              toExpression(constructingFactory),
+              value.getClass().getSimpleName()));
     } else {
-      VectorFunction vectorFunction = (VectorFunction)value;
+      VectorFunction vectorFunction = (VectorFunction) value;
       return vectorFunction.getFromContext("phase");
     }
   }

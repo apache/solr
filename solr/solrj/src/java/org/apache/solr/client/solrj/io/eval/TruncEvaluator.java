@@ -20,33 +20,37 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class TruncEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public TruncEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public TruncEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    if(2 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 2 values but found %d",expression,containedEvaluators.size()));
+    if (2 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 2 values but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
-  public Object doWork(Object value1, Object value2){
-    if(null == value1){
+  public Object doWork(Object value1, Object value2) {
+    if (null == value1) {
       return null;
     }
 
-    int endIndex = ((Number)value2).intValue();
+    int endIndex = ((Number) value2).intValue();
 
-    if(value1 instanceof List){
-      return ((List<?>)value1).stream().map(innerValue -> doWork(innerValue, endIndex)).collect(Collectors.toList());
-    }
-    else {
+    if (value1 instanceof List) {
+      return ((List<?>) value1)
+          .stream().map(innerValue -> doWork(innerValue, endIndex)).collect(Collectors.toList());
+    } else {
       return value1.toString().substring(0, endIndex);
     }
   }

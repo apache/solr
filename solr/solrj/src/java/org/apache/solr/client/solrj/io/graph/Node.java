@@ -17,9 +17,9 @@
 
 package org.apache.solr.client.solrj.io.graph;
 
+import java.util.*;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
-import java.util.*;
 
 public class Node {
 
@@ -28,8 +28,8 @@ public class Node {
   private Set<String> ancestors;
 
   public Node(String id, boolean track) {
-    this.id=id;
-    if(track) {
+    this.id = id;
+    if (track) {
       ancestors = new TreeSet<>();
     }
   }
@@ -39,12 +39,12 @@ public class Node {
   }
 
   public void add(String ancestor, Tuple tuple) {
-    if(ancestors != null) {
+    if (ancestors != null) {
       ancestors.add(ancestor);
     }
 
-    if(metrics != null) {
-      for(Metric metric : metrics) {
+    if (metrics != null) {
+      for (Metric metric : metrics) {
         metric.update(tuple);
       }
     }
@@ -61,15 +61,15 @@ public class Node {
     boolean prependCollection = traversal.isMultiCollection();
     List<String> cols = traversal.getCollections();
 
-    if(ancestors != null) {
+    if (ancestors != null) {
       List<String> l = new ArrayList<>();
-      for(String ancestor : ancestors) {
+      for (String ancestor : ancestors) {
         String[] ancestorParts = ancestor.split("\\^");
 
-        if(prependCollection) {
-          //prepend the collection
+        if (prependCollection) {
+          // prepend the collection
           int colIndex = Integer.parseInt(ancestorParts[0]);
-          l.add(cols.get(colIndex)+"/"+ancestorParts[1]);
+          l.add(cols.get(colIndex) + "/" + ancestorParts[1]);
         } else {
           // Use only the ancestor id.
           l.add(ancestorParts[1]);
@@ -79,8 +79,8 @@ public class Node {
       tuple.put("ancestors", l);
     }
 
-    if(metrics != null) {
-      for(Metric metric : metrics) {
+    if (metrics != null) {
+      for (Metric metric : metrics) {
         tuple.put(metric.getIdentifier(), metric.getValue());
       }
     }

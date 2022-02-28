@@ -670,7 +670,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       log.debug("start {}", cmd);
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
-        SolrIndexWriter.setCommitData(iw.get(), cmd.getVersion());
+        SolrIndexWriter.setCommitData(iw.get(), cmd.getVersion(), cmd.commitData);
         iw.get().prepareCommit();
       } finally {
         iw.decref();
@@ -748,7 +748,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
           // SolrCore.verbose("writer.commit() start writer=",writer);
 
           if (writer.hasUncommittedChanges()) {
-            SolrIndexWriter.setCommitData(writer, cmd.getVersion());
+            SolrIndexWriter.setCommitData(writer, cmd.getVersion(), cmd.commitData);
             writer.commit();
           } else {
             log.debug("No uncommitted changes. Skipping IW.commit.");
@@ -955,7 +955,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
             // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't
             // be used)
-            SolrIndexWriter.setCommitData(writer, cmd.getVersion());
+            SolrIndexWriter.setCommitData(writer, cmd.getVersion(), null);
             writer.commit();
 
             synchronized (solrCoreState.getUpdateLock()) {

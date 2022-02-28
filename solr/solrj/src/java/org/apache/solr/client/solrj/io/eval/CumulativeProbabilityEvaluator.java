@@ -18,35 +18,54 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
-import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.IntegerDistribution;
+import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class CumulativeProbabilityEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
+public class CumulativeProbabilityEvaluator extends RecursiveObjectEvaluator
+    implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public CumulativeProbabilityEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public CumulativeProbabilityEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
-  public Object doWork(Object first, Object second) throws IOException{
-    if(null == first){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
+  public Object doWork(Object first, Object second) throws IOException {
+    if (null == first) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - null found for the first value",
+              toExpression(constructingFactory)));
     }
-    if(null == second){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
+    if (null == second) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - null found for the second value",
+              toExpression(constructingFactory)));
     }
-    if(!(first instanceof RealDistribution) && !(first instanceof IntegerDistribution)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a real or integer Distribution",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    if (!(first instanceof RealDistribution) && !(first instanceof IntegerDistribution)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for the first value, expecting a real or integer Distribution",
+              toExpression(constructingFactory),
+              first.getClass().getSimpleName()));
     }
-    if(!(second instanceof Number)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a Number",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    if (!(second instanceof Number)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for the second value, expecting a Number",
+              toExpression(constructingFactory),
+              first.getClass().getSimpleName()));
     }
 
-    if(first instanceof  RealDistribution) {
+    if (first instanceof RealDistribution) {
       RealDistribution rd = (RealDistribution) first;
       Number predictOver = (Number) second;
       return rd.cumulativeProbability(predictOver.doubleValue());

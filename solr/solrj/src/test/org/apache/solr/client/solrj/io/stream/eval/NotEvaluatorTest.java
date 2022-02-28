@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.NotEvaluator;
@@ -26,45 +26,41 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class NotEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public NotEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("not", NotEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("not", NotEvaluator.class);
+    values = new HashMap<String, Object>();
   }
-    
+
   @Test
-  public void notOneBooleans() throws Exception{
+  public void notOneBooleans() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("not(a)");
     Object result;
-    
+
     values.clear();
     values.put("a", true);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
-    
+
     values.clear();
     values.put("a", false);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
   }
-  
+
   @Test
-  public void notWithSubNotBooleans() throws Exception{
+  public void notWithSubNotBooleans() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("not(not(a))");
     Object result;
-    
+
     values.clear();
     values.put("a", true);
     result = evaluator.evaluate(new Tuple(values));
@@ -75,6 +71,6 @@ public class NotEvaluatorTest extends SolrTestCase {
     values.put("a", false);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
-    Assert.assertEquals(false, result);    
+    Assert.assertEquals(false, result);
   }
 }

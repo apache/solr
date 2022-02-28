@@ -19,22 +19,21 @@ package org.apache.solr.client.solrj.io.comp;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
- *  An equality Comparator to be used when a stream will only ever return a single field,
- *  ie, it has no sorted order
- **/
+ * An equality Comparator to be used when a stream will only ever return a single field, ie, it has
+ * no sorted order
+ */
 public class SingleValueComparator implements StreamComparator {
 
   private static final long serialVersionUID = 1;
   private UUID comparatorNodeId = UUID.randomUUID();
-    
-  public StreamExpressionParameter toExpression(StreamFactory factory){
+
+  public StreamExpressionParameter toExpression(StreamFactory factory) {
     return null;
   }
 
@@ -42,24 +41,24 @@ public class SingleValueComparator implements StreamComparator {
   public Explanation toExplanation(StreamFactory factory) throws IOException {
     return null;
   }
-  
+
   public int compare(Tuple leftTuple, Tuple rightTuple) {
-    return -1; // whatever, just keep everything in same order 
+    return -1; // whatever, just keep everything in same order
   }
-  
+
   @Override
-  public boolean isDerivedFrom(StreamComparator base){
+  public boolean isDerivedFrom(StreamComparator base) {
     // this doesn't sort, so everything else is a match
     return true;
   }
-  
+
   @Override
-  public SingleValueComparator copyAliased(Map<String,String> aliases){
+  public SingleValueComparator copyAliased(Map<String, String> aliases) {
     return this;
   }
-  
+
   @Override
-  public StreamComparator append(StreamComparator other){
+  public StreamComparator append(StreamComparator other) {
     return other;
   }
 }

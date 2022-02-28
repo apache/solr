@@ -20,20 +20,18 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.OutputStream;
 
-/**
- * A byte[] backed String
- */
-public interface Utf8CharSequence extends CharSequence , Comparable<Utf8CharSequence>, Cloneable {
+/** A byte[] backed String */
+public interface Utf8CharSequence extends CharSequence, Comparable<Utf8CharSequence>, Cloneable {
 
   /**
-   * Write the bytes into a buffer. The objective is to avoid the local bytes being exposed to
-   * other classes if the implementation is expected to be immutable. It writes as many bytes as
-   * possible into the buffer and then return how many bytes were written. It's the responsibility
-   * of the caller to call this method repeatedly and ensure that everything is completely written
+   * Write the bytes into a buffer. The objective is to avoid the local bytes being exposed to other
+   * classes if the implementation is expected to be immutable. It writes as many bytes as possible
+   * into the buffer and then return how many bytes were written. It's the responsibility of the
+   * caller to call this method repeatedly and ensure that everything is completely written
    *
-   * @param start  position from which to start writing
+   * @param start position from which to start writing
    * @param buffer the buffer to which to write to
-   * @param pos    position to start writing
+   * @param pos position to start writing
    * @return no:of bytes written
    */
   int write(int start, byte[] buffer, int pos);
@@ -49,12 +47,12 @@ public interface Utf8CharSequence extends CharSequence , Comparable<Utf8CharSequ
 
   @Override
   default int compareTo(Utf8CharSequence o) {
-    if(o == null) return 1;
+    if (o == null) return 1;
     return toString().compareTo(o.toString());
   }
 
   /**
-   * Creates  a byte[] and copy to it first before writing it out to the output
+   * Creates a byte[] and copy to it first before writing it out to the output
    *
    * @param os The sink
    */
@@ -72,5 +70,4 @@ public interface Utf8CharSequence extends CharSequence , Comparable<Utf8CharSequ
   }
 
   Utf8CharSequence clone();
-
 }

@@ -18,20 +18,17 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 
-/**
- * Retrieves cluster state via Solr HTTP APIs
- */
+/** Retrieves cluster state via Solr HTTP APIs */
 public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
 
   private final HttpClient httpClient;
   private final boolean clientIsInternal;
 
   public HttpClusterStateProvider(List<String> solrUrls, HttpClient httpClient) throws Exception {
-    this.httpClient = httpClient == null? HttpClientUtil.createClient(null): httpClient;
+    this.httpClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
     this.clientIsInternal = httpClient == null;
     init(solrUrls);
   }

@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -37,18 +36,19 @@ public class MonteCarloEvaluator extends RecursiveEvaluator {
 
   private Map<String, Object> variables = new LinkedHashMap<>();
 
-  public MonteCarloEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public MonteCarloEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
-    //Get all the named params
+    // Get all the named params
     Set<String> echo = null;
     boolean echoAll = false;
-    for(StreamExpressionNamedParameter np : namedParams) {
+    for (StreamExpressionNamedParameter np : namedParams) {
       String name = np.getName();
 
       StreamExpressionParameter param = np.getParameter();
-      if(factory.isEvaluator((StreamExpression)param)) {
+      if (factory.isEvaluator((StreamExpression) param)) {
         StreamEvaluator evaluator = factory.constructEvaluator((StreamExpression) param);
         variables.put(name, evaluator);
       } else {
@@ -60,15 +60,22 @@ public class MonteCarloEvaluator extends RecursiveEvaluator {
     init();
   }
 
-  public MonteCarloEvaluator(StreamExpression expression, StreamFactory factory, List<String> ignoredNamedParameters) throws IOException{
+  public MonteCarloEvaluator(
+      StreamExpression expression, StreamFactory factory, List<String> ignoredNamedParameters)
+      throws IOException {
     super(expression, factory, ignoredNamedParameters);
 
     init();
   }
 
-  private void init() throws IOException{
-    if(2 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 2 parameters but found %d", toExpression(constructingFactory), containedEvaluators.size()));
+  private void init() throws IOException {
+    if (2 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 2 parameters but found %d",
+              toExpression(constructingFactory),
+              containedEvaluators.size()));
     }
   }
 
@@ -78,18 +85,17 @@ public class MonteCarloEvaluator extends RecursiveEvaluator {
 
       StreamEvaluator function = containedEvaluators.get(0);
       StreamEvaluator iterationsEvaluator = containedEvaluators.get(1);
-      Number itNum = (Number)iterationsEvaluator.evaluate(tuple);
+      Number itNum = (Number) iterationsEvaluator.evaluate(tuple);
       int it = itNum.intValue();
       List<Number> results = new ArrayList<>();
-      for(int i=0; i<it; i++) {
+      for (int i = 0; i < it; i++) {
         populateVariables(tuple);
-        Number result = (Number)function.evaluate(tuple);
+        Number result = (Number) function.evaluate(tuple);
         results.add(result);
       }
 
       return results;
-    }
-    catch(UncheckedIOException e){
+    } catch (UncheckedIOException e) {
       throw e.getCause();
     }
   }
@@ -100,22 +106,21 @@ public class MonteCarloEvaluator extends RecursiveEvaluator {
     throw new IOException("This call should never occur");
   }
 
-
   private void populateVariables(Tuple contextTuple) throws IOException {
 
     Set<Map.Entry<String, Object>> entries = variables.entrySet();
 
-    for(Map.Entry<String, Object> entry : entries) {
+    for (Map.Entry<String, Object> entry : entries) {
       String name = entry.getKey();
       Object o = entry.getValue();
-      if(o instanceof TupleStream) {
+      if (o instanceof TupleStream) {
         List<Tuple> tuples = new ArrayList<>();
-        TupleStream tStream = (TupleStream)o;
+        TupleStream tStream = (TupleStream) o;
         tStream.setStreamContext(streamContext);
         try {
           tStream.open();
           TUPLES:
-          while(true) {
+          while (true) {
             Tuple tuple = tStream.read();
             if (tuple.EOF) {
               break TUPLES;
@@ -128,7 +133,7 @@ public class MonteCarloEvaluator extends RecursiveEvaluator {
           tStream.close();
         }
       } else {
-        StreamEvaluator evaluator = (StreamEvaluator)o;
+        StreamEvaluator evaluator = (StreamEvaluator) o;
         Object eo = evaluator.evaluate(contextTuple);
         contextTuple.put(name, eo);
       }
