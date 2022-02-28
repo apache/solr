@@ -38,9 +38,8 @@ public class ProtectedTermFilterFactoryTest extends SolrTestCaseJ4 {
     String text = "Wuthering FooBar distant goldeN ABC compote";
     Map<String, String> args = new HashMap<>();
     args.put("ignoreCase", "true");
-    args.put(
-        "protected",
-        "protected-1.txt,protected-2.txt"); // Protected: foobar, jaxfopbuz, golden, compote
+    // Protected: foobar, jaxfopbuz, golden, compote
+    args.put("protected", "protected-1.txt,protected-2.txt");
     args.put("wrappedFilters", "lowercase");
 
     ResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));

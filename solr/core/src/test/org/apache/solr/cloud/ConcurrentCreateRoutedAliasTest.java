@@ -33,8 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
-@LuceneTestCase.AwaitsFix(
-    bugUrl = "https://issues.apache.org/jira/browse/SOLR-12386") // "Can't find resource"
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12386")
 public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -61,21 +60,17 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
   @Test
   public void testConcurrentCreateRoutedAliasMinimal()
       throws IOException, KeeperException.NoNodeException {
-    // this is the test where be blow out a bunch of create commands all out at once.
-    // other tests are more functionality based, and just use a single thread.
+    // this is the test where be blow out a bunch of create commands all out at once. other tests
+    // are more functionality based, and just use a single thread.
 
     // Failure of this test very occasionally due to overseer overload would not be worrisome (just
-    // bothersome).
-    // Any use case creating large numbers of time routed aliases concurrently would be an EXTREMELY
-    // odd
-    // if not fundamentally broken use case. This test method is just here to guard against any race
-    // conditions in the code that could crop up rarely in lower volume usage.
+    // bothersome). Any use case creating large numbers of time routed aliases concurrently would be
+    // an EXTREMELY odd if not fundamentally broken use case. This test method is just here to guard
+    // against any race conditions in the code that could crop up rarely in lower volume usage.
 
     // That said any failures involving about NPE's or missing parameters or oddities other than
-    // overwhelming
-    // the overseer queue with retry races emanating from this test should be investigated. Also if
-    // it fails
-    // frequently that needs to be investigated of course.
+    // overwhelming the overseer queue with retry races emanating from this test should be
+    // investigated. Also if it fails frequently that needs to be investigated of course.
 
     final AtomicReference<Exception> failure = new AtomicReference<>();
 
@@ -83,25 +78,19 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
     // (50) in
     // org.apache.solr.common.cloud.ZkStateReader.AliasesManager.applyModificationAndExportToZk()
     // with the original 5 retries this wouldn't reliably pass with 10 threads, but with 50 retries
-    // it seems
-    // to handle 50 threads about a dozen times without any failure (on a 32 thread processor)
-    // it also passed 3/3 at 150 threads and 2/3 with 250 threads on both 1 node and 4 nodes...
-    // the failure mode seems to be overseer tasks that are not found. I suspect this happens when
-    // enough
-    // threads get into retry races and the spam overwhelms the overseer. (that this can happen
-    // might imply
-    // an issue over there, but I'm not sure, since there is an intentional hard limit on the
-    // overseer queue
-    // and I haven't tried to count the retries up and figure out if the requests are actually
-    // exceeding that
-    // limit or not, but the speed of retries might indicate an effectively hot loop, but again, a
-    // separate issue.
+    // it seems to handle 50 threads about a dozen times without any failure (on a 32 thread
+    // processor) it also passed 3/3 at 150 threads and 2/3 with 250 threads on both 1 node and 4
+    // nodes... the failure mode seems to be overseer tasks that are not found. I suspect this
+    // happens when enough threads get into retry races and the spam overwhelms the overseer. (that
+    // this can happen might imply an issue over there, but I'm not sure, since there is an
+    // intentional hard limit on the overseer queue and I haven't tried to count the retries up and
+    // figure out if the requests are actually exceeding that limit or not, but the speed of retries
+    // might indicate an effectively hot loop, but again, a separate issue.
 
     // The hope is that the level of concurrency supported by create routed alias and the code it
-    // uses is such
-    // that this test wouldn't spuriously fail more than once a year. If that's true users should
-    // never see
-    // an issue in the wild unless they are doing something we probably don't want to support anyway
+    // uses is such that this test wouldn't spuriously fail more than once a year. If that's true
+    // users should never see an issue in the wild unless they are doing something we probably don't
+    // want to support anyway
 
     final CreateRoutedAliasThread[] threads = new CreateRoutedAliasThread[4];
     int numStart = num;

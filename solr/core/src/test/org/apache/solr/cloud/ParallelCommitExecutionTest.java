@@ -126,8 +126,7 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
       countdown.countDown();
       try {
         // NOTE: this ensures that all commits are executed in parallel; no commit can complete
-        // successfully
-        // until all commits have entered the `processCommit(...)` method.
+        // successfully until all commits have entered the `processCommit(...)` method.
         if (!countdown.await(5, TimeUnit.SECONDS)) {
           throw new RuntimeException("done waiting");
         }

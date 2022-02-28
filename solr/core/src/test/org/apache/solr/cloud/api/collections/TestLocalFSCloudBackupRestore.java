@@ -39,9 +39,8 @@ import org.junit.Test;
  * capability. Note that the Solr backup/restore still requires a "shared" file-system. Its just
  * that in this case such file-system would be exposed via local file-system API.
  */
-@LuceneTestCase.SuppressCodecs({
-  "SimpleText"
-}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+// Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs({"SimpleText"})
 public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   private static String backupLocation;
 

@@ -47,8 +47,7 @@ public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
     }
   }
 
-  // ================================================= Inner Classes
-  // ==================================================
+  // ===== Inner Classes =====
 
   protected static class TokenInfo {
 

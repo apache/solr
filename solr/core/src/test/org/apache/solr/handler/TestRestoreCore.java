@@ -40,9 +40,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
-@LuceneTestCase.SuppressCodecs(
-    "SimpleText") // Backups do checksum validation against a footer value not present in
-// 'SimpleText'
+// Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestRestoreCore extends SolrJettyTestBase {
 
   JettySolrRunner leaderJetty;

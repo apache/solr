@@ -70,15 +70,41 @@ public class ClusterStateMockUtil {
    *
    * <p>'csr' Then, another collection that has a shard with a single active replica on node 1.
    *
-   * <p>Result: { "collection2":{ "replicationFactor":"1", "shards":{"slice1":{ "state":"active",
-   * "replicas":{"replica5":{ "state":"active", "node_name":"baseUrl1_",
-   * "base_url":"http://baseUrl1"}}}}}, "collection1":{ "replicationFactor":"1", "shards":{
-   * "slice1":{ "state":"active", "replicas":{ "replica3 (bad)":{ "state":"down",
-   * "node_name":"baseUrl1_", "base_url":"http://baseUrl1"}, "replica2":{ "state":"active",
-   * "node_name":"baseUrl2_", "base_url":"http://baseUrl2"}, "replica1":{ "state":"active",
-   * "node_name":"baseUrl1_", "base_url":"http://baseUrl1"}}}, "slice2":{ "state":"active",
-   * "replicas":{"replica4":{ "state":"active", "node_name":"baseUrl2_",
-   * "base_url":"http://baseUrl2"}}}}}}
+   * <p>Result: <code>
+   *   {
+   *         "collection2":{
+   *           "replicationFactor":"1",
+   *           "shards":{"slice1":{
+   *               "state":"active",
+   *               "replicas":{"replica5":{
+   *                   "state":"active",
+   *                   "node_name":"baseUrl1_",
+   *                   "base_url":"http://baseUrl1"}}}}},
+   *         "collection1":{
+   *           "replicationFactor":"1",
+   *           "shards":{
+   *             "slice1":{
+   *               "state":"active",
+   *               "replicas":{
+   *                 "replica3 (bad)":{
+   *                   "state":"down",
+   *                   "node_name":"baseUrl1_",
+   *                   "base_url":"http://baseUrl1"},
+   *                 "replica2":{
+   *                   "state":"active",
+   *                   "node_name":"baseUrl2_",
+   *                   "base_url":"http://baseUrl2"},
+   *                 "replica1":{
+   *                   "state":"active",
+   *                   "node_name":"baseUrl1_",
+   *                   "base_url":"http://baseUrl1"}}},
+   *             "slice2":{
+   *               "state":"active",
+   *               "replicas":{"replica4":{
+   *                   "state":"active",
+   *                   "node_name":"baseUrl2_",
+   *                   "base_url":"http://baseUrl2"}}}}}}
+   * </code>
    */
   @SuppressWarnings("resource")
   public static ZkStateReader buildClusterState(
@@ -117,11 +143,9 @@ public class ClusterStateMockUtil {
           slices.put(slice.getName(), slice);
 
           // hack alert: the DocCollection constructor copies over active slices to its active slice
-          // map in the constructor
-          // but here we construct the DocCollection before creating the slices which breaks code
-          // that calls DocCollection.getActiveSlices
-          // so here we re-create doc collection with the latest slices map to workaround this
-          // problem
+          // map in the constructor but here we construct the DocCollection before creating the
+          // slices which breaks code that calls DocCollection.getActiveSlices so here we re-create
+          // doc collection with the latest slices map to workaround this problem
           // todo: a better fix would be to have a builder class for DocCollection that builds the
           // final object once all the slices and replicas have been created.
           docCollection = docCollection.copyWithSlices(slices);

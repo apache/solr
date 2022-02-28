@@ -26,8 +26,8 @@ import org.junit.Test;
 
 public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
 
-  String collection =
-      DEFAULT_COLLECTION; // enable this to be configurable (more work needs to be done)
+  // enable this to be configurable (more work needs to be done)
+  String collection = DEFAULT_COLLECTION;
 
   @BeforeClass
   public static void beforeShardHashingTest() throws Exception {

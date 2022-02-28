@@ -85,11 +85,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertJQ(req("q", "name:c*", "timeAllowed", "-7"), assertionString);
   }
 
-  // There are lots of assumptions about how/when cache entries should be changed in this method.
-  // The
-  // simple case above shows the root problem without the confusion. testFilterSimpleCase should be
-  // removed once it is running and this test should be un-ignored and the assumptions verified.
-  // With all the weirdness, I'm not going to vouch for this test. Feel free to change it.
+  // There are lots of assumptions about how/when cache entries should be changed in this method. The simple case above shows the root problem without the confusion. testFilterSimpleCase should be removed once it is running and this test should be un-ignored and the assumptions verified. With all the weirdness, I'm not going to vouch for this test. Feel free to change it.
   @Test
   public void testCacheAssumptions() throws Exception {
     String fq = "name:d*";
@@ -115,8 +111,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     long qrInserts = (long) queryCacheStats.getValue().get("inserts");
 
     // This gets 0 docs back. Use 10000 instead of 1 for timeAllowed and it gets 100 back and the
-    // for loop below
-    // succeeds.
+    // for loop below succeeds.
     String response =
         JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", "1", "sleep", sleep));
     Map<?, ?> res = (Map<?, ?>) fromJSONString(response);

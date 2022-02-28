@@ -194,8 +194,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   @Test
   public void testDistribFaceting() throws IOException, SolrServerException {
     // For this test, I want to insure that there are shards that do _not_ have a doc with any of
-    // the DV_only
-    // fields, see SOLR-5260. So I'll add exactly 1 document to a 4 shard collection.
+    // the DV_only fields, see SOLR-5260. So I'll add exactly 1 document to a 4 shard collection.
 
     CloudSolrClient client = cluster.getSolrClient();
 
@@ -350,11 +349,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   }
 
   @Test
-  // Verify that we actually form groups that are "expected". Most of the processing takes some care
-  // to
-  // make sure all the values for each field are unique. We need to have docs that have values that
-  // are _not_
-  // unique.
+  // Verify that we actually form groups that are "expected". Most of the processing takes some care to make sure all the values for each field are unique. We need to have docs that have values that are _not_ unique.
   public void testGroupingDVOnlySortFirst() throws IOException, SolrServerException {
     doGroupingDvOnly(fieldsToTestGroupSortFirst, "boolGSF");
   }
@@ -378,8 +373,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       docs.add(doc);
 
       // Every fifth time through we add a doc with no values in any of the "fields of interest", so
-      // there should be
-      // 10 docs with nulls
+      // there should be 10 docs with nulls
       if ((idx % 5) == 0) {
         doc = new SolrInputDocument();
         doc.addField("id", idx + 10_000);
@@ -391,8 +385,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
     new UpdateRequest().add(docs).commit(client, COLLECTION);
 
-    // OK, we should have one group with 10 entries for null, a group with 1 entry and 7 groups with
-    // 7
+    // we should have one group with 10 entries for null, a group with 1 entry and 7 groups with 7
     for (FieldProps prop : fieldProps) {
 
       // Solr 9802

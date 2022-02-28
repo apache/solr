@@ -479,9 +479,8 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   // What happens when they delete old_collection now?
   //
   // Current behavior is that delete "does the right thing" and deletes old_collection rather than
-  // new_collection,
-  // but if this behavior changes it could be disastrous for users so this test insures that this
-  // behavior.
+  // new_collection, but if this behavior changes it could be disastrous for users so this test
+  // insures that this behavior.
   //
   @Test
   public void testDeleteAliasWithExistingCollectionName() throws Exception {
@@ -618,8 +617,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   // While writing the above test I wondered what happens when an alias points to two collections
-  // and one of them
-  // is deleted.
+  // and one of them is deleted.
   @Test
   public void testDeleteOneOfTwoCollectionsAliased() throws Exception {
     CollectionAdminRequest.createCollection("collection_one", "conf", 2, 1)
@@ -929,9 +927,8 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     }
 
     // note: collectionList could be null when we randomly recurse and put the actual collection
-    // list into the
-    //  "collection" param and some bugs value into collectionList (including null).  Only
-    // CloudSolrClient supports null.
+    // list into the "collection" param and some bugs value into collectionList (including null).
+    // Only CloudSolrClient supports null.
     if (collectionList != null) {
       // HttpSolrClient
       JettySolrRunner jetty = cluster.getRandomJetty(random());

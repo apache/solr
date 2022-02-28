@@ -44,9 +44,8 @@ public class TestJoin extends SolrTestCaseJ4 {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.filterCache.async", "true");
 
-    if (System.getProperty("solr.tests.IntegerFieldType")
-        .contains("Point")) { // all points change at the same time
-      // point fields need docvalues
+    // all points change at the same time point fields need docvalues
+    if (System.getProperty("solr.tests.IntegerFieldType").contains("Point")) {
       System.setProperty("solr.tests.numeric.dv", "true");
     }
 

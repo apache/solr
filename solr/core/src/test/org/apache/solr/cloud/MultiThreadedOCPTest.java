@@ -100,10 +100,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         mockTask.setSleep("1");
         mockTask.processAsync("200", client);
 
-        // We now check that either the B_COLL task has completed before the third (long running)
-        // task on A_COLL,
-        // Or if both have completed (if this check got significantly delayed for some reason), we
-        // verify B_COLL was first.
+        // We now check that either the B_COLL task has completed before the third (long running) task on A_COLL, or if both have completed (if this check got significantly delayed for some reason), we verify B_COLL was first.
         Long taskCollB = waitForTaskToCompleted(client, 200);
 
         // We do not wait for the long running task to finish, that would be a waste of time.

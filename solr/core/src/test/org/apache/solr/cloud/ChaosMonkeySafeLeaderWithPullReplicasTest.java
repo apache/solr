@@ -58,8 +58,9 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
 
   @Override
   protected boolean useTlogReplicas() {
-    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug
-    // and it's TestInjection use
+    // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's
+    // TestInjection use
+    return false;
   }
 
   @BeforeClass
@@ -113,7 +114,6 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
   }
 
   @Test
-  // 2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
     DocCollection docCollection =
         cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION);

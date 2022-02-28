@@ -51,7 +51,6 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-// 12-Jun-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6944")
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -82,8 +81,6 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void test() throws Exception {
     log.info("replication factor test running");
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
@@ -163,8 +160,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     sendNonDirectUpdateRequestReplicaWithRetry(replicas.get(0), up, 1, testCollectionName);
 
     // Whether the replication factor is 1 or 2 in the delete-by-id case depends on whether the doc
-    // IDs happen to fall
-    // on a single shard or not.
+    // IDs happen to fall on a single shard or not.
 
     Set<Integer> byIDs;
     byIDs = getSomeIds(2);
@@ -189,9 +185,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   }
 
   // When doing a delete by id, it's tricky, very tricky. If any document we're deleting by ID goes
-  // to shardWithOne,
-  // then the replication factor we return will be 1.
-  //
+  // to shardWithOne, then the replication factor we return will be 1.
   private int calcByIdRf(Set<Integer> byIDs, String testCollectionName, String shardWithOne) {
     ZkController zkController = jettys.get(0).getCoreContainer().getZkController();
     DocCollection coll = zkController.getClusterState().getCollection(testCollectionName);
@@ -206,12 +200,11 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     return retval;
   }
 
-  int idFloor =
-      random().nextInt(100) + 1000; // Get the delete tests to use disjoint documents although
+  // Get the delete tests to use disjoint documents although
+  int idFloor = random().nextInt(100) + 1000;
 
   // Randomize documents so we exercise requests landing on replicas that have (or don't) particular
-  // documents
-  // Yeah, this will go on forever if you ask for more than 100, but it suffices.
+  // documents. Yeah, this will go on forever if you ask for more than 100, but it suffices.
   private Set<Integer> getSomeIds(int count) {
     Set<Integer> ids = new HashSet<>();
     while (ids.size() < count) {

@@ -54,9 +54,8 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
 
     handle.clear();
     handle.put("timestamp", SKIPVAL);
-    handle.put(
-        "grouped",
-        UNORDERED); // distrib grouping doesn't guarantee order of top level group commands
+    // distrib grouping doesn't guarantee order of top level group commands
+    handle.put("grouped", UNORDERED);
 
     int docid = 1;
     int group = 5;
@@ -93,9 +92,8 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
 
     handle.clear();
     handle.put("timestamp", SKIPVAL);
-    handle.put(
-        "grouped",
-        UNORDERED); // distrib grouping doesn't guarantee order of top level group commands
+    // distrib grouping doesn't guarantee order of top level group commands
+    handle.put("grouped", UNORDERED);
 
     int numDocs = TestUtil.nextInt(random(), 100, 1000);
     int numGroups = TestUtil.nextInt(random(), 1, numDocs / 50);

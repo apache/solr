@@ -146,9 +146,8 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer"});
       assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
 
-      if (random()
-          .nextBoolean()) { // even if parameters are not passed in, they should be picked up from
-        // previous deployment
+      // even if parameters are not passed in, they should be picked up from previous deployment
+      if (random().nextBoolean()) {
         run(
             tool,
             new String[] {

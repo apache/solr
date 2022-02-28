@@ -86,8 +86,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   // This is a fairly complete test where we set many options and see that it both affected the
-  // created
-  //  collection and that the alias metadata was saved accordingly
+  // created collection and that the alias metadata was saved accordingly
   @Test
   public void testV2() throws Exception {
     // note we don't use TZ in this test, thus it's UTC

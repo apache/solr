@@ -71,8 +71,6 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-// commented out on: 24-Dec-2018
-// @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2018-06-18
 public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -128,8 +126,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 

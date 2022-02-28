@@ -56,8 +56,8 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
   @Override
   protected boolean useTlogReplicas() {
-    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug
-    // and it's TestInjection use
+    // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
+    return false;
   }
 
   @Override
@@ -156,9 +156,8 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     sendCommitWithRetry(replica);
     Thread.sleep(sleepMsBeforeHealPartition);
 
-    cloudClient
-        .getZkStateReader()
-        .forceUpdateCollection(testCollectionName); // get the latest state
+    // get the latest state
+    cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName);
     leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
     assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
 

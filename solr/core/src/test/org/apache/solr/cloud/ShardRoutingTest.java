@@ -276,16 +276,14 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     nStart = getNumRequests();
     replica.client.solrClient.add(sdoc("id", "b!doc1"));
     nEnd = getNumRequests();
-    assertEquals(
-        3,
-        nEnd - nStart); // orig request + replica forwards to leader, which forward back to replica.
+    // orig request + replica forwards to leader, which forward back to replica.
+    assertEquals(3, nEnd - nStart);
 
     nStart = getNumRequests();
     replica.client.solrClient.add(sdoc("id", "b!doc1"));
     nEnd = getNumRequests();
-    assertEquals(
-        3,
-        nEnd - nStart); // orig request + replica forwards to leader, which forward back to replica.
+    // orig request + replica forwards to leader, which forward back to replica.
+    assertEquals(3, nEnd - nStart);
 
     CloudJettyRunner leader2 = shardToLeaderJetty.get(bucket2);
 

@@ -48,7 +48,6 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
   }
 
   @Test
-  // 28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 

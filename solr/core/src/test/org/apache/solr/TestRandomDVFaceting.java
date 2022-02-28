@@ -107,15 +107,9 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     types.add(
         new FldType("small2_ss", ZERO_TWO, new SVal('a', (char) ('c' + indexSize / 3), 1, 1)));
     types.add(new FldType("small3_ss", new IRange(0, 25), new SVal('A', 'z', 1, 1)));
+    // to test specialization when a multi-valued field is actually single-valued
     types.add(
-        new FldType(
-            "small4_ss",
-            ZERO_ONE,
-            new SVal(
-                'a',
-                (char) ('c' + indexSize / 3),
-                1,
-                1))); // to test specialization when a multi-valued field is actually single-valued
+        new FldType("small4_ss", ZERO_ONE, new SVal('a', (char) ('c' + indexSize / 3), 1, 1)));
     types.add(new FldType("small_i", ZERO_ONE, new IRange(0, 5 + indexSize / 3)));
     types.add(new FldType("small2_i", ZERO_ONE, new IRange(0, 5 + indexSize / 3)));
     types.add(new FldType("small2_is", ZERO_TWO, new IRange(0, 5 + indexSize / 3)));
@@ -285,8 +279,8 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
           params.set("facet.method", method);
         }
 
-        // if (random().nextBoolean()) params.set("facet.mincount", "1");  // uncomment to test that
-        // validation fails
+        // uncomment to test that validation fails
+        // if (random().nextBoolean()) params.set("facet.mincount", "1");
 
         String strResponse = h.query(req(params));
         // Object realResponse = ObjectBuilder.fromJSON(strResponse);

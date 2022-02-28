@@ -45,9 +45,6 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  // commented 2-Aug-2018
-  // @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // 2018-06-18
   public void test() throws Exception {
     if (new CollectionAdminRequest.RequestApiDistributedProcessing()
         .process(cloudClient)
@@ -160,9 +157,8 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
       SolrZkClient testZkClient, List<String> overseerDesignates, long timeoutInNanos)
       throws KeeperException, InterruptedException {
     long now = System.nanoTime();
-    long maxTimeout =
-        now + timeoutInNanos; // the maximum amount of time we're willing to wait to see the
-    // designate as leader
+    // the maximum amount of time we're willing to wait to see the designate as leader
+    long maxTimeout = now + timeoutInNanos;
     long timeout = now + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
     boolean firstTime = true;
     int stableCheckTimeout = 2000;

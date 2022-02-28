@@ -61,10 +61,11 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
           public void accept(String clusterId, MiniSolrCloudCluster cluster) {
             for (final String collection : collections) {
               if (random().nextBoolean()) {
-                doAccept(collection, cluster); // same collection name in different clouds
+                // same collection name in different clouds
+                doAccept(collection, cluster);
               } else {
-                doAccept(
-                    collection + "_in_" + clusterId, cluster); // globally unique collection name
+                // globally unique collection name
+                doAccept(collection + "_in_" + clusterId, cluster);
               }
             }
           }

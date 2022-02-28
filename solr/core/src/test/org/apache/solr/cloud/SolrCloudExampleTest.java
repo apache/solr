@@ -256,8 +256,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     assertEquals(maxTime, maxTimeFromConfig);
 
     // Just check that we can access paths with slashes in them both through an intermediate method
-    // and explicitly
-    // using atPath.
+    // and explicitly using atPath.
     assertEquals(
         "Should have been able to get a value from the /query request handler",
         "explicit",
@@ -275,15 +274,13 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     }
 
     // Since it takes some time for this command to complete we need to make sure all the reloads
-    // for
-    // all the cores have been done.
+    // for all the cores have been done.
     boolean allGood = false;
     Map<String, Long> curSoftCommitInterval = null;
     for (int idx = 0; idx < 600 && allGood == false; ++idx) {
       curSoftCommitInterval = getSoftAutocommitInterval(testCollectionName);
-      if (curSoftCommitInterval.size() > 0
-          && curSoftCommitInterval.size()
-              == startTimes.size()) { // no point in even trying if they're not the same size!
+      // no point in even trying if they're not the same size!
+      if (curSoftCommitInterval.size() > 0 && curSoftCommitInterval.size() == startTimes.size()) {
         allGood = true;
         for (Map.Entry<String, Long> currEntry : curSoftCommitInterval.entrySet()) {
           if (currEntry.getValue().equals(maxTime) == false) {

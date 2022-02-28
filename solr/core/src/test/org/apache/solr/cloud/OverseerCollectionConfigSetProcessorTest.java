@@ -982,13 +982,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     }
   }
 
-  // Tests below are being run twice: once with Overseer based updates and once with distributed
-  // updates.
-  // This is done explicitly here because these tests use mocks than can be configured directly.
-  // Tests not using mocks (most other tests) but using the MiniSolrCloudCluster are randomized to
-  // sometimes use Overseer
-  // and sometimes distributed state updates (but not both for a given test and a given test seed).
-  // See the SolrCloudTestCase.Builder constructor and the rest of the Builder class.
+  // Tests below are being run twice: once with Overseer based updates and once with distributed updates. This is done explicitly here because these tests use mocks than can be configured directly. Tests not using mocks (most other tests) but using the MiniSolrCloudCluster are randomized to sometimes use Overseer and sometimes distributed state updates (but not both for a given test and a given test seed). See the SolrCloudTestCase.Builder constructor and the rest of the Builder class.
 
   @Test
   public void testNoReplicationEqualNumberOfSlicesPerNodeOverseer() throws Exception {

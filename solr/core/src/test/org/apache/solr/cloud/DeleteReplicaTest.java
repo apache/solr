@@ -74,9 +74,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     // these tests need to be isolated, so we dont share the minicluster
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
-        .useOtherCollectionConfigSetExecution() // Some tests (this one) use "the other" cluster
-        // Collection API execution strategy to increase
-        // coverage
+        .useOtherCollectionConfigSetExecution()
+        // Some tests (this one) use "the other" cluster Collection API execution strategy to increase coverage
         .configure();
   }
 
@@ -88,9 +87,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 01-Apr-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on:
-  // 24-Dec-2018
   public void deleteLiveReplicaTest() throws Exception {
 
     final String collectionName = "delLiveColl";
@@ -229,9 +225,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on:
-  // 24-Dec-2018
   public void deleteReplicaByCountForAllShards() throws Exception {
 
     final String collectionName = "deleteByCountNew";
@@ -329,9 +322,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   @Test
   @Slow
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on:
-  // 24-Dec-2018
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
     final String collectionName = "raceDeleteReplicaCollection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
@@ -437,11 +427,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
       replica1Jetty.stop();
       waitForNodeLeave(replica1JettyNodeName);
 
-      // There is a race condition: the replica might be marked down before we get here, in which
-      // case we never get notified
-      // So we check before waiting... Not eliminating but significantly reducing the race window -
-      // eliminating would require
-      // deeper changes in the code where the watcher is set.
+      // There is a race condition: the replica might be marked down before we get here, in which case we never get notified. So we check before waiting... Not eliminating but significantly reducing the race window - eliminating would require deeper changes in the code where the watcher is set.
       if (getCollectionState(collectionName)
               .getSlice("shard1")
               .getReplica(replica1.getName())

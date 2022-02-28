@@ -85,12 +85,9 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     String emptyNode = l.remove(0);
     String node2bdecommissioned = l.get(0);
     CollectionAdminRequest.Create create;
-    // NOTE: always using the createCollection that takes in 'int' for all types of replicas, so we
-    // never
-    // have to worry about null checking when comparing the Create command with the final Slices
+    // NOTE: always using the createCollection that takes in 'int' for all types of replicas, so we never have to worry about null checking when comparing the Create command with the final Slices
 
-    // TODO: tlog replicas do not work correctly in tests due to fault
-    // TestInjection#waitForInSyncWithLeader
+    // TODO: tlog replicas do not work correctly in tests due to fault TestInjection#waitForInSyncWithLeader
     create =
         pickRandom(
             CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),

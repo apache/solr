@@ -36,16 +36,13 @@ class SegmentTerminateEarlyTestState {
   static final String KEY_FIELD = "id";
 
   // for historic reasons, this is refered to as a "timestamp" field, but in actuallity is just an
-  // int
-  // value representing a number of "minutes" between 0-60.
+  // int value representing a number of "minutes" between 0-60.
   // aka: I decided not to rename a million things while refactoring this test
   public static final String TIMESTAMP_FIELD = "timestamp_i_dvo";
-  public static final String ODD_FIELD =
-      "odd_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true"
-  // multiValued="false"/>
-  public static final String QUAD_FIELD =
-      "quad_l1"; // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true"
-  // multiValued="false"/>
+  // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
+  public static final String ODD_FIELD = "odd_l1";
+  // <dynamicField name="*_l1"  type="long"   indexed="true"  stored="true" multiValued="false"/>
+  public static final String QUAD_FIELD = "quad_l1";
 
   final Set<Integer> minTimestampDocKeys = new HashSet<>();
   final Set<Integer> maxTimestampDocKeys = new HashSet<>();
@@ -316,9 +313,8 @@ class SegmentTerminateEarlyTestState {
     TestSegmentSorting.assertTrue("numDocs=" + numDocs + " is not even", (numDocs % 2) == 0);
     final Long oddFieldValue = (long) (minTimestampDocKeys.iterator().next().intValue() % 2);
     final SolrQuery query = new SolrQuery(ODD_FIELD + ":" + oddFieldValue);
-    query.setSort(
-        TIMESTAMP_FIELD,
-        SolrQuery.ORDER.asc); // a sort order that is _not_ compatible with the merge sort order
+    // a sort order that is _not_ compatible with the merge sort order
+    query.setSort(TIMESTAMP_FIELD, SolrQuery.ORDER.asc);
     query.setFields(KEY_FIELD, ODD_FIELD, TIMESTAMP_FIELD);
     query.setRows(1);
     query.set(CommonParams.SEGMENT_TERMINATE_EARLY, true);

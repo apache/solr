@@ -93,9 +93,8 @@ public class CommonGramsPhraseQueryTest extends SolrTestCaseJ4 {
           "//str[@name='id' and .='2']");
     }
     assertQ(
-        req(f + ":quick") // just for the hell of it, let's also check this as a term and not a
-        // phase
-        ,
+        // just for the hell of it, let's also check this as a term and not a phrase
+        req(f + ":quick"),
         "//*[@numFound='2']",
         "//str[@name='id' and .='1']",
         "//str[@name='id' and .='2']");

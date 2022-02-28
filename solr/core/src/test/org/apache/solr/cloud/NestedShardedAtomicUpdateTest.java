@@ -38,8 +38,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class NestedShardedAtomicUpdateTest
-    extends SolrCloudTestCase { // used to extend AbstractFullDistribZkTestBase
+public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
   private static final String DEFAULT_COLLECTION = "col1";
   private static CloudSolrClient cloudClient;
   private static List<SolrClient> clients; // not CloudSolrClient

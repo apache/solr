@@ -56,8 +56,9 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTests() throws Exception {
     // we need DVs on point fields to compute stats & facets
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP))
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
       System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
+    }
 
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
@@ -272,8 +273,9 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
             params.remove("facet.exists");
           }
 
-          // if (random().nextBoolean()) params.set("facet.mincount", "1");  // uncomment to test
-          // that validation fails
+          // uncomment to test that validation fails
+          // if (random().nextBoolean()) params.set("facet.mincount", "1");
+
           if (!(params.getInt("facet.limit", 100) == 0
               && !params.getBool("facet.missing", false))) {
             // it bypasses all processing, and we can go to empty validation
@@ -335,9 +337,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
       throws Exception {
     if (params.getBool("facet.exists", false)) {
       if (isSortByCount(params)) { // it's challenged with facet.sort=count
-        expected =
-            getExpectationForSortByCount(
-                params, methods); // that requires to recalculate expactation
+        // that requires to recalculate expactation
+        expected = getExpectationForSortByCount(params, methods);
       } else { // facet.sort=index
         expected = capFacetCountsTo1(expected);
       }
@@ -401,8 +402,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
           }
           @SuppressWarnings({"rawtypes"})
           List stratified = new ArrayList<>();
-          for (Integer s :
-              new Integer[] {1, 0}) { // non-zero capped to one goes first, zeroes go then
+          // non-zero capped to one goes first, zeroes go then
+          for (Integer s : new Integer[] {1, 0}) {
             stratified.addAll(stratas.get(s));
           } // cropping them now
           int offset = params.getInt("facet.offset", 0) * 2;

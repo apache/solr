@@ -30,8 +30,7 @@ public class MockSolrSource {
     final DistributedClusterStateUpdater distributedClusterStateUpdater;
     if (overseer == null) {
       // When no overseer is passed, the Overseer queue does nothing. Replicate this in how we
-      // handle distributed state
-      // updates by doing nothing as well...
+      // handle distributed state updates by doing nothing as well...
       distributedClusterStateUpdater = mock(DistributedClusterStateUpdater.class);
       overseer = mock(Overseer.class);
       when(overseer.getDistributedClusterStateUpdater()).thenReturn(distributedClusterStateUpdater);
@@ -43,7 +42,6 @@ public class MockSolrSource {
     if (reader != null && zkClient == null) {
       zkClient = reader.getZkClient();
     } else {
-      if (zkClient == null) {}
       reader = mock(ZkStateReader.class);
       when(reader.getZkClient()).thenReturn(zkClient);
     }

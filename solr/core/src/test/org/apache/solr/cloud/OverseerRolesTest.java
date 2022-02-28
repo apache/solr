@@ -220,13 +220,12 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     log.info("Killing designated overseer: {}", overseer1);
 
     // after 5 seconds, bring back dead designated overseer and assert that it assumes leadership
-    // "right away",
-    // i.e. without any other node assuming leadership before this node becomes leader.
+    // "right away", i.e. without any other node assuming leadership before this node becomes leader.
     Thread.sleep(5);
     logOverseerState();
     log.info("Starting back the prioritized overseer..");
     leaderJetty.start();
-    waitForNewOverseer(
-        15, overseer1, true); // assert that there is just a single leadership transition
+    // assert that there is just a single leadership transition
+    waitForNewOverseer(15, overseer1, true);
   }
 }

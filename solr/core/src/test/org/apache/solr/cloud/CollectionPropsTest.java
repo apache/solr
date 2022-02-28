@@ -145,8 +145,8 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     cluster.getSolrClient().getZkStateReader().removeCollectionPropsWatcher(collectionName, w);
 
     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
-    checkValue(
-        "property1", "value1"); // Should be no cache, so the change should take effect immediately
+    // Should be no cache, so the change should take effect immediately
+    checkValue("property1", "value1");
   }
 
   private void checkValue(String propertyName, String expectedValue) throws InterruptedException {
