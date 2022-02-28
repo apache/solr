@@ -25,18 +25,13 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.junit.Test;
 
-/**
- * 
- *
- * @since solr 1.3
- */
+/** @since solr 1.3 */
 public class SolrExceptionTest extends SolrTestCase {
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSolrException() throws Throwable {
     // test a connection to a solr server that probably doesn't exist
-    // this is a very simple test and most of the test should be considered verified 
+    // this is a very simple test and most of the test should be considered verified
     // if the compiler won't let you by without the try/catch
     boolean gotExpectedError = false;
     CloseableHttpClient httpClient = null;
@@ -44,7 +39,8 @@ public class SolrExceptionTest extends SolrTestCase {
       // switched to a local address to avoid going out on the net, ns lookup issues, etc.
       // set a 1ms timeout to let the connection fail faster.
       httpClient = HttpClientUtil.createClient(null);
-      try (HttpSolrClient client = getHttpSolrClient("http://" + SolrTestCaseJ4.DEAD_HOST_1 + "/solr/", httpClient, 1)) {
+      try (HttpSolrClient client =
+          getHttpSolrClient("http://" + SolrTestCaseJ4.DEAD_HOST_1 + "/solr/", httpClient, 1)) {
         SolrQuery query = new SolrQuery("test123");
         client.query(query);
       }
@@ -52,14 +48,13 @@ public class SolrExceptionTest extends SolrTestCase {
     } catch (SolrServerException sse) {
       gotExpectedError = true;
       /***
-      assertTrue(UnknownHostException.class == sse.getRootCause().getClass()
-              //If one is using OpenDNS, then you don't get UnknownHostException, instead you get back that the query couldn't execute
-              || (sse.getRootCause().getClass() == SolrException.class && ((SolrException) sse.getRootCause()).code() == 302 && sse.getMessage().equals("Error executing query")));
-      ***/
+       * assertTrue(UnknownHostException.class == sse.getRootCause().getClass()
+       * //If one is using OpenDNS, then you don't get UnknownHostException, instead you get back that the query couldn't execute
+       * || (sse.getRootCause().getClass() == SolrException.class && ((SolrException) sse.getRootCause()).code() == 302 && sse.getMessage().equals("Error executing query")));
+       ***/
     } finally {
       if (httpClient != null) HttpClientUtil.close(httpClient);
     }
     assertTrue(gotExpectedError);
   }
-  
 }

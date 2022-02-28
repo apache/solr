@@ -16,37 +16,29 @@
  */
 package org.apache.solr.client.solrj;
 
-import java.io.Reader;
 import java.io.InputStream;
+import java.io.Reader;
 import org.apache.solr.common.util.NamedList;
 
-/**
- * 
- *
- * @since solr 1.3
- */
-public abstract class ResponseParser
-{
+/** @since solr 1.3 */
+public abstract class ResponseParser {
   public abstract String getWriterType(); // for example: wt=XML, JSON, etc
 
   public abstract NamedList<Object> processResponse(InputStream body, String encoding);
 
   public abstract NamedList<Object> processResponse(Reader reader);
-  
+
   /**
    * A well behaved ResponseParser will return its content-type.
-   * 
+   *
    * @return the content-type this parser expects to parse
    */
   public String getContentType() {
     return null;
   }
-  
-  /**
-   * @return the version param passed to solr
-   */
-  public String getVersion()
-  {
+
+  /** @return the version param passed to solr */
+  public String getVersion() {
     return "2.2";
   }
 }

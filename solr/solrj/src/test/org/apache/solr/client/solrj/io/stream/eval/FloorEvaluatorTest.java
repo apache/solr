@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.FloorEvaluator;
@@ -27,36 +27,33 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class FloorEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public FloorEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("floor", FloorEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("floor", FloorEvaluator.class);
+    values = new HashMap<String, Object>();
   }
-    
+
   @Test
-  public void floorOneField() throws Exception{
+  public void floorOneField() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("floor(a)");
     Object result;
-    
+
     values.clear();
     values.put("a", 1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertEquals(1D, result);
-    
+
     values.clear();
     values.put("a", 1.1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertEquals(1D, result);
-    
+
     values.clear();
     values.put("a", -1.1);
     result = evaluator.evaluate(new Tuple(values));
@@ -64,27 +61,28 @@ public class FloorEvaluatorTest extends SolrTestCase {
   }
 
   @Test(expected = IOException.class)
-  public void floorNoField() throws Exception{
+  public void floorNoField() throws Exception {
     factory.constructEvaluator("floor()");
   }
-  
+
   @Test(expected = IOException.class)
-  public void floorTwoFields() throws Exception{
+  public void floorTwoFields() throws Exception {
     factory.constructEvaluator("floor(a,b)");
   }
 
-  @Test//(expected = NumberFormatException.class)
-  public void floorNoValue() throws Exception{
+  @Test // (expected = NumberFormatException.class)
+  public void floorNoValue() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("floor(a)");
-    
+
     values.clear();
     Object result = evaluator.evaluate(new Tuple(values));
     assertNull(result);
   }
-  @Test//(expected = NumberFormatException.class)
-  public void floorNullValue() throws Exception{
+
+  @Test // (expected = NumberFormatException.class)
+  public void floorNullValue() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("floor(a)");
-    
+
     values.clear();
     values.put("a", null);
     Object result = evaluator.evaluate(new Tuple(values));

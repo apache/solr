@@ -16,12 +16,7 @@
  */
 package org.apache.solr.client.solrj.response;
 
-/**
- * 
- *
- * @since solr 1.3
- */
-public class SolrPingResponse extends SolrResponseBase
-{
+/** @since solr 1.3 */
+public class SolrPingResponse extends SolrResponseBase {
   // nothing special now...
 }

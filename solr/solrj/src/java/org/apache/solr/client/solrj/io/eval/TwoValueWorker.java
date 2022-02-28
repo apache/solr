@@ -22,13 +22,13 @@ import java.util.Locale;
 public interface TwoValueWorker extends ValueWorker {
 
   Object doWork(Object value1, Object value2) throws IOException;
-  
-  default Object doWork(Object ... values) throws IOException{
-    if(2 != values.length){
-      throw new IOException(String.format(Locale.ROOT, "Expecting 2 values but found %d", values.length));
+
+  default Object doWork(Object... values) throws IOException {
+    if (2 != values.length) {
+      throw new IOException(
+          String.format(Locale.ROOT, "Expecting 2 values but found %d", values.length));
     }
-    
+
     return doWork(values[0], values[1]);
   }
-  
 }

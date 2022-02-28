@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -31,9 +30,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-/**
- * @since 6.6.0
- */
+/** @since 6.6.0 */
 public class EvalStream extends TupleStream implements Expressible {
 
   private TupleStream stream;
@@ -44,17 +41,24 @@ public class EvalStream extends TupleStream implements Expressible {
 
   public EvalStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
 
-    if(1 != streamExpressions.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single stream but found %d",expression, streamExpressions.size()));
+    if (1 != streamExpressions.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting a single stream but found %d",
+              expression,
+              streamExpressions.size()));
     }
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
     init(stream, factory);
   }
 
-  private void init(TupleStream tupleStream, StreamFactory factory) throws IOException{
+  private void init(TupleStream tupleStream, StreamFactory factory) throws IOException {
     this.stream = tupleStream;
     this.streamFactory = factory;
   }
@@ -64,17 +68,19 @@ public class EvalStream extends TupleStream implements Expressible {
     return toExpression(factory, true);
   }
 
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
 
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
 
     // stream
-    if(includeStreams) {
+    if (includeStreams) {
       if (stream instanceof Expressible) {
         expression.addParameter(((Expressible) stream).toExpression(factory));
       } else {
-        throw new IOException("The EvalStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+        throw new IOException(
+            "The EvalStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
     }
 
@@ -85,9 +91,7 @@ public class EvalStream extends TupleStream implements Expressible {
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
     return new StreamExplanation(getStreamNodeId().toString())
-        .withChildren(new Explanation[]{
-            stream.toExplanation(factory)
-        })
+        .withChildren(new Explanation[] {stream.toExplanation(factory)})
         .withFunctionName(factory.getFunctionName(this.getClass()))
         .withImplementingClass(this.getClass().getName())
         .withExpressionType(ExpressionType.STREAM_DECORATOR)
@@ -100,7 +104,7 @@ public class EvalStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
@@ -111,7 +115,7 @@ public class EvalStream extends TupleStream implements Expressible {
       Tuple tuple = stream.read();
       String expr = tuple.getString("expr_s");
 
-      if(expr == null) {
+      if (expr == null) {
         throw new IOException("expr_s cannot be empty for the EvalStream");
       }
 
@@ -131,7 +135,7 @@ public class EvalStream extends TupleStream implements Expressible {
     return evalStream.read();
   }
 
-  public StreamComparator getStreamSort(){
+  public StreamComparator getStreamSort() {
     return stream.getStreamSort();
   }
 

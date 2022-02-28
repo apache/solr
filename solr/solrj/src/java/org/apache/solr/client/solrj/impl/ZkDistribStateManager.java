@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
-
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -36,9 +35,7 @@ import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 
-/**
- * Implementation of {@link DistribStateManager} that uses Zookeeper.
- */
+/** Implementation of {@link DistribStateManager} that uses Zookeeper. */
 public class ZkDistribStateManager implements DistribStateManager {
 
   private final SolrZkClient zkClient;
@@ -58,7 +55,8 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public List<String> listData(String path, Watcher watcher) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
+  public List<String> listData(String path, Watcher watcher)
+      throws NoSuchElementException, IOException, KeeperException, InterruptedException {
     try {
       return zkClient.getChildren(path, watcher, true);
     } catch (KeeperException.NoNodeException e) {
@@ -70,16 +68,20 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public List<String> listData(String path) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
+  public List<String> listData(String path)
+      throws NoSuchElementException, IOException, KeeperException, InterruptedException {
     return listData(path, null);
   }
 
   @Override
-  public VersionedData getData(String path, Watcher watcher) throws NoSuchElementException, IOException, KeeperException, InterruptedException {
+  public VersionedData getData(String path, Watcher watcher)
+      throws NoSuchElementException, IOException, KeeperException, InterruptedException {
     Stat stat = new Stat();
     try {
       byte[] bytes = zkClient.getData(path, watcher, stat, true);
-      return new VersionedData(stat.getVersion(), bytes,
+      return new VersionedData(
+          stat.getVersion(),
+          bytes,
           stat.getEphemeralOwner() != 0 ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT,
           String.valueOf(stat.getEphemeralOwner()));
     } catch (KeeperException.NoNodeException e) {
@@ -91,7 +93,8 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public void makePath(String path) throws AlreadyExistsException, IOException, KeeperException, InterruptedException {
+  public void makePath(String path)
+      throws AlreadyExistsException, IOException, KeeperException, InterruptedException {
     try {
       zkClient.makePath(path, true);
     } catch (KeeperException.NodeExistsException e) {
@@ -103,7 +106,8 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public void makePath(String path, byte[] data, CreateMode createMode, boolean failOnExists) throws AlreadyExistsException, IOException, KeeperException, InterruptedException {
+  public void makePath(String path, byte[] data, CreateMode createMode, boolean failOnExists)
+      throws AlreadyExistsException, IOException, KeeperException, InterruptedException {
     try {
       zkClient.makePath(path, data, createMode, null, failOnExists, true);
     } catch (KeeperException.NodeExistsException e) {
@@ -115,7 +119,9 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public String createData(String path, byte[] data, CreateMode mode) throws NoSuchElementException, AlreadyExistsException, IOException, KeeperException, InterruptedException {
+  public String createData(String path, byte[] data, CreateMode mode)
+      throws NoSuchElementException, AlreadyExistsException, IOException, KeeperException,
+          InterruptedException {
     try {
       return zkClient.create(path, data, mode, true);
     } catch (KeeperException.NoNodeException e) {
@@ -129,7 +135,9 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public void removeData(String path, int version) throws NoSuchElementException, BadVersionException, NotEmptyException, IOException, KeeperException, InterruptedException {
+  public void removeData(String path, int version)
+      throws NoSuchElementException, BadVersionException, NotEmptyException, IOException,
+          KeeperException, InterruptedException {
     try {
       zkClient.delete(path, version, true);
     } catch (KeeperException.NoNodeException e) {
@@ -145,7 +153,9 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public void setData(String path, byte[] data, int version) throws BadVersionException, NoSuchElementException, IOException, KeeperException, InterruptedException {
+  public void setData(String path, byte[] data, int version)
+      throws BadVersionException, NoSuchElementException, IOException, KeeperException,
+          InterruptedException {
     try {
       zkClient.setData(path, data, version, true);
     } catch (KeeperException.NoNodeException e) {
@@ -159,7 +169,9 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public List<OpResult> multi(Iterable<Op> ops) throws BadVersionException, AlreadyExistsException, NoSuchElementException, IOException, KeeperException, InterruptedException {
+  public List<OpResult> multi(Iterable<Op> ops)
+      throws BadVersionException, AlreadyExistsException, NoSuchElementException, IOException,
+          KeeperException, InterruptedException {
     try {
       return zkClient.multi(ops, true);
     } catch (KeeperException.NoNodeException e) {
@@ -175,16 +187,15 @@ public class ZkDistribStateManager implements DistribStateManager {
   }
 
   @Override
-  public void close() throws IOException {
-
-  }
+  public void close() throws IOException {}
 
   public SolrZkClient getZkClient() {
     return zkClient;
   }
 
   @Override
-  public PerReplicaStates getReplicaStates(String path) throws KeeperException, InterruptedException {
+  public PerReplicaStates getReplicaStates(String path)
+      throws KeeperException, InterruptedException {
     return PerReplicaStates.fetch(path, zkClient, null);
   }
 }

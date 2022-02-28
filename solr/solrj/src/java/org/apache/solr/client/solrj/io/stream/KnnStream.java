@@ -17,6 +17,9 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.common.params.CommonParams.Q;
+import static org.apache.solr.common.params.CommonParams.ROWS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,7 +29,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -46,16 +48,12 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
-import static org.apache.solr.common.params.CommonParams.Q;
-import static org.apache.solr.common.params.CommonParams.ROWS;
+/** @since 7.0.0 */
+public class KnnStream extends TupleStream implements Expressible {
 
-
-/**
- * @since 7.0.0
- */
-public class KnnStream extends TupleStream implements Expressible  {
-
-  private static String[] mltParams = {"qf", "mintf", "mindf", "maxdf", "minwl", "maxwl", "maxqt", "maxntp", "boost"};
+  private static String[] mltParams = {
+    "qf", "mintf", "mindf", "maxdf", "minwl", "maxwl", "maxqt", "maxntp", "boost"
+  };
 
   private String zkHost;
   private Map<String, String> props;
@@ -65,14 +63,12 @@ public class KnnStream extends TupleStream implements Expressible  {
   private Iterator<SolrDocument> documentIterator;
   private String id;
 
-  public KnnStream(String zkHost,
-                   String collection,
-                   String id,
-                   Map<String, String> props) throws IOException {
+  public KnnStream(String zkHost, String collection, String id, Map<String, String> props)
+      throws IOException {
     init(zkHost, collection, id, props);
   }
 
-  public KnnStream(StreamExpression expression, StreamFactory factory) throws IOException{
+  public KnnStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -80,58 +76,70 @@ public class KnnStream extends TupleStream implements Expressible  {
     StreamExpressionNamedParameter idExpression = factory.getNamedOperand(expression, "id");
     StreamExpressionNamedParameter qfExpression = factory.getNamedOperand(expression, "qf");
 
-
     // Collection Name
-    if(null == collectionName){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
+    if (null == collectionName) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - collectionName expected as first operand",
+              expression));
     }
 
     // Named parameters - passed directly to solr as solrparams
-    if(namedParams.size() < 2){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least two named parameters expected. eg. 'id' and 'qf'",expression));
+    if (namedParams.size() < 2) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - at least two named parameters expected. eg. 'id' and 'qf'",
+              expression));
     }
 
     // pull out known named params
-    Map<String,String> params = new HashMap<String,String>();
-    for(StreamExpressionNamedParameter namedParam : namedParams){
-      if(!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("id")){
+    Map<String, String> params = new HashMap<String, String>();
+    for (StreamExpressionNamedParameter namedParam : namedParams) {
+      if (!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("id")) {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
 
     String id = null;
-    if(idExpression != null) {
-      id = ((StreamExpressionValue)idExpression.getParameter()).getValue();
+    if (idExpression != null) {
+      id = ((StreamExpressionValue) idExpression.getParameter()).getValue();
     } else {
       throw new IOException("id parameter is expected for KnnStream");
     }
 
-    if(qfExpression == null) {
+    if (qfExpression == null) {
       throw new IOException("qf parameter is expected for KnnStream");
     }
 
     // zkHost, optional - if not provided then will look into factory list to get
     String zkHost = null;
-    if(null == zkHostExpression){
+    if (null == zkHostExpression) {
       zkHost = factory.getCollectionZkHost(collectionName);
-      if(zkHost == null) {
+      if (zkHost == null) {
         zkHost = factory.getDefaultZkHost();
       }
+    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
+      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
     }
-    else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
-      zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
-    }
-    if(null == zkHost){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
+    if (null == zkHost) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - zkHost not found for collection '%s'",
+              expression,
+              collectionName));
     }
 
     // We've got all the required items
-    init(zkHost, collectionName, id,  params);
+    init(zkHost, collectionName, id, params);
   }
 
-  private void init(String zkHost, String collection, String id, Map<String, String> props) throws IOException {
-    this.zkHost  = zkHost;
-    this.props   = props;
+  private void init(String zkHost, String collection, String id, Map<String, String> props)
+      throws IOException {
+    this.zkHost = zkHost;
+    this.props = props;
     this.collection = collection;
     this.id = id;
   }
@@ -145,7 +153,7 @@ public class KnnStream extends TupleStream implements Expressible  {
     expression.addParameter(collection);
 
     // parameters
-    for(Entry<String,String> param : props.entrySet()){
+    for (Entry<String, String> param : props.entrySet()) {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
     }
 
@@ -170,8 +178,11 @@ public class KnnStream extends TupleStream implements Expressible  {
     child.setFunctionName(String.format(Locale.ROOT, "solr (%s)", collection));
     child.setImplementingClass("Solr/Lucene");
     child.setExpressionType(ExpressionType.DATASTORE);
-    if(null != props){
-      child.setExpression(props.entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));
+    if (null != props) {
+      child.setExpression(
+          props.entrySet().stream()
+              .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
+              .collect(Collectors.joining(",")));
     }
     explanation.addChild(child);
 
@@ -183,7 +194,7 @@ public class KnnStream extends TupleStream implements Expressible  {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<>();
+    List<TupleStream> l = new ArrayList<>();
     return l;
   }
 
@@ -193,8 +204,8 @@ public class KnnStream extends TupleStream implements Expressible  {
 
     StringBuilder builder = new StringBuilder();
 
-    for(String key : mltParams) {
-      if(params.get(key) != null) {
+    for (String key : mltParams) {
+      if (params.get(key) != null) {
         builder.append(' ').append(key).append('=').append(params.get(key));
         params.remove(key);
       }
@@ -202,12 +213,12 @@ public class KnnStream extends TupleStream implements Expressible  {
 
     String k = params.get("k");
 
-    if(k != null) {
+    if (k != null) {
       params.add(ROWS, k);
       params.remove(k);
     }
 
-    params.add(Q, "{!mlt"+builder.toString()+"}"+id);
+    params.add(Q, "{!mlt" + builder.toString() + "}" + id);
 
     QueryRequest request = new QueryRequest(params);
     try {
@@ -219,15 +230,13 @@ public class KnnStream extends TupleStream implements Expressible  {
     }
   }
 
-  public void close() throws IOException {
-
-  }
+  public void close() throws IOException {}
 
   public Tuple read() throws IOException {
-    if(documentIterator.hasNext()) {
+    if (documentIterator.hasNext()) {
       Tuple tuple = new Tuple();
       SolrDocument doc = documentIterator.next();
-      for(Entry<String, Object> entry : doc.entrySet()) {
+      for (Entry<String, Object> entry : doc.entrySet()) {
         tuple.put(entry.getKey(), entry.getValue());
       }
       return tuple;
@@ -238,7 +247,7 @@ public class KnnStream extends TupleStream implements Expressible  {
 
   private ModifiableSolrParams getParams(Map<String, String> props) {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    for(Entry<String, String> entry : props.entrySet()) {
+    for (Entry<String, String> entry : props.entrySet()) {
       String value = entry.getValue();
       params.add(entry.getKey(), value);
     }

@@ -16,12 +16,11 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.net.URL;
 import java.util.Locale;
 import java.util.Random;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -43,24 +42,17 @@ import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-/**
- *
- * @since solr 1.3
- */
-public class JettyWebappTest extends SolrTestCaseJ4
-{
+/** @since solr 1.3 */
+public class JettyWebappTest extends SolrTestCaseJ4 {
   int port = 0;
   static final String context = "/test";
 
-  @Rule
-  public TestRule solrTestRules =
-    RuleChain.outerRule(new SystemPropertiesRestoreRule());
+  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   Server server;
 
   @Override
-  public void setUp() throws Exception
-  {
+  public void setUp() throws Exception {
     super.setUp();
     System.setProperty("solr.solr.home", SolrJettyTestBase.legacyExampleCollection1SolrHome());
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
@@ -74,39 +66,39 @@ public class JettyWebappTest extends SolrTestCaseJ4
 
     server = new Server(port);
     // insecure: only use for tests!!!!
-    server.setSessionIdManager(new DefaultSessionIdManager(server, new Random(random().nextLong())));
-    new WebAppContext(server, path, context );
+    server.setSessionIdManager(
+        new DefaultSessionIdManager(server, new Random(random().nextLong())));
+    new WebAppContext(server, path, context);
 
     ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
     connector.setIdleTimeout(1000 * 60 * 60);
     connector.setPort(0);
-    server.setConnectors(new Connector[]{connector});
-    server.setStopAtShutdown( true );
+    server.setConnectors(new Connector[] {connector});
+    server.setStopAtShutdown(true);
 
     server.start();
     port = connector.getLocalPort();
   }
 
   @Override
-  public void tearDown() throws Exception
-  {
+  public void tearDown() throws Exception {
     try {
       server.stop();
-    } catch( Exception ex ) {}
+    } catch (Exception ex) {
+    }
     System.clearProperty("tests.shardhandler.randomSeed");
     System.clearProperty("solr.data.dir");
     System.clearProperty("solr.tests.doContainerStreamCloseAssert");
     super.tearDown();
   }
 
-  public void testAdminUI() throws Exception
-  {
+  public void testAdminUI() throws Exception {
     // Currently not an extensive test, but it does fire up the JSP pages and make
     // sure they compile ok
 
-    String adminPath = "http://127.0.0.1:"+port+context+"/";
-    byte[] bytes = IOUtils.toByteArray( new URL(adminPath).openStream() );
-    assertNotNull( bytes ); // real error will be an exception
+    String adminPath = "http://127.0.0.1:" + port + context + "/";
+    byte[] bytes = IOUtils.toByteArray(new URL(adminPath).openStream());
+    assertNotNull(bytes); // real error will be an exception
 
     HttpClient client = HttpClients.createDefault();
     HttpRequestBase m = new HttpGet(adminPath);

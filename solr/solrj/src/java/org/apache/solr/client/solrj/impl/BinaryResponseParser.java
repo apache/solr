@@ -16,19 +16,15 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.JavaBinCodec;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.NamedList;
 
-/**
- *
- * @since solr 1.3
- */
+/** @since solr 1.3 */
 public class BinaryResponseParser extends ResponseParser {
   public static final String BINARY_CONTENT_TYPE = "application/octet-stream";
 
@@ -51,7 +47,6 @@ public class BinaryResponseParser extends ResponseParser {
       return (NamedList<Object>) createCodec().unmarshal(body);
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
-
     }
   }
 

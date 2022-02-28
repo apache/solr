@@ -53,8 +53,7 @@ public class BytesOutputStream extends OutputStream {
   }
 
   private void ensureCapacity(int minCapacity) {
-    if (minCapacity - buf.length > 0)
-      expandBuf(minCapacity);
+    if (minCapacity - buf.length > 0) expandBuf(minCapacity);
   }
 
   /** * Write a byte to the stream. */
@@ -106,15 +105,12 @@ public class BytesOutputStream extends OutputStream {
   private void expandBuf(int minCapacity) {
     int oldCapacity = buf.length;
     int newCapacity = oldCapacity << 1;
-    if (newCapacity - minCapacity < 0)
-      newCapacity = minCapacity;
+    if (newCapacity - minCapacity < 0) newCapacity = minCapacity;
     if (newCapacity - MAX_ARRAY_SIZE > 0) {
       if (minCapacity < 0)
         // overflow
         throw new OutOfMemoryError();
-      newCapacity = (minCapacity > MAX_ARRAY_SIZE) ?
-          Integer.MAX_VALUE :
-          MAX_ARRAY_SIZE;
+      newCapacity = (minCapacity > MAX_ARRAY_SIZE) ? Integer.MAX_VALUE : MAX_ARRAY_SIZE;
     }
     buf = Arrays.copyOf(buf, newCapacity);
   }
@@ -135,7 +131,5 @@ public class BytesOutputStream extends OutputStream {
       this.offset = offset;
       this.length = length;
     }
-
   }
-
 }

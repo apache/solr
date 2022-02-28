@@ -16,9 +16,8 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import java.lang.invoke.MethodHandles;
-
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -35,21 +34,16 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- * @since solr 1.3
- */
+/** @since solr 1.3 */
 public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @Rule
-  public TestRule solrTestRules = 
-    RuleChain.outerRule(new SystemPropertiesRestoreRule());
+  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   protected SolrClient getSolrAdmin() {
     return new EmbeddedSolrServer(cores, null);
   }
-  
+
   @Test
   public void testProperties() throws Exception {
 
@@ -110,7 +104,5 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     mcr = CoreAdminRequest.getStatus(name, coreadmin);
     long after = mcr.getStartTime(name).getTime();
     assertTrue("should have more recent time: " + after + "," + before, after > before);
-
   }
-
 }

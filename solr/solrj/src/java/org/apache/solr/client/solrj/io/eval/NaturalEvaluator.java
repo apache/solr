@@ -20,26 +20,30 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class NaturalEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public NaturalEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public NaturalEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    if(1 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 1 value but found %d",expression,containedEvaluators.size()));
+    if (1 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 1 value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
-  public Object doWork(Object value){
-    int natural = ((Number)value).intValue();
+  public Object doWork(Object value) {
+    int natural = ((Number) value).intValue();
     List<Number> naturals = new ArrayList<>();
-    for(int i=0; i<natural; i++) {
+    for (int i = 0; i < natural; i++) {
       naturals.add(i);
     }
     return naturals;

@@ -20,21 +20,22 @@ package org.apache.solr.common.cloud;
 import java.util.Set;
 
 /**
- * Callback registered with {@link ZkStateReader#registerCloudCollectionsListener(CloudCollectionsListener)}
- * and called whenever the cloud's set of collections changes.
+ * Callback registered with {@link
+ * ZkStateReader#registerCloudCollectionsListener(CloudCollectionsListener)} and called whenever the
+ * cloud's set of collections changes.
  */
 public interface CloudCollectionsListener {
 
   /**
-   * Called when a collection is created, a collection is deleted or a watched collection's state changes.
+   * Called when a collection is created, a collection is deleted or a watched collection's state
+   * changes.
    *
-   * Note that, due to the way Zookeeper watchers are implemented, a single call may be
-   * the result of multiple or no collection creation or deletions. Also, multiple calls to this method can be made
-   * with the same set of collections, ie. without any new updates.
+   * <p>Note that, due to the way Zookeeper watchers are implemented, a single call may be the
+   * result of multiple or no collection creation or deletions. Also, multiple calls to this method
+   * can be made with the same set of collections, ie. without any new updates.
    *
-   * @param oldCollections       the previous set of collections
-   * @param newCollections       the new set of collections
+   * @param oldCollections the previous set of collections
+   * @param newCollections the new set of collections
    */
   void onChange(Set<String> oldCollections, Set<String> newCollections);
-
 }

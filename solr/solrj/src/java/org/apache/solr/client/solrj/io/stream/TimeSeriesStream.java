@@ -24,10 +24,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
@@ -50,10 +49,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
-/**
- * @since 6.6.0
- */
-public class TimeSeriesStream extends TupleStream implements Expressible  {
+/** @since 6.6.0 */
+public class TimeSeriesStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
@@ -75,23 +72,25 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
 
-  public TimeSeriesStream(String zkHost,
-                          String collection,
-                          SolrParams params,
-                          Metric[] metrics,
-                          String field,
-                          String start,
-                          String end,
-                          String gap,
-                          String format) throws IOException {
+  public TimeSeriesStream(
+      String zkHost,
+      String collection,
+      SolrParams params,
+      Metric[] metrics,
+      String field,
+      String start,
+      String end,
+      String gap,
+      String format)
+      throws IOException {
     init(collection, params, field, metrics, start, end, gap, format, null, null, zkHost);
   }
 
-  public TimeSeriesStream(StreamExpression expression, StreamFactory factory) throws IOException{
+  public TimeSeriesStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
 
-    if(collectionName.indexOf('"') > -1) {
+    if (collectionName.indexOf('"') > -1) {
       collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
     }
 
@@ -105,71 +104,89 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     StreamExpressionNamedParameter limitExpression = factory.getNamedOperand(expression, "limit");
 
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
-    List<StreamExpression> metricExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
+    List<StreamExpression> metricExpressions =
+        factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
 
     String start = null;
-    if(startExpression != null) {
-      start = ((StreamExpressionValue)startExpression.getParameter()).getValue();
+    if (startExpression != null) {
+      start = ((StreamExpressionValue) startExpression.getParameter()).getValue();
     } else {
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - start parameter is required",expression));
+      throw new IOException(
+          String.format(
+              Locale.ROOT, "invalid expression %s - start parameter is required", expression));
     }
 
     String end = null;
-    if(endExpression != null) {
-      end = ((StreamExpressionValue)endExpression.getParameter()).getValue();
-    }  else {
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - end parameter is required",expression));
+    if (endExpression != null) {
+      end = ((StreamExpressionValue) endExpression.getParameter()).getValue();
+    } else {
+      throw new IOException(
+          String.format(
+              Locale.ROOT, "invalid expression %s - end parameter is required", expression));
     }
 
     String gap = null;
-    if(gapExpression != null) {
-      gap = ((StreamExpressionValue)gapExpression.getParameter()).getValue();
+    if (gapExpression != null) {
+      gap = ((StreamExpressionValue) gapExpression.getParameter()).getValue();
     } else {
-    throw new IOException(String.format(Locale.ROOT,"invalid expression %s - gap parameter is required",expression));
-  }
+      throw new IOException(
+          String.format(
+              Locale.ROOT, "invalid expression %s - gap parameter is required", expression));
+    }
 
     String field = null;
-    if(fieldExpression != null) {
-      field = ((StreamExpressionValue)fieldExpression.getParameter()).getValue();
+    if (fieldExpression != null) {
+      field = ((StreamExpressionValue) fieldExpression.getParameter()).getValue();
     } else {
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - field parameter is required",expression));
+      throw new IOException(
+          String.format(
+              Locale.ROOT, "invalid expression %s - field parameter is required", expression));
     }
 
     String format = null;
-    if(formatExpression != null) {
-      format = ((StreamExpressionValue)formatExpression.getParameter()).getValue();
+    if (formatExpression != null) {
+      format = ((StreamExpressionValue) formatExpression.getParameter()).getValue();
     }
 
     String split = null;
-    if(splitExpression != null) {
-      split = ((StreamExpressionValue)splitExpression.getParameter()).getValue();
+    if (splitExpression != null) {
+      split = ((StreamExpressionValue) splitExpression.getParameter()).getValue();
     }
 
     String limit = "10";
-    if(limitExpression != null) {
-      limit = ((StreamExpressionValue)limitExpression.getParameter()).getValue();
+    if (limitExpression != null) {
+      limit = ((StreamExpressionValue) limitExpression.getParameter()).getValue();
       try {
         Integer.parseInt(limit);
       } catch (Exception e) {
-        throw new IOException(String.format(Locale.ROOT,"invalid limit %s, integer expected", limit));
+        throw new IOException(
+            String.format(Locale.ROOT, "invalid limit %s, integer expected", limit));
       }
     }
 
     // Collection Name
-    if(null == collectionName){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
+    if (null == collectionName) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - collectionName expected as first operand",
+              expression));
     }
 
     // Named parameters - passed directly to solr as solrparams
-    if(0 == namedParams.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
+    if (0 == namedParams.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",
+              expression));
     }
 
     // Construct the metrics
     Metric[] metrics = null;
-    if(metricExpressions.size() > 0) {
+    if (metricExpressions.size() > 0) {
       metrics = new Metric[metricExpressions.size()];
-      for(int idx = 0; idx < metricExpressions.size(); ++idx){
+      for (int idx = 0; idx < metricExpressions.size(); ++idx) {
         metrics[idx] = factory.constructMetric(metricExpressions.get(idx));
       }
     } else {
@@ -179,29 +196,36 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
 
     // pull out known named params
     ModifiableSolrParams params = new ModifiableSolrParams();
-    for(StreamExpressionNamedParameter namedParam : namedParams){
-      if(!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("start") && !namedParam.getName().equals("end") && !namedParam.getName().equals("gap")){
+    for (StreamExpressionNamedParameter namedParam : namedParams) {
+      if (!namedParam.getName().equals("zkHost")
+          && !namedParam.getName().equals("start")
+          && !namedParam.getName().equals("end")
+          && !namedParam.getName().equals("gap")) {
         params.add(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
 
-    if(params.get("q") == null) {
+    if (params.get("q") == null) {
       params.set("q", "*:*");
     }
 
     // zkHost, optional - if not provided then will look into factory list to get
     String zkHost = null;
-    if(null == zkHostExpression){
+    if (null == zkHostExpression) {
       zkHost = factory.getCollectionZkHost(collectionName);
-      if(zkHost == null) {
+      if (zkHost == null) {
         zkHost = factory.getDefaultZkHost();
       }
+    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
+      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
     }
-    else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
-      zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
-    }
-    if(null == zkHost){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
+    if (null == zkHost) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - zkHost not found for collection '%s'",
+              expression,
+              collectionName));
     }
 
     // We've got all the required items
@@ -212,25 +236,25 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     return this.collection;
   }
 
-
-
-  private void init(String collection,
-                    SolrParams params,
-                    String field,
-                    Metric[] metrics,
-                    String start,
-                    String end,
-                    String gap,
-                    String format,
-                    String split,
-                    String limit,
-                    String zkHost) throws IOException {
-    this.zkHost  = zkHost;
+  private void init(
+      String collection,
+      SolrParams params,
+      String field,
+      Metric[] metrics,
+      String start,
+      String end,
+      String gap,
+      String format,
+      String split,
+      String limit,
+      String zkHost)
+      throws IOException {
+    this.zkHost = zkHost;
     this.collection = collection;
     this.start = start;
     this.gap = gap;
-    if(!gap.startsWith("+")) {
-      this.gap = "+"+gap;
+    if (!gap.startsWith("+")) {
+      this.gap = "+" + gap;
     }
     this.metrics = metrics;
     this.field = field;
@@ -238,7 +262,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     this.split = split;
     this.limit = limit;
     this.end = end;
-    if(format != null) {
+    if (format != null) {
       this.format = format;
       formatter = DateTimeFormatter.ofPattern(format, Locale.ROOT);
     }
@@ -249,8 +273,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     // collection
-    if(collection.indexOf(',') > -1) {
-      expression.addParameter("\""+collection+"\"");
+    if (collection.indexOf(',') > -1) {
+      expression.addParameter("\"" + collection + "\"");
     } else {
       expression.addParameter(collection);
     }
@@ -259,12 +283,12 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     ModifiableSolrParams tmpParams = new ModifiableSolrParams(params);
 
     for (Entry<String, String[]> param : tmpParams.getMap().entrySet()) {
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(),
-          String.join(",", param.getValue())));
+      expression.addParameter(
+          new StreamExpressionNamedParameter(param.getKey(), String.join(",", param.getValue())));
     }
 
     // metrics
-    for(Metric metric : metrics){
+    for (Metric metric : metrics) {
       expression.addParameter(metric.toExpression(factory));
     }
 
@@ -273,7 +297,6 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     expression.addParameter(new StreamExpressionNamedParameter("gap", gap));
     expression.addParameter(new StreamExpressionNamedParameter("field", gap));
     expression.addParameter(new StreamExpressionNamedParameter("format", format));
-
 
     // zkHost
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
@@ -294,13 +317,17 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     // child is a datastore so add it at this point
     StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
     child.setFunctionName(String.format(Locale.ROOT, "solr (%s)", collection));
-    // TODO: fix this so we know the # of workers - check with Joel about a Topic's ability to be in a
-    // parallel stream.
+    // TODO: fix this so we know the # of workers - check with Joel about a Topic's ability to be in
+    // a parallel stream.
 
     child.setImplementingClass("Solr/Lucene");
     child.setExpressionType(ExpressionType.DATASTORE);
 
-    child.setExpression(params.stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), Arrays.toString(e.getValue()))).collect(Collectors.joining(",")));
+    child.setExpression(
+        params.stream()
+            .map(
+                e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), Arrays.toString(e.getValue())))
+            .collect(Collectors.joining(",")));
 
     explanation.addChild(child);
 
@@ -340,13 +367,13 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   }
 
   public void close() throws IOException {
-    if(cache == null) {
+    if (cache == null) {
       cloudSolrClient.close();
     }
   }
 
   public Tuple read() throws IOException {
-    if(index < tuples.size()) {
+    if (index < tuples.size()) {
       Tuple tuple = tuples.get(index);
       ++index;
       return tuple;
@@ -355,19 +382,15 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     }
   }
 
-  private String getJsonFacetString(String field, Metric[] _metrics, String start, String end, String gap) {
+  private String getJsonFacetString(
+      String field, Metric[] _metrics, String start, String end, String gap) {
     StringBuilder buf = new StringBuilder();
     appendJson(buf, _metrics, field, start, end, gap);
-    return "{"+buf.toString()+"}";
+    return "{" + buf.toString() + "}";
   }
 
-
-  private void appendJson(StringBuilder buf,
-                          Metric[] _metrics,
-                          String field,
-                          String start,
-                          String end,
-                          String gap) {
+  private void appendJson(
+      StringBuilder buf, Metric[] _metrics, String field, String start, String end, String gap) {
     buf.append('"');
     buf.append("timeseries");
     buf.append('"');
@@ -380,9 +403,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
 
     buf.append(",\"facet\":{");
 
-
     // Add the split here:
-    if(split != null) {
+    if (split != null) {
       buf.append('"');
       buf.append("split");
       buf.append('"');
@@ -391,50 +413,82 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
       buf.append(",\"field\":\"").append(split.toString()).append('"');
       buf.append(",\"limit\":").append(limit);
       buf.append(",\"overrequest\":100");
-      if(_metrics[0].getIdentifier().startsWith("count(")) {
+      if (_metrics[0].getIdentifier().startsWith("count(")) {
         buf.append(",\"sort\":\"").append("count").append(" desc\"");
       } else {
         buf.append(",\"sort\":\"").append("facet_0").append(" desc\"");
       }
       buf.append(",\"facet\":{");
-      //Add the aggregations.
+      // Add the aggregations.
       int metricCount = 0;
-      for(Metric metric : _metrics) {
+      for (Metric metric : _metrics) {
         String identifier = metric.getIdentifier();
-        if(!identifier.startsWith("count(")) {
-          if(metricCount>0) {
+        if (!identifier.startsWith("count(")) {
+          if (metricCount > 0) {
             buf.append(",");
           }
-          if(identifier.startsWith("per(")) {
-            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("per", "percentile")).append('"');
-          } else if(identifier.startsWith("std(")) {
-            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("std", "stddev")).append('"');
-          }  else if (identifier.startsWith("countDist(")) {
-            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("countDist", "unique")).append('"');
+          if (identifier.startsWith("per(")) {
+            buf.append("\"facet_")
+                .append(metricCount)
+                .append("\":\"")
+                .append(identifier.replaceFirst("per", "percentile"))
+                .append('"');
+          } else if (identifier.startsWith("std(")) {
+            buf.append("\"facet_")
+                .append(metricCount)
+                .append("\":\"")
+                .append(identifier.replaceFirst("std", "stddev"))
+                .append('"');
+          } else if (identifier.startsWith("countDist(")) {
+            buf.append("\"facet_")
+                .append(metricCount)
+                .append("\":\"")
+                .append(identifier.replaceFirst("countDist", "unique"))
+                .append('"');
           } else {
-            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
+            buf.append("\"facet_")
+                .append(metricCount)
+                .append("\":\"")
+                .append(identifier)
+                .append('"');
           }
           ++metricCount;
         }
       }
       buf.append("}}");
     } else {
-      //No split so simply append the aggregations.
+      // No split so simply append the aggregations.
       int metricCount = 0;
-      for(Metric metric : _metrics) {
+      for (Metric metric : _metrics) {
         String identifier = metric.getIdentifier();
-        if(!identifier.startsWith("count(")) {
-          if(metricCount>0) {
+        if (!identifier.startsWith("count(")) {
+          if (metricCount > 0) {
             buf.append(",");
           }
-          if(identifier.startsWith("per(")) {
-            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("per", "percentile")).append('"');
-          } else if(identifier.startsWith("std(")) {
-            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("std", "stddev")).append('"');
-          }  else if (identifier.startsWith("countDist(")) {
-            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier.replaceFirst("countDist", "unique")).append('"');
+          if (identifier.startsWith("per(")) {
+            buf.append("\"facet_")
+                .append(metricCount)
+                .append("\":\"")
+                .append(identifier.replaceFirst("per", "percentile"))
+                .append('"');
+          } else if (identifier.startsWith("std(")) {
+            buf.append("\"facet_")
+                .append(metricCount)
+                .append("\":\"")
+                .append(identifier.replaceFirst("std", "stddev"))
+                .append('"');
+          } else if (identifier.startsWith("countDist(")) {
+            buf.append("\"facet_")
+                .append(metricCount)
+                .append("\":\"")
+                .append(identifier.replaceFirst("countDist", "unique"))
+                .append('"');
           } else {
-            buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
+            buf.append("\"facet_")
+                .append(metricCount)
+                .append("\":\"")
+                .append(identifier)
+                .append('"');
           }
           ++metricCount;
         }
@@ -443,46 +497,46 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     buf.append("}}");
   }
 
-  private void getTuples(NamedList<?> response,
-                         String field,
-                         Metric[] metrics) {
+  private void getTuples(NamedList<?> response, String field, Metric[] metrics) {
 
     Tuple tuple = new Tuple();
-    NamedList<?> facets = (NamedList<?>)response.get("facets");
+    NamedList<?> facets = (NamedList<?>) response.get("facets");
     fillTuples(tuples, tuple, facets, field, metrics);
   }
 
-  private void fillTuples(List<Tuple> tuples,
-                          Tuple currentTuple,
-                          NamedList<?> facets,
-                          String field,
-                          Metric[] _metrics) {
+  private void fillTuples(
+      List<Tuple> tuples,
+      Tuple currentTuple,
+      NamedList<?> facets,
+      String field,
+      Metric[] _metrics) {
 
-    NamedList<?> nl = (NamedList<?>)facets.get("timeseries");
-    if(nl == null) {
+    NamedList<?> nl = (NamedList<?>) facets.get("timeseries");
+    if (nl == null) {
       return;
     }
     @SuppressWarnings("unchecked")
-    List<NamedList<?>> allBuckets = (List<NamedList<?>>)nl.get("buckets");
-    for(int b=0; b<allBuckets.size(); b++) {
+    List<NamedList<?>> allBuckets = (List<NamedList<?>>) nl.get("buckets");
+    for (int b = 0; b < allBuckets.size(); b++) {
       NamedList<?> bucket = allBuckets.get(b);
       Object val = bucket.get("val");
       Tuple tx = currentTuple.clone();
 
-      if(formatter != null) {
-        LocalDateTime localDateTime = LocalDateTime.ofInstant(((java.util.Date) val).toInstant(), ZoneOffset.UTC);
+      if (formatter != null) {
+        LocalDateTime localDateTime =
+            LocalDateTime.ofInstant(((java.util.Date) val).toInstant(), ZoneOffset.UTC);
         val = localDateTime.format(formatter);
       }
 
       tx.put(field, val);
 
-      if(split != null) {
+      if (split != null) {
         NamedList<?> splitBuckets = (NamedList<?>) bucket.get("split");
-        if(splitBuckets == null) {
+        if (splitBuckets == null) {
           continue;
         }
         @SuppressWarnings({"unchecked"})
-        List<NamedList<?>> sbuckets = (List<NamedList<?>>)splitBuckets.get("buckets");
+        List<NamedList<?>> sbuckets = (List<NamedList<?>>) splitBuckets.get("buckets");
         for (int d = 0; d < sbuckets.size(); d++) {
           NamedList<?> bucketS = sbuckets.get(d);
           Object valS = bucketS.get("val");
@@ -492,10 +546,10 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
           Tuple splitT = tx.clone();
           splitT.put(split, valS);
           int m = 0;
-          for(Metric metric : _metrics) {
+          for (Metric metric : _metrics) {
             String identifier = metric.getIdentifier();
-            if(!identifier.startsWith("count(")) {
-              if(bucketS.get("facet_"+m) != null) {
+            if (!identifier.startsWith("count(")) {
+              if (bucketS.get("facet_" + m) != null) {
                 Number n = (Number) bucketS.get("facet_" + m);
                 if (metric.outputLong) {
                   splitT.put(identifier, Math.round(n.doubleValue()));
@@ -507,7 +561,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
               }
               ++m;
             } else {
-              long l = ((Number)bucketS.get("count")).longValue();
+              long l = ((Number) bucketS.get("count")).longValue();
               splitT.put("count(*)", l);
             }
           }
@@ -515,10 +569,10 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
         }
       } else {
         int m = 0;
-        for(Metric metric : _metrics) {
+        for (Metric metric : _metrics) {
           String identifier = metric.getIdentifier();
-          if(!identifier.startsWith("count(")) {
-            if(bucket.get("facet_"+m) != null) {
+          if (!identifier.startsWith("count(")) {
+            if (bucket.get("facet_" + m) != null) {
               Number d = (Number) bucket.get("facet_" + m);
               if (metric.outputLong) {
                 tx.put(identifier, Math.round(d.doubleValue()));
@@ -530,7 +584,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
             }
             ++m;
           } else {
-            long l = ((Number)bucket.get("count")).longValue();
+            long l = ((Number) bucket.get("count")).longValue();
             tx.put("count(*)", l);
           }
         }

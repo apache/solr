@@ -17,36 +17,59 @@
 
 package org.apache.solr.client.solrj.request;
 
-
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.ApiMapping.CommandMeta;
-import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
-
-import java.util.Collections;
-import java.util.Map;
-
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.request.CoreApiMapping.EndPoint.*;
 
-/** stores the mapping of v1 API parameters to v2 API parameters
- * for core admin API
- *
- */
+import java.util.Collections;
+import java.util.Map;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.ApiMapping.CommandMeta;
+import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+
+/** stores the mapping of v1 API parameters to v2 API parameters for core admin API */
 public class CoreApiMapping {
   public enum Meta implements CommandMeta {
     UNLOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.UNLOAD, "unload", null),
     RELOAD(PER_CORE_COMMANDS, POST, CoreAdminAction.RELOAD, "reload", null),
-    SWAP(PER_CORE_COMMANDS, POST, CoreAdminAction.SWAP, "swap", Collections.singletonMap("other", "with")),
-    RENAME(PER_CORE_COMMANDS, POST, CoreAdminAction.RENAME, "rename", Collections.singletonMap("other", "to")),
+    SWAP(
+        PER_CORE_COMMANDS,
+        POST,
+        CoreAdminAction.SWAP,
+        "swap",
+        Collections.singletonMap("other", "with")),
+    RENAME(
+        PER_CORE_COMMANDS,
+        POST,
+        CoreAdminAction.RENAME,
+        "rename",
+        Collections.singletonMap("other", "to")),
     MERGEINDEXES(PER_CORE_COMMANDS, POST, CoreAdminAction.MERGEINDEXES, "merge-indexes", null),
-    SPLIT(PER_CORE_COMMANDS, POST, CoreAdminAction.SPLIT, "split", Collections.singletonMap("split.key", "splitKey")),
+    SPLIT(
+        PER_CORE_COMMANDS,
+        POST,
+        CoreAdminAction.SPLIT,
+        "split",
+        Collections.singletonMap("split.key", "splitKey")),
     PREPRECOVERY(PER_CORE_COMMANDS, POST, CoreAdminAction.PREPRECOVERY, "prep-recovery", null),
-    REQUESTRECOVERY(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTRECOVERY, "request-recovery", null),
-    REQUESTSYNCSHARD(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTSYNCSHARD, "request-sync-shard", null),
-    REQUESTBUFFERUPDATES(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTBUFFERUPDATES, "request-buffer-updates", null),
-    REQUESTAPPLYUPDATES(PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTAPPLYUPDATES, "request-apply-updates", null),
-    REQUESTSTATUS(PER_CORE_COMMANDS, GET, CoreAdminAction.REQUESTSTATUS, "request-status", null)/*TODO*/;
+    REQUESTRECOVERY(
+        PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTRECOVERY, "request-recovery", null),
+    REQUESTSYNCSHARD(
+        PER_CORE_COMMANDS, POST, CoreAdminAction.REQUESTSYNCSHARD, "request-sync-shard", null),
+    REQUESTBUFFERUPDATES(
+        PER_CORE_COMMANDS,
+        POST,
+        CoreAdminAction.REQUESTBUFFERUPDATES,
+        "request-buffer-updates",
+        null),
+    REQUESTAPPLYUPDATES(
+        PER_CORE_COMMANDS,
+        POST,
+        CoreAdminAction.REQUESTAPPLYUPDATES,
+        "request-apply-updates",
+        null),
+    REQUESTSTATUS(
+        PER_CORE_COMMANDS, GET, CoreAdminAction.REQUESTSTATUS, "request-status", null) /*TODO*/;
 
     public final String commandName;
     public final EndPoint endPoint;
@@ -54,12 +77,19 @@ public class CoreApiMapping {
     public final CoreAdminAction action;
     public final Map<String, String> paramstoAttr;
 
-    Meta(EndPoint endPoint, SolrRequest.METHOD method, CoreAdminAction action, String commandName,
-         Map<String,String> paramstoAttr) {
+    Meta(
+        EndPoint endPoint,
+        SolrRequest.METHOD method,
+        CoreAdminAction action,
+        String commandName,
+        Map<String, String> paramstoAttr) {
       this.commandName = commandName;
       this.endPoint = endPoint;
       this.method = method;
-      this.paramstoAttr = paramstoAttr == null ? Collections.emptyMap() : paramstoAttr; // expect this to be immutable
+      this.paramstoAttr =
+          paramstoAttr == null
+              ? Collections.emptyMap()
+              : paramstoAttr; // expect this to be immutable
       this.action = action;
     }
 

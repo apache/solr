@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -29,9 +28,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-/**
- * @since 6.6.0
- */
+/** @since 6.6.0 */
 public class ListStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
@@ -44,30 +41,33 @@ public class ListStream extends TupleStream implements Expressible {
   }
 
   public ListStream(StreamExpression expression, StreamFactory factory) throws IOException {
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
     TupleStream[] streams = new TupleStream[streamExpressions.size()];
-    for(int idx = 0; idx < streamExpressions.size(); ++idx){
+    for (int idx = 0; idx < streamExpressions.size(); ++idx) {
       streams[idx] = factory.constructStream(streamExpressions.get(idx));
     }
 
     init(streams);
   }
 
-  private void init(TupleStream ... tupleStreams) {
+  private void init(TupleStream... tupleStreams) {
     this.streams = tupleStreams;
   }
 
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     return toExpression(factory, true);
   }
 
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
-    if(includeStreams) {
-      for(TupleStream stream : streams) {
-        expression.addParameter(((Expressible)stream).toExpression(factory));
+    if (includeStreams) {
+      for (TupleStream stream : streams) {
+        expression.addParameter(((Expressible) stream).toExpression(factory));
       }
     }
     return expression;
@@ -81,7 +81,7 @@ public class ListStream extends TupleStream implements Expressible {
     explanation.setImplementingClass(this.getClass().getName());
     explanation.setExpressionType(ExpressionType.STREAM_DECORATOR);
     explanation.setExpression(toExpression(factory, false).toString());
-    for(TupleStream stream : streams) {
+    for (TupleStream stream : streams) {
       explanation.addChild(stream.toExplanation(factory));
     }
 
@@ -89,21 +89,21 @@ public class ListStream extends TupleStream implements Expressible {
   }
 
   public void setStreamContext(StreamContext context) {
-    for(TupleStream stream : streams) {
+    for (TupleStream stream : streams) {
       stream.setStreamContext(context);
     }
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<TupleStream>();
-    for(TupleStream stream : streams) {
+    List<TupleStream> l = new ArrayList<TupleStream>();
+    for (TupleStream stream : streams) {
       l.add(stream);
     }
     return l;
   }
 
   public Tuple read() throws IOException {
-    while(true) {
+    while (true) {
       if (currentStream == null) {
         if (streamIndex < streams.length) {
           currentStream = streams[streamIndex];
@@ -128,22 +128,16 @@ public class ListStream extends TupleStream implements Expressible {
     }
   }
 
-  public void close() throws IOException {
-  }
+  public void close() throws IOException {}
 
-  public void open() throws IOException {
-
-
-  }
+  public void open() throws IOException {}
 
   /** Return the stream sort - ie, the order in which records are returned */
-  public StreamComparator getStreamSort(){
+  public StreamComparator getStreamSort() {
     return null;
   }
 
   public int getCost() {
     return 0;
   }
-
-
 }
