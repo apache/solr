@@ -21,56 +21,56 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class MultiplyEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public MultiplyEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public MultiplyEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
-    if(containedEvaluators.size() < 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
+
+    if (containedEvaluators.size() < 1) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting at least one value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if(Arrays.stream(values).anyMatch(item -> null == item)){
+    if (Arrays.stream(values).anyMatch(item -> null == item)) {
       return null;
-    }
-    
-    if(0 == values.length){
-      return null;
-    }
-    
-    BigDecimal result = BigDecimal.ONE;
-    for(Object value : values){
-      result = multiply(result, value);
-    }
-    
-    return result;
-  }
-  
-  private BigDecimal multiply(BigDecimal left, Object right) throws IOException{
-    if(null == left || null == right){
-      return null;
-    }
-    else if(right instanceof BigDecimal){
-      return left.multiply((BigDecimal)right);
-    }
-    else if(right instanceof Number){
-      return multiply(left, new BigDecimal(right.toString()));
-    }
-    else if(right instanceof List){
-      return multiply(left, doWork(((List<?>)right).toArray()));
-    }
-    else{
-      throw new StreamEvaluatorException("Numeric value expected but found type %s for value %s", right.getClass().getName(), right.toString());
     }
 
+    if (0 == values.length) {
+      return null;
+    }
+
+    BigDecimal result = BigDecimal.ONE;
+    for (Object value : values) {
+      result = multiply(result, value);
+    }
+
+    return result;
   }
-  
+
+  private BigDecimal multiply(BigDecimal left, Object right) throws IOException {
+    if (null == left || null == right) {
+      return null;
+    } else if (right instanceof BigDecimal) {
+      return left.multiply((BigDecimal) right);
+    } else if (right instanceof Number) {
+      return multiply(left, new BigDecimal(right.toString()));
+    } else if (right instanceof List) {
+      return multiply(left, doWork(((List<?>) right).toArray()));
+    } else {
+      throw new StreamEvaluatorException(
+          "Numeric value expected but found type %s for value %s",
+          right.getClass().getName(), right.toString());
+    }
+  }
 }

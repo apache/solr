@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.commons.math3.random.EmpiricalDistribution;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -27,17 +27,15 @@ import org.apache.solr.client.solrj.io.eval.EmpiricalDistributionEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class EmpiricalDistributionEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
-  Map<String,Object> values;
+  Map<String, Object> values;
 
   public EmpiricalDistributionEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("emp", EmpiricalDistributionEvaluator.class);
-    values = new HashMap<String,Object>();
+    values = new HashMap<String, Object>();
   }
 
   @Test
@@ -51,7 +49,9 @@ public class EmpiricalDistributionEvaluatorTest extends SolrTestCase {
 
     EmpiricalDistribution dist = new EmpiricalDistribution();
     dist.load(l1);
-    Assert.assertEquals(dist.getNumericalMean(),
-        ((EmpiricalDistribution) factory.constructEvaluator("emp(l1)").evaluate(new Tuple(values))).getNumericalMean());
+    Assert.assertEquals(
+        dist.getNumericalMean(),
+        ((EmpiricalDistribution) factory.constructEvaluator("emp(l1)").evaluate(new Tuple(values)))
+            .getNumericalMean());
   }
 }

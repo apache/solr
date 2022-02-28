@@ -18,17 +18,16 @@
 package org.apache.solr.common.util;
 
 /**
- * This is a very fast, non-cryptographic hash suitable for general hash-based
- * lookup. See http://murmurhash.googlepages.com/ for more details.
- * <p>
- * The C version of MurmurHash 2.0 found at that site was ported to Java by
- * Andrzej Bialecki (ab at getopt org).
- * </p>
- * <p>
- *  The code from getopt.org was adapted by Mark Harwood in the form here as one of a pluggable choice of
- *  hashing functions as the core function had to be adapted to work with BytesRefs with offsets and lengths
- *  rather than raw byte arrays.
- * </p>
+ * This is a very fast, non-cryptographic hash suitable for general hash-based lookup. See
+ * http://murmurhash.googlepages.com/ for more details.
+ *
+ * <p>The C version of MurmurHash 2.0 found at that site was ported to Java by Andrzej Bialecki (ab
+ * at getopt org).
+ *
+ * <p>The code from getopt.org was adapted by Mark Harwood in the form here as one of a pluggable
+ * choice of hashing functions as the core function had to be adapted to work with BytesRefs with
+ * offsets and lengths rather than raw byte arrays.
+ *
  * @lucene.experimental
  */
 public final class MurmurHash2 {
@@ -80,18 +79,14 @@ public final class MurmurHash2 {
   /**
    * Generates 32 bit hash from byte array with default seed value.
    *
-   * @param data
-   *          byte array to hash
-   * @param offset
-   *          the start position in the array to hash
-   * @param len
-   *          length of the array elements to hash
+   * @param data byte array to hash
+   * @param offset the start position in the array to hash
+   * @param len length of the array elements to hash
    * @return 32 bit hash of the given array
    */
   public static final int hash32(final byte[] data, int offset, int len) {
     return MurmurHash2.hash(data, 0x9747b28c, offset, len);
   }
-
 
   @Override
   public String toString() {

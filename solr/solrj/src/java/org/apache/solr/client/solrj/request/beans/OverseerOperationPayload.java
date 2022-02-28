@@ -21,9 +21,7 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 public class OverseerOperationPayload implements ReflectMapWriter {
-    @JsonProperty
-    public String op;
+  @JsonProperty public String op;
 
-    @JsonProperty
-    public String electionNode;
+  @JsonProperty public String electionNode;
 }

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -34,35 +33,58 @@ public class AscEvaluator extends RecursiveObjectEvaluator implements OneValueWo
   @Override
   @SuppressWarnings({"unchecked"})
   public Object doWork(Object value) throws IOException {
-    if(null == value){
+    if (null == value) {
       return value;
+    } else if (!(value instanceof List<?>)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting a List",
+              toExpression(constructingFactory),
+              value.getClass().getSimpleName()));
     }
-    else if(!(value instanceof List<?>)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a List",toExpression(constructingFactory), value.getClass().getSimpleName()));
-    }
-    
-    List<?> list = (List<?>)value;
-    
-    if(0 == list.size()){
+
+    List<?> list = (List<?>) value;
+
+    if (0 == list.size()) {
       return list;
     }
 
     // Validate all of same type and are comparable
     Object checkingObject = list.get(0);
-    for(int idx = 0; idx < list.size(); ++idx){
+    for (int idx = 0; idx < list.size(); ++idx) {
       Object item = list.get(0);
-      
-      if(null == item){
-        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found null value",toExpression(constructingFactory)));
-      }
-      else if(!(item instanceof Comparable<?>)){
-        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found non-comparable value %s of type %s",toExpression(constructingFactory), item.toString(), item.getClass().getSimpleName()));
-      }
-      else if(!item.getClass().getCanonicalName().equals(checkingObject.getClass().getCanonicalName())){
-        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - value %s is of type %s but we are expeting type %s",toExpression(constructingFactory), item.toString(), item.getClass().getSimpleName(), checkingObject.getClass().getCanonicalName()));
+
+      if (null == item) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - found null value",
+                toExpression(constructingFactory)));
+      } else if (!(item instanceof Comparable<?>)) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - found non-comparable value %s of type %s",
+                toExpression(constructingFactory),
+                item.toString(),
+                item.getClass().getSimpleName()));
+      } else if (!item.getClass()
+          .getCanonicalName()
+          .equals(checkingObject.getClass().getCanonicalName())) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - value %s is of type %s but we are expeting type %s",
+                toExpression(constructingFactory),
+                item.toString(),
+                item.getClass().getSimpleName(),
+                checkingObject.getClass().getCanonicalName()));
       }
     }
 
-    return list.stream().sorted((left,right) -> ((Comparable)left).compareTo((Comparable)right)).collect(Collectors.toList());
+    return list.stream()
+        .sorted((left, right) -> ((Comparable) left).compareTo((Comparable) right))
+        .collect(Collectors.toList());
   }
 }

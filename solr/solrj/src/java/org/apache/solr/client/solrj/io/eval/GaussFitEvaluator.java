@@ -15,31 +15,29 @@
  * limitations under the License.
  */
 
-
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
-
+import java.util.List;
 import org.apache.commons.math3.analysis.function.Gaussian;
 import org.apache.commons.math3.fitting.GaussianCurveFitter;
-import org.apache.commons.math3.fitting.WeightedObservedPoints;
 import org.apache.commons.math3.fitting.WeightedObservedPoint;
+import org.apache.commons.math3.fitting.WeightedObservedPoints;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class GaussFitEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public GaussFitEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public GaussFitEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
   @Override
-  public Object doWork(Object... objects) throws IOException{
+  public Object doWork(Object... objects) throws IOException {
 
-    if(objects.length >= 3) {
+    if (objects.length >= 3) {
       throw new IOException("gaussfit function takes a maximum of 2 arguments.");
     }
 
@@ -48,28 +46,28 @@ public class GaussFitEvaluator extends RecursiveNumericEvaluator implements Many
     double[] x = null;
     double[] y = null;
 
-    if(objects.length == 1) {
-      //Only the y values passed
+    if (objects.length == 1) {
+      // Only the y values passed
 
       y = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       x = new double[y.length];
-      for(int i=0; i<y.length; i++) {
+      for (int i = 0; i < y.length; i++) {
         x[i] = i;
       }
 
-    } else if(objects.length == 2) {
+    } else if (objects.length == 2) {
       // x and y passed
       Object second = objects[1];
       x = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
-      y = ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
-
-
+      y =
+          ((List<?>) second)
+              .stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
     }
 
     GaussianCurveFitter curveFitter = GaussianCurveFitter.create();
 
     WeightedObservedPoints points = new WeightedObservedPoints();
-    for(int i=0; i<x.length; i++) {
+    for (int i = 0; i < x.length; i++) {
       points.add(x[i], y[i]);
     }
 
@@ -81,8 +79,8 @@ public class GaussFitEvaluator extends RecursiveNumericEvaluator implements Many
     double[] coef = curveFitter.fit(pointList);
     Gaussian gaussian = new Gaussian(coef[0], coef[1], coef[2]);
     List<Double> list = new ArrayList<>();
-    for(double xvalue : x) {
-      double yvalue= gaussian.value(xvalue);
+    for (double xvalue : x) {
+      double yvalue = gaussian.value(xvalue);
       list.add(yvalue);
     }
 

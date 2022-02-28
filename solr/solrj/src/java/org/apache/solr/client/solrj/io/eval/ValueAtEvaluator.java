@@ -31,36 +31,37 @@ public class ValueAtEvaluator extends RecursiveObjectEvaluator implements ManyVa
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if(values[0] instanceof List) {
+    if (values[0] instanceof List) {
 
       @SuppressWarnings({"unchecked"})
       List<Number> c = (List<Number>) values[0];
       int index = -1;
-      if(values.length == 2) {
-        index = ((Number)values[1]).intValue();
-        if(index >= c.size()) {
-          throw new IOException("Index out of bounds: "+index);
+      if (values.length == 2) {
+        index = ((Number) values[1]).intValue();
+        if (index >= c.size()) {
+          throw new IOException("Index out of bounds: " + index);
         }
       } else {
-        throw new IOException("The valueAt function expects an array and array index as parameters.");
+        throw new IOException(
+            "The valueAt function expects an array and array index as parameters.");
       }
       return c.get(index);
 
-    } else if(values[0] instanceof Matrix) {
+    } else if (values[0] instanceof Matrix) {
 
       Matrix c = (Matrix) values[0];
       double[][] data = c.getData();
       int row = -1;
       int col = -1;
-      if(values.length == 3) {
-        row = ((Number)values[1]).intValue();
-        if(row >= data.length) {
-          throw new IOException("Row index out of bounds: "+row);
+      if (values.length == 3) {
+        row = ((Number) values[1]).intValue();
+        if (row >= data.length) {
+          throw new IOException("Row index out of bounds: " + row);
         }
 
-        col = ((Number)values[2]).intValue();
-        if(col >= data[0].length) {
-          throw new IOException("Column index out of bounds: "+col);
+        col = ((Number) values[2]).intValue();
+        if (col >= data[0].length) {
+          throw new IOException("Column index out of bounds: " + col);
         }
 
       } else {
@@ -68,8 +69,8 @@ public class ValueAtEvaluator extends RecursiveObjectEvaluator implements ManyVa
       }
       return data[row][col];
     } else {
-      throw new IOException("The valueAt function expects a numeric array or matrix as the first parameter");
+      throw new IOException(
+          "The valueAt function expects a numeric array or matrix as the first parameter");
     }
-
   }
 }

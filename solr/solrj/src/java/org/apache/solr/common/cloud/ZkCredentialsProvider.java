@@ -19,26 +19,25 @@ package org.apache.solr.common.cloud;
 import java.util.Collection;
 
 public interface ZkCredentialsProvider {
-  
+
   public class ZkCredentials {
     String scheme;
     byte[] auth;
-    
+
     public ZkCredentials(String scheme, byte[] auth) {
       super();
       this.scheme = scheme;
       this.auth = auth;
     }
-    
+
     public String getScheme() {
       return scheme;
     }
-    
+
     public byte[] getAuth() {
       return auth;
     }
   }
-  
-  Collection<ZkCredentials> getCredentials();
 
+  Collection<ZkCredentials> getCredentials();
 }
