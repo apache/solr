@@ -145,6 +145,8 @@ public class Overseer implements SolrCloseable {
 
   public static final int NUM_RESPONSES_TO_STORE = 10000;
   public static final String OVERSEER_ELECT = "/overseer_elect";
+  public static final String OVERSEER_ELECT_LEADER = OVERSEER_ELECT + "/leader";
+
   private final CopyOnWriteArrayList<Message> unprocessedMessages = new CopyOnWriteArrayList<>();
 
   private SolrMetricsContext solrMetricsContext;
@@ -406,10 +408,9 @@ public class Overseer implements SolrCloseable {
         return;//shutting down no need to go further
       }
       org.apache.zookeeper.data.Stat stat = new org.apache.zookeeper.data.Stat();
-      final String path = OVERSEER_ELECT + "/leader";
       byte[] data;
       try {
-        data = zkClient.getData(path, null, stat, true);
+        data = zkClient.getData(OVERSEER_ELECT_LEADER, null, stat, true);
       } catch (AlreadyClosedException e) {
         return;
       } catch (Exception e) {
@@ -423,11 +424,11 @@ public class Overseer implements SolrCloseable {
           try {
             log.warn("I (id={}) am exiting, but I'm still the leader",
                 overseerCollectionConfigSetProcessor.getId());
-            zkClient.delete(path,stat.getVersion(),true);
+            zkClient.delete(OVERSEER_ELECT_LEADER, stat.getVersion(),true);
           } catch (KeeperException.BadVersionException e) {
             //no problem ignore it some other Overseer has already taken over
           } catch (Exception e) {
-            log.error("Could not delete my leader node {}", path, e);
+            log.error("Could not delete my leader node {}", OVERSEER_ELECT_LEADER, e);
           }
 
         } else{
@@ -522,7 +523,7 @@ public class Overseer implements SolrCloseable {
       String propsId = null;
       try {
         ZkNodeProps props = ZkNodeProps.load(zkClient.getData(
-            OVERSEER_ELECT + "/leader", null, null, true));
+            OVERSEER_ELECT_LEADER, null, null, true));
         propsId = props.getStr(ID);
         if (myId.equals(propsId)) {
           return LeaderStatus.YES;

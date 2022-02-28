@@ -114,7 +114,8 @@ public  class LeaderElector {
     }
 
     // If any double-registrations exist for me, remove all but this latest one!
-    // TODO: can we even get into this state?
+    // Possible if we suffered multiple session expirations in a very short time span
+    // See TestLeaderElectionZkExpiry for an example
     String prefix = zkClient.getSolrZooKeeper().getSessionId() + "-" + context.id + "-";
     Iterator<String> it = seqs.iterator();
     while (it.hasNext()) {
@@ -137,7 +138,8 @@ public  class LeaderElector {
         if (zkClient.isClosed()) return; // but our zkClient is already closed
         runIamLeaderProcess(context, replacement);
       } catch (KeeperException.NodeExistsException e) {
-        log.error("node exists",e);
+        // for some reason if we don't cast here, we log a literal {} and the full exception
+        log.error("node exists {}", (Object) e);
         retryElection(context, false);
         return;
       }
