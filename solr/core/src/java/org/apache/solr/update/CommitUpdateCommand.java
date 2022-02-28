@@ -18,8 +18,10 @@ package org.apache.solr.update;
 
 import org.apache.solr.request.SolrQueryRequest;
 
+import java.util.Map;
+
 /**
- *
+ * A commit index command encapsulated in an object.
  */
 public class CommitUpdateCommand extends UpdateCommand {
   public boolean optimize;
@@ -28,6 +30,8 @@ public class CommitUpdateCommand extends UpdateCommand {
   public boolean expungeDeletes = false;
   public boolean softCommit = false;
   public boolean prepareCommit = false;
+  /** User provided commit data. Can be let to null if there is none. */
+  public Map<String, String> commitData;
 
   /**
    * During optimize, optimize down to &lt;= this many segments.  Must be &gt;= 1
@@ -48,12 +52,16 @@ public class CommitUpdateCommand extends UpdateCommand {
 
   @Override
   public String toString() {
-    return super.toString() + ",optimize="+optimize
-            +",openSearcher="+openSearcher
-            +",waitSearcher="+waitSearcher
-            +",expungeDeletes="+expungeDeletes
-            +",softCommit="+softCommit
-            +",prepareCommit="+prepareCommit
-            +'}';
+    StringBuilder sb = new StringBuilder(super.toString())
+        .append(",optimize=").append(optimize)
+        .append(",openSearcher=").append(openSearcher)
+        .append(",expungeDeletes=").append(expungeDeletes)
+        .append(",softCommit=").append(softCommit)
+        .append(",prepareCommit=").append(prepareCommit);
+    if (commitData != null) {
+      sb.append(",commitData=").append(commitData);
+    }
+    sb.append('}');
+    return sb.toString();
   }
 }
