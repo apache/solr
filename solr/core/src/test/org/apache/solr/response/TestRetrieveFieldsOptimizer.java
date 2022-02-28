@@ -265,8 +265,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     toCheck.removeAll(fieldsHolder.multiValuedFields);
 
     // At this point, toCheck should be only singleValued fields. Adding in even a single
-    // multiValued field should
-    // read stuff from stored.
+    // multiValued field should read stuff from stored.
     String fl =
         idField
             + toCheck.stream()
@@ -346,8 +345,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     for (Object doc : docs) {
       SolrDocument sdoc = (SolrDocument) doc;
       // Check that every (and only) the fields in the fl param were fetched and the values are as
-      // expected.
-      // Since each doc has the same fields, we don't need to find the special doc.
+      // expected. Since each doc has the same fields, we don't need to find the special doc.
       String[] requestedFields = fl.split(",");
       assertEquals(
           "Should have exactly as many fields as requested, ",
@@ -623,8 +621,8 @@ class RetrieveField {
         break;
     }
     // There are tricky cases with multiValued fields that are sometimes fetched from docValues that
-    // obey set
-    // semantics so be sure we include at least one duplicate in a multValued field sometimes
+    // obey set semantics so be sure we include at least one duplicate in a multValued field
+    // sometimes
     if (random().nextBoolean() && valsAsStrings.size() > 1) {
       valsAsStrings.add(valsAsStrings.get(random().nextInt(valsAsStrings.size())));
     }

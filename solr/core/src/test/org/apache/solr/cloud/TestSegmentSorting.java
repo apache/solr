@@ -88,7 +88,6 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     cloudSolrClient.setDefaultCollection(collectionName);
   }
 
-  // 12-Jun-2018 @Test@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSegmentTerminateEarly() throws Exception {
 
     final SegmentTerminateEarlyTestState tstes = new SegmentTerminateEarlyTestState(random());
@@ -109,8 +108,8 @@ public class TestSegmentSorting extends SolrCloudTestCase {
 
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter present but it won't be used
     tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(cloudSolrClient);
-    tstes.queryTimestampAscendingSegmentTerminateEarlyYes(
-        cloudSolrClient); // uses a sort order that is _not_ compatible with the merge sort order
+    // uses a sort order that is _not_ compatible with the merge sort order
+    tstes.queryTimestampAscendingSegmentTerminateEarlyYes(cloudSolrClient);
   }
 
   /**

@@ -318,14 +318,12 @@ public class SplitShardTest extends SolrCloudTestCase {
   @Test
   public void testLiveSplit() throws Exception {
     // Debugging tips: if this fails, it may be easier to debug by lowering the number fo threads to
-    // 1 and looping the test
-    // until you get another failure.
-    // You may need to further instrument things like DistributedZkUpdateProcessor to display the
-    // cluster state for the collection, etc.
-    // Using more threads increases the chance to hit a concurrency bug, but too many threads can
-    // overwhelm single-threaded buffering
-    // replay after the low level index split and result in subShard leaders that can't catch up and
-    // become active (a known issue that still needs to be resolved.)
+    // 1 and looping the test until you get another failure. You may need to further instrument
+    // things like DistributedZkUpdateProcessor to display the cluster state for the collection,
+    // etc. Using more threads increases the chance to hit a concurrency bug, but too many threads
+    // can overwhelm single-threaded buffering replay after the low level index split and result in
+    // subShard leaders that can't catch up and become active (a known issue that still needs to be
+    // resolved.)
     doLiveSplitShard("livesplit1", 1, 4);
   }
 }

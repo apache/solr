@@ -155,13 +155,12 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     for (Map permission : permissions) {
       assertFalse("some-permission".equals(permission.get("name")));
     }
+    // -ve test security edit is a well-known permission, only role attribute should be provided
     command =
         "{\n"
             + "'set-permission':{index : 2,  'name': 'security-edit',\n"
             + "                  'method':'POST',"
-            + // -ve test security edit is a well-known permission , only role attribute should be
-            // provided
-            "                  'role': 'admin'\n"
+            + "                  'role': 'admin'\n"
             + "                  }}";
     req = new LocalSolrQueryRequest(null, new ModifiableSolrParams());
     req.getContext().put("httpMethod", "POST");

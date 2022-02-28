@@ -106,10 +106,8 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     home = schema.getField("home_ns");
     assertNotNull(home);
     fields = home.createFields(point);
-    assertEquals(
-        expectdNumFields - 1,
-        fields.size(),
-        2); // one less field than with "home", since we aren't storing
+    // one less field than with "home", since we aren't storing
+    assertEquals(expectdNumFields - 1, fields.size(), 2);
 
     home = schema.getField("home_ns");
     assertNotNull(home);

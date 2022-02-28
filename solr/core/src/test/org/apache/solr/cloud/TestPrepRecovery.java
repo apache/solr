@@ -77,8 +77,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
         .process(solrClient);
 
     // add another replica to the new node. When it starts recovering, it will likely have stale
-    // state
-    // and ask the erstwhile leader to PREPRECOVERY which will hang for about 30 seconds
+    // state and ask the erstwhile leader to PREPRECOVERY which will hang for about 30 seconds
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(newNodeName)
         .process(solrClient);
@@ -107,8 +106,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
       CollectionAdminRequest.addReplicaToShard(collectionName, "shard1").process(solrClient);
 
       // in the absence of fixes made in SOLR-9716, prep recovery waits forever and the following
-      // statement
-      // times out
+      // statement times out
       waitForState(
           "Expected collection: testLeaderNotResponding to be live with 1 shard and 2 replicas",
           collectionName,

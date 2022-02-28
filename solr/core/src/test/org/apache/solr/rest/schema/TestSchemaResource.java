@@ -22,9 +22,9 @@ import org.junit.Test;
 public class TestSchemaResource extends SolrRestletTestBase {
   @Test
   public void testXMLResponse() throws Exception {
+    // should work with or without trailing slash on '/schema/' path
     assertQ(
-        "/schema/?indent=on&wt=xml", // should work with or without trailing slash on '/schema/'
-        // path
+        "/schema/?indent=on&wt=xml",
         "count(/response/lst[@name='schema']/str[@name='name']) = 1",
         "/response/lst[@name='schema']/str[@name='name'][.='test-rest']",
         "count(/response/lst[@name='schema']/float[@name='version']) = 1",
@@ -81,8 +81,9 @@ public class TestSchemaResource extends SolrRestletTestBase {
 
   @Test
   public void testJSONResponse() throws Exception {
+    // Should work with or without a trailing slash
     assertJQ(
-        "/schema", // Should work with or without a trailing slash
+        "/schema",
         "/schema/name=='test-rest'",
         "/schema/version==1.6",
         "/schema/uniqueKey=='id'",
@@ -112,8 +113,9 @@ public class TestSchemaResource extends SolrRestletTestBase {
 
   @Test
   public void testSchemaXmlResponse() {
+    // should work with or without trailing slash on '/schema/' path
     assertQ(
-        "/schema?wt=schema.xml", // should work with or without trailing slash on '/schema/' path
+        "/schema?wt=schema.xml",
         "/schema/@name = 'test-rest'",
         "/schema/@version = '1.6'",
         "/schema/uniqueKey = 'id'",

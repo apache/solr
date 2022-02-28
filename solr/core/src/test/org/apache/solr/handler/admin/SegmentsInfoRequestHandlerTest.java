@@ -50,8 +50,8 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
     System.setProperty("solr.tests.ramBufferSizeMB", "5000");
 
     System.setProperty("enable.update.log", "false"); // no _version_ in our schema
-    initCore(
-        "solrconfig.xml", "schema12.xml"); // segments API shouldn't depend on _version_ or ulog
+    // segments API shouldn't depend on _version_ or ulog
+    initCore("solrconfig.xml", "schema12.xml");
 
     // build up an index with at least 2 segments and some deletes
     for (int i = 0; i < DOC_COUNT; i++) {

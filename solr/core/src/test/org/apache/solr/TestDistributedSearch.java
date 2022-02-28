@@ -315,8 +315,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     testMinExactCount();
 
     query("q", "{!func}" + i1); // does not expect maxScore. So if it comes ,ignore it.
-    // JavaBinCodec.writeSolrDocumentList()
-    // is agnostic of request params.
+    // JavaBinCodec.writeSolrDocumentList() is agnostic of request params.
     handle.remove("maxScore");
     query("q", "{!func}" + i1, "fl", "*,score"); // even scores should match exactly here
 
@@ -502,10 +501,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     assertEquals(2, response.getFacetRanges().get(0).getAfter());
 
     // Test mincounts. Do NOT want to go through all the stuff where with validateControlData in
-    // query() method
-    // Purposely packing a _bunch_ of stuff together here to insure that the proper level of
-    // mincount is used for
-    // each
+    // query() method. Purposely packing a _bunch_ of stuff together here to insure that the proper
+    // level of mincount is used for each
     ModifiableSolrParams minParams = new ModifiableSolrParams();
     minParams.set("q", "*:*");
     minParams.set("rows", 1);
@@ -644,9 +641,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     stress = 0; // turn off stress... we want to tex max combos in min time
     for (int i = 0; i < 25 * RANDOM_MULTIPLIER; i++) {
       String f = fieldNames[random().nextInt(fieldNames.length)];
-      if (random().nextBoolean())
-        f = t1; // the text field is a really interesting one to facet on (and it's multi-valued
-      // too)
+      if (random().nextBoolean()) {
+        // the text field is an interesting one to facet on (and it's multi-valued too)
+        f = t1;
+      }
 
       // we want a random query and not just *:* so we'll get zero counts in facets also
       // TODO: do a better random query

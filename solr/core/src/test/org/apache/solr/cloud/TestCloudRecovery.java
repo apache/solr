@@ -94,8 +94,6 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   }
 
   @Test
-  // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // added 20-Jul-2018
   public void leaderRecoverFromLogOnStartupTest() throws Exception {
     AtomicInteger countReplayLog = new AtomicInteger(0);
     TestInjection.skipIndexWriterCommitOnClose = true;
@@ -168,8 +166,6 @@ public class TestCloudRecovery extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void corruptedLogTest() throws Exception {
     AtomicInteger countReplayLog = new AtomicInteger(0);
     TestInjection.skipIndexWriterCommitOnClose = true;

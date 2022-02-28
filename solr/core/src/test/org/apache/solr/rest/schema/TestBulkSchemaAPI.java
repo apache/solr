@@ -704,8 +704,8 @@ public class TestBulkSchemaAPI extends RestTestBase {
     m = getObj(harness, "a5", "fields");
     assertNotNull("field a5 not created", m);
     assertEquals("myWhitespaceTxtField", m.get("type"));
-    assertNull(
-        m.get("uninvertible")); // inherited, but API shouldn't return w/o explicit showDefaults
+    // inherited, but API shouldn't return w/o explicit showDefaults
+    assertNull(m.get("uninvertible"));
     assertFieldSimilarity("a5", BM25Similarity.class); // unspecified, expect default
 
     m = getObj(harness, "wdf_nocase", "fields");
@@ -722,10 +722,8 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNull(m.get("sortMissingLast"));
     assertTrue((Boolean) m.get("sortMissingFirst"));
 
-    m =
-        getObj(
-            harness, "bind",
-            "fields"); // this field will be rebuilt when "boolean" field type is replaced
+    // this field will be rebuilt when "boolean" field type is replaced
+    m = getObj(harness, "bind", "fields");
     assertNotNull("'bind' field does not exist in the schema", m);
 
     m = getObj(harness, "name", "fields");

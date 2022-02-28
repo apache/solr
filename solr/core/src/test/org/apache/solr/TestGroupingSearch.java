@@ -1911,9 +1911,10 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     result.put("groups", groupList);
 
     for (int i = start; i < sortedGroups.size(); i++) {
-      if (rows != -1 && groupList.size() >= rows)
-        break; // directly test rather than calculating, so we can catch any calc errors in the real
-      // code
+      if (rows != -1 && groupList.size() >= rows) {
+        // directly test rather than calculating, so we can catch any calc errors in the real code
+        break;
+      }
       Map<String, Object> group = new LinkedHashMap<>();
       groupList.add(group);
 

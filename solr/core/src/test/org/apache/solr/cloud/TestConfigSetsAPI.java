@@ -1448,10 +1448,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       return (new Upload())
           .setConfigSetName(configSetName + suffix)
           .setFilePath(uploadPath)
-          .setUploadFile(
-              file,
-              "application/octet-stream") // NOTE: server doesn't actually care, and test plumbing
-          // doesn't tell us
+          // NOTE: server doesn't actually care, and test plumbing doesn't tell us
+          .setUploadFile(file, "application/octet-stream")
           .setOverwrite(overwrite ? true : null) // expect server default to be 'false'
           .setCleanup(cleanup ? true : null) // expect server default to be 'false'
           .setBasicAuthCredentials(username, username) // for our MockAuthenticationPlugin

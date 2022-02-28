@@ -58,9 +58,9 @@ public class TestDynamicFieldCollectionResource extends SolrRestletTestBase {
 
   @Test
   public void testJsonGetTwoDynamicFields() throws Exception {
+    // assertJQ will fix the wt param to be json
     assertJQ(
-        "/schema/dynamicfields?indent=on&fl=*_i,*_s&wt=xml", // assertJQ will fix the wt param to be
-        // json
+        "/schema/dynamicfields?indent=on&fl=*_i,*_s&wt=xml",
         "/dynamicFields/[0]/name=='*_i'",
         "/dynamicFields/[1]/name=='*_s'");
   }

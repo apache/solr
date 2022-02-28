@@ -91,10 +91,8 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
 
     ByteArrayOutputStream buf = new ByteArrayOutputStream();
     NamedList<Object> nl = new NamedList<>();
-    nl.add(
-        "data1",
-        "he\u2028llo\u2029!"); // make sure that 2028 and 2029 are both escaped (they are illegal in
-    // javascript)
+    // make sure that 2028 and 2029 are both escaped (they are illegal in javascript)
+    nl.add("data1", "he\u2028llo\u2029!");
     nl.add(null, 42);
     rsp.add("nl", nl);
 

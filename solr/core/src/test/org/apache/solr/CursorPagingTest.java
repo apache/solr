@@ -129,10 +129,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
         "Grouping");
 
     // if a user specifies a 'bogus' cursorMark param, this should error *only* if some other
-    // component
-    // cares about (and parses) a SortSpec in it's prepare() method.
-    // (the existence of a 'sort' param shouldn't make a diff ... unless it makes a diff to a
-    // component being used,
+    // component cares about (and parses) a SortSpec in it's prepare() method. (the existence of a
+    // 'sort' param shouldn't make a diff ... unless it makes a diff to a component being used,
     // which it doesn't for RTG)
     assertU(adoc("id", "yyy", "str", "y", "float", "3", "int", "-3"));
     if (random().nextBoolean()) {

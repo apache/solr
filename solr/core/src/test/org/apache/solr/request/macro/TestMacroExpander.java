@@ -116,11 +116,8 @@ public class TestMacroExpander extends SolrTestCase {
   public void testMap() { // see SOLR-9740, the second fq param was being dropped.
     final Map<String, String[]> request = new HashMap<>();
     request.put("fq", new String[] {"zero", "${one_ref}", "two", "${three_ref}"});
-    request.put(
-        "expr",
-        new String[] {
-          "${one_ref}"
-        }); // expr is for streaming expressions, no replacement by default
+    // expr is for streaming expressions, no replacement by default
+    request.put("expr", new String[] {"${one_ref}"});
     request.put("one_ref", new String[] {"one"});
     request.put("three_ref", new String[] {"three"});
     Map<String, String[]> expanded = MacroExpander.expand(request);
@@ -136,11 +133,8 @@ public class TestMacroExpander extends SolrTestCase {
   public void testMapExprExpandOn() {
     final Map<String, String[]> request = new HashMap<>();
     request.put("fq", new String[] {"zero", "${one_ref}", "two", "${three_ref}"});
-    request.put(
-        "expr",
-        new String[] {
-          "${one_ref}"
-        }); // expr is for streaming expressions, no replacement by default
+    // expr is for streaming expressions, no replacement by default
+    request.put("expr", new String[] {"${one_ref}"});
     request.put("one_ref", new String[] {"one"});
     request.put("three_ref", new String[] {"three"});
     // I believe that so long as this is sure to be reset before the end of the test we should

@@ -98,10 +98,8 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
     StringWriter buf = new StringWriter();
     NamedList<Object> nl = new NamedList<>();
-    nl.add(
-        "data1",
-        "he\u2028llo\u2029!"); // make sure that 2028 and 2029 are both escaped (they are illegal in
-    // javascript)
+    // make sure that 2028 and 2029 are both escaped (they are illegal in javascript)
+    nl.add("data1", "he\u2028llo\u2029!");
     nl.add(null, 42);
     nl.add(null, null);
     rsp.add("nl", nl);

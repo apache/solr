@@ -112,10 +112,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
   public void testNoSslButSillyClientAuth() throws Exception {
     // this combination doesn't really make sense, since ssl==false the clientauth option will be
-    // ignored
-    // but we test it anyway for completeness of sanity checking the behavior of code that looks at
-    // those
-    // options.
+    // ignored but we test it anyway for completeness of sanity checking the behavior of code that
+    // looks at those options.
     final SSLTestConfig sslConfig = new SSLTestConfig(false, true);
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider());
@@ -145,9 +143,6 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     checkClusterWithNodeReplacement(sslConfig);
   }
 
-  // commented out on: 17-Feb-2019
-  // @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // 2-Aug-2018
   public void testSslWithCheckPeerName() throws Exception {
     final SSLTestConfig sslConfig = new SSLTestConfig(true, false, true);
     HttpClientUtil.setSocketFactoryRegistryProvider(
@@ -177,10 +172,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       checkClusterWithCollectionCreations(cluster, sslConfig);
 
       // Change the defaul SSLContext to match our test config, or to match our original system
-      // default if
-      // our test config doesn't use SSL, and reset HttpClientUtil to it's defaults so it picks up
-      // our
-      // SSLContext that way.
+      // default if our test config doesn't use SSL, and reset HttpClientUtil to it's defaults so it
+      // picks up our SSLContext that way.
       SSLContext.setDefault(
           sslConfig.isSSLMode() ? sslConfig.buildClientSSLContext() : DEFAULT_SSL_CONTEXT);
       System.setProperty(
@@ -437,10 +430,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     // 2) a sanity check that whatever getHttpSolrClient(String) returns will work regardless of
     //    current test configuration.
     // ... so we are hopefully future proofing against possible changes to
-    // SolrTestCaseJ4.getHttpSolrClient
-    // that "optimize" the test client construction in a way that would prevent us from finding bugs
-    // with
-    // regular HttpSolrClient instantiation.
+    // SolrTestCaseJ4.getHttpSolrClient that "optimize" the test client construction in a way that
+    // would prevent us from finding bugs with regular HttpSolrClient instantiation.
     if (random().nextBoolean()) {
       return (new HttpSolrClient.Builder(url)).build();
     } // else...

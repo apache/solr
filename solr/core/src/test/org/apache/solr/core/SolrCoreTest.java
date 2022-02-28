@@ -308,19 +308,15 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
         ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("testReloadLeak"));
 
     // Continuously open new searcher while core is not closed, and reload core to try to reproduce
-    // searcher leak.
-    // While in practice we never continuously open new searchers, this is trying to make up for the
-    // fact that opening
-    // a searcher in this empty core is very fast by opening new searchers continuously to increase
-    // the likelihood
-    // for race.
+    // searcher leak. While in practice we never continuously open new searchers, this is trying to
+    // make up for the fact that opening a searcher in this empty core is very fast by opening new
+    // searchers continuously to increase the likelihood for race.
     SolrCore core = h.getCore();
     assertTrue("Refcount != 1", core.getOpenCount() == 1);
     executor.execute(new NewSearcherRunnable(core));
 
     // Since we called getCore() vs getCoreInc() and don't own a refCount, the container should
-    // decRef the core
-    // and close it when we call reload.
+    // decRef the core and close it when we call reload.
     h.reload();
 
     executor.shutdown();

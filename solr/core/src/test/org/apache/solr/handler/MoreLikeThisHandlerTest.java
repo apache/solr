@@ -262,8 +262,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
       req.setContentStreams(streams);
 
       // Make sure we have terms from both fields in the interestingTerms array and all documents
-      // have been
-      // retrieved as matching.
+      // have been retrieved as matching.
       assertQ(
           req,
           "//lst[@name = 'interestingTerms']/float[@name = 'subword:bbb']",

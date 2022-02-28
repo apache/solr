@@ -243,13 +243,10 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       String leaderRegistry = leaderCore.getCoreMetricManager().getRegistryName();
       Counter cnt = leaderMetricManager.counter(null, leaderRegistry, "requests", "QUERY./select");
 
-      // All queries should be served by the active replica
-      // To make sure that's true we keep querying the down replica
-      // If queries are getting processed by the down replica then the cluster state hasn't updated
-      // for that replica
-      // locally
-      // So we keep trying till it has updated and then verify if ALL queries go to the active
-      // replica
+      // All queries should be served by the active replica to make sure that's true we keep
+      // querying the down replica. If queries are getting processed by the down replica then the
+      // cluster state hasn't updated for that replica locally. So we keep trying till it has
+      // updated and then verify if ALL queries go to the active replica
       long count = 0;
       while (true) {
         count++;

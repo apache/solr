@@ -132,9 +132,6 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     super.tearDown();
   }
 
-  //  @Repeat(iterations=10)
-  // commented 9-Aug-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // added 20-Jul-2018
   public void testCantConnectToPullReplica() throws Exception {
     int numShards = 2;
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, 1, 0, 1)
@@ -164,9 +161,8 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
                 }
               });
 
-      assertNumberOfReplicas(
-          numShards, 0, numShards, true,
-          true); // Replica should still be active, since it doesn't disconnect from ZooKeeper
+      // Replica should still be active, since it doesn't disconnect from ZooKeeper
+      assertNumberOfReplicas(numShards, 0, numShards, true, true);
       {
         long numFound = 0;
         TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);

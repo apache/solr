@@ -32,8 +32,8 @@ public class BooleanFieldTest extends SolrTestCaseJ4 {
   public void testBoolField() {
 
     // found an odd case when adding booleans to docValues and noticed that we didn't have any
-    // boolean
-    // specific tests. Only caught the odd case by accident so let's have a place for explicit tests
+    // boolean specific tests. Only caught the odd case by accident so let's have a place for
+    // explicit tests
     assertU(adoc("id", "0")); // missing
     assertU(
         adoc(

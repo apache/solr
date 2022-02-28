@@ -234,9 +234,8 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
   public void testHistogramBuilding() throws Exception {
     List<Prefix> prefixes = SplitByPrefixTest.findPrefixes(20, 0, 0x00ffffff);
     List<Prefix> uniquePrefixes = SplitByPrefixTest.removeDups(prefixes);
-    assertTrue(
-        prefixes.size()
-            > uniquePrefixes.size()); // make sure we have some duplicates to test hash collisions
+    // make sure we have some duplicates to test hash collisions
+    assertTrue(prefixes.size() > uniquePrefixes.size());
 
     String prefixField = "id_prefix_s";
     String idField = "id";

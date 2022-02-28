@@ -134,8 +134,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
         }
         blockedT.start();
         // there is no way to "await" on the situation of the 'blockedT' thread actually reaching
-        // the
-        // "synchronized" block and becoming BLOCKED ... we just have to Poll for it...
+        // the "synchronized" block and becoming BLOCKED ... we just have to Poll for it...
         for (int i = 0; i < 500 && (!Thread.State.BLOCKED.equals(blockedT.getState())); i++) {
           Thread.sleep(10); // 10ms at a time, at most 5 sec total
         }
@@ -264,8 +263,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
         }
         blockedT.start();
         // there is no way to "await" on the situation of the 'blockedT' thread actually reaches the
-        // lock()
-        // call and WAITING in the queue ... we just have to Poll for it...
+        // lock() call and WAITING in the queue ... we just have to Poll for it...
         for (int i = 0; i < 500 && (!lock.hasQueuedThread(blockedT)); i++) {
           Thread.sleep(10); // 10ms at a time, at most 5 sec total
         }

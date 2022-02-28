@@ -62,7 +62,6 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   private static void createMiniSolrCloudCluster() throws Exception {
     // multi replicas should matter...
     final int repFactor = usually() ? 1 : 2;
-    ;
     // ... but we definitely want to ensure forwarded requests to other shards work ...
     final int numShards = 2;
     // ... including some forwarded requests from nodes not hosting a shard
@@ -200,14 +199,12 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     // instead of "ssto"
     //
     // that way we can first sanity check a single value in a multivalued field is returned
-    // correctly
-    // as a "List" of one element, *AND* then we could be testing that a (single valued)
-    // pseudo-field correctly
-    // overrides that actual (real) value in a multivalued field (ie: not returning a an List)
+    // correctly as a "List" of one element, *AND* then we could be testing that a (single valued)
+    // pseudo-field correctly overrides that actual (real) value in a multivalued field (ie: not
+    // returning a an List)
     //
     // (NOTE: not doing this yet due to how it will impact most other tests, many of which are
-    // currently
-    // @AwaitsFix'ed)
+    // currently @AwaitsFix'ed)
     //
     // assertTrue(doc.getFieldValue("val_ss").getClass().toString(),
     //           doc.getFieldValue("val_ss") instanceof List);

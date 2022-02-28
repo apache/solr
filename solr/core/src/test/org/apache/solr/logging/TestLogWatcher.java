@@ -49,9 +49,8 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
     LogWatcher<?> watcher = null;
     int lim = random().nextInt(3) + 2;
     // Every time through this loop, insure that, of all the test messages that have been logged,
-    // only the current
-    // test message is present. NOTE: there may be log messages from the superclass the first time
-    // around.
+    // only the current test message is present. NOTE: there may be log messages from the superclass
+    // the first time around.
     List<String> oldMessages = new ArrayList<>(lim);
     for (int idx = 0; idx < lim; ++idx) {
 

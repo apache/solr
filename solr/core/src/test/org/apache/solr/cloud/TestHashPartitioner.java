@@ -266,25 +266,24 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     }
   }
 
-  /***
-   * public void testPrintHashCodes() throws Exception {
-   * // from negative to positive, the upper bits of the hash ranges should be
-   * // shard1: 11
-   * // shard2: 10
-   * // shard3: 00
-   * // shard4: 01
-   *
-   * String[] highBitsToShard = {"shard3","shard4","shard1","shard2"};
-   *
-   *
-   * for (int i = 0; i<26; i++) {
-   * String id  = new String(Character.toChars('a'+i));
-   * int hash = hash(id);
-   * System.out.println("hash of " + id + " is " + Integer.toHexString(hash) + " high bits=" + (hash>>>30)
-   * + " shard="+highBitsToShard[hash>>>30]);
-   * }
-   * }
-   ***/
+  //    public void testPrintHashCodes() throws Exception {
+  //     // from negative to positive, the upper bits of the hash ranges should be
+  //     // shard1: 11
+  //     // shard2: 10
+  //     // shard3: 00
+  //     // shard4: 01
+  //
+  //     String[] highBitsToShard = {"shard3","shard4","shard1","shard2"};
+  //
+  //
+  //     for (int i = 0; i<26; i++) {
+  //        String id  = new String(Character.toChars('a'+i));
+  //        int hash = hash(id);
+  //        System.out.println("hash of " + id + " is " + Integer.toHexString(hash) + " high bits="
+  // + (hash>>>30)
+  //            + " shard="+highBitsToShard[hash>>>30]);
+  //      }
+  //    }
 
   DocCollection createCollection(int nSlices, DocRouter router) {
     List<Range> ranges = router.partitionRange(nSlices, router.fullRange());

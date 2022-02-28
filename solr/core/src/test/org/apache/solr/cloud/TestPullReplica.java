@@ -129,9 +129,8 @@ public class TestPullReplica extends SolrCloudTestCase {
     super.tearDown();
   }
 
-  @Repeat(
-      iterations =
-          2) // 2 times to make sure cleanup is complete and we can create the same collection
+  // 2 times to make sure cleanup is complete and we can create the same collection
+  @Repeat(iterations = 2)
   public void testCreateDelete() throws Exception {
     try {
       switch (random().nextInt(3)) {
@@ -151,12 +150,8 @@ public class TestPullReplica extends SolrCloudTestCase {
                   "conf",
                   2, // numShards
                   3); // pullReplicas
-          url =
-              url
-                  + pickRandom(
-                      "",
-                      "&nrtReplicas=1",
-                      "&replicationFactor=1"); // These options should all mean the same
+          // These options should all mean the same
+          url = url + pickRandom("", "&nrtReplicas=1", "&replicationFactor=1");
           HttpGet createCollectionGet = new HttpGet(url);
           cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
           break;
@@ -597,10 +592,9 @@ public class TestPullReplica extends SolrCloudTestCase {
     // Queries should still work
     waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
     // Add nrt replica back. Since there is no nrt now, new nrt will have no docs. There will be
-    // data loss, since the it will become the leader
-    // and pull replicas will replicate from it. Maybe we want to change this. Replicate from pull
-    // replicas is not a good idea, since they
-    // are by definition out of date.
+    // data loss, since the it will become the leader and pull replicas will replicate from it.
+    // Maybe we want to change this. Replicate from pull replicas is not a good idea, since they are
+    // by definition out of date.
     if (removeReplica) {
       CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.NRT)
           .process(cluster.getSolrClient());

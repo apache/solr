@@ -71,8 +71,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
     update.commit(cluster.getSolrClient(), COLLECTION_NAME);
 
     // Bring down replicas but keep nodes up. This could've been done by some combinations of
-    // collections API operations;
-    // however, to make it faster, altering cluster state directly! ;-)
+    // collections API operations; however to make it faster, altering cluster state directly!
     downAllReplicas();
 
     // assert all replicas are in down state
@@ -91,8 +90,8 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
             .setBasicAuthCredentials(USERNAME, PASSWORD);
 
     // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the
-    // nodes run out
-    // of serviceable threads and they crash, even for other collections hosted on the nodes).
+    // nodes run out of serviceable threads and they crash, even for other collections hosted on the
+    // nodes).
     SolrException error =
         expectThrows(
             SolrException.class,

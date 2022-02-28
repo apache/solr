@@ -69,9 +69,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
     handle.put("_version_", SKIP);
-    handle.put(
-        "grouped",
-        UNORDERED); // distrib grouping doesn't guarantee order of top level group commands
+    // distrib grouping doesn't guarantee order of top level group commands
+    handle.put("grouped", UNORDERED);
 
     // Test distributed grouping with empty indices
     query(
@@ -1590,8 +1589,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
       //
       if (withFL == false) {
         // exact number varies based on test randomization, but there should always be at least the
-        // 8
-        // explicitly indexed in these 2 docs...
+        // 8 explicitly indexed in these 2 docs...
         assertTrue(docs.toString(), 8 <= docs.get(0).getFieldNames().size());
         assertTrue(docs.toString(), 8 <= docs.get(4).getFieldNames().size());
       }

@@ -1131,8 +1131,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       reader.createClusterStateWatchersAndUpdate();
 
       // We did not create /collections/collection1 -> this message will cause exception when
-      // Overseer tries to flush
-      // the collection state
+      // Overseer tries to flush the collection state
       ZkNodeProps badMessage =
           new ZkNodeProps(
               Overseer.QUEUE_OPERATION,
@@ -1812,9 +1811,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       q.offer(Utils.toJSON(m));
 
       // Verify replica creation worked ok in spite of external update of state.json (although in
-      // theory such updates
-      // do not happen unless an old overseer is still updating ZK after a new Overseer got
-      // elected...).
+      // theory such updates do not happen unless an old overseer is still updating ZK after a new
+      // Overseer got elected...).
       verifyReplicaStatus(reader, testCollectionName, "x", "core_node1", Replica.State.DOWN);
 
       waitForCollections(reader, "c1");
@@ -2134,9 +2132,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
     latch1.await(100);
     long after = System.nanoTime();
     assertTrue(TimeUnit.NANOSECONDS.toMillis(after - before) > 50);
-    assertTrue(
-        TimeUnit.NANOSECONDS.toMillis(after - before)
-            < 500); // Mostly to make sure the millis->nanos->millis is not broken
+    // Mostly to make sure the millis->nanos->millis is not broken
+    assertTrue(TimeUnit.NANOSECONDS.toMillis(after - before) < 500);
     latch1.process(new WatchedEvent(new WatcherEvent(1, 1, "/foo/bar")));
     before = System.nanoTime();
     latch1.await(10000); // Expecting no wait

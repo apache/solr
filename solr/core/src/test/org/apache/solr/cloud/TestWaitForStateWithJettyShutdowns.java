@@ -91,11 +91,10 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       //
       // we know that in the current implementation, waitForState invokes the predicate twice
       // independently of the current state of the collection and/or wether the predicate succeeds.
-      // If this implementation detail changes, (ie: so that it's only invoked once)
-      // then this number needs to change -- but the test fundementally depends on the
-      // implementation
-      // calling the predicate at least once, which should also be neccessary for any future impl
-      // (to verify that it didn't "miss" the state change when creating the watcher)
+      // If this implementation detail changes, (ie: so that it's only invoked once) then this
+      // number needs to change -- but the test fundementally depends on the implementation calling
+      // the predicate at least once, which should also be neccessary for any future impl (to verify
+      // that it didn't "miss" the state change when creating the watcher)
       final CountDownLatch latch = new CountDownLatch(2);
 
       final Future<?> backgroundWaitForState =

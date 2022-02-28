@@ -60,9 +60,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Nightly
-@SuppressCodecs({
-  "SimpleText"
-}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+// Backups do checksum validation against a footer value not present in 'SimpleText'
+@SuppressCodecs({"SimpleText"})
 public class TestStressThreadBackup extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -168,8 +167,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     final AtomicBoolean keepGoing = new AtomicBoolean(true);
 
     // this thread will do nothing but add/commit new 'dummy' docs over and over again as fast as
-    // possible
-    // to create a lot of index churn w/ segment merging
+    // possible to create a lot of index churn w/ segment merging
     final Thread heavyCommitting =
         new Thread() {
           public void run() {

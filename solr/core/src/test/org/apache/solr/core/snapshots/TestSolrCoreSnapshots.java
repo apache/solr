@@ -63,9 +63,8 @@ import org.slf4j.LoggerFactory;
  * similar snapshot functionality incrementally, see {@link
  * org.apache.solr.handler.TestIncrementalCoreBackup}
  */
-@LuceneTestCase.SuppressCodecs({
-  "SimpleText"
-}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+// Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs({"SimpleText"})
 @SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
 @Slow
 public class TestSolrCoreSnapshots extends SolrCloudTestCase {
@@ -132,8 +131,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       BackupRestoreUtils.verifyDocs(0, cluster.getSolrClient(), collectionName);
 
       // Verify that the index directory contains at least 2 index commits - one referred by the
-      // snapshots
-      // and the other containing document deletions.
+      // snapshots and the other containing document deletions.
       {
         List<IndexCommit> commits = listCommits(metaData.getIndexDirPath());
         assertTrue(commits.size() >= 2);
@@ -161,10 +159,8 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       }
 
       // Verify that the old index directory (before restore) contains only those index commits
-      // referred by snapshots.
-      // The IndexWriter (used to cleanup index files) creates an additional commit during closing.
-      // Hence we expect 2 commits (instead
-      // of 1).
+      // referred by snapshots. The IndexWriter (used to cleanup index files) creates an additional
+      // commit during closing. Hence we expect 2 commits (instead of 1).
       {
         List<IndexCommit> commits = listCommits(metaData.getIndexDirPath());
         assertEquals(2, commits.size());
@@ -184,8 +180,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       // be removed immediately. But the current DirectoryFactory impl waits until the
       // closing the core (or the directoryFactory) for actual removal. Since the IndexWriter
       // (used to cleanup index files) creates an additional commit during closing, we expect a
-      // single
-      // commit (instead of 0).
+      // single commit (instead of 0).
       assertEquals(1, listCommits(duplicateCommit.getIndexDirPath()).size());
     }
   }
@@ -348,8 +343,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       return DirectoryReader.listCommits(dir);
     } catch (IndexNotFoundException ex) {
       // This can happen when the delete snapshot functionality cleans up the index files (when the
-      // directory
-      // storing these files is not the *current* index directory).
+      // directory storing these files is not the *current* index directory).
       return Collections.emptyList();
     }
   }

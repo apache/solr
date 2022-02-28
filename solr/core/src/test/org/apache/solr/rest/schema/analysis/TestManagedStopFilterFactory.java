@@ -29,8 +29,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Test the REST API for managing stop words, which is pretty basic: GET: returns the list of stop
- * words or a single word if it exists PUT: add some words to the current list
+ * Test the REST API for managing stop words, which is pretty basic:
+ *
+ * <p>GET: returns the list of stop words or a single word if it exists
+ *
+ * <p>PUT: add some words to the current list
  */
 public class TestManagedStopFilterFactory extends RestTestBase {
   private static File tmpSolrHome;

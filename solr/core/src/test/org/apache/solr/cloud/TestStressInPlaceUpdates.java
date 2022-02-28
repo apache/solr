@@ -93,8 +93,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
   @Test
   @ShardsFixed(num = 3)
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 09-Apr-2018
   public void stressTest() throws Exception {
     waitForRecoveriesToFinish(true);
 
@@ -115,19 +113,25 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     final AtomicLong operations = new AtomicLong(5000);
     int nReadThreads = 5 + random().nextInt(12);
 
-    /**
-     * // testing final int commitPercent = 5; final int softCommitPercent = 100; // what percent of
-     * the commits are soft final int deletePercent = 0; final int deleteByQueryPercent = 50; final
-     * int ndocs = 10; int nWriteThreads = 10;
-     *
-     * <p>final int maxConcurrentCommits = nWriteThreads; // number of committers at a time... it
-     * should be <= maxWarmingSearchers
-     *
-     * <p>// query variables final int percentRealtimeQuery = 101; final AtomicLong operations = new
-     * AtomicLong(50000); // number of query operations to perform in total int nReadThreads = 10;
-     *
-     * <p>int fullUpdatePercent = 20;
-     */
+    // testing
+    //     final int commitPercent = 5;
+    //     final int softCommitPercent = 100; // what percent of the commits are soft
+    //     final int deletePercent = 0;
+    //     final int deleteByQueryPercent = 50;
+    //     final int ndocs = 10;
+    //     int nWriteThreads = 10;
+    //
+    //     final int maxConcurrentCommits = nWriteThreads;   // number of committers at a time... it
+    // should be <= maxWarmingSearchers
+    //
+    // query variables
+    //     final int percentRealtimeQuery = 101;
+    //     final AtomicLong operations = new AtomicLong(50000);  // number of query operations to
+    // perform in total
+    //     int nReadThreads = 10;
+    //
+    //     int fullUpdatePercent = 20;
+
     if (log.isInfoEnabled()) {
       log.info(
           "{}",
@@ -271,9 +275,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
                     int addOper = rand.nextInt(30);
                     Long returnedVersion;
-                    if (addOper < fullUpdatePercent
-                        || info.version <= 0) { // if document was never indexed or was deleted
-                      // FULL UPDATE
+                    // if document was never indexed or was deleted FULL UPDATE
+                    if (addOper < fullUpdatePercent || info.version <= 0) {
                       nextVal1 = Primes.nextPrime(val1 + 1);
                       nextVal2 = nextVal1 * 1000000000l;
                       try {
@@ -463,31 +466,23 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                         0,
                         (longVal % intVal));
 
-                    // NOTE: when foundVersion is greater then the version read from the model,
-                    // it's not possible to make any assertions about the field values in solr
-                    // relative to the
-                    // field values in the model -- ie: we can *NOT* assert expected.longFieldVal <=
-                    // doc.longVal
+                    // NOTE: when foundVersion is greater then the version read from the model, it's
+                    // not possible to make any assertions about the field values in solr relative
+                    // to the field values in the model -- ie: we can *NOT* assert
+                    // expected.longFieldVal <= doc.longVal
                     //
                     // it's tempting to think that this would be possible if we changed our model to
-                    // preserve the
-                    // "old" valuess when doing a delete, but that's still no garuntee because of
-                    // how oportunistic
-                    // concurrency works with negative versions:  When adding a doc, we can assert
-                    // that it must not
-                    // exist with version<0, but we can't assert that the *reason* it doesn't exist
-                    // was because of
-                    // a delete with the specific version of "-42".
-                    // So a wrtier thread might (1) prep to add a doc for the first time with
-                    // "intValue=1,_version_=-1",
-                    // and that add may succeed and (2) return some version X which is put in the
-                    // model.  but
-                    // inbetween #1 and #2 other threads may have added & deleted the doc
-                    // repeatedly, updating
+                    // preserve the "old" valuess when doing a delete, but that's still no garuntee
+                    // because of how oportunistic concurrency works with negative versions:  When
+                    // adding a doc, we can assert that it must not exist with version<0, but we
+                    // can't assert that the *reason* it doesn't exist was because of a delete with
+                    // the specific version of "-42". So a wrtier thread might (1) prep to add a doc
+                    // for the first time with "intValue=1,_version_=-1", and that add may succeed
+                    // and (2) return some version X which is put in the model.  but inbetween #1
+                    // and #2 other threads may have added & deleted the doc repeatedly, updating
                     // the model with intValue=7,_version_=-42, and a reader thread might meanwhile
-                    // read from the
-                    // model before #2 and expect intValue=5, but get intValue=1 from solr (with a
-                    // greater version)
+                    // read from the model before #2 and expect intValue=5, but get intValue=1 from
+                    // solr (with a greater version)
 
                   } else {
                     fail(
@@ -542,25 +537,17 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
       }
     }
 
-    { // do a final search and compare every result with the model
-
-      // because commits don't provide any sort of concrete versioning (or optimistic concurrency
-      // constraints)
-      // there's no way to garuntee that our committedModel matches what was in Solr at the time of
-      // the last commit.
+    {
+      // do a final search and compare every result with the model because commits don't provide any
+      // sort of concrete versioning (or optimistic concurrency constraints) there's no way to
+      // garuntee that our committedModel matches what was in Solr at the time of the last commit.
       // It's possible other threads made additional writes to solr before the commit was processed,
-      // but after
-      // the committedModel variable was assigned it's new value.
-      //
-      // what we can do however, is commit all completed updates, and *then* compare solr search
-      // results
-      // against the (new) committed model....
+      // but after the committedModel variable was assigned it's new value. what we can do however,
+      // is commit all completed updates, and *then* compare solr search results against the (new)
+      // committed model....
 
-      waitForThingsToLevelOut(
-          30,
-          TimeUnit
-              .SECONDS); // NOTE: this does an automatic commit for us & ensures replicas are up to
-      // date
+      // NOTE: this does an automatic commit for us & ensures replicas are up to date
+      waitForThingsToLevelOut(30, TimeUnit.SECONDS);
       committedModel = new HashMap<>(model);
 
       // first, prune the model of any docs that have negative versions
@@ -614,8 +601,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     long longFieldValue;
 
     public DocInfo(long version, int val1, long val2) {
-      assert version
-          != 0; // must either be real positive version, or negative deleted version/indicator
+      // must either be real positive version, or negative deleted version/indicator
+      assert version != 0;
       this.version = version;
       this.intFieldValue = val1;
       this.longFieldValue = val2;

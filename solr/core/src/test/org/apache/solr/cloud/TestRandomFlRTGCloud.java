@@ -108,11 +108,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           //
           new RenameFieldValueValidator("id", "my_id_alias"),
           // NOTE: we add a SimpleFieldValueValidator below to check that we can enforce the
-          // presence of this field,
-          // even when it may have been "renamed" by the transformer above? (this and other such
-          // instances are
-          // marked with `//REQ`); also add a RenameFieldValueValidator to "fork" values, marked
-          // with `//FORK`.
+          // presence of this field, even when it may have been "renamed" by the transformer above?
+          // (this and other such instances are marked with `//REQ`); also add a
+          // RenameFieldValueValidator to "fork" values, marked with `//FORK`.
           new SimpleFieldValueValidator("id"), // REQ
           new SimpleFieldValueValidator("aaa_i"),
           new RenameFieldValueValidator("bbb_i", "my_int_field_alias"),
@@ -463,8 +461,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
 
     final Set<FlValidator> validators = new LinkedHashSet<>();
-    validators.add(
-        ID_VALIDATOR); // always include id so we can be confident which doc we're looking at
+    // always include id so we can be confident which doc we're looking at
+    validators.add(ID_VALIDATOR);
     validators.add(ROOT_VALIDATOR); // always added in a nested schema, with the same value as id
     addRandomFlValidators(random(), validators);
     FlValidator.addParams(validators, params);
@@ -846,11 +844,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         Object v = actual.get(actualFieldName);
         if (v instanceof Collection) {
           // the json "array" type is indistinguishable from a multivalued field, so when `super`
-          // validates
-          // based on `actual.getFirstValue(...)`, it causes issues. Here we know that our raw
-          // values are only
-          // on single-valued fields, so we wrap it to work around `getFirstValue` in parent class.
-          // The same logic applies to `expected` (below)
+          // validates based on `actual.getFirstValue(...)`, it causes issues. Here we know that our
+          // raw values are only on single-valued fields, so we wrap it to work around
+          // `getFirstValue` in parent class. The same logic applies to `expected` (below)
           actual.setField(actualFieldName, Collections.singleton(v));
         }
         try {

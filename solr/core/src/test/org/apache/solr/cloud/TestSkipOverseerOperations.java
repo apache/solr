@@ -138,8 +138,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
         CollectionAdminRequest.getOverseerStatus().process(cluster.getSolrClient());
 
     // When cluster state updates are done in a distributed way, the stats that this test is
-    // verifying are not available.
-    // See comment in OverseerStatusCmd.call().
+    // verifying are not available. See comment in OverseerStatusCmd.call().
     // Keeping the rest of the test running in case other errors can happen and can be caught...
     // Eventually maintain per node cluster state updates stats and be able to check them here?
     // Longer term question...
@@ -151,8 +150,6 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSkipDownOperations() throws Exception {
     if (new CollectionAdminRequest.RequestApiDistributedProcessing()
         .process(cluster.getSolrClient())

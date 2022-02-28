@@ -97,16 +97,13 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   int timeoutMs = 60000;
 
   // test that setting an arbitrary "slice unique" property un-sets the property if it's on another
-  // replica in the
-  // slice. This is testing when the property is set on an _individual_ replica whereas
-  // testBalancePropertySliceUnique
-  // tests whether changing an individual _replica_ un-sets the property on other replicas _in that
-  // slice_.
+  // replica in the slice. This is testing when the property is set on an _individual_ replica
+  // whereas testBalancePropertySliceUnique tests whether changing an individual _replica_ un-sets
+  // the property on other replicas _in that slice_.
   //
   // NOTE: There were significant problems because at one point the code implicitly defined
   // shardUnique=true for the special property preferredLeader. That was removed at one point so
-  // we're explicitly
-  // testing that as well.
+  // we're explicitly testing that as well.
   @Test
   public void testSetArbitraryPropertySliceUnique()
       throws IOException, SolrServerException, InterruptedException, KeeperException {
@@ -117,11 +114,9 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // Test that automatically distributing a slice unique property un-sets that property if it's in
-  // any other replica
-  // on that slice.
-  // This is different than the test above. The test above sets individual properties on individual
-  // nodes. This one
-  // relies on Solr to pick which replicas to set the property on
+  // any other replica on that slice. This is different than the test above. The test above sets
+  // individual properties on individual nodes. This one relies on Solr to pick which replicas to
+  // set the property on
   @Test
   public void testBalancePropertySliceUnique()
       throws KeeperException, InterruptedException, IOException, SolrServerException {
@@ -132,8 +127,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // We've moved on from a property being tested, we need to check if rebalancing the leaders
-  // actually chantges the
-  // leader appropriately.
+  // actually chantges the leader appropriately.
   @Test
   public void testRebalanceLeaders() throws Exception {
 
@@ -228,8 +222,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     while (timeout.hasTimedOut() == false) {
       if (checkPreferredsAreLeaders(false)) {
         // Ok, all preferreds are leaders. Just for Let's also get the election queue and guarantee
-        // that every
-        // live replica is in the queue and none are repeated.
+        // that every live replica is in the queue and none are repeated.
         checkElectionQueues();
         return;
       }
@@ -249,8 +242,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
 
   // Do all active nodes in each slice appear exactly once in the slice's leader election queue?
   // Since we assert that the number of live replicas is the same size as the leader election queue,
-  // we only
-  // have to compare one way.
+  // we only have to compare one way.
   private void checkElectionQueues() throws KeeperException, InterruptedException {
 
     DocCollection docCollection =
@@ -505,8 +497,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // This important. I've (Erick Erickson) run across a situation where the "standard request"
-  // causes failures, but
-  // never the Admin request. So let's test both all the time for a given test.
+  // causes failures, but never the Admin request. So let's test both all the time for a given test.
   //
   // This sets an _individual_ replica to have the property, not collection-wide
   private void setProp(Slice slice, Replica rep, String prop)
@@ -576,18 +567,17 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // Intentionally un-balance the property to insure that BALANCESHARDUNIQUE does its job. There was
-  // an odd case
-  // where rebalancing didn't work very well if the Solr nodes were stopped and restarted that
-  // worked perfectly
-  // when if the nodes were _not_ restarted in the test. So we have to test that too.
+  // an odd case where rebalancing didn't work very well if the Solr nodes were stopped and
+  // restarted that worked perfectly when if the nodes were _not_ restarted in the test. So we have
+  // to test that too.
   private void concentratePropByRestartingJettys() throws Exception {
 
     List<JettySolrRunner> jettys = new ArrayList<>(cluster.getJettySolrRunners());
     Collections.shuffle(jettys, random());
     jettys.remove(random().nextInt(jettys.size()));
     // Now we have a list of jettys, and there is one missing. Stop all of the remaining jettys,
-    // then start them again
-    // to concentrate the leaders. It's not necessary that all shards have a leader.
+    // then start them again to concentrate the leaders. It's not necessary that all shards have a
+    // leader.
 
     ExecutorService executorService = ExecutorUtil.newMDCAwareCachedThreadPool("Start Jetty");
 
@@ -627,15 +617,14 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // while banging my nead against a wall, I put a lot of force refresh statements in. Want to leave
-  // them in
-  // but have this be a no-op so if we start to get failures, we can re-enable with minimal effort.
+  // them in but have this be a no-op so if we start to get failures, we can re-enable with minimal
+  // effort.
   private void forceUpdateCollectionStatus() throws KeeperException, InterruptedException {
     // cluster.getSolrClient().getZkStateReader().forceUpdateCollection(COLLECTION_NAME);
   }
 
   // Since we have to restart jettys, we don't want to try rebalancing etc. until we're sure all
-  // jettys that should
-  // be up are up and all replicas are active.
+  // jettys that should be up are up and all replicas are active.
   private void checkReplicasInactive(List<JettySolrRunner> downJettys)
       throws KeeperException, InterruptedException {
     TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
@@ -682,8 +671,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // We need to wait around until all replicas are active before expecting rebalancing or
-  // distributing shard-unique
-  // properties to work.
+  // distributing shard-unique properties to work.
   private void checkAllReplicasActive() throws KeeperException, InterruptedException {
     TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (timeout.hasTimedOut() == false) {
@@ -713,13 +701,11 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // use a simple heuristic to put as many replicas with the property on as few nodes as possible.
-  // The point is that
-  // then we can execute BALANCESHARDUNIQUE and be sure it worked correctly
+  // The point is that then we can execute BALANCESHARDUNIQUE and be sure it worked correctly
   private void concentrateProp(String prop)
       throws KeeperException, InterruptedException, IOException, SolrServerException {
-    // find all the live nodes
-    // for each slice, assign the leader to the first replica that is in the lowest position on
-    // live_nodes
+    // find all the live nodes for each slice, assign the leader to the first replica that is in the
+    // lowest position on live_nodes
     List<String> liveNodes =
         new ArrayList<>(
             cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());

@@ -92,7 +92,6 @@ public class TestSSLRandomization extends SolrCloudTestCase {
     // (If it didn't work this way, it would be a pain in the ass to quickly disable SSL for a
     // broad hierarchy of tests)
   }
-  ;
 
   /** Used by {@link #testSSLRandomizer} */
   @RandomizeSSL()

@@ -111,8 +111,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
     final AtomicBoolean keepGoing = new AtomicBoolean(true);
 
     // this thread will do nothing but add/commit new 'dummy' docs over and over again as fast as
-    // possible
-    // to create a lot of index churn w/ segment merging
+    // possible to create a lot of index churn w/ segment merging
     final Thread heavyCommitting =
         new Thread() {
           public void run() {

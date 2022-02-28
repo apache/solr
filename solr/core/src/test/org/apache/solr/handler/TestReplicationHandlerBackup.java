@@ -52,9 +52,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.SuppressCodecs({
-  "SimpleText"
-}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+// Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs({"SimpleText"})
 @SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
 public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 

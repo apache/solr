@@ -35,8 +35,6 @@ import org.junit.Test;
 
 /** Depends on ZK for testing ZooKeeper backed storage logic. */
 @Slow
-// commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl =
-// "https://issues.apache.org/jira/browse/SOLR-6443")
 public class TestManagedResourceStorage extends AbstractZkTestCase {
 
   /** Runs persisted managed resource creation and update tests on Zookeeper storage. */

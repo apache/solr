@@ -56,8 +56,8 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    useFactory(
-        "solr.StandardDirectoryFactory"); // necessary to find the index+tlog intact after restart
+    // necessary to find the index+tlog intact after restart
+    useFactory("solr.StandardDirectoryFactory");
   }
 
   @Before
@@ -125,8 +125,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
     cluster.waitForJettyToStop(runner);
     // check waitForState only after we are sure the node has shutdown and have forced an update to
-    // liveNodes
-    // ie: workaround SOLR-13490
+    // liveNodes ie: workaround SOLR-13490
     cluster.getSolrClient().getZkStateReader().updateLiveNodes();
     waitForState(
         "jetty count:" + cluster.getJettySolrRunners().size(), collectionName, clusterShape(1, 0));
@@ -271,9 +270,8 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     coreNameRef.set(null);
     coreNodeNameRef.set(null);
     failingCoreNodeName.set(null);
-    sleepTime.set(
-        14000); // has to be higher than the twice the recovery wait pause between attempts plus
-    // some margin
+    // has to be higher than the twice the recovery wait pause between attempts plus some margin
+    sleepTime.set(14000);
 
     // inject failure
     TestInjection.failIndexFingerprintRequests = "true:100";

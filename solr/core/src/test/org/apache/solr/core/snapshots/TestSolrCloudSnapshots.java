@@ -56,9 +56,8 @@ import org.slf4j.LoggerFactory;
  * <p>This test uses the (now deprecated) traditional backup method/format. For more thorough tests
  * using the new format, see {@link org.apache.solr.handler.TestIncrementalCoreBackup}
  */
-@LuceneTestCase.SuppressCodecs({
-  "SimpleText"
-}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+// Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs({"SimpleText"})
 @SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
 @Slow
 public class TestSolrCloudSnapshots extends SolrCloudTestCase {
@@ -242,8 +241,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     }
 
     // Verify if the snapshot deletion works correctly when one or more replicas containing the
-    // snapshot are
-    // deleted
+    // snapshot are deleted
     boolean replicaDeletion = rarely();
     if (replicaDeletion) {
       CoreSnapshotMetaData replicaToDelete = null;

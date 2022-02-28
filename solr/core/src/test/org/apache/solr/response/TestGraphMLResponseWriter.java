@@ -46,8 +46,8 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings({"unchecked"})
   public void testGraphMLOutput() throws Exception {
-    SolrQueryRequest request =
-        req("blah", "blah"); // Just need a request to attach the stream and traversal to.
+    // Just need a request to attach the stream and traversal to.
+    SolrQueryRequest request = req("blah", "blah");
     SolrQueryResponse response = new SolrQueryResponse();
     @SuppressWarnings({"rawtypes"})
     Map context = request.getContext();
