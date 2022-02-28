@@ -366,21 +366,24 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       // bring them up again
       jetty.start();
-      SolrCloudManager cloudManager = new SolrClientCloudManager(null, client);
-      zkStateReader.waitForLiveNodes(30, TimeUnit.SECONDS, (o, n) -> n != null && n.contains(nodeName));
-      CloudUtil.waitForState(cloudManager, COLLECTION_NAME, 30, TimeUnit.SECONDS, (liveNodes, coll) ->
-        coll != null &&
-            coll.getReplicas().stream()
-                .allMatch(r -> r.getState().equals(Replica.State.ACTIVE)));
-      rsp = request.process(client).getResponse();
-      collection = (Map<String, Object>) Utils.getObjectByPath(rsp, false, "cluster/collections/" + COLLECTION_NAME);
-      assertEquals("collection health", "GREEN", collection.get("health"));
-      shardStatus = (Map<String, Object>) collection.get("shards");
-      assertEquals(2, shardStatus.size());
-      health = (String) Utils.getObjectByPath(shardStatus, false, "shard1/health");
-      assertEquals("shard1 health", "GREEN", health);
-      health = (String) Utils.getObjectByPath(shardStatus, false, "shard2/health");
-      assertEquals("shard2 health", "GREEN", health);
+      // Need to start a new client, in case the http connections in the old client are still cached to the restarted server.
+      // If this is the case, it will throw an HTTP Exception, and we don't retry Admin requests.
+      try (CloudSolrClient newClient = createCloudClient(null)) {
+        newClient.getZkStateReader().waitForLiveNodes(30, TimeUnit.SECONDS, (o, n) -> n != null && n.contains(nodeName));
+        newClient.getZkStateReader().waitForState(COLLECTION_NAME, 30, TimeUnit.SECONDS, (liveNodes, coll) ->
+            coll != null &&
+                coll.getReplicas().stream()
+                    .allMatch(r -> r.getState().equals(Replica.State.ACTIVE)));
+        rsp = request.process(newClient).getResponse();
+        collection = (Map<String, Object>) Utils.getObjectByPath(rsp, false, "cluster/collections/" + COLLECTION_NAME);
+        assertEquals("collection health", "GREEN", collection.get("health"));
+        shardStatus = (Map<String, Object>) collection.get("shards");
+        assertEquals(2, shardStatus.size());
+        health = (String) Utils.getObjectByPath(shardStatus, false, "shard1/health");
+        assertEquals("shard1 health", "GREEN", health);
+        health = (String) Utils.getObjectByPath(shardStatus, false, "shard2/health");
+        assertEquals("shard2 health", "GREEN", health);
+      }
     }
   }
 
