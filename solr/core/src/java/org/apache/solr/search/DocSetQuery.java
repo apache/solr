@@ -40,7 +40,7 @@ class DocSetQuery extends Query implements DocSetProducer{
     private final DocSet docSet;
 
     DocSetQuery(DocSet docSet) {
-        this.docSet = docSet;
+        this.docSet = Objects.requireNonNull(docSet);
     }
 
     @Override
@@ -64,7 +64,7 @@ class DocSetQuery extends Query implements DocSetProducer{
 
     @Override
     public int hashCode() {
-        return classHash() * 31 + (docSet != null ? docSet.hashCode() : 0);
+        return classHash() * 31 + docSet.hashCode();
     }
 
     /**
