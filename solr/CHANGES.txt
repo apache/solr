@@ -12,7 +12,7 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
 
 Optimizations
 ---------------------
