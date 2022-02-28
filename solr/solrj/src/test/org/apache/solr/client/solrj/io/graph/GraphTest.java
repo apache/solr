@@ -27,7 +27,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
-import org.apache.solr.client.solrj.io.stream.StreamingTest;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -36,6 +35,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 /**
  *  All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so
  *  SolrStream will get fully exercised through these tests.
@@ -98,7 +98,7 @@ public class GraphTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
-    SolrParams sParams = StreamingTest.mapParams("fq", "predicate_s:knows");
+    SolrParams sParams = params("fq", "predicate_s:knows");
 
     stream = new ShortestPathStream(zkHost,
                                                        "collection1",
@@ -128,7 +128,7 @@ public class GraphTest extends SolrCloudTestCase {
 
     //Test with batch size of 1
 
-    sParams = StreamingTest.mapParams("fq", "predicate_s:knows");
+    sParams = params("fq", "predicate_s:knows");
 
     stream = new ShortestPathStream(zkHost,
         "collection1",
@@ -156,7 +156,7 @@ public class GraphTest extends SolrCloudTestCase {
 
     //Test with bad predicate
 
-    sParams = StreamingTest.mapParams("fq", "predicate_s:crap");
+    sParams = params("fq", "predicate_s:crap");
 
     stream = new ShortestPathStream(zkHost,
         "collection1",
@@ -176,7 +176,7 @@ public class GraphTest extends SolrCloudTestCase {
 
     //Test with depth 2
 
-    sParams = StreamingTest.mapParams("fq", "predicate_s:knows");
+    sParams = params("fq", "predicate_s:knows");
 
     stream = new ShortestPathStream(zkHost,
         "collection1",
@@ -197,7 +197,7 @@ public class GraphTest extends SolrCloudTestCase {
 
 
     //Take out alex
-    sParams = StreamingTest.mapParams("fq", "predicate_s:knows NOT to_s:alex");
+    sParams = params("fq", "predicate_s:knows NOT to_s:alex");
 
     stream = new ShortestPathStream(zkHost,
         "collection1",

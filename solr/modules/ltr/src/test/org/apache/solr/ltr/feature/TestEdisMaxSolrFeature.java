@@ -29,22 +29,41 @@ public class TestEdisMaxSolrFeature extends TestRerankBase {
   public void before() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
-        "1"));
-    assertU(adoc("id", "2", "title", "w2 2asd asdd didid", "description",
-        "w2 2asd asdd didid", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
-        "3"));
-    assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity",
-        "4"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
-        "5"));
-    assertU(adoc("id", "6", "title", "w1 w2", "description", "w1 w2",
-        "popularity", "6"));
-    assertU(adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description",
-        "w1 w2 w3 w4 w5 w8", "popularity", "7"));
-    assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2 w8", "description",
-        "w1 w1 w1 w2 w2", "popularity", "8"));
+    assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity", "1"));
+    assertU(
+        adoc(
+            "id",
+            "2",
+            "title",
+            "w2 2asd asdd didid",
+            "description",
+            "w2 2asd asdd didid",
+            "popularity",
+            "2"));
+    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity", "3"));
+    assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity", "4"));
+    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity", "5"));
+    assertU(adoc("id", "6", "title", "w1 w2", "description", "w1 w2", "popularity", "6"));
+    assertU(
+        adoc(
+            "id",
+            "7",
+            "title",
+            "w1 w2 w3 w4 w5",
+            "description",
+            "w1 w2 w3 w4 w5 w8",
+            "popularity",
+            "7"));
+    assertU(
+        adoc(
+            "id",
+            "8",
+            "title",
+            "w1 w1 w1 w2 w2 w8",
+            "description",
+            "w1 w1 w1 w2 w2",
+            "popularity",
+            "8"));
     assertU(commit());
   }
 
@@ -60,8 +79,11 @@ public class TestEdisMaxSolrFeature extends TestRerankBase {
         SolrFeature.class.getName(),
         "{\"q\":\"{!edismax qf='title description' pf='description' mm=100% boost='pow(popularity, 0.1)' v='w1' tie=0.1}\"}");
 
-    loadModel("EdisMax-model", LinearModel.class.getName(),
-        new String[] {"SomeEdisMax"}, "{\"weights\":{\"SomeEdisMax\":1.0}}");
+    loadModel(
+        "EdisMax-model",
+        LinearModel.class.getName(),
+        new String[] {"SomeEdisMax"},
+        "{\"weights\":{\"SomeEdisMax\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");

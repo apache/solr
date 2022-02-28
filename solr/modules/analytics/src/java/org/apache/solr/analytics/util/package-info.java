@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Utility classes for the analytics component.
- */
+/** Utility classes for the analytics component. */
 package org.apache.solr.analytics.util;
-
-

@@ -17,13 +17,13 @@
 package org.apache.solr.analytics.value.constant;
 
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.facet.compare.ConstantComparator;
 import org.apache.solr.analytics.value.StringValue;
 import org.apache.solr.analytics.value.StringValue.CastingStringValue;
 
 /**
- * A constant {@link StringValue}. Every call to {@link #getString()} and other methods will return the same constant value.
+ * A constant {@link StringValue}. Every call to {@link #getString()} and other methods will return
+ * the same constant value.
  */
 public class ConstantStringValue extends ConstantValue implements CastingStringValue {
   String value;
@@ -39,10 +39,12 @@ public class ConstantStringValue extends ConstantValue implements CastingStringV
   public String getString() {
     return value;
   }
+
   @Override
   public Object getObject() {
     return value;
   }
+
   @Override
   public boolean exists() {
     return true;
@@ -52,6 +54,7 @@ public class ConstantStringValue extends ConstantValue implements CastingStringV
   public void streamStrings(Consumer<String> cons) {
     cons.accept(value);
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     cons.accept(value);

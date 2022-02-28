@@ -17,13 +17,12 @@
 package org.apache.solr.analytics.value;
 
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 
 /**
  * A multi-valued analytics value that can be represented as a boolean.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #streamBooleans},
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #streamBooleans},
  * resulting in different values on each call.
  */
 public interface BooleanValueStream extends AnalyticsValueStream {
@@ -35,22 +34,26 @@ public interface BooleanValueStream extends AnalyticsValueStream {
   void streamBooleans(BooleanConsumer cons);
 
   /**
-   * An interface that represents all of the types a {@link BooleanValueStream} should be able to cast to.
+   * An interface that represents all of the types a {@link BooleanValueStream} should be able to
+   * cast to.
    */
   public static interface CastingBooleanValueStream extends BooleanValueStream, StringValueStream {}
 
   /**
-   * An abstract base for {@link CastingBooleanValueStream} that automatically casts to all types if {@link #streamBooleans} is implemented.
+   * An abstract base for {@link CastingBooleanValueStream} that automatically casts to all types if
+   * {@link #streamBooleans} is implemented.
    */
-  public static abstract class AbstractBooleanValueStream implements CastingBooleanValueStream {
+  public abstract static class AbstractBooleanValueStream implements CastingBooleanValueStream {
     @Override
     public void streamStrings(Consumer<String> cons) {
       streamBooleans((boolean val) -> cons.accept(Boolean.toString(val)));
     }
+
     @Override
     public void streamObjects(Consumer<Object> cons) {
       streamBooleans((boolean val) -> cons.accept(val));
     }
+
     @Override
     public AnalyticsValueStream convertToConstant() {
       return this;

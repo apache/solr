@@ -17,7 +17,6 @@
 package org.apache.solr.analytics.function.reduction.data;
 
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.stream.reservation.LongReservation;
 import org.apache.solr.analytics.stream.reservation.ReductionDataReservation;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
@@ -60,35 +59,30 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
   }
 
   @Override
-  public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
+  public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
     // Count
-    consumer.accept(new LongReservation(
-        value -> ioData.count += value,
-        () -> ioData.count
-      ));
+    consumer.accept(new LongReservation(value -> ioData.count += value, () -> ioData.count));
     // DocCount
-    consumer.accept(new LongReservation(
-        value -> ioData.docCount += value,
-        () -> ioData.docCount
-      ));
+    consumer.accept(new LongReservation(value -> ioData.docCount += value, () -> ioData.docCount));
   }
 
   @Override
   public void setMergedData(ReductionData data) {
-    count = ((CountData)data).count;
-    docCount = ((CountData)data).docCount;
+    count = ((CountData) data).count;
+    docCount = ((CountData) data).docCount;
   }
 
   @Override
   public void setData(ReductionData data) {
-    count = ((CountData)data).count;
-    docCount = ((CountData)data).docCount;
+    count = ((CountData) data).count;
+    docCount = ((CountData) data).docCount;
   }
 
   @Override
   public String getName() {
     return name;
   }
+
   @Override
   public String getExpressionStr() {
     return exprStr;
@@ -103,9 +97,9 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
   /**
    * Represents a {@code count(expr)} expression. This collects 3 values:
    *
-   * docCount - The number of Solr Documents for which the wrapped expression exists.
-   * count - The number of values which wrapped expression contains.
-   * missing - The number of Solr Documents for which the wrapped expression does not exist.
+   * <p>docCount - The number of Solr Documents for which the wrapped expression exists. count - The
+   * number of values which wrapped expression contains. missing - The number of Solr Documents for
+   * which the wrapped expression does not exist.
    */
   public static class ExpressionCountCollector extends CountCollector {
     private final AnalyticsValueStream param;
@@ -129,24 +123,26 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
     @Override
     public void setMergedData(ReductionData data) {
       super.setMergedData(data);
-      missing = ((CountData)data).missing;
+      missing = ((CountData) data).missing;
     }
 
     @Override
     public void setData(ReductionData data) {
       super.setData(data);
-      missing = ((CountData)data).missing;
+      missing = ((CountData) data).missing;
     }
 
     long tempCount;
     int tempMissing;
     int tempDocCount;
+
     @Override
     public void collect() {
       tempCount = 0;
-      param.streamObjects( obj -> {
-        ++tempCount;
-      });
+      param.streamObjects(
+          obj -> {
+            ++tempCount;
+          });
       tempMissing = tempCount == 0 ? 1 : 0;
       tempDocCount = tempCount > 0 ? 1 : 0;
     }
@@ -159,18 +155,16 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
       super.submitReservations(consumer);
       // Missing
-      consumer.accept(new LongReservation(
-          value -> ioData.missing += value,
-          () -> ioData.missing
-        ));
+      consumer.accept(new LongReservation(value -> ioData.missing += value, () -> ioData.missing));
     }
   }
 
   /**
-   * Represents a {@code count()} expression. This collects the number of Solr Documents used in a result set.
+   * Represents a {@code count()} expression. This collects the number of Solr Documents used in a
+   * result set.
    */
   public static class TotalCountCollector extends CountCollector {
 

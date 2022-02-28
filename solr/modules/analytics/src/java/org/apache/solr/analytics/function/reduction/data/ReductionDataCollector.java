@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.reduction.data;
 
 import java.util.ArrayList;
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.function.ReductionFunction;
 import org.apache.solr.analytics.stream.reservation.ReductionDataReservation;
 import org.apache.solr.analytics.value.AnalyticsValue;
@@ -44,7 +43,7 @@ public abstract class ReductionDataCollector<T extends ReductionData> {
    *
    * @param consumer the consumer which the reservations are submitted to
    */
-  public abstract void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer);
+  public abstract void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer);
 
   /**
    * A clean slate to start a new reduction.
@@ -54,8 +53,8 @@ public abstract class ReductionDataCollector<T extends ReductionData> {
   public abstract T newData();
 
   /**
-   * Add a reduction data to target during collection.
-   * The given target is valid until the lasting targets are cleared.
+   * Add a reduction data to target during collection. The given target is valid until the lasting
+   * targets are cleared.
    *
    * @param data the data to target
    */
@@ -65,16 +64,16 @@ public abstract class ReductionDataCollector<T extends ReductionData> {
   }
 
   /**
-   * Clear the lasting collection targets. After this is called the current lasting
-   * targets will not be affected by future {@link #collectAndApply()} calls.
+   * Clear the lasting collection targets. After this is called the current lasting targets will not
+   * be affected by future {@link #collectAndApply()} calls.
    */
   public void clearLastingCollectTargets() {
     lastingTargets.clear();
   }
 
   /**
-   * Create a new reduction data to target during collection.
-   * The given target is only valid for one call to {@link #collectAndApply()}.
+   * Create a new reduction data to target during collection. The given target is only valid for one
+   * call to {@link #collectAndApply()}.
    *
    * @return the reduction data created
    */
@@ -85,37 +84,35 @@ public abstract class ReductionDataCollector<T extends ReductionData> {
   }
 
   /**
-   * Add a reduction data to target during collection.
-   * The given target is only valid for one call to {@link #collectAndApply()}.
+   * Add a reduction data to target during collection. The given target is only valid for one call
+   * to {@link #collectAndApply()}.
    *
    * @param data the data to target
    */
   @SuppressWarnings("unchecked")
   public void addCollectTarget(ReductionData data) {
-    collectionTargets.add((T)data);
+    collectionTargets.add((T) data);
   }
 
   /**
-   * Collect the info for the current Solr Document and apply the results to the
-   * given collection targets.
+   * Collect the info for the current Solr Document and apply the results to the given collection
+   * targets.
    *
-   * After application, all non-lasting targets are removed.
+   * <p>After application, all non-lasting targets are removed.
    */
   public void collectAndApply() {
     collect();
-    lastingTargets.forEach( target -> apply(target) );
-    collectionTargets.forEach( target -> apply(target) );
+    lastingTargets.forEach(target -> apply(target));
+    collectionTargets.forEach(target -> apply(target));
     collectionTargets.clear();
   }
 
-  /**
-   * Collect the information from current Solr Document.
-   */
-  protected void collect() { }
+  /** Collect the information from current Solr Document. */
+  protected void collect() {}
 
   /**
-   * Apply the collected info to the given reduction data.
-   * Should always be called after a {@link #collect()} call.
+   * Apply the collected info to the given reduction data. Should always be called after a {@link
+   * #collect()} call.
    *
    * @param data reduction data to apply collected info to
    */
@@ -138,35 +135,34 @@ public abstract class ReductionDataCollector<T extends ReductionData> {
    */
   @SuppressWarnings("unchecked")
   public void dataIO(ReductionData data) {
-    ioData = (T)data;
+    ioData = (T) data;
   }
 
   /**
-   * Finalize the reduction with the merged data stored in the parameter.
-   * Once the reduction is finalized, the {@link ReductionFunction}s that use this
-   * data collector act like regular {@link AnalyticsValue} classes that
-   * can be accessed through their {@code get<value-type>} methods.
+   * Finalize the reduction with the merged data stored in the parameter. Once the reduction is
+   * finalized, the {@link ReductionFunction}s that use this data collector act like regular {@link
+   * AnalyticsValue} classes that can be accessed through their {@code get<value-type>} methods.
    *
-   * (FOR CLOUD)
+   * <p>(FOR CLOUD)
    *
    * @param data the merged data to compute a reduction for
    */
   public abstract void setMergedData(ReductionData data);
 
   /**
-   * Finalize the reduction with the collected data stored in the parameter.
-   * Once the reduction is finalized, the {@link ReductionFunction}s that use this
-   * data collector act like regular {@link AnalyticsValue} classes that
-   * can be accessed through their {@code get<value-type>} methods.
+   * Finalize the reduction with the collected data stored in the parameter. Once the reduction is
+   * finalized, the {@link ReductionFunction}s that use this data collector act like regular {@link
+   * AnalyticsValue} classes that can be accessed through their {@code get<value-type>} methods.
    *
-   * (FOR SINGLE-SHARD)
+   * <p>(FOR SINGLE-SHARD)
    *
    * @param data the collected data to compute a reduction for
    */
   public abstract void setData(ReductionData data);
 
   /**
-   * Get the name of the reduction data collector. This is the same across all instances of the data collector.
+   * Get the name of the reduction data collector. This is the same across all instances of the data
+   * collector.
    *
    * @return the name
    */
@@ -174,8 +170,8 @@ public abstract class ReductionDataCollector<T extends ReductionData> {
 
   /**
    * The unique expression string of the reduction data collector, given all inputs and parameters.
-   * Used during {@link ReductionDataCollector} syncing. Since the string should be unique,
-   * only one of expression is kept.
+   * Used during {@link ReductionDataCollector} syncing. Since the string should be unique, only one
+   * of expression is kept.
    *
    * @return the expression string
    */

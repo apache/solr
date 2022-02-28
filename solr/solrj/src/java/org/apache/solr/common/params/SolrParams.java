@@ -614,23 +614,18 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder(128);
-    try {
-      boolean first=true;
-      for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext();) {
-        final String name = it.next();
-        for (String val : getParams(name)) {
-          if (!first) sb.append('&');
-          first=false;
-          StrUtils.partialURLEncodeVal(sb, name);
-          sb.append('=');
-          StrUtils.partialURLEncodeVal(sb, val);
-        }
+    boolean first = true;
+    for (final Iterator<String> it = getParameterNamesIterator(); it.hasNext();) {
+      final String name = it.next();
+      for (String val : getParams(name)) {
+        if (!first) sb.append('&');
+        first = false;
+        StrUtils.partialURLEncodeVal(sb, name);
+        sb.append('=');
+        StrUtils.partialURLEncodeVal(sb, val);
       }
-      return sb.toString();
-    } catch (IOException e) {
-      // impossible!
-      throw new AssertionError(e);
     }
+    return sb.toString();
   }
 
 }

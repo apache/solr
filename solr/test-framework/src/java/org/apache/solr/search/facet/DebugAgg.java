@@ -20,7 +20,6 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntFunction;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.common.params.SolrParams;
@@ -29,7 +28,6 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.ValueSourceParser;
-
 
 class DebugAgg extends AggValueSource {
   public static AtomicLong parses = new AtomicLong(0);
@@ -41,8 +39,10 @@ class DebugAgg extends AggValueSource {
       final String what = fp.hasMoreArguments() ? fp.parseId() : "wrap";
 
       switch (what) {
-        case "wrap": return new DebugAgg(fp);
-        case "numShards": return new DebugAggNumShards();
+        case "wrap":
+          return new DebugAgg(fp);
+        case "numShards":
+          return new DebugAggNumShards();
         default: /* No-Op */
       }
       throw new RuntimeException("No idea what to do with " + what);
@@ -50,20 +50,22 @@ class DebugAgg extends AggValueSource {
   }
 
   /**
-   * This exposes the raw localparams used by the FunctionQParser, it does <b>NOT</b>
-   * wrap them in defaults from the request
+   * This exposes the raw localparams used by the FunctionQParser, it does <b>NOT</b> wrap them in
+   * defaults from the request
    */
   public final SolrParams localParams;
+
   public final AggValueSource inner;
-  
-  public DebugAgg(FunctionQParser fp) throws SyntaxError { 
+
+  public DebugAgg(FunctionQParser fp) throws SyntaxError {
     super("debug");
     this.localParams = fp.getLocalParams();
     this.inner = fp.hasMoreArguments() ? fp.parseAgg(FunctionQParser.FLAG_IS_AGG) : new CountAgg();
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
+      throws IOException {
     return new Acc(fcontext, numDocs, numSlots, inner.createSlotAcc(fcontext, numDocs, numSlots));
   }
 
@@ -99,14 +101,15 @@ class DebugAgg extends AggValueSource {
     }
 
     @Override
-    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext)
+        throws IOException {
       collectDocs.addAndGet(1);
       sub.collect(doc, slot, slotContext);
     }
-    
 
     @Override
-    public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+    public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext)
+        throws IOException {
       collectDocSets.addAndGet(1);
       return sub.collect(docs, slot, slotContext);
     }
@@ -146,7 +149,7 @@ class DebugAgg extends AggValueSource {
 
     @Override
     public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
-      sub.key = this.key;  // TODO: Blech... this should be fixed
+      sub.key = this.key; // TODO: Blech... this should be fixed
       sub.setValues(bucket, slotNum);
     }
 
@@ -166,58 +169,57 @@ class DebugAgg extends AggValueSource {
     public DebugAggNumShards() {
       super("debugNumShards");
     }
-    
+
     @Override
     public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) {
       return new NumShardsAcc(fcontext, numDocs, numSlots);
     }
-    
+
     @Override
     public int hashCode() {
       return 0;
     }
-    
+
     @Override
     public String description() {
       return "debug(numShards)";
     }
-    
+
     public static class NumShardsAcc extends SlotAcc {
       public NumShardsAcc(FacetContext fcontext, long numDocs, int numSlots) {
         super(fcontext);
       }
-      
+
       @Override
-      public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      public void collect(int doc, int slot, IntFunction<SlotContext> slotContext)
+          throws IOException {
         // No-Op
       }
-      
+
       @Override
       public int compare(int slotA, int slotB) {
         return 0;
       }
-      
+
       @Override
       public Object getValue(int slotNum) throws IOException {
         return 1L;
       }
-      
+
       @Override
       public void reset() throws IOException {
         // No-Op
       }
-      
+
       @Override
       public void resize(Resizer resizer) {
         // No-op
       }
-      
     }
-    
+
     @Override
     public FacetMerger createFacetMerger(Object prototype) {
       return new FacetModule.FacetLongMerger();
     }
-    
   }
 }

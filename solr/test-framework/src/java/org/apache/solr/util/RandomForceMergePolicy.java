@@ -21,17 +21,14 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * A {@link MergePolicy} with a no-arg constructor that proxies to a
- * {@link ForceMergePolicy} wrapped instance retrieved from
- * {@link LuceneTestCase#newMergePolicy}.
- * Solr tests utilizing the Lucene randomized test framework can refer 
- * to this class in solrconfig.xml to get a fully randomized merge policy
- * that only returns forced merges.
+ * A {@link MergePolicy} with a no-arg constructor that proxies to a {@link ForceMergePolicy}
+ * wrapped instance retrieved from {@link LuceneTestCase#newMergePolicy}. Solr tests utilizing the
+ * Lucene randomized test framework can refer to this class in solrconfig.xml to get a fully
+ * randomized merge policy that only returns forced merges.
  */
 public final class RandomForceMergePolicy extends RandomMergePolicy {
 
   public RandomForceMergePolicy() {
     super(new ForceMergePolicy(LuceneTestCase.newMergePolicy()));
   }
-
 }

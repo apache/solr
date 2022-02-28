@@ -17,13 +17,13 @@
 package org.apache.solr.analysis;
 
 import java.io.File;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows
+// machines occasionally
 public class TestFoldingMultitermExtrasQuery extends SolrTestCaseJ4 {
 
   public String getCoreName() {
@@ -34,7 +34,7 @@ public class TestFoldingMultitermExtrasQuery extends SolrTestCaseJ4 {
   public static void beforeTests() throws Exception {
     File testHome = createTempDir().toFile();
     FileUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
-    initCore("solrconfig-icucollate.xml","schema-folding-extra.xml", testHome.getAbsolutePath());
+    initCore("solrconfig-icucollate.xml", "schema-folding-extra.xml", testHome.getAbsolutePath());
 
     int idx = 1;
     // ICUFoldingFilterFactory
@@ -72,6 +72,7 @@ public class TestFoldingMultitermExtrasQuery extends SolrTestCaseJ4 {
     assertQ(req("q", "content_icufolding:RE\u0301su*"), "//result[@numFound='2']");
     assertQ(req("q", "content_icufolding:El*"), "//result[@numFound='2']");
   }
+
   @Test
   public void testICUNormalizer2() {
     assertQ(req("q", "content_icunormalizer2:BadMagicicuFold*"), "//result[@numFound='1']");
@@ -80,7 +81,7 @@ public class TestFoldingMultitermExtrasQuery extends SolrTestCaseJ4 {
     assertQ(req("q", "content_icunormalizer2:re\u0301Su*"), "//result[@numFound='2']");
     assertQ(req("q", "content_icunormalizer2:eL*"), "//result[@numFound='2']");
   }
-  
+
   public void testICUTransform() {
     assertQ(req("q", "content_icutransform:Росс*"), "//result[@numFound='1']");
   }

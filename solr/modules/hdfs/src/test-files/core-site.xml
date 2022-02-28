@@ -18,6 +18,12 @@
 <configuration>
   <property>
     <name>hadoop.security.group.mapping</name>
-    <value>org.apache.solr.cloud.hdfs.HdfsFakeGroupMapping</value>
+    <value>org.apache.solr.hdfs.cloud.HdfsFakeGroupMapping</value>
+  </property>
+
+  <!-- SSL KeyStore reloading causes thread leaks - HADOOP-16524 introduced in Hadoop 3.3.1 -->
+  <property>
+    <name>hadoop.ssl.keystores.factory.class</name>
+    <value>org.apache.solr.hdfs.cloud.DisableKeyStoresFactory</value>
   </property>
 </configuration>

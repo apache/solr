@@ -21,7 +21,6 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -31,7 +30,8 @@ import org.apache.solr.schema.DatePointField;
 import org.apache.solr.schema.TrieDateField;
 
 /**
- * An analytics wrapper for a single-valued {@link TrieDateField} or {@link DatePointField} with DocValues enabled.
+ * An analytics wrapper for a single-valued {@link TrieDateField} or {@link DatePointField} with
+ * DocValues enabled.
  */
 public class DateField extends AnalyticsField implements CastingDateValue {
   private NumericDocValues docValues;
@@ -59,18 +59,22 @@ public class DateField extends AnalyticsField implements CastingDateValue {
   public long getLong() {
     return value;
   }
+
   @Override
   public Date getDate() {
     return exists ? new Date(value) : null;
   }
+
   @Override
   public String getString() {
     return exists ? Instant.ofEpochMilli(value).toString() : null;
   }
+
   @Override
   public Object getObject() {
     return exists ? value : null;
   }
+
   @Override
   public boolean exists() {
     return exists;
@@ -82,18 +86,21 @@ public class DateField extends AnalyticsField implements CastingDateValue {
       cons.accept(value);
     }
   }
+
   @Override
   public void streamDates(Consumer<Date> cons) {
     if (exists) {
       cons.accept(new Date(value));
     }
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     if (exists) {
       cons.accept(Instant.ofEpochMilli(value).toString());
     }
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     if (exists) {

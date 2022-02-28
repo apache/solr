@@ -16,15 +16,7 @@
  */
 package org.apache.solr.handler;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -38,6 +30,19 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.api.SchemaGetFieldAPI;
+import org.apache.solr.handler.admin.api.SchemaGetDynamicFieldAPI;
+import org.apache.solr.handler.admin.api.SchemaGetFieldTypeAPI;
+import org.apache.solr.handler.admin.api.SchemaInfoAPI;
+import org.apache.solr.handler.admin.api.SchemaUniqueKeyAPI;
+import org.apache.solr.handler.admin.api.SchemaListAllFieldsAPI;
+import org.apache.solr.handler.admin.api.SchemaListAllCopyFieldsAPI;
+import org.apache.solr.handler.admin.api.SchemaListAllDynamicFieldsAPI;
+import org.apache.solr.handler.admin.api.SchemaListAllFieldTypesAPI;
+import org.apache.solr.handler.admin.api.SchemaNameAPI;
+import org.apache.solr.handler.admin.api.SchemaSimilarityAPI;
+import org.apache.solr.handler.admin.api.SchemaVersionAPI;
+import org.apache.solr.handler.admin.api.SchemaZkVersionAPI;
 import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -52,6 +57,16 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.params.CommonParams.JSON;
@@ -139,7 +154,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
           break;
         }
         case "/schema/zkversion": {
-          int refreshIfBelowVersion = req.getParams().getInt("refreshIfBelowVersion");
+          int refreshIfBelowVersion = req.getParams().getInt("refreshIfBelowVersion", -1);
           int zkVersion = -1;
           IndexSchema schema = req.getSchema();
           if (schema instanceof ManagedIndexSchema) {
@@ -277,13 +292,24 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   @Override
   public Collection<Api> getApis() {
-    return ApiBag.wrapRequestHandlers(this, "core.SchemaRead",
-        "core.SchemaRead.fields",
-        "core.SchemaRead.copyFields",
-        "core.SchemaEdit",
-        "core.SchemaRead.dynamicFields_fieldTypes"
-        );
+    final List<Api> immList = ApiBag.wrapRequestHandlers(this,"core.SchemaEdit");
+    final List<Api> mutList = new ArrayList<>();
+    mutList.addAll(immList);
+    mutList.addAll(AnnotatedApi.getApis(new SchemaNameAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaInfoAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaUniqueKeyAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaVersionAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaSimilarityAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaZkVersionAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllFieldsAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaGetFieldAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllCopyFieldsAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllDynamicFieldsAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaGetDynamicFieldAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllFieldTypesAPI(this)));
+    mutList.addAll(AnnotatedApi.getApis(new SchemaGetFieldTypeAPI(this)));
 
+    return mutList;
   }
 
   @Override

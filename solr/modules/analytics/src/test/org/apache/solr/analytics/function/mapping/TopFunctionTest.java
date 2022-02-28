@@ -19,7 +19,6 @@ package org.apache.solr.analytics.function.mapping;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.DateValue;
@@ -48,7 +47,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
   public void multiValueIntTest() {
     TestIntValueStream val = new TestIntValueStream();
 
-    AnalyticsValueStream uncasted = TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof IntValue);
     IntValue func = (IntValue) uncasted;
 
@@ -72,7 +72,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
   public void multiValueLongTest() {
     TestLongValueStream val = new TestLongValueStream();
 
-    AnalyticsValueStream uncasted = TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof LongValue);
     LongValue func = (LongValue) uncasted;
 
@@ -96,7 +97,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
   public void multiValueFloatTest() {
     TestFloatValueStream val = new TestFloatValueStream();
 
-    AnalyticsValueStream uncasted = TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof FloatValue);
     FloatValue func = (FloatValue) uncasted;
 
@@ -120,7 +122,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
   public void multiValueDoubleTest() {
     TestDoubleValueStream val = new TestDoubleValueStream();
 
-    AnalyticsValueStream uncasted = TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
 
@@ -144,7 +147,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
   public void multiValueDateTest() throws DateTimeParseException {
     TestDateValueStream val = new TestDateValueStream();
 
-    AnalyticsValueStream uncasted = TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof DateValue);
     DateValue func = (DateValue) uncasted;
 
@@ -159,7 +163,11 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
     assertTrue(func.exists());
 
     // Both exist
-    val.setValues("1950-05-03T10:30:50Z", "2200-01-01T10:00:50Z", "1800-12-31T11:30:50Z", "1930-05-020T10:45:50Z");
+    val.setValues(
+        "1950-05-03T10:30:50Z",
+        "2200-01-01T10:00:50Z",
+        "1800-12-31T11:30:50Z",
+        "1930-05-020T10:45:50Z");
     assertEquals(Date.from(Instant.parse("2200-01-01T10:00:50Z")), func.getDate());
     assertTrue(func.exists());
   }
@@ -168,7 +176,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
   public void multiValueStringTest() {
     TestStringValueStream val = new TestStringValueStream();
 
-    AnalyticsValueStream uncasted = TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof StringValue);
     StringValue func = (StringValue) uncasted;
 
@@ -195,7 +204,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
     TestIntValue val3 = new TestIntValue();
     TestIntValue val4 = new TestIntValue();
 
-    AnalyticsValueStream uncasted = TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
+    AnalyticsValueStream uncasted =
+        TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
     assertTrue(uncasted instanceof IntValue);
     IntValue func = (IntValue) uncasted;
 
@@ -231,7 +241,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
     TestLongValue val3 = new TestLongValue();
     TestLongValue val4 = new TestLongValue();
 
-    AnalyticsValueStream uncasted = TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
+    AnalyticsValueStream uncasted =
+        TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
     assertTrue(uncasted instanceof LongValue);
     LongValue func = (LongValue) uncasted;
 
@@ -267,7 +278,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
     TestFloatValue val3 = new TestFloatValue();
     TestFloatValue val4 = new TestFloatValue();
 
-    AnalyticsValueStream uncasted = TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
+    AnalyticsValueStream uncasted =
+        TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
     assertTrue(uncasted instanceof FloatValue);
     FloatValue func = (FloatValue) uncasted;
 
@@ -303,7 +315,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
     TestDoubleValue val3 = new TestDoubleValue();
     TestDoubleValue val4 = new TestDoubleValue();
 
-    AnalyticsValueStream uncasted = TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
+    AnalyticsValueStream uncasted =
+        TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
 
@@ -339,7 +352,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
     TestDateValue val3 = new TestDateValue();
     TestDateValue val4 = new TestDateValue();
 
-    AnalyticsValueStream uncasted = TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
+    AnalyticsValueStream uncasted =
+        TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
     assertTrue(uncasted instanceof DateValue);
     DateValue func = (DateValue) uncasted;
 
@@ -375,7 +389,8 @@ public class TopFunctionTest extends SolrTestCaseJ4 {
     TestStringValue val3 = new TestStringValue();
     TestStringValue val4 = new TestStringValue();
 
-    AnalyticsValueStream uncasted = TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
+    AnalyticsValueStream uncasted =
+        TopFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
     assertTrue(uncasted instanceof StringValue);
     StringValue func = (StringValue) uncasted;
 

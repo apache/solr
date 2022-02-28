@@ -652,7 +652,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
       //Exercise the /stream handler
-      ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
       sParams.add("expr", "random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"1\", fl=\"id, a_i\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
       SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
@@ -662,7 +662,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertNull(tuples4.get(0).get("x"));
 
 
-      sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
+      sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
       sParams.add("expr", "random(" + COLLECTIONORALIAS + ")");
       jetty = cluster.getJettySolrRunner(0);
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
@@ -698,7 +698,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     try {
       context.setSolrClientCache(cache);
-      ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
       sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\")");
       JettySolrRunner jetty = cluster.getJettySolrRunner(0);
       SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
@@ -706,26 +706,26 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertTrue(tuples.size() == 3);
       assertOrder(tuples, 2, 3, 4);
 
-      sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
+      sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
       sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", k=\"2\", fl=\"id, score\", mintf=\"1\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 2);
       assertOrder(tuples, 2, 3);
 
-      sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
+      sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
       sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxdf=\"0\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 0);
 
-      sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
+      sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
       sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"4\", fl=\"id, score\", mintf=\"1\", maxwl=\"1\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
       assertTrue(tuples.size() == 0);
 
-      sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
+      sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream"));
       sParams.add("expr", "knnSearch(" + COLLECTIONORALIAS + ", id=\"1\", qf=\"a_t\", rows=\"2\", fl=\"id, score\", mintf=\"1\", minwl=\"20\")");
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples = getTuples(solrStream);
@@ -3917,7 +3917,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   private static Path findUserFilesDataDir() {
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      final String baseDir = cluster.getBaseDir().toAbsolutePath().toString();
       for (CoreDescriptor coreDescriptor : jetty.getCoreContainer().getCoreDescriptors()) {
         if (coreDescriptor.getCollectionName().equals(FILESTREAM_COLLECTION)) {
           return jetty.getCoreContainer().getUserFilesPath();

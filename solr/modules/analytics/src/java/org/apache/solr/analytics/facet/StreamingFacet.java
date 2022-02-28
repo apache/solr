@@ -20,13 +20,12 @@ import org.apache.solr.analytics.AnalyticsDriver;
 import org.apache.solr.analytics.function.ReductionCollectionManager;
 import org.apache.solr.analytics.function.ReductionCollectionManager.ReductionDataCollection;
 
-/**
- * A facet that is collected during the streaming phase of the {@link AnalyticsDriver}.
- */
+/** A facet that is collected during the streaming phase of the {@link AnalyticsDriver}. */
 public interface StreamingFacet {
   /**
-   * Determine which facet values match the current document. Add the {@link ReductionDataCollection}s of the relevant facet values
-   * to the targets of the streaming {@link ReductionCollectionManager} so that they are updated with the current document's data.
+   * Determine which facet values match the current document. Add the {@link
+   * ReductionDataCollection}s of the relevant facet values to the targets of the streaming {@link
+   * ReductionCollectionManager} so that they are updated with the current document's data.
    */
   void addFacetValueCollectionTargets();
 }

@@ -69,7 +69,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
 
     InputStream stream = client.pullStream("/override");
     assertEquals(
-        "File contents should have been overriden",
+        "File contents should have been overridden",
         "new content",
         IOUtils.toString(stream, Charset.defaultCharset()));
   }
