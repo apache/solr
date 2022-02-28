@@ -193,8 +193,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     handle.put("response", SKIP);
 
     // currently distrib mlt is sorting by score (even though it's not really comparable across
-    // shards)
-    // so it may not match the sort of single shard mlt
+    // shards) so it may not match the sort of single shard mlt
     handle.put("17", UNORDERED);
 
     query(

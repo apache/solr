@@ -681,10 +681,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testMetricsUnload() throws Exception {
 
-    SolrCore core =
-        h.getCoreContainer()
-            .getCore("collection1"); // ;.getRequestHandlers().put("/dumphandler", new
-    // DumpRequestHandler());
+    SolrCore core = h.getCoreContainer().getCore("collection1");
+    // .getRequestHandlers().put("/dumphandler", new DumpRequestHandler());
     RefreshablePluginHolder pluginHolder = null;
     try {
       PluginInfo info =

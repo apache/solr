@@ -150,8 +150,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
         };
 
     // we don't need/want the barrier to be cyclic, so we use a ref that our barrier action will
-    // null
-    // out to prevent it from being triggered multiple times (which shouldn't happen anyway)
+    // null out to prevent it from being triggered multiple times (which shouldn't happen anyway)
     final AtomicReference<CyclicBarrier> commonBarrier = new AtomicReference<>();
     commonBarrier.set(
         new CyclicBarrier(

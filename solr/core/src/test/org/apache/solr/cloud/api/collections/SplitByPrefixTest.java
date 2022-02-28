@@ -56,10 +56,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     // cloud-minimal does not and thus histogram should be driven from the "id" field directly
     String configSetName = random().nextBoolean() ? "cloud-minimal" : "cloud-managed";
 
-    configureCluster(1)
-        .addConfig(
-            "conf", configset(configSetName)) // cloud-managed has the id copyfield to id_prefix
-        .configure();
+    configureCluster(1).addConfig("conf", configset(configSetName)).configure();
   }
 
   @Before
@@ -131,14 +128,12 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
 
   // Randomly add a second level prefix to test that
   // they are all collapsed to a single bucket.  This behavior should change if/when counting
-  // support
-  // for more levels of compositeId values
+  // support for more levels of compositeId values
   SolrInputDocument getDoc(String prefix, String unique) {
     String secondLevel = "";
     if (random().nextBoolean()) {
-      prefix =
-          prefix.substring(0, prefix.length() - 1)
-              + "/16!"; // change "foo!" into "foo/16!" to match 2 level compositeId
+      // change "foo!" into "foo/16!" to match 2 level compositeId
+      prefix = prefix.substring(0, prefix.length() - 1) + "/16!";
       secondLevel = "" + random().nextInt(2) + "!";
     }
     return sdoc("id", prefix + secondLevel + unique);
@@ -170,16 +165,16 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
       splitShard.setAsyncId("SPLIT1");
     }
     splitShard.process(client);
+    // expectedReplicas==3 because original replica still exists (just inactive)
     waitForState(
         "Timed out waiting for sub shards to be active.",
         COLLECTION_NAME,
-        activeClusterShape(
-            2, 3)); // expectedReplicas==3 because original replica still exists (just inactive)
+        activeClusterShape(2, 3));
 
     List<Prefix> prefixes = findPrefixes(20, 0, 0x00ffffff);
     List<Prefix> uniquePrefixes = removeDups(prefixes);
-    if (uniquePrefixes.size() % 2
-        == 1) { // make it an even sized list so we can split it exactly in two
+    // make it an even sized list so we can split it exactly in two
+    if (uniquePrefixes.size() % 2 == 1) {
       uniquePrefixes.remove(uniquePrefixes.size() - 1);
     }
     log.info("Unique prefixes: {}", uniquePrefixes);

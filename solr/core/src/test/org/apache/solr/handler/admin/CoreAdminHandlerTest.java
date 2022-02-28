@@ -115,8 +115,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     assertNull("Exception on create", resp.getException());
 
     // Now assert that certain values are properly dereferenced in the process of creating the core,
-    // see
-    // SOLR-4982.
+    // see SOLR-4982.
 
     // Should NOT be a datadir named ${DATA_TEST} (literal). This is the bug after all
     File badDir = new File(instDir, "${DATA_TEST}");

@@ -51,8 +51,8 @@ public class Builders {
     public ClusterBuilder initializeLiveNodes(int countNodes) {
       nodeBuilders = new LinkedList<>();
       for (int n = 0; n < countNodes; n++) {
-        NodeBuilder nodeBuilder =
-            new NodeBuilder().setNodeName("node_" + n); // Default name, can be changed
+        // Default name, can be changed
+        NodeBuilder nodeBuilder = new NodeBuilder().setNodeName("node_" + n);
         nodeBuilder.setTotalDiskGB(10000.0);
         nodeBuilder.setFreeDiskGB(5000.0);
         nodeBuilder.setCoreCount(0);
@@ -127,9 +127,8 @@ public class Builders {
       // TODO And a few more missing and will be added...
 
       // Slight redoing of work twice (building Node instances) but let's favor readability over
-      // tricks (I could think
-      // of many) to reuse the nodes computed in build() or build the AttributeFetcher at the same
-      // time.
+      // tricks (I could think of many) to reuse the nodes computed in build() or build the
+      // AttributeFetcher at the same time.
       for (NodeBuilder nodeBuilder : nodeBuilders) {
         Node node = nodeBuilder.build();
 
@@ -275,11 +274,9 @@ public class Builders {
             node = liveNodes.get(nodeIndex);
           } else {
             // The collection can have replicas on non live nodes. Let's create such a node here
-            // (that is not known to the
-            // cluster). There could be many non live nodes in the collection configuration, they
-            // will all reference new
-            // instances such as below of a node unknown to cluster, but all will have the same name
-            // (so will be equal if
+            // (that is not known to the cluster). There could be many non live nodes in the
+            // collection configuration, they will all reference new instances such as below of a
+            // node unknown to cluster, but all will have the same name (so will be equal if
             // tested).
             node = new NodeBuilder().setNodeName("NonLiveNode");
           }
@@ -295,8 +292,8 @@ public class Builders {
           replicas.add(replicaBuilder);
 
           // No way to specify which replica is the leader. Could be done by adding a "*" to the
-          // replica definition for example
-          // in the passed shardsReplicas but not implementing this until it is needed :)
+          // replica definition for example in the passed shardsReplicas but not implementing this
+          // until it is needed :)
           if (leader == null && type != Replica.ReplicaType.PULL) {
             leader = replicaBuilder;
           }

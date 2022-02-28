@@ -148,8 +148,8 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
         assertEquals(1, cloudReplicaSource.getReplicasBySlice(i).size());
 
         // need a switch here because unlike the testShards* tests which always returns slices in
-        // the order they were specified,
-        // using the collection param can return slice names in any order
+        // the order they were specified, using the collection param can return slice names in any
+        // order
         switch (sliceName) {
           case "collection1_slice1":
             assertEquals(
@@ -260,8 +260,8 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("collection", "collection1,collection2");
     // the cluster state will have collection1 with slice2 with two tlog replicas out of which the
-    // first one will be the leader
-    // and collection2 with just a single slice and a tlog replica that will be leader
+    // first one will be the leader and collection2 with just a single slice and a tlog replica that
+    // will be leader
     try (ZkStateReader zkStateReader =
         ClusterStateMockUtil.buildClusterState(
             "csrr*st2t2cst", "baseUrl1:8983_", "baseUrl2:8984_")) {

@@ -54,9 +54,8 @@ public class DateRangeFieldTest extends SolrTestCaseJ4 {
     assertQ(req(commonParams, "qq", "[1999 TO 2001]", "op", "IsWithin"), xpathMatches());
     assertQ(req(commonParams, "qq", "2014-05", "op", "IsWithin"), xpathMatches(1));
 
-    assertQ(
-        req("q", "dateRange:[1998 TO 2000}"),
-        xpathMatches(0)); // exclusive end, so we barely miss one doc
+    // exclusive end, so we barely miss one doc
+    assertQ(req("q", "dateRange:[1998 TO 2000}"), xpathMatches(0));
 
     // show without local-params
     assertQ(req("q", "dateRange:[* TO *]"), xpathMatches(0, 1, 2, 3));

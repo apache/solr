@@ -43,17 +43,17 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   private static final String[] fieldsToRemove = {"_nest_parent_", "_nest_path_", "_root_"};
   private static final int sumOfDocsPerNestedDocument = 8;
   private static final int numberOfDocsPerNestedTest = 10;
-  private static final String fqToExcludeNonTestedDocs =
-      "{!frange l=0}id_i"; // filter documents that were created for random segments to ensure the
-  // transformer works with multiple segments.
+  // filter documents that were created for random segments to ensure the transformer works with
+  // multiple segments.
+  private static final String fqToExcludeNonTestedDocs = "{!frange l=0}id_i";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-minimal.xml", "schema-nest.xml"); // use "nest" schema
 
     if (random().nextBoolean()) {
-      idCounter.set(
-          -100); // start docIDs at -100 for these random docs we don't care about (all less than 0)
+      // start docIDs at -100 for these random docs we don't care about (all less than 0)
+      idCounter.set(-100);
       // create random segments
       final int numOfDocs = 10;
       for (int i = 0; i < numOfDocs; ++i) {

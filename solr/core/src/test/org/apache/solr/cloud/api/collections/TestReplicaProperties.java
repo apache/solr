@@ -50,8 +50,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
 
     try (CloudSolrClient client = createCloudClient(null)) {
       // Mix up a bunch of different combinations of shards and replicas in order to exercise
-      // boundary cases.
-      // shards, replicationfactor
+      // boundary cases. shards, replicationfactor
       int shards = random().nextInt(7);
       if (shards < 2) shards = 2;
       int rFactor = random().nextInt(4);
@@ -225,8 +224,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "property.bogus1", "whatever");
 
       // At this point we've assigned a preferred leader. Make it happen and check that all the
-      // nodes that are
-      // leaders _also_ have the preferredLeader property set.
+      // nodes that are leaders _also_ have the preferredLeader property set.
 
       NamedList<Object> res =
           doPropertyAction(
@@ -243,9 +241,8 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
   private void verifyLeaderAssignment(CloudSolrClient client, String collectionName)
       throws InterruptedException, KeeperException {
     String lastFailMsg = "";
-    for (int idx = 0;
-        idx < 300;
-        ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
+    // Keep trying while Overseer writes the ZK state for up to 30 seconds.
+    for (int idx = 0; idx < 300; ++idx) {
       lastFailMsg = "";
       ClusterState clusterState = client.getZkStateReader().getClusterState();
       for (Slice slice : clusterState.getCollection(collectionName).getSlices()) {

@@ -143,9 +143,8 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   public void testMaxDistErrConversion() throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    Files.delete(
-        managedSchemaFile
-            .toPath()); // Delete managed-schema.xml so it won't block parsing a new schema
+    // Delete managed-schema.xml so it won't block parsing a new schema
+    Files.delete(managedSchemaFile.toPath());
     System.setProperty("managed.schema.mutable", "true");
     initCore(
         "solrconfig-managed-schema.xml",
@@ -267,9 +266,8 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
       throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    Files.delete(
-        managedSchemaFile
-            .toPath()); // Delete managed-schema.xml so it won't block parsing a new schema
+    // Delete managed-schema.xml so it won't block parsing a new schema
+    Files.delete(managedSchemaFile.toPath());
     System.setProperty("managed.schema.mutable", "true");
     initCore(
         "solrconfig-managed-schema.xml",

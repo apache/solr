@@ -110,8 +110,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     testAliasCreationNameValidation();
     testShardCreationNameValidation();
     testNoConfigset();
-    testModifyCollection(); // deletes replicationFactor property from collections, be careful
-    // adding new tests after this one!
+    testModifyCollection();
+    // deletes replicationFactor property from collections, be careful adding new tests after this
+    // one!
   }
 
   private void testModifyCollection() throws Exception {

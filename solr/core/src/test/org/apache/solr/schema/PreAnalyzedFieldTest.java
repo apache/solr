@@ -71,14 +71,16 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
       json("{'v':'1','str':'stored-value','tokens':[{'t':'a'},{'t':'b'},{'t':'c'}]}");
 
   private static final String[] invalidJson = {
-    json("'v':'1','str':'stored-value','tokens':[{'t':'a'},{'t':'b'},{'t':'c'}]"), // missing
-    // enclosing
-    // object
-    json("{'str':'stored-value','tokens':[{'t':'a'},{'t':'b'},{'t':'c'}]}"), // missing version #
-    json("{'v':'2','str':'stored-value','tokens':[{'t':'a'},{'t':'b'},{'t':'c'}]}"), // invalid
-    // version #
-    json("{'v':'1','str':'stored-value','tokens':[{}]}"), // single token no attribs
-    json("{'v':'1','str':'stored-value','tokens':[{'t'}]}"), // missing attrib value
+    // missing enclosing object
+    json("'v':'1','str':'stored-value','tokens':[{'t':'a'},{'t':'b'},{'t':'c'}]"),
+    // missing version #
+    json("{'str':'stored-value','tokens':[{'t':'a'},{'t':'b'},{'t':'c'}]}"),
+    // invalid version #
+    json("{'v':'2','str':'stored-value','tokens':[{'t':'a'},{'t':'b'},{'t':'c'}]}"),
+    // single token no attribs
+    json("{'v':'1','str':'stored-value','tokens':[{}]}"),
+    // missing attrib value
+    json("{'v':'1','str':'stored-value','tokens':[{'t'}]}"),
   };
 
   SchemaField field = null;

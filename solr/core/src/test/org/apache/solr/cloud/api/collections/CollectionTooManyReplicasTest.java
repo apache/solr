@@ -46,8 +46,9 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // Since maxShardsPerNode was removed in SOLR-12847 and autoscaling framework was removed
-  // in SOLR-14656, this test is broken
+  @Ignore
+  // Since maxShardsPerNode was removed in SOLR-12847 and autoscaling framework was removed in
+  // SOLR-14656, this test is broken
   public void testAddTooManyReplicas() throws Exception {
 
     final String collectionName = "TooManyReplicasInSeveralFlavors";
@@ -97,8 +98,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     assertEquals("There should be 3 replicas for shard 1", 3, slice.getReplicas().size());
 
     // And let's fail one more time because to ensure that the math doesn't do weird stuff it we
-    // have more replicas
-    // than simple calcs would indicate.
+    // have more replicas than simple calcs would indicate.
     Exception e2 =
         expectThrows(
             Exception.class,
@@ -124,8 +124,9 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // Since maxShardsPerNode was removed in SOLR-12847 and autoscaling framework was removed
-  // in SOLR-14656, this test is broken
+  @Ignore
+  // Since maxShardsPerNode was removed in SOLR-12847 and autoscaling framework was removed in
+  // SOLR-14656, this test is broken
   public void testAddShard() throws Exception {
     // equivalent to maxShardsPerNode=2
     // String commands =  "{ set-cluster-policy: [ {replica: '<3', shard: '#ANY', node: '#ANY',
@@ -138,8 +139,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     // We have two nodes, maxShardsPerNode is set to 2. Therefore, we should be able to add 2 shards
-    // each with
-    // two replicas, but fail on the third.
+    // each with two replicas, but fail on the third.
     CollectionAdminRequest.createShard(collectionName, "shard1").process(cluster.getSolrClient());
 
     // Now we should have one replica on each Jetty, add another to reach maxShardsPerNode
@@ -185,8 +185,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
         e3.getMessage().contains("No node can satisfy the rules"));
 
     // And finally, ensure that there are all the replicas we expect. We should have shards 1, 2 and
-    // 4 and each
-    // should have exactly two replicas
+    // 4 and each should have exactly two replicas
     waitForState(
         "Expected shards shardstart, 1, 2, each with two active replicas",
         collectionName,

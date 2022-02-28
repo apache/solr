@@ -638,9 +638,8 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
     if (sf.indexed()) { // SolrQueryParser should also be generating a TermInSetQuery if indexed
       String setQuery = sf.getType().getSetQuery(null, sf, enumStrs).toString();
-      if (sf.getType()
-          instanceof
-          EnumField) { // Trie field TermInSetQuery non-XML chars serialize with "#XX;" syntax
+      // Trie field TermInSetQuery non-XML chars serialize with "#XX;" syntax
+      if (sf.getType() instanceof EnumField) {
         Pattern nonXMLCharPattern = Pattern.compile("[\u0000-\u0008\u000B\u000C\u000E-\u0019]");
         StringBuffer munged = new StringBuffer();
         Matcher matcher = nonXMLCharPattern.matcher(setQuery);

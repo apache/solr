@@ -61,8 +61,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setupClass() throws Exception {
     // Need to use a disk-based directory because there are tests that close a core after adding
-    // documents
-    // then expect to be able to re-open that core and execute a search
+    // documents then expect to be able to re-open that core and execute a search
     useFactory("solr.StandardDirectoryFactory");
   }
 
@@ -169,8 +168,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   // This is a little weak. I'm not sure how to test that lazy core2 is loaded automagically. The
-  // getCore
-  // will, of course, load it.
+  // getCore will, of course, load it.
 
   private void checkSearch(SolrCore core) throws IOException {
     addLazy(core, "id", "0");
@@ -218,8 +216,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       checkSearch(core4);
 
       // Now just insure that the normal searching on "collection1" finds _0_ on the same query that
-      // found _2_ above.
-      // Use of makeReq above and req below is tricky, very tricky.
+      // found _2_ above. Use of makeReq above and req below is tricky, very tricky.
       SolrCore collection1 = cc.getCore("collection1");
       assertQ(
           "test raw query",
@@ -517,8 +514,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       checkSomeLoadedCores(cc, 5, coreNames);
 
       // While we're at it, a test for SOLR-5366, unloading transient core that's been unloaded b/c
-      // it's
-      // transient generates a "too many closes" error
+      // it's transient generates a "too many closes" error
 
       class TestThread extends Thread {
 
@@ -599,8 +595,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       checkSearch(core1);
 
       // Did we get the expected message for each of the cores that failed to load? Make sure we
-      // don't run afoul of
-      // the dreaded slash/backslash difference on Windows and *nix machines.
+      // don't run afoul of the dreaded slash/backslash difference on Windows and *nix machines.
       testMessage(cc.getCoreInitFailures(), makePath("badConfig1", "conf", "solrconfig.xml"));
       testMessage(cc.getCoreInitFailures(), makePath("badConfig2", "conf", "solrconfig.xml"));
       testMessage(cc.getCoreInitFailures(), makePath("badSchema1", "conf", "schema.xml"));
@@ -909,8 +904,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   @Test
   public void testMidUseUnload() throws Exception {
-    final int maximumSleepMillis =
-        random().nextInt(9999) + 1; // sleep for up to 10 s Must add 1 because using
+    // sleep for up to 10 s Must add 1 because using
+    final int maximumSleepMillis = random().nextInt(9999) + 1;
     // this as a seed will rea few lines down will
     // throw an exception if this is zero
     if (VERBOSE) {
@@ -944,12 +939,12 @@ public class TestLazyCores extends SolrTestCaseJ4 {
           }
         }
 
-        assertFalse(
-            core_to_use.isClosed()); // not closed since we are still using it and hold a reference
-        core_to_use.close(); // now give up our reference to the core
+        // not closed since we are still using it and hold a reference
+        assertFalse(core_to_use.isClosed());
+        // now give up our reference to the core
+        core_to_use.close();
       }
     }
-    ;
 
     CoreContainer cc = init();
 
@@ -971,9 +966,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   // Insure that when a core is evicted from the transient cache, any uncommitted docs are
-  // preserved.
-  // Note, this needs FS-based indexes to persist!
-  // Cores 2, 3, 6, 7, 8, 9 are transient
+  // preserved. Note, this needs FS-based indexes to persist! Cores 2, 3, 6, 7, 8, 9 are transient
   @Test
   public void testNoCommit() throws Exception {
     CoreContainer cc = init();

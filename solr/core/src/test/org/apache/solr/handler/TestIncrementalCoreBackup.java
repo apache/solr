@@ -37,9 +37,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-@LuceneTestCase.SuppressCodecs({
-  "SimpleText"
-}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+// Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs({"SimpleText"})
 public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
   @Before // unique core per test
   public void coreInit() throws Exception {
@@ -93,8 +92,7 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
   public void testBackupBeforeFirstCommit() throws Exception {
 
     // even w/o a user sending any data, the SolrCore initialiation logic should have automatically
-    // created
-    // an "empty" commit point that can be backed up...
+    // created an "empty" commit point that can be backed up...
     final IndexCommit empty = h.getCore().getDeletionPolicy().getLatestCommit();
     assertNotNull(empty);
 

@@ -72,8 +72,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
 
     cluster.uploadConfigSet(configset("cloud-minimal"), CONF_NAME);
     // create a single shard, single replica collection. This is necessary until SOLR-13245 since
-    // the commands
-    // don't look in all replicas.
+    // the commands don't look in all replicas.
     CollectionAdminRequest.createCollection(SOURCE_COLL, CONF_NAME, 1, 1)
         .process(cluster.getSolrClient());
 
@@ -196,8 +195,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
         tupleOfInterest.getString(DAEMON_OP).contains(daemonOfInterest + " not found"));
 
     // Let's bring the killed daemon back and see if it returns in our lists. Use the method that
-    // loops a bit to check
-    // in case there's a delay.
+    // loops a bit to check in case there's a delay.
     createDaemon(DAEMON_DEF.replace("DAEMON_NAME", daemonOfInterest), daemonOfInterest);
     checkAlive(daemonOfInterest);
 
@@ -226,8 +224,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
             + "' did not become RUNNABLE, WAITING or TIMED_WAITING in 10 seconds");
   }
   // There can be some delay while threads stabilize, so we need to loop. Evenutally, the statu of a
-  // stopped
-  // thread should be "TERMINATED"
+  // stopped thread should be "TERMINATED"
   private void checkStopped() throws InterruptedException, IOException {
     TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 

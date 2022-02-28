@@ -34,9 +34,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
 import org.junit.Before;
 
-@LuceneTestCase.SuppressCodecs({
-  "SimpleText"
-}) // Backups do checksum validation against a footer value not present in 'SimpleText'
+// Backups do checksum validation against a footer value not present in 'SimpleText'
+@LuceneTestCase.SuppressCodecs({"SimpleText"})
 public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
   @Before // unique core per test
   public void coreInit() throws Exception {
@@ -90,8 +89,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
   public void testBackupBeforeFirstCommit() throws Exception {
 
     // even w/o a user sending any data, the SolrCore initialiation logic should have automatically
-    // created
-    // an "empty" commit point that can be backed up...
+    // created an "empty" commit point that can be backed up...
     final IndexCommit empty = h.getCore().getDeletionPolicy().getLatestCommit();
     assertNotNull(empty);
 
@@ -417,8 +415,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
                   assertEquals(1L, (long) s.getIndexReader().numDocs());
 
                   final IndexCommit commit = s.getIndexReader().getIndexCommit();
-                  // WTF: how/why does this reader still have the same commit generation as before ?
-                  // ? ? ? ?
+                  // WTF: how/why does this reader still have the same commit generation as before?
                   assertEquals(
                       "WTF: This Reader (claims) the same generation as our previous pre-softCommif (empty) reader",
                       EXPECTED_GEN_OF_EMPTY_INDEX,

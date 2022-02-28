@@ -420,8 +420,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     assertions.accept(1, phrasesLocal);
 
     // likewise, if we create a new freshly parsed set of phrases, and "merge" in the previous index
-    // stats
-    // (ie: merge results from one shard) we should get the same results
+    // stats (ie: merge results from one shard) we should get the same results
     final List<Phrase> phrasesMerged = Phrase.extractPhrases(input, analysisField, 3, 7);
     Phrase.populateStats(phrasesMerged, Phrase.formatShardResponse(phrasesLocal));
     assertions.accept(1, phrasesMerged);
@@ -492,9 +491,8 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
         0.0D);
 
     // "why are we lazy" is longer then the max indexed phrase size & appears verbatim in a title
-    // value
-    // it should score -1 against body -- but because of our weights, that shouldn't bring down the
-    // total
+    // value it should score -1 against body -- but because of our weights, that shouldn't bring
+    // down the total
     final Phrase wawl = phrases.get(phrases.size() - 7);
     assertEquals("why are we lAzY", wawl.getSubSequence());
     assertEquals(wawl.toString(), -1.0D, wawl.getFieldScore("multigrams_body"), 0.0D);
@@ -572,8 +570,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       // but we also generates scores from a field that doesn't know about them...
       //
       // (NOTE: the parser will still generate _some_ candidate phrases spaning the stop word
-      // position,
-      // but not ones that start with the stopword)
+      // position, but not ones that start with the stopword)
       final SchemaField analysisField =
           h.getCore().getLatestSchema().getField("multigrams_title_stop");
       assertNotNull(analysisField);
@@ -588,8 +585,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       for (Phrase p : phrases) {
         if (p.getPositionStart() <= 2 && 2 < p.getPositionEnd()) {
           // phrases that span the stop word should have valid scores from the field that doesn't
-          // care
-          // about stop words, but the stopword field should reject them
+          // care about stop words, but the stopword field should reject them
           assertEquals(p.toString(), -1.0D, p.getFieldScore("multigrams_title"), 0.0D);
           assertEquals(p.toString(), -1.0D, p.getFieldScore("multigrams_title_stop"), 0.0D);
         }

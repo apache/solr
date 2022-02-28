@@ -237,8 +237,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
                       new Properties(),
                       zkControllerRef.get());
               // non-existent coreNodeName, this will cause zkController.publishAndWaitForDownStates
-              // to wait indefinitely
-              // when using coreNodeName but usage of core name alone will return immediately
+              // to wait indefinitely when using coreNodeName but usage of core name alone will
+              // return immediately
               descriptor.getCloudDescriptor().setCoreNodeName("core_node0");
               return Collections.singletonList(descriptor);
             }

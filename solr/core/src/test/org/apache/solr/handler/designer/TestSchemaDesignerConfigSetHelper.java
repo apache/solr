@@ -405,11 +405,8 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
             configSet, updateField, helper.loadLatestSchema(helper.loadSolrConfig(mutableId)));
     assertNotNull(resp);
     assertEquals("field", resp.get("updateType"));
-    assertEquals(
-        false,
-        resp.get(
-            "rebuild")); // tricky, we didn't actually change the field to multiValue (it already
-    // was)
+    // tricky, we didn't actually change the field to multiValue (it already was)
+    assertEquals(false, resp.get("rebuild"));
 
     // add / update field type
     Map<String, Object> addType =

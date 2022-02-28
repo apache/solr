@@ -156,9 +156,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
   }
 
-  @Repeat(
-      iterations =
-          2) // 2 times to make sure cleanup is complete and we can create the same collection
+  // 2 times to make sure cleanup is complete and we can create the same collection
+  @Repeat(iterations = 2)
   public void testCreateDelete() throws Exception {
     switch (random().nextInt(3)) {
       case 0:
@@ -641,15 +640,14 @@ public class TestTlogReplica extends SolrCloudTestCase {
     new UpdateRequest().add(sdoc("id", "6")).process(cloudClient, collectionName);
     solrRunner.start();
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0, 2, 0));
-    // We skip peerSync, so replica will always trigger commit on leader
-    // We query only the non-leader replicas, since we haven't opened a new searcher on the leader
-    // yet
-    waitForNumDocsInAllReplicas(
-        4, getNonLeaderReplias(collectionName), 10); // timeout for stale collection state
+    // We skip peerSync, so replica will always trigger commit on leader. We query only the
+    // non-leader replicas, since we haven't opened a new searcher on the leader yet
+
+    // timeout for stale collection state
+    waitForNumDocsInAllReplicas(4, getNonLeaderReplias(collectionName), 10);
 
     // If I add the doc immediately, the leader fails to communicate with the follower with broken
-    // pipe.
-    // Options are, wait or retry...
+    // pipe. Options are, wait or retry...
     for (int i = 0; i < 3; i++) {
       UpdateRequest ureq = new UpdateRequest().add(sdoc("id", "7"));
       ureq.setParam("collection", collectionName);
@@ -670,8 +668,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
     solrRunner.start();
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0, 2, 0));
-    waitForNumDocsInAllReplicas(
-        5, getNonLeaderReplias(collectionName), 10); // timeout for stale collection state
+    // timeout for stale collection state
+    waitForNumDocsInAllReplicas(5, getNonLeaderReplias(collectionName), 10);
     checkRTG(3, 7, cluster.getJettySolrRunners());
     cluster.getSolrClient().commit(collectionName);
 
@@ -692,8 +690,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     solrRunner.start();
     waitingForReplay.acquire();
     // If I add the doc immediately, the leader fails to communicate with the follower with broken
-    // pipe.
-    // Options are, wait or retry...
+    // pipe. Options are, wait or retry...
     for (int i = 0; i < 3; i++) {
       UpdateRequest ureq = new UpdateRequest().add(sdoc("id", "8"));
       ureq.setParam("collection", collectionName);

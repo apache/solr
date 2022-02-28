@@ -704,8 +704,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       assertEquals(
           "not the type of error we were expecting (" + e.code() + "): " + e.toString(),
           // NOTE: we always expect a 400 because we know that's what we would get from these types
-          // of errors
-          // on a single node setup -- a 5xx type error isn't something we should have triggered
+          // of errors on a single node setup -- a 5xx type error isn't something we should have
+          // triggered
           400,
           e.code());
 
@@ -809,8 +809,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       assertEquals(
           "not the type of error we were expecting (" + e.code() + "): " + e.toString(),
           // NOTE: we always expect a 400 because we know that's what we would get from these types
-          // of errors
-          // on a single node setup -- a 5xx type error isn't something we should have triggered
+          // of errors on a single node setup -- a 5xx type error isn't something we should have
+          // triggered
           400,
           e.code());
 
@@ -923,8 +923,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       assertEquals(
           "not the type of error we were expecting (" + e.code() + "): " + e.toString(),
           // NOTE: we always expect a 400 because we know that's what we would get from these types
-          // of errors
-          // on a single node setup -- a 5xx type error isn't something we should have triggered
+          // of errors on a single node setup -- a 5xx type error isn't something we should have
+          // triggered
           400,
           e.code());
 

@@ -140,9 +140,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     String collectionName = "testSplitStaticIndexReplication_" + splitMethod.toLower();
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
-    create.setCreateNodeSet(
-        nodeName); // we want to create the leader on a fixed node so that we know which one to
-    // restart later
+    // we want to create the leader on a fixed node so that we know which one to restart later
+    create.setCreateNodeSet(nodeName);
     create.process(cloudClient);
 
     cloudClient.waitForState(
@@ -268,8 +267,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                     });
             newReplicaLatch.await(30, TimeUnit.SECONDS);
             // check consistency of sub-shard replica explicitly because checkShardConsistency
-            // methods doesn't
-            // handle new shards/replica so well.
+            // methods doesn't handle new shards/replica so well.
             ClusterState clusterState = client.getZkStateReader().getClusterState();
             DocCollection collection = clusterState.getCollection(collectionName);
             int numReplicasChecked = assertConsistentReplicas(collection.getSlice(SHARD1_0));
@@ -329,14 +327,11 @@ public class ShardSplitTest extends BasicDistributedZkTest {
    * <p>See SOLR-9439
    */
   @Test
-  // 05-Jul-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testSplitAfterFailedSplit() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
-    TestInjection.splitFailureBeforeReplicaCreation =
-        "true:100"; // we definitely want split to fail
+    // we definitely want split to fail
+    TestInjection.splitFailureBeforeReplicaCreation = "true:100";
     try {
       splitAfterFailedSplit();
     } finally {
@@ -397,15 +392,11 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   }
 
   @Test
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testSplitMixedReplicaTypes() throws Exception {
     doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod.REWRITE);
   }
 
   @Test
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testSplitMixedReplicaTypesLink() throws Exception {
     doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod.LINK);
   }
@@ -568,8 +559,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       // we don't care if the split failed because we are injecting faults and it is likely
       // that the split has failed but in any case we want to assert that all docs that got
       // indexed are available in SolrCloud and if the split succeeded then all replicas of the
-      // sub-shard
-      // must be consistent (i.e. have same numdocs)
+      // sub-shard must be consistent (i.e. have same numdocs)
 
       if (log.isInfoEnabled()) {
         log.info(
@@ -656,8 +646,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           cloudClientDocs);
 
       // check consistency of sub-shard replica explicitly because checkShardConsistency methods
-      // doesn't
-      // handle new shards/replica so well.
+      // doesn't handle new shards/replica so well.
       if (areSubShardsActive.get()) {
         ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
         DocCollection collection =
@@ -973,8 +962,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       final int[] docCounts = new int[ranges.size()];
 
       for (int i = 100; i <= 200; i++) {
-        String shardKey =
-            "" + (char) ('a' + (i % 26)); // See comment in ShardRoutingTest for hash distribution
+        // See comment in ShardRoutingTest for hash distribution
+        String shardKey = "" + (char) ('a' + (i % 26));
 
         collectionClient.add(getDoc(id, i, "n_ti", i, shard_fld, shardKey));
         int idx = getHashRangeIdx(router, ranges, shardKey);
@@ -1050,8 +1039,8 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       int uniqIdentifier = (1 << 12);
       int splitKeyDocCount = 0;
       for (int i = 100; i <= 200; i++) {
-        String shardKey =
-            "" + (char) ('a' + (i % 26)); // See comment in ShardRoutingTest for hash distribution
+        // See comment in ShardRoutingTest for hash distribution
+        String shardKey = "" + (char) ('a' + (i % 26));
 
         String idStr = shardKey + "!" + i;
         collectionClient.add(

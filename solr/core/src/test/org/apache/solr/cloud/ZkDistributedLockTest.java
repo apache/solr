@@ -101,8 +101,8 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
         collRL4.isAcquired());
 
     // Collection is write locked by collWL3 and collRL4 read lock waiting behind. Now moving to
-    // request shard level locks.
-    // These are totally independent from the Collection level locks so should see no impact.
+    // request shard level locks. These are totally independent from the Collection level locks so
+    // should see no impact.
     DistributedLock shardWL5 =
         factory.createLock(
             true, CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD_NAME, null);
@@ -178,13 +178,11 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
             })
         .start();
 
-    // Wait for the thread to start and to get blocked in waitUntilAcquired()
-    // (thread start could have been checked more reliably using another latch, and verifying the
-    // thread is in waitUntilAcquired
-    // done through that thread stacktrace, but that would be overkill compared to the very slight
-    // race condition of waiting 30ms,
-    // but a race that would not cause the test to fail since we're testing... that nothing happened
-    // yet).
+    // Wait for the thread to start and to get blocked in waitUntilAcquired() (thread start could
+    // have been checked more reliably using another latch, and verifying the thread is in
+    // waitUntilAcquired done through that thread stacktrace, but that would be overkill compared to
+    // the very slight race condition of waiting 30ms, but a race that would not cause the test to
+    // fail since we're testing... that nothing happened yet).
     Thread.sleep(30);
 
     assertEquals(
@@ -267,13 +265,11 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
             })
         .start();
 
-    // Wait for the thread to start and to get blocked in waitUntilAcquired()
-    // (thread start could have been checked more reliably using another latch, and verifying the
-    // thread is in waitUntilAcquired
-    // done through that thread stacktrace, but that would be overkill compared to the very slight
-    // race condition of waiting 30ms,
-    // but a race that would not cause the test to fail since we're testing... that nothing happened
-    // yet).
+    // Wait for the thread to start and to get blocked in waitUntilAcquired() (thread start could
+    // have been checked more reliably using another latch, and verifying the thread is in
+    // waitUntilAcquired done through that thread stacktrace, but that would be overkill compared to
+    // the very slight race condition of waiting 30ms, but a race that would not cause the test to
+    // fail since we're testing... that nothing happened yet).
     Thread.sleep(30);
 
     assertEquals(
@@ -285,7 +281,7 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
         "configSetWL1 should have been acquired now that configSetRL1 was released",
         configSetWL1.isAcquired());
 
-    // Wait for the Zookeeper watch to fire + the thread to be unblocked and countdown the latch
+    // Wait for the Zookeeper watch to fire + the thread to be unblocked and countdown the latch.
     // We'll wait up to 10 seconds here, so should be safe even if GC is extraordinarily high with a
     // pause
     int i = 0;

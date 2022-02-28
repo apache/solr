@@ -145,8 +145,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     // checkOnlyKnown(propFile);
 
     // Now assert that certain values are properly dereferenced in the process of creating the core,
-    // see
-    // SOLR-4982. Really, we should be able to just verify that the index files exist.
+    // see SOLR-4982. Really, we should be able to just verify that the index files exist.
 
     // Should NOT be a datadir named ${DATA_TEST} (literal).
     File badDir = new File(workDir, "${DATA_TEST}");

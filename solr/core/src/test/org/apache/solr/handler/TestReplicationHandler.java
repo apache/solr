@@ -84,12 +84,6 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @SuppressSSL // Currently unknown why SSL does not work with this test
-// commented 20-July-2018
-// @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-// 12-Jun-2018
-// commented out on: 24-Dec-2018
-// @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added
-// 23-Aug-2018
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -350,8 +344,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
             replicatedAtCount);
 
         // we can have more replications than we added docs because a replication can legally fail
-        // and try
-        // again (sometimes we cannot merge into a live index and have to try again)
+        // and try again (sometimes we cannot merge into a live index and have to try again)
         assertTrue(
             "i:" + i + " replicationCount:" + replicatedAtCount.size(),
             replicatedAtCount.size() >= i);
@@ -908,7 +901,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertVersions(leaderClient, followerClient);
 
     // now force a new index directory
-    for (int i = nDocs + 3; i < nDocs + 7; i++) index(leaderClient, "id", i, "name", "name = " + i);
+    for (int i = nDocs + 3; i < nDocs + 7; i++) {
+      index(leaderClient, "id", i, "name", "name = " + i);
+    }
 
     leaderClient.commit();
 
@@ -949,8 +944,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   @Test
-  // commented 20-Sep-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // added 17-Aug-2018
   public void doTestStressReplication() throws Exception {
     // change solrconfig on follower
     // this has no entry for pollinginterval
@@ -1514,8 +1507,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     pullFromTo(leaderJetty, followerJetty);
 
     // Add a few more docs in the leader. Just to make sure that we are replicating the correct
-    // index point
-    // These extra docs should not get replicated
+    // index point. These extra docs should not get replicated
     new Thread(new AddExtraDocs(leaderClient, totalDocs)).start();
 
     // Wait and make sure that it actually replicated correctly.

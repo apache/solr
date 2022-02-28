@@ -543,8 +543,7 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
 
   public void testRequireFieldMatch() {
     // We highlight on field text3 (hl.fl), but our query only references the "text" field.
-    // Nonetheless, the query word
-    //  "document" is found in all fields here.
+    // Nonetheless, the query word "document" is found in all fields here.
 
     assertQ(
         req(

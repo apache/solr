@@ -230,10 +230,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     // The collection already exists with shards and replicas
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
     // Note that the collection as defined below is in a state that would NOT be returned by the
-    // placement plugin:
-    // shard 1 has two replicas on node 0.
-    // The plugin should still be able to place additional replicas as long as they don't break the
-    // rules.
+    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
+    // place additional replicas as long as they don't break the rules.
     List<List<String>> shardsReplicas =
         List.of(
             List.of("NRT 0", "TLOG 0", "NRT 3"), // shard 1
@@ -249,10 +247,9 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes), 1, 1, 0);
 
     // The replicas must be placed on the most appropriate nodes, i.e. those that do not already
-    // have a replica for the
-    // shard and then on the node with the lowest number of cores.
-    // NRT are placed first and given the cluster state here the placement is deterministic (easier
-    // to test, only one good placement).
+    // have a replica for the shard and then on the node with the lowest number of cores. NRT are
+    // placed first and given the cluster state here the placement is deterministic (easier to test,
+    // only one good placement).
     PlacementPlan pp =
         plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
 
@@ -358,14 +355,13 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes), 2, 1, 0);
     PlacementPlan pp =
         plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
-    // Shard 1: The NRT's should go to the med cores node on AZ2 and low core on az3 (even though
-    // a low core node can take the replica in az1, there's already an NRT replica there and we want
-    // spreading across AZ's),
-    // the TLOG to the TLOG node on AZ2 (because the tlog node on AZ1 has low free disk)
+    // Shard 1: The NRT's should go to the med cores node on AZ2 and low core on az3 (even though a
+    // low core node can take the replica in az1, there's already an NRT replica there and we want
+    // spreading across AZ's), the TLOG to the TLOG node on AZ2 (because the tlog node on AZ1 has
+    // low free disk)
     // Shard 2: The NRT's should go to AZ1 and AZ3 lowcores because AZ2 has more cores (and there's
-    // not NRT in any AZ for
-    // this shard). The TLOG should go to AZ3 because AZ1 TLOG node has low free disk.
-    // Each expected placement is represented as a string "shard replica-type node"
+    // not NRT in any AZ for this shard). The TLOG should go to AZ3 because AZ1 TLOG node has low
+    // free disk. Each expected placement is represented as a string "shard replica-type node"
     Set<String> expectedPlacements =
         Set.of(
             "1 NRT " + AZ2_NRT_MEDCORES,
@@ -472,9 +468,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     // The collection already exists with shards and replicas
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
     // The collection below has shard 1 having replicas only on dead nodes and shard 2 no replicas
-    // at all... (which is
-    // likely a challenging condition to recover from, but the placement computations should still
-    // execute happily).
+    // at all... (which is likely a challenging condition to recover from, but the placement
+    // computations should still execute happily).
     List<List<String>> shardsReplicas =
         List.of(
             List.of("NRT 10", "TLOG 11"), // shard 1
@@ -503,8 +498,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);
 
     // If we placed instead a replica for shard 2 (starting with the same initial cluster state, not
-    // including the first
-    // placement above), it should go too to node 0 since it has less cores...
+    // including the first placement above), it should go too to node 0 since it has less cores...
     Iterator<Shard> it = solrCollection.iterator();
     it.next(); // skip first shard to do placement for the second one...
     placementRequest =

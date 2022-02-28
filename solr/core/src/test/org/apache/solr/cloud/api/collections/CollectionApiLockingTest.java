@@ -174,13 +174,11 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
             })
         .start();
 
-    // Wait for the thread to start and to get blocked in waitUntilAcquired()
-    // (thread start could have been checked more reliably using another latch, and verifying the
-    // thread is in waitUntilAcquired
-    // done through that thread stacktrace, but that would be overkill compared to the very slight
-    // race condition of waiting 30ms,
-    // but a race that would not cause the test to fail since we're testing... that nothing happened
-    // yet).
+    // Wait for the thread to start and to get blocked in waitUntilAcquired() (thread start could
+    // have been checked more reliably using another latch, and verifying the thread is in
+    // waitUntilAcquired done through that thread stacktrace, but that would be overkill compared to
+    // the very slight race condition of waiting 30ms, but a race that would not cause the test to
+    // fail since we're testing... that nothing happened yet).
     Thread.sleep(30);
 
     assertEquals("we should not have been notified that replica was acquired", 1, latch.getCount());
