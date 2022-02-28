@@ -51,11 +51,12 @@ final class HLLUtil {
    * log2m</code> between the specified <code>HLL.{MINIMUM,MAXIMUM}_{REGWIDTH,LOG2M}_PARAM</code>
    * constants.
    *
+   * <p>See: <a
+   * href='http://research.neustar.biz/2013/01/24/hyperloglog-googles-take-on-engineering-hll/'>Blog
+   * post with section on 2^L</a>
+   *
    * @see #largeEstimator(int, int, double)
    * @see #largeEstimatorCutoff(int, int)
-   * @see "<a
-   *     href='http://research.neustar.biz/2013/01/24/hyperloglog-googles-take-on-engineering-hll/'>Blog
-   *     post with section on 2^L</a>"
    */
   private static final double[] TWO_TO_L =
       new double[(HLL.MAXIMUM_REGWIDTH_PARAM + 1) * (HLL.MAXIMUM_LOG2M_PARAM + 1)];
@@ -172,13 +173,14 @@ final class HLLUtil {
    * The cutoff for using the "large range correction" formula, from the HyperLogLog algorithm,
    * adapted for 64 bit hashes.
    *
+   * <p>See: <a
+   * href='http://research.neustar.biz/2013/01/24/hyperloglog-googles-take-on-engineering-hll/'>Blog
+   * post with section on 64 bit hashes and 'large range correction' cutoff</a>
+   *
    * @param log2m log-base-2 of the number of registers in the HLL. <em>b<em> in the paper.
    * @param registerSizeInBits the size of the HLL registers, in bits.
    * @return the cutoff for the large range correction.
    * @see #largeEstimator(int, int, double)
-   * @see "<a
-   *     href='http://research.neustar.biz/2013/01/24/hyperloglog-googles-take-on-engineering-hll/'>Blog
-   *     post with section on 64 bit hashes and 'large range correction' cutoff</a>"
    */
   public static double largeEstimatorCutoff(final int log2m, final int registerSizeInBits) {
     return (TWO_TO_L[(REG_WIDTH_INDEX_MULTIPLIER * registerSizeInBits) + log2m]) / 30.0;
@@ -189,13 +191,14 @@ final class HLLUtil {
    * Only appropriate for estimators whose value exceeds the return of {@link
    * #largeEstimatorCutoff(int, int)}.
    *
+   * <p>See: <a
+   * href='http://research.neustar.biz/2013/01/24/hyperloglog-googles-take-on-engineering-hll/'>Blog
+   * post with section on 64 bit hashes and 'large range correction'</a>
+   *
    * @param log2m log-base-2 of the number of registers in the HLL. <em>b<em> in the paper.
    * @param registerSizeInBits the size of the HLL registers, in bits.
    * @param estimator the original estimator ("E" in the paper).
    * @return a corrected cardinality estimate.
-   * @see "<a
-   *     href='http://research.neustar.biz/2013/01/24/hyperloglog-googles-take-on-engineering-hll/'>Blog
-   *     post with section on 64 bit hashes and 'large range correction'</a>"
    */
   public static double largeEstimator(
       final int log2m, final int registerSizeInBits, final double estimator) {
