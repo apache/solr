@@ -289,7 +289,9 @@ public abstract class FieldType extends FieldProperties {
    */
   public IndexableField createField(SchemaField field, Object value) {
     if (!field.indexed() && !field.stored()) {
-      if (log.isTraceEnabled()) log.trace("Ignoring unindexed/unstored field: {}", field);
+      if (log.isTraceEnabled()) {
+        log.trace("Ignoring unindexed/unstored field: {}", field);
+      }
       return null;
     }
 

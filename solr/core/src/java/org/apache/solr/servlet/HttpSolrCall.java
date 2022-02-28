@@ -890,8 +890,8 @@ public class HttpSolrCall {
     handleAdmin(solrResp);
     SolrCore.postDecorateResponse(handler, solrReq, solrResp);
     if (solrResp.getToLog().size() > 0) {
-      if (log.isInfoEnabled()) { // has to come second and in it's own if to keep ./gradlew check
-        // happy.
+      // has to come second and in it's own if to keep ./gradlew check happy.
+      if (log.isInfoEnabled()) {
         log.info(
             handler != null
                 ? MarkerFactory.getMarker(handler.getClass().getName())
