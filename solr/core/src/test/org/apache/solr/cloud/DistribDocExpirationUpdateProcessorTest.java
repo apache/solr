@@ -215,12 +215,15 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     waitForNoResults(0, params("q", "id:special99", "rows", "0", "_trace", "sanity_check99"));
 
     {
-      // force a hard commit on all shards (the prior auto-expire would have only done a soft commit) so we can ensure our indexVersion won't change uncessisarily on the un-affected shard when we add & (hard) commit our special doc...
+      // force a hard commit on all shards (the prior auto-expire would have only done a soft
+      // commit) so we can ensure our indexVersion won't change uncessisarily on the un-affected
+      // shard when we add & (hard) commit our special doc...
       final UpdateRequest req = setAuthIfNeeded(new UpdateRequest());
       req.commit(cluster.getSolrClient(), COLLECTION);
     }
 
-    // record important data for each replica core so we can check later that it only changes for the replicas of a single shard after we add/expire a single special doc
+    // record important data for each replica core so we can check later that it only changes for
+    // the replicas of a single shard after we add/expire a single special doc
     log.info("Fetching ReplicaData BEFORE special doc addition/expiration");
     final Map<String, ReplicaData> initReplicaData = getTestDataForAllReplicas();
     assertTrue("WTF? no replica data?", 0 < initReplicaData.size());

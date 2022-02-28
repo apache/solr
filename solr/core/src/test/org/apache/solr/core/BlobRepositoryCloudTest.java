@@ -83,7 +83,10 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
     // 1. it will fail to initialize if it doesn't find a 2 line CSV like foo,bar\nbaz,bam thus
     // validating that we are properly pulling data from the blob store
     // 2. It replaces any q for a query request to /select with "text:<name>" where <name> is
-    // the name of the last collection to run a query. It does this by caching a shared resource of type ResourceSharingTestComponent.TestObject, and the following sequence is proof that either collection can tell if it was (or was not) the last collection to issue a query by consulting the shared object
+    // the name of the last collection to run a query. It does this by caching a shared resource of
+    // type ResourceSharingTestComponent.TestObject, and the following sequence is proof that either
+    // collection can tell if it was (or was not) the last collection to issue a query by consulting
+    // the shared object
     assertLastQueryNotToCollection("col1");
     assertLastQueryNotToCollection("col2");
     assertLastQueryNotToCollection("col1");

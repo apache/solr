@@ -36,7 +36,10 @@ import org.slf4j.LoggerFactory;
 @SolrTestCaseJ4.SuppressSSL
 public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
   //
-  // NOTE: This class can only have one test because our test for caching is to nuke the SolrZkClient to verify that a cached load is going to hit the cache, not try to talk to zk. Any other ZK related test method in this class will fail if it runs after testReadWriteCached, so don't add one! :)
+  // NOTE: This class can only have one test because our test for caching is to nuke the
+  // SolrZkClient to verify that a cached load is going to hit the cache, not try to talk to zk. Any
+  // other ZK related test method in this class will fail if it runs after testReadWriteCached, so
+  // don't add one! :)
   //
   private String collectionName;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

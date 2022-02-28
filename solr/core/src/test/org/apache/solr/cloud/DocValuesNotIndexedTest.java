@@ -349,7 +349,9 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   }
 
   @Test
-  // Verify that we actually form groups that are "expected". Most of the processing takes some care to make sure all the values for each field are unique. We need to have docs that have values that are _not_ unique.
+  // Verify that we actually form groups that are "expected". Most of the processing takes some care
+  // to make sure all the values for each field are unique. We need to have docs that have values
+  // that are _not_ unique.
   public void testGroupingDVOnlySortFirst() throws IOException, SolrServerException {
     doGroupingDvOnly(fieldsToTestGroupSortFirst, "boolGSF");
   }

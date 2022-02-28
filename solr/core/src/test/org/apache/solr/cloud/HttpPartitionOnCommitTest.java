@@ -56,7 +56,8 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
   @Override
   protected boolean useTlogReplicas() {
-    // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
+    // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's
+    // TestInjection use
     return false;
   }
 
