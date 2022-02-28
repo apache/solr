@@ -115,9 +115,8 @@ public class TestCaffeineCache extends SolrTestCase {
     cacheDecay.put(25, "25");
     itemsDecay = cacheDecay.policy().eviction().get().hottest(10);
     // 13 - 17 should be in cache, but 11 and 18 (among others) should not. Testing that elements
-    // before and
-    // after the ones with increased counts are removed, and all the increased count ones are still
-    // in the cache
+    // before and after the ones with increased counts are removed, and all the increased count ones
+    // are still in the cache
     assertNull(itemsDecay.get(11));
     assertNull(itemsDecay.get(18));
     assertNotNull(itemsDecay.get(13));

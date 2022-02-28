@@ -144,8 +144,8 @@ public class TestStressLucene extends TestRTGBase {
                         newCommittedModel = new HashMap<>(model); // take a snapshot
                         version = snapshotCount++;
                         oldReader = reader;
-                        oldReader.incRef(); // increment the reference since we will use this for
-                        // reopening
+                        // increment the reference since we will use this for reopening
+                        oldReader.incRef();
                       }
 
                       if (!softCommit) {
@@ -214,8 +214,8 @@ public class TestStressLucene extends TestRTGBase {
                   }
 
                   // We can't concurrently update the same document and retain our invariants of
-                  // increasing values
-                  // since we can't guarantee what order the updates will be executed.
+                  // increasing values since we can't guarantee what order the updates will be
+                  // executed.
                   synchronized (sync) {
                     DocInfo info = model.get(id);
                     long val = info.val;

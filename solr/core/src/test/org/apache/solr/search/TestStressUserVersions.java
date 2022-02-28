@@ -57,8 +57,7 @@ public class TestStressUserVersions extends TestRTGBase {
 
   // This version simulates user versions sometimes being reordered.
   // It should fail (and currently does) if optimistic concurrency is disabled
-  // (cmd.setVersion(currVersion))
-  // in DocBasedVersionConstraintsProcessor.
+  // (cmd.setVersion(currVersion)) in DocBasedVersionConstraintsProcessor.
   @Test
   public void testStressReorderVersions() throws Exception {
     clearIndex();
@@ -75,21 +74,26 @@ public class TestStressUserVersions extends TestRTGBase {
 
     // query variables
     final int percentRealtimeQuery = 75;
-    final AtomicLong operations =
-        new AtomicLong(
-            10000); // number of query operations to perform in total - ramp up for a longer test
+    // number of query operations to perform in total - ramp up for a longer test
+    final AtomicLong operations = new AtomicLong(10000);
     int nReadThreads = 5 + random().nextInt(25);
 
-    /**
-     * // testing final int commitPercent = 5; final int softCommitPercent = 100; // what percent of
-     * the commits are soft final int deletePercent = 0; final int deleteByQueryPercent = 50; final
-     * int ndocs = 1; int nWriteThreads = 2;
-     *
-     * <p>final int maxConcurrentCommits = nWriteThreads;
-     *
-     * <p>// query variables final int percentRealtimeQuery = 101; final AtomicLong operations = new
-     * AtomicLong(50000); // number of query operations to perform in total int nReadThreads = 1;
-     */
+    // testing
+    //     final int commitPercent = 5;
+    //     final int softCommitPercent = 100; // what percent of the commits are soft
+    //     final int deletePercent = 0;
+    //     final int deleteByQueryPercent = 50;
+    //     final int ndocs = 1;
+    //     int nWriteThreads = 2;
+    //
+    //     final int maxConcurrentCommits = nWriteThreads;
+    //
+    //     // query variables
+    //     final int percentRealtimeQuery = 101;
+    //     final AtomicLong operations = new AtomicLong(50000);  // number of query operations to
+    // perform in total
+    //     int nReadThreads = 1;
+
     verbose(
         "commitPercent",
         commitPercent,
@@ -186,8 +190,7 @@ public class TestStressUserVersions extends TestRTGBase {
 
                   // the version we set on the update should determine who wins
                   // These versions are not derived from the actual leader update handler hand hence
-                  // this
-                  // test may need to change depending on how we handle version numbers.
+                  // this test may need to change depending on how we handle version numbers.
                   long version = testVersion.incrementAndGet();
 
                   // yield after getting the next version to increase the odds of updates happening

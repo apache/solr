@@ -2667,8 +2667,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
               if (inCalendarUnits >= 12L) {
                 calendarUnit = "MONTHS";
                 inCalendarUnits = (inCalendarUnits + 11L) / 12L;
-                if ((inCalendarUnits * 16)
-                    >= 487) { // 487 = 365.25 / 12 * 16   (365.25 days/year, -ish)
+                // 487 = 365.25 / 12 * 16   (365.25 days/year, -ish)
+                if ((inCalendarUnits * 16) >= 487) {
                   calendarUnit = "YEARS";
                   inCalendarUnits = (16L * inCalendarUnits + 486) / 487L;
                 }
@@ -2684,8 +2684,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
       return (negative ? "-" : "+") + inCalendarUnits + calendarUnit;
     }
 
-    public long addTo(
-        long millis) { // Instant.plus() doesn't work with estimated durations (MONTHS and YEARS)
+    public long addTo(long millis) {
+      // Instant.plus() doesn't work with estimated durations (MONTHS and YEARS)
       LocalDateTime time =
           LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneOffset.ofHours(0));
       if (negative) {
@@ -5937,11 +5937,10 @@ public class TestPointFields extends SolrTestCaseJ4 {
       final String fieldName, final Class<?> pointType, final Object... values) throws Exception {
 
     for (Object value : values) {
-      // ideally we should require that all input values be diff forms of the same logical value
-      // (ie '"42"' vs 'new Integer(42)') and assert that each produces an equivalent list of
-      // IndexableField objects
-      // but that doesn't seem to work -- appears not all IndexableField classes override
-      // Object.equals?
+      // ideally we should require that all input values be diff forms of the same logical value (ie
+      // '"42"' vs 'new Integer(42)') and assert that each produces an equivalent list of
+      // IndexableField objects but that doesn't seem to work -- appears not all IndexableField
+      // classes override Object.equals?
       final List<IndexableField> result = callAndCheckCreateFields(fieldName, pointType, value);
       assertNotNull(value + " => null", result);
     }

@@ -1192,8 +1192,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     // we just want to make sure we test multiple code paths (some, all, "ALL", none)
     //
     // NOTE: Don't mix "ALL" or "NONE" with other options so we don't have to make
-    // assertBeforeAfterBetween
-    // overly complicated
+    // assertBeforeAfterBetween overly complicated
     ArrayList<EnumSet<FacetRangeOther>> results = new ArrayList<>(5);
     results.add(EnumSet.of(FacetRangeOther.ALL));
     results.add(EnumSet.of(FacetRangeOther.BEFORE, FacetRangeOther.AFTER, FacetRangeOther.BETWEEN));

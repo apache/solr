@@ -488,9 +488,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//*[@numFound='1']",
           "//result/doc[1]/str[@name='id'][.='7']",
           "not(//result/doc[1]/bool[@name='[elevated]'][.='false'])",
-          "not(//result/doc[1]/bool[@name='[elev]'][.='false'])" // even though we asked for elev,
-          // there is no Transformer
-          // registered w/ that, so we
+          "not(//result/doc[1]/bool[@name='[elev]'][.='false'])"
+          // even though we asked for elev, there is no Transformer registered w/ that, so we
           // shouldn't get a result
           );
     } finally {

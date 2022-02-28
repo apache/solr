@@ -139,9 +139,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
     queryFutures.forEach(CompletableFuture::join);
 
     // There is a very small window where we can successfully cancel the query because
-    // QueryComponent will
-    // aggressively deregister, and even if we use DelayingSearchComponent these queries are not
-    // around
+    // QueryComponent will aggressively deregister, and even if we use DelayingSearchComponent these
+    // queries are not around
     // assertFalse("Should have canceled at least one query", queryIdsSet.isEmpty());
     if (log.isInfoEnabled()) {
       log.info("Cancelled {} queries", queryIdsSet.size());

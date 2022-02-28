@@ -385,8 +385,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
         // checks the *FieldInfos* on the reader to see if the DocVals type is ok.
         //
         // Which means that unlike most other facet method:xxx options, it fails hard if you try to
-        // use it
-        // on a field where no docs have been indexed (yet).
+        // use it on a field where no docs have been indexed (yet).
         expectThrows(
             SolrException.class,
             () -> {
@@ -581,8 +580,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "prelim_sort:'count desc', sort:'z desc'",
             "prelim_sort:'count desc', sort:'skg desc'")) {
       // the relatedness score of each of our cat_s values is (conviniently) also alphabetical
-      // order,
-      // (and the same order as 'sum(num_i) desc' & 'min(num_i) desc')
+      // order, (and the same order as 'sum(num_i) desc' & 'min(num_i) desc')
       //
       // So all of these re/sort options should produce identical output (since the num buckets is <
       // limit)
@@ -667,8 +665,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "sort:'index asc'",
             "prelim_sort:'count desc', sort:'skg desc'")) {
       // the relatedness score of each of our cat_s values is (conveniently) also alphabetical
-      // order,
-      // (and the same order as 'sum(num_i) desc' & 'min(num_i) desc')
+      // order, (and the same order as 'sum(num_i) desc' & 'min(num_i) desc')
       //
       // So all of these re/sort options should produce identical output (since the num buckets is <
       // limit)
@@ -1018,8 +1015,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "prelim_sort:'count desc', sort:'z desc'",
             "prelim_sort:'count desc', sort:'skg desc'")) {
       // the relatedness score of each of our cat_s values is (conviniently) also alphabetical
-      // order,
-      // (and the same order as 'sum(num_i) desc' & 'min(num_i) desc')
+      // order, (and the same order as 'sum(num_i) desc' & 'min(num_i) desc')
       //
       // So all of these re/sort options should produce identical output
       // - Testing "index" sort allows the randomized use of "stream" processor as default to be
@@ -1070,9 +1066,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @Test
   public void testRepeatedNumerics() throws Exception {
     Client client = Client.localClient();
-    String field =
-        "num_is"; // docValues of multi-valued points field can contain duplicate values... make
-    // sure they don't mess up our counts.
+    // docValues of multi-valued points field can contain duplicate values... make sure they don't
+    // mess up our counts.
+    String field = "num_is";
     client.add(
         sdoc(
             "id",
@@ -1476,10 +1472,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     fieldLists.put("noexist", getAlternatives("noexist_s"));
     fieldLists.put("cat_s", getAlternatives("cat_s"));
     fieldLists.put("where_s", getAlternatives("where_s"));
-    fieldLists.put(
-        "num_d",
-        getAlternatives(
-            "num_f")); // num_d name is historical, which is why we map it to num_f alternatives so
+    // num_d name is historical, which is why we map it to num_f alternatives so
+    fieldLists.put("num_d", getAlternatives("num_f"));
     // we can include floats as well
     fieldLists.put("num_i", getAlternatives("num_i"));
     fieldLists.put("super_s", getAlternatives("super_s"));
@@ -3507,8 +3501,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             + "}");
 
     // test acc reuse (i.e. reset() method).  This is normally used for stats that are not
-    // calculated in the first phase,
-    // currently non-sorting stats.
+    // calculated in the first phase, currently non-sorting stats.
     client.testJQ(
         params(
             p,
@@ -3569,10 +3562,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue(DebugAgg.Acc.resets.get() - resets <= 1);
-      assertTrue(
-          DebugAgg.Acc.last.numSlots
-              <= 2); // probably "1", but may be special slot for something.  As long as it's not
-      // cardinality of the field
+      // probably "1", but may be special slot for something.  As long as it's not cardinality of
+      // the field
+      assertTrue(DebugAgg.Acc.last.numSlots <= 2);
 
       creates = DebugAgg.Acc.creates.get();
       resets = DebugAgg.Acc.resets.get();
@@ -3588,10 +3580,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue(DebugAgg.Acc.resets.get() - resets == 0);
-      assertTrue(
-          DebugAgg.Acc.last.numSlots
-              >= 5); // all slots should be done in a single shot. there may be more than 5 due to
-      // special slots or hashing.
+      // all slots should be done in a single shot. there may be more than 5 due to special slots or
+      // hashing.
+      assertTrue(DebugAgg.Acc.last.numSlots >= 5);
 
       // When limit:-1, we should do most stats in first phase (SOLR-10634)
       creates = DebugAgg.Acc.creates.get();
@@ -3607,10 +3598,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue(DebugAgg.Acc.resets.get() - resets == 0);
-      assertTrue(
-          DebugAgg.Acc.last.numSlots
-              >= 5); // all slots should be done in a single shot. there may be more than 5 due to
-      // special slots or hashing.
+      // all slots should be done in a single shot. there may be more than 5 due to special slots or
+      // hashing.
+      assertTrue(DebugAgg.Acc.last.numSlots >= 5);
 
       // Now for a numeric field
       // When limit:-1, we should do most stats in first phase (SOLR-10634)
@@ -3627,10 +3617,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
       assertTrue(DebugAgg.Acc.resets.get() - resets == 0);
-      assertTrue(
-          DebugAgg.Acc.last.numSlots
-              >= 5); // all slots should be done in a single shot. there may be more than 5 due to
-      // special slots or hashing.
+      // all slots should be done in a single shot. there may be more than 5 due to special slots or
+      // hashing.
+      assertTrue(DebugAgg.Acc.last.numSlots >= 5);
 
       // But if we need to calculate domains anyway, it probably makes sense to calculate most stats
       // in the 2nd phase (along with sub-facets)
@@ -3670,13 +3659,11 @@ public class TestJsonFacets extends SolrTestCaseHS {
     //////////////////////////////////////////////////////////////// end phase testing
 
     //
-    // Refinement should not be needed to get exact results here, so this tests that
-    // extra refinement requests are not sent out.  This currently relies on counting the number of
-    // times
+    // Refinement should not be needed to get exact results here, so this tests that extra
+    // refinement requests are not sent out.  This currently relies on counting the number of times
     // debug() aggregation is parsed... which is somewhat fragile.  Please replace this with
-    // something
-    // better in the future - perhaps debug level info about number of refinements or additional
-    // facet phases.
+    // something better in the future - perhaps debug level info about number of refinements or
+    // additional facet phases.
     //
     for (String facet_field :
         new String[] {
@@ -3817,9 +3804,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     final int numShardsWithData = (shardA == shardB) ? 1 : 2;
 
     // for simplicity, each foo_s "term" exists on each shard in the same number of docs as it's
-    // numeric
-    // value (so count should be double the term) and bar_i is always 1 per doc (so sum(bar_i)
-    // should always be the same as count)
+    // numeric value (so count should be double the term) and bar_i is always 1 per doc (so
+    // sum(bar_i) should always be the same as count)
     int id = 0;
     for (int i = 1; i <= 20; i++) {
       for (int j = 1; j <= i; j++) {
@@ -4123,11 +4109,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // custom sort codepaths for index & count that work differnetly then general stats
     //
     // NOTE: there's very little value in re-sort by count/index after prelim_sort on something more
-    // complex,
-    // typically better to just ignore the prelim_sort, but we're testing it for completeness
-    // (and because you *might* want to prelim_sort by some function, for the purpose of "sampling"
-    // the
-    // top results and then (re)sorting by count/index)
+    // complex, typically better to just ignore the prelim_sort, but we're testing it for
+    // completeness (and because you *might* want to prelim_sort by some function, for the purpose
+    // of "sampling" the top results and then (re)sorting by count/index)
     for (String numSort : Arrays.asList("count", "x")) { // equivilent ordering
       client.testJQ(
           params(
@@ -4280,9 +4264,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     { // sanity check how defered stats are handled
 
       // here we'll prelim_sort & sort on things that are both "not x" and using the debug()
-      // counters
-      // (wrapping x) to assert that 'x' is correctly defered and only collected for the final top
-      // buckets
+      // counters (wrapping x) to assert that 'x' is correctly defered and only collected for the
+      // final top buckets
       final List<String> sorts = new ArrayList<String>(Arrays.asList("index asc", "count asc"));
       if (extraAgg) {
         sorts.add("y asc"); // same for every bucket, but index order tie breaker should kick in

@@ -48,8 +48,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
 
   private static final List<String> STR_VALS = Arrays.asList("x0", "x1", "x2");
   // NOTE: in our test conversions EUR uses an asynetric exchange rate
-  // these are the equivalent values relative to:                                USD        EUR
-  //   GBP
+  // these are the equivalent values relative to: USD EUR GBP
   private static final List<String> VALUES =
       Arrays.asList(
           "10.00,USD", // 10.00,USD  25.00,EUR   5.00,GBP
@@ -82,12 +81,10 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
 
     cluster.getSolrClient().setDefaultCollection(COLLECTION);
 
-    for (int id = 0;
-        id < NUM_DOCS;
-        id++) { // we're indexing each Currency value in 3 docs, each with a diff 'x_s' field value
-      // use modulo to pick the values, so we don't add the docs in strict order of either VALUES of
-      // STR_VALS
-      // (that way if we want ot filter by id later, it's an independent variable)
+    // we're indexing each Currency value in 3 docs, each with a diff 'x_s' field value
+    // use modulo to pick the values, so we don't add the docs in strict order of either VALUES of
+    // STR_VALS (that way if we want ot filter by id later, it's an independent variable)
+    for (int id = 0; id < NUM_DOCS; id++) {
       final String x = STR_VALS.get(id % STR_VALS.size());
       final String val = VALUES.get(id % VALUES.size());
       assertEquals(
@@ -105,10 +102,8 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
       // exchange rates relative to USD...
       //
       // for all of these permutations, the numDocs in each bucket that we get back should be the
-      // same
-      // (regardless of the any asymetric echanges ranges, or the currency used for the 'gap')
-      // because the
-      // start & end are always in USD.
+      // same (regardless of the any asymetric echanges ranges, or the currency used for the 'gap')
+      // because the start & end are always in USD.
       //
       // NOTE:
       //  - 0,1,2 are the *input* start,gap,end
@@ -556,13 +551,10 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     //   ...except in some rare sharding cases where it doesn't make it into the top 2 terms.
     //
     // So the filter also explicitly accepts all 'x2' docs -- ensuring we have enough matches
-    // containing that term for it
-    // to be enough of a candidate in phase#1, but for many shard arrangements it won't be returned
-    // by all shards resulting
-    // in refinement being neccessary to get the x_s:x2 sub-shard ranges from shard(s) where x_s:x2
-    // is only tied for the
-    // (shard local) top term count and would lose the (index order) tie breaker with x_s:x0 or
-    // x_s:x1
+    // containing that term for it to be enough of a candidate in phase#1, but for many shard
+    // arrangements it won't be returned by all shards resulting in refinement being neccessary to
+    // get the x_s:x2 sub-shard ranges from shard(s) where x_s:x2 is only tied for the (shard local)
+    // top term count and would lose the (index order) tie breaker with x_s:x0 or x_s:x1
     final String filter = "id_i1:[" + VALUES.size() + " TO *] OR x_s:x2";
 
     // the *facet* results should be the same regardless of wether we filter via fq, or using a

@@ -159,8 +159,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
           doc.addField(multiStrField(fieldNum), fieldValue);
           doc.addField(multiIntField(fieldNum), fieldValue);
         }
-        if (3 <= numValsThisDoc) { // use num values in multivalue to inform sparseness of single
-          // value
+        // use num values in multivalue to inform sparseness of single value
+        if (3 <= numValsThisDoc) {
           final String fieldValue = randFieldValue(fieldNum);
           doc.addField(soloStrField(fieldNum), fieldValue);
           doc.addField(soloIntField(fieldNum), fieldValue);
@@ -252,8 +252,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     // - only one "top" facet per request
     // - no refinement
     // even with those constraints in place, a single facet can (may/sometimes?) produce multiple
-    // debug
-    // blocks - aparently due to shard merging? So...
+    // debug blocks - apparently due to shard merging? So...
     // - only inspect the "first" debug NamedList in the results
     //
 
@@ -298,8 +297,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     // - only one "top" facet per request
     // - no refinement
     // even with those constraints in place, a single facet can (may/sometimes?) produce multiple
-    // debug
-    // blocks - aparently due to shard merging? So...
+    // debug blocks - apparently due to shard merging? So...
     // - only inspect the "first" debug NamedList in the results
     //
 
@@ -470,8 +468,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     // in each term facet.  they shouldn't be involved in the sweeping at all.
     for (Facet extra : Arrays.asList(null, new RelatednessFacet(multiStrField(2) + ":9", null))) {
       // choose single value strings so we know both 'dv' (sweep) and 'dvhash' (no sweep) can be
-      // specified
-      // choose 'id' for the parent facet so we are garunteed some child facets
+      // specified choose 'id' for the parent facet so we are garunteed some child facets
       final TermFacet parent = new TermFacet("id", 1, 0, "skg desc", false);
       final TermFacet child = new TermFacet(soloStrField(7), 1, 0, "skg desc", false);
       parent.subFacets.put("child", child);
@@ -1257,9 +1254,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
           Math.max(1, TestUtil.nextInt(random(), -1, 3)); // 3/5th chance of being '1'
       Map<String, TermFacet> results = new LinkedHashMap<>();
       for (int i = 0; i < numFacets; i++) {
-        if (keyCounter.get()
-            < 3) { // a hard limit on the total number of facets (regardless of depth) to reduce OOM
-          // risk
+        // a hard limit on the total number of facets (regardless of depth) to reduce OOM risk
+        if (keyCounter.get() < 3) {
 
           final TermFacet facet = TermFacet.buildRandom();
 

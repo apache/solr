@@ -300,20 +300,16 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     }
 
     // with a limit==6, we have to "overrequest >= 20" in order to ensure that 'tail' is included in
-    // the top 6
-    // this is because of how the "simple" refinement process works: the "top buckets" are
-    // determined based
-    // on the info available in the first pass request.
+    // the top 6 this is because of how the "simple" refinement process works: the "top buckets" are
+    // determined based on the info available in the first pass request.
     //
     // Even though 'tail' is returned in the top6 for shard2, the cumulative total for 'bbb0' from
-    // shard0 and shard1 is
-    // high enough that the simple facet refinement ignores 'tail' because it assumes 'bbb0's final
-    // total will be greater.
+    // shard0 and shard1 is high enough that the simple facet refinement ignores 'tail' because it
+    // assumes 'bbb0's final total will be greater.
     //
     // Meanwhile, for the sub-facet on 'bar', a limit==6 means we should correctly find 'tailB' as
-    // the top sub-term of 'tail',
-    // regardless of how much overrequest is used (or even if we don't have any refinement) since
-    // it's always in the top6...
+    // the top sub-term of 'tail', regardless of how much overrequest is used (or even if we don't
+    // have any refinement) since it's always in the top6...
     for (String bar_opts :
         Arrays.asList(
             "refine:none,",
@@ -364,8 +360,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     }
 
     // if we lower the limit on the sub-bucket to '5', overrequesting of at least 1 should still
-    // ensure
-    // that we get the correct top5 including "tailB" -- even w/o refinement
+    // ensure that we get the correct top5 including "tailB" -- even w/o refinement
     for (String bar_opts :
         Arrays.asList(
             "refine:none,",
@@ -462,9 +457,8 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     // Deep checking of some Facet stats
 
     // the assertions only care about the first 5 results of each facet, but to get the long tail
-    // more are needed
-    // from the sub-shards.  results should be the same regardless of: "high limit" vs "low limit +
-    // high overrequest"
+    // more are needed from the sub-shards.  results should be the same regardless of: "high limit"
+    // vs "low limit + high overrequest"
     checkSubFacetStats("refine:simple, limit: 100,");
     checkSubFacetStats("refine:simple, overrequest: 100,");
 

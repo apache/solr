@@ -64,9 +64,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
   // means that we've seen the leader and have version info (i.e. we are a non-leader replica)
   private static String FROM_LEADER = DistribPhase.FROMLEADER.toString();
 
-  private static int timeout =
-      60; // acquire timeout in seconds.  change this to a huge number when debugging to prevent
-  // threads from advancing.
+  // acquire timeout in seconds.  change this to a huge number when debugging to prevent threads
+  // from advancing.
+  private static int timeout = 60;
 
   // TODO: fix this test to not require FSDirectory
   static String savedFactory;
@@ -340,12 +340,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertU(commit());
 
       // because we're sending updates during log replay, we can't emulate replica logic -- we need
-      // to use
-      // normal updates like a leader / single-node instance would get.
+      // to use normal updates like a leader / single-node instance would get.
       //
       // (In SolrCloud mode, when a replica run recoverFromLog, replica in this time period will
-      // have state = DOWN,
-      // so It won't receive any updates.)
+      // have state = DOWN, so It won't receive any updates.)
 
       updateJ(jsonAdd(sdoc("id", "B0")), params());
       updateJ(jsonAdd(sdoc("id", "B1")), params()); // should be deleted by subsequent DBQ in tlog
@@ -772,8 +770,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
           jsonAdd(sdoc("id", "B8", "_version_", v1080)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
 
       // test that delete by query is at least buffered along with everything else so it will delete
-      // the
-      // currently buffered id:8 (even if it doesn't currently support versioning)
+      // the currently buffered id:8 (even if it doesn't currently support versioning)
       updateJ(
           "{\"delete\": { \"query\":\"id:B2 OR id:B8\" }}",
           params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", v3000_del));
@@ -1174,11 +1171,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
     version = addAndGetVersion(sdoc("id", "reload1", "_version_", Long.toString(version)), null);
 
     // if the update log was not informed of the new update handler, then the old core will
-    // incorrectly be used for some of the operations above and opened searchers
-    // will never be closed.  This used to cause the test framework to fail because of unclosed
-    // directory checks.
-    // SolrCore.openNewSearcher was modified to throw an error if the core is closed, resulting in
-    // a faster fail.
+    // incorrectly be used for some of the operations above and opened searchers will never be
+    // closed.  This used to cause the test framework to fail because of unclosed directory checks.
+    // SolrCore.openNewSearcher was modified to throw an error if the core is closed, resulting in a
+    // faster fail.
   }
 
   @Test
@@ -1517,9 +1513,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   //
   // test that a partially written last tlog entry (that will cause problems for both reverse
-  // reading and for
-  // log replay) doesn't stop us from coming up, and from recovering the documents that were not cut
-  // off.
+  // reading and for log replay) doesn't stop us from coming up, and from recovering the documents
+  // that were not cut off.
   //
   @Test
   public void testTruncatedLog() throws Exception {
@@ -1562,9 +1557,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       logReplay.release(1000);
       logReplayFinish.drainPermits();
-      ignoreException(
-          "OutOfBoundsException"); // this is what the corrupted log currently produces... subject
-      // to change.
+      // this is what the corrupted log currently produces... subject to change.
+      ignoreException("OutOfBoundsException");
       createCore();
       assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
       resetExceptionIgnores();
@@ -1627,9 +1621,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
         raf.write(new byte[(int) len]); // zero out file
       }
 
-      ignoreException(
-          "Failure to open existing log file"); // this is what the corrupted log currently
-      // produces... subject to change.
+      // this is what the corrupted log currently produces... subject to change.
+      ignoreException("Failure to open existing log file");
       createCore();
       resetExceptionIgnores();
 
@@ -1743,9 +1736,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       logReplay.release(1000);
       logReplayFinish.drainPermits();
-      ignoreException(
-          "OutOfBoundsException"); // this is what the corrupted log currently produces... subject
-      // to change.
+      // this is what the corrupted log currently produces... subject to change.
+      ignoreException("OutOfBoundsException");
       createCore();
       assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
       resetExceptionIgnores();

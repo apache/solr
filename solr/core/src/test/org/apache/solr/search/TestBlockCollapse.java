@@ -316,11 +316,10 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
             // block collapse used explicitly (int)
             "field=block_i  hint=block")) {
 
-      { // score based group head selection (default)
-
-        // these permutations should all give the same results, since the queries don't match any
-        // docs in 'null' groups
-        // (because we don't have any in our index)...
+      {
+        // score based group head selection (default) these permutations should all give the same
+        // results, since the queries don't match any docs in 'null' groups (because we don't have
+        // any in our index)...
         for (String nullPolicy :
             Arrays.asList(
                 "", // ignore is default
@@ -541,9 +540,8 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
           }
 
           // queries are relevancy based, and score is used in collapse local param sort -- but not
-          // in top fl/sort
-          // (ie: help prove we setup 'needScores' correctly for collapse, even though top level
-          // query doesn't care)
+          // in top fl/sort (ie: help prove we setup 'needScores' correctly for collapse, even
+          // though top level query doesn't care)
           for (String selector :
               Arrays.asList(
                   "", // implicit score ranking as sanity check
@@ -617,8 +615,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
   public void testNullPolicyExpand() throws Exception {
 
     { // convert our docs + some docs w/o collapse fields, along with some commits, to update
-      // commands
-      // in a shuffled order and process all of them...
+      // commands in a shuffled order and process all of them...
       final List<String> updates =
           Stream.concat(
                   Stream.of(commit(), commit()),
@@ -640,8 +637,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     }
 
     // NOTE: we don't try to collapse on '_root_' in this test, because then we'll get different
-    // results
-    // compared to our other collapse fields (because every doc has a _root_ field)
+    // results compared to our other collapse fields (because every doc has a _root_ field)
     for (String opt :
         Arrays.asList( // no block collapse logic used (sanity checks)
             "field=block_s1",
@@ -883,9 +879,8 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
         }
 
         // queries are relevancy based, and score is used in collapse local param sort -- but not in
-        // top fl/sort
-        // (ie: help prove we setup 'needScores' correctly for collapse, even though top level query
-        // doesn't care)
+        // top fl/sort (ie: help prove we setup 'needScores' correctly for collapse, even though top
+        // level query doesn't care)
         for (String selector :
             Arrays.asList(
                 "", // implicit score ranking as sanity check

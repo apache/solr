@@ -251,8 +251,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             + "    '_actual_end':'does_not_matter_must_be_echoed_back'"
             + "} } ");
     // imagine that all the nodes we query in phase#1 are running "old" versions of solr that
-    // don't know they are suppose to compute _actual_end ... our merger should not fail or freak
-    // out
+    // don't know they are supposed to compute _actual_end. our merger should not fail or freak out
     // trust that in the phase#2 refinement request either:
     //  - the processor will re-compute it (if refine request goes to "new" version of solr)
     //  - the processor wouldn't know what to do with an _actual_end sent by the merger anyway
@@ -366,8 +365,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         "=={x:{_l:[x1,x0,x9]}}");
 
     // when using (default) mincount (or mincount=0) sort="count desc" should eliminate need for
-    // overrefine
-    // (regardless of whether any explicit overrequest is specified)
+    // overrefine (regardless of whether any explicit overrequest is specified)
     for (String extra :
         Arrays.asList(
             "", ", mincount:0", ", mincount:1", ", overrequest:3", ", overrequest:3, mincount:0")) {
@@ -546,8 +544,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     client.commit();
 
     // in both cases, neither C nor Z make the cut for the top3 buckets in phase#1 (due to tie
-    // breaker),
-    // so they aren't refined -- after refinement the re-sorting re-orders the buckets
+    // breaker), so they aren't refined -- after refinement the re-sorting re-orders the buckets
     client.testJQ(
         params(
             "q",
@@ -774,9 +771,8 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             + "}");
 
     // if we use mincount=2, such that A & B get filtered out, then we should have buckets.size() <
-    // limit
-    // rather then buckets w/inaccurate counts/stats.
-    // (explicitly disabling overrefine & overrequest to prevent filler terms)
+    // limit rather then buckets w/inaccurate counts/stats. (explicitly disabling overrefine &
+    // overrequest to prevent filler terms)
     client.testJQ(
         params(
             "q",
@@ -806,8 +802,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // any (sub) buckets with incomplete/inaccurate counts
     //
     // NOTE: parent facet limit is 1, testing with various top level overrequest/refine params to
-    // see
-    // how different refinement code paths of parent effect the child refinement
+    // see how different refinement code paths of parent effect the child refinement
     for (String top_refine : Arrays.asList("true", "false")) {
       // if our top level facet does *NO* overrequesting, then our shard1 will return "some" as it's
       // (only) top term, which will lose to "z_all" from shard0, and the (single pass) refinement
@@ -973,12 +968,10 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // regardless of how much overrequest there is, in phase#1
     // all terms will tie on the sort criteria, and "Ax" should win the tiebreaker.
     //
-    // When Ax is refined against c1, it's 'debug' sort value will increase, but regardless
-    // of the value of processEmpty, no other term should be returned in it's place
-    // (because if they are also correctly refined, then their 'debug' sort values will also
-    // increase
-    // and Ax will stll win the tie breaker -- and if they are not refined they shouldn't be
-    // returned)
+    // When Ax is refined against c1, it's 'debug' sort value will increase, but regardless of the
+    // value of processEmpty, no other term should be returned in it's place (because if they are
+    // also correctly refined, then their 'debug' sort values will also increase and Ax will stll
+    // win the tie breaker -- and if they are not refined they shouldn't be returned)
     for (int overrequest = 0; overrequest < 5; overrequest++) {
       for (boolean pe : Arrays.asList(false, true)) {
         ModifiableSolrParams p =
@@ -1135,22 +1128,18 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // if we do the same request as testSortedSubFacetRefinementWhenParentOnlyReturnedByOneShard,
     // but with processEmpty:true, then ideally we should get the same buckets & counts as before,
     // but the debug info should indicate that every shard contributed to every bucket (either
-    // initially,
-    // or during refinement)
+    // initially, or during refinement)
     //
     // The problem comes in with how "empty" bucket lists are dealt with...
     // - child debug counts never get higher then '2' because even with the forced "_l" refinement
-    // of
-    //   the parent buckets against the "empty" shards we don't explicitly ask those shards to
-    //   evaluate the child buckets
+    // of the parent buckets against the "empty" shards we don't explicitly ask those shards to
+    // evaluate the child buckets
     // - perhaps we should reconsider the value of "_l" ?
     //   - why aren't we just specifying all the buckets (and child buckets) chosen in phase#1 using
     // "_p" ?
     //   - or at the very least, if the purpose of "_l" is to give other buckets a chance to "bubble
-    // up"
-    //     in phase#2, then shouldn't a "_l" refinement requests still include the buckets choosen
-    // in
-    //     phase#1, and request that the shard fill them in in addition to returning its own top
+    // up" in phase#2, then shouldn't a "_l" refinement requests still include the buckets choosen
+    // in phase#1, and request that the shard fill them in in addition to returning its own top
     // buckets?
     client.testJQ(
         params(
@@ -1258,10 +1247,9 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     String cat_i = p.get("cat_i"); // just like cat_s, but a number
     String xy_s = p.get("xy_s");
     String qw_s = p.get("qw_s");
-    String er_s =
-        p.get(
-            "er_s"); // this field is designed to test numBuckets refinement... the first phase will
-    // only have a single bucket returned for the top count bucket of cat_s
+    // this field is designed to test numBuckets refinement... the first phase will only have a
+    // single bucket returned for the top count bucket of cat_s
+    String er_s = p.get("er_s");
     String num_d = p.get("num_d");
     String date = p.get("date");
 
@@ -2058,7 +2046,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // * NOTE: the intuitive value to return here would be "A"; but we're testing for _consistency_
     // here, and artificially setting `overrequest:0`. With default overrequest, the intuitive
     // "correct" behavior would indeed be achieved -- but we then wouldn't be triggering the
-    // behavior
-    // that this test is designed to evaluate.
+    // behavior that this test is designed to evaluate.
   }
 }

@@ -317,8 +317,8 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     }
     // Monkeying with these params changes the gridLevel in different directions. We don't test the
-    // exact
-    // computation here; that's not _that_ relevant, and is Lucene spatial's job (not Solr) any way.
+    // exact computation here; that's not _that_ relevant, and is Lucene spatial's job (not Solr)
+    // any way.
     assertEquals(
         7,
         getHmObj(

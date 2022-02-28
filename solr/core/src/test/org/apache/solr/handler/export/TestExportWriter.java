@@ -1107,10 +1107,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertU(commit());
     doTestQuery("id:1", trieFields, pointFields);
     doTestQuery("*:*", trieFields, pointFields);
-    doTestQuery(
-        "id:[0 TO 2]",
-        trieFields,
-        pointFields); // "id" field is really a string, this is not a numeric range query
+    // "id" field is really a string, this is not a numeric range query
+    doTestQuery("id:[0 TO 2]", trieFields, pointFields);
     doTestQuery("id:[0 TO 9]", trieFields, pointFields);
     doTestQuery("id:DOES_NOT_EXIST", trieFields, pointFields);
   }

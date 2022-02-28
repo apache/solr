@@ -576,38 +576,36 @@ public class TestRealTimeGet extends TestRTGBase {
     assertJQ(req("qt", "/get", "id", "1"), "=={'doc':{'id':'1','_version_':" + lastVersion + "}}");
   }
 
-  /***
-   * @Test
-   * public void testGetRealtime() throws Exception {
-   * SolrQueryRequest sr1 = req("q","foo");
-   * IndexReader r1 = sr1.getCore().getRealtimeReader();
-   *
-   * assertU(adoc("id","1"));
-   *
-   * IndexReader r2 = sr1.getCore().getRealtimeReader();
-   * assertNotSame(r1, r2);
-   * int refcount = r2.getRefCount();
-   *
-   * // make sure a new reader wasn't opened
-   * IndexReader r3 = sr1.getCore().getRealtimeReader();
-   * assertSame(r2, r3);
-   * assertEquals(refcount+1, r3.getRefCount());
-   *
-   * assertU(commit());
-   *
-   * // this is not critical, but currently a commit does not refresh the reader
-   * // if nothing has changed
-   * IndexReader r4 = sr1.getCore().getRealtimeReader();
-   * assertEquals(refcount+2, r4.getRefCount());
-   *
-   *
-   * r1.decRef();
-   * r2.decRef();
-   * r3.decRef();
-   * r4.decRef();
-   * sr1.close();
-   * }
-   ***/
+  //    @Test
+  //    public void testGetRealtime() throws Exception {
+  //      SolrQueryRequest sr1 = req("q","foo");
+  //      IndexReader r1 = sr1.getCore().getRealtimeReader();
+  //
+  //      assertU(adoc("id","1"));
+  //
+  //      IndexReader r2 = sr1.getCore().getRealtimeReader();
+  //      assertNotSame(r1, r2);
+  //      int refcount = r2.getRefCount();
+  //
+  //      // make sure a new reader wasn't opened
+  //      IndexReader r3 = sr1.getCore().getRealtimeReader();
+  //      assertSame(r2, r3);
+  //      assertEquals(refcount+1, r3.getRefCount());
+  //
+  //      assertU(commit());
+  //
+  //      // this is not critical, but currently a commit does not refresh the reader
+  //      // if nothing has changed
+  //      IndexReader r4 = sr1.getCore().getRealtimeReader();
+  //      assertEquals(refcount+2, r4.getRefCount());
+  //
+  //
+  //      r1.decRef();
+  //      r2.decRef();
+  //      r3.decRef();
+  //      r4.decRef();
+  //      sr1.close();
+  //    }
 
   @Test
   public void testStressGetRealtime() throws Exception {
@@ -617,23 +615,21 @@ public class TestRealTimeGet extends TestRTGBase {
     // req().getCore().getUpdateHandler().getIndexWriterProvider().getIndexWriter(req().getCore()).setInfoStream(System.out);
 
     final int commitPercent = 5 + random().nextInt(20);
-    final int softCommitPercent = 30 + random().nextInt(75); // what percent of the commits are soft
+    // what percent of the commits are soft
+    final int softCommitPercent = 30 + random().nextInt(75);
     final int deletePercent = 4 + random().nextInt(25);
     final int deleteByQueryPercent = 1 + random().nextInt(5);
-    final int optimisticPercent =
-        1 + random().nextInt(50); // percent change that an update uses optimistic locking
-    final int optimisticCorrectPercent =
-        25 + random().nextInt(70); // percent change that a version specified will be correct
-    final int filteredGetPercent =
-        random()
-            .nextInt(
-                random().nextInt(20)
-                    + 1); // percent of time that a get will be filtered... we normally don't want
-    // too high.
+    // percent change that an update uses optimistic locking
+    final int optimisticPercent = 1 + random().nextInt(50);
+    // percent change that a version specified will be correct
+    final int optimisticCorrectPercent = 25 + random().nextInt(70);
+    // percent of time that a get will be filtered... we normally don't want too high.
+    final int filteredGetPercent = random().nextInt(random().nextInt(20) + 1);
     final int ndocs = 5 + (random().nextBoolean() ? random().nextInt(25) : random().nextInt(200));
     int nWriteThreads = 5 + random().nextInt(25);
 
-    final int maxConcurrentCommits = nWriteThreads; // number of committers at a time...
+    // number of committers at a time...
+    final int maxConcurrentCommits = nWriteThreads;
 
     // query variables
     final int percentRealtimeQuery = 60;
@@ -716,10 +712,9 @@ public class TestRealTimeGet extends TestRTGBase {
                   }
 
                   // We can't concurrently update the same document and retain our invariants of
-                  // increasing values
-                  // since we can't guarantee what order the updates will be executed.
-                  // Even with versions, we can't remove the sync because increasing versions does
-                  // not mean increasing vals.
+                  // increasing values since we can't guarantee what order the updates will be
+                  // executed. Even with versions, we can't remove the sync because increasing
+                  // versions does not mean increasing vals.
                   synchronized (sync) {
                     DocInfo info = model.get(id);
 
@@ -907,8 +902,7 @@ public class TestRealTimeGet extends TestRTGBase {
                   List doclist = (List) (((Map) rsp.get("response")).get("docs"));
                   if (doclist.size() == 0) {
                     // there's no info we can get back with a delete, so not much we can check
-                    // without further synchronization
-                    // This is also correct when filteredOut==true
+                    // without further synchronization. This is also correct when filteredOut==true
                   } else {
                     assertEquals(1, doclist.size());
                     long foundVal = (Long) (((Map) doclist.get(0)).get(FIELD));

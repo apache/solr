@@ -35,11 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // This test takes approx 30 seconds on a 2012 MacBook Pro running in IntelliJ. There should be a
-// bunch of
-// update threads dumped out all waiting on DefaultSolrCoreState.getIndexWriter,
-// DistributedUpdateProcessor.versionAdd(DistributedUpdateProcessor.java:1016)
-// and the like in a "real" failure. If we have false=fails we should probably bump this timeout.
-// See SOLR-7836
+// bunch of update threads dumped out all waiting on DefaultSolrCoreState.getIndexWriter,
+// DistributedUpdateProcessor.versionAdd(DistributedUpdateProcessor.java:1016) and the like in a
+// "real" failure. If we have false=fails we should probably bump this timeout. See SOLR-7836
 @TimeoutSuite(millis = 7 * TimeUnits.MINUTE)
 @Nightly
 public class TestReloadDeadlock extends TestRTGBase {

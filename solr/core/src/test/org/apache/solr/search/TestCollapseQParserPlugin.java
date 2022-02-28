@@ -1201,7 +1201,6 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         SolrException.ErrorCode.BAD_REQUEST);
 
     // if a field is uninvertible=false, it should behave the same as a field that is indexed=false
-    // ...
     // this also tests docValues=false along with indexed=false or univertible=false
     for (String f : Arrays.asList("not_indexed_sS", "indexed_s_not_uninvert")) {
       {
@@ -1301,8 +1300,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   public void testNullGroupNumericVsStringCollapse() throws Exception {
     // NOTE: group_i and group_s will contain identical content so these need to be "numbers"...
     // The specific numbers shouldn't matter (and we explicitly test '0' to confirm legacy
-    // bug/behavior
-    // of treating 0 as null is no longer a problem) ...
+    // bug/behavior of treating 0 as null is no longer a problem) ...
     final String A = "-1";
     final String B = "0";
     final String C = "1";
@@ -1350,8 +1348,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     final String q = "{!func}sum(asc_i,42)";
 
     // results should be the same regardless of wether we collapse on a string field or numeric
-    // field
-    // (docs have identicle group identifiers in both fields)
+    // field (docs have identicle group identifiers in both fields)
     for (String f : Arrays.asList("group_i", "group_s")) {
 
       // these group head selectors should all result in identical group heads for our query...

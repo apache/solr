@@ -558,10 +558,9 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   public void testRandom() throws Exception {
 
     // we put a safety valve in place on the maximum number of buckets that we are willing to verify
-    // across *all* the queries that we do.
-    // that way if the randomized queries we build all have relatively small facets, so be it, but
-    // if
-    // we get a really big one early on, we can test as much as possible, skip other iterations.
+    // across *all* the queries that we do. that way if the randomized queries we build all have
+    // relatively small facets, so be it, but if we get a really big one early on, we can test as
+    // much as possible, skip other iterations.
     //
     // (deeply nested facets may contain more buckets then the max, but we won't *check* all of
     // them)

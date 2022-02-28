@@ -223,8 +223,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         0.0); // just so that we see it in black & white in the test
 
     // max found by trial & error.  If we used 8 decimal places then we could get down to 1.04cm
-    // accuracy but then we
-    // lose the ability to round-trip -- 40 would become 39.99999997  (ugh).
+    // accuracy but then we lose the ability to round-trip -- 40 would become 39.99999997  (ugh).
     assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.41);
     // Pt(x=105.29894270124083,y=-0.4371673760042398) to  Pt(x=105.2989428,y=-0.4371673) is 1.38568
   }
@@ -355,9 +354,8 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     assertU(commit());
 
     // Search to the edge but not quite touching the indexed envelope of id=0.  It requires geom
-    // validation to
-    //  eliminate id=0.  id=1 is found and doesn't require validation.  cache=false means no query
-    // cache.
+    // validation to eliminate id=0.  id=1 is found and doesn't require validation.  cache=false
+    // means no query cache.
     final SolrQueryRequest sameReq =
         req(
             "q",
@@ -400,10 +398,9 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
       assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
 
       // When there are new segments, we accumulate another hit. This tests the cache was not blown
-      // away on commit.
-      // (i.e. the cache instance is new but it should've been regenerated from the old one).
-      // Checking equality for the first reader's cache key indicates whether the cache should still
-      // be valid.
+      // away on commit. (i.e. the cache instance is new but it should've been regenerated from the
+      // old one). Checking equality for the first reader's cache key indicates whether the cache
+      // should still be valid.
       Object leafKey2 = getFirstLeafReaderKey();
       // get the current instance of metrics - the old one may not represent the current cache
       // instance

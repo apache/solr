@@ -825,10 +825,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
         random().nextBoolean() ? new String[] {} : new String[] {"facet.method", "uif"};
 
     // All I really care about here is the chance to fire off a bunch of threads to the
-    // UnIninvertedField.get method
-    // to insure that we get into/out of the lock. Again, it's not entirely deterministic, but it
-    // might catch bad
-    // stuff occasionally...
+    // UnIninvertedField.get method to insure that we get into/out of the lock. Again, it's not
+    // entirely deterministic, but it might catch bad stuff occasionally...
     assertQ(
         "check threading, more threads than fields",
         req(
@@ -1165,14 +1163,11 @@ public class TestFaceting extends SolrTestCaseJ4 {
                   "//lst[@name='f9_ws']/int[@name='nine_11'][.='5']");
 
               // After this all, the uninverted fields should be exactly the same as they were the
-              // first time, even if we
-              // blast a whole bunch of identical fields at the facet code.
+              // first time, even if we blast a whole bunch of identical fields at the facet code.
               // The way fetching the uninverted field is written, all this is really testing is if
-              // the cache is working.
-              // It's NOT testing whether the pending/sleep is actually functioning, I had to do
-              // that by hand since I don't
-              // see how to make sure that uninverting the field multiple times actually happens to
-              // hit the wait state.
+              // the cache is working. It's NOT testing whether the pending/sleep is actually
+              // functioning, I had to do that by hand since I don't see how to make sure that
+              // uninverting the field multiple times actually happens to hit the wait state.
               assertQ(
                   "check threading, more threads than fields",
                   req(

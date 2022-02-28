@@ -603,9 +603,9 @@ public class TestDocSet extends SolrTestCase {
   public void testFilter() throws IOException {
     // keeping these numbers smaller help hit more edge cases
     int maxSeg = 4;
-    int maxDoc =
-        5; // increase if future changes add more edge cases (like probing a certain distance in the
-    // bin search)
+    // increase if future changes add more edge cases (like probing a certain distance in the bin
+    // search)
+    int maxDoc = 5;
     for (int i = 0; i < 5000; i++) {
       IndexReader r = dummyMultiReader(maxSeg, maxDoc);
       doFilterTest(r);

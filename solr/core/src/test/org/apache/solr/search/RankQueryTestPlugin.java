@@ -276,8 +276,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
             } else if (o1.score > o2.score) {
               return -1;
             } else {
-              return 0; // To change body of implemented methods use File | Settings | File
-              // Templates.
+              return 0;
             }
           });
 
@@ -586,8 +585,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
             } else if (o1.score > o2.score) {
               return -1;
             } else {
-              return 0; // To change body of implemented methods use File | Settings | File
-              // Templates.
+              return 0;
             }
           });
 

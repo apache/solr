@@ -525,24 +525,22 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\""),
         nor);
 
-    /**
-     * stopword removal in conjunction with multi-word synonyms at query time break this test. //
-     * multi-word synonyms // remove id:50 which contans the false match assertQ(req("defType",
-     * "edismax", "qf", "text_t", "indent","true", "debugQuery","true", "q","-id:50 nyc"), oner );
-     */
+    // stopword removal in conjunction with multi-word synonyms at query time break this test.
+    // multi-word synonyms
+    // remove id:50 which contans the false match
+    //     assertQ(req("defType", "edismax", "qf", "text_t", "indent","true", "debugQuery","true",
+    //     "q","-id:50 nyc"), oner
+    //     );
 
-    /*** these fail because multi-word synonyms are being used at query time
-     * // this will incorrectly match "new big city"
-     * assertQ(req("defType", "edismax", "qf", "id title",
-     * "q","nyc"), oner
-     * );
-     *
-     * // this will incorrectly match "new big city"
-     * assertQ(req("defType", "edismax", "qf", "title",
-     * "q","the big apple"), nor
-     * );
-     ***/
-
+    // these fail because multi-word synonyms are being used at query time
+    // this will incorrectly match "new big city"
+    //     assertQ(req("defType", "edismax", "qf", "id title",
+    //     "q","nyc"), oner
+    //     );
+    // this will incorrectly match "new big city"
+    //     assertQ(req("defType", "edismax", "qf", "title",
+    //     "q","the big apple"), nor
+    //     );
   }
 
   public void testBoostQuery() {
@@ -1465,13 +1463,11 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(commit());
 
     // the backslash needs to be manually escaped (the query parser sees the raw backslash as an
-    // escape the subsequent
-    // character)
+    // escape the subsequent character)
     String query = allReservedCharacters.replace("\\", "\\\\");
 
     // query for all those reserved characters. This will fail to parse in the initial parse,
-    // meaning that the escaped
-    // query will then be used
+    // meaning that the escaped query will then be used
     assertQ(
         "Escaping reserved characters",
         req(
@@ -1550,8 +1546,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
     String allReservedCharacters = "!():^[]{}~*?\"+-\\|&/";
     // the backslash needs to be manually escaped (the query parser sees the raw backslash as an
-    // escape the subsequent
-    // character)
+    // escape the subsequent character)
     query = allReservedCharacters.replace("\\", "\\\\");
 
     request = req("q", query, "qf", "name", "mm", "100%", "defType", "edismax");

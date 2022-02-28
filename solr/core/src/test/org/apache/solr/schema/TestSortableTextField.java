@@ -566,8 +566,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     for (int i = 1; i <= numDocs; i++) {
 
       // ideally we'd test all "realistic" unicode string, but EmbeddedSolrServer uses XML request
-      // writer
-      // and has no option to change this so ctrl-characters break the request
+      // writer and has no option to change this so ctrl-characters break the request
       final String val = TestUtil.randomSimpleString(random(), 100);
       if (i == magicIdx) {
         magic = val;

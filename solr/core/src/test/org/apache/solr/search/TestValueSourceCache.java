@@ -114,8 +114,7 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
   }
 
   // These should always and forever fail, and would have failed without the fixes for 2829, but why
-  // not make
-  // some more tests just in case???
+  // not make some more tests just in case???
   void tryQueryDiffTypes(String template, String numbers, String[] types) throws SyntaxError {
     String s1 = template;
     String s2 = template;

@@ -126,10 +126,9 @@ public class TestStressVersions extends TestRTGBase {
                   }
 
                   // We can't concurrently update the same document and retain our invariants of
-                  // increasing values
-                  // since we can't guarantee what order the updates will be executed.
-                  // Even with versions, we can't remove the sync because increasing versions does
-                  // not mean increasing vals.
+                  // increasing values since we can't guarantee what order the updates will be
+                  // executed. Even with versions, we can't remove the sync because increasing
+                  // versions does not mean increasing vals.
                   //
                   // NOTE: versioning means we can now remove the sync and tell what update "won"
                   // synchronized (sync) {

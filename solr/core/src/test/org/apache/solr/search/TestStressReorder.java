@@ -72,16 +72,22 @@ public class TestStressReorder extends TestRTGBase {
         new AtomicLong(50000); // number of query operations to perform in total
     int nReadThreads = 5 + random().nextInt(25);
 
-    /**
-     * // testing final int commitPercent = 5; final int softCommitPercent = 100; // what percent of
-     * the commits are soft final int deletePercent = 0; final int deleteByQueryPercent = 50; final
-     * int ndocs = 1; int nWriteThreads = 2;
-     *
-     * <p>final int maxConcurrentCommits = nWriteThreads;
-     *
-     * <p>// query variables final int percentRealtimeQuery = 101; final AtomicLong operations = new
-     * AtomicLong(50000); // number of query operations to perform in total int nReadThreads = 1;
-     */
+    // testing
+    //     final int commitPercent = 5;
+    //     final int softCommitPercent = 100; // what percent of the commits are soft
+    //     final int deletePercent = 0;
+    //     final int deleteByQueryPercent = 50;
+    //     final int ndocs = 1;
+    //     int nWriteThreads = 2;
+    //
+    //     final int maxConcurrentCommits = nWriteThreads;
+    //
+    //     // query variables
+    //     final int percentRealtimeQuery = 101;
+    //     final AtomicLong operations = new AtomicLong(50000);  // number of query operations to
+    // perform in total
+    //     int nReadThreads = 1;
+
     verbose(
         "commitPercent",
         commitPercent,
@@ -178,8 +184,7 @@ public class TestStressReorder extends TestRTGBase {
 
                   // the version we set on the update should determine who wins
                   // These versions are not derived from the actual leader update handler hand hence
-                  // this
-                  // test may need to change depending on how we handle version numbers.
+                  // this test may need to change depending on how we handle version numbers.
                   long version = testVersion.incrementAndGet();
 
                   // yield after getting the next version to increase the odds of updates happening

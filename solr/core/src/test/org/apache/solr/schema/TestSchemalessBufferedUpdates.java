@@ -105,8 +105,8 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
 
       // If the ParseDateField URP isn't ahead of the DUP, then the date won't be normalized in the
-      // buffered tlog entry,
-      // and the doc won't be indexed on the replaying replica - a warning is logged as follows:
+      // buffered tlog entry, and the doc won't be indexed on the replaying replica - a warning is
+      // logged as follows:
       // WARN [...] o.a.s.u.UpdateLog REYPLAY_ERR: IOException reading log
       //            org.apache.solr.common.SolrException: Invalid Date String:'2017-01-05'
       //              at org.apache.solr.util.DateMathParser.parseMath(DateMathParser.java:234)
@@ -158,9 +158,8 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
         // Non-JSON types (Date in this case) aren't handled properly in noggit-0.6.  Although this
         // is fixed in
         // https://github.com/yonik/noggit/commit/ec3e732af7c9425e8f40297463cbe294154682b1 to call
-        // obj.toString(),
-        // Date::toString produces a Date representation that Solr doesn't like, so we convert using
-        // Instant::toString
+        // obj.toString(), Date::toString produces a Date representation that Solr doesn't like, so
+        // we convert using Instant::toString
         cmd.solrDoc
             .get("f_dt")
             .setValue(((Date) cmd.solrDoc.get("f_dt").getValue()).toInstant().toString());

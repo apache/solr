@@ -82,8 +82,7 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
               docs[i]));
     }
     // Mixing and matching amongst various languages is probalby a bad thing, so add some tests for
-    // various
-    // special filters
+    // various special filters
     int idx = docs.length;
     // Greek
     assertU(adoc("id", Integer.toString(idx++), "content_greek", "Μάϊος"));
@@ -237,8 +236,7 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
   }
 
   // Phrases should fail. This test is mainly a marker so if phrases ever do start working with
-  // wildcards we go
-  // and update the documentation
+  // wildcards we go and update the documentation
   @Test
   public void testPhrase() {
     assertQ(req("q", "content:\"silly ABCD*\""), "//result[@numFound='0']");

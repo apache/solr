@@ -438,10 +438,9 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   // See SOLR-8740 for a discussion. This test is here to make sure we consciously change behavior
-  // of multiValued
-  // fields given that we can now return docValues fields. The behavior we've guaranteed in the past
-  // is that if
-  // multiValued fields are stored, they're returned in the document in the order they were added.
+  // of multiValued fields given that we can now return docValues fields. The behavior we've
+  // guaranteed in the past is that if multiValued fields are stored, they're returned in the
+  // document in the order they were added.
   // There are four new fieldTypes added:
   // <field name="test_mvt_dvt_st_str" type="string" indexed="true" multiValued="true"
   // docValues="true"  stored="true"/>
@@ -453,9 +452,8 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   //     stored="true"/>
   //
   // If any of these tests break as a result of returning DocValues rather than stored values, make
-  // sure we reach some
-  // consensus that any breaks on back-compat are A Good Thing and that that behavior is carefully
-  // documented!
+  // sure we reach some consensus that any breaks on back-compat are A Good Thing and that that
+  // behavior is carefully documented!
 
   @Test
   public void testMultivaluedOrdering() throws Exception {

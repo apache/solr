@@ -109,8 +109,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   @Test
   public void testRangeQueries() throws Exception {
     // ensure that we aren't losing precision on any fields in addition to testing other non-numeric
-    // fields
-    // that aren't tested in testRandomRangeQueries()
+    // fields that aren't tested in testRandomRangeQueries()
 
     int i = 2000000000;
     long l = 500000000000000000L;
@@ -365,8 +364,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     }
 
     // now build some random queries (against *any* field) and validate that using it in a DBQ
-    // changes
-    // the index by the expected number of docs
+    // changes the index by the expected number of docs
     long numDocsLeftInIndex = numDocs;
     final int numDBQs = atLeast(10);
     for (int i = 0; i < numDBQs; i++) {

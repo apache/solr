@@ -1178,10 +1178,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
     {
       // the only way to facet on an "uninvertible=false" field is to explicitly request
-      // facet.method=enum
-      // in which case it should behave consistently with it's copyField source & equivilent
-      // docValues field
-      // (using any method for either of them)
+      // facet.method=enum in which case it should behave consistently with it's copyField source &
+      // equivilent docValues field (using any method for either of them)
 
       final List<SolrParams> paramSets = new ArrayList<>();
       for (String min : Arrays.asList("0", "1")) {

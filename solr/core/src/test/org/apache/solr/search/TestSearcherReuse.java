@@ -94,9 +94,8 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
     }
 
     // with random merge policies, a regular commit can cause a segment to be flushed that can kick
-    // off a background merge
-    // that can cause a later commit to actually see changes and open a new searcher.  This should
-    // not be possible with optimize
+    // off a background merge that can cause a later commit to actually see changes and open a new
+    // searcher.  This should not be possible with optimize
     assertU(optimize());
 
     // seed a single query into the cache

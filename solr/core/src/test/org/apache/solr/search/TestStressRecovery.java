@@ -64,10 +64,6 @@ public class TestStressRecovery extends TestRTGBase {
   // This version simulates updates coming from the leader and sometimes being reordered
   // and tests the ability to buffer updates and apply them later
   @Test
-  // 12-Jun-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // 04-May-2018
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testStressRecovery() throws Exception {
     assumeFalse("FIXME: This test is horribly slow sometimes on Windows!", Constants.WINDOWS);
 
@@ -187,8 +183,7 @@ public class TestStressRecovery extends TestRTGBase {
 
                   // the version we set on the update should determine who wins
                   // These versions are not derived from the actual leader update handler hand hence
-                  // this
-                  // test may need to change depending on how we handle version numbers.
+                  // this test may need to change depending on how we handle version numbers.
                   long version = testVersion.incrementAndGet();
 
                   // yield after getting the next version to increase the odds of updates happening

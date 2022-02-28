@@ -102,10 +102,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
 
   public void testQueryLuceneAllDocsWithField() throws Exception {
     // for all "primative" types except for doubles/floats, 'foo:*' should be functionally
-    // equivilent to "foo:[* TO *]"
-    // whatever implementation/optimizations exist for one syntax, should exist for the other syntax
-    // as well
-    // (regardless of docValues, multivalued, etc...)
+    // equivilent to "foo:[* TO *]" whatever implementation/optimizations exist for one syntax,
+    // should exist for the other syntax as well (regardless of docValues, multivalued, etc...)
     for (String field :
         Arrays.asList(
             "foo_sI",

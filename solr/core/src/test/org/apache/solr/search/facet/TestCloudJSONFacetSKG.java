@@ -158,14 +158,13 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     for (int id = 0; id < numDocs; id++) {
       SolrInputDocument doc = sdoc("id", "" + id);
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {
-        // NOTE: we ensure every doc has at least one value in each field
-        // that way, if a term is returned for a parent there there is guaranteed to be at least one
-        // one term in the child facet as well.
+        // NOTE: we ensure every doc has at least one value in each field that way, if a term is
+        // returned for a parent there there is guaranteed to be at least one one term in the child
+        // facet as well.
         //
         // otherwise, we'd face the risk of a single shardX returning parentTermX as a top term for
         // the parent facet, but having no child terms -- meanwhile on refinement another shardY
-        // that
-        // did *not* returned parentTermX in phase#1, could return some *new* child terms under
+        // that did *not* returned parentTermX in phase#1, could return some *new* child terms under
         // parentTermX, but their stats would not include the bgCount from shardX.
         //
         // in normal operation, this is an edge case that isn't a big deal because the ratios &
@@ -314,12 +313,10 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   public void testRandom() throws Exception {
 
     // since the "cost" of verifying the stats for each bucket is so high (see TODO in
-    // verifySKGResults())
-    // we put a safety valve in place on the maximum number of buckets that we are willing to verify
-    // across *all* the queries that we do.
-    // that way if the randomized queries we build all have relatively small facets, so be it, but
-    // if
-    // we get a really big one early on, we can test as much as possible, skip other iterations.
+    // verifySKGResults()) we put a safety valve in place on the maximum number of buckets that we
+    // are willing to verify across *all* the queries that we do. that way if the randomized queries
+    // we build all have relatively small facets, so be it, but if we get a really big one early on,
+    // we can test as much as possible, skip other iterations.
     //
     // (deeply nested facets may contain more buckets then the max, but we won't *check* all of
     // them)
@@ -470,10 +467,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       }
 
       // NOTE: it's important that we do this depth first -- not just because it's the easiest way
-      // to do it,
-      // but because it means that our maxBucketsToCheck will ensure we do a lot of deep sub-bucket
-      // checking,
-      // not just all the buckets of the top level(s) facet(s)
+      // to do it, but because it means that our maxBucketsToCheck will ensure we do a lot of deep
+      // sub-bucket checking, not just all the buckets of the top level(s) facet(s)
       for (NamedList<Object> bucket : buckets) {
         final String fieldVal = bucket.get("val").toString(); // int or stringified int
 
