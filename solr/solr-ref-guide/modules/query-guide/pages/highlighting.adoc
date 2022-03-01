@@ -28,7 +28,7 @@ Nonetheless, highlighting is very simple to use.
 == Usage
 
 === Common Highlighter Parameters
-You only need to set the `hl` and often `hl.fl` parameters to get results.
+You only need to set the `hl` and often `hl.fl` parameters to get results (assuming there's a `uniqueKey` defined in your xref:indexing-guide:schema-elements.adoc[schema]).
 The following table documents these and some other supported parameters.
 Note that many highlighting parameters support per-field overrides, such as: `f._title_txt_.hl.snippets`.
 
