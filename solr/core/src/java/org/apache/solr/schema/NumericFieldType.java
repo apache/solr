@@ -164,9 +164,8 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
       query =
           new FunctionRangeQuery(
               new ValueSourceRangeFilter(vs, minVal.toString(), maxVal.toString(), true, true));
-    } else if (minNegative
-        && maxNegative) { // If both max and min are negative (or -0d), then issue range query with
-      // max and min reversed
+    } else if (minNegative && maxNegative) {
+      // If both max and min are negative (or -0d), then issue range query with max and min reversed
       query = numericDocValuesRangeQuery(fieldName, maxBits, minBits, true, true, false);
     } else { // If both max and min are positive, then issue range query
       query = numericDocValuesRangeQuery(fieldName, minBits, maxBits, true, true, false);

@@ -226,9 +226,8 @@ public class QueryParsing {
    */
   public static void toString(Query query, IndexSchema schema, Appendable out, int flags)
       throws IOException {
-    int subflag =
-        flags
-            & ~(FLAG_BOOSTED | FLAG_IS_CLAUSE); // clear the boosted / is clause flags for recursion
+    // clear the boosted / is clause flags for recursion
+    int subflag = flags & ~(FLAG_BOOSTED | FLAG_IS_CLAUSE);
 
     if (query instanceof TermQuery) {
       TermQuery q = (TermQuery) query;

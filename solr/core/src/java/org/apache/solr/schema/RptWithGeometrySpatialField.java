@@ -52,13 +52,12 @@ public class RptWithGeometrySpatialField
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
-    Map<String, String> origArgs =
-        new HashMap<>(args); // clone so we can feed it to an aggregated field type
+    // clone so we can feed it to an aggregated field type
+    Map<String, String> origArgs = new HashMap<>(args);
     super.init(schema, origArgs);
 
     // TODO Move this check to a call from AbstractSpatialFieldType.createFields() so the type can
-    // declare
-    // if it supports multi-valued or not. It's insufficient here; we can't see if you set
+    // declare if it supports multi-valued or not. It's insufficient here; we can't see if you set
     // multiValued on the field.
     if (isMultiValued()) {
       throw new SolrException(
@@ -180,8 +179,8 @@ public class RptWithGeometrySpatialField
           if (shape != null) {
             // optimize shape on a cache hit if possible. This must be thread-safe and it is.
             if (shape instanceof JtsGeometry) {
-              ((JtsGeometry) shape)
-                  .index(); // TODO would be nice if some day we didn't have to cast
+              // TODO would be nice if some day we didn't have to cast
+              ((JtsGeometry) shape).index();
             }
           }
           return shape;

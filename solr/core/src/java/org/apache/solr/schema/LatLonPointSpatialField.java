@@ -101,10 +101,8 @@ public class LatLonPointSpatialField
     final double latDouble = GeoEncodingUtils.decodeLatitude((int) (value >> 32));
     final double lonDouble = GeoEncodingUtils.decodeLongitude((int) (value & 0xFFFFFFFFL));
     // This # decimal places gets us close to our available precision to 1.40cm; we have a test for
-    // it.
-    // CEILING round-trips (decode then re-encode then decode to get identical results). Others did
-    // not. It also
-    //   reverses the "floor" that occurred when we encoded.
+    // it. CEILING round-trips (decode then re-encode then decode to get identical results). Others
+    // did not. It also reverses the "floor" that occurred when we encoded.
     final int DECIMAL_PLACES = 7;
     final RoundingMode ROUND_MODE = CEILING;
     BigDecimal latitudeDecoded = BigDecimal.valueOf(latDouble).setScale(DECIMAL_PLACES, ROUND_MODE);
@@ -231,8 +229,7 @@ public class LatLonPointSpatialField
             getFieldName() + " must have docValues enabled to support this feature");
       }
       // Internally, the distance from LatLonPointSortField/Comparator is in meters. So we must also
-      // go from meters to
-      //  degrees, which is what Lucene spatial-extras is oriented around.
+      // go from meters to degrees, which is what Lucene spatial-extras is oriented around.
       return new DistanceSortValueSource(
           getFieldName(), queryPoint, DistanceUtils.KM_TO_DEG / 1000.0 * multiplier);
     }

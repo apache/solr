@@ -837,10 +837,9 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
             // payload(field,value[,default, ['min|max|average|first']])
             //   defaults to "average" and 0.0 default value
 
-            TInfo tinfo =
-                parseTerm(
-                    fp); // would have made this parser a new separate class and registered it, but
+            // would have made this parser a new separate class and registered it, but
             // this handy method is private :/
+            TInfo tinfo = parseTerm(fp);
 
             ValueSource defaultValueSource;
             if (fp.hasMoreArguments()) {

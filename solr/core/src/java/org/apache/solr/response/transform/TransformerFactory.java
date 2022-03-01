@@ -62,13 +62,11 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin {
    */
   public interface FieldRenamer {
     // TODO: Behavior is undefined in the event of a "destination field" collision (e.g., a user
-    // maps two fields to
-    //  the same "destination field", or maps a field to a top-level requested field). In the
-    // future, the easiest way
-    //  to detect such a case would be by "failing fast" upon renaming to a field that already has
-    // an associated value,
-    //  or support for this feature could be expressly added via a hypothetical
-    //  `combined_field:[consolidate fl=field_1,field_2]` transformer.
+    // maps two fields to the same "destination field", or maps a field to a top-level requested
+    // field). In the future, the easiest way to detect such a case would be by "failing fast" upon
+    // renaming to a field that already has an associated value, or support for this feature could
+    // be expressly added via a hypothetical `combined_field:[consolidate fl=field_1,field_2]`
+    // transformer.
     /**
      * Analogous to {@link TransformerFactory#create(String, SolrParams, SolrQueryRequest)}, but to
      * be implemented by {@link TransformerFactory}s that produce {@link DocTransformer}s that may

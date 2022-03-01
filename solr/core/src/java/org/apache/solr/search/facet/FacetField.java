@@ -27,8 +27,9 @@ public class FacetField extends FacetRequestSorted {
   public static final int DEFAULT_FACET_LIMIT = 10;
   String field;
   boolean missing;
-  boolean allBuckets; // show cumulative stats across all buckets (this can be different than
-  // non-bucketed stats across all docs because of multi-valued docs)
+  // show cumulative stats across all buckets (this can be different than non-bucketed stats across
+  // all docs because of multi-valued docs)
+  boolean allBuckets;
   boolean numBuckets;
   String prefix;
   FacetMethod method;
@@ -140,8 +141,7 @@ public class FacetField extends FacetRequestSorted {
     if (!multiToken) {
       if (mincount > 0 && prefix == null && (ntype != null || method == FacetMethod.DVHASH)) {
         // TODO can we auto-pick for strings when term cardinality is much greater than DocSet
-        // cardinality?
-        //   or if we don't know cardinality but DocSet size is very small
+        // cardinality? or if we don't know cardinality but DocSet size is very small
         return new FacetFieldProcessorByHashDV(fcontext, this, sf);
       } else if (ntype == null) {
         // single valued string...

@@ -2157,9 +2157,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         if (collapseFieldType instanceof StrField) {
           if (blockCollapse) {
             // NOTE: for now we don't worry about wether this is a sortSpec of min/max
-            // groupHeadSelector,
-            // we use a "sort spec' based block collector unless/until there is some (performance?)
-            // reason to specialize
+            // groupHeadSelector, we use a "sort spec' based block collector unless/until there is
+            // some (performance?) reason to specialize
             return new BlockOrdSortSpecCollector(
                 collapseField,
                 nullPolicy,
@@ -2187,9 +2186,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
           if (blockCollapse) {
             // NOTE: for now we don't worry about wether this is a sortSpec of min/max
-            // groupHeadSelector,
-            // we use a "sort spec' based block collector unless/until there is some (performance?)
-            // reason to specialize
+            // groupHeadSelector, we use a "sort spec' based block collector unless/until there is
+            // some (performance?) reason to specialize
             return new BlockIntSortSpecCollector(
                 collapseField,
                 nullPolicy,
@@ -3422,8 +3420,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         //   ...and that's *good* because each is treated like it's own group, our boosts don't
         // matter
         // We only have to worry about removing null docs when using COLLAPSE, in which case any
-        // boosted null doc
-        // means we clear the group head of the null group..
+        // boosted null doc means we clear the group head of the null group..
         resetNullGroupHead.run();
       }
     }
@@ -3661,8 +3658,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       if (0 <= lastCompare) {
         // we're either not competitive, or we're completely tied with another doc that's already
-        // group head
-        // that's already been selected
+        // group head that's already been selected
         return false;
       } // else...
 

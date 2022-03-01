@@ -127,8 +127,7 @@ public class MacroExpander {
       if (idx > 0) {
         // check if escaped...
         // TODO: what if you *want* to actually have a backslash... perhaps that's when we allow
-        // changing
-        // of the escape character?
+        // changing of the escape character?
 
         char ch = val.charAt(idx - 1);
         if (ch == escape) {

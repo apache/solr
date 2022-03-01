@@ -41,10 +41,10 @@ import org.apache.solr.schema.SchemaField;
  * @lucene.experimental
  */
 public class PointMerger {
-  public static int TOTAL_BUFFER_SIZE =
-      1000000; // target number of elements to cache across all segments
-  public static int MIN_SEG_BUFFER_SIZE =
-      100; // minimum buffer size on any segment (to limit unnecessary exception throws)
+  // target number of elements to cache across all segments
+  public static int TOTAL_BUFFER_SIZE = 1000000;
+  // minimum buffer size on any segment (to limit unnecessary exception throws)
+  public static int MIN_SEG_BUFFER_SIZE = 100;
 
   public static class ValueIterator {
     PQueue queue;
@@ -173,7 +173,6 @@ public class PointMerger {
     public int setNextValue() throws IOException {
       return 0;
     }
-    ;
 
     void refill() throws IOException {
       assert readPos >= pos;

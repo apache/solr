@@ -146,8 +146,7 @@ public class MetricsMap implements Gauge<Map<String, Object>>, MapWriter, Dynami
         }
       }
       // It's an arbitrary object which could be something complex and odd, return its toString,
-      // assuming that is
-      // a workable representation of the object
+      // assuming that is a workable representation of the object
       return val.toString();
     }
     return null;

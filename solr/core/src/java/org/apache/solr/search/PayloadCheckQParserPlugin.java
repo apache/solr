@@ -57,9 +57,8 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
         String value = localParams.get(QueryParsing.V);
         String p = localParams.get("payloads");
         // payloads and op parameter are probably mutually exclusive. we could consider making a
-        // different query
-        // not a span payload check query, but something that just operates on payloads without the
-        // span?
+        // different query not a span payload check query, but something that just operates on
+        // payloads without the span?
         String strOp = localParams.get("op");
         MatchOperation op = MatchOperation.EQ;
         if (strOp != null) {
@@ -94,7 +93,8 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
         PayloadEncoder encoder = null;
         String e = PayloadUtils.getPayloadEncoder(ft);
         PayloadType payloadType = null;
-        if ("float".equals(e)) { // TODO: centralize this string->PayloadEncoder logic (see
+        if ("float".equals(e)) {
+          // TODO: centralize this string->PayloadEncoder logic (see
           // DelimitedPayloadTokenFilterFactory)
           encoder = new FloatEncoder();
           payloadType = PayloadType.FLOAT;
@@ -113,8 +113,8 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
         }
 
         List<BytesRef> payloads = new ArrayList<>();
-        String[] rawPayloads =
-            p.split(" "); // since payloads (most likely) came in whitespace delimited, just split
+        // since payloads (most likely) came in whitespace delimited, just split
+        String[] rawPayloads = p.split(" ");
         for (String rawPayload : rawPayloads) {
           if (rawPayload.length() > 0) payloads.add(encoder.encode(rawPayload.toCharArray()));
         }

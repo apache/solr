@@ -858,8 +858,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private BitDocSet makeBitDocSet(DocSet answer) {
     // TODO: this should be implemented in DocSet, most likely with a getBits method that takes a
-    // maxDoc argument
-    // or make DocSet instances remember maxDoc
+    // maxDoc argument or make DocSet instances remember maxDoc
     if (answer instanceof BitDocSet) {
       return (BitDocSet) answer;
     }
@@ -921,13 +920,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled()) {
       // If there is a possibility of timeout for this query, then don't reserve a computation slot.
-      // Further, we can't
-      // naively wait for an in progress computation to finish, because if we time out before it
-      // does then we won't
-      // even have partial results to provide. We could possibly wait for the query to finish in
-      // parallel with our own
-      // results and if they complete first use that instead, but we'll leave that to implement
-      // later.
+      // Further, we can't naively wait for an in progress computation to finish, because if we time
+      // out before it does then we won't even have partial results to provide. We could possibly
+      // wait for the query to finish in parallel with our own results and if they complete first
+      // use that instead, but we'll leave that to implement later.
       DocSet answer = filterCache.get(query);
       if (answer != null) {
         return answer;
@@ -1036,9 +1032,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @see #getProcessedFilter(DocSet, List)
    */
   public static class ProcessedFilter {
-    public DocSet
-        answer; // maybe null. Sometimes we have a docSet answer that represents the complete answer
-    // / result.
+    // maybe null. Sometimes we have a docSet answer that represents the complete answer or result.
+    public DocSet answer;
     public Query filter; // maybe null.  Scoring is irrelevant / unspecified.
     public DelegatingCollector postFilter; // maybe null
   }

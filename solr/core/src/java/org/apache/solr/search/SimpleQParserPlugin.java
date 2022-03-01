@@ -119,8 +119,7 @@ public class SimpleQParserPlugin extends QParserPlugin {
         for (Map.Entry<String, Float> queryField : queryFields.entrySet()) {
           if (queryField.getValue() == null) {
             // Some fields may be specified without a boost, so default the boost to 1.0 since a
-            // null value
-            // will not be accepted by SimpleQueryParser.
+            // null value will not be accepted by SimpleQueryParser.
             queryField.setValue(1.0F);
           }
         }

@@ -72,10 +72,8 @@ public class RequestUtil {
         req.setParams(params);
       }
 
-      String[] jsonFromParams =
-          map.remove(
-              JSON); // params from the query string should come after (and hence override) JSON
-      // content streams
+      // params from the query string should come after (and hence override) JSON content streams
+      String[] jsonFromParams = map.remove(JSON);
 
       for (ContentStream cs : req.getContentStreams()) {
         String contentType = cs.getContentType();
@@ -181,8 +179,8 @@ public class RequestUtil {
     req.setParams(newParams);
 
     // Skip the rest of the processing (including json processing for now) if this isn't a search
-    // handler.
-    // For example json.command started to be used  in SOLR-6294, and that caused errors here.
+    // handler. For example json.command started to be used  in SOLR-6294, and that caused errors
+    // here.
     if (!searchHandler) return;
 
     Map<String, Object> json = null;
@@ -345,8 +343,7 @@ public class RequestUtil {
       @SuppressWarnings("unchecked")
       Map<String, Object> map = (Map<String, Object>) o;
       // To make consistent with json.param handling, we should make query params come after json
-      // params (i.e. query params should
-      // appear to overwrite json params.
+      // params (i.e. query params should appear to overwrite json params.
 
       // Solr params are based on String though, so we need to convert
       for (Map.Entry<String, Object> entry : map.entrySet()) {

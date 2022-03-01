@@ -166,10 +166,8 @@ public class DocSetUtil {
     int maxCount = 0;
     int firstReader = -1;
     List<LeafReaderContext> leaves = reader.leaves();
-    PostingsEnum[] postList =
-        new PostingsEnum
-            [leaves.size()]; // use array for slightly higher scanning cost, but fewer memory
-    // allocations
+    // use array for slightly higher scanning cost, but fewer memory allocations
+    PostingsEnum[] postList = new PostingsEnum[leaves.size()];
     for (LeafReaderContext ctx : leaves) {
       assert leaves.get(ctx.ord) == ctx;
       LeafReader r = ctx.reader();

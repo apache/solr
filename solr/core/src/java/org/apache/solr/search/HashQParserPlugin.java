@@ -65,8 +65,8 @@ public class HashQParserPlugin extends QParserPlugin {
       int worker = localParams.getInt("worker", 0);
       String keyParam = params.get("partitionKeys");
       String[] keys = keyParam.replace(" ", "").split(",");
-      Arrays.stream(keys)
-          .forEach(field -> req.getSchema().getField(field)); // validate all fields exist
+      // validate all fields exist
+      Arrays.stream(keys).forEach(field -> req.getSchema().getField(field));
 
       // TODO wish to provide matchCost on FunctionMatchQuery's TwoPhaseIterator -- LUCENE-9373
       return new FunctionMatchQuery(
@@ -99,8 +99,7 @@ public class HashQParserPlugin extends QParserPlugin {
           resultValues[i] =
               new LongValues() {
                 // Even if not a Long field; could be int, double, float and this still works
-                // because DocValues numerics
-                //  are based on a Long.
+                // because DocValues numerics are based on a Long.
                 final NumericDocValues values = numericDocValues;
                 boolean atDoc = false;
 

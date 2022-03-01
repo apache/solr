@@ -79,8 +79,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected static final String REVERSE_WILDCARD_LOWER_BOUND =
       new String(new char[] {ReverseStringFilter.START_OF_HEADING_MARKER + 1});
 
-  public static final int TERMS_QUERY_THRESHOLD =
-      16; // @lucene.internal Set to a low value temporarily for better test coverage
+  // @lucene.internal Set to a low value temporarily for better test coverage
+  public static final int TERMS_QUERY_THRESHOLD = 16;
 
   static final int CONJ_NONE = 0;
   static final int CONJ_AND = 1;
@@ -270,9 +270,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     ReInit(new FastCharStream(new StringReader(query)));
     try {
       // TopLevelQuery is a Query followed by the end-of-input (EOF)
-      Query res =
-          TopLevelQuery(
-              null); // pass null so we can tell later if an explicit field was provided or not
+      // pass null so we can tell later if an explicit field was provided or not
+      Query res = TopLevelQuery(null);
       return res != null ? res : newBooleanQuery().build();
     } catch (ParseException | TokenMgrError tme) {
       throw new SyntaxError("Cannot parse '" + query + "': " + tme.getMessage(), tme);
@@ -735,10 +734,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             sfield = rawq.sfield;
             fieldValues = fmap.get(sfield);
             // If this field isn't indexed, or if it is indexed and we want to use TermsQuery, then
-            // collect this value.
-            // We are currently relying on things like PointField not being marked as indexed in
-            // order to bypass
-            // the "useTermQuery" check.
+            // collect this value. We are currently relying on things like PointField not being
+            // marked as indexed in order to bypass the "useTermQuery" check.
             if ((fieldValues == null && useTermsQuery) || !sfield.indexed()) {
               fieldValues = new ArrayList<>(2);
               fmap.put(sfield, fieldValues);
@@ -1083,8 +1080,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   private SchemaField lastField;
 
   // if raw==true, then it's possible for this method to return a RawQuery that will need to be
-  // transformed
-  // further before using.
+  // transformed further before using.
   protected Query getFieldQuery(String field, String queryText, boolean quoted, boolean raw)
       throws SyntaxError {
     checkNullField(field);
@@ -1092,8 +1088,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     SchemaField sf;
     if (field.equals(lastFieldName)) {
       // only look up the SchemaField on a field change... this helps with memory allocation of
-      // dynamic fields
-      // and large queries like foo_i:(1 2 3 4 5 6 7 8 9 10) when we are passed "foo_i" each time.
+      // dynamic fields and large queries like foo_i:(1 2 3 4 5 6 7 8 9 10) when we are passed
+      // "foo_i" each time.
       sf = lastField;
     } else {
       // intercept magic field name of "_" to use as a hook for our
@@ -1151,8 +1147,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     SchemaField sf;
     if (field.equals(lastFieldName)) {
       // only look up the SchemaField on a field change... this helps with memory allocation of
-      // dynamic fields
-      // and large queries like foo_i:(1 2 3 4 5 6 7 8 9 10) when we are passed "foo_i" each time.
+      // dynamic fields and large queries like foo_i:(1 2 3 4 5 6 7 8 9 10) when we are passed
+      // "foo_i" each time.
       sf = lastField;
     } else {
       // intercept magic field name of "_" to use as a hook for our
@@ -1202,13 +1198,12 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             for (String queryTerm : queryTerms) {
               try {
                 subqs.add(ft.getFieldQuery(parser, sf, queryTerm));
-              } catch (Exception e) { // assumption: raw = false only when called from
-                // ExtendedDismaxQueryParser.getQuery()
-                // ExtendedDismaxQueryParser is a lenient query parser
-                // This happens when a field tries to parse a query term that has a type
-                // incompatible with the field
-                // e.g.
-                // a numerical field trying to parse a textual query term
+              } catch (Exception e) {
+                // assumption: raw = false only when called from
+                // ExtendedDismaxQueryParser.getQuery(). ExtendedDismaxQueryParser is a lenient
+                // query parser. This happens when a field tries to parse a query term that has a
+                // type incompatible with the field e.g. a numerical field trying to parse a textual
+                // query term
                 subqs.add(new MatchNoDocsQuery());
               }
             }

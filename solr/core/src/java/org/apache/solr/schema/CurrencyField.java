@@ -68,14 +68,12 @@ public class CurrencyField extends CurrencyFieldType implements SchemaAware, Res
     }
 
     // NOTE: because we're not using the PluginLoader to register these field types, they aren't
-    // "real"
-    // field types and never get Schema default properties (based on schema.xml's version attribute)
-    // so only the properties explicitly set here (or on the SchemaField's we create from them) are
-    // used.
+    // "real" field types and never get Schema default properties (based on schema.xml's version
+    // attribute) so only the properties explicitly set here (or on the SchemaField's we create from
+    // them) are used.
     //
     // In theory we should fix this, but since this class is already deprecated, we'll leave it
-    // alone
-    // to simplify the risk of back-compat break for existing users.
+    // alone to simplify the risk of back-compat break for existing users.
 
     // Initialize field type for amount
     fieldTypeAmountRaw = new TrieLongField();

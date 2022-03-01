@@ -58,8 +58,8 @@ class JsonQueryConverter {
           SolrException.ErrorCode.BAD_REQUEST,
           "Error when parsing json query, expect a json object here, but found : " + val);
       // NOTE: a top-level query *can* be a String, so we should really allow it here.  This
-      // currently only works because
-      // we special-case String in toLocalParams() and don't call this method.
+      // currently only works because we special-case String in toLocalParams() and don't call this
+      // method.
     }
     // We don't want to introduce unnecessary variable at root level
     boolean useSubBuilder = builder.length() > 0;

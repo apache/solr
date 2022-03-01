@@ -247,9 +247,8 @@ public abstract class QParser {
       defaultType = localParams.get(QueryParsing.DEFTYPE);
     }
     QParser nestedParser = getParser(q, defaultType, getReq());
-    nestedParser.flags =
-        this.flags; // TODO: this would be better passed in to the constructor... change to a
-    // ParserContext object?
+    // TODO: this would be better passed in to the constructor... change to a ParserContext object?
+    nestedParser.flags = this.flags;
     nestedParser.recurseCount = recurseCount;
     recurseCount--;
     return nestedParser;

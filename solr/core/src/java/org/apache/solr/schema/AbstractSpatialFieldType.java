@@ -355,8 +355,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     // This is different from Solr 3 LatLonType's approach which uses the MultiValueSource concept
-    // to directly expose
-    // the x & y pair of FieldCache value sources.
+    // to directly expose the x & y pair of FieldCache value sources.
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
         "A ValueSource isn't directly available from this field. Instead try a query using the distance as the score.");

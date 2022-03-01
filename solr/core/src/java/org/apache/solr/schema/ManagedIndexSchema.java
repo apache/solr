@@ -477,9 +477,8 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema.refreshAnalyzers();
 
       if (persist) {
-        success =
-            newSchema.persistManagedSchema(
-                false); // don't just create - update it if it already exists
+        // don't just create - update it if it already exists
+        success = newSchema.persistManagedSchema(false);
         if (success) {
           log.debug("Added field(s): {}", newFields);
         } else {
@@ -670,9 +669,8 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema.postReadInform();
       newSchema.refreshAnalyzers();
       if (persist) {
-        success =
-            newSchema.persistManagedSchema(
-                false); // don't just create - update it if it already exists
+        // don't just create - update it if it already exists
+        success = newSchema.persistManagedSchema(false);
         if (success) {
           log.debug("Added dynamic field(s): {}", newDynamicFields);
         } else {
@@ -865,9 +863,8 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema.postReadInform();
       newSchema.refreshAnalyzers();
       if (persist) {
-        success =
-            newSchema.persistManagedSchema(
-                false); // don't just create - update it if it already exists
+        // don't just create - update it if it already exists
+        success = newSchema.persistManagedSchema(false);
         if (success) {
           if (log.isDebugEnabled()) {
             log.debug("Added copy fields for {} sources", copyFields.size());
@@ -1209,8 +1206,8 @@ public final class ManagedIndexSchema extends IndexSchema {
           // Add the replacement field
           SchemaField replacementField =
               SchemaField.create(fieldName, replacementFieldType, oldField.getArgs());
-          replacementFields.add(
-              replacementField); // Save the new field to be added after iteration is finished
+          // Save the new field to be added after iteration is finished
+          replacementFields.add(replacementField);
           if (null != replacementField.getDefaultValue()) {
             if (log.isDebugEnabled()) {
               log.debug(

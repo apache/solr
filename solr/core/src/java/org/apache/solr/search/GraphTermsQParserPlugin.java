@@ -343,7 +343,6 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     @Override
     public abstract BytesRef next();
   }
-  ;
 
   public void setMaxDocFreq(int maxDocFreq) {
     this.maxDocFreq = maxDocFreq;
@@ -481,9 +480,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     this.numDims = numDims;
 
     // In the 1D case this works well (the more points, the more common prefixes they share,
-    // typically), but in
-    // the > 1 D case, where we are only looking at the first dimension's prefix bytes, it can at
-    // worst not hurt:
+    // typically), but in the > 1 D case, where we are only looking at the first dimension's prefix
+    // bytes, it can at worst not hurt:
     PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
     BytesRefBuilder previous = null;
     BytesRef current;
@@ -702,8 +700,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
         return PointValues.Relation.CELL_CROSSES_QUERY;
       } else {
         // NOTE: we only hit this if we are on a cell whose min and max values are exactly equal to
-        // our point,
-        // which can easily happen if many docs share this one value
+        // our point, which can easily happen if many docs share this one value
         return PointValues.Relation.CELL_INSIDE_QUERY;
       }
     }

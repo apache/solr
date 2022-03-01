@@ -271,8 +271,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     boolean defaultPayloads = true; // overwritten below
     try {
       // It'd be nice to know if payloads are on the tokenStream but the presence of the attribute
-      // isn't a good
-      // indicator.
+      // isn't a good indicator.
       final Terms terms = request.getSearcher().getSlowAtomicReader().terms(fieldName);
       if (terms != null) {
         defaultPayloads = terms.hasPayloads();
@@ -477,8 +476,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     } else {
       returnFields = new SolrReturnFields(new String[0], req);
     }
-    FvhContainer fvhContainer =
-        new FvhContainer(null, null); // Lazy container for fvh and fieldQuery
+    // Lazy container for fvh and fieldQuery
+    FvhContainer fvhContainer = new FvhContainer(null, null);
 
     IndexReader reader =
         new TermVectorReusingLeafReader(req.getSearcher().getSlowAtomicReader()); // SOLR-5855
@@ -722,12 +721,10 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         Highlighter highlighter;
         if (params.getFieldBool(fieldName, HighlightParams.USE_PHRASE_HIGHLIGHTER, true)) {
           // We're going to call getPhraseHighlighter and it might consume the tokenStream. If it
-          // does, the tokenStream
-          // needs to implement reset() efficiently.
+          // does, the tokenStream needs to implement reset() efficiently.
 
           // If the tokenStream is right from the term vectors, then CachingTokenFilter is
-          // unnecessary.
-          //  It should be okay if OffsetLimit won't get applied in this case.
+          // unnecessary. It should be okay if OffsetLimit won't get applied in this case.
           final TokenStream tempTokenStream;
           if (tstream != tvStream) {
             if (maxCharsToAnalyze >= thisText.length()) {
@@ -769,9 +766,10 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
             // snippet regardless.
             if (bestTextFragment.getScore() > 0 || preserveMulti) {
               frags.add(bestTextFragment);
-              if (bestTextFragment.getScore() > 0)
-                --mvToMatch; // note: limits fragments (for multi-valued fields), not quite the
-              // number of values
+              if (bestTextFragment.getScore() > 0) {
+                // note: limits fragments (for multi-valued fields), not quite the number of values
+                --mvToMatch;
+              }
             }
           }
         } catch (InvalidTokenOffsetsException e) {
@@ -818,13 +816,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       if (value instanceof IndexableField) {
         strValue = fieldType.toExternal((IndexableField) value);
       } else {
-        strValue =
-            value.toString(); // TODO FieldType needs an API for this, e.g. toExternalFromDv()
+        // TODO FieldType needs an API for this, e.g. toExternalFromDv()
+        strValue = value.toString();
       }
       result.add(strValue);
 
-      maxCharsToAnalyze -=
-          strValue.length(); // we exit early if we'll never get to analyze the value
+      // we exit early if we'll never get to analyze the value
+      maxCharsToAnalyze -= strValue.length();
       maxValues--;
       if (maxValues <= 0 || maxCharsToAnalyze <= 0) {
         break;
@@ -1028,9 +1026,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     // Called at the start of each value/window
     OffsetWindowTokenFilter advanceToNextWindowOfLength(int length) {
-      windowStartOffset =
-          windowEndOffset
-              + 1; // unclear why there's a single offset gap between values, but tests show it
+      // unclear why there's a single offset gap between values, but tests show it
+      windowStartOffset = windowEndOffset + 1;
       windowEndOffset = windowStartOffset + length;
       windowTokenIncremented = false; // thereby permit reset()
       return this;

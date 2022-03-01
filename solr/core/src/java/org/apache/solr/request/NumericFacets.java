@@ -495,9 +495,8 @@ final class NumericFacets {
         hashTable.add(l, 1);
         for (int i = 1, count = longs.docValueCount(); i < count; i++) {
           long lnew = longs.nextValue();
-          if (lnew
-              > l) { // Skip the value if it's equal to the last one, we don't want to double-count
-            // it
+          // Skip the value if it's equal to the last one, we don't want to double-count it
+          if (lnew > l) {
             hashTable.add(lnew, 1);
           }
           l = lnew;
@@ -563,8 +562,7 @@ final class NumericFacets {
     }
 
     // Once facet.mincount=0 is supported we'll need to add logic similar to the SingleValue case,
-    // but obtaining values
-    // with count 0 from DocValues
+    // but obtaining values with count 0 from DocValues
 
     return finalize(result, missingCount, missing);
   }

@@ -184,8 +184,8 @@ public final class DocSetBuilder {
       sorter.sort(PackedInts.bitsRequired(maxDoc - 1), buffer, pos);
       final int l = dedup(buffer, pos, filter);
       assert l <= pos;
-      return new SortedIntDocSet(
-          buffer, l); // TODO: have option to not shrink in the future if it will be a temporary set
+      // TODO: have option to not shrink in the future if it will be a temporary set
+      return new SortedIntDocSet(buffer, l);
     }
   }
 
@@ -202,8 +202,8 @@ public final class DocSetBuilder {
       if (filter != null) {
         l = dedup(buffer, pos, filter);
       }
-      return new SortedIntDocSet(
-          buffer, l); // TODO: have option to not shrink in the future if it will be a temporary set
+      // TODO: have option to not shrink in the future if it will be a temporary set
+      return new SortedIntDocSet(buffer, l);
     }
   }
 }

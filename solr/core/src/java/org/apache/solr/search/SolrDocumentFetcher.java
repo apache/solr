@@ -133,9 +133,8 @@ public class SolrDocumentFetcher {
     final Set<String> dvsCanSubstituteStored = new HashSet<>();
     final Set<String> allStoreds = new HashSet<>();
 
-    for (FieldInfo fieldInfo :
-        searcher.getFieldInfos()) { // can find materialized dynamic fields, unlike using the Solr
-      // IndexSchema.
+    // can find materialized dynamic fields, unlike using the Solr IndexSchema.
+    for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
       final SchemaField schemaField = searcher.getSchema().getFieldOrNull(fieldInfo.name);
       if (schemaField == null) {
         continue;
@@ -210,9 +209,8 @@ public class SolrDocumentFetcher {
                     || (field.getType() instanceof org.apache.solr.schema.StrField))) {
               storedHighlightFieldNames.add(fieldName);
             }
-          } catch (
-              RuntimeException
-                  e) { // getField() throws a SolrException, but it arrives as a RuntimeException
+          } catch (RuntimeException e) {
+            // getField() throws a SolrException, but it arrives as a RuntimeException
             log.warn("Field [{}] found in index, but not defined in schema.", fieldName);
           }
         }
@@ -335,9 +333,8 @@ public class SolrDocumentFetcher {
     public Status needsField(FieldInfo fieldInfo) throws IOException {
       Status status = super.needsField(fieldInfo);
       assert status != Status.STOP : "Status.STOP not supported or expected";
-      if (addLargeFieldsLazily
-          && largeFields.contains(
-              fieldInfo.name)) { // load "large" fields using this lazy mechanism
+      // load "large" fields using this lazy mechanism
+      if (addLargeFieldsLazily && largeFields.contains(fieldInfo.name)) {
         if (lazyFieldProducer != null || status == Status.YES) {
           doc.add(new LargeLazyField(fieldInfo.name, docId));
         }
@@ -452,8 +449,8 @@ public class SolrDocumentFetcher {
 
     @Override
     public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
-      return analyzer.tokenStream(
-          name(), stringValue()); // or we could throw unsupported exception?
+      // or we could throw unsupported exception?
+      return analyzer.tokenStream(name(), stringValue());
     }
 
     /** (for tests) */
@@ -638,8 +635,7 @@ public class SolrDocumentFetcher {
 
   private Object decodeNumberFromDV(SchemaField schemaField, long value, boolean sortableNumeric) {
     // note: This special-case is unfortunate; if we have to add any more than perhaps the fieldType
-    // should
-    //  have this method so that specific field types can customize it.
+    // should have this method so that specific field types can customize it.
     if (schemaField.getType() instanceof LatLonPointSpatialField) {
       return LatLonPointSpatialField.decodeDocValueToString(value);
     }
@@ -781,13 +777,18 @@ public class SolrDocumentFetcher {
         storedFields.removeIf(
             (String name) -> {
               SchemaField schemaField = searcher.getSchema().getFieldOrNull(name);
-              if (schemaField == null)
-                return false; // Get it from the stored fields if, for some reasonm, we can't get
-              // the schema.
-              if (schemaField.stored() && schemaField.multiValued())
-                return false; // must return multivalued fields from stored data if possible.
-              if (schemaField.stored() == false)
-                return true; // if it's not stored, no choice but to return from DV.
+              if (schemaField == null) {
+                // Get it from the stored fields if, for some reason, we can't get the schema.
+                return false;
+              }
+              if (schemaField.stored() && schemaField.multiValued()) {
+                // must return multivalued fields from stored data if possible.
+                return false;
+              }
+              if (schemaField.stored() == false) {
+                // if it's not stored, no choice but to return from DV.
+                return true;
+              }
               return false;
             });
       }

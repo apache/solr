@@ -876,10 +876,8 @@ public class SimpleFacets {
     }
 
     // Passing a negative number for FACET_THREADS implies an unlimited number of threads is
-    // acceptable.
-    // Also, a subtlety of directExecutor is that no matter how many times you "submit" a job, it's
-    // really
-    // just a method call in that it's run by the calling thread.
+    // acceptable. Also, a subtlety of directExecutor is that no matter how many times you "submit"
+    // a job, it's really just a method call in that it's run by the calling thread.
     int maxThreads = req.getParams().getInt(FacetParams.FACET_THREADS, 0);
     Executor executor = maxThreads == 0 ? directExecutor : facetExecutor;
     final Semaphore semaphore = new Semaphore((maxThreads <= 0) ? Integer.MAX_VALUE : maxThreads);

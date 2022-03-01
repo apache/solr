@@ -37,9 +37,9 @@ public class FunctionQParser extends QParser {
 
   public static final int FLAG_CONSUME_DELIMITER = 0x01; // consume delimiter after parsing arg
   public static final int FLAG_IS_AGG = 0x02;
-  public static final int FLAG_USE_FIELDNAME_SOURCE =
-      0x04; // When a field name is encountered, use the placeholder FieldNameValueSource instead of
-  // resolving to a real ValueSource
+  // When a field name is encountered, use the placeholder FieldNameValueSource instead of resolving
+  // to a real ValueSource
+  public static final int FLAG_USE_FIELDNAME_SOURCE = 0x04;
   public static final int FLAG_DEFAULT = FLAG_CONSUME_DELIMITER;
 
   /**

@@ -118,8 +118,8 @@ public class RandomSortField extends FieldType {
 
             @Override
             public int compare(int slot1, int slot2) {
-              return values[slot1]
-                  - values[slot2]; // values will be positive... no overflow possible.
+              // values will be positive... no overflow possible.
+              return values[slot1] - values[slot2];
             }
 
             @Override

@@ -77,5 +77,4 @@ public class StrFieldSource extends FieldCacheSource {
   public int hashCode() {
     return hcode + super.hashCode();
   }
-  ;
 }

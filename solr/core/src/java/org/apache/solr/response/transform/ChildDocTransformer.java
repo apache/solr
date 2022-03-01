@@ -165,17 +165,14 @@ class ChildDocTransformer extends DocTransformer {
       final SortedDocValues segPathDocValues =
           DocValues.getSorted(leafReaderContext.reader(), NEST_PATH_FIELD_NAME);
       // passing a different SortedDocValues obj since the child documents which come after are of
-      // smaller docIDs,
-      // and the iterator can not be reversed.
-      // The root doc is the input document to be transformed, and is not necessarily the root doc
-      // of the block of docs.
+      // smaller docIDs, and the iterator can not be reversed. The root doc is the input document to
+      // be transformed, and is not necessarily the root doc of the block of docs.
       final String rootDocPath =
           getPathByDocId(
               segRootId, DocValues.getSorted(leafReaderContext.reader(), NEST_PATH_FIELD_NAME));
 
       // the key in the Map is the document's ancestors key (one above the parent), while the key in
-      // the intermediate
-      // MultiMap is the direct child document's key(of the parent document)
+      // the intermediate MultiMap is the direct child document's key(of the parent document)
       final Map<String, Multimap<String, SolrDocument>> pendingParentPathsToChildren =
           new HashMap<>();
 

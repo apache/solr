@@ -43,10 +43,9 @@ public class BlockJoin {
     DocIterator iter = parentInput.iterator();
     while (iter.hasNext()) {
       int parentDoc = iter.nextDoc();
-      if (!parentList.exists(parentDoc)
-          || parentDoc
-              == 0) { // test for parentDoc==0 here to avoid passing -1 to prevSetBit later on
-        // not a parent, or parent has no children
+      // test for parentDoc==0 here to avoid passing -1 to prevSetBit later on not a parent, or
+      // parent has no children
+      if (!parentList.exists(parentDoc) || parentDoc == 0) {
         continue;
       }
       int prevParent = parentBits.prevSetBit(parentDoc - 1);

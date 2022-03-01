@@ -123,10 +123,9 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
       searcherHolder = core.getSearcher();
 
       // We start tracking here instead of at construction, because if getSearcher is never called,
-      // it's
-      // not fatal to forget close(), and lots of test code is sloppy about it. However, when we get
-      // another
-      // searcher reference, having this tracked may be a good hint about where the leak comes from.
+      // it's not fatal to forget close(), and lots of test code is sloppy about it. However, when
+      // we get another searcher reference, having this tracked may be a good hint about where the
+      // leak comes from.
       assert ObjectReleaseTracker.track(this);
     }
 

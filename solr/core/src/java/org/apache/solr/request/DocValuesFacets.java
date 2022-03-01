@@ -165,8 +165,8 @@ public class DocValuesFacets {
       List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
       for (int subIndex = 0; subIndex < leaves.size(); subIndex++) {
         LeafReaderContext leaf = leaves.get(subIndex);
-        final DocIdSetIterator disi =
-            docs.iterator(leaf); // solr docsets already exclude any deleted docs
+        // solr docsets already exclude any deleted docs
+        final DocIdSetIterator disi = docs.iterator(leaf);
         if (disi != null) {
           if (multiValued) {
             SortedSetDocValues sub = leaf.reader().getSortedSetDocValues(fieldName);

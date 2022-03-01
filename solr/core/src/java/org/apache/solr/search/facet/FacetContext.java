@@ -27,9 +27,9 @@ public class FacetContext {
   // Context info for actually executing a local facet command
   public static final int IS_SHARD = 0x01;
   public static final int IS_REFINEMENT = 0x02;
-  public static final int SKIP_FACET =
-      0x04; // refinement: skip calculating this immediate facet, but proceed to specific sub-facets
-  // based on facetInfo
+  // refinement: skip calculating this immediate facet, but proceed to specific sub-facets based on
+  // facetInfo
+  public static final int SKIP_FACET = 0x04;
 
   FacetProcessor<?> processor;
   Map<String, Object> facetInfo; // refinement info for this node

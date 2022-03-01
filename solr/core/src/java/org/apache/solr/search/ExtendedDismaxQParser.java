@@ -317,10 +317,9 @@ public class ExtendedDismaxQParser extends QParser {
           phraseFieldsByWordGram.asMap().entrySet()) {
 
         // group the fields within this wordGram collection by their associated slop (it's possible
-        // that the same
-        // field appears multiple times for the same wordGram count but with different slop values.
-        // In this case, we
-        // should take the *sum* of those phrase queries, rather than the max across them).
+        // that the same field appears multiple times for the same wordGram count but with different
+        // slop values. In this case, we should take the *sum* of those phrase queries, rather than
+        // the max across them).
         Multimap<Integer, FieldParams> phraseFieldsBySlop =
             Multimaps.index(phraseFieldsByWordGramEntry.getValue(), FieldParams::getSlop);
         for (Map.Entry<Integer, Collection<FieldParams>> phraseFieldsBySlopEntry :
@@ -425,10 +424,8 @@ public class ExtendedDismaxQParser extends QParser {
       String mmSpec = config.minShouldMatch;
 
       if (foundOperators(clauses, config.lowercaseOperators)) {
-        mmSpec =
-            config.solrParams.get(
-                DisMaxParams.MM,
-                "0%"); // Use provided mm spec if present, otherwise turn off mm processing
+        // Use provided mm spec if present, otherwise turn off mm processing
+        mmSpec = config.solrParams.get(DisMaxParams.MM, "0%");
       }
       query = SolrPluginUtils.setMinShouldMatch((BooleanQuery) query, mmSpec, config.mmAutoRelax);
     }
@@ -1346,8 +1343,8 @@ public class ExtendedDismaxQParser extends QParser {
         }
         if (allOptionalDisMaxQueries) {
           // getAliasedMultiTermQuery() constructed a BooleanQuery containing only SHOULD
-          // DisjunctionMaxQuery-s.
-          // Unwrap the query and add a clause for each contained DisMax query.
+          // DisjunctionMaxQuery-s. Unwrap the query and add a clause for each contained DisMax
+          // query.
           for (BooleanClause c : ((BooleanQuery) q).clauses()) {
             clauses.add(newBooleanClause(c.getQuery(), occur));
           }
@@ -1715,14 +1712,12 @@ public class ExtendedDismaxQParser extends QParser {
         SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       solrParams = SolrParams.wrapDefaults(localParams, params);
       schema = req.getSchema();
-      minShouldMatch =
-          DisMaxQParser.parseMinShouldMatch(
-              schema, solrParams); // req.getSearcher() here causes searcher refcount imbalance
+      // req.getSearcher() here causes searcher refcount imbalance
+      minShouldMatch = DisMaxQParser.parseMinShouldMatch(schema, solrParams);
       userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)));
       try {
-        queryFields =
-            DisMaxQParser.parseQueryFields(
-                schema, solrParams); // req.getSearcher() here causes searcher refcount imbalance
+        // req.getSearcher() here causes searcher refcount imbalance
+        queryFields = DisMaxQParser.parseQueryFields(schema, solrParams);
       } catch (SyntaxError e) {
         throw new RuntimeException(e);
       }

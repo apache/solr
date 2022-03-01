@@ -31,12 +31,12 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @since solr 0.9
  */
 public class BitDocSet extends DocSet {
+  // for the array object inside the FixedBitSet. long[] array won't change alignment, so no need to
+  // calculate it.
   private static final long BASE_RAM_BYTES_USED =
       RamUsageEstimator.shallowSizeOfInstance(BitDocSet.class)
           + RamUsageEstimator.shallowSizeOfInstance(FixedBitSet.class)
-          + RamUsageEstimator
-              .NUM_BYTES_ARRAY_HEADER; // for the array object inside the FixedBitSet. long[] array
-  // won't change alignment, so no need to calculate it.
+          + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 
   // TODO consider SparseFixedBitSet alternative
 

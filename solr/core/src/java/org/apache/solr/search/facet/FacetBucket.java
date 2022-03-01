@@ -29,9 +29,9 @@ public class FacetBucket {
   @SuppressWarnings({"rawtypes"})
   final Comparable bucketValue;
 
-  final int
-      bucketNumber; // this is just for internal correlation (the first bucket created is bucket 0,
+  // this is just for internal correlation (the first bucket created is bucket 0,
   // the next bucket 1, across all field buckets)
+  final int bucketNumber;
 
   long count;
   Map<String, FacetMerger> subs;
@@ -42,8 +42,8 @@ public class FacetBucket {
       FacetMerger.Context mcontext) {
     this.parent = parent;
     this.bucketValue = bucketValue;
-    this.bucketNumber =
-        mcontext.getNewBucketNumber(); // TODO: we don't need bucket numbers for all buckets...
+    // TODO: we don't need bucket numbers for all buckets...
+    this.bucketNumber = mcontext.getNewBucketNumber();
   }
 
   public long getCount() {

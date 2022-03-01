@@ -102,15 +102,15 @@ public class Grouping {
   private boolean getDocList; // doclist needed for debugging or highlighting
   private Query query;
   private NamedList<Object> grouped = new SimpleOrderedMap<>();
-  private Set<Integer> idSet =
-      new LinkedHashSet<>(); // used for tracking unique docs when we need a doclist
+  // used for tracking unique docs when we need a doclist
+  private Set<Integer> idSet = new LinkedHashSet<>();
   private int maxMatches; // max number of matches from any grouping command
   private float maxScore = Float.NaN; // max score seen in any doclist
   private boolean signalCacheWarning = false;
   private TimeLimitingCollector timeLimitingCollector;
 
-  public DocList
-      mainResult; // output if one of the grouping commands should be used as the main result.
+  // output if one of the grouping commands should be used as the main result.
+  public DocList mainResult;
 
   /**
    * @param cacheSecondPassSearch Whether to cache the documents and scores from the first pass
@@ -491,8 +491,7 @@ public class Grouping {
     return signalCacheWarning;
   }
 
-  // ======================================   Inner classes
-  // =============================================================
+  // ===== Inner classes =====
 
   public static enum Format {
 

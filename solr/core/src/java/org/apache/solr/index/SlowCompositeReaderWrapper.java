@@ -117,9 +117,8 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
           f -> {
             try {
               return MultiTerms.getTerms(in, f);
-            } catch (
-                IOException
-                    e) { // yuck!  ...sigh... checked exceptions with built-in lambdas are a pain
+            } catch (IOException e) {
+              // yuck!  ...sigh... checked exceptions with built-in lambdas are a pain
               throw new RuntimeException("unwrapMe", e);
             }
           });

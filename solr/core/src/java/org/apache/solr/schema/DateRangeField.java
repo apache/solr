@@ -157,9 +157,8 @@ public class DateRangeField
       String endStr,
       boolean minInclusive,
       boolean maxInclusive) {
-    if (parser
-        == null) { // null when invoked by SimpleFacets.  But getQueryFromSpatialArgs expects to get
-      // localParams.
+    // null when invoked by SimpleFacets. But getQueryFromSpatialArgs expects to get localParams.
+    if (parser == null) {
       final SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
       parser =
           new QParser("", null, requestInfo.getReq().getParams(), requestInfo.getReq()) {

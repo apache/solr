@@ -159,9 +159,8 @@ public class SchemaManager {
     }
     if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
       // Don't block further schema updates while waiting for a pending update to propagate to other
-      // replicas.
-      // This reduces the likelihood of a (time-limited) distributed deadlock during concurrent
-      // schema updates.
+      // replicas. This reduces the likelihood of a (time-limited) distributed deadlock during
+      // concurrent schema updates.
       waitForOtherReplicasToUpdate(timeOut, latestVersion);
     }
     if (errors.isEmpty() && timeOut.hasTimedOut()) {
@@ -216,8 +215,8 @@ public class SchemaManager {
         String src = op.getStr(SOURCE);
         List<String> dests = op.getStrs(DESTINATION);
 
-        int maxChars =
-            CopyField.UNLIMITED; // If maxChars is not specified, there is no limit on copied chars
+        // If maxChars is not specified, there is no limit on copied chars
+        int maxChars = CopyField.UNLIMITED;
         String maxCharsStr = op.getStr(MAX_CHARS, null);
         if (null != maxCharsStr) {
           try {

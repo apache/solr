@@ -82,9 +82,8 @@ public class SortedIntDocSet extends DocSet {
 
     // Since the majority of probes should be misses, we'll already be above the last probe
     // and shouldn't need to move larger than the step size on average to step over our target (and
-    // thus lower
-    // the high upper bound a lot.)... but if we don't go over our target, it's a big miss... so
-    // double it.
+    // thus lower the high upper bound a lot.)... but if we don't go over our target, it's a big
+    // miss... so double it.
     step = step + step;
 
     // FUTURE: come up with a density such that target * density == likely position?
@@ -673,8 +672,8 @@ public class SortedIntDocSet extends DocSet {
       int lastLimitDoc = docs[0]; // docs.length != 0
       for (LeafReaderContext lrc : leaves) {
         // sanity check that initial `lastLimit*` values are valid (and consequently that our
-        // initial
-        // setting of `startIdx` for context.ord==0 won't inadvertently include invalid docs).
+        // initial setting of `startIdx` for context.ord==0 won't inadvertently include invalid
+        // docs).
         assert lrc.ord != 0 || lastLimitDoc >= lrc.docBase;
         final int max =
             lrc.docBase + lrc.reader().maxDoc(); // one past the max doc in this segment.
@@ -698,9 +697,8 @@ public class SortedIntDocSet extends DocSet {
     if (docs.length == 0 || context.reader().maxDoc() < 1) {
       // empty docset or entirely empty segment (verified that the latter actually happens)
       // NOTE: wrt the "empty docset" case, this is not just an optimization; this shortcircuits
-      // also
-      // to prevent the static DocSet.EmptyLazyHolder.INSTANCE from having cachedOrdIdxMap initiated
-      // across different IndexReaders.
+      // also to prevent the static DocSet.EmptyLazyHolder.INSTANCE from having cachedOrdIdxMap
+      // initiated across different IndexReaders.
       return null;
     }
 

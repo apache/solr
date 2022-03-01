@@ -244,10 +244,8 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     // We don't care about the power here,
     // b/c we are always in a rectangular coordinate system, so any norm can be used by
     // using the definition of sine
-    distance =
-        SIN_PI_DIV_4
-            * distance; // sin(Pi/4) == (2^0.5)/2 == opp/hyp == opp/distance, solve for opp,
-    // similarly for cosine
+    // sin(Pi/4) == (2^0.5)/2 == opp/hyp == opp/distance, solve for opp, similarly for cosine
+    distance = SIN_PI_DIV_4 * distance;
     for (int i = 0; i < center.length; i++) {
       result[i] = center[i] + distance;
     }
@@ -271,12 +269,12 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     int end = idx;
     int start = 0;
     int i = 0;
-    if (idx == -1
-        && dimension == 1
-        && externalVal.length() > 0) { // we have a single point, dimension better be 1
+    // we have a single point, dimension better be 1
+    if (idx == -1 && dimension == 1 && externalVal.length() > 0) {
       out[0] = externalVal.trim();
       i = 1;
-    } else if (idx > 0) { // if it is zero, that is an error
+    } else if (idx > 0) {
+      // if it is zero, that is an error
       // Parse out a comma separated list of values, as in: 73.5,89.2,7773.4
       for (; i < dimension; i++) {
         while (start < end && externalVal.charAt(start) == ' ') start++;
@@ -310,8 +308,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
   @Override
   public double getSphereRadius() {
     // This won't likely be used. You should probably be using LatLonPointSpatialField instead if
-    // you felt the need for this.
-    // This is here just for backward compatibility reasons.
+    // you felt the need for this. This is here just for backward compatibility reasons.
     return DistanceUtils.EARTH_MEAN_RADIUS_KM;
   }
 }

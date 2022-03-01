@@ -264,9 +264,8 @@ public class PackageManager implements Closeable {
   @SuppressWarnings({"unchecked"})
   public Map<String, SolrPackageInstance> getPackagesDeployedAsClusterLevelPlugins() {
     Map<String, String> packageVersions = new HashMap<>();
-    MultiValuedMap<String, PluginMeta> packagePlugins =
-        new HashSetValuedHashMap<>(); // map of package name to multiple values of pluginMeta
-    // (Map<String, String>)
+    // map of package name to multiple values of pluginMeta(Map<String, String>)
+    MultiValuedMap<String, PluginMeta> packagePlugins = new HashSetValuedHashMap<>();
     Map<String, Object> result;
     try {
       result =
@@ -277,10 +276,8 @@ public class PackageManager implements Closeable {
                   Utils.JSONCONSUMER);
     } catch (SolrException ex) {
       if (ex.code() == ErrorCode.NOT_FOUND.code) {
-        result =
-            Collections
-                .emptyMap(); // Cluster props doesn't exist, that means there are no cluster level
-        // plugins installed.
+        // Cluster props doesn't exist, that means there are no cluster level plugins installed.
+        result = Collections.emptyMap();
       } else {
         throw ex;
       }
@@ -386,8 +383,8 @@ public class PackageManager implements Closeable {
       boolean noprompt,
       List<String> collections,
       String[] overrides) {
-    List<String> previouslyDeployed =
-        new ArrayList<>(); // collections where package is already deployed in
+    // collections where package is already deployed in
+    List<String> previouslyDeployed = new ArrayList<>();
     for (String collection : collections) {
       SolrPackageInstance deployedPackage =
           getPackagesDeployed(collection).get(packageInstance.name);
@@ -577,8 +574,8 @@ public class PackageManager implements Closeable {
         for (PluginMeta pluginMeta : (List<PluginMeta>) deployedPackage.getCustomData()) {
           PackageUtils.printGreen("Updating this plugin: " + pluginMeta);
           try {
-            pluginMeta.version =
-                packageInstance.version; // just update the version, let the other metadata same
+            // just update the version, let the other metadata same
+            pluginMeta.version = packageInstance.version;
             String postBody = "{\"update\": " + Utils.toJSONString(pluginMeta) + "}";
             PackageUtils.printGreen(
                 "Posting " + postBody + " to " + PackageUtils.CLUSTER_PLUGINS_PATH);
@@ -926,10 +923,9 @@ public class PackageManager implements Closeable {
       throws SolrException {
     ensureCollectionsExist(Arrays.asList(collections));
 
-    boolean pegToLatest =
-        PackageUtils.LATEST.equals(
-            version); // User wants to peg this package's version to the latest installed (for
-    // auto-update, i.e. no explicit deploy step)
+    // User wants to peg this package's version to the latest installed (for auto-update, i.e. no
+    // explicit deploy step)
+    boolean pegToLatest = PackageUtils.LATEST.equals(version);
     SolrPackageInstance packageInstance = getPackageInstance(packageName, version);
     if (packageInstance == null) {
       PackageUtils.printRed(
@@ -1088,13 +1084,11 @@ public class PackageManager implements Closeable {
 
       // Set the package version in the collection's parameters
       try {
+        // Is it better to "unset"? If so, build support in params API for "unset"
         SolrCLI.postJsonToSolr(
             solrClient,
             PackageUtils.getCollectionParamsPath(collection),
-            "{set: {PKG_VERSIONS: {"
-                + packageName
-                + ": null}}}"); // Is it better to "unset"? If so, build support in params API for
-        // "unset"
+            "{set: {PKG_VERSIONS: {" + packageName + ": null}}}");
         SolrCLI.postJsonToSolr(
             solrClient, PackageUtils.PACKAGE_PATH, "{\"refresh\": \"" + packageName + "\"}");
       } catch (Exception ex) {

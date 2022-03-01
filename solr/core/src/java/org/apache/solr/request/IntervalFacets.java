@@ -291,8 +291,8 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     for (int subIndex = 0; subIndex < leaves.size(); subIndex++) {
       LeafReaderContext leaf = leaves.get(subIndex);
-      final DocIdSetIterator disi =
-          docs.iterator(leaf); // solr docsets already exclude any deleted docs
+      // solr docsets already exclude any deleted docs
+      final DocIdSetIterator disi = docs.iterator(leaf);
       if (disi != null) {
         if (schemaField.multiValued()) {
           SortedSetDocValues sub = leaf.reader().getSortedSetDocValues(schemaField.getName());

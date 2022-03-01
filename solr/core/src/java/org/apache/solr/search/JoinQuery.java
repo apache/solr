@@ -57,8 +57,9 @@ import org.apache.solr.util.RefCounted;
 class JoinQuery extends Query {
   String fromField;
   String toField;
-  String fromIndex; // TODO: name is missleading here compared to JoinQParserPlugin usage - here it
-  // must be a core name
+  // TODO: name is missleading here compared to JoinQParserPlugin usage - here it must be a core
+  // name
+  String fromIndex;
   Query q;
   long fromCoreOpenTime;
 
@@ -127,15 +128,13 @@ class JoinQuery extends Query {
 
         if (info.getReq().getCore() == fromCore) {
           // if this is the same core, use the searcher passed in... otherwise we could be warming
-          // and
-          // get an older searcher from the core.
+          // and get an older searcher from the core.
           fromSearcher = searcher;
         } else {
           // This could block if there is a static warming query with a join in it, and if
-          // useColdSearcher is true.
-          // Deadlock could result if two cores both had useColdSearcher and had joins that used
-          // eachother.
-          // This would be very predictable though (should happen every time if misconfigured)
+          // useColdSearcher is true. Deadlock could result if two cores both had useColdSearcher
+          // and had joins that used each other. This would be very predictable though (should
+          // happen every time if misconfigured)
           fromRef = fromCore.getSearcher(false, true, null);
 
           // be careful not to do anything with this searcher that requires the thread local

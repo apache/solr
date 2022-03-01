@@ -77,8 +77,7 @@ import org.locationtech.spatial4j.shape.Shape;
 public class BBoxStrategy extends SpatialStrategy {
 
   // note: we use a FieldType to articulate the options we want on the field.  We don't use it as-is
-  // with a Field, we
-  //  create more than one Field.
+  // with a Field, we create more than one Field.
 
   /** pointValues, docValues, and nothing else. */
   public static FieldType DEFAULT_FIELDTYPE;
@@ -121,8 +120,8 @@ public class BBoxStrategy extends SpatialStrategy {
   final String field_maxY;
   final String field_xdl; // crosses dateline
 
-  private final FieldType
-      optionsFieldType; // from constructor; aggregate field type used to express all options
+  // from constructor; aggregate field type used to express all options
+  private final FieldType optionsFieldType;
   private final int fieldsLen;
   private final boolean hasStored;
   private final boolean hasDocVals;

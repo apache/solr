@@ -150,12 +150,10 @@ public class DocsStreamer implements Iterator<SolrDocument> {
             ? new SolrDocument()
             : (masked = new BinaryResponseWriter.MaskCharSeqSolrDocument());
 
-    // NOTE: it would be tempting to try and optimize this to loop over fieldNamesNeeded
-    // when it's smaller then the IndexableField[] in the Document -- but that's actually *less*
-    // effecient
+    // NOTE: it would be tempting to try and optimize this to loop over fieldNamesNeeded when it's
+    // smaller then the IndexableField[] in the Document -- but that's actually *less* effecient
     // since Document.getFields(String) does a full (internal) iteration over the full
-    // IndexableField[]
-    // see SOLR-11891
+    // IndexableField[]. see SOLR-11891
     for (IndexableField f : doc.getFields()) {
       final String fname = f.name();
       if (null == fieldNamesNeeded || fieldNamesNeeded.contains(fname)) {

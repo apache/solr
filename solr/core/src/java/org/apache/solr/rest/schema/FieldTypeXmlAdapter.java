@@ -157,8 +157,8 @@ public class FieldTypeXmlAdapter {
 
       if (filters != null) appendFilterElements(doc, analyzerElem, "filter", filters);
 
-    } else { // When analyzer class is specified: char filters, tokenizers, and filters are
-      // disallowed
+    } else {
+      // When analyzer class is specified: char filters, tokenizers, and filters are disallowed
       if (charFilters != null)
         throw new SolrException(
             ErrorCode.BAD_REQUEST,

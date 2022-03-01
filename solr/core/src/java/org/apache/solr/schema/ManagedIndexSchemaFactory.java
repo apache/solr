@@ -465,8 +465,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         // some other node already started the upgrade, or an error occurred - bail out
         return;
       }
-      schema.persistManagedSchemaToZooKeeper(
-          true); // Only create, don't update it if it already exists
+      // Only create, don't update it if it already exists
+      schema.persistManagedSchemaToZooKeeper(true);
 
       // After successfully persisting the managed schema, rename the non-managed
       // schema znode by appending UPGRADED_SCHEMA_EXTENSION to its name.

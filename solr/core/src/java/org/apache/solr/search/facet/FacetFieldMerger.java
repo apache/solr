@@ -33,8 +33,9 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
 
   // LinkedHashMap<Object,FacetBucket> buckets = new LinkedHashMap<>();
   // List<FacetBucket> sortedBuckets;
-  int numReturnedBuckets; // the number of buckets in the bucket lists returned from all of the
-  // shards
+
+  // the number of buckets in the bucket lists returned from all of the shards
+  int numReturnedBuckets;
 
   public FacetFieldMerger(FacetField freq) {
     super(freq);

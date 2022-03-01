@@ -55,8 +55,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   SlotAcc indexOrderAcc;
   int effectiveMincount;
   final boolean singlePassSlotAccCollection;
-  final FacetRequest.FacetSort
-      sort; // never null (may be the user's requested sort, or the prelim_sort)
+  // never null (may be the user's requested sort, or the prelim_sort)
+  final FacetRequest.FacetSort sort;
   final FacetRequest.FacetSort resort; // typically null (unless the user specified a prelim_sort)
 
   final Map<String, AggValueSource> deferredAggs = new HashMap<String, AggValueSource>();
@@ -68,17 +68,18 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   // collectAcc would be used to accumulate all buckets, and sortAcc would be used to sort those
   // buckets.
   //
-  SlotAcc
-      collectAcc; // Accumulator to collect across entire domain (in addition to the countAcc).  May
-  // be null.
-  SlotAcc
-      sortAcc; // Accumulator to use for sorting *only* (i.e. not used for collection). May be an
-  // alias of countAcc, collectAcc, or indexOrderAcc
-  SlotAcc[] otherAccs; // Accumulators that do not need to be calculated across all buckets.
 
-  SpecialSlotAcc
-      allBucketsAcc; // this can internally refer to otherAccs and/or collectAcc. setNextReader
-  // should be called on otherAccs directly if they exist.
+  // Accumulator to collect across entire domain (in addition to the countAcc). May be null.
+  SlotAcc collectAcc;
+  // Accumulator to use for sorting *only* (i.e. not used for collection). May be an alias of
+  // countAcc, collectAcc, or indexOrderAcc
+  SlotAcc sortAcc;
+  // Accumulators that do not need to be calculated across all buckets.
+  SlotAcc[] otherAccs;
+
+  // this can internally refer to otherAccs and/or collectAcc. setNextReader should be called on
+  // otherAccs directly if they exist.
+  SpecialSlotAcc allBucketsAcc;
 
   FacetFieldProcessor(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq);
@@ -97,8 +98,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
       if (fcontext.isShard()) {
         // for a shard request, we can ignore the users requested "sort" and focus solely on the
-        // prelim_sort
-        // the merger will worry about the final sorting -- we don't need to resort anything...
+        // prelim_sort the merger will worry about the final sorting -- we don't need to resort
+        // anything...
         this.sort = freq.prelim_sort;
         this.resort = null;
 
@@ -110,8 +111,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
           this.resort = null;
         } else {
           // for a non-shard request, we will use the prelim_sort as our initial sort option if it
-          // exists
-          // then later we will re-sort on the final desired sort...
+          // exists then later we will re-sort on the final desired sort...
           this.sort = freq.prelim_sort;
           this.resort = freq.sort;
         }
@@ -199,8 +199,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     if (this.singlePassSlotAccCollection) {
       // If we are going to return all buckets, and if there are no subfacets (that would need a
-      // domain),
-      // then don't defer any aggregation calculations to a second phase.
+      // domain), then don't defer any aggregation calculations to a second phase.
       // This way we can avoid calculating domains for each bucket, which can be expensive.
 
       // TODO: BEGIN: why can't we just call createAccs here ?
@@ -340,12 +339,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         if (freq.overrequest > 0) {
           // NOTE: although _default_ distrib overrequest is disabled for the "index sort" case (see
           // below), we _do_ want to respect an _explicit_ `overrequest` value, if present.
-          // Overrequest
-          // is always relevant (regardless of prelim sort) for the `resort` case; but even in the
-          // case of
-          // "index sort, no resort", overrequest can be relevant in some edge cases of the "shard"
-          // case,
-          // where it can affect the behavior of `isBucketComplete()` (see SOLR-14595).
+          // Overrequest is always relevant (regardless of prelim sort) for the `resort` case; but
+          // even in the case of "index sort, no resort", overrequest can be relevant in some edge
+          // cases of the "shard" case, where it can affect the behavior of `isBucketComplete()`
+          // (see SOLR-14595).
           effectiveLimit += freq.overrequest;
         } else {
           switch (freq.overrequest) {
@@ -356,11 +353,9 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
               // default
               if (!"index".equals(this.sort.sortVariable)) {
                 // NOTE: even for distrib requests, `overrequest` is not directly relevant for
-                // "index" sort, hence
-                // there is no default/implicit overrequest for "index sort" (even if `resort` is
-                // also specified --
-                // overrequest that is exclusively for `resort` must be explicit, even in a distrib
-                // context)
+                // "index" sort, hence there is no default/implicit overrequest for "index sort"
+                // (even if `resort` is also specified -- overrequest that is exclusively for
+                // `resort` must be explicit, even in a distrib context)
                 effectiveLimit = applyDefaultOverrequest(freq.offset, effectiveLimit);
               }
               break;
@@ -417,9 +412,11 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       if (effectiveMincount > 0) {
         long count = countAcc.getCount(slotNum);
         if (count < effectiveMincount) {
-          if (count > 0)
-            numBuckets++; // Still increment numBuckets as long as we have some count.  This is for
-          // consistency between distrib and non-distrib mode.
+          if (count > 0) {
+            // Still increment numBuckets as long as we have some count. This is for
+            // consistency between distrib and non-distrib mode.
+            numBuckets++;
+          }
           continue;
         }
       }
@@ -428,8 +425,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
       if (bottom != null) {
         shardHasMoreBuckets = true;
-        scratchSlot.slot =
-            slotNum; // scratchSlot is only used to hold this slotNum for the following line
+        // scratchSlot is only used to hold this slotNum for the following line
+        scratchSlot.slot = slotNum;
         if (orderPredicate.test(bottom, scratchSlot)) {
           bottom.slot = slotNum;
           bottom = queue.updateTop();
@@ -643,8 +640,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     SlotAcc resortAcc = getTrivialSortingSlotAcc(this.resort);
     if (null != resortAcc) {
       // resorting on count or index is rare (and not particularly useful) but if someone chooses to
-      // do
-      // either of these we don't need to re-collect ... instead just re-sort the slots based on
+      // do either of these we don't need to re-collect ... instead just re-sort the slots based on
       // the previously collected values using the originally collected slot numbers...
       if (resortAcc.equals(countAcc)) {
         final Comparator<Slot> comparator =
@@ -1043,22 +1039,15 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   protected SimpleOrderedMap<Object> refineFacets() throws IOException {
     boolean skipThisFacet = (fcontext.flags & SKIP_FACET) != 0;
 
-    List leaves =
-        asList(
-            fcontext.facetInfo.get(
-                "_l")); // We have not seen this bucket: do full faceting for this bucket, including
-    // all sub-facets
-    List<List> skip =
-        asList(
-            fcontext.facetInfo.get(
-                "_s")); // We have seen this bucket, so skip stats on it, and skip sub-facets except
+    // We have not seen this bucket: do full faceting for this bucket, including all sub-facets
+    List leaves = asList(fcontext.facetInfo.get("_l"));
+    // We have seen this bucket, so skip stats on it, and skip sub-facets except
     // for the specified sub-facets that should calculate specified buckets.
-    List<List> partial =
-        asList(
-            fcontext.facetInfo.get(
-                "_p")); // We have not seen this bucket, do full faceting for this bucket, and most
+    List<List> skip = asList(fcontext.facetInfo.get("_s"));
+    // We have not seen this bucket, do full faceting for this bucket, and most
     // sub-facets... but some sub-facets are partial and should only visit
     // specified buckets.
+    List<List> partial = asList(fcontext.facetInfo.get("_p"));
 
     // For leaf refinements, we do full faceting for each leaf bucket.  Any sub-facets of these
     // buckets will be fully evaluated.  Because of this, we should never
@@ -1125,9 +1114,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       Object bucketVal, boolean skip, Map<String, Object> facetInfo) throws IOException {
     SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
     FieldType ft = sf.getType();
-    bucketVal =
-        ft.toNativeType(
-            bucketVal); // refinement info passed in as JSON will cause int->long and float->double
+    // refinement info passed in as JSON will cause int->long and float->double
+    bucketVal = ft.toNativeType(bucketVal);
     bucket.add("val", bucketVal);
 
     // fieldQuery currently relies on a string input of the value...
