@@ -24,15 +24,12 @@ package org.apache.solr.handler.tagger;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @lucene.spi {@value #NAME}
- */
+/** @lucene.spi {@value #NAME} */
 public class WordLengthTaggingFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
@@ -53,7 +50,6 @@ public class WordLengthTaggingFilterFactory extends TokenFilterFactory {
         minLength = Integer.parseInt(value.toString());
       } catch (NumberFormatException e) {
         log.warn("Unable to parse minLength from value 'minLength=\"{}\"'", value);
-
       }
     }
     if (minLength <= 0) {
@@ -74,5 +70,4 @@ public class WordLengthTaggingFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new WordLengthTaggingFilter(input, minLength);
   }
-
 }

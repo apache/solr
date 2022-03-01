@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -47,14 +46,14 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private boolean waitForRuleToExpire(String collection, String shard, String splitKey, long finishTime) throws KeeperException, InterruptedException, SolrServerException, IOException {
+  private boolean waitForRuleToExpire(
+      String collection, String shard, String splitKey, long finishTime)
+      throws KeeperException, InterruptedException, SolrServerException, IOException {
     DocCollection state;
     Slice slice;
     boolean ruleRemoved = false;
@@ -63,7 +62,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collection);
       state = getCollectionState(collection);
       slice = state.getSlice(shard);
-      Map<String,RoutingRule> routingRules = slice.getRoutingRules();
+      Map<String, RoutingRule> routingRules = slice.getRoutingRules();
       if (routingRules == null || routingRules.isEmpty() || !routingRules.containsKey(splitKey)) {
         ruleRemoved = true;
         break;
@@ -76,12 +75,14 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     return ruleRemoved;
   }
 
-  protected void invokeCollectionMigration(CollectionAdminRequest.AsyncCollectionAdminRequest request) throws IOException, SolrServerException, InterruptedException {
+  protected void invokeCollectionMigration(
+      CollectionAdminRequest.AsyncCollectionAdminRequest request)
+      throws IOException, SolrServerException, InterruptedException {
     request.processAndWait(cluster.getSolrClient(), 60000);
   }
 
   @Test
-  public void testMissingSplitKey() throws Exception  {
+  public void testMissingSplitKey() throws Exception {
     String sourceCollection = "testMissingSplitKey-source";
     CollectionAdminRequest.createCollection(sourceCollection, "conf", 1, 1)
         .process(cluster.getSolrClient());
@@ -89,41 +90,46 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1)
         .process(cluster.getSolrClient());
 
-    BaseHttpSolrClient.RemoteSolrException remoteSolrException = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-        "Expected an exception in case split.key is not specified", () -> {
-          CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "")
-              .setForwardTimeout(45)
-              .process(cluster.getSolrClient());
-        });
+    BaseHttpSolrClient.RemoteSolrException remoteSolrException =
+        expectThrows(
+            BaseHttpSolrClient.RemoteSolrException.class,
+            "Expected an exception in case split.key is not specified",
+            () -> {
+              CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "")
+                  .setForwardTimeout(45)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(remoteSolrException.getMessage().contains("split.key cannot be null or empty"));
   }
 
   @Test
-  public void multipleShardMigrateTest() throws Exception  {
+  public void multipleShardMigrateTest() throws Exception {
 
-    CollectionAdminRequest.createCollection("sourceCollection", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("sourceCollection", "conf", 2, 1)
+        .process(cluster.getSolrClient());
     cluster.getSolrClient().setDefaultCollection("sourceCollection");
 
     final String splitKey = "a";
     final int BIT_SEP = 1;
     final int[] splitKeyCount = new int[1];
-    for (int id = 0; id < 26*3; id++) {
-      String shardKey = "" + (char) ('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution
+    for (int id = 0; id < 26 * 3; id++) {
+      String shardKey =
+          "" + (char) ('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution
       String key = shardKey;
-      if (splitKey.equals(shardKey))  {
-        key += "/" + BIT_SEP;  // spread it over half the collection
+      if (splitKey.equals(shardKey)) {
+        key += "/" + BIT_SEP; // spread it over half the collection
       }
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", key + "!" + id);
       doc.addField("n_ti", id);
       cluster.getSolrClient().add("sourceCollection", doc);
-      if (splitKey.equals(shardKey))
-        splitKeyCount[0]++;
+      if (splitKey.equals(shardKey)) splitKeyCount[0]++;
     }
     assertTrue(splitKeyCount[0] > 0);
 
     String targetCollection = "migrate_multipleshardtest_targetCollection";
-    CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1)
+        .process(cluster.getSolrClient());
 
     Indexer indexer = new Indexer(cluster.getSolrClient(), splitKey, 1, 30);
     indexer.start();
@@ -133,11 +139,15 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     try (HttpSolrClient collectionClient = getHttpSolrClient(replica.getCoreUrl())) {
 
       SolrQuery solrQuery = new SolrQuery("*:*");
-      assertEquals("DocCount on target collection does not match", 0, collectionClient.query(solrQuery).getResults().getNumFound());
+      assertEquals(
+          "DocCount on target collection does not match",
+          0,
+          collectionClient.query(solrQuery).getResults().getNumFound());
 
       invokeCollectionMigration(
-          CollectionAdminRequest.migrateData("sourceCollection", targetCollection, splitKey + "/" + BIT_SEP + "!")
-          .setForwardTimeout(45));
+          CollectionAdminRequest.migrateData(
+                  "sourceCollection", targetCollection, splitKey + "/" + BIT_SEP + "!")
+              .setForwardTimeout(45));
 
       long finishTime = System.nanoTime();
 
@@ -156,20 +166,22 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       solrQuery = new SolrQuery("*:*").setRows(1000);
       QueryResponse response = collectionClient.query(solrQuery);
       log.info("Response from target collection: {}", response);
-      assertEquals("DocCount on target collection does not match", splitKeyCount[0], response.getResults().getNumFound());
+      assertEquals(
+          "DocCount on target collection does not match",
+          splitKeyCount[0],
+          response.getResults().getNumFound());
 
-      waitForState("Expected to find routing rule for split key " + splitKey, "sourceCollection", (n, c) -> {
-        if (c == null)
-          return false;
-        Slice shard = c.getSlice("shard2");
-        if (shard == null)
-          return false;
-        if (shard.getRoutingRules() == null || shard.getRoutingRules().isEmpty())
-          return false;
-        if (shard.getRoutingRules().get(splitKey + "!") == null)
-          return false;
-        return true;
-      });
+      waitForState(
+          "Expected to find routing rule for split key " + splitKey,
+          "sourceCollection",
+          (n, c) -> {
+            if (c == null) return false;
+            Slice shard = c.getSlice("shard2");
+            if (shard == null) return false;
+            if (shard.getRoutingRules() == null || shard.getRoutingRules().isEmpty()) return false;
+            if (shard.getRoutingRules().get(splitKey + "!") == null) return false;
+            return true;
+          });
 
       boolean ruleRemoved = waitForRuleToExpire("sourceCollection", "shard2", splitKey, finishTime);
       assertTrue("Routing rule was not expired", ruleRemoved);
@@ -193,15 +205,15 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     @Override
     public void run() {
       TimeOut timeout = new TimeOut(seconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      for (int id = 26*3; id < 500 && ! timeout.hasTimedOut(); id++) {
-        String shardKey = "" + (char) ('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution
+      for (int id = 26 * 3; id < 500 && !timeout.hasTimedOut(); id++) {
+        String shardKey =
+            "" + (char) ('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution
         SolrInputDocument doc = new SolrInputDocument();
         doc.addField("id", shardKey + (bitSep != -1 ? "/" + bitSep : "") + "!" + id);
         doc.addField("n_ti", id);
         try {
           cloudClient.add(doc);
-          if (splitKey.equals(shardKey))
-            splitKeyCount++;
+          if (splitKey.equals(shardKey)) splitKeyCount++;
         } catch (Exception e) {
           log.error("Exception while adding document id: {}", doc.getField("id"), e);
         }

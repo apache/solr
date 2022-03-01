@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
+
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,7 +72,6 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
     AYE_BEE.put("eight-theta", 0);
     AYE_BEE.put("nine-iota", 0);
 
-
     CEE = new LinkedHashMap<>();
     CEE.put("one", 0);
     CEE.put("two", 0);
@@ -89,33 +88,33 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
   @Test
   public void testScalability() throws Exception {
     Map<Token, LinkedHashMap<String, Integer>> lotsaSuggestions = new LinkedHashMap<>();
-    lotsaSuggestions.put(TOKEN_AYE , AYE);
-    lotsaSuggestions.put(TOKEN_BEE , BEE);
-    lotsaSuggestions.put(TOKEN_CEE , CEE);
-    
-    lotsaSuggestions.put(new Token("AYE1", 0, 3),  AYE);
-    lotsaSuggestions.put(new Token("BEE1", 4, 7),  BEE);
+    lotsaSuggestions.put(TOKEN_AYE, AYE);
+    lotsaSuggestions.put(TOKEN_BEE, BEE);
+    lotsaSuggestions.put(TOKEN_CEE, CEE);
+
+    lotsaSuggestions.put(new Token("AYE1", 0, 3), AYE);
+    lotsaSuggestions.put(new Token("BEE1", 4, 7), BEE);
     lotsaSuggestions.put(new Token("CEE1", 8, 11), CEE);
-    
-    lotsaSuggestions.put(new Token("AYE2", 0, 3),  AYE);
-    lotsaSuggestions.put(new Token("BEE2", 4, 7),  BEE);
+
+    lotsaSuggestions.put(new Token("AYE2", 0, 3), AYE);
+    lotsaSuggestions.put(new Token("BEE2", 4, 7), BEE);
     lotsaSuggestions.put(new Token("CEE2", 8, 11), CEE);
-    
-    lotsaSuggestions.put(new Token("AYE3", 0, 3),  AYE);
-    lotsaSuggestions.put(new Token("BEE3", 4, 7),  BEE);
+
+    lotsaSuggestions.put(new Token("AYE3", 0, 3), AYE);
+    lotsaSuggestions.put(new Token("BEE3", 4, 7), BEE);
     lotsaSuggestions.put(new Token("CEE3", 8, 11), CEE);
-    
-    lotsaSuggestions.put(new Token("AYE4", 0, 3),  AYE);
-    lotsaSuggestions.put(new Token("BEE4", 4, 7),  BEE);
+
+    lotsaSuggestions.put(new Token("AYE4", 0, 3), AYE);
+    lotsaSuggestions.put(new Token("BEE4", 4, 7), BEE);
     lotsaSuggestions.put(new Token("CEE4", 8, 11), CEE);
-    
+
     PossibilityIterator iter = new PossibilityIterator(lotsaSuggestions, 1000, 10000, false);
     int count = 0;
     while (iter.hasNext()) {
       PossibilityIterator.RankedSpellPossibility rsp = iter.next();
       count++;
     }
-    assertTrue(count==1000);
+    assertTrue(count == 1000);
 
     lotsaSuggestions.put(new Token("AYE_BEE1", 0, 7), AYE_BEE);
     lotsaSuggestions.put(new Token("AYE_BEE2", 0, 7), AYE_BEE);
@@ -123,33 +122,35 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
     lotsaSuggestions.put(new Token("AYE_BEE4", 0, 7), AYE_BEE);
     iter = new PossibilityIterator(lotsaSuggestions, 1000, 10000, true);
     count = 0;
-    while (iter.hasNext()) {      
+    while (iter.hasNext()) {
       PossibilityIterator.RankedSpellPossibility rsp = iter.next();
       count++;
     }
-    assertTrue(count<100);
+    assertTrue(count < 100);
   }
 
   @Test
   public void testSpellPossibilityIterator() throws Exception {
     Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<>();
-    suggestions.put(TOKEN_AYE , AYE);
-    suggestions.put(TOKEN_BEE , BEE);
-    suggestions.put(TOKEN_CEE , CEE);
-    
+    suggestions.put(TOKEN_AYE, AYE);
+    suggestions.put(TOKEN_BEE, BEE);
+    suggestions.put(TOKEN_CEE, CEE);
+
     PossibilityIterator iter = new PossibilityIterator(suggestions, 1000, 10000, false);
     int count = 0;
     while (iter.hasNext()) {
 
       PossibilityIterator.RankedSpellPossibility rsp = iter.next();
-      if(count==0) {
+      if (count == 0) {
         assertTrue("I".equals(rsp.corrections.get(0).getCorrection()));
         assertTrue("alpha".equals(rsp.corrections.get(1).getCorrection()));
         assertTrue("one".equals(rsp.corrections.get(2).getCorrection()));
       }
       count++;
     }
-    assertTrue(("Three maps (8*9*10) should return 720 iterations but instead returned " + count), count == 720);
+    assertTrue(
+        ("Three maps (8*9*10) should return 720 iterations but instead returned " + count),
+        count == 720);
 
     suggestions.remove(TOKEN_CEE);
     iter = new PossibilityIterator(suggestions, 100, 10000, false);
@@ -158,7 +159,8 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
       iter.next();
       count++;
     }
-    assertTrue(("Two maps (8*9) should return 72 iterations but instead returned " + count), count == 72);
+    assertTrue(
+        ("Two maps (8*9) should return 72 iterations but instead returned " + count), count == 72);
 
     suggestions.remove(TOKEN_BEE);
     iter = new PossibilityIterator(suggestions, 5, 10000, false);
@@ -177,7 +179,6 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
       count++;
     }
     assertTrue(("No maps should return 0 iterations but instead returned " + count), count == 0);
-
   }
 
   @Test
@@ -187,8 +188,9 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
     overlappingSuggestions.put(TOKEN_BEE, BEE);
     overlappingSuggestions.put(TOKEN_AYE_BEE, AYE_BEE);
     overlappingSuggestions.put(TOKEN_CEE, CEE);
-    
-    PossibilityIterator iter = new PossibilityIterator(overlappingSuggestions, Integer.MAX_VALUE, Integer.MAX_VALUE, true);
+
+    PossibilityIterator iter =
+        new PossibilityIterator(overlappingSuggestions, Integer.MAX_VALUE, Integer.MAX_VALUE, true);
     int aCount = 0;
     int abCount = 0;
     Set<PossibilityIterator.RankedSpellPossibility> dupChecker = new HashSet<>();
@@ -198,28 +200,28 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
       Token b = null;
       Token ab = null;
       Token c = null;
-      for(SpellCheckCorrection scc : rsp.corrections) {
-        if(scc.getOriginal().equals(TOKEN_AYE)) {
+      for (SpellCheckCorrection scc : rsp.corrections) {
+        if (scc.getOriginal().equals(TOKEN_AYE)) {
           a = scc.getOriginal();
-        } else if(scc.getOriginal().equals(TOKEN_BEE)) {
+        } else if (scc.getOriginal().equals(TOKEN_BEE)) {
           b = scc.getOriginal();
-        } else if(scc.getOriginal().equals(TOKEN_AYE_BEE)) {
+        } else if (scc.getOriginal().equals(TOKEN_AYE_BEE)) {
           ab = scc.getOriginal();
-        } else if(scc.getOriginal().equals(TOKEN_CEE)) {
+        } else if (scc.getOriginal().equals(TOKEN_CEE)) {
           c = scc.getOriginal();
-        }       
-        if(ab!=null) {
+        }
+        if (ab != null) {
           abCount++;
         } else {
           aCount++;
-        }       
+        }
       }
       assertTrue(c != null);
-      assertTrue(ab != null || (a!=null && b!=null));
-      assertTrue(ab == null || (a==null && b==null));
+      assertTrue(ab != null || (a != null && b != null));
+      assertTrue(ab == null || (a == null && b == null));
       assertTrue(dupChecker.add(rsp));
     }
-    assertTrue(aCount==2160);
-    assertTrue(abCount==180);
+    assertTrue(aCount == 2160);
+    assertTrue(abCount == 180);
   }
 }

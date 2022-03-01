@@ -17,6 +17,8 @@
 
 package org.apache.solr.update.processor;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +31,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -52,22 +53,22 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.UpdateCommand;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.Ignore;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
-@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13696")
-@Ignore  // don't try too run abstract base class
+@org.apache.lucene.util.LuceneTestCase.AwaitsFix(
+    bugUrl = "https://issues.apache.org/jira/browse/SOLR-13696")
+@Ignore // don't try too run abstract base class
 public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   private static final String intField = "integer_i";
 
-  void waitColAndAlias(String alias, String separator, final String suffix, int slices) throws InterruptedException {
+  void waitColAndAlias(String alias, String separator, final String suffix, int slices)
+      throws InterruptedException {
     // collection to exist
     String collection = alias + separator + suffix;
     waitCol(slices, collection);
@@ -81,14 +82,18 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       }
     }
     try {
-      DocCollection confirmCollection = cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollectionOrNull(collection);
-      assertNotNull("Unable to find collection we were waiting for after done waiting",confirmCollection);
+      DocCollection confirmCollection =
+          cluster
+              .getSolrClient()
+              .getClusterStateProvider()
+              .getClusterState()
+              .getCollectionOrNull(collection);
+      assertNotNull(
+          "Unable to find collection we were waiting for after done waiting", confirmCollection);
     } catch (IOException e) {
       fail("exception getting collection we were waiting for and have supposedly created already");
     }
   }
-
-
 
   private boolean haveCollection(String alias, String collection) {
     // separated into separate lines to make it easier to track down an NPE that occurred once
@@ -106,53 +111,79 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     return getSaferTestName();
   }
 
-  void createConfigSet(String configName) throws SolrServerException, IOException, InterruptedException {
+  void createConfigSet(String configName)
+      throws SolrServerException, IOException, InterruptedException {
     // First create a configSet
     // Then we create a collection with the name of the eventual config.
     // We configure it, and ultimately delete the collection, leaving a modified config-set behind.
     // Later we create the "real" collections referencing this modified config-set.
-    assertEquals(0, new ConfigSetAdminRequest.Create()
-        .setConfigSetName(configName)
-        .setBaseConfigSetName("_default")
-        .process(getSolrClient()).getStatus());
+    assertEquals(
+        0,
+        new ConfigSetAdminRequest.Create()
+            .setConfigSetName(configName)
+            .setBaseConfigSetName("_default")
+            .process(getSolrClient())
+            .getStatus());
 
     CollectionAdminRequest.createCollection(configName, configName, 1, 1).process(getSolrClient());
 
     // TODO: fix SOLR-13059, a where this wait isn't working ~0.3% of the time without the sleep.
-    waitCol(1,configName);
+    waitCol(1, configName);
     Thread.sleep(500); // YUCK but works (beasts 2500x20 ok vs failing in ~500x20 every time)
     // manipulate the config...
-    checkNoError(getSolrClient().request(new V2Request.Builder("/collections/" + configName + "/config")
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{" +
-            "  'set-user-property' : {'update.autoCreateFields':false}," + // no data driven
-            "  'add-updateprocessor' : {" +
-            "    'name':'tolerant', 'class':'solr.TolerantUpdateProcessorFactory'" +
-            "  }," +
-            // See TrackingUpdateProcessorFactory javadocs for details...
-            "  'add-updateprocessor' : {" +
-            "    'name':'tracking-testSliceRouting', 'class':'solr.TrackingUpdateProcessorFactory', 'group':'" + getTrackUpdatesGroupName() + "'" +
-            "  }," +
-            "  'add-updateprocessor' : {" + // for testing
-            "    'name':'inc', 'class':'" + IncrementURPFactory.class.getName() + "'," +
-            "    'fieldName':'" + getIntField() + "'" +
-            "  }," +
-            "}").build()));
+    checkNoError(
+        getSolrClient()
+            .request(
+                new V2Request.Builder("/collections/" + configName + "/config")
+                    .withMethod(SolrRequest.METHOD.POST)
+                    .withPayload(
+                        "{"
+                            + "  'set-user-property' : {'update.autoCreateFields':false},"
+                            + // no data driven
+                            "  'add-updateprocessor' : {"
+                            + "    'name':'tolerant', 'class':'solr.TolerantUpdateProcessorFactory'"
+                            + "  },"
+                            +
+                            // See TrackingUpdateProcessorFactory javadocs for details...
+                            "  'add-updateprocessor' : {"
+                            + "    'name':'tracking-testSliceRouting', 'class':'solr.TrackingUpdateProcessorFactory', 'group':'"
+                            + getTrackUpdatesGroupName()
+                            + "'"
+                            + "  },"
+                            + "  'add-updateprocessor' : {"
+                            + // for testing
+                            "    'name':'inc', 'class':'"
+                            + IncrementURPFactory.class.getName()
+                            + "',"
+                            + "    'fieldName':'"
+                            + getIntField()
+                            + "'"
+                            + "  },"
+                            + "}")
+                    .build()));
     // only sometimes test with "tolerant" URP:
     final String urpNames = "inc" + (random().nextBoolean() ? ",tolerant" : "");
-    checkNoError(getSolrClient().request(new V2Request.Builder("/collections/" + configName + "/config/params")
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{" +
-            "  'set' : {" +
-            "    '_UPDATE' : {'processor':'" + urpNames + "'}" +
-            "  }" +
-            "}").build()));
+    checkNoError(
+        getSolrClient()
+            .request(
+                new V2Request.Builder("/collections/" + configName + "/config/params")
+                    .withMethod(SolrRequest.METHOD.POST)
+                    .withPayload(
+                        "{"
+                            + "  'set' : {"
+                            + "    '_UPDATE' : {'processor':'"
+                            + urpNames
+                            + "'}"
+                            + "  }"
+                            + "}")
+                    .build()));
 
     CollectionAdminRequest.deleteCollection(configName).process(getSolrClient());
     assertTrue(
-        new ConfigSetAdminRequest.List().process(getSolrClient()).getConfigSets()
-            .contains(configName)
-    );
+        new ConfigSetAdminRequest.List()
+            .process(getSolrClient())
+            .getConfigSets()
+            .contains(configName));
   }
 
   String getIntField() {
@@ -167,10 +198,12 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   @SuppressWarnings("WeakerAccess")
   Set<String> getLeaderCoreNames(ClusterState clusterState) {
-    Set<String> leaders = new TreeSet<>(); // sorted just to make it easier to read when debugging...
+    Set<String> leaders =
+        new TreeSet<>(); // sorted just to make it easier to read when debugging...
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
     for (JettySolrRunner jettySolrRunner : jettySolrRunners) {
-      List<CoreDescriptor> coreDescriptors = jettySolrRunner.getCoreContainer().getCoreDescriptors();
+      List<CoreDescriptor> coreDescriptors =
+          jettySolrRunner.getCoreContainer().getCoreDescriptors();
       for (CoreDescriptor core : coreDescriptors) {
         String nodeName = jettySolrRunner.getNodeName();
         String collectionName = core.getCollectionName();
@@ -191,12 +224,22 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       ClusterStateProvider clusterStateProvider = cloudSolrClient.getClusterStateProvider();
       clusterStateProvider.connect();
       Set<String> leaders = getLeaderCoreNames(clusterStateProvider.getClusterState());
-      assertEquals("should have " + 3 * numShards + " leaders, " + numShards + " per collection", 3 * numShards, leaders.size());
+      assertEquals(
+          "should have " + 3 * numShards + " leaders, " + numShards + " per collection",
+          3 * numShards,
+          leaders.size());
 
       assertEquals(3, updateCommands.size());
       for (UpdateCommand updateCommand : updateCommands) {
-        String node = (String) updateCommand.getReq().getContext().get(TrackingUpdateProcessorFactory.REQUEST_NODE);
-        assertTrue("Update was not routed to a leader (" + node + " not in list of leaders" + leaders, leaders.contains(node));
+        String node =
+            (String)
+                updateCommand
+                    .getReq()
+                    .getContext()
+                    .get(TrackingUpdateProcessorFactory.REQUEST_NODE);
+        assertTrue(
+            "Update was not routed to a leader (" + node + " not in list of leaders" + leaders,
+            leaders.contains(node));
       }
     }
   }
@@ -215,12 +258,18 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         for (CoreDescriptor coreDescriptor : coreDescriptors) {
           String collectionName = coreDescriptor.getCollectionName();
           if (collection.equals(collectionName)) {
-            coreFooCount ++;
+            coreFooCount++;
           }
         }
       }
       if (NANOSECONDS.toSeconds(System.nanoTime() - start) > 60) {
-        fail("took over 60 seconds after collection creation to update aliases:"+collection + " core count=" + coreFooCount + " was looking for " + count);
+        fail(
+            "took over 60 seconds after collection creation to update aliases:"
+                + collection
+                + " core count="
+                + coreFooCount
+                + " was looking for "
+                + count);
       } else {
         try {
           Thread.sleep(500);
@@ -229,17 +278,18 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
           fail(e.getMessage());
         }
       }
-    } while(coreFooCount != count);
+    } while (coreFooCount != count);
   }
 
-  public abstract String getAlias() ;
+  public abstract String getAlias();
 
-  public abstract CloudSolrClient getSolrClient() ;
-
+  public abstract CloudSolrClient getSolrClient();
 
   @SuppressWarnings("WeakerAccess")
   void waitCol(int slices, String collection) {
-    waitForState("waiting for collections to be created", collection,
+    waitForState(
+        "waiting for collections to be created",
+        collection,
         (liveNodes, collectionState) -> {
           if (collectionState == null) {
             // per predicate javadoc, this is what we get if the collection doesn't exist at all.
@@ -251,9 +301,12 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         });
   }
 
-  /** Adds these documents and commits, returning when they are committed.
-   * We randomly go about this in different ways. */
-  void addDocsAndCommit(boolean aliasOnly, SolrInputDocument... solrInputDocuments) throws Exception {
+  /**
+   * Adds these documents and commits, returning when they are committed. We randomly go about this
+   * in different ways.
+   */
+  void addDocsAndCommit(boolean aliasOnly, SolrInputDocument... solrInputDocuments)
+      throws Exception {
     // we assume all docs will be added (none too old/new to cause exception)
     Collections.shuffle(Arrays.asList(solrInputDocuments), random());
 
@@ -262,7 +315,11 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     List<String> collections = new ArrayList<>();
     collections.add(getAlias());
     if (!aliasOnly) {
-      collections.addAll(new CollectionAdminRequest.ListAliases().process(getSolrClient()).getAliasesAsLists().get(getAlias()));
+      collections.addAll(
+          new CollectionAdminRequest.ListAliases()
+              .process(getSolrClient())
+              .getAliasesAsLists()
+              .get(getAlias()));
     }
 
     int commitWithin = random().nextBoolean() ? -1 : 500; // if -1, we commit explicitly instead
@@ -272,8 +329,9 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       ExecutorService exec = null;
       try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
         try {
-          exec = ExecutorUtil.newMDCAwareFixedThreadPool(1 + random().nextInt(2),
-              new SolrNamedThreadFactory(getSaferTestName()));
+          exec =
+              ExecutorUtil.newMDCAwareFixedThreadPool(
+                  1 + random().nextInt(2), new SolrNamedThreadFactory(getSaferTestName()));
           List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
           for (SolrInputDocument solrInputDocument : solrInputDocuments) {
             String col = collections.get(random().nextInt(collections.size()));
@@ -304,8 +362,9 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       // check that it all got committed eventually
       String docsQ =
           "{!terms f=id}"
-          + Arrays.stream(solrInputDocuments).map(d -> d.getFieldValue("id").toString())
-              .collect(Collectors.joining(","));
+              + Arrays.stream(solrInputDocuments)
+                  .map(d -> d.getFieldValue("id").toString())
+                  .collect(Collectors.joining(","));
       int numDocs = queryNumDocs(docsQ);
       if (numDocs == solrInputDocuments.length) {
         System.err.println("Docs committed sooner than expected.  Bug or slow test env?");
@@ -313,14 +372,14 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       }
       // wait until it's committed
       Thread.sleep(commitWithin);
-      for (int idx = 0; idx < 100; ++idx) { // Loop for up to 10 seconds waiting for commit to catch up
+      // Loop for up to 10 seconds waiting for commit to catch up
+      for (int idx = 0; idx < 100; ++idx) {
         numDocs = queryNumDocs(docsQ);
         if (numDocs == solrInputDocuments.length) break;
         Thread.sleep(100);
       }
 
-      assertEquals("not committed.  Bug or a slow test?",
-          solrInputDocuments.length, numDocs);
+      assertEquals("not committed.  Bug or a slow test?", solrInputDocuments.length, numDocs);
     }
   }
 
@@ -328,19 +387,22 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     // use of TolerantUpdateProcessor can cause non-thrown "errors" that we need to check for
     @SuppressWarnings({"rawtypes"})
     List errors = (List) rsp.getResponseHeader().get("errors");
-    assertTrue("Expected no errors: " + errors,errors == null || errors.isEmpty());
+    assertTrue("Expected no errors: " + errors, errors == null || errors.isEmpty());
   }
 
   private int queryNumDocs(String q) throws SolrServerException, IOException {
-    return (int) getSolrClient().query(getAlias(), params("q", q, "rows", "0")).getResults().getNumFound();
+    return (int)
+        getSolrClient().query(getAlias(), params("q", q, "rows", "0")).getResults().getNumFound();
   }
 
   /** Adds the docs to Solr via {@link #getSolrClient()} with the params */
   @SuppressWarnings("SameParameterValue")
-  protected UpdateResponse add(String collection, Collection<SolrInputDocument> docs, SolrParams params) throws SolrServerException, IOException {
+  protected UpdateResponse add(
+      String collection, Collection<SolrInputDocument> docs, SolrParams params)
+      throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     if (params != null) {
-      req.setParams(new ModifiableSolrParams(params));// copy because will be modified
+      req.setParams(new ModifiableSolrParams(params)); // copy because will be modified
     }
     req.add(docs);
     return req.process(getSolrClient(), collection);
@@ -349,9 +411,10 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   public static class IncrementURPFactory extends FieldMutatingUpdateProcessorFactory {
 
     @Override
-    public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-      return FieldValueMutatingUpdateProcessor.valueMutator( getSelector(), next,
-          (src) -> Integer.valueOf(src.toString()) + 1);
+    public UpdateRequestProcessor getInstance(
+        SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+      return FieldValueMutatingUpdateProcessor.valueMutator(
+          getSelector(), next, (src) -> Integer.valueOf(src.toString()) + 1);
     }
   }
 }

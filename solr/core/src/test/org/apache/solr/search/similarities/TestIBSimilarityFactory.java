@@ -26,15 +26,13 @@ import org.apache.lucene.search.similarities.NormalizationH3;
 import org.apache.lucene.search.similarities.Similarity;
 import org.junit.BeforeClass;
 
-/**
- * Tests {@link IBSimilarityFactory}
- */
+/** Tests {@link IBSimilarityFactory} */
 public class TestIBSimilarityFactory extends BaseSimilarityTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-ib.xml");
+    initCore("solrconfig-basic.xml", "schema-ib.xml");
   }
-  
+
   /** spl/df/h2 with default parameters */
   public void test() throws Exception {
     Similarity sim = getSimilarity("text");
@@ -44,7 +42,7 @@ public class TestIBSimilarityFactory extends BaseSimilarityTestCase {
     assertEquals(LambdaDF.class, ib.getLambda().getClass());
     assertEquals(NormalizationH2.class, ib.getNormalization().getClass());
   }
-  
+
   /** ll/ttf/h3 with parametrized normalization */
   public void testParameters() throws Exception {
     Similarity sim = getSimilarity("text_params");

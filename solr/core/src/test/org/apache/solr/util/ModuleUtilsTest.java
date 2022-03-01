@@ -16,13 +16,12 @@
  */
 package org.apache.solr.util;
 
-import junit.framework.TestCase;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Set;
+import junit.framework.TestCase;
 
 public class ModuleUtilsTest extends TestCase {
   private Path mockRootDir;
@@ -46,8 +45,9 @@ public class ModuleUtilsTest extends TestCase {
   }
 
   public void testGetModuleLibPath() {
-    assertEquals(mockRootDir.resolve("modules")
-        .resolve("mod1").resolve("lib"), ModuleUtils.getModuleLibPath(mockRootDir, "mod1"));
+    assertEquals(
+        mockRootDir.resolve("modules").resolve("mod1").resolve("lib"),
+        ModuleUtils.getModuleLibPath(mockRootDir, "mod1"));
   }
 
   public void testResolveFromSyspropOrEnv() {
@@ -62,10 +62,14 @@ public class ModuleUtilsTest extends TestCase {
   }
 
   public void testResolveModules() {
-    assertEquals(Set.of("foo", "bar", "baz", "mod1"), ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("foo ,bar, baz,mod1"));
+    assertEquals(
+        Set.of("foo", "bar", "baz", "mod1"),
+        ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("foo ,bar, baz,mod1"));
     assertEquals(Collections.emptySet(), ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(""));
     System.setProperty("solr.modules", "foo ,bar, baz,mod1");
-    assertEquals(Set.of("foo", "bar", "baz", "mod1"), ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(null));
+    assertEquals(
+        Set.of("foo", "bar", "baz", "mod1"),
+        ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(null));
     System.clearProperty("solr.modules");
   }
 
