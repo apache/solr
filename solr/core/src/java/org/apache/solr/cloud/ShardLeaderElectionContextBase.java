@@ -96,10 +96,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         try {
           // We need to be careful and make sure we *only* delete our own leader registration node.
           // We do this by using a multi and ensuring the parent znode of the leader registration
-          // node
-          // matches the version we expect - there is a setData call that increments the parent's
-          // znode
-          // version whenever a leader registers.
+          // node matches the version we expect - there is a setData call that increments the
+          // parent's znode version whenever a leader registers.
           log.debug(
               "Removing leader registration node on cancel: {} {}",
               leaderPath,

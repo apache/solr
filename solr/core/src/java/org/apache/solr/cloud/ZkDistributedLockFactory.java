@@ -36,9 +36,8 @@ abstract class ZkDistributedLockFactory {
   protected DistributedLock doCreateLock(boolean isWriteLock, String lockPath) {
     try {
       // TODO optimize by first attempting to create the ZkDistributedLock without calling
-      // makeLockPath() and only call it
-      //  if the lock creation fails. This will be less costly on high contention (and slightly more
-      // on low contention)
+      // makeLockPath() and only call it if the lock creation fails. This will be less costly on
+      // high contention (and slightly more on low contention)
       makeLockPath(lockPath);
 
       return isWriteLock

@@ -158,10 +158,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
       if (isClosed) {
         // Solr is shutting down or the ZooKeeper session expired while waiting for replicas. If the
-        // later,
-        // we cannot be sure we are still the leader, so we should bail out. The OnReconnect handler
-        // will
-        // re-register the cores and handle a new leadership election.
+        // later, we cannot be sure we are still the leader, so we should bail out. The OnReconnect
+        // handler will re-register the cores and handle a new leadership election.
         return;
       }
 

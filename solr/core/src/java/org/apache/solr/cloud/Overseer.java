@@ -373,8 +373,7 @@ public class Overseer implements SolrCloseable {
             }
             fallbackQueueSize = processedNodes.size();
             // we should force write all pending updates because the next iteration might sleep
-            // until there
-            // are more items in the main queue
+            // until there are more items in the main queue
             clusterState = zkStateWriter.writePendingUpdates();
             // clean work queue
             stateUpdateQueue.remove(processedNodes);
@@ -735,9 +734,8 @@ public class Overseer implements SolrCloseable {
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
 
     // Below is the only non test usage of the "cluster state update" queue even when distributed
-    // cluster state updates are enabled.
-    // That queue is used to tell the Overseer to quit. As long as we have an Overseer, we need to
-    // support this.
+    // cluster state updates are enabled. That queue is used to tell the Overseer to quit. As long
+    // as we have an Overseer, we need to support this.
     OverseerNodePrioritizer overseerPrioritizer =
         new OverseerNodePrioritizer(reader, this, adminPath, shardHandler.getShardHandlerFactory());
     overseerCollectionConfigSetProcessor =
@@ -1179,8 +1177,7 @@ public class Overseer implements SolrCloseable {
 
   public void offerStateUpdate(byte[] data) throws KeeperException, InterruptedException {
     // When cluster state update is distributed, the Overseer cluster state update queue should only
-    // ever receive QUIT messages.
-    // These go to sendQuitToOverseer for execution path clarity.
+    // ever receive QUIT messages. These go to sendQuitToOverseer for execution path clarity.
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
       final ZkNodeProps message = ZkNodeProps.load(data);
       final String operation = message.getStr(QUEUE_OPERATION);

@@ -114,17 +114,15 @@ public class DistributedApiAsyncTracker {
     }
     try {
       // First create the persistent node, with no content. If that fails, it means the asyncId has
-      // been previously used
-      // and not yet cleared...
+      // been previously used and not yet cleared...
       if (!trackedAsyncTasks.putIfAbsent(asyncId, null)) {
         return false;
       }
 
       // ...then create the transient node. If the corresponding ephemeral node already exists, it
-      // means the persistent node
-      // was removed (maybe trackedAsyncTasks grew too large? It has a max size then evicts). We
-      // cannot then track the new
-      // provided asyncId, and have simply "revived" its persistent node...
+      // means the persistent node was removed (maybe trackedAsyncTasks grew too large? It has a max
+      // size then evicts). We cannot then track the new provided asyncId, and have simply "revived"
+      // its persistent node...
       try {
         inFlightAsyncTasks.createNewInFlightTask(asyncId);
         return true;
@@ -171,8 +169,7 @@ public class DistributedApiAsyncTracker {
       return;
     }
     // First update the persistent node with the execution result, only then remove the transient
-    // node
-    // (otherwise a status check might report the task in error)
+    // node (otherwise a status check might report the task in error)
     try {
       try {
         trackedAsyncTasks.put(asyncId, OverseerSolrResponseSerializer.serialize(solrResponse));
@@ -245,14 +242,13 @@ public class DistributedApiAsyncTracker {
     }
 
     // The task has failed, but there are two options: if response is null, it has failed because
-    // the node on which it was
-    // running has crashed. If it is not null, it has failed because the execution has failed.
-    // Because caller expects a non
-    // null response in any case, let's make up one if needed...
+    // the node on which it was running has crashed. If it is not null, it has failed because the
+    // execution has failed. Because caller expects a non null response in any case, let's make up
+    // one if needed...
     if (response == null) {
       // Node crash has removed the ephemeral node, but the command did not complete execution (or
-      // didn't even start it, who
-      // knows). We have a failure to report though so let's create a reasonable return response.
+      // didn't even start it, who knows). We have a failure to report though so let's create a
+      // reasonable return response.
       NamedList<Object> results = new NamedList<>();
       SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
       nl.add(

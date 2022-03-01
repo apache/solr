@@ -412,32 +412,27 @@ public class DistributedClusterStateUpdater {
       // Note we DO NOT track nor use the live nodes in the cluster state.
       // That may means the two abstractions (collection metadata vs. nodes) should be separated.
       // For now trying to diverge as little as possible from existing data structures and code
-      // given the need to
-      // support both the old way (Overseer) and new way (distributed) of handling cluster state
-      // update.
+      // given the need to support both the old way (Overseer) and new way (distributed) of handling
+      // cluster state update.
       final Set<String> liveNodes = Collections.emptySet();
 
       // Per Replica States updates are done before all other updates and not subject to the number
-      // of attempts of CAS
-      // made here, given they have their own CAS strategy and implementation (see
-      // PerReplicaStatesOps.persist()).
+      // of attempts of CAS made here, given they have their own CAS strategy and implementation
+      // (see PerReplicaStatesOps.persist()).
       boolean firstAttempt = true;
 
       // When there are multiple retries of state.json write and the cluster state gets updated over
-      // and over again with
-      // the changes done in the per replica states, we avoid refetching those multiple times.
+      // and over again with the changes done in the per replica states, we avoid refetching those
+      // multiple times.
       PerReplicaStates fetchedPerReplicaStates = null;
 
       // Later on (when Collection API commands are distributed) we will have to rely on the version
-      // of state.json
-      // to implement the replacement of Collection API locking. Then we should not blindly retry
-      // cluster state updates
-      // as we do here but instead intelligently fail (or retry completely) the Collection API call
-      // when seeing that
-      // state.json was changed by a concurrent command execution.
-      // The loop below is ok for distributing cluster state updates from Overseer to all nodes
-      // while Collection API
-      // commands are still executed on the Overseer and manage their locking the old fashioned way.
+      // of state.json to implement the replacement of Collection API locking. Then we should not
+      // blindly retry cluster state updates as we do here but instead intelligently fail (or retry
+      // completely) the Collection API call when seeing that state.json was changed by a concurrent
+      // command execution. The loop below is ok for distributing cluster state updates from
+      // Overseer to all nodes while Collection API commands are still executed on the Overseer and
+      // manage their locking the old fashioned way.
       for (int attempt = 0; attempt < CAS_MAX_ATTEMPTS; attempt++) {
         // Start by reading the current state.json (if this is an update).
         // TODO Eventually rethink the way each node manages and caches its copy of the cluster
@@ -451,12 +446,10 @@ public class DistributedClusterStateUpdater {
         }
 
         // Apply the desired changes. Note that the cluster state passed to the chain of mutators is
-        // totally up to date
-        // (it's read from ZK just above). So assumptions made in the mutators (like
-        // SliceMutator.removeReplica() deleting
-        // the whole collection if it's not found) are ok. Actually in the removeReplica case, the
-        // collection will always
-        // exist otherwise the call to fetchStateForCollection() above would have failed.
+        // totally up to date (it's read from ZK just above). So assumptions made in the mutators
+        // (like SliceMutator.removeReplica() deleting the whole collection if it's not found) are
+        // ok. Actually in the removeReplica case, the collection will always exist otherwise the
+        // call to fetchStateForCollection() above would have failed.
         updater.computeUpdates(initialClusterState, zkStateReader.getZkClient());
 
         ClusterState updatedState = updater.getUpdatedClusterState();
@@ -486,9 +479,8 @@ public class DistributedClusterStateUpdater {
             updatedState.getCollectionOrNull(updater.getCollectionName(), true);
 
         // If we did update per replica states and we're also updating state.json, update the
-        // content of state.json to reflect
-        // the changes made to replica states. Not strictly necessary (the state source of truth is
-        // in per replica states), but nice to have...
+        // content of state.json to reflect the changes made to replica states. Not strictly
+        // necessary (the state source of truth is in per replica states), but nice to have...
         if (allStatesOps != null) {
           if (docCollection != null) {
             // Fetch the per replica states updates done previously or skip fetching if we already
@@ -515,33 +507,25 @@ public class DistributedClusterStateUpdater {
           }
         }
         // We've tried to update an existing state.json and got a BadVersionException. We'll try
-        // again a few times.
-        // When only two threads compete, no point in waiting: if we lost this time we'll get it
-        // next time right away.
-        // But if more threads compete, then waiting a bit (random delay) can improve our chances.
-        // The delay should in
-        // theory grow as the number of concurrent threads attempting updates increase, but we don't
-        // know that number, so
-        // doing exponential backoff instead.
-        // With "per replica states" collections, concurrent attempts of even just two threads are
-        // expected to be extremely rare.
+        // again a few times. When only two threads compete, no point in waiting: if we lost this
+        // time we'll get it next time right away. But if more threads compete, then waiting a bit
+        // (random delay) can improve our chances. The delay should in theory grow as the number of
+        // concurrent threads attempting updates increase, but we don't know that number, so doing
+        // exponential backoff instead. With "per replica states" collections, concurrent attempts
+        // of even just two threads are expected to be extremely rare.
         Thread.sleep(
             CollectionHandlingUtils.RANDOM.nextInt(
                 attempt < 13 ? 1 << attempt : 1 << 13)); // max wait 2^13ms=8.192 sec
       }
 
       // We made quite a few attempts but failed repeatedly. This is pretty bad but we can't loop
-      // trying forever.
-      // Offering a job to the Overseer wouldn't usually fail if the ZK queue can be written to (but
-      // the Overseer can then
-      // loop forever attempting the update).
-      // We do want whoever called us to fail right away rather than to wait for a cluster change
-      // and timeout because it
-      // didn't happen. Likely need to review call by call what is the appropriate behaviour,
-      // especially once Collection
-      // API is distributed (because then the Collection API call will fail if the underlying
-      // cluster state update cannot
-      // be done, and that's a desirable thing).
+      // trying forever. Offering a job to the Overseer wouldn't usually fail if the ZK queue can be
+      // written to (but the Overseer can then loop forever attempting the update). We do want
+      // whoever called us to fail right away rather than to wait for a cluster change and timeout
+      // because it didn't happen. Likely need to review call by call what is the appropriate
+      // behaviour, especially once Collection API is distributed (because then the Collection API
+      // call will fail if the underlying cluster state update cannot be done, and that's a
+      // desirable thing).
       throw new KeeperException.BadVersionException(
           ZkStateReader.getCollectionPath(updater.getCollectionName()));
     }
@@ -577,16 +561,13 @@ public class DistributedClusterStateUpdater {
         // We do not have a collection znode version to test we delete the right version of
         // state.json. But this doesn't really matter:
         // if we had one, and the delete failed (because state.json got updated in the meantime), we
-        // would re-read the collection
-        // state, update our version, run the CAS delete again and it will pass. Which means that
-        // one way or another, deletes are final.
-        // I hope nobody deletes a collection then creates a new one with the same name immediately
-        // (although the creation should fail
-        // if the znode still exists, so the creation would only succeed after the delete made it,
-        // and we're ok).
+        // would re-read the collection state, update our version, run the CAS delete again and it
+        // will pass. Which means that one way or another, deletes are final. I hope nobody deletes
+        // a collection then creates a new one with the same name immediately (although the creation
+        // should fail if the znode still exists, so the creation would only succeed after the
+        // delete made it, and we're ok).
         // With Overseer based updates the same behavior can be observed: a collection update is
-        // enqueued followed by the
-        // collection delete before the update was executed.
+        // enqueued followed by the collection delete before the update was executed.
         log.debug("going to recursively delete state.json at {}", jsonPath);
         zkStateReader.getZkClient().clean(jsonPath);
       } else {
@@ -821,12 +802,11 @@ public class DistributedClusterStateUpdater {
             }
           } catch (Exception e) {
             // Seems weird to skip rather than fail, but that's what Overseer is doing (see
-            // ClusterStateUpdater.processQueueItem()).
-            // Maybe in the new distributed update world we should make the caller fail? (something
-            // Overseer cluster state updater can't do)
-            // To be reconsidered once Collection API commands are distributed because then cluster
-            // updates are done synchronously and
-            // have the opportunity to make the Collection API call fail directly.
+            // ClusterStateUpdater.processQueueItem()). Maybe in the new distributed update world we
+            // should make the caller fail? (something Overseer cluster state updater can't do) To
+            // be reconsidered once Collection API commands are distributed because then cluster
+            // updates are done synchronously and have the opportunity to make the Collection API
+            // call fail directly.
             log.error(
                 "Distributed cluster state update could not process the current clusterstate state update message, skipping the message: {}",
                 message,
@@ -880,14 +860,11 @@ public class DistributedClusterStateUpdater {
 
       // TODO update stats here for the various commands executed successfully or not?
       // This would replace the stats about cluster state updates that the Collection API currently
-      // makes available using
-      // the OVERSEERSTATUS command, but obviously would be per node and will not have stats about
-      // queues (since there
-      // will be no queues). Would be useful in some tests though, for example
-      // TestSkipOverseerOperations.
-      // Probably better to rethink what types of stats are expected from a distributed system
-      // rather than trying to present
-      // those previously provided by a central server in the system (the Overseer).
+      // makes available using the OVERSEERSTATUS command, but obviously would be per node and will
+      // not have stats about queues (since there will be no queues). Would be useful in some tests
+      // though, for example TestSkipOverseerOperations. Probably better to rethink what types of
+      // stats are expected from a distributed system rather than trying to present those previously
+      // provided by a central server in the system (the Overseer).
     }
   }
 
@@ -915,22 +892,19 @@ public class DistributedClusterStateUpdater {
      */
     public static void executeNodeDownStateUpdate(String nodeName, ZkStateReader zkStateReader) {
       // This code does a version of what NodeMutator.downNode() is doing. We can't assume we have a
-      // cache of the collections,
-      // so we're going to read all of them from ZK, fetch the state.json for each and if it has any
-      // replicas on the
-      // failed node, do an update (conditional of course) of the state.json
+      // cache of the collections, so we're going to read all of them from ZK, fetch the state.json
+      // for each and if it has any replicas on the failed node, do an update (conditional of
+      // course) of the state.json
 
       // For Per Replica States collections there is still a need to read state.json, but the update
-      // of state.json is replaced
-      // by a few znode deletions and creations. Might be faster or slower overall, depending on the
-      // number of impacted
-      // replicas of such a collection and the total size of that collection's state.json.
+      // of state.json is replaced by a few znode deletions and creations. Might be faster or slower
+      // overall, depending on the number of impacted replicas of such a collection and the total
+      // size of that collection's state.json.
 
       // Note code here also has to duplicate some of the work done in ZkStateReader because
-      // ZkStateReader couples reading of
-      // the cluster state and maintaining a cached copy of the cluster state. Something likely to
-      // be refactored later (once
-      // Overseer is totally removed and Zookeeper access patterns become clearer).
+      // ZkStateReader couples reading of the cluster state and maintaining a cached copy of the
+      // cluster state. Something likely to be refactored later (once Overseer is totally removed
+      // and Zookeeper access patterns become clearer).
 
       log.debug("DownNode state change invoked for node: {}", nodeName);
 

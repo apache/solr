@@ -178,20 +178,17 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     String oldestItemInWorkQueue = null;
     // hasLeftOverItems - used for avoiding re-execution of async tasks that were processed by a
-    // previous Overseer.
-    // This variable is set in case there's any task found on the workQueue when the OCP starts up
-    // and
-    // the id for the queue tail is used as a marker to check for the task in completed/failed map
-    // in zk.
-    // Beyond the marker, all tasks can safely be assumed to have never been executed.
+    // previous Overseer. This variable is set in case there's any task found on the workQueue when
+    // the OCP starts up and the id for the queue tail is used as a marker to check for the task in
+    // completed/failed map in zk. Beyond the marker, all tasks can safely be assumed to have never
+    // been executed.
     boolean hasLeftOverItems = true;
 
     try {
       oldestItemInWorkQueue = workQueue.getTailId();
     } catch (KeeperException e) {
       // We don't need to handle this. This is just a fail-safe which comes in handy in skipping
-      // already processed
-      // async calls.
+      // already processed async calls.
       SolrException.log(log, "", e);
     } catch (AlreadyClosedException e) {
       return;
@@ -227,8 +224,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             new SolrNamedThreadFactory("OverseerThreadFactory"));
 
     // In OverseerCollectionMessageHandler, a new Session needs to be created for each new iteration
-    // over the tasks in the
-    // queue. Incrementing this id causes a new session to be created there.
+    // over the tasks in the queue. Incrementing this id causes a new session to be created there.
     long batchSessionId = 0;
 
     try {
@@ -283,24 +279,19 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             heads.addAll(newTasks);
           } else {
             // The sleep below slows down spinning when heads is full from previous work dispatch
-            // attempt below and no new
-            // tasks got executed (all executors are busy or all waiting tasks require locks
-            // currently held by executors).
+            // attempt below and no new tasks got executed (all executors are busy or all waiting
+            // tasks require locks currently held by executors).
             //
             // When heads is not full but no progress was made (no new work got dispatched in the
-            // for loop below), slowing down
-            // of the spinning is done by the wait time in the call to workQueue.peekTopN() above.
-            // (at least in theory because the method eventually called from there is
-            // ZkDistributedQueue.peekElements()
-            // and because it filters out entries that have just completed on a Runner thread in a
-            // different way than the
-            // predicate based filtering, it can return quickly without waiting the configured delay
-            // time. Therefore spinning
-            // can be observed, likely something to clean up at some point).
+            // for loop below), slowing down of the spinning is done by the wait time in the call to
+            // workQueue.peekTopN() above. (at least in theory because the method eventually called
+            // from there is ZkDistributedQueue.peekElements() and because it filters out entries
+            // that have just completed on a Runner thread in a different way than the predicate
+            // based filtering, it can return quickly without waiting the configured delay time.
+            // Therefore spinning can be observed, likely something to clean up at some point).
             //
             // If heads is not empty and new tasks appeared in the queue there's no delay,
-            // workQueue.peekTopN() above will
-            // return immediately.
+            // workQueue.peekTopN() above will return immediately.
             Thread.sleep(1000);
           }
 
@@ -311,9 +302,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           }
 
           // clear the blocked tasks, may get refilled below. Given blockedTasks can only get
-          // entries from heads and heads
-          // has at most MAX_BLOCKED_TASKS tasks, blockedTasks will never exceed MAX_BLOCKED_TASKS
-          // entries.
+          // entries from heads and heads has at most MAX_BLOCKED_TASKS tasks, blockedTasks will
+          // never exceed MAX_BLOCKED_TASKS entries.
           // Note blockedTasks can't be cleared too early as it is used in the excludedTasks
           // Predicate above.
           blockedTasks.clear();

@@ -283,9 +283,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       // ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
-      // ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);// Why do we need to
-      // open searcher if
-      // "onlyLeaderIndexes"?
+      // ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);
+      // Why do we need to open searcher if "onlyLeaderIndexes"?
       ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
       ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(client);
     }
@@ -347,11 +346,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // + core.getUpdateHandler().getUpdateLog());
     // return;
     // }
-    while (!successfulRecovery
-        && !Thread.currentThread().isInterrupted()
-        && !isClosed()) { // don't use interruption or
-      // it will close channels
-      // though
+    while (!successfulRecovery && !Thread.currentThread().isInterrupted() && !isClosed()) {
+      // don't use interruption or it will close channels though
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
         ZkNodeProps leaderprops =
@@ -359,10 +355,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         final String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderprops);
         final String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
 
-        boolean isLeader =
-            ourUrl.equals(
-                leaderUrl); // TODO: We can probably delete most of this code if we say this
-        // strategy can only be used for pull replicas
+        // TODO: We can probably delete most of this code if we say this strategy can only be used
+        // for pull replicas
+        boolean isLeader = ourUrl.equals(leaderUrl);
         if (isLeader && !cloudDesc.isLeader()) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
         }
@@ -564,14 +559,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     if (recoveringAfterStartup) {
       // if we're recovering after startup (i.e. we have been down), then we need to know what the
-      // last versions were
-      // when we went down. We may have received updates since then.
+      // last versions were when we went down. We may have received updates since then.
       recentVersions = startingVersions;
       try {
         if (ulog.existOldBufferLog()) {
-          // this means we were previously doing a full index replication
-          // that probably didn't complete and buffering updates in the
-          // meantime.
+          // this means we were previously doing a full index replication that probably didn't
+          // complete and buffering updates in the meantime.
           log.info(
               "Looks like a previous replication recovery did not complete - skipping peer sync.");
           firstTime = false; // skip peersync
@@ -588,11 +581,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     final String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
     Future<RecoveryInfo> replayFuture = null;
-    while (!successfulRecovery
-        && !Thread.currentThread().isInterrupted()
-        && !isClosed()) { // don't use interruption or
-      // it will close channels
-      // though
+    // don't use interruption or it will close channels though
+    while (!successfulRecovery && !Thread.currentThread().isInterrupted() && !isClosed()) {
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
         final Replica leader = pingLeader(ourUrl, this.coreDescriptor, true);

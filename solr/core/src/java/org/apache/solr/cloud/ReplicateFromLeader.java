@@ -103,9 +103,9 @@ public class ReplicateFromLeader {
                   .getSlice(cloudDescriptor.getShardId())
                   .getReplica(cloudDescriptor.getCoreNodeName());
           if (replica != null && replica.getType() == Replica.Type.PULL) {
-            skipCommitOnLeaderVersionZero =
-                true; // only set this to true if we're a PULL replica, otherwise use value of
+            // only set this to true if we're a PULL replica, otherwise use value of
             // switchTransactionLog
+            skipCommitOnLeaderVersionZero = true;
           }
         }
       }

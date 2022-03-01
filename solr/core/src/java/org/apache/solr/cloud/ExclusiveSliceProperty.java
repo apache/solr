@@ -62,8 +62,8 @@ class ExclusiveSliceProperty {
   // Key structure. For each node, a list of the replicas _currently_ hosting the property.
   private final Map<String, List<SliceReplica>> nodesHostingProp = new HashMap<>();
   Set<String> shardsNeedingHosts = new HashSet<>();
-  Map<String, Slice> changedSlices =
-      new HashMap<>(); // Work on copies rather than the underlying cluster state.
+  // Work on copies rather than the underlying cluster state.
+  Map<String, Slice> changedSlices = new HashMap<>();
 
   private int origMaxPropPerNode = 0;
   private int origModulo = 0;
@@ -129,14 +129,11 @@ class ExclusiveSliceProperty {
   }
 
   // Collect a list of all the nodes that _can_ host the indicated property. Along the way, also
-  // collect any of
-  // the replicas on that node that _already_ host the property as well as any slices that do _not_
-  // have the
-  // property hosted.
+  // collect any of the replicas on that node that _already_ host the property as well as any slices
+  // that do _not_ have the property hosted.
   //
   // Return true if anything node needs it's property reassigned. False if the property is already
-  // balanced for
-  // the collection.
+  // balanced for the collection.
 
   private boolean collectCurrentPropStats() {
     int maxAssigned = 0;
@@ -148,8 +145,8 @@ class ExclusiveSliceProperty {
       for (Replica replica : slice.getReplicas()) {
         if (onlyActiveNodes && isActive(replica) == false) {
           if (StringUtils.isNotBlank(replica.getStr(property))) {
-            removeProp(
-                slice, replica.getName()); // Note, we won't be committing this to ZK until later.
+            // Note, we won't be committing this to ZK until later.
+            removeProp(slice, replica.getName());
           }
           continue;
         }
@@ -181,8 +178,7 @@ class ExclusiveSliceProperty {
 
     // If the total number of already-hosted properties assigned to nodes
     // that have potential to host leaders is equal to the slice count _AND_ none of the current
-    // nodes has more than
-    // the max number of properties, there's nothing to do.
+    // nodes has more than the max number of properties, there's nothing to do.
     origMaxPropPerNode = collection.getSlices().size() / allHosts.size();
 
     // Some nodes can have one more of the proeprty if the numbers aren't exactly even.
@@ -199,9 +195,8 @@ class ExclusiveSliceProperty {
 
     // Make sure there are no more slices at the limit than the "leftovers"
     // Let's say there's 7 slices and 3 nodes. We need to distribute the property as 3 on node1, 2
-    // on node2 and 2 on node3
-    // (3, 2, 2) We need to be careful to not distribute them as 3, 3, 1. that's what this check is
-    // all about.
+    // on node2 and 2 on node3 (3, 2, 2) We need to be careful to not distribute them as 3, 3, 1.
+    // that's what this check is all about.
     int counter = origModulo;
     for (List<SliceReplica> list : nodesHostingProp.values()) {
       if (list.size() == origMaxPropPerNode) --counter;
@@ -235,8 +230,7 @@ class ExclusiveSliceProperty {
       for (String slice : shardsNeedingHosts) {
         for (Map.Entry<String, List<SliceReplica>> ent : nodesHostingReplicas.entrySet()) {
           // A little tricky. If we don't set this to something below, then it means all possible
-          // places to
-          // put this property are full up, so just put it somewhere.
+          // places to put this property are full up, so just put it somewhere.
           if (srToChange == null && ent.getValue().size() > 0) {
             srToChange = ent.getValue().get(0);
           }
@@ -370,8 +364,7 @@ class ExclusiveSliceProperty {
     removeOverallocatedReplicas();
 
     // prune replicas belonging to a slice that have the property currently assigned from the list
-    // of replicas
-    // that could host the property.
+    // of replicas that could host the property.
     for (Map.Entry<String, List<SliceReplica>> entProp : nodesHostingProp.entrySet()) {
       for (SliceReplica srHosting : entProp.getValue()) {
         removeSliceAlreadyHostedFromPossibles(srHosting.slice.getName());
@@ -388,8 +381,7 @@ class ExclusiveSliceProperty {
     }
 
     // At this point, nodesHostingProp should contain _only_ lists of replicas that belong to slices
-    // that do _not_
-    // have any replica hosting the property. So let's assign them.
+    // that do _not_ have any replica hosting the property. So let's assign them.
 
     balanceUnassignedReplicas();
     for (Slice newSlice : changedSlices.values()) {

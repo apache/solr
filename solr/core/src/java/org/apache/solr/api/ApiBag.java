@@ -123,8 +123,7 @@ public class ApiBag {
       }
 
       // If 'o' and 'node.obj' aren't both AnnotatedApi's then we can't aggregate the commands, so
-      // fallback to the
-      // default behavior
+      // fallback to the default behavior
       if ((!(o instanceof AnnotatedApi)) || (!(node.getObject() instanceof AnnotatedApi))) {
         super.attachValueToNode(node, o);
         return;
