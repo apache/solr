@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-configure(allprojects.findAll {project -> project.path.startsWith(":solr:packaging") || project.path.startsWith(":solr:solr-ref-guide") }) {
+configure([project(":solr:packaging"), project(":solr:solr-ref-guide")]) {
     apply plugin: "com.github.node-gradle.node"
 
     ext {

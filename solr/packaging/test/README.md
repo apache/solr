@@ -23,11 +23,12 @@ All tests in this project use the [BATS](https://bats-core.readthedocs.io/en/sta
 
 ## Running Tests
 
-Tests can be run via `./gradlew integrationTest` or using gradle abbreviation `./gradlew iTest`.
+Tests can be run via `./gradlew integrationTests` or using gradle abbreviation `./gradlew iTest`.
  This will download libraries to your `.gradle` directory, assemble the binary distribution,
  and run the full test suite.
 
-Individual test files can be run by specifying the `-P bats.tests=[test_file.bats]` property.
+Individual test files can be selected by specifying the `--tests [test_file.bats]` option.
+ The `--tests` option may be repeated to select multiple test files to run.
 
 Tests do not currently randomize ports or directories, so they cannot be run
  in parallel. They may also fail if you already have an external cluster up.
@@ -39,7 +40,7 @@ function that test files can call from their own `setup()` function.
 
 Test are defined as `@test "description of the test" { ... }`
  with statements in the function body. Test names can include
- letters, number, and spaces. They cannot include special
+ letters, numbers, and spaces. They cannot include special
  characters like dashes or underscores, so JIRA issue numbers
  and command line flags are not valid test names. For more detail
  about BATS features, please consult the documentation.

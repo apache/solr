@@ -178,14 +178,13 @@ task downloadBats(type: NpmTask) {
   outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-assert")
 }
 
-task integrationTests(type: Exec) {
+task integrationTests(type: BatsTask) {
   dependsOn installDist
   dependsOn downloadBats
 
   def integrationTestOutput = "$buildDir/test-output"
   def solrHome = "$integrationTestOutput/solr-home"
 
-  inputs.files(fileTree('test'))
   outputs.dir(integrationTestOutput)
   outputs.dir(solrHome)
 
@@ -198,9 +197,29 @@ task integrationTests(type: Exec) {
   environment SOLR_HOME: solrHome
   environment SOLR_LOGS_DIR: "$solrHome/logs"
   environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
+}
 
-  executable "$nodeProjectDir/node_modules/bats/bin/bats"
+class BatsTask extends Exec {
+  @InputDirectory
+  String testDir = 'test'
 
-  // TODO allow specifying multiple files?
-  args '--print-output-on-failure', 'test/' + propertyOrDefault('bats.tests', '')
+  @Input
+  var testFiles = []
+
+  @Option(option = "tests", description = "Sets test cases to be included")
+  public void setTestNamePatterns(List<String> tests) {
+    // TODO: bats --filter <regex>
+    tests.each { testFiles << "$testDir/$it" }
+  }
+
+  @Override
+  @TaskAction
+  protected void exec() {
+    executable "$project.ext.nodeProjectDir/node_modules/bats/bin/bats"
+
+    // Note: tests to run must be listed after all other arguments
+    setArgs(['--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
+
+    super.exec()
+  }
 }
