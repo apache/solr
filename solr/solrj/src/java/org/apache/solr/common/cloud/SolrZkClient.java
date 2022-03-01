@@ -854,11 +854,7 @@ public class SolrZkClient implements Closeable {
     public void process(final WatchedEvent event) {
       log.debug("Submitting job to respond to event {}", event);
       try {
-        if (watcher instanceof ConnectionManager) {
-          watcher.process(event);
-        } else {
-          zkCallbackExecutor.submit(() -> watcher.process(event));
-        }
+        zkCallbackExecutor.submit(() -> watcher.process(event));
       } catch (RejectedExecutionException e) {
         // If not a graceful shutdown
         if (!isClosed()) {
