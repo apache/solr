@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bats
+
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -14,26 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load bats_helper
 
-# All tests should start with solr_test
-
-function solr_suite_before() {
-  bin/solr stop -all > /dev/null 2>&1
+setup() {
+  common_setup
 }
 
-function solr_suite_after() {
-  bin/solr stop -all > /dev/null 2>&1
+teardown() {
+  solr stop -all >/dev/null 2>&1
 }
 
-function solr_test_11740_checks_f() {
-  # SOLR-11740
-  bin/solr start
-  bin/solr start -p 7574
-  bin/solr stop -all 2>&1 | grep -i "forcefully killing"
-  rcode=$?
-  if [[ $rcode -eq 0 ]]
-  then
-    echo "Unexpected forceful kill - please check."
-    return 2
-  fi
+@test "SOLR11740 check f" {
+  run -0 solr start
+  run -0 solr start -p 7574
+  run bash -c 'solr stop -all 2>&1'
+  refute_output --partial 'forcefully killing'
 }
