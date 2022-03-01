@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.core;
+
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SimpleFloatFunction;
@@ -23,11 +24,7 @@ import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.ValueSourceParser;
 
-
-/**
- * Mock ValueSource parser that doesn't do much of anything
- *
- **/
+/** Mock ValueSource parser that doesn't do much of anything */
 public class DummyValueSourceParser extends ValueSourceParser {
   private NamedList<?> args;
 
@@ -39,20 +36,19 @@ public class DummyValueSourceParser extends ValueSourceParser {
   @Override
   public ValueSource parse(FunctionQParser fp) throws SyntaxError {
     ValueSource source = fp.parseValueSource();
-    ValueSource result = new SimpleFloatFunction(source) {
-      @Override
-      protected String name() {
-        return "foo";
-      }
+    ValueSource result =
+        new SimpleFloatFunction(source) {
+          @Override
+          protected String name() {
+            return "foo";
+          }
 
-      @Override
-      protected float func(int doc, FunctionValues vals) {
-        float result = 0;
-        return result;
-      }
-    };
+          @Override
+          protected float func(int doc, FunctionValues vals) {
+            float result = 0;
+            return result;
+          }
+        };
     return result;
   }
-
-
 }

@@ -23,7 +23,8 @@ import org.junit.Test;
 @Slow
 @Nightly
 /**
- * Implementation moved to AbstractRestartWhileUpdatingTestBase because it is used by HDFS contrib module tests
+ * Implementation moved to AbstractRestartWhileUpdatingTestBase because it is used by HDFS contrib
+ * module tests
  */
 public class RestartWhileUpdatingTest extends AbstractRestartWhileUpdatingTestBase {
 

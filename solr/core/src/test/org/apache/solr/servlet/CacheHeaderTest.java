@@ -16,8 +16,6 @@
  */
 package org.apache.solr.servlet;
 
-
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
@@ -26,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Date;
-
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -37,12 +34,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * A test case for the several HTTP cache headers emitted by Solr
- */
+/** A test case for the several HTTP cache headers emitted by Solr */
 public class CacheHeaderTest extends CacheHeaderTestBase {
   private static File solrHomeDirectory;
-    
+
   @BeforeClass
   public static void beforeTest() throws Exception {
     solrHomeDirectory = createTempDir().toFile();
@@ -51,24 +46,26 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   }
 
   @AfterClass
-  public static void afterTest() throws Exception {
-
-  }
+  public static void afterTest() throws Exception {}
 
   protected static final String CONTENTS = "id\n100\n101\n102";
 
   @Test
   public void testCacheVetoHandler() throws Exception {
-    File f=makeFile(CONTENTS);
-    HttpRequestBase m=getUpdateMethod("GET", 
-        CommonParams.STREAM_FILE, f.getCanonicalPath(),
-        CommonParams.STREAM_CONTENTTYPE, "text/csv" );
+    File f = makeFile(CONTENTS);
+    HttpRequestBase m =
+        getUpdateMethod(
+            "GET",
+            CommonParams.STREAM_FILE,
+            f.getCanonicalPath(),
+            CommonParams.STREAM_CONTENTTYPE,
+            "text/csv");
     HttpResponse response = getClient().execute(m);
     assertEquals(200, response.getStatusLine().getStatusCode());
     checkVetoHeaders(response, true);
     Files.delete(f.toPath());
   }
-  
+
   @Test
   public void testCacheVetoException() throws Exception {
     HttpRequestBase m = getSelectMethod("GET", "q", "xyz_ignore_exception:solr", "qt", "standard");
@@ -82,8 +79,12 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   protected void checkVetoHeaders(HttpResponse response, boolean checkExpires) throws Exception {
     Header head = response.getFirstHeader("Cache-Control");
     assertNotNull("We got no Cache-Control header", head);
-    assertTrue("We got no no-cache in the Cache-Control header ["+head+"]", head.getValue().contains("no-cache"));
-    assertTrue("We got no no-store in the Cache-Control header ["+head+"]", head.getValue().contains("no-store"));
+    assertTrue(
+        "We got no no-cache in the Cache-Control header [" + head + "]",
+        head.getValue().contains("no-cache"));
+    assertTrue(
+        "We got no no-store in the Cache-Control header [" + head + "]",
+        head.getValue().contains("no-store"));
 
     head = response.getFirstHeader("Pragma");
     assertNotNull("We got no Pragma header", head);
@@ -93,9 +94,9 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
       head = response.getFirstHeader("Expires");
       assertNotNull("We got no Expires header:" + Arrays.asList(response.getAllHeaders()), head);
       Date d = DateUtils.parseDate(head.getValue());
-      assertTrue("We got no Expires header far in the past", System
-          .currentTimeMillis()
-          - d.getTime() > 100000);
+      assertTrue(
+          "We got no Expires header far in the past",
+          System.currentTimeMillis() - d.getTime() > 100000);
     }
   }
 
@@ -107,8 +108,10 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     HttpResponse response = getClient().execute(get);
     checkResponseBody(method, response);
 
-    assertEquals("Got no response code 200 in initial request", 200, response.
-        getStatusLine().getStatusCode());
+    assertEquals(
+        "Got no response code 200 in initial request",
+        200,
+        response.getStatusLine().getStatusCode());
 
     Header head = response.getFirstHeader("Last-Modified");
     assertNotNull("We got no Last-Modified header", head);
@@ -121,36 +124,41 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
     response = getClient().execute(get);
     checkResponseBody(method, response);
-    assertEquals("Expected 304 NotModified response with current date", 304,
+    assertEquals(
+        "Expected 304 NotModified response with current date",
+        304,
         response.getStatusLine().getStatusCode());
 
     get = getSelectMethod(method);
-    get.addHeader("If-Modified-Since", DateUtils.formatDate(new Date(
-        lastModified.getTime() - 10000)));
+    get.addHeader(
+        "If-Modified-Since", DateUtils.formatDate(new Date(lastModified.getTime() - 10000)));
     response = getClient().execute(get);
     checkResponseBody(method, response);
-    assertEquals("Expected 200 OK response with If-Modified-Since in the past",
-        200, response.getStatusLine().getStatusCode());
+    assertEquals(
+        "Expected 200 OK response with If-Modified-Since in the past",
+        200,
+        response.getStatusLine().getStatusCode());
 
     // If-Unmodified-Since tests
     get = getSelectMethod(method);
-    get.addHeader("If-Unmodified-Since", DateUtils.formatDate(new Date(
-        lastModified.getTime() - 10000)));
+    get.addHeader(
+        "If-Unmodified-Since", DateUtils.formatDate(new Date(lastModified.getTime() - 10000)));
 
     response = getClient().execute(get);
     checkResponseBody(method, response);
     assertEquals(
         "Expected 412 Precondition failed with If-Unmodified-Since in the past",
-        412, response.getStatusLine().getStatusCode());
+        412,
+        response.getStatusLine().getStatusCode());
 
     get = getSelectMethod(method);
-    get.addHeader("If-Unmodified-Since", DateUtils
-            .formatDate(new Date()));
+    get.addHeader("If-Unmodified-Since", DateUtils.formatDate(new Date()));
     response = getClient().execute(get);
     checkResponseBody(method, response);
     assertEquals(
         "Expected 200 OK response with If-Unmodified-Since and current date",
-        200, response.getStatusLine().getStatusCode());
+        200,
+        response.getStatusLine().getStatusCode());
   }
 
   // test ETag
@@ -160,13 +168,15 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     HttpResponse response = getClient().execute(get);
     checkResponseBody(method, response);
 
-    assertEquals("Got no response code 200 in initial request", 200, response
-        .getStatusLine().getStatusCode());
+    assertEquals(
+        "Got no response code 200 in initial request",
+        200,
+        response.getStatusLine().getStatusCode());
 
     Header head = response.getFirstHeader("ETag");
     assertNotNull("We got no ETag in the response", head);
-    assertTrue("Not a valid ETag", head.getValue().startsWith("\"")
-        && head.getValue().endsWith("\""));
+    assertTrue(
+        "Not a valid ETag", head.getValue().startsWith("\"") && head.getValue().endsWith("\""));
 
     String etag = head.getValue();
 
@@ -178,16 +188,18 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     checkResponseBody(method, response);
     assertEquals(
         "If-None-Match: Got no response code 200 in response to non matching ETag",
-        200, response.getStatusLine().getStatusCode());
+        200,
+        response.getStatusLine().getStatusCode());
 
     // now we set matching ETags
     get = getSelectMethod(method);
     get.addHeader("If-None-Match", "\"xyz1223\"");
-    get.addHeader("If-None-Match", "\"1231323423\", \"1211211\",   "
-        + etag);
+    get.addHeader("If-None-Match", "\"1231323423\", \"1211211\",   " + etag);
     response = getClient().execute(get);
     checkResponseBody(method, response);
-    assertEquals("If-None-Match: Got no response 304 to matching ETag", 304,
+    assertEquals(
+        "If-None-Match: Got no response 304 to matching ETag",
+        304,
         response.getStatusLine().getStatusCode());
 
     // we now set the special star ETag
@@ -195,7 +207,9 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     get.addHeader("If-None-Match", "*");
     response = getClient().execute(get);
     checkResponseBody(method, response);
-    assertEquals("If-None-Match: Got no response 304 for star ETag", 304,
+    assertEquals(
+        "If-None-Match: Got no response 304 for star ETag",
+        304,
         response.getStatusLine().getStatusCode());
 
     // If-Match tests
@@ -206,7 +220,8 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     checkResponseBody(method, response);
     assertEquals(
         "If-Match: Got no response code 412 in response to non matching ETag",
-        412, response.getStatusLine().getStatusCode());
+        412,
+        response.getStatusLine().getStatusCode());
 
     // now we set matching ETags
     get = getSelectMethod(method);
@@ -214,7 +229,9 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     get.addHeader("If-Match", "\"1231323423\", \"1211211\",   " + etag);
     response = getClient().execute(get);
     checkResponseBody(method, response);
-    assertEquals("If-Match: Got no response 200 to matching ETag", 200,
+    assertEquals(
+        "If-Match: Got no response 200 to matching ETag",
+        200,
         response.getStatusLine().getStatusCode());
 
     // now we set the special star ETag
@@ -222,8 +239,10 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     get.addHeader("If-Match", "*");
     response = getClient().execute(get);
     checkResponseBody(method, response);
-    assertEquals("If-Match: Got no response 200 to star ETag", 200, response
-        .getStatusLine().getStatusCode());
+    assertEquals(
+        "If-Match: Got no response 200 to star ETag",
+        200,
+        response.getStatusLine().getStatusCode());
   }
 
   @Override
@@ -257,7 +276,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   protected File makeFile(String contents, String charset) {
     try {
-      File f = createTempFile("cachetest","csv").toFile();
+      File f = createTempFile("cachetest", "csv").toFile();
       try (Writer out = new OutputStreamWriter(new FileOutputStream(f), charset)) {
         out.write(contents);
       }
