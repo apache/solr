@@ -27,6 +27,7 @@ plugins {
   id "de.undercouch.download" version "4.0.2" apply false
   id "net.ltgt.errorprone" version "2.0.2" apply false
   id 'com.diffplug.spotless' version "5.14.3" apply false
+  id 'com.github.node-gradle.node' version '3.1.1' apply false
 }
 
 apply from: file('gradle/globals.gradle')
@@ -205,4 +206,5 @@ apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/ant-compat/solr.post-jar.gradle')
 
+apply from: file('gradle/node.gradle')
 
