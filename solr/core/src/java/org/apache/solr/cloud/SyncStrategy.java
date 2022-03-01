@@ -201,10 +201,9 @@ public class SyncStrategy {
     // TODO: as an assurance, we should still try and tell the sync nodes that we couldn't reach
     // to recover once more?
     // Fingerprinting here is off because the we currently rely on having at least one of the nodes
-    // return "true", and if replicas are out-of-sync
-    // we still need to pick one as leader.  A followup sync from the replica to the new leader
-    // (with fingerprinting on) should then fail and
-    // initiate recovery-by-replication.
+    // return "true", and if replicas are out-of-sync we still need to pick one as leader.  A
+    // followup sync from the replica to the new leader (with fingerprinting on) should then fail
+    // and initiate recovery-by-replication.
     try (PeerSync peerSync =
         new PeerSync(
             core,

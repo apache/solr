@@ -305,26 +305,20 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
 
       // TODO Is this propagation logic really necessary?
       // The intention seems to be that if some index files are only referenced by a shard-metadata
-      // file that
-      // is itself orphaned, then propagating the "orphaned" status down to each of these index
-      // files will allow
-      // them to be deleted.
+      // file that is itself orphaned, then propagating the "orphaned" status down to each of these
+      // index files will allow them to be deleted.
       //
       // But that doesn't seem to hold up under closer inspection.
       //
       // The graph is populated by following links out from the set of valid backup-id's.  All files
-      // (shard-
-      // metadata, or index) that trace back to a valid backup-ID will appear in the graph.  If a
-      // shard-metadata
-      // file becomes orphaned, it will be ignored during graph construction and any index files
-      // that it alone
-      // references will not appear in the graph.  Since those index files will be unrepresented in
-      // the graph, the
-      // 'visitExistingNodes' calls above should be sufficient to detect them as orphaned.
+      // (shard-metadata, or index) that trace back to a valid backup-ID will appear in the graph.
+      // If a shard-metadata file becomes orphaned, it will be ignored during graph construction and
+      // any index files that it alone references will not appear in the graph.  Since those index
+      // files will be unrepresented in the graph, the 'visitExistingNodes' calls above should be
+      // sufficient to detect them as orphaned.
       //
       // This all assumes though that propagation is intended to solve the scenario I think it does.
-      //  If that
-      // assumption is wrong, then this whole comment is wrong.
+      // If that assumption is wrong, then this whole comment is wrong.
 
       // for nodes which are not existing, propagate that information to other nodes
       shardBackupMetadataNodeMap.values().forEach(Node::propagateNotExisting);

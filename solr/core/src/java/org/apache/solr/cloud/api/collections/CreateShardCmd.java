@@ -88,10 +88,9 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
 
     if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
       // The message has been crafted by CollectionsHandler.CollectionOperation.CREATESHARD_OP and
-      // defines the QUEUE_OPERATION
-      // to be CollectionParams.CollectionAction.CREATESHARD.
-      // Likely a bug here (distributed or Overseer based) as we use the collection alias name and
-      // not the real name?
+      // defines the QUEUE_OPERATION to be CollectionParams.CollectionAction.CREATESHARD. Likely a
+      // bug here (distributed or Overseer based) as we use the collection alias name and not the
+      // real name?
       ccc.getDistributedClusterStateUpdater()
           .doSingleStateUpdate(
               DistributedClusterStateUpdater.MutatingCommand.CollectionCreateShard,

@@ -75,9 +75,8 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
     }
     createReqParams.set(NAME, createCollName);
     // a CollectionOperation reads params and produces a message (Map) that is supposed to be sent
-    // to the Overseer.
-    //   Although we could create the Map without it, there are a fair amount of rules we don't want
-    // to reproduce.
+    // to the Overseer. Although we could create the Map without it, there are a fair amount of
+    // rules we don't want to reproduce.
     final Map<String, Object> createMsgMap =
         CollectionsHandler.CollectionOperation.CREATE_OP.execute(
             new LocalSolrQueryRequest(null, createReqParams),
@@ -90,8 +89,7 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
       // Since we are running in the Overseer here, send the message directly to the Overseer
       // CreateCollectionCmd.
       // note: there's doesn't seem to be any point in locking on the collection name, so we don't.
-      // We currently should
-      //   already have a lock on the alias name which should be sufficient.
+      // We currently should already have a lock on the alias name which should be sufficient.
       new CreateCollectionCmd(ccc).call(clusterState, new ZkNodeProps(createMsgMap), results);
     } catch (SolrException e) {
       // The collection might already exist, and that's okay -- we can adopt it.

@@ -69,45 +69,33 @@ public class CollectionApiLockFactory {
     }
 
     // There is a bug in the way locks are managed in the Overseer, it sometimes locks at a given
-    // level (for example shard)
-    // without knowing on which shard to lock. This can happen for example for SPLITSHARD using a
-    // split.key (details below)
-    // or DELETEREPLICA when specifying a count of replicas to delete but no shard.
+    // level (for example shard) without knowing on which shard to lock. This can happen for example
+    // for SPLITSHARD using a split.key (details below) or DELETEREPLICA when specifying a count of
+    // replicas to delete but no shard.
     //
-    //   When doing a splitshard using a split.key (and not specifying the actual shard name), when
-    // the OverseerCollectionMessageHandler
-    //   grabs a lock for the Collection API it does not have the shard name and the lock is
-    // obtained for a null key.
-    //   This means that this lock does not prevent another operation specifically targeting the
-    // shard from executing concurrently
-    //   (can even be another split if it is specified with a shard name). The null shard lock does
-    // prevent another split.key split
-    //   for another shard of the same collection at the same time (because trying to obtain another
-    // lock on the null key below the
-    //   collection will fail).
-    //   The splitshard request is built in CollectionAdminRequest.splitShard(). The case of concern
-    // is when SplitShard.setSplitKey()
-    //   is then called (see test CollectionsAPISolrJTest.testSplitShard()).
-    // CollectionOperation.SPLITSHARD_OP in CollectionsHandler
-    //   verifies that when the key is specified no shard name is specified.
-    //   The locking happens from OverseerTaskProcessor.run() calling
-    // OverseerCollectionMessageHandler.lockTask().
-    //   The ArrayList passed to LockTree.Session.lock() contains the collection name (index 0) but
-    // not shard name (value null
-    //   at index 1) yet the action.lockLevel is SHARD. Note that there ends up being a single shard
-    // name associated with the
-    //   split key. It is computed in SplitShardCmd.getParentSlice().
+    // When doing a splitshard using a split.key (and not specifying the actual shard name), when
+    // the OverseerCollectionMessageHandler grabs a lock for the Collection API it does not have the
+    // shard name and the lock is obtained for a null key. This means that this lock does not
+    // prevent another operation specifically targeting the shard from executing concurrently (can
+    // even be another split if it is specified with a shard name). The null shard lock does prevent
+    // another split.key split for another shard of the same collection at the same time (because
+    // trying to obtain another lock on the null key below the collection will fail). The splitshard
+    // request is built in CollectionAdminRequest.splitShard(). The case of concern is when
+    // SplitShard.setSplitKey() is then called (see test CollectionsAPISolrJTest.testSplitShard()).
+    // CollectionOperation.SPLITSHARD_OP in CollectionsHandler verifies that when the key is
+    // specified no shard name is specified. The locking happens from OverseerTaskProcessor.run()
+    // calling OverseerCollectionMessageHandler.lockTask(). The ArrayList passed to
+    // LockTree.Session.lock() contains the collection name (index 0) but not shard name (value null
+    // at index 1) yet the action.lockLevel is SHARD. Note that there ends up being a single shard
+    // name associated with the split key. It is computed in SplitShardCmd.getParentSlice().
     //
     // We deal with the issue to trigger the same (wrong) behavior for compatibility of distributed
-    // Collection API vs Overseer
-    // based collection API. We make up a shard name that is highly unlikely to otherwise exist and
-    // lock it instead.
-    // Another option would be to bump up the locking level from SHARD to COLLECTION when no shard
-    // is specified (would be
-    // "more correct" from the perspective of preventing competing Collection API commands from
-    // running concurrently, but
-    // would restrict concurrency a bit more than existing solution, and if some installations
-    // depend on current behavior...).
+    // Collection API vs Overseer based collection API. We make up a shard name that is highly
+    // unlikely to otherwise exist and lock it instead. Another option would be to bump up the
+    // locking level from SHARD to COLLECTION when no shard is specified (would be "more correct"
+    // from the perspective of preventing competing Collection API commands from running
+    // concurrently, but would restrict concurrency a bit more than existing solution, and if some
+    // installations depend on current behavior...).
     if (lockLevel == CollectionParams.LockLevel.SHARD && shardId == null) {
       shardId = "MadeUpShardNameWhenNoShardNameWasProvided";
       // Bumping locking level to collection would be instead: lockLevel =
@@ -115,9 +103,8 @@ public class CollectionApiLockFactory {
     }
 
     // The first requested lock is a write one (on the target object for the action, depending on
-    // lock level), then requesting
-    // read locks on "higher" levels (collection > shard > replica here for the level. Note
-    // LockLevel "height" is other way around).
+    // lock level), then requesting read locks on "higher" levels (collection > shard > replica here
+    // for the level. Note LockLevel "height" is other way around).
     boolean requestWriteLock = true;
     final CollectionParams.LockLevel[] iterationOrder = {
       CollectionParams.LockLevel.REPLICA,

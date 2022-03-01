@@ -151,26 +151,24 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           ccc.getCoreContainer().getConfigSetService());
 
       // Note that in code below there are two main execution paths: Overseer based cluster state
-      // updates and distributed
-      // cluster state updates (look for isDistributedStateUpdate() conditions).
+      // updates and distributed cluster state updates (look for isDistributedStateUpdate()
+      // conditions).
       //
       // PerReplicaStates (PRS) collections follow a hybrid approach. Even when the cluster is
-      // Overseer cluster state update based,
-      // these collections are created locally then the cluster state updater is notified (look for
-      // usage of RefreshCollectionMessage).
-      // This explains why PRS collections have less diverging execution paths between distributed
-      // or Overseer based cluster state updates.
+      // Overseer cluster state update based, these collections are created locally then the cluster
+      // state updater is notified (look for usage of RefreshCollectionMessage). This explains why
+      // PRS collections have less diverging execution paths between distributed or Overseer based
+      // cluster state updates.
 
       if (isPRS) {
         // In case of a PRS collection, create the collection structure directly instead of
-        // resubmitting
-        // to the overseer queue.
+        // resubmitting to the overseer queue.
         // TODO: Consider doing this for all collections, not just the PRS collections.
         // TODO comment above achieved by switching the cluster to distributed state updates
 
         // This code directly updates Zookeeper by creating the collection state.json. It is
-        // compatible with both distributed
-        // cluster state updates and Overseer based cluster state updates.
+        // compatible with both distributed cluster state updates and Overseer based cluster state
+        // updates.
         ZkWriteCommand command =
             new ClusterStateMutator(ccc.getSolrCloudManager())
                 .createCollection(clusterState, message);
@@ -181,21 +179,18 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
         // When cluster state updates are handled by Overseer, ask it to load that collection it
-        // doesn't know about.
-        // When cluster state updates are distributed, ZK is the source of truth for all nodes so no
-        // reload needed.
+        // doesn't know about. When cluster state updates are distributed, ZK is the source of truth
+        // for all nodes so no reload needed.
         if (!ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           // If cluster state update is not distributed and we execute here, the Collection API is
-          // not distributed either
-          // and this execution happens on the Overseer node, so direct memory access as done below
-          // is ok.
+          // not distributed either and this execution happens on the Overseer node, so direct
+          // memory access as done below is ok.
           ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
         }
       } else {
         if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           // The message has been crafted by CollectionsHandler.CollectionOperation.CREATE_OP and
-          // defines the QUEUE_OPERATION
-          // to be CollectionParams.CollectionAction.CREATE.
+          // defines the QUEUE_OPERATION to be CollectionParams.CollectionAction.CREATE.
           ccc.getDistributedClusterStateUpdater()
               .doSingleStateUpdate(
                   DistributedClusterStateUpdater.MutatingCommand.ClusterCreateCollection,
@@ -226,8 +221,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         }
 
         // refresh cluster state (value read below comes from Zookeeper watch firing following the
-        // update done previously,
-        // be it by Overseer or by this thread when updates are distributed)
+        // update done previously, be it by Overseer or by this thread when updates are distributed)
         clusterState = ccc.getSolrCloudManager().getClusterStateProvider().getClusterState();
         newColl = clusterState.getCollection(collectionName);
       }
@@ -378,17 +372,15 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       }
 
       // PRS collections updated ZK state.json in the loop above. When Overseer is managing cluster
-      // state updates, need to
-      // tell it to refresh itself to know about the replicas and be able to execute nodes shard
-      // requests regarding the replicas.
+      // state updates, need to tell it to refresh itself to know about the replicas and be able to
+      // execute nodes shard requests regarding the replicas.
       if (isPRS && !ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
       }
 
       // Distributed updates don't need to do anything for PRS collections that wrote state.json
-      // directly
-      // For non PRS collections, distributed updates have to be executed if that's how the cluster
-      // is configured
+      // directly. For non PRS collections, distributed updates have to be executed if that's how
+      // the cluster is configured
       if (!isPRS && ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         // Add the replicas to the collection state (all at once after the loop above)
         scr.executeStateUpdates(ccc.getSolrCloudManager(), ccc.getZkStateReader());
@@ -397,12 +389,10 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       final Map<String, Replica> replicas;
       if (isPRS) {
         replicas = new ConcurrentHashMap<>();
+        // Only the elements that were asked for...
         newColl.getSlices().stream()
             .flatMap(slice -> slice.getReplicas().stream())
-            .filter(
-                r ->
-                    coresToCreate.containsKey(
-                        r.getCoreName())) // Only the elements that were asked for...
+            .filter(r -> coresToCreate.containsKey(r.getCoreName()))
             .forEach(r -> replicas.putIfAbsent(r.getCoreName(), r)); // ...get added to the map
       } else {
         // wait for all replica entries to be created and visible in local cluster state (updated by
@@ -445,11 +435,10 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           failure = true;
         }
         // When cluster state updates are distributed, Overseer state updater is not used and
-        // doesn't have to be notified
-        // of a new collection created elsewhere (which is how all collections are created).
-        // Note it is likely possibly to skip the the whole if (isPRS) bloc, but keeping distributed
-        // state updates as
-        // close in behavior to Overseer state updates for now.
+        // doesn't have to be notified of a new collection created elsewhere (which is how all
+        // collections are created). Note it is likely possibly to skip the the whole if (isPRS)
+        // bloc, but keeping distributed state updates as close in behavior to Overseer state
+        // updates for now.
         if (!ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           // Now ask Overseer to fetch the latest state of collection from ZK
           ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
@@ -458,8 +447,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       if (failure) {
         // Let's cleanup as we hit an exception
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain
-        // 'success'
-        // element, which may be interpreted by the user as a positive ack
+        // 'success' element, which may be interpreted by the user as a positive ack
         CollectionHandlingUtils.cleanupCollection(collectionName, new NamedList<Object>(), ccc);
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
         throw new SolrException(
@@ -701,18 +689,17 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 stateManager, collection, collectionPath, collectionProps, configSetService);
           }
 
-          collectionProps.remove(
-              ZkStateReader
-                  .NUM_SHARDS_PROP); // we don't put numShards in the collections properties
-          collectionProps.remove(
-              ZkStateReader.CONFIGNAME_PROP); // we don't write configName on a zk collection node
+          // we don't put numShards in the collections properties
+          collectionProps.remove(ZkStateReader.NUM_SHARDS_PROP);
+          // we don't write configName on a zk collection node
+          collectionProps.remove(ZkStateReader.CONFIGNAME_PROP);
 
           // create a node
           stateManager.makePath(collectionPath);
 
         } catch (KeeperException e) {
           // TODO shouldn't the stateManager ensure this does not happen; should throw
-          // AlreadyExistsException
+          // AlreadyExistsException.
           // it's okay if the node already exists
           if (e.code() != KeeperException.Code.NODEEXISTS) {
             throw e;

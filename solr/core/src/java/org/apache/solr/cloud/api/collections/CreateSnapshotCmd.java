@@ -211,8 +211,7 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
           commitName,
           failedShards);
       // Update the ZK meta-data to include only cores with the snapshot. This will enable users to
-      // figure out
-      // which cores have the named snapshot.
+      // figure out which cores have the named snapshot.
       CollectionSnapshotMetaData meta =
           new CollectionSnapshotMetaData(commitName, SnapshotStatus.Failed, creationDate, replicas);
       SolrSnapshotManager.updateCollectionLevelSnapshot(zkClient, collectionName, meta);

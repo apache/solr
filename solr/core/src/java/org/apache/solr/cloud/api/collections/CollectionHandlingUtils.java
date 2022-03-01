@@ -118,8 +118,7 @@ public class CollectionHandlingUtils {
 
   static {
     // We try to make things reproducible in the context of our tests by initializing the random
-    // instance
-    // based on the current seed
+    // instance based on the current seed
     String seed = System.getProperty("tests.seed");
     if (seed == null) {
       RANDOM = new Random();
@@ -673,8 +672,8 @@ public class CollectionHandlingUtils {
 
       // If request is async wait for the core admin to complete before returning
       if (asyncId != null) {
-        waitForAsyncCallsToComplete(
-            results); // TODO: Shouldn't we abort with msgOnError exception when failure?
+        // TODO: Shouldn't we abort with msgOnError exception when failure?
+        waitForAsyncCallsToComplete(results);
         shardAsyncIdByNode.clear();
       }
     }

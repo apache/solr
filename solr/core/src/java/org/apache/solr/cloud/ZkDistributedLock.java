@@ -191,15 +191,12 @@ abstract class ZkDistributedLock implements DistributedLock {
     List<String> locks = zkClient.getChildren(lockDir, null, true);
     boolean foundSelf = false; // For finding bugs or ZK bad behavior
     // We deviate from the ZK recipe here: we do not sort the list of nodes, and we stop waiting on
-    // the first one we find
-    // that blocks us. This is done in O(n), whereas sorting is more expensive. And we iterate only
-    // once over the set of children.
-    // Might cause more wakeups than needed though (multiple locks watching the same one rather than
-    // one another) but lock
+    // the first one we find that blocks us. This is done in O(n), whereas sorting is more
+    // expensive. And we iterate only once over the set of children. Might cause more wakeups than
+    // needed though (multiple locks watching the same one rather than one another) but lock
     // contention expected low (how many concurrent and conflicting Collection API requests a
-    // reasonable user can issue?)
-    // and the code below is simpler. Changing to a sorted "optimal" approach implies only changes
-    // in this method.
+    // reasonable user can issue?) and the code below is simpler. Changing to a sorted "optimal"
+    // approach implies only changes in this method.
     for (String lock : locks) {
       long seq = getSequenceFromNodename(lock);
       if (seq == sequence) {

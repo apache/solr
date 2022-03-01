@@ -230,9 +230,8 @@ public class ZkController implements Closeable {
   private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
 
   // keeps track of a list of objects that need to know a new ZooKeeper session was created after
-  // expiration occurred
-  // ref is held as a HashSet since we clone the set before notifying to avoid synchronizing too
-  // long
+  // expiration occurred ref is held as a HashSet since we clone the set before notifying to avoid
+  // synchronizing too long
   private HashSet<OnReconnect> reconnectListeners = new HashSet<OnReconnect>();
 
   private class RegisterCoreAsync implements Callable<Object> {
@@ -393,8 +392,7 @@ public class ZkController implements Closeable {
                     throw e;
                   } catch (Exception e) {
                     // this is really best effort - in case of races or failure cases where we now
-                    // need to be the leader, if anything fails,
-                    // just continue
+                    // need to be the leader, if anything fails, just continue
                     log.warn("Exception while trying to register all cores as DOWN", e);
                   }
 
@@ -407,11 +405,9 @@ public class ZkController implements Closeable {
                       (cc != null) ? cc.getCoreZkRegisterExecutorService() : null;
                   if (descriptors != null) {
                     for (CoreDescriptor descriptor : descriptors) {
-                      // TODO: we need to think carefully about what happens when it
-                      // was
-                      // a leader that was expired - as well as what to do about
-                      // leaders/overseers
-                      // with connection loss
+                      // TODO: we need to think carefully about what happens when it was a leader
+                      // that was expired - as well as what to do about leaders/overseers with
+                      // connection loss
                       try {
                         // unload solrcores that have been 'failed over'
                         throwErrorIfReplicaReplaced(descriptor);
@@ -537,8 +533,7 @@ public class ZkController implements Closeable {
         zkClient.delete(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, -1, true);
       } else {
         // /clusterstate.json not empty: refuse to start but do not automatically delete. A bit of a
-        // pain but user shouldn't
-        // have older collections at this stage anyway.
+        // pain but user shouldn't have older collections at this stage anyway.
         String message =
             ZkStateReader.UNSUPPORTED_CLUSTER_STATE
                 + " no longer supported starting with Solr 9. "
@@ -1472,11 +1467,9 @@ public class ZkController implements Closeable {
     try {
       leaderUrl = getLeaderProps(collection, cloudDesc.getShardId(), timeoutms).getCoreUrl();
 
-      // now wait until our currently cloud state contains the latest leader
-      String clusterStateLeaderUrl =
-          zkStateReader.getLeaderUrl(
-              collection, shardId, timeoutms * 2); // since we found it in zk, we are willing to
-      // wait a while to find it in state
+      // now wait until our currently cloud state contains the latest leader since we found it in
+      // zk, we are willing to wait a while to find it in state
+      String clusterStateLeaderUrl = zkStateReader.getLeaderUrl(collection, shardId, timeoutms * 2);
       int tries = 0;
       final long msInSec = 1000L;
       int maxTries = (int) Math.floor(leaderConflictResolveWait / msInSec);
@@ -1738,8 +1731,8 @@ public class ZkController implements Closeable {
       if (state == Replica.State.RECOVERING
           && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
         // state is used by client, state of replica can change from RECOVERING to DOWN without
-        // needed to finish recovery
-        // by calling this we will know that a replica actually finished recovery or not
+        // needed to finish recovery by calling this we will know that a replica actually finished
+        // recovery or not
         getShardTerms(collection, shardId).startRecovering(coreNodeName);
       }
       if (state == Replica.State.ACTIVE && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
@@ -2133,11 +2126,11 @@ public class ZkController implements Closeable {
               leaderProps.getCoreUrl());
         }
 
+        // short timeouts, we may be in a storm and this is best effort and maybe we should be the
+        // leader now
         try (HttpSolrClient client =
             new Builder(leaderBaseUrl)
-                .withConnectionTimeout(
-                    8000) // short timeouts, we may be in a storm and this is best effort and maybe
-                // we should be the leader now
+                .withConnectionTimeout(8000)
                 .withSocketTimeout(30000)
                 .build()) {
           WaitForState prepCmd = new WaitForState();
@@ -2445,8 +2438,7 @@ public class ZkController implements Closeable {
                   core.getCoreDescriptor().getCloudDescriptor(), cloudConfig.getLeaderVoteWait());
           if (!leaderUrl.equals(ourUrl)) {
             // restart the replication thread to ensure the replication is running in each new
-            // replica
-            // especially if previous role is "leader" (i.e., no replication thread)
+            // replica especially if previous role is "leader" (i.e., no replication thread)
             stopReplicationFromLeader(coreName);
             startReplicationFromLeader(coreName, false);
           }
@@ -2572,9 +2564,8 @@ public class ZkController implements Closeable {
     try {
       try {
         Stat stat = zkClient.setData(resourceLocation, content, znodeVersion, true);
-        latestVersion =
-            stat.getVersion(); // if the set succeeded , it should have incremented the version by
-        // one always
+        // if the set succeeded, it should have incremented the version by one always
+        latestVersion = stat.getVersion();
         log.info("Persisted config data to node {} ", resourceLocation);
         touchConfDir(zkLoader);
       } catch (NoNodeException e) {
@@ -2896,13 +2887,11 @@ public class ZkController implements Closeable {
     log.info("Publish node={} as DOWN", nodeName);
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
       // Note that with the current implementation, when distributed cluster state updates are
-      // enabled, we mark the node
-      // down synchronously from this thread, whereas the Overseer cluster state update frees this
-      // thread right away and
-      // the Overseer will async mark the node down but updating all affected collections.
-      // If this is an issue (i.e. takes too long), then the call below should be executed from
-      // another thread so that
-      // the calling thread can immediately return.
+      // enabled, we mark the node down synchronously from this thread, whereas the Overseer cluster
+      // state update frees this thread right away and the Overseer will async mark the node down
+      // but updating all affected collections. If this is an issue (i.e. takes too long), then the
+      // call below should be executed from another thread so that the calling thread can
+      // immediately return.
       distributedClusterStateUpdater.executeNodeDownStateUpdate(nodeName, zkStateReader);
     } else {
       ZkNodeProps m =

@@ -43,10 +43,9 @@ public class CategoryRoutedAlias extends RoutedAlias {
 
   // This constant is terribly annoying but a great many things fall apart if we allow an alias with
   // no collections to be created. So this kludge seems better than reworking every request path
-  // that
-  // expects a collection but also works with an alias to handle or error out on empty alias. The
-  // collection with this constant as a suffix is automatically removed after the alias begins to
-  // receive data.
+  // that expects a collection but also works with an alias to handle or error out on empty alias.
+  // The collection with this constant as a suffix is automatically removed after the alias begins
+  // to receive data.
   public static final String UNINITIALIZED = "NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA_TEMP";
 
   @SuppressWarnings("WeakerAccess")
@@ -122,8 +121,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
 
     Object fieldValue = cmd.getSolrInputDocument().getFieldValue(getRouteField());
     // possible future enhancement: allow specification of an "unknown" category name to where we
-    // can send
-    // docs that are uncategorized.
+    // can send docs that are uncategorized.
     if (fieldValue == null) {
       throw new SolrException(BAD_REQUEST, "Route value is null");
     }
@@ -255,8 +253,7 @@ public class CategoryRoutedAlias extends RoutedAlias {
       actionList.add(new Action(this, ActionType.ENSURE_EXISTS, targetCol));
       for (String s : collectionList) {
         // can't remove the uninitialized on the first pass otherwise there is a risk of momentarily
-        // having
-        // an empty alias if thread scheduling plays tricks on us.
+        // having an empty alias if thread scheduling plays tricks on us.
         if (s.contains(UNINITIALIZED) && collectionList.size() > 1) {
           actionList.add(new Action(this, ActionType.ENSURE_REMOVED, s));
         }

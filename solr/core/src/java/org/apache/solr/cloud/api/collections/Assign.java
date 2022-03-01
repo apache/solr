@@ -303,8 +303,7 @@ public class Assign {
   // Only called from addReplica (and by extension createShard) (so far).
   //
   // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if the
-  // AssignStrategy
-  // can't allocate valid positions.
+  // AssignStrategy can't allocate valid positions.
   @SuppressWarnings({"unchecked"})
   public static List<ReplicaPosition> getNodesForNewReplicas(
       ClusterState clusterState,
@@ -339,8 +338,7 @@ public class Assign {
 
     // produces clear message when down nodes are the root cause, without this the user just
     // gets a log message of detail about the nodes that are up, and a message that policies could
-    // not
-    // be satisfied which then requires study to diagnose the issue.
+    // not be satisfied which then requires study to diagnose the issue.
     checkLiveNodes(createNodeList, clusterState);
 
     AssignRequest assignRequest =

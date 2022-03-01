@@ -69,8 +69,8 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
       throws Exception {
     Object o = message.get(MaintainRoutedAliasCmd.INVOKED_BY_ROUTED_ALIAS);
     if (o != null) {
-      ((Runnable) o)
-          .run(); // this will ensure the collection is removed from the alias before it disappears.
+      // this will ensure the collection is removed from the alias before it disappears.
+      ((Runnable) o).run();
     }
     final String extCollection = message.getStr(NAME);
     ZkStateReader zkStateReader = ccc.getZkStateReader();
@@ -110,10 +110,8 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
             .getZkClient()
             .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true)) {
           // if the collection is not in the clusterstate, but is listed in zk, do nothing, it will
-          // just
-          // be removed in the finally - we cannot continue, because the below code will error if
-          // the collection
-          // is not in the clusterstate
+          // just be removed in the finally - we cannot continue, because the below code will error
+          // if the collection is not in the clusterstate
           return;
         }
       }
@@ -135,9 +133,8 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 && failedReplica.get("dataDir") != null;
         if (isSharedFS) {
           // if the replica use a shared FS and it did not receive the unload message, then counter
-          // node should not be removed
-          // because when a new collection with same name is created, new replicas may reuse the old
-          // dataDir
+          // node should not be removed because when a new collection with same name is created, new
+          // replicas may reuse the old dataDir
           removeCounterNode = false;
           break;
         }

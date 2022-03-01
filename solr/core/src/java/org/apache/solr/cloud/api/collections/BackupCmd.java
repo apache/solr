@@ -149,16 +149,16 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       backupMgr.downloadConfigDir(configName, cc.getConfigSetService());
 
       // Save the collection's state. Can be part of the monolithic clusterstate.json or a
-      // individual state.json
-      // Since we don't want to distinguish we extract the state and back it up as a separate json
+      // individual state.json. Since we don't want to distinguish we extract the state and back it
+      // up as a separate json
       DocCollection collectionState =
           ccc.getZkStateReader().getClusterState().getCollection(collectionName);
       backupMgr.writeCollectionState(collectionName, collectionState);
       backupMgr.downloadCollectionProperties(collectionName);
 
       // TODO: Add MD5 of the configset. If during restore the same name configset exists then we
-      // can compare checksums to see if they are the same.
-      // if they are not the same then we can throw an error or have an 'overwriteConfig' flag
+      // can compare checksums to see if they are the same. if they are not the same then we can
+      // throw an error or have an 'overwriteConfig' flag
       // TODO save numDocs for the shardLeader. We can use it to sanity check the restore.
 
       backupMgr.writeBackupProperties(backupProperties);
@@ -413,10 +413,8 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString());
     params.set(NAME, slice.getName());
     params.set(CoreAdminParams.BACKUP_REPOSITORY, repoName);
-    params.set(
-        CoreAdminParams.BACKUP_LOCATION,
-        backupPath
-            .toASCIIString()); // note: index dir will be here then the "snapshot." + slice name
+    // note: index dir will be here then the "snapshot." + slice name
+    params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString());
     params.set(CORE_NAME_PROP, coreName);
     params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
     return params;
