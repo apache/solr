@@ -17,14 +17,11 @@
 package org.apache.solr.core;
 
 import java.nio.file.Path;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 
-/**
- * Tests specifying a custom ShardHandlerFactory
- */
+/** Tests specifying a custom ShardHandlerFactory */
 public class TestShardHandlerFactory extends SolrTestCaseJ4 {
 
   public void testXML() throws Exception {
@@ -32,10 +29,9 @@ public class TestShardHandlerFactory extends SolrTestCaseJ4 {
     CoreContainer cc = CoreContainer.createAndLoad(home, home.resolve("solr-shardhandler.xml"));
     ShardHandlerFactory factory = cc.getShardHandlerFactory();
     assertTrue(factory instanceof MockShardHandlerFactory);
-    NamedList<?> args = ((MockShardHandlerFactory)factory).args;
+    NamedList<?> args = ((MockShardHandlerFactory) factory).args;
     assertEquals("myMagicRequiredValue", args.get("myMagicRequiredParameter"));
     factory.close();
     cc.shutdown();
   }
-
 }

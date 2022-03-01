@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import java.io.File;
 import java.util.Collections;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -42,7 +41,8 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     final String schemaFileName = "schema-id-and-version-fields-only.xml";
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, configFileName), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, schemaFileName), tmpConfDir);
-    FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
+    FileUtils.copyFileToDirectory(
+        new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
@@ -60,31 +60,38 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     String newFieldValue = "xyz";
 
     ignoreException("unknown field");
-    assertFailedU("Should fail due to unknown field '" + newFieldName + "'", 
-                  adoc("id", "1", newFieldName, newFieldValue));
+    assertFailedU(
+        "Should fail due to unknown field '" + newFieldName + "'",
+        adoc("id", "1", newFieldName, newFieldValue));
     unIgnoreException("unknown field");
 
     IndexSchema schema = h.getCore().getLatestSchema();
     SchemaField newField = schema.newField(newFieldName, newFieldType, Collections.emptyMap());
     IndexSchema newSchema = schema.addField(newField);
     h.getCore().setLatestSchema(newSchema);
-    
-    String newFieldKeyValue = "'" + newFieldName + "':'" + newFieldValue + "'"; 
+
+    String newFieldKeyValue = "'" + newFieldName + "':'" + newFieldValue + "'";
     assertU(adoc("id", "1", newFieldName, newFieldValue));
-    assertJQ(req("q","id:1"), 
-             "/response/numFound==0");
-    assertJQ(req("qt","/get", "id","1", "fl","id,"+newFieldName),
-             "=={'doc':{'id':'1'," + newFieldKeyValue + "}}");
-    assertJQ(req("qt","/get","ids","1", "fl","id,"+newFieldName),
-             "=={'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1'," + newFieldKeyValue + "}]}}");
+    assertJQ(req("q", "id:1"), "/response/numFound==0");
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id," + newFieldName),
+        "=={'doc':{'id':'1'," + newFieldKeyValue + "}}");
+    assertJQ(
+        req("qt", "/get", "ids", "1", "fl", "id," + newFieldName),
+        "=={'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1',"
+            + newFieldKeyValue
+            + "}]}}");
 
     assertU(commit());
 
-    assertJQ(req("q","id:1"), 
-             "/response/numFound==1");
-    assertJQ(req("qt","/get", "id","1", "fl","id,"+newFieldName),
+    assertJQ(req("q", "id:1"), "/response/numFound==1");
+    assertJQ(
+        req("qt", "/get", "id", "1", "fl", "id," + newFieldName),
         "=={'doc':{'id':'1'," + newFieldKeyValue + "}}");
-    assertJQ(req("qt","/get","ids","1", "fl","id,"+newFieldName),
-        "=={'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1'," + newFieldKeyValue + "}]}}");
+    assertJQ(
+        req("qt", "/get", "ids", "1", "fl", "id," + newFieldName),
+        "=={'response':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1',"
+            + newFieldKeyValue
+            + "}]}}");
   }
 }

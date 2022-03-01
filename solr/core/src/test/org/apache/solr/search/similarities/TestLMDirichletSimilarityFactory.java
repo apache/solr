@@ -20,20 +20,18 @@ import org.apache.lucene.search.similarities.LMDirichletSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.junit.BeforeClass;
 
-/**
- * Tests {@link LMDirichletSimilarityFactory}
- */
+/** Tests {@link LMDirichletSimilarityFactory} */
 public class TestLMDirichletSimilarityFactory extends BaseSimilarityTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-lmdirichlet.xml");
+    initCore("solrconfig-basic.xml", "schema-lmdirichlet.xml");
   }
-  
+
   /** dirichlet with default parameters */
   public void test() throws Exception {
     assertEquals(LMDirichletSimilarity.class, getSimilarity("text").getClass());
   }
-  
+
   /** dirichlet with parameters */
   public void testParameters() throws Exception {
     Similarity sim = getSimilarity("text_params");

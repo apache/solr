@@ -18,14 +18,11 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 
-/**
- * Search component used to add delay to each request.
- */
-public class DelayingSearchComponent extends SearchComponent{
+/** Search component used to add delay to each request. */
+public class DelayingSearchComponent extends SearchComponent {
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
@@ -34,9 +31,10 @@ public class DelayingSearchComponent extends SearchComponent{
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
-    final long totalSleepMillis = rb.req.getParams().getLong("sleep",0);
+    final long totalSleepMillis = rb.req.getParams().getLong("sleep", 0);
     if (totalSleepMillis > 0) {
-      final long totalSleepNanos = TimeUnit.NANOSECONDS.convert(totalSleepMillis, TimeUnit.MILLISECONDS);
+      final long totalSleepNanos =
+          TimeUnit.NANOSECONDS.convert(totalSleepMillis, TimeUnit.MILLISECONDS);
       final long startNanos = System.nanoTime();
       try {
         // Thread.sleep() (and derivatives) are not garunteed to sleep the full amount:
@@ -48,8 +46,8 @@ public class DelayingSearchComponent extends SearchComponent{
         // has exceeded in order to get their expected results, we would rather over-sleep
         // then under sleep)
         for (long sleepNanos = totalSleepNanos;
-             0 < sleepNanos;
-             sleepNanos = totalSleepNanos - (System.nanoTime() - startNanos)) {
+            0 < sleepNanos;
+            sleepNanos = totalSleepNanos - (System.nanoTime() - startNanos)) {
           TimeUnit.NANOSECONDS.sleep(sleepNanos);
         }
       } catch (InterruptedException e) {
@@ -62,5 +60,4 @@ public class DelayingSearchComponent extends SearchComponent{
   public String getDescription() {
     return "SearchComponent used to add delay to each request";
   }
-
 }

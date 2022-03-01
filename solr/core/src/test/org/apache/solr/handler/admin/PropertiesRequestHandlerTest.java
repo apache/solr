@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -28,12 +27,10 @@ import org.apache.solr.util.RedactionUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
 public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
 
   public static final String PASSWORD = "secret123";
   public static final String REDACT_STRING = RedactionUtils.getRedactString();
-
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -43,22 +40,22 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testRedaction() throws Exception {
     RedactionUtils.setRedactSystemProperty(true);
-    for(String propName: new String[]{"some.password", "javax.net.ssl.trustStorePassword"}){
+    for (String propName : new String[] {"some.password", "javax.net.ssl.trustStorePassword"}) {
       System.setProperty(propName, PASSWORD);
       NamedList<Object> properties = readProperties();
 
-      assertEquals("Failed to redact "+propName, REDACT_STRING, properties.get(propName));
+      assertEquals("Failed to redact " + propName, REDACT_STRING, properties.get(propName));
     }
   }
 
   @Test
   public void testDisabledRedaction() throws Exception {
     RedactionUtils.setRedactSystemProperty(false);
-    for(String propName: new String[]{"some.password", "javax.net.ssl.trustStorePassword"}){
+    for (String propName : new String[] {"some.password", "javax.net.ssl.trustStorePassword"}) {
       System.setProperty(propName, PASSWORD);
       NamedList<Object> properties = readProperties();
 
-      assertEquals("Failed to *not* redact "+propName, PASSWORD, properties.get(propName));
+      assertEquals("Failed to *not* redact " + propName, PASSWORD, properties.get(propName));
     }
   }
 
@@ -66,8 +63,10 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
   private NamedList<Object> readProperties() throws Exception {
     SolrClient client = new EmbeddedSolrServer(h.getCore());
 
-    NamedList<Object> properties = client.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/properties",
-            new ModifiableSolrParams()));
+    NamedList<Object> properties =
+        client.request(
+            new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/admin/info/properties", new ModifiableSolrParams()));
 
     return (NamedList<Object>) properties.get("system.properties");
   }
