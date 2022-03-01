@@ -80,8 +80,9 @@ class SolrTableScan extends TableScan implements SolrRel {
     // Solr's impl only supports LogicalAggregate, so don't let Calcite convert LogicalAggregate's
     // to Enumerable (SOLR-15974)
     planner.removeRule(EnumerableRules.ENUMERABLE_AGGREGATE_RULE);
-    // prevent AND NOT from being reduced away, see SOLR-15461
-    planner.removeRule(CoreRules.FILTER_REDUCE_EXPRESSIONS);
+    planner.removeRule(
+        CoreRules
+            .FILTER_REDUCE_EXPRESSIONS); // prevent AND NOT from being reduced away, see SOLR-15461
   }
 
   public void implement(Implementor implementor) {
