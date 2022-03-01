@@ -59,6 +59,8 @@ Other Changes
 
 * SOLR-15886: Remove deprecated showItems configuration value from solrconfig.xml files (Andy Lester via Eric Pugh)
 
+* SOLR-12228: Move bin-test scripts to packaging project and create gradle task for running them. (Mike Drob)
+
 Build
 ---------------------
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
