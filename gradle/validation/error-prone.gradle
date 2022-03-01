@@ -64,6 +64,7 @@ allprojects { prj ->
             '-Xep:ComparableType:OFF', // SolrTestCaseJ4.Doc and Fld are messy
 
             '-Xep:AlmostJavadoc:OFF',
+            '-Xep:AlreadyChecked:OFF',
             '-Xep:AmbiguousMethodReference:OFF',
             '-Xep:ArgumentSelectionDefectChecker:OFF',
             '-Xep:ArrayEquals:OFF',
@@ -104,9 +105,9 @@ allprojects { prj ->
             '-Xep:MissingSummary:OFF',
             '-Xep:MixedMutabilityReturnType:OFF',
             '-Xep:ModifiedButNotUsed:OFF',
-            '-Xep:MutableConstantField:OFF',
             '-Xep:MutablePublicArray:OFF',
             '-Xep:NarrowingCompoundAssignment:OFF',
+            '-Xep:NegativeCharLiteral:OFF',
             '-Xep:NonAtomicVolatileUpdate:OFF',
             '-Xep:NonCanonicalType:OFF',
             '-Xep:ObjectToString:OFF',
