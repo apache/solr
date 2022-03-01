@@ -418,7 +418,7 @@ public class XMLResponseParser extends ResponseParser {
           break;
 
         case XMLStreamConstants
-                .SPACE: // TODO?  should this be trimmed? make sure it only gets one/two space?
+            .SPACE: // TODO?  should this be trimmed? make sure it only gets one/two space?
         case XMLStreamConstants.CDATA:
         case XMLStreamConstants.CHARACTERS:
           builder.append(parser.getText());
@@ -542,7 +542,7 @@ public class XMLResponseParser extends ResponseParser {
           break;
 
         case XMLStreamConstants
-                .SPACE: // TODO?  should this be trimmed? make sure it only gets one/two space?
+            .SPACE: // TODO?  should this be trimmed? make sure it only gets one/two space?
         case XMLStreamConstants.CDATA:
         case XMLStreamConstants.CHARACTERS:
           builder.append(parser.getText());
