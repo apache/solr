@@ -48,8 +48,8 @@ import org.apache.solr.search.facet.SlotAcc.SlotContext;
  * </ul>
  */
 class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
-  static int MAXIMUM_STARTING_TABLE_SIZE =
-      1024; // must be a power of two, non-final to support setting by tests
+  // must be a power of two, non-final to support setting by tests
+  static int MAXIMUM_STARTING_TABLE_SIZE = 1024;
 
   /** a hash table with long keys (what we're counting) and integer values (counts) */
   private static class LongCounts {
@@ -57,9 +57,8 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
     static final float LOAD_FACTOR = 0.7f;
 
     long[] vals;
-    long[]
-        counts; // maintain the counts here since we need them to tell if there was actually a value
-    // anyway
+    // maintain the counts here since we need them to tell if there was actually a value anyway
+    long[] counts;
     long[] oldToNewMapping;
 
     int cardinality;
@@ -78,14 +77,12 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
     }
 
     private int hash(long val) {
-      // For floats: exponent bits start at bit 23 for single precision,
-      // and bit 52 for double precision.
-      // Many values will only have significant bits just to the right of that,
-      // and the leftmost bits will all be zero.
+      // For floats: exponent bits start at bit 23 for single precision, and bit 52 for double
+      // precision. Many values will only have significant bits just to the right of that, and the
+      // leftmost bits will all be zero.
 
       // For now, lets just settle to get first 8 significant mantissa bits of double or float in
-      // the lowest bits of our hash
-      // The upper bits of our hash will be irrelevant.
+      // the lowest bits of our hash. The upper bits of our hash will be irrelevant.
       int h = (int) (val + (val >>> 44) + (val >>> 15));
       return h;
     }
@@ -114,8 +111,8 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
 
     protected void rehash() {
       long[] oldVals = vals;
-      long[] oldCounts =
-          counts; // after retrieving the count, this array is reused as a mapping to new array
+      // after retrieving the count, this array is reused as a mapping to new array
+      long[] oldCounts = counts;
       int newCapacity = vals.length << 1;
       vals = new long[newCapacity];
       counts = new long[newCapacity];
@@ -416,9 +413,9 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
                   collectValFirstPhase(segDoc, l);
                   for (int i = 1, count = values.docValueCount(); i < count; i++) {
                     long lnew = values.nextValue();
-                    if (lnew
-                        != l) { // Skip the value if it's equal to the last one, we don't want to
-                      // double-count it
+                    // Skip the value if it's equal to the last one, we don't want to double-count
+                    // it
+                    if (lnew != l) {
                       collectValFirstPhase(segDoc, lnew);
                     }
                     l = lnew;

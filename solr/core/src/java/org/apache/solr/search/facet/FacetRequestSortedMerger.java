@@ -34,8 +34,10 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     extends FacetModule.FacetBucketMerger<FacetRequestT> {
   LinkedHashMap<Object, FacetBucket> buckets = new LinkedHashMap<>();
   List<FacetBucket> sortedBuckets;
-  BitSet shardHasMoreBuckets; // null, or "true" if we saw a result from this shard and it indicated
-  // that there are more results
+
+  // null, or "true" if we saw a result from this shard and it indicated that there are more results
+  BitSet shardHasMoreBuckets;
+
   Context mcontext; // HACK: this should be passed in getMergedResult as well!
 
   public FacetRequestSortedMerger(FacetRequestT freq) {
@@ -58,8 +60,8 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
 
   private static class SortVal implements Comparable<SortVal> {
     FacetBucket bucket;
-    FacetModule.FacetSortableMerger
-        merger; // make this class inner and access merger , direction in parent?
+    // make this class inner and access merger , direction in parent?
+    FacetModule.FacetSortableMerger merger;
     FacetRequest.SortDirection direction;
 
     @Override
@@ -185,29 +187,25 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     // refining.
     Collection<String> tagsWithPartial = mcontext.getSubsWithPartial(freq);
 
-    boolean thisMissing =
-        mcontext.bucketWasMissing(); // Was this whole facet missing (i.e. inside a bucket that was
-    // missing)?
+    // Was this whole facet missing (i.e. inside a bucket that was missing)?
+    boolean thisMissing = mcontext.bucketWasMissing();
+    // shard indicated it has more buckets
     boolean shardHasMore =
-        shardHasMoreBuckets != null
-            && shardHasMoreBuckets.get(mcontext.shardNum); // shard indicated it has more buckets
-    shardHasMore |=
-        thisMissing; // if we didn't hear from the shard at all, assume it as more buckets
+        shardHasMoreBuckets != null && shardHasMoreBuckets.get(mcontext.shardNum);
+    // if we didn't hear from the shard at all, assume it as more buckets
+    shardHasMore |= thisMissing;
 
     // If we know we've seen all the buckets from a shard, then we don't have to add to leafBuckets
     // or partialBuckets, only skipBuckets
-    boolean isCommandPartial =
-        freq.returnsPartial()
-            || freq.processEmpty; // TODO: should returnsPartial() check processEmpty internally?
-    boolean returnedAllBuckets =
-        !shardHasMore
-            && !freq.processEmpty; // did the shard return all of the possible buckets at this
-    // level? (pretend it didn't if processEmpty is set)
+    // TODO: should returnsPartial() check processEmpty internally?
+    boolean isCommandPartial = freq.returnsPartial() || freq.processEmpty;
+    // did the shard return all of the possible buckets at this level? (pretend it didn't if
+    // processEmpty is set)
+    boolean returnedAllBuckets = !shardHasMore && !freq.processEmpty;
 
     if (returnedAllBuckets && tags.isEmpty() && tagsWithPartial.isEmpty()) {
       // this shard returned all of its possible buckets, and there were no sub-facets with partial
-      // results
-      // or sub-facets that require refining
+      // results or sub-facets that require refining
       return null;
     }
 
@@ -261,15 +259,14 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
       bucketList = sortedBuckets;
     }
 
-    ArrayList<Object> leafBuckets =
-        null; // "_l" missing buckets specified by bucket value only (no need to specify anything
-    // further)
-    ArrayList<Object> partialBuckets =
-        null; // "_p" missing buckets that have a partial sub-facet that need to specify those
-    // bucket values... each entry is [bucketval, subs]
-    ArrayList<Object> skipBuckets =
-        null; // "_s" present buckets that we need to recurse into because children facets have
-    // refinement requirements. each entry is [bucketval, subs]
+    // "_l" missing buckets specified by bucket value only (no need to specify anything further)
+    ArrayList<Object> leafBuckets = null;
+    // "_p" missing buckets that have a partial sub-facet that need to specify those bucket
+    // values... each entry is [bucketval, subs]
+    ArrayList<Object> partialBuckets = null;
+    // "_s" present buckets that we need to recurse into because children facets have refinement
+    // requirements. each entry is [bucketval, subs]
+    ArrayList<Object> skipBuckets = null;
 
     for (FacetBucket bucket : bucketList) {
       if (numBucketsToCheck-- <= 0) break;
@@ -311,9 +308,8 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     }
 
     // TODO: what if we don't need to refine any variable buckets, but we do need to contribute to
-    // numBuckets, missing, allBuckets, etc...
-    // because we were "partial".  That will be handled at a higher level (i.e. we'll be in
-    // someone's missing bucket?)
+    // numBuckets, missing, allBuckets, etc... because we were "partial".  That will be handled at a
+    // higher level (i.e. we'll be in someone's missing bucket?)
     // TODO: test with a sub-facet with a limit of 0 and something like a missing bucket
     if (leafBuckets != null || partialBuckets != null || skipBuckets != null) {
       refinement = new HashMap<>(3);
@@ -328,8 +324,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
   }
 
   // utility method for subclasses to override to finish calculating faceting (special buckets in
-  // field facets)... this feels hacky and we
-  // should find a better way.
+  // field facets)... this feels hacky and we should find a better way.
   Map<String, Object> getRefinementSpecial(
       Context mcontext, Map<String, Object> refinement, Collection<String> tagsWithPartial) {
     return refinement;

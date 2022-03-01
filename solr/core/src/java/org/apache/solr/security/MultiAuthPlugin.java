@@ -58,8 +58,8 @@ public class MultiAuthPlugin extends AuthenticationPlugin
 
   private final Map<String, AuthenticationPlugin> pluginMap = new LinkedHashMap<>();
   private final ResourceLoader loader;
-  private AuthenticationPlugin allowsUnknown =
-      null; // the first of our plugins that allows anonymous requests
+  // the first of our plugins that allows anonymous requests
+  private AuthenticationPlugin allowsUnknown = null;
 
   // Get the loader from the CoreContainer so we can load the sub-plugins, such as the
   // BasicAuthPlugin for Basic
@@ -190,8 +190,7 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     final String authHeader = request.getHeader(AUTHORIZATION_HEADER);
     if (authHeader == null) {
       // no Authorization header but if it's an AJAX request, forward to the default scheme so it
-      // can handle it
-      // otherwise, send to the first plugin that allows blockUnknown = false
+      // can handle it otherwise, send to the first plugin that allows blockUnknown = false
       final AuthenticationPlugin plugin =
           BasicAuthPlugin.isAjaxRequest(request)
               ? pluginMap.values().iterator().next()

@@ -98,8 +98,7 @@ public abstract class ServletUtils {
             @Override
             public void close() {
               // even though we skip closes, we let local tests know not to close so that a full
-              // understanding can take
-              // place
+              // understanding can take place
               assert !Thread.currentThread()
                       .getStackTrace()[2]
                       .getClassName()
@@ -136,8 +135,7 @@ public abstract class ServletUtils {
             @Override
             public void close() {
               // even though we skip closes, we let local tests know not to close so that a full
-              // understanding can take
-              // place
+              // understanding can take place
               assert !Thread.currentThread()
                       .getStackTrace()[2]
                       .getClassName()

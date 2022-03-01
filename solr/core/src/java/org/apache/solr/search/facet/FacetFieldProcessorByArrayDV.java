@@ -92,8 +92,8 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
   protected void collectDocs() throws IOException {
     int domainSize = fcontext.base.size();
 
-    if (nTerms <= 0
-        || domainSize < effectiveMincount) { // TODO: what about allBuckets? missing bucket?
+    // TODO: what about allBuckets? missing bucket?
+    if (nTerms <= 0 || domainSize < effectiveMincount) {
       return;
     }
 
@@ -111,24 +111,19 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     // available for indexed fields.
     // FUTURE: take into account that bigger ord maps are more expensive than smaller ones
     // One test: 5M doc index, faceting on a single-valued field with almost 1M unique values,
-    // crossover point where global counting was slower
-    // than per-segment counting was a domain of 658k docs.  At that point, top 10 buckets had 6-7
-    // matches each.
-    // this was for heap docvalues produced by UninvertingReader
-    // Since these values were randomly distributed, lets round our domain multiplier up to account
-    // for less random real world data.
+    // crossover point where global counting was slower than per-segment counting was a domain of
+    // 658k docs.  At that point, top 10 buckets had 6-7 matches each. this was for heap docvalues
+    // produced by UninvertingReader Since these values were randomly distributed, lets round our
+    // domain multiplier up to account for less random real world data.
     long domainMultiplier = multiValuedField ? 4L : 2L;
-    boolean manyHitsPerBucket =
-        domainSize * domainMultiplier
-            > (si.getValueCount() + 3); // +3 to increase test coverage with small tests
+    // +3 to increase test coverage with small tests
+    boolean manyHitsPerBucket = domainSize * domainMultiplier > (si.getValueCount() + 3);
 
     // If we're only calculating counts, we're not prefixing, and we expect to collect many
-    // documents per unique value,
-    // then collect per-segment before mapping to global ords at the end.  This will save redundant
-    // seg->global ord mappings.
+    // documents per unique value, then collect per-segment before mapping to global ords at the
+    // end.  This will save redundant seg->global ord mappings.
     // FUTURE: there are probably some other non "countOnly" cases where we can use this as well
-    // (i.e. those where
-    // the docid is not used)
+    // (i.e. those where the docid is not used)
     boolean canDoPerSeg = countOnly && fullRange;
     boolean accumSeg = manyHitsPerBucket && canDoPerSeg;
 

@@ -411,9 +411,8 @@ public abstract class SlotAcc implements Closeable {
 
     public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext)
         throws IOException {
-      double val =
-          values.doubleVal(
-              doc); // todo: worth trying to share this value across multiple stats that need it?
+      // todo: worth trying to share this value across multiple stats that need it?
+      double val = values.doubleVal(doc);
       result[slotNum] += val;
     }
   }
@@ -511,8 +510,8 @@ public abstract class SlotAcc implements Closeable {
     }
 
     private double variance(int slot) {
-      return AggUtil.variance(
-          result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      // calc once and cache in result?
+      return AggUtil.variance(result[slot], sum[slot], counts[slot]);
     }
 
     @Override
@@ -570,8 +569,8 @@ public abstract class SlotAcc implements Closeable {
     }
 
     private double stdDev(int slot) {
-      return AggUtil.stdDev(
-          result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      // calc once and cache in result?
+      return AggUtil.stdDev(result[slot], sum[slot], counts[slot]);
     }
 
     @Override

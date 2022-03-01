@@ -166,8 +166,8 @@ public class FacetHeatmap extends FacetRequest {
         }
       } else {
         // SpatialArgs has utility methods to resolve a 'distErr' from optionally set distErr &
-        // distErrPct. Arguably that
-        // should be refactored to feel less weird than using it like this.
+        // distErrPct. Arguably that should be refactored to feel less weird than using it like
+        // this.
         SpatialArgs spatialArgs =
             new SpatialArgs(
                 SpatialOperation.Intersects /*ignored*/,
@@ -319,19 +319,18 @@ public class FacetHeatmap extends FacetRequest {
     }
 
     switch (format) {
-      case FORMAT_INTS2D: // A List of List of Integers. Good for small heatmaps and ease of
-        // consumption
+      case FORMAT_INTS2D:
+        // A List of List of Integers. Good for small heatmaps and ease of consumption
         return asInts2D(columns, rows, counts);
-      case FORMAT_PNG: // A PNG graphic; compressed.  Good for large & dense heatmaps; hard to
-        // consume.
+      case FORMAT_PNG:
+        // A PNG graphic; compressed. Good for large & dense heatmaps; hard to consume.
         return asPngBytes(columns, rows, counts, debugInfo);
 
-        // TODO  case UTFGRID  https://github.com/mapbox/utfgrid-spec
-        // TODO  case skipList: //A sequence of values; negative values are actually how many 0's to
-        // insert.
-        //            Good for small or large but sparse heatmaps.
-        // TODO    auto choose png or skipList; use skipList when < ~25% full or <= ~512 cells
-        //  remember to augment error list below when we add more formats.
+        // TODO case UTFGRID  https://github.com/mapbox/utfgrid-spec
+        // TODO case skipList: //A sequence of values; negative values are actually how many 0's to
+        // insert. Good for small or large but sparse heatmaps.
+        // TODO auto choose png or skipList; use skipList when < ~25% full or <= ~512 cells remember
+        // to augment error list below when we add more formats.
       default:
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown format: " + format);
     }
@@ -344,10 +343,8 @@ public class FacetHeatmap extends FacetRequest {
       int[] counts;
 
       // note: there appears to be no mechanism to modify the shard requests in this API.  If we
-      // could, we'd
-      //  change the format to png.  Instead, we have the facet processor recognize it's a shard
-      // request and ignore
-      //  the requested format, which seems like a hack.
+      // could, we'd change the format to png.  Instead, we have the facet processor recognize it's
+      // a shard request and ignore the requested format, which seems like a hack.
 
       @SuppressWarnings("unchecked")
       @Override
@@ -407,9 +404,9 @@ public class FacetHeatmap extends FacetRequest {
     // The data is oriented naturally for human/developer viewing: one row at a time top-down
     return new AbstractList<List<Integer>>() {
       @Override
-      public List<Integer> get(
-          final int rowIdx) { // top-down remember; the heatmap.counts is bottom up
-        // check if all zeroes and return null if so
+      public List<Integer> get(final int rowIdx) {
+        // top-down remember; the heatmap.counts is bottom up check if all zeroes and return null if
+        // so
         boolean hasNonZero = false;
         int y = rows - rowIdx - 1; // flip direction for 'y'
         for (int c = 0; c < columns; c++) {
@@ -485,8 +482,7 @@ public class FacetHeatmap extends FacetRequest {
 
     static BufferedImage readImage(final byte[] bytes) {
       // Wrap ImageInputStream around the bytes.  We could use MemoryCacheImageInputStream but it
-      // will
-      // cache the data which is quite unnecessary given we have it all in-memory already.
+      // will cache the data which is quite unnecessary given we have it all in-memory already.
       ImageInputStream imageInputStream =
           new ImageInputStreamImpl() {
             // TODO re-use this instance; superclass has 8KB buffer.

@@ -821,8 +821,7 @@ public class SolrRequestParsers {
       boolean isPost = "POST".equals(method);
 
       // SOLR-6787 changed the behavior of a POST without content type.  Previously it would throw
-      // an exception,
-      // but now it will use the raw request parser.
+      // an exception, but now it will use the raw request parser.
       /***
        * if (contentType == null && isPost) {
        * throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Must specify a Content-Type header with POST requests");
@@ -903,9 +902,8 @@ public class SolrRequestParsers {
       int pos = in.getPositionInBuffer();
       int end = in.getEndInBuffer();
 
-      for (int i = pos;
-          i < end - 1;
-          i++) { // we do "end-1" because we check "arr[i+1]" sometimes in the loop body
+      // we do "end-1" because we check "arr[i+1]" sometimes in the loop body
+      for (int i = pos; i < end - 1; i++) {
         int ch = arr[i];
         boolean isWhitespace = ((WS_MASK >> ch) & 0x01) != 0 && (ch <= ' ' || ch == 0xa0);
         if (!isWhitespace) {

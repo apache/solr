@@ -29,8 +29,8 @@ import org.apache.solr.search.QueryParsing;
 
 public class KnnQParser extends QParser {
 
-  static final String TOP_K =
-      "topK"; // retrieve the top K results based on the distance similarity function
+  // retrieve the top K results based on the distance similarity function
+  static final String TOP_K = "topK";
   static final int DEFAULT_TOP_K = 10;
 
   /**

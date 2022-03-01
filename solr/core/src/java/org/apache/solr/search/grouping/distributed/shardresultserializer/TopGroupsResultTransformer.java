@@ -133,8 +133,8 @@ public class TopGroupsResultTransformer
         String groupValue = commandResult.getName(i);
         @SuppressWarnings("unchecked")
         NamedList<Object> groupResult = (NamedList<Object>) commandResult.getVal(i);
-        Number totalGroupHits =
-            (Number) groupResult.get("totalHits"); // // previously Integer now Long
+        // previously Integer now Long
+        Number totalGroupHits = (Number) groupResult.get("totalHits");
         Float maxScore = (Float) groupResult.get("maxScore");
         if (maxScore == null) {
           maxScore = Float.NaN;

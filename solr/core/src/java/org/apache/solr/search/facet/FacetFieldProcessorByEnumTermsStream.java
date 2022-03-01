@@ -90,8 +90,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
     super.process();
 
     // We need to keep the fcontext open after processing is done (since we will be streaming in the
-    // response writer).
-    // But if the connection is broken, we want to clean up.
+    // response writer). But if the connection is broken, we want to clean up.
     // fcontext.base.incref();  // OFF-HEAP
     fcontext.qcontext.addCloseHook(this);
 
@@ -120,8 +119,8 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
             retrieveNext = true;
             if (val == null) {
               // Last value, so clean up.  In the case that we are doing streaming facets within
-              // streaming facets,
-              // the number of close hooks could grow very large, so we want to remove ourselves.
+              // streaming facets, the number of close hooks could grow very large, so we want to
+              // remove ourselves.
               boolean removed =
                   fcontext.qcontext.removeCloseHook(FacetFieldProcessorByEnumTermsStream.this);
               assert removed;
@@ -159,14 +158,10 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
       throw new IllegalArgumentException("Illegal `overrequest` specified: " + freq.overrequest);
     } else if (freq.overrequest > 0 && (fcontext.isShard() || null != resort)) {
       // NOTE: "index sort" _never_ applies a default overrequest. In both the shard case and the
-      // resort case, the
-      // default overrequest is `0`. However, if `overrequest` is explicitly specified, we respect
-      // it except for
-      // non-distrib, no-resort request. Overrequest is relevant for the `resort` case; but it can
-      // also be relevant
-      // in some edge cases of the "shard" case, where it can affect the behavior of
-      // `isBucketComplete()`
-      // (see SOLR-14595).
+      // resort case, the default overrequest is `0`. However, if `overrequest` is explicitly
+      // specified, we respect it except for non-distrib, no-resort request. Overrequest is relevant
+      // for the `resort` case; but it can also be relevant in some edge cases of the "shard" case,
+      // where it can affect the behavior of `isBucketComplete()` (see SOLR-14595).
       effectiveLimit += freq.overrequest;
     }
 
@@ -176,9 +171,8 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
     if (freq.cacheDf == -1) { // -1 means never cache
       minDfFilterCache = Integer.MAX_VALUE;
     } else if (freq.cacheDf == 0) { // default; compute as fraction of maxDoc
-      minDfFilterCache =
-          Math.max(
-              fcontext.searcher.maxDoc() >> 4, 3); // (minimum of 3 is for test coverage purposes)
+      // (minimum of 3 is for test coverage purposes)
+      minDfFilterCache = Math.max(fcontext.searcher.maxDoc() >> 4, 3);
     } else {
       minDfFilterCache = freq.cacheDf;
     }

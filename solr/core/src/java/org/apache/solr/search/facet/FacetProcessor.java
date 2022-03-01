@@ -50,8 +50,9 @@ public abstract class FacetProcessor<T extends FacetRequest> {
   // TODO : I'm not sure this needs to be generic but come back to this later
   T freq;
 
-  DocSet filter; // additional filters specified by "filter"  // TODO: do these need to be on the
-  // context to support recomputing during multi-select?
+  // TODO: do these need to be on the context to support recomputing during multi-select?
+  DocSet filter; // additional filters specified by "filter"
+
   LinkedHashMap<String, SlotAcc> accMap;
   SlotAcc[] accs;
   SlotAcc.CountSlotAcc countAcc;
@@ -502,12 +503,13 @@ public abstract class FacetProcessor<T extends FacetRequest> {
       // make a new context for each sub-facet since they can change the domain
       FacetContext subContext = fcontext.sub(filter, domain);
       subContext.facetInfo = facetInfoSub;
-      if (!skip)
-        subContext.flags &=
-            ~FacetContext.SKIP_FACET; // turn off the skip flag if we're not skipping this bucket
+      if (!skip) {
+        // turn off the skip flag if we're not skipping this bucket
+        subContext.flags &= ~FacetContext.SKIP_FACET;
+      }
 
-      if (fcontext.getDebugInfo()
-          != null) { // if fcontext.debugInfo != null, it means rb.debug() == true
+      // if fcontext.debugInfo != null, it means rb.debug() == true
+      if (fcontext.getDebugInfo() != null) {
         FacetDebugInfo fdebug = new FacetDebugInfo();
         subContext.setDebugInfo(fdebug);
         fcontext.getDebugInfo().addChild(fdebug);

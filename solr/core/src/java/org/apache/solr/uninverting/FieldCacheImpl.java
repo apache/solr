@@ -1284,11 +1284,10 @@ public class FieldCacheImpl implements FieldCache {
     if (terms == null) {
       return DocValues.emptySortedSet();
     } else {
-      // if #postings = #docswithfield we know that the field is "single valued enough".
-      // it's possible the same term might appear twice in the same document, but SORTED_SET
-      // discards frequency.
-      // it's still ok with filtering (which we limit to numerics), it just means precisionStep =
-      // Inf
+      // if #postings = #docswithfield we know that the field is "single valued enough". it's
+      // possible the same term might appear twice in the same document, but SORTED_SET discards
+      // frequency. it's still ok with filtering (which we limit to numerics), it just means
+      // precisionStep = Inf
       long numPostings = terms.getSumDocFreq();
       if (numPostings != -1 && numPostings == terms.getDocCount()) {
         return DocValues.singleton(getTermsIndex(reader, field));

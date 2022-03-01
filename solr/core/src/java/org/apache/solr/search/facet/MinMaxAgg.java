@@ -37,9 +37,9 @@ import org.apache.solr.schema.StrFieldSource;
 import org.apache.solr.search.function.FieldNameValueSource;
 
 public class MinMaxAgg extends SimpleAggValueSource {
-  final int
-      minmax; // a multiplier to reverse the normal order of compare if this is max instead of min
-  // (i.e. max will be -1)
+  // a multiplier to reverse the normal order of compare if this is max instead of min (i.e. max
+  // will be -1)
+  final int minmax;
 
   public MinMaxAgg(String minOrMax, ValueSource vs) {
     super(minOrMax, vs);
@@ -322,9 +322,11 @@ public class MinMaxAgg extends SimpleAggValueSource {
       boolean eb = b != 0 || exists.get(slotB);
 
       if (ea != eb) {
-        if (ea)
-          return 1; // a exists and b doesn't TODO: we need context to be able to sort missing last!
-        //  SOLR-10618
+        if (ea) {
+          // a exists and b doesn't
+          // TODO: we need context to be able to sort missing last! SOLR-10618
+          return 1;
+        }
         if (eb) return -1; // b exists and a is missing
       }
 

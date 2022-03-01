@@ -340,10 +340,8 @@ public class RelatednessAgg extends AggValueSource {
       // cache the set sizes for frequent re-use on every slot
       this.fgSize = fgSet.size();
       this.bgSize = bgSet.size();
-      this.slotvalues =
-          new BucketData
-              [numSlots]; // TODO: avoid initializing array until we know we're not doing sweep
-      // collection?
+      // TODO: avoid initializing array until we know we're not doing sweep collection?
+      this.slotvalues = new BucketData[numSlots];
       reset();
     }
 
@@ -387,8 +385,7 @@ public class RelatednessAgg extends AggValueSource {
         // NOTE: it might be temping to use 'slotvalues[slot] = null' in this case
         // since getValue() will also ultimately generate an implied bucket in that case,
         // but by using a non-null bucket we let collect(int,...) know it doesn't need to keep
-        // calling
-        // processSlot over and over.
+        // calling processSlot over and over.
         return;
       }
 
@@ -396,9 +393,8 @@ public class RelatednessAgg extends AggValueSource {
       if (null == slotQ) {
         // extremeley special edge case...
         // the only way this should be possible is if our relatedness() function is used as a "top
-        // level"
-        // stat w/o being nested under any facet, in which case it should be a FacetQuery w/no
-        // parent...
+        // level" stat w/o being nested under any facet, in which case it should be a FacetQuery
+        // w/no parent...
         assert fcontext.processor.freq instanceof FacetQuery : fcontext.processor.freq;
         assert null == fcontext.parent;
         assert null == fcontext.filter;
@@ -440,8 +436,7 @@ public class RelatednessAgg extends AggValueSource {
       processSlot(slot, slotContext);
 
       // we don't do any filtering, we collect the whole docset, so return that as out collected
-      // count
-      // (as a stat, we're actually required to return this by assertions in
+      // count (as a stat, we're actually required to return this by assertions in
       // FacetFieldProcessor.processStats)
       return docs.size();
     }
@@ -678,8 +673,7 @@ public class RelatednessAgg extends AggValueSource {
       } else {
         if (implied) {
           // When returning results to an external client, any bucket still 'implied' shouldn't
-          // return
-          // any results at all.
+          // return any results at all.
           // (practically speaking this should only happen for the 'allBuckets' bucket
           return null;
         }

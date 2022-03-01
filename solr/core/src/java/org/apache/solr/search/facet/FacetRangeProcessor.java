@@ -104,9 +104,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     // ...but that would require sorting the buckets (by their val) at the top level
     //
     // Rather then do that, which could be complicated by non trivial field types, we'll force the
-    // sub-shard effectiveMincount
-    // to be 0, ensuring that we can trivially merge all the buckets from every shard
-    // (we have to filter the merged buckets by the original mincount either way)
+    // sub-shard effectiveMincount to be 0, ensuring that we can trivially merge all the buckets
+    // from every shard (we have to filter the merged buckets by the original mincount either way)
     effectiveMincount = fcontext.isShard() ? 0 : freq.mincount;
   }
 
@@ -583,8 +582,9 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     DocSet intersection = fcontext.searcher.getDocSet(rangeQ, fcontext.base);
     if (hasSubFacets) {
       filters[slot] = rangeQ;
-      intersections[slot] =
-          intersection; // save for later  // TODO: only save if number of slots is small enough?
+      // save for later
+      // TODO: only save if number of slots is small enough?
+      intersections[slot] = intersection;
     }
     long num =
         collect(
@@ -985,22 +985,19 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   protected SimpleOrderedMap<Object> refineFacets() throws IOException {
     // this refineFacets method is patterned after FacetFieldProcessor.refineFacets such that
     // the same "_s" skip bucket syntax is used and FacetRangeMerger can subclass
-    // FacetRequestSortedMerger
-    // for dealing with them & the refinement requests.
+    // FacetRequestSortedMerger for dealing with them & the refinement requests.
     //
     // But range faceting does *NOT* use the "leaves" and "partial" syntax
     //
     // If/When range facet becomes more like field facet in it's ability to sort and limit the
-    // "range buckets"
-    // FacetRangeProcessor and FacetFieldProcessor should probably be refactored to share more code.
+    // "range buckets" FacetRangeProcessor and FacetFieldProcessor should probably be refactored to
+    // share more code.
 
     boolean skipThisFacet = (fcontext.flags & SKIP_FACET) != 0;
 
-    List<List> skip =
-        FacetFieldProcessor.asList(
-            fcontext.facetInfo.get(
-                "_s")); // We have seen this bucket, so skip stats on it, and skip sub-facets except
-    // for the specified sub-facets that should calculate specified buckets.
+    // We have seen this bucket, so skip stats on it, and skip sub-facets except for the specified
+    // sub-facets that should calculate specified buckets.
+    List<List> skip = FacetFieldProcessor.asList(fcontext.facetInfo.get("_s"));
 
     // sanity check our merger's super class didn't send us something we can't handle ...
     assert 0 == FacetFieldProcessor.asList(fcontext.facetInfo.get("_l")).size();

@@ -551,8 +551,8 @@ public class DocTermOrds implements Accountable {
   /** Number of bytes to represent an unsigned int as a vint. */
   private static int vIntSize(int x) {
     // Tests outside of this code base shows that the previous conditional-based vIntSize is fairly
-    // slow until
-    // JITted and still about 1/3 slower after JIT than the numberOfLeadingZeros version below.
+    // slow until JITted and still about 1/3 slower after JIT than the numberOfLeadingZeros version
+    // below.
     return BLOCK7[Integer.numberOfLeadingZeros(x)]; // Intrinsic on modern CPUs
   }
 

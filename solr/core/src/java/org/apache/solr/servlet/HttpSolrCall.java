@@ -147,8 +147,7 @@ public class HttpSolrCall {
 
   static {
     // We try to make things reproducible in the context of our tests by initializing the random
-    // instance
-    // based on the current seed
+    // instance based on the current seed
     String seed = System.getProperty("tests.seed");
     if (seed == null) {
       random = new Random();
@@ -174,11 +173,10 @@ public class HttpSolrCall {
   protected Map<String, Integer> invalidStates;
 
   // The states of client that is invalid in this request
-  protected String
-      origCorename; // What's in the URL path; might reference a collection/alias or a Solr core
-  // name
-  protected List<String>
-      collectionsList; // The list of SolrCloud collections if in SolrCloud (usually 1)
+  // What's in the URL path; might reference a collection/alias or a Solr core name
+  protected String origCorename;
+  // The list of SolrCloud collections if in SolrCloud (usually 1)
+  protected List<String> collectionsList;
 
   public RequestType getRequestType() {
     return requestType;
@@ -269,8 +267,8 @@ public class HttpSolrCall {
       if (core != null) {
         path = path.substring(idx);
       } else {
-        if (cores.isCoreLoading(
-            origCorename)) { // extra mem barriers, so don't look at this before trying to get core
+        // extra mem barriers, so don't look at this before trying to get core
+        if (cores.isCoreLoading(origCorename)) {
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCore is loading");
         }
         // the core may have just finished loading
@@ -294,16 +292,15 @@ public class HttpSolrCall {
 
       if (core == null) {
         // lookup core from collection, or route away if need to
-        String collectionName =
-            collectionsList.isEmpty() ? null : collectionsList.get(0); // route to 1st
+        // route to 1st
+        String collectionName = collectionsList.isEmpty() ? null : collectionsList.get(0);
         // TODO try the other collections if can't find a local replica of the first?   (and do to
         // V2HttpSolrCall)
 
         boolean isPreferLeader = (path.endsWith("/update") || path.contains("/update/"));
 
-        core =
-            getCoreByCollection(
-                collectionName, isPreferLeader); // find a local replica/core for the collection
+        // find a local replica/core for the collection
+        core = getCoreByCollection(collectionName, isPreferLeader);
         if (core != null) {
           if (idx > 0) {
             path = path.substring(idx);
@@ -952,8 +949,7 @@ public class HttpSolrCall {
     assert cores.isZooKeeperAware();
     String collectionParam = queryParams.get(COLLECTION_PROP);
     // if there is no existing collection param and the core we go to is for the expected
-    // collection,
-    //   then we needn't add a collection param
+    // collection, then we needn't add a collection param
     if (collectionParam == null
         && // if collection param already exists, we may need to over-write it
         core != null

@@ -118,9 +118,8 @@ public class Suggester extends SolrSpellChecker {
     String store = (String) config.get(STORE_DIR);
     if (store != null) {
       storeDir = Path.of(store);
-      storeDir =
-          Path.of(core.getDataDir())
-              .resolve(storeDir); // if store dir is absolute this won't change it
+      // if store dir is absolute this won't change it
+      storeDir = Path.of(core.getDataDir()).resolve(storeDir);
       try {
         Files.createDirectories(storeDir);
       } catch (IOException e) {

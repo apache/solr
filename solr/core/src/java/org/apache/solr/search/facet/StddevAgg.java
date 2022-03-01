@@ -100,8 +100,8 @@ public class StddevAgg extends SimpleAggValueSource {
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.stdDev(
-          result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      // calc once and cache in result?
+      return AggUtil.stdDev(result[slot], sum[slot], counts[slot]);
     }
   }
 
@@ -114,8 +114,8 @@ public class StddevAgg extends SimpleAggValueSource {
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.stdDev(
-          result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      // calc once and cache in result?
+      return AggUtil.stdDev(result[slot], sum[slot], counts[slot]);
     }
   }
 
@@ -128,8 +128,8 @@ public class StddevAgg extends SimpleAggValueSource {
 
     @Override
     protected double computeVal(int slot) {
-      return AggUtil.stdDev(
-          result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+      // calc once and cache in result?
+      return AggUtil.stdDev(result[slot], sum[slot], counts[slot]);
     }
   }
 }

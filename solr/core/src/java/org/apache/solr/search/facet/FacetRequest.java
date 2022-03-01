@@ -158,9 +158,8 @@ public abstract class FacetRequest {
     public GraphField graphField;
     public boolean toParent;
     public boolean toChildren;
-    public String
-        parents; // identifies the parent filter... the full set of parent documents for any block
-    // join operation
+    // identifies the parent filter... the full set of parent documents for any block join operation
+    public String parents;
     public List<Object> filters; // list of symbolic filters (JSON query format)
 
     // True if a starting set of documents can be mapped onto a different set of documents not
@@ -216,7 +215,6 @@ public abstract class FacetRequest {
         final Object queryJoin = domainMap.get("join");
         if (null != queryJoin) {
           // TODO: maybe allow simple string (instead of map) to mean "self join on this field name"
-          // ?
           if (!(queryJoin instanceof Map)) {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,

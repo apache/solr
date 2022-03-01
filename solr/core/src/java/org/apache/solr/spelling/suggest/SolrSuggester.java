@@ -131,9 +131,8 @@ public class SolrSuggester implements Accountable {
     // if store directory is provided make it or load up the lookup with its content
     if (store != null && !store.isEmpty()) {
       storeDir = Path.of(store);
-      storeDir =
-          Path.of(core.getDataDir())
-              .resolve(storeDir); // if store dir is absolute this won't change it
+      // if store dir is absolute this won't change it
+      storeDir = Path.of(core.getDataDir()).resolve(storeDir);
       try {
         Files.createDirectories(storeDir);
       } catch (IOException e) {

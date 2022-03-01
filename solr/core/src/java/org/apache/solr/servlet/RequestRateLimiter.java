@@ -34,10 +34,9 @@ public class RequestRateLimiter {
   private final Semaphore guaranteedSlotsPool;
 
   // Competitive slots pool that are available for this rate limiter as well as borrowing by other
-  // request rate limiters.
-  // By competitive, the meaning is that there is no prioritization for the acquisition of these
-  // slots -- First Come First Serve,
-  // irrespective of whether the request is of this request rate limiter or other.
+  // request rate limiters. By competitive, the meaning is that there is no prioritization for the
+  // acquisition of these slots -- First Come First Serve, irrespective of whether the request is of
+  // this request rate limiter or other.
   private final Semaphore borrowableSlotsPool;
 
   private final RateLimiterConfig rateLimiterConfig;

@@ -90,17 +90,16 @@ public class CoreContainerProvider implements ServletContextListener {
   private String registryName;
   private final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
   // AFAIK the only reason we need this is to support JettySolrRunner for tests. In tests we might
-  // have
-  // multiple CoreContainers in the same JVM, but I *think* that doesn't happen in a real server.
+  // have multiple CoreContainers in the same JVM, but I *think* that doesn't happen in a real
+  // server.
   private static final Map<ContextInitializationKey, ServiceHolder> services =
       Collections.synchronizedMap(new WeakHashMap<>());
 
-  // todo: dependency injection instead, but for now this method and the associated  map will have
+  // todo: dependency injection instead, but for now this method and the associated map will have
   // to suffice.
-  //  Note that this relies on ServletContext.equals() not implementing anything significantly
-  // different
-  //  than Object.equals for its .equals method (I've found no implementation that even implements
-  // it).
+  // Note that this relies on ServletContext.equals() not implementing anything significantly
+  // different than Object.equals for its .equals method (I've found no implementation that even
+  // implements it).
   public static ServiceHolder serviceForContext(ServletContext ctx) throws InterruptedException {
     ContextInitializationKey key = new ContextInitializationKey(ctx);
     return services.computeIfAbsent(key, ServiceHolder::new);
@@ -270,8 +269,7 @@ public class CoreContainerProvider implements ServletContextListener {
 
   private void logWelcomeBanner() {
     // _Really_ sorry about how clumsy this is as a result of the logging call checker, but this is
-    // the only one
-    // that's so ugly so far.
+    // the only one that's so ugly so far.
     if (log.isInfoEnabled()) {
       log.info(" ___      _       Welcome to Apache Solr™ version {}", solrVersion());
     }
@@ -463,8 +461,7 @@ public class CoreContainerProvider implements ServletContextListener {
       }
       // if one of these is reachable both must be to avoid collection from weak hashmap, so
       // set an attribute holding this object to ensure we never get collected until the
-      // ServletContext
-      // is eligible for collection too.
+      // ServletContext is eligible for collection too.
       ctx.setAttribute(this.getClass().getName(), this);
       this.ctx = ctx;
     }

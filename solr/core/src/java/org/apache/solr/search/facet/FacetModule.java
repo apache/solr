@@ -162,9 +162,8 @@ public class FacetModule extends SearchComponent {
     // turn off faceting for requests not marked as being for faceting refinements
     for (ShardRequest sreq : outgoing) {
       if ((sreq.purpose & PURPOSE_REFINE_JSON_FACETS) != 0) continue;
-      sreq.params.remove(
-          "json.facet"); // this just saves space... the presence of FACET_INFO is enough to control
-      // the faceting
+      // this just saves space. FACET_INFO is enough to control the faceting
+      sreq.params.remove("json.facet");
       sreq.params.remove(FACET_INFO);
     }
   }
@@ -275,8 +274,8 @@ public class FacetModule extends SearchComponent {
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
       sreq.purpose |= FacetModule.PURPOSE_GET_JSON_FACETS;
-      sreq.params.set(
-          FACET_INFO, "{}"); // The presence of FACET_INFO (_facet_) turns on json faceting
+      // The presence of FACET_INFO (_facet_) turns on json faceting
+      sreq.params.set(FACET_INFO, "{}");
     } else {
       // turn off faceting on other requests
       /*** distributedProcess will need to use other requests for refinement

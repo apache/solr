@@ -203,8 +203,8 @@ public abstract class RuleBasedAuthorizationPluginBase
             "Request handler [{}] is not a PermissionNameProvider, perm doesnt apply",
             context.getHandler());
       }
-      return false; // We're not 'ALL', and the handler isn't associated with any other predefined
-      // permissions
+      // We're not 'ALL', and the handler isn't associated with any other predefined permissions
+      return false;
     } else {
       PermissionNameProvider handler = (PermissionNameProvider) context.getHandler();
       PermissionNameProvider.Name permissionName = handler.getPermissionName(context);

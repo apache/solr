@@ -124,8 +124,9 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
         countAcc = SlotAcc.DEV_NULL_SLOT_ACC;
         createAccs(nDocs, 1);
         assert collectAcc == null;
-        otherAccs = accs; // accs is created above and set on allBucketsAcc; but during collection,
-        // setNextReader is called on otherAccs.
+        // accs is created above and set on allBucketsAcc; but during collection, setNextReader is
+        // called on otherAccs.
+        otherAccs = accs;
         allBucketsAcc = new SpecialSlotAcc(fcontext, null, -1, accs, 0);
         collectDocs();
 
