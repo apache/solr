@@ -19,9 +19,7 @@ package org.apache.solr.metrics;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 
-/**
- *
- */
+/** */
 public class MockTimerSupplier implements MetricRegistry.MetricSupplier<Timer> {
   public boolean boolParam;
   public String strParam;

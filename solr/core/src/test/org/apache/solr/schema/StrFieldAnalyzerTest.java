@@ -16,10 +16,9 @@
  */
 package org.apache.solr.schema;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-
-import java.io.IOException;
 
 public class StrFieldAnalyzerTest extends BaseTokenStreamTestCase {
   public void testOffsetSanity() throws IOException {

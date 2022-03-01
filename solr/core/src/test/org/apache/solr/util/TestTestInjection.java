@@ -17,45 +17,42 @@
 package org.apache.solr.util;
 
 import java.util.Locale;
-
 import org.apache.solr.SolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestTestInjection extends SolrTestCase {
-  
+
   @BeforeClass
-  public static void beforeClass() {
-  
-  }
-  
+  public static void beforeClass() {}
+
   @AfterClass
   public static void cleanup() {
     TestInjection.reset();
   }
-  
+
   public void testBasics() {
     TestInjection.failReplicaRequests = "true:100";
 
     Exception e = expectThrows(Exception.class, TestInjection::injectFailReplicaRequests);
-    assertFalse("Should not fail based on bad syntax",
+    assertFalse(
+        "Should not fail based on bad syntax",
         e.getMessage().toLowerCase(Locale.ENGLISH).contains("bad syntax"));
-    
+
     TestInjection.failReplicaRequests = "true:00";
     for (int i = 0; i < 100; i++) {
       // should never fail
       TestInjection.injectFailReplicaRequests();
-      
     }
   }
-  
+
   public void testBadSyntax() {
     testBadSyntax("true/10");
     testBadSyntax("boo:100");
     testBadSyntax("false:100f");
     testBadSyntax("TRUE:0:");
   }
-  
+
   public void testGoodSyntax() {
     testGoodSyntax("true:10");
     testGoodSyntax("true:100");
@@ -65,7 +62,6 @@ public class TestTestInjection extends SolrTestCase {
     testGoodSyntax("TRUE:000");
     testGoodSyntax("FALSE:50");
     testGoodSyntax("FAlsE:99");
-    
   }
 
   public void testBadSyntax(String syntax) {
@@ -73,7 +69,7 @@ public class TestTestInjection extends SolrTestCase {
     Exception e = expectThrows(Exception.class, TestInjection::injectFailReplicaRequests);
     assertTrue(e.getMessage().toLowerCase(Locale.ENGLISH).contains("bad syntax"));
   }
-  
+
   public void testGoodSyntax(String syntax) {
     TestInjection.failReplicaRequests = syntax;
 
