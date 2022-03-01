@@ -104,8 +104,8 @@ public class SolrZkClient implements Closeable {
     this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, new DefaultConnectionStrategy(), null);
   }
 
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, OnReconnect onReonnect) {
-    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, new DefaultConnectionStrategy(), onReonnect);
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, OnReconnect onReconnect) {
+    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, new DefaultConnectionStrategy(), onReconnect);
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
@@ -147,16 +147,10 @@ public class SolrZkClient implements Closeable {
       }
     });
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
-        + zkServerAddress, this, zkServerAddress, strat, onReconnect, beforeReconnect, new IsClosed() {
-
-          @Override
-          public boolean isClosed() {
-            return SolrZkClient.this.isClosed();
-          }
-        });
+        + zkServerAddress, this, zkServerAddress, strat, onReconnect, beforeReconnect, SolrZkClient.this::isClosed, zkConnManagerCallbackExecutor);
 
     try {
-      strat.connect(zkServerAddress, zkClientTimeout, wrapWatcher(connManager),
+      strat.connect(zkServerAddress, zkClientTimeout, connManager,
           zooKeeper -> {
             SolrZooKeeper oldKeeper = keeper;
             keeper = zooKeeper;
@@ -190,7 +184,7 @@ public class SolrZkClient implements Closeable {
       } catch (InterruptedException e1) {
         Thread.currentThread().interrupt();
       }
-      zkConnManagerCallbackExecutor.shutdown();
+      zkConnManagerCallbackExecutor.shutdownNow();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     assert ObjectReleaseTracker.track(this);
@@ -697,7 +691,7 @@ public class SolrZkClient implements Closeable {
     }
 
     try {
-      ExecutorUtil.shutdownAndAwaitTermination(zkConnManagerCallbackExecutor);
+      ExecutorUtil.shutdownNowAndAwaitTermination(zkConnManagerCallbackExecutor);
     } catch (Exception e) {
       SolrException.log(log, e);
     }
@@ -861,7 +855,7 @@ public class SolrZkClient implements Closeable {
       log.debug("Submitting job to respond to event {}", event);
       try {
         if (watcher instanceof ConnectionManager) {
-          zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
+          watcher.process(event);
         } else {
           zkCallbackExecutor.submit(() -> watcher.process(event));
         }

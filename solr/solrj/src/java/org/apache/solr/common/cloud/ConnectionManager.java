@@ -16,11 +16,15 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.common.SolrException;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
@@ -46,6 +50,8 @@ public class ConnectionManager implements Watcher {
 
   private final OnReconnect onReconnect;
   private final BeforeReconnect beforeReconnect;
+
+  private final ExecutorService executorService;
 
   private volatile boolean isClosed = false;
 
@@ -73,8 +79,9 @@ public class ConnectionManager implements Watcher {
     }
   }
 
-  public static abstract class IsClosed {
-    public abstract boolean isClosed();
+  @FunctionalInterface
+  public interface IsClosed {
+    boolean isClosed();
   }
 
   private volatile LikelyExpiredState likelyExpiredState = LikelyExpiredState.EXPIRED;
@@ -82,6 +89,10 @@ public class ConnectionManager implements Watcher {
   private IsClosed isClosedCheck;
 
   public ConnectionManager(String name, SolrZkClient client, String zkServerAddress, ZkClientConnectionStrategy strat, OnReconnect onConnect, BeforeReconnect beforeReconnect, IsClosed isClosed) {
+    this(name, client, zkServerAddress, strat, onConnect, beforeReconnect, isClosed, null);
+  }
+
+  public ConnectionManager(String name, SolrZkClient client, String zkServerAddress, ZkClientConnectionStrategy strat, OnReconnect onConnect, BeforeReconnect beforeReconnect, IsClosed isClosed, ExecutorService executorService) {
     this.name = name;
     this.client = client;
     this.connectionStrategy = strat;
@@ -89,6 +100,7 @@ public class ConnectionManager implements Watcher {
     this.onReconnect = onConnect;
     this.beforeReconnect = beforeReconnect;
     this.isClosedCheck = isClosed;
+    this.executorService = executorService;
   }
 
   private synchronized void connected() {
@@ -108,6 +120,21 @@ public class ConnectionManager implements Watcher {
 
   @Override
   public void process(WatchedEvent event) {
+    if (executorService == null) {
+      processInternal(event);
+    } else {
+      try {
+        executorService.submit(() -> processInternal(event));
+      } catch (RejectedExecutionException e) {
+        // If not a graceful shutdown
+        if (!isClosed()) {
+          throw e;
+        }
+      }
+    }
+  }
+
+  public void processInternal(WatchedEvent event) {
     if (event.getState() == AuthFailed || event.getState() == Disconnected || event.getState() == Expired) {
       log.warn("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
     } else {
@@ -145,35 +172,25 @@ public class ConnectionManager implements Watcher {
         }
       }
 
-      do {
-        // This loop will break if a valid connection is made. If a connection is not made then it will repeat and
-        // try again to create a new connection.
-        try {
-          connectionStrategy.reconnect(zkServerAddress,
-              client.getZkClientTimeout(), this,
-              keeper -> {
-                waitForConnected(Long.MAX_VALUE);
+      try {
+        connectionStrategy.reconnect(zkServerAddress,
+            client.getZkClientTimeout(), this,
+            keeper -> {
+              client.updateKeeper(keeper);
 
-                client.updateKeeper(keeper);
+              if (onReconnect != null) {
+                onReconnect.command();
+              }
+            });
 
-                if (onReconnect != null) {
-                  onReconnect.command();
-                }
-              });
-
-          break;
-
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          // we must have been asked to stop
-          throw new RuntimeException(e);
-        } catch (Exception e) {
-          SolrException.log(log, "", e);
-          log.info("Could not connect due to error, sleeping for 1s and trying again");
-          waitSleep(1000);
-        }
-      } while (!isClosed());
-      log.info("zkClient Connected: {}", connected);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        // we must have been asked to stop
+        throw new RuntimeException(e);
+      } catch (Exception e) {
+        SolrException.log(log, "", e);
+        log.info("Could not connect due to error, sleeping for 1s and trying again");
+      }
     } else if (state == KeeperState.Disconnected) {
       log.warn("zkClient has disconnected");
       disconnected();

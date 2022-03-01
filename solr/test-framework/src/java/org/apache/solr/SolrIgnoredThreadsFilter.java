@@ -70,10 +70,6 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-    if (threadName.startsWith("zkConnectionManagerCallback") && t.getState() == State.TIMED_WAITING) {
-      return true;
-    }
-
     if (threadName.startsWith("DaemonStream")) {
       return true;
     }
