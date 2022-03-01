@@ -370,10 +370,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         params.getBool(ExpandParams.EXPAND_NULL, false)
             &&
             // Our GroupCollector can typically ignore nulls (and the user's nullGroup param) unless
-            // the
-            // current page had any - but if expand.q was specified, current page doesn't mater: We
-            // need look for nulls if the user asked us to because we don't know what the expand.q
-            // will match
+            // the current page had any - but if expand.q was specified, current page doesn't mater:
+            // We need look for nulls if the user asked us to because we don't know what the
+            // expand.q will match
             (nullGroupOnCurrentPage || (null != query));
 
     if (expandNullGroup && null != groupQuery) {
@@ -803,11 +802,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if (groups.isEmpty()) {
         return ScoreMode.COMPLETE; // doesn't matter?
       } else {
-        return groups
-            .iterator()
-            .next()
-            .value
-            .scoreMode(); // we assume all the collectors should have the same nature
+        // we assume all the collectors should have the same nature
+        return groups.iterator().next().value.scoreMode();
       }
     }
 

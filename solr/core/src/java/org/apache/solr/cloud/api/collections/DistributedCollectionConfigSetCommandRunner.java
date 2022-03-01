@@ -110,18 +110,17 @@ public class DistributedCollectionConfigSetCommandRunner {
 
     if (log.isInfoEnabled()) {
       // Note is it hard to print a log when Collection API is handled by Overseer because Overseer
-      // is started regardless
-      // of how Collection API is handled, so it doesn't really know...
+      // is started regardless of how Collection API is handled, so it doesn't really know...
       log.info(
           "Creating DistributedCollectionConfigSetCommandRunner. Collection and ConfigSet APIs are running distributed (not Overseer based)");
     }
 
-    // TODO we should look at how everything is getting closed when the node is shutdown.
-    //  But it seems that CollectionsHandler (that creates instances of this class) is not really
-    // closed, so maybe it doesn't matter?
+    // TODO we should look at how everything is getting closed when the node is shutdown. But it
+    // seems that CollectionsHandler (that creates instances of this class) is not really closed, so
+    // maybe it doesn't matter?
     // With distributed Collection API execution, each node will have such an executor but given how
-    // thread pools work,
-    // threads will only be created if needed (including the corePoolSize threads).
+    // thread pools work, threads will only be created if needed (including the corePoolSize
+    // threads).
     distributedCollectionApiExecutorService =
         new ExecutorUtil.MDCAwareThreadPoolExecutor(
             5,
@@ -192,8 +191,7 @@ public class DistributedCollectionConfigSetCommandRunner {
       long timeoutMs)
       throws Exception {
     // We refuse new tasks, but will wait for already submitted ones (i.e. those that made it
-    // through this method earlier).
-    // See stopAndWaitForPendingTasksToComplete() below
+    // through this method earlier). See stopAndWaitForPendingTasksToComplete() below
     if (shuttingDown) {
       throw new SolrException(
           SolrException.ErrorCode.CONFLICT,
@@ -262,8 +260,7 @@ public class DistributedCollectionConfigSetCommandRunner {
   public OverseerSolrResponse runCollectionCommand(
       ZkNodeProps message, CollectionParams.CollectionAction action, long timeoutMs) {
     // We refuse new tasks, but will wait for already submitted ones (i.e. those that made it
-    // through this method earlier).
-    // See stopAndWaitForPendingTasksToComplete() below
+    // through this method earlier). See stopAndWaitForPendingTasksToComplete() below
     if (shuttingDown) {
       throw new SolrException(
           SolrException.ErrorCode.CONFLICT,
@@ -278,8 +275,8 @@ public class DistributedCollectionConfigSetCommandRunner {
     }
 
     // Following the call below returning true, we must eventually cancel or complete the task.
-    // Happens either in the
-    // CollectionCommandRunner below or in the catch when the runner would not execute.
+    // Happens either in the CollectionCommandRunner below or in the catch when the runner would not
+    // execute.
     if (!asyncTaskTracker.createNewAsyncJobTracker(asyncId)) {
       NamedList<Object> resp = new NamedList<>();
       resp.add("error", "Task with the same requestid already exists. (" + asyncId + ")");
@@ -301,9 +298,8 @@ public class DistributedCollectionConfigSetCommandRunner {
 
     if (asyncId == null) {
       // Non async calls wait for a while in case the command completes. If they time out, there's
-      // no way to track the
-      // job progress (improvement suggestion: decorrelate having a task ID from the fact of waiting
-      // for the job to complete)
+      // no way to track the job progress (improvement suggestion: decorrelate having a task ID from
+      // the fact of waiting for the job to complete)
       try {
         return taskFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
       } catch (TimeoutException te) {
@@ -398,16 +394,14 @@ public class DistributedCollectionConfigSetCommandRunner {
       NamedList<Object> results = new NamedList<>();
       try {
         // Create API lock for executing the command. This call is non blocking (not blocked on
-        // waiting for a lock to be acquired anyway,
-        // might be blocked on access to ZK etc)
-        // We create a new CollectionApiLockFactory using a new ZkDistributedCollectionLockFactory
-        // because earlier (in the constructor of this class)
-        // the ZkStateReader was not yet available, due to how CoreContainer is built in part in the
-        // constructor and in part in its
-        // load() method. And this class is built from the CoreContainer constructor...
-        // The cost of these creations is low, and these classes do not hold state but only serve as
-        // an interface to Zookeeper.
-        // Note that after this call, we MUST execute the lock.release(); in the finally below
+        // waiting for a lock to be acquired anyway, might be blocked on access to ZK etc) We create
+        // a new CollectionApiLockFactory using a new ZkDistributedCollectionLockFactory because
+        // earlier (in the constructor of this class) the ZkStateReader was not yet available, due
+        // to how CoreContainer is built in part in the constructor and in part in its load()
+        // method. And this class is built from the CoreContainer constructor... The cost of these
+        // creations is low, and these classes do not hold state but only serve as an interface to
+        // Zookeeper. Note that after this call, we MUST execute the lock.release(); in the finally
+        // below
         DistributedMultiLock lock =
             new CollectionApiLockFactory(
                     new ZkDistributedCollectionLockFactory(
@@ -427,8 +421,7 @@ public class DistributedCollectionConfigSetCommandRunner {
           lock.waitUntilAcquired();
 
           // Got the lock so moving from submitted to running if we run for an async task (if
-          // asyncId is null the asyncTaskTracker
-          // calls do nothing).
+          // asyncId is null the asyncTaskTracker calls do nothing).
           asyncTaskTracker.setTaskRunning(asyncId);
 
           log.debug(
@@ -452,10 +445,9 @@ public class DistributedCollectionConfigSetCommandRunner {
         } finally {
           try {
             // TODO If the Collection API command failed because the collection does not exist,
-            // we've just created some lock directory
-            //  structure for a non existent collection... Maybe try to remove it here? No big deal
-            // for now as leftover nodes in the
-            //  lock hierarchy do no harm, and there shouldn't be too many of those.
+            // we've just created some lock directory structure for a non existent collection...
+            // Maybe try to remove it here? No big deal for now as leftover nodes in the lock
+            // hierarchy do no harm, and there shouldn't be too many of those.
             lock.release();
           } catch (SolrException se) {
             log.error(

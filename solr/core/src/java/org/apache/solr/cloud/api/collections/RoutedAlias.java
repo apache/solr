@@ -67,10 +67,8 @@ public abstract class RoutedAlias {
   private static final String DIMENSIONAL = "Dimensional[";
 
   // This class is created once per request and the overseer methods prevent duplicate create
-  // requests
-  // from creating extra copies via locking on the alias name. All we need to track here is that we
-  // don't
-  // spam preemptive creates to the overseer multiple times from *this* request.
+  // requests from creating extra copies via locking on the alias name. All we need to track here is
+  // that we don't spam preemptive creates to the overseer multiple times from *this* request.
   boolean preemptiveCreateOnceAlready = false;
 
   public static SolrException newAliasMustExistException(String aliasName) {
@@ -115,8 +113,7 @@ public abstract class RoutedAlias {
         addRouterTypeOf(type, routerTypes);
 
         // v2 api case - the v2 -> v1 mapping mechanisms can't handle this conversion because they
-        // expect
-        // strings or arrays of strings, not lists of objects.
+        // expect strings or arrays of strings, not lists of objects.
         // TODO: The generic types for props are a lie
         if (props.containsKey("router.routerList")) {
           HashMap<String, Object> tmp = new HashMap<>(props);
@@ -131,8 +128,7 @@ public abstract class RoutedAlias {
         // Here we need to push the type into each dimension's params. We could have eschewed the
         // "Dimensional[dim1,dim2]" style notation, to simplify this case but I think it's nice
         // to be able to understand the dimensionality at a glance without having to hunt for name
-        // properties
-        // in the list of properties for each dimension.
+        // properties in the list of properties for each dimension.
         String typeName = ROUTER_PREFIX + i + ".name";
         // can't use computeIfAbsent because the non-dimensional case where typeName is present
         // happens to be an unmodifiable map and will fail.
@@ -142,10 +138,8 @@ public abstract class RoutedAlias {
         fields.add(props.get(ROUTER_PREFIX + i + ".field"));
       }
       // this next remove is checked for key because when we build from aliases.json's data it we
-      // get an
-      // immutable map which would cause  UnsupportedOperationException to be thrown. This remove is
-      // here
-      // to prevent this property from making it into aliases.json
+      // get an immutable map which would cause  UnsupportedOperationException to be thrown. This
+      // remove is here to prevent this property from making it into aliases.json
       if (props.containsKey("router.routerList")) {
         props.remove("router.routerList");
       }
@@ -276,34 +270,25 @@ public abstract class RoutedAlias {
    */
   public String createCollectionsIfRequired(AddUpdateCommand cmd) {
 
-    // Even though it is possible that multiple requests hit this code in the 1-2 sec that
-    // it takes to create a collection, it's an established anti-pattern to feed data with a very
-    // large number
-    // of client connections. This in mind, we only guard against spamming the overseer within a
-    // batch of
-    // updates. We are intentionally tolerating a low level of redundant requests in favor of
-    // simpler code. Most
-    // super-sized installations with many update clients will likely be multi-tenant and multiple
-    // tenants
-    // probably don't write to the same alias. As such, we have deferred any solution to the "many
-    // clients causing
-    // collection creation simultaneously" problem until such time as someone actually has that
-    // problem in a
-    // real world use case that isn't just an anti-pattern.
+    // Even though it is possible that multiple requests hit this code in the 1-2 sec that it takes
+    // to create a collection, it's an established anti-pattern to feed data with a very large
+    // number of client connections. This in mind, we only guard against spamming the overseer
+    // within a batch of updates. We are intentionally tolerating a low level of redundant requests
+    // in favor of simpler code. Most super-sized installations with many update clients will likely
+    // be multi-tenant and multiple tenants probably don't write to the same alias. As such, we have
+    // deferred any solution to the "many clients causing collection creation simultaneously"
+    // problem until such time as someone actually has that problem in a real world use case that
+    // isn't just an anti-pattern.
     CandidateCollection candidateCollectionDesc = findCandidateGivenValue(cmd);
 
     try {
       // It's important not to add code between here and the prior call to findCandidateGivenValue()
       // in processAdd() that invokes updateParsedCollectionAliases(). Doing so would update
-      // parsedCollectionsDesc
-      // and create a race condition. When Routed aliases have an implicit sort for their
-      // collections we
-      // are relying on the fact that collectionList.get(0) is returning the head of the parsed
-      // collections that
-      // existed when the collection list was consulted for the candidate value. If this class
-      // updates it's notion
-      // of the list of collections since candidateCollectionDesc was chosen, we could create
-      // collection n+2
+      // parsedCollectionsDesc and create a race condition. When Routed aliases have an implicit
+      // sort for their collections we are relying on the fact that collectionList.get(0) is
+      // returning the head of the parsed collections that existed when the collection list was
+      // consulted for the candidate value. If this class updates it's notion of the list of
+      // collections since candidateCollectionDesc was chosen, we could create collection n+2
       // instead of collection n+1.
       return createAllRequiredCollections(cmd, candidateCollectionDesc);
     } catch (SolrException e) {
@@ -461,18 +446,16 @@ public abstract class RoutedAlias {
     CollectionsHandler collectionsHandler = coreContainer.getCollectionsHandler();
 
     // Invoke MANINTAIN_ROUTED_ALIAS (in the Overseer, locked by alias name).  It will create the
-    // collection
-    //   and update the alias contingent on the requested collection name not already existing.
-    //   otherwise it will return (without error).
+    // collection and update the alias contingent on the requested collection name not already
+    // existing. otherwise it will return (without error).
     try {
       MaintainRoutedAliasCmd.remoteInvoke(collectionsHandler, getAliasName(), targetCollection);
-      // we don't care about the response.  It's possible no collection was created because
-      //  of a race and that's okay... we'll ultimately retry any way.
+      // we don't care about the response.  It's possible no collection was created because of a
+      // race and that's okay... we'll ultimately retry any way.
 
       // Ensure our view of the aliases has updated. If we didn't do this, our zkStateReader might
-      //  not yet know about the new alias (thus won't see the newly added collection to it), and we
-      // might think
-      //  we failed.
+      // not yet know about the new alias (thus won't see the newly added collection to it), and we
+      // might think we failed.
       coreContainer.getZkController().getZkStateReader().aliasesManager.update();
       updateParsedCollectionAliases(coreContainer.getZkController().getZkStateReader(), false);
     } catch (RuntimeException e) {

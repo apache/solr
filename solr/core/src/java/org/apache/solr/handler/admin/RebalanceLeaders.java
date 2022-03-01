@@ -133,9 +133,8 @@ class RebalanceLeaders {
     int maxWaitSecs = req.getParams().getInt(MAX_WAIT_SECONDS_PROP, 60);
 
     // If there are a maximum number of simultaneous requests specified, we have to pause when we
-    // have that many
-    // outstanding requests and wait for at least one to finish before going on the the next
-    // rebalance.
+    // have that many outstanding requests and wait for at least one to finish before going on the
+    // the next rebalance.
     boolean keepGoing = true;
     for (Slice slice : dc.getSlices()) {
       ensurePreferredIsLeader(slice);
@@ -196,8 +195,7 @@ class RebalanceLeaders {
   }
 
   // Once we've done all the fiddling with the queues, check on the way out to see if all the active
-  // preferred
-  // leaders that we intended to change are in fact the leaders.
+  // preferred leaders that we intended to change are in fact the leaders.
   private void checkLeaderStatus() throws InterruptedException, KeeperException {
     for (int idx = 0; pendingOps.size() > 0 && idx < 600; ++idx) {
       ClusterState clusterState = coreContainer.getZkController().getClusterState();
@@ -228,12 +226,11 @@ class RebalanceLeaders {
   // if the replica with preferredLeader is already the leader, do nothing
   // Otherwise:
   // > if two nodes have the same sequence number and both point to the current leader, we presume
-  // that we've just
-  //   moved it, move the one that does _not_ have the preferredLeader to the end of the list.
+  // that we've just moved it, move the one that does _not_ have the preferredLeader to the end of
+  // the list.
   // > move the current leader to the end of the list. This _should_ mean that the current ephemeral
-  // node in the
-  //   leader election queue is removed and the only remaining node watching it is triggered to
-  // become leader.
+  // node in the leader election queue is removed and the only remaining node watching it is
+  // triggered to become leader.
   private void ensurePreferredIsLeader(Slice slice) throws KeeperException, InterruptedException {
     for (Replica replica : slice.getReplicas()) {
       // Tell the replica to become the leader if we're the preferred leader AND active AND not the
@@ -269,12 +266,9 @@ class RebalanceLeaders {
       // 2> tell the actual leader to re-queue itself.
 
       // Ok, the sorting for election nodes is a bit strange. If the sequence numbers are the same,
-      // then the whole
-      // string is used, but that sorts nodes with the same sequence number by their session IDs
-      // from ZK.
-      // While this is determinate, it's not quite what we need, so re-queue nodes that aren't us
-      // and are
-      // watching the leader node..
+      // then the whole string is used, but that sorts nodes with the same sequence number by their
+      // session IDs from ZK. While this is determinate, it's not quite what we need, so re-queue
+      // nodes that aren't us and are watching the leader node.
 
       String firstWatcher = electionNodes.get(1);
 
@@ -296,13 +290,12 @@ class RebalanceLeaders {
   }
 
   // Check that the election queue has some members! There really should be two or more for this to
-  // make any sense,
-  // if there's only one we can't change anything.
+  // make any sense, if there's only one we can't change anything.
   private boolean electionQueueInBadState(
       List<String> electionNodes, Slice slice, Replica replica) {
-    if (electionNodes.size()
-        < 2) { // if there's only one node in the queue, should already be leader and we shouldn't
-      // be here anyway.
+    // if there's only one node in the queue, should already be leader and we shouldn't be here
+    // anyway.
+    if (electionNodes.size() < 2) {
       log.warn(
           "Rebalancing leaders and slice {} has less than two elements in the leader election queue, but replica {} doesn't think it's the leader.",
           slice.getName(),
@@ -314,8 +307,7 @@ class RebalanceLeaders {
   }
 
   // Provide some feedback to the user about what actually happened, or in this case where no action
-  // was
-  // possible
+  // was possible
   private void addInactiveToResults(Slice slice, Replica replica) {
     SimpleOrderedMap<SimpleOrderedMap<String>> inactives = results.get(INACTIVE_PREFERREDS);
     if (inactives == null) {
@@ -335,8 +327,7 @@ class RebalanceLeaders {
   }
 
   // Provide some feedback to the user about what actually happened, or in this case where no action
-  // was
-  // necesary since this preferred replica was already the leader
+  // was necesary since this preferred replica was already the leader
   private void addAlreadyLeaderToResults(Slice slice, Replica replica) {
     SimpleOrderedMap<SimpleOrderedMap<String>> alreadyLeaders = results.get(ALREADY_LEADERS);
     if (alreadyLeaders == null) {
@@ -356,11 +347,9 @@ class RebalanceLeaders {
   }
 
   // Put the replica in at the head of the queue and send all nodes with the same sequence number to
-  // the back of the list
-  // There can be "ties", i.e. replicas in the queue with the same sequence number. Sorting doesn't
-  // necessarily sort
-  // the one we most care about first. So put the node we _don't care about at the end of the
-  // election queue_
+  // the back of the list. There can be "ties", i.e. replicas in the queue with the same sequence
+  // number. Sorting doesn't necessarily sort the one we most care about first. So put the node we
+  // _don't care about at the end of the election queue_
 
   void makeReplicaFirstWatcher(Slice slice, Replica replica)
       throws KeeperException, InterruptedException {
@@ -427,8 +416,7 @@ class RebalanceLeaders {
   }
 
   // We're just waiting for the electionNode to rejoin the queue with a _different_ node, indicating
-  // that any
-  // requeueing we've done has happened.
+  // that any requeueing we've done has happened.
   int waitForNodeChange(Slice slice, String electionNode)
       throws InterruptedException, KeeperException {
     String nodeName = LeaderElector.getNodeName(electionNode);
@@ -453,8 +441,7 @@ class RebalanceLeaders {
   }
 
   // Move an election node to some other place in the queue. If rejoinAtHead==false, then at the
-  // end, otherwise
-  // the new node should point at the leader.
+  // end, otherwise the new node should point at the leader.
   private void rejoinElectionQueue(
       Slice slice, String electionNode, String core, boolean rejoinAtHead)
       throws KeeperException, InterruptedException {
@@ -513,14 +500,11 @@ class RebalanceLeaders {
           foundChange = true;
         }
       }
-      // We're done if we're processing a few at a time or all requests are processed.
-      // We don't want to change, say, 100s of leaders simultaneously. So if the request specifies
-      // some limit,
-      // and we're at that limit, we want to return to the caller so it can immediately add another
-      // request.
-      // That's the purpose of the first clause here. Otherwise, of course, just return if all
-      // requests are
-      // processed.
+      // We're done if we're processing a few at a time or all requests are processed. We don't want
+      // to change, say, 100s of leaders simultaneously. So if the request specifies some limit, and
+      // we're at that limit, we want to return to the caller so it can immediately add another
+      // request. That's the purpose of the first clause here. Otherwise, of course, just return if
+      // all requests are processed.
       if ((foundChange && waitForAll == false) || asyncRequests.size() == 0) {
         return true;
       }
@@ -552,10 +536,8 @@ class RebalanceLeaders {
   }
 
   // If for any reason we were supposed to change leadership, that should be recorded in
-  // changingLeaders. Any
-  // time we verified that the change actually occurred, that entry should have been removed. So
-  // report anything
-  // left over as a failure.
+  // changingLeaders. Any time we verified that the change actually occurred, that entry should have
+  // been removed. So report anything left over as a failure.
   private void addAnyFailures() {
     if (pendingOps.size() == 0) {
       return;

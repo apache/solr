@@ -359,8 +359,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       int firstSep = termStr.indexOf(CompositeIdRouter.SEPARATOR);
       // truncate to first separator since we don't support multiple levels currently
       // NOTE: this does not currently work for tri-level composite ids since the number of bits
-      // allocated to the first ID is 16 for a 2 part id
-      // and 8 for a 3 part id!
+      // allocated to the first ID is 16 for a 2 part id and 8 for a 3 part id!
       if (firstSep != termStr.length() - 1 && firstSep > 0) {
         numTriLevel++;
         termStr = termStr.substring(0, firstSep + 1);
@@ -464,9 +463,8 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
 
       // Copy the bytes up to and including the separator, and set the length if the separator is
-      // found.
-      // If there was no separator, then length remains 0 and it's the indicator that we have no
-      // prefix bucket
+      // found. If there was no separator, then length remains 0 and it's the indicator that we have
+      // no prefix bucket
       currPrefix.length = 0;
       for (int i = 0; i < term.length; i++) {
         byte b = term.bytes[i + term.offset];
@@ -499,8 +497,8 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
   static Collection<DocRouter.Range> getSplits(
       Collection<RangeCount> rawCounts, DocRouter.Range currentRange) throws Exception {
     int totalCount = 0;
-    RangeCount biggest =
-        null; // keep track of the largest in case we need to split it out into it's own shard
+    // keep track of the largest in case we need to split it out into it's own shard
+    RangeCount biggest = null;
     RangeCount last = null; // keep track of what the last range is
 
     // Remove counts that don't overlap with currentRange (can happen if someone overrode document
@@ -528,10 +526,9 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     if (counts.size() == 1) {
       // We have a single range, so we should split it.
       // Currently, we only split a prefix/bucket when we have just one, but this could be
-      // changed/controlled
-      // in the future via a allowedSizeDifference parameter (i.e. if just separating prefix buckets
-      // results in
-      // too large of an imbalanced, allow splitting within a prefix)
+      // changed/controlled in the future via a allowedSizeDifference parameter (i.e. if just
+      // separating prefix buckets results in too large of an imbalanced, allow splitting within a
+      // prefix)
 
       // It may already be a partial range, so figure that out
       int lower = Math.max(last.range.min, currentRange.min);

@@ -80,10 +80,9 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
       } else {
         SnapShooter snapShooter = new SnapShooter(repository, core, locationUri, name, commitName);
         // validateCreateSnapshot will create parent dirs instead of throw; that choice is dubious.
-        //  But we want to throw. One reason is that
-        //  this dir really should, in fact must, already exist here if triggered via a collection
-        // backup on a shared
-        //  file system. Otherwise, perhaps the FS location isn't shared -- we want an error.
+        // But we want to throw. One reason is that this dir really should, in fact must, already
+        // exist here if triggered via a collection backup on a shared file system. Otherwise,
+        // perhaps the FS location isn't shared -- we want an error.
         if (!snapShooter.getBackupRepository().exists(snapShooter.getLocation())) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,

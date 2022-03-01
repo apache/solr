@@ -296,8 +296,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
                 @Override
                 public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
                   // it is possible that the Authentication plugin is modified since the last call.
-                  // invalidate the
-                  // the cached commandSchema
+                  // invalidate the cached commandSchema
                   if (SecurityConfHandler.this.authcPlugin != cores.getAuthenticationPlugin())
                     commandSchema = null;
                   SecurityConfHandler.this.authcPlugin = cores.getAuthenticationPlugin();
@@ -317,8 +316,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
                 @Override
                 public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
                   // it is possible that the Authorization plugin is modified since the last call.
-                  // invalidate the
-                  // the cached commandSchema
+                  // invalidate cached commandSchema
                   if (SecurityConfHandler.this.authzPlugin != cores.getAuthorizationPlugin())
                     commandSchema = null;
                   SecurityConfHandler.this.authzPlugin = cores.getAuthorizationPlugin();

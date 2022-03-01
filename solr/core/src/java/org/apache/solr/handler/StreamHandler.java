@@ -193,8 +193,7 @@ public class StreamHandler extends RequestHandlerBase
       }
     } catch (Exception e) {
       // Catch exceptions that occur while the stream is being created. This will include streaming
-      // expression parse
-      // rules.
+      // expression parse rules.
       SolrException.log(log, e);
       rsp.add(StreamParams.RESULT_SET, new DummyErrorStream(e));
 
@@ -309,8 +308,8 @@ public class StreamHandler extends RequestHandlerBase
 
       case "kill":
         daemons.remove(id);
-        d.close(); // we already found it in the daemons list, so we don't need to verify we
-        // removed it.
+        // we already found it in the daemons list, so we don't need to verify we removed it.
+        d.close();
         rsp.add(
             StreamParams.RESULT_SET,
             new DaemonResponseStream("Daemon:" + id + " killed on " + coreName));

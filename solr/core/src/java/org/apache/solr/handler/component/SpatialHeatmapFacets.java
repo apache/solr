@@ -107,9 +107,8 @@ public class SpatialHeatmapFacets {
   public static void distribModifyRequest(
       ShardRequest sreq, LinkedHashMap<String, HeatmapFacet> heatmapFacets) {
     // Set the format to PNG because it's compressed and it's the only format we have code to read
-    // at the moment.
-    // We re-write the facet.heatmap list with PNG format in local-params where it has highest
-    // precedence.
+    // at the moment. We re-write the facet.heatmap list with PNG format in local-params where it
+    // has highest precedence.
 
     // Remove existing heatmap field param vals; we will rewrite
     sreq.params.remove(FacetParams.FACET_HEATMAP);

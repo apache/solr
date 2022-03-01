@@ -406,9 +406,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     printer.dump = dump;
     boolean isGraphView = "graph".equals(params.get("view"));
     // There is no znode /clusterstate.json (removed in Solr 9), but we do as if there's one and
-    // return collection listing
-    // Need to change services.js if cleaning up here, collection list is used from Admin UI Cloud -
-    // Graph
+    // return collection listing. Need to change services.js if cleaning up here, collection list is
+    // used from Admin UI Cloud - Graph
     boolean paginateCollections = (isGraphView && "/clusterstate.json".equals(path));
     printer.page = paginateCollections ? new PageOfCollections(start, rows, type, filter) : null;
     printer.pagingSupport = pagingSupport;

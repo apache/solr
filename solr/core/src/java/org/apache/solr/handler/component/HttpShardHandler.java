@@ -372,8 +372,7 @@ public class HttpShardHandler extends ShardHandler {
       SolrParams params,
       CloudDescriptor cloudDescriptor) {
     // Are we hosting the shard that this request is for, and are we active? If so, then handle it
-    // ourselves
-    // and make it a non-distributed request.
+    // ourselves and make it a non-distributed request.
     String ourSlice = cloudDescriptor.getShardId();
     String ourCollection = cloudDescriptor.getCollectionName();
     // Some requests may only be fulfilled by replicas of type Replica.Type.NRT
@@ -384,16 +383,12 @@ public class HttpShardHandler extends ShardHandler {
                 ourCollection + "_" + ourSlice)) // handle the <collection>_<slice> format
         && cloudDescriptor.getLastPublished() == Replica.State.ACTIVE
         && (!onlyNrtReplicas || cloudDescriptor.getReplicaType() == Replica.Type.NRT)) {
-      boolean shortCircuit =
-          params.getBool(
-              "shortCircuit",
-              true); // currently just a debugging parameter to check distrib search on a single
-      // node
+      // currently just a debugging parameter to check distrib search on a single node
+      boolean shortCircuit = params.getBool("shortCircuit", true);
 
       String targetHandler = params.get(ShardParams.SHARDS_QT);
-      shortCircuit =
-          shortCircuit
-              && targetHandler == null; // if a different handler is specified, don't short-circuit
+      // if a different handler is specified, don't short-circuit
+      shortCircuit = shortCircuit && targetHandler == null;
 
       return shortCircuit;
     }

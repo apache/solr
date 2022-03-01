@@ -167,8 +167,7 @@ public class BackupFilePaths {
             .anyMatch(entry -> entry.equals(BackupManager.TRADITIONAL_BACKUP_PROPS_FILE));
     if (incremental) {
       // Incremental backups have an additional URI path component representing the collection that
-      // was backed up.
-      // This collection directory is the path assumed by other backup code.
+      // was backed up. This collection directory is the path assumed by other backup code.
       if (entries.length != 1) {
         throw new IllegalStateException(
             "Incremental backup URI ["

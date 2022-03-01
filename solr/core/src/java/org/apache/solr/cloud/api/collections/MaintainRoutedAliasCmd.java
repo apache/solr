@@ -121,12 +121,10 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
     final Aliases aliases = aliasesManager.getAliases();
     final Map<String, String> aliasMetadata = aliases.getCollectionAliasProperties(aliasName);
     if (aliasMetadata.isEmpty()) {
+      // if it did exist, we'd have a non-null map
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Alias "
-              + aliasName
-              + " does not exist or is not a routed alias."); // if it did exist, we'd have a
-      // non-null map
+          "Alias " + aliasName + " does not exist or is not a routed alias.");
     }
     final RoutedAlias ra = RoutedAlias.fromProps(aliasName, aliasMetadata);
     if (ra == null) {
@@ -167,13 +165,10 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
           } else {
             // check that the collection is properly integrated into the alias (see
             // TimeRoutedAliasUpdateProcessorTest.java:141). Presently we need to ensure inclusion
-            // in the alias
-            // and the presence of the appropriate collection property. Note that this only works if
-            // the collection
-            // happens to fall where we would have created one already. Support for un-even
-            // collection sizes will
-            // take additional work (though presently they might work if the below book keeping is
-            // done by hand)
+            // in the alias and the presence of the appropriate collection property. Note that this
+            // only works if the collection happens to fall where we would have created one already.
+            // Support for un-even collection sizes will take additional work (though presently they
+            // might work if the below book keeping is done by hand)
             if (!ra.getCollectionList(aliases).contains(action.targetCollection)) {
               addCollectionToAlias(aliasName, aliasesManager, action.targetCollection);
               Map<String, String> collectionProperties =

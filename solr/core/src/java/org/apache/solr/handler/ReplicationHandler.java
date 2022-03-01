@@ -286,8 +286,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         rsp.add(STATUS, OK_STATUS);
       } else {
         // This happens when replication is not configured to happen after startup and no
-        // commit/optimize
-        // has happened yet.
+        // commit/optimize has happened yet.
         rsp.add(CMD_INDEX_VERSION, 0L);
         rsp.add(GENERATION, 0L);
         rsp.add(STATUS, OK_STATUS);
@@ -537,9 +536,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     URI locationUri = repo.createDirectoryURI(location);
 
     // If name is not provided then look for the last unnamed( the ones with the snapshot.timestamp
-    // format)
-    // snapshot folder since we allow snapshots to be taken without providing a name. Pick the
-    // latest timestamp.
+    // format) snapshot folder since we allow snapshots to be taken without providing a name. Pick
+    // the latest timestamp.
     if (name == null) {
       String[] filePaths = repo.listAll(locationUri);
       List<OldBackupDirectory> dirs = new ArrayList<>();
@@ -1480,9 +1478,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       new CloseHook() {
         @Override
         public void preClose(SolrCore core) {
-          if (executorService != null)
-            executorService
-                .shutdown(); // we don't wait for shutdown - this can deadlock core reload
+          if (executorService != null) {
+            // we don't wait for shutdown - this can deadlock core reload
+            executorService.shutdown();
+          }
         }
 
         @Override
@@ -1661,10 +1660,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     protected void createOutputStream(OutputStream out) {
-      out =
-          new CloseShieldOutputStream(
-              out); // DeflaterOutputStream requires a close call, but don't close the request
-      // outputstream
+      // DeflaterOutputStream requires a close call, but don't close the request outputstream
+      out = new CloseShieldOutputStream(out);
       if (compress) {
         fos = new FastOutputStream(new DeflaterOutputStream(out));
       } else {
@@ -1676,8 +1673,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       if (indexGen != null) {
         // Reserve the commit point for another 10s for the next file to be to fetched.
         // We need to keep extending the commit reservation between requests so that the replica can
-        // fetch
-        // all the files correctly.
+        // fetch all the files correctly.
         delPolicy.setReserveDuration(indexGen, reserveCommitDuration);
 
         // release the commit point as the write is complete
@@ -1723,8 +1719,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           }
           if (read != buf.length) {
             writeNothingAndFlush();
-            fos.close(); // we close because DeflaterOutputStream requires a close call, but but
-            // the request outputstream is protected
+            // we close because DeflaterOutputStream requires a close call, but  the request
+            // outputstream is protected
+            fos.close();
             break;
           }
           offset += read;
@@ -1777,8 +1774,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
               long bytesRead = channel.read(bb);
               if (bytesRead <= 0) {
                 writeNothingAndFlush();
-                fos.close(); // we close because DeflaterOutputStream requires a close call, but
-                // the request outputstream is protected
+                // we close because DeflaterOutputStream requires a close call, but the request
+                // outputstream is protected
+                fos.close();
                 break;
               }
               fos.writeInt((int) bytesRead);

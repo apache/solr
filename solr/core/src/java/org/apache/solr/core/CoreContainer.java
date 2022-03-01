@@ -548,18 +548,15 @@ public class CoreContainer {
           builderPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
 
       // this caused plugins like KerberosPlugin to register it's intercepts, but this intercept
-      // logic is also
-      // handled by the pki authentication code when it decideds to let the plugin handle auth via
-      // it's intercept
-      // - so you would end up with two intercepts
+      // logic is also handled by the pki authentication code when it decideds to let the plugin
+      // handle auth via it's intercept - so you would end up with two intercepts
       // -->
       //  shardHandlerFactory.setSecurityBuilder(builderPlugin); // calls setup for the authcPlugin
       //  updateShardHandler.setSecurityBuilder(builderPlugin);
       // <--
 
       // This should not happen here at all - it's only currently required due to its affect on
-      // http1 clients
-      // in a test or two incorrectly counting on it for their configuration.
+      // http1 clients in a test or two incorrectly counting on it for their configuration.
       // -->
 
       SolrHttpClientContextBuilder httpClientBuilder = new SolrHttpClientContextBuilder();
@@ -590,8 +587,7 @@ public class CoreContainer {
     }
 
     // Always register PKI auth interceptor, which will then delegate the decision of who should
-    // secure
-    // each request to the configured authentication plugin.
+    // secure each request to the configured authentication plugin.
     if (pkiAuthenticationSecurityBuilder != null
         && !pkiAuthenticationSecurityBuilder.isInterceptorRegistered()) {
       pkiAuthenticationSecurityBuilder.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
@@ -777,13 +773,11 @@ public class CoreContainer {
         ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
 
     // CoreContainer is initialized enough at this stage so we can set
-    // distributedCollectionCommandRunner (the
-    // construction of DistributedCollectionConfigSetCommandRunner uses Zookeeper so can't be done
-    // from the CoreContainer constructor
-    // because there Zookeeper is not yet ready). Given this is used in the CollectionsHandler
-    // created next line, this is
-    // the latest point where distributedCollectionCommandRunner can be initialized without
-    // refactoring this method...
+    // distributedCollectionCommandRunner (the construction of
+    // DistributedCollectionConfigSetCommandRunner uses Zookeeper so can't be done from the
+    // CoreContainer constructor because there Zookeeper is not yet ready). Given this is used in
+    // the CollectionsHandler created next line, this is the latest point where
+    // distributedCollectionCommandRunner can be initialized without refactoring this method...
     // TODO: manage to completely build CoreContainer in the constructor and not in the load()
     // method... Requires some test refactoring.
     this.distributedCollectionCommandRunner =
@@ -1168,8 +1162,8 @@ public class CoreContainer {
       objectCache.clear();
 
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it
-      // up if so.
-      // Since all the pending operations queues have been drained, there should be nothing to do.
+      // up if so. Since all the pending operations queues have been drained, there should be
+      // nothing to do.
       synchronized (solrCores.getModifyLock()) {
         solrCores.getModifyLock().notifyAll(); // wake up the thread
       }
@@ -1425,18 +1419,16 @@ public class CoreContainer {
         }
 
         // Much of the logic in core handling pre-supposes that the core.properties file already
-        // exists, so create it
-        // first and clean it up if there's an error.
+        // exists, so create it first and clean it up if there's an error.
         coresLocator.create(this, cd);
 
         SolrCore core;
         try {
           solrCores.waitAddPendingCoreOps(cd.getName());
           core = createFromDescriptor(cd, true, newCollection);
-          coresLocator.persist(
-              this,
-              cd); // Write out the current core properties in case anything changed when the core
-          // was created
+          // Write out the current core properties in case anything changed when the core was
+          // created
+          coresLocator.persist(this, cd);
         } finally {
           solrCores.removeFromPendingOps(cd.getName());
         }
@@ -1444,8 +1436,7 @@ public class CoreContainer {
         return core;
       } catch (Exception ex) {
         // First clean up any core descriptor, there should never be an existing core.properties
-        // file for any core that
-        // failed to be created on-the-fly.
+        // file for any core that failed to be created on-the-fly.
         coresLocator.delete(this, cd);
         if (isZooKeeperAware() && !preExisitingZkEntry) {
           try {
@@ -1807,24 +1798,20 @@ public class CoreContainer {
         cpl.buildCoreDescriptor(oldDesc.getInstanceDir().resolve(PROPERTIES_FILENAME), this);
 
     // Ok, this little jewel is all because we still create core descriptors on the fly from lists
-    // of properties
-    // in tests particularly. Theoretically, there should be _no_ way to create a CoreDescriptor in
-    // the new world
-    // of core discovery without writing the core.properties file out first.
+    // of properties in tests particularly. Theoretically, there should be _no_ way to create a
+    // CoreDescriptor in the new world of core discovery without writing the core.properties file
+    // out first.
     //
     // TODO: remove core.properties from the conf directory in test files, it's in a bad place there
     // anyway.
     if (ret == null) {
-      oldDesc
-          .loadExtraProperties(); // there may be changes to extra properties that we need to pick
-      // up.
+      // there may be changes to extra properties that we need to pick up.
+      oldDesc.loadExtraProperties();
       return oldDesc;
     }
     // The CloudDescriptor bit here is created in a very convoluted way, requiring access to private
-    // methods
-    // in ZkController. When reloading, this behavior is identical to what used to happen where a
-    // copy of the old
-    // CoreDescriptor was just re-used.
+    // methods in ZkController. When reloading, this behavior is identical to what used to happen
+    // where a copy of the old CoreDescriptor was just re-used.
 
     if (ret.getCloudDescriptor() != null) {
       ret.getCloudDescriptor().reload(oldDesc.getCloudDescriptor());
@@ -1854,8 +1841,7 @@ public class CoreContainer {
     SolrCore core = solrCores.getCoreFromAnyList(name, false, coreId);
     if (core != null) {
       // The underlying core properties files may have changed, we don't really know. So we have a
-      // (perhaps) stale
-      // CoreDescriptor and we need to reload it from the disk files
+      // (perhaps) stale CoreDescriptor and we need to reload it from the disk files
       CoreDescriptor cd = reloadCoreDescriptor(core.getCoreDescriptor());
       solrCores.addCoreDescriptor(cd);
       boolean success = false;
@@ -2122,24 +2108,22 @@ public class CoreContainer {
       throw new SolrCoreInitializationException(name, loadFailure.exception);
     }
     // This is a bit of awkwardness where SolrCloud and transient cores don't play nice together.
-    // For transient cores,
-    // we have to allow them to be created at any time there hasn't been a core load failure (use
-    // reload to cure that).
-    // But for TestConfigSetsAPI.testUploadWithScriptUpdateProcessor, this needs to _not_ try to
-    // load the core if
-    // the core is null and there was an error. If you change this, be sure to run both
-    // TestConfiSetsAPI and
-    // TestLazyCores
+    // For transient cores, we have to allow them to be created at any time there hasn't been a core
+    // load failure (use reload to cure that). But for
+    // TestConfigSetsAPI.testUploadWithScriptUpdateProcessor, this needs to _not_ try to load the
+    // core if the core is null and there was an error. If you change this, be sure to run both
+    // TestConfiSetsAPI and TestLazyCores
     if (desc == null || zkSys.getZkController() != null) return null;
 
     // This will put an entry in pending core ops if the core isn't loaded. Here's where moving the
     // waitAddPendingCoreOps to createFromDescriptor would introduce a race condition.
     core = solrCores.waitAddPendingCoreOps(name);
 
-    if (isShutDown)
-      return null; // We're quitting, so stop. This needs to be after the wait above since we may
-    // come off
-    // the wait as a consequence of shutting down.
+    if (isShutDown) {
+      // We're quitting, so stop. This needs to be after the wait above since we may come off the
+      // wait as a consequence of shutting down.
+      return null;
+    }
     try {
       if (core == null) {
         if (zkSys.getZkController() != null) {
@@ -2415,10 +2399,8 @@ class CloserThread extends Thread {
 
   // It's important that this be the _only_ thread removing things from pendingDynamicCloses!
   // This is single-threaded, but I tried a multi-threaded approach and didn't see any performance
-  // gains, so
-  // there's no good justification for the complexity. I suspect that the locking on things like
-  // DefaultSolrCoreState
-  // essentially create a single-threaded process anyway.
+  // gains, so there's no good justification for the complexity. I suspect that the locking on
+  // things like DefaultSolrCoreState essentially create a single-threaded process anyway.
   @Override
   public void run() {
     while (!container.isShutDown()) {
@@ -2427,8 +2409,7 @@ class CloserThread extends Thread {
           solrCores.getModifyLock().wait();
         } catch (InterruptedException e) {
           // Well, if we've been told to stop, we will. Otherwise, continue on and check to see if
-          // there are
-          // any cores to close.
+          // there are any cores to close.
         }
       }
 

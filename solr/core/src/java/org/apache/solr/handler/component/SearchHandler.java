@@ -253,8 +253,8 @@ public class SearchHandler extends RequestHandlerBase
       shardHandler = shardHandlerFactory.getShardHandler();
       shardHandler.prepDistributed(rb);
       if (!rb.isDistrib) {
-        shardHandler =
-            null; // request is not distributed after all and so the shard handler is not needed
+        // request is not distributed after all and so the shard handler is not needed
+        shardHandler = null;
       }
     }
 
@@ -332,8 +332,8 @@ public class SearchHandler extends RequestHandlerBase
       }
     }
 
-    final ShardHandler shardHandler1 =
-        getAndPrepShardHandler(req, rb); // creates a ShardHandler object only if it's needed
+    // creates a ShardHandler object only if it's needed
+    final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb);
 
     if (timer == null) {
       // non-debugging prepare phase
@@ -353,9 +353,8 @@ public class SearchHandler extends RequestHandlerBase
 
     { // Once all of our components have been prepared, check if this request involves a SortSpec.
       // If it does, and if our request includes a cursorMark param, then parse & init the
-      // CursorMark state
-      // (This must happen after the prepare() of all components, because any component may have
-      // modified the SortSpec)
+      // CursorMark state (This must happen after the prepare() of all components, because any
+      // component may have modified the SortSpec)
       final SortSpec spec = rb.getSortSpec();
       final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
       if (null != spec && null != cursorStr) {
@@ -445,10 +444,8 @@ public class SearchHandler extends RequestHandlerBase
             if (sreq.actualShards == ShardRequest.ALL_SHARDS) {
               sreq.actualShards = rb.shards;
             }
-            sreq.responses =
-                new ArrayList<>(
-                    sreq.actualShards
-                        .length); // presume we'll get a response from each shard we send to
+            // presume we'll get a response from each shard we send to
+            sreq.responses = new ArrayList<>(sreq.actualShards.length);
 
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {
@@ -575,8 +572,7 @@ public class SearchHandler extends RequestHandlerBase
 
       // NOTE: SearchHandler explicitly never clears/removes this MDC value...
       // We want it to live for the entire request, beyond the scope of SearchHandler's processing,
-      // and trust
-      // SolrDispatchFilter to clean it up at the end of the request.
+      // and trust SolrDispatchFilter to clean it up at the end of the request.
       //
       // Examples:
       // - ERROR logging of Exceptions propogated up to our base class

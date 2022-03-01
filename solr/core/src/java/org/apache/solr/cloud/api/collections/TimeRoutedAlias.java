@@ -77,11 +77,10 @@ public class TimeRoutedAlias extends RoutedAlias {
 
   // These two fields may be updated within the calling thread during processing but should
   // never be updated by any async creation thread.
-  private List<Map.Entry<Instant, String>>
-      parsedCollectionsDesc; // k=timestamp (start), v=collection.  Sorted descending
-  private Aliases
-      parsedCollectionsAliases; // a cached reference to the source of what we parse into
-  // parsedCollectionsDesc
+  // k=timestamp (start), v=collection.  Sorted descending
+  private List<Map.Entry<Instant, String>> parsedCollectionsDesc;
+  // a cached reference to the source of what we parse into parsedCollectionsDesc
+  private Aliases parsedCollectionsAliases;
 
   // These are parameter names to routed alias creation, AND are stored as metadata with the alias.
   @SuppressWarnings("WeakerAccess")
@@ -384,18 +383,14 @@ public class TimeRoutedAlias extends RoutedAlias {
     }
 
     // Although this is also checked later, we need to check it here too to handle the case in
-    // Dimensional Routed
-    // aliases where one can legally have zero collections for a newly encountered category and thus
-    // the loop later
-    // can't catch this.
+    // Dimensional Routed aliases where one can legally have zero collections for a newly
+    // encountered category and thus the loop later can't catch this.
 
     // SOLR-13760 - we need to fix the date math to a specific instant when the first document
-    // arrives.
-    // If we don't do this DRA's with a time dimension have variable start times across the other
-    // dimensions
-    // and logic gets much to complicated, and depends too much on queries to zookeeper. This keeps
-    // life simpler.
-    // I have to admit I'm not terribly fond of the mutation during a validate method however.
+    // arrives. If we don't do this DRA's with a time dimension have variable start times across the
+    // other dimensions and logic gets much to complicated, and depends too much on queries to
+    // zookeeper. This keeps life simpler. I have to admit I'm not terribly fond of the mutation
+    // during a validate method however.
     Instant startTime;
     try {
       startTime = Instant.parse(start);
@@ -410,9 +405,8 @@ public class TimeRoutedAlias extends RoutedAlias {
 
       // This could race, but it only occurs when the alias is first used and the values produced
       // should all be identical and who wins won't matter (baring cases of Date Math involving
-      // seconds,
-      // which is pretty far fetched). Putting this in a separate thread to ensure that any failed
-      // races don't cause documents to get rejected.
+      // seconds, which is pretty far fetched). Putting this in a separate thread to ensure that any
+      // failed races don't cause documents to get rejected.
       core.runAsync(
           () ->
               zkStateReader.aliasesManager.applyModificationAndExportToZk(
@@ -496,10 +490,9 @@ public class TimeRoutedAlias extends RoutedAlias {
     final Instant docTimestamp = parseRouteKey(value);
 
     // reparse explicitly such that if we are a dimension in a DRA, the list gets culled by our
-    // context
-    // This does not normally happen with the above updateParsedCollectionAliases, because at that
-    // point the aliases
-    // should be up to date and updateParsedCollectionAliases will short circuit
+    // context. This does not normally happen with the above updateParsedCollectionAliases, because
+    // at that point the aliases should be up to date and updateParsedCollectionAliases will short
+    // circuit
     this.parsedCollectionsDesc = parseCollections(zkStateReader.getAliases());
     CandidateCollection next1 = calcCandidateCollection(docTimestamp);
     if (next1 != null) return next1;
@@ -535,8 +528,7 @@ public class TimeRoutedAlias extends RoutedAlias {
               // simply goes to head collection no action required
             } else {
               // Although we create collections one at a time, this calculation of the ultimate
-              // destination is
-              // useful for contextualizing TRA's used as dimensions in DRA's
+              // destination is useful for contextualizing TRA's used as dimensions in DRA's
               String creationCol = calcNextCollection(colStartTime);
               Instant colDestTime = colStartTime;
               Instant possibleDestTime = colDestTime;
@@ -616,8 +608,8 @@ public class TimeRoutedAlias extends RoutedAlias {
     List<Action> collectionsToDelete = new ArrayList<>();
 
     // iterating from newest to oldest, find the first collection that has a time <= "before".  We
-    // keep this collection
-    // (and all newer to left) but we delete older collections, which are the ones that follow.
+    // keep this collection (and all newer to left) but we delete older collections, which are the
+    // ones that follow.
     int numToKeep = 0;
     DateTimeFormatter dtf = null;
     if (log.isDebugEnabled()) {

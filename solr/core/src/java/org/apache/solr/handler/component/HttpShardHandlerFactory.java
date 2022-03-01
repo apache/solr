@@ -260,8 +260,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             blockingQueue,
             new SolrNamedThreadFactory("httpShardExecutor"),
             // the Runnable added to this executor handles all exceptions so we disable stack trace
-            // collection as an optimization
-            // see SOLR-11880 for more details
+            // collection as an optimization. see SOLR-11880 for more details
             false);
 
     this.httpListenerFactory = new InstrumentedHttpListenerFactory(this.metricNameStrategy);

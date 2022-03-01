@@ -68,8 +68,7 @@ public class SnapShooter {
     String snapDirStr = null;
     // Note - This logic is only applicable to the usecase where a shared file-system is exposed via
     // local file-system interface (primarily for backwards compatibility). For other use-cases,
-    // users
-    // will be required to specify "location" where the backup should be stored.
+    // users will be required to specify "location" where the backup should be stored.
     if (location == null) {
       snapDirStr = core.getDataDir();
     } else {
@@ -311,8 +310,8 @@ public class SnapShooter {
 
       String endTime = Instant.now().toString();
 
-      details.add(
-          "fileCount", files.size()); // DEPRECATED: for removal, replaced with indexFileCount
+      // DEPRECATED: fileCount for removal, replaced with indexFileCount
+      details.add("fileCount", files.size());
       details.add("indexFileCount", files.size());
       details.add("status", "success");
       details.add("snapshotCompletedAt", endTime); // DEPRECATED: for removal, replaced with endTime

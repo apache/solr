@@ -106,9 +106,8 @@ public class NodeConfig {
   private final PluginInfo tracerConfig;
 
   // Track if this config was loaded from zookeeper so that we can skip validating the zookeeper
-  // connection later
-  // If it becomes necessary to track multiple potential sources in the future, replace this with an
-  // Enum
+  // connection later. If it becomes necessary to track multiple potential sources in the future,
+  // replace this with an Enum
   private final boolean fromZookeeper;
   private final String defaultZkHost;
 

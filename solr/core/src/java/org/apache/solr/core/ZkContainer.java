@@ -53,8 +53,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ZkContainer {
   // NOTE DWS: It's debatable if this in-between class is needed instead of folding it all into
-  // ZkController.
-  //  ZKC is huge though.
+  // ZkController. ZKC is huge though.
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

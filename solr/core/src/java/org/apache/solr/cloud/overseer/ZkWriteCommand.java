@@ -40,10 +40,8 @@ public class ZkWriteCommand {
     this.name = name;
     this.collection = collection;
     this.ops = replicaOps;
-    this.persistJsonState =
-        persistJsonState
-            || !isPerReplicaStateCollection; // Always persist for non "per replica state"
-    // collections
+    // Always persist for non "per replica state" collections
+    this.persistJsonState = persistJsonState || !isPerReplicaStateCollection;
   }
 
   public ZkWriteCommand(String name, DocCollection collection) {

@@ -45,14 +45,12 @@ class SolrCores {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // This map will hold objects that are being currently operated on. The core (value) may be null
-  // in the case of
-  // initial load. The rule is, never to any operation on a core that is currently being operated
-  // upon.
+  // in the case of initial load. The rule is, never to any operation on a core that is currently
+  // being operated upon.
   private static final Set<String> pendingCoreOps = new HashSet<>();
 
   // Due to the fact that closes happen potentially whenever anything is _added_ to the transient
-  // core list, we need
-  // to essentially queue them up to be handled via pendingCoreOps.
+  // core list, we need to essentially queue them up to be handled via pendingCoreOps.
   private static final List<SolrCore> pendingCloses = new ArrayList<>();
 
   private TransientSolrCoreCacheFactory transientSolrCoreCacheFactory;
@@ -88,8 +86,7 @@ class SolrCores {
   }
 
   // We are shutting down. You can't hold the lock on the various lists of cores while they shut
-  // down, so we need to
-  // make a temporary copy of the names and shut them down outside the lock.
+  // down, so we need to make a temporary copy of the names and shut them down outside the lock.
   protected void close() {
     waitForLoadingCoresToFinish(30 * 1000);
     Collection<SolrCore> coreList = new ArrayList<>();
@@ -102,10 +99,8 @@ class SolrCores {
     }
 
     // It might be possible for one of the cores to move from one list to another while we're
-    // closing them. So
-    // loop through the lists until they're all empty. In particular, the core could have moved from
-    // the transient
-    // list to the pendingCloses list.
+    // closing them. So loop through the lists until they're all empty. In particular, the core
+    // could have moved from the transient list to the pendingCloses list.
     do {
       coreList.clear();
       synchronized (modifyLock) {
@@ -289,8 +284,7 @@ class SolrCores {
         }
       }
       // When we swap the cores, we also need to swap the associated core descriptors. Note, this
-      // changes the
-      // name of the coreDescriptor by virtue of the c-tor
+      // changes the name of the coreDescriptor by virtue of the c-tor
       CoreDescriptor cd1 = c1.getCoreDescriptor();
       addCoreDescriptor(new CoreDescriptor(n1, c0.getCoreDescriptor()));
       addCoreDescriptor(new CoreDescriptor(n0, cd1));
@@ -312,8 +306,7 @@ class SolrCores {
     synchronized (modifyLock) {
       SolrCore ret = cores.remove(name);
       // It could have been a newly-created core. It could have been a transient core. The
-      // newly-created cores
-      // in particular should be checked. It could have been a dynamic core.
+      // newly-created cores in particular should be checked. It could have been a dynamic core.
       if (ret == null) {
         ret = getTransientCacheHandler().removeCore(name);
       }
@@ -344,10 +337,8 @@ class SolrCores {
   }
 
   // See SOLR-5366 for why the UNLOAD command needs to know whether a core is actually loaded or
-  // not, it might have
-  // to close the core. However, there's a race condition. If the core happens to be in the pending
-  // "to close" queue,
-  // we should NOT close it in unload core.
+  // not, it might have to close the core. However, there's a race condition. If the core happens to
+  // be in the pending "to close" queue, we should NOT close it in unload core.
   protected boolean isLoadedNotPendingClose(String name) {
     // Just all be synchronized
     synchronized (modifyLock) {
@@ -425,17 +416,15 @@ class SolrCores {
         if (!pendingCoreOps.add(name)) {
           log.warn("Replaced an entry in pendingCoreOps {}, we should not be doing this", name);
         }
-        return getCoreFromAnyList(
-            name,
-            false); // we might have been _unloading_ the core, so return the core if it was loaded.
+        // we might have been _unloading_ the core, so return the core if it was loaded.
+        return getCoreFromAnyList(name, false);
       }
     }
     return null;
   }
 
   // We should always be removing the first thing in the list with our name! The idea here is to NOT
-  // do anything n
-  // any core while some other operation is working on that core.
+  // do anything on any core while some other operation is working on that core.
   protected void removeFromPendingOps(String name) {
     synchronized (modifyLock) {
       if (!pendingCoreOps.remove(name)) {
@@ -450,12 +439,9 @@ class SolrCores {
   }
 
   // Be a little careful. We don't want to either open or close a core unless it's _not_ being
-  // opened or closed by
-  // another thread. So within this lock we'll walk along the list of pending closes until we find
-  // something NOT in
-  // the list of threads currently being loaded or reloaded. The "usual" case will probably return
-  // the very first
-  // one anyway..
+  // opened or closed by another thread. So within this lock we'll walk along the list of pending
+  // closes until we find something NOT in the list of threads currently being loaded or reloaded.
+  // The "usual" case will probably return the very first one anyway.
   protected SolrCore getCoreToClose() {
     synchronized (modifyLock) {
       for (SolrCore core : pendingCloses) {

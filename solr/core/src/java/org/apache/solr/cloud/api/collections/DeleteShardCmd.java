@@ -106,17 +106,13 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
       ZkNodeProps m = new ZkNodeProps(propMap);
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         // In this DeleteShardCmd.call() method there are potentially two cluster state updates.
-        // This is the first one.
-        // Even though the code of this method does not wait for it to complete, it does call the
-        // Collection API before
-        // it issues the second state change below. The collection API will be doing its own state
-        // change(s), and these will
-        // happen after this one (given it's for the same collection). Therefore we persist this
-        // state change
-        // immediately and do not group it with the one done further down.
-        // Once the Collection API is also distributed (and not only the cluster state updates), we
-        // will likely be able
-        // to batch more/all cluster state updates done by this command (DeleteShardCmd). TODO
+        // This is the first one. Even though the code of this method does not wait for it to
+        // complete, it does call the Collection API before it issues the second state change below.
+        // The collection API will be doing its own state change(s), and these will happen after
+        // this one (given it's for the same collection). Therefore we persist this state change
+        // immediately and do not group it with the one done further down. Once the Collection API
+        // is also distributed (and not only the cluster state updates), we will likely be able to
+        // batch more/all cluster state updates done by this command (DeleteShardCmd). TODO
         // SOLR-15146
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(

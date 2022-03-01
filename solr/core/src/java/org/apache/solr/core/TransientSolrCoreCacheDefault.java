@@ -205,9 +205,12 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
 
   @Override
   public int getStatus(String coreName) {
+    // no_op for default handler.
     return 0;
-  } // no_op for default handler.
+  }
 
   @Override
-  public void setStatus(String coreName, int status) {} // no_op for default handler.
+  public void setStatus(String coreName, int status) {
+    // no_op for default handler.
+  }
 }

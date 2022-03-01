@@ -419,9 +419,9 @@ public class LukeRequestHandler extends RequestHandlerBase {
         fieldMap.add("dynamicBase", schema.getDynamicPattern(sfield.getName()));
       }
       Terms terms = reader.terms(fieldName);
-      if (terms
-          == null) { // Not indexed, so we need to report what we can (it made it through the fl
-        // param if specified)
+      // Not indexed, so we need to report what we can (it made it through the fl param if
+      // specified)
+      if (terms == null) {
         finfo.add(fieldName, fieldMap);
         continue;
       }
@@ -467,9 +467,8 @@ public class LukeRequestHandler extends RequestHandlerBase {
     // better way?
     for (int idx = 0; idx < 1000 && postingsEnum == null; ++idx) {
       text = termsEnum.next();
-      if (text
-          == null) { // Ran off the end of the terms enum without finding any live docs with that
-        // field in them.
+      // Ran off the end of the terms enum without finding any live docs with that field in them.
+      if (text == null) {
         return null;
       }
       postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
@@ -619,8 +618,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
   }
 
   // This method just gets the top-most level of information. This was conflated with getting
-  // detailed info
-  // for *all* the fields, called from CoreAdminHandler etc.
+  // detailed info for *all* the fields, called from CoreAdminHandler etc.
 
   public static SimpleOrderedMap<Object> getIndexInfo(DirectoryReader reader) throws IOException {
     Directory dir = reader.directory();
@@ -629,9 +627,8 @@ public class LukeRequestHandler extends RequestHandlerBase {
     indexInfo.add("numDocs", reader.numDocs());
     indexInfo.add("maxDoc", reader.maxDoc());
     indexInfo.add("deletedDocs", reader.maxDoc() - reader.numDocs());
-    indexInfo.add(
-        "version",
-        reader.getVersion()); // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
+    // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
+    indexInfo.add("version", reader.getVersion());
     indexInfo.add("segmentCount", reader.leaves().size());
     indexInfo.add("current", closeSafe(reader::isCurrent));
     indexInfo.add("hasDeletions", reader.hasDeletions());
@@ -689,8 +686,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
   }
 
   // Get terribly detailed information about a particular field. This is a very expensive call, use
-  // it with caution
-  // especially on large indexes!
+  // it with caution especially on large indexes!
   private static void getDetailedFieldInfo(
       SolrQueryRequest req, String field, SimpleOrderedMap<Object> fieldMap) throws IOException {
 
@@ -710,10 +706,8 @@ public class LukeRequestHandler extends RequestHandlerBase {
     int[] buckets = new int[HIST_ARRAY_SIZE];
     while ((text = termsEnum.next()) != null) {
       ++tiq.distinctTerms;
-      int freq =
-          termsEnum
-              .docFreq(); // This calculation seems odd, but it gives the same results as it used
-      // to.
+      // This calculation seems odd, but it gives the same results as it used to.
+      int freq = termsEnum.docFreq();
       int slot = 32 - Integer.numberOfLeadingZeros(Math.max(0, freq - 1));
       buckets[slot] = buckets[slot] + 1;
       if (numTerms > 0 && freq > tiq.minFreq) {

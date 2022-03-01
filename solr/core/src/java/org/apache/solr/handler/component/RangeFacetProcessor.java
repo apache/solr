@@ -239,17 +239,15 @@ public class RangeFacetProcessor extends SimpleFacets {
     int intervalIndex = 0;
     int lastIntervalIndex = intervalsArray.length - 1;
     // if the user requested "BEFORE", it will be the first of the intervals. Needs to be added to
-    // the
-    // response named list instead of with the counts
+    // the response named list instead of with the counts
     if (includeBefore) {
       res.add(intervalsArray[intervalIndex].getKey(), intervalsArray[intervalIndex].getCount());
       intervalIndex++;
     }
 
     // if the user requested "BETWEEN", it will be the first or second of the intervals (depending
-    // on if
-    // "BEFORE" was also requested). Needs to be added to the response named list instead of with
-    // the counts
+    // on if "BEFORE" was also requested). Needs to be added to the response named list instead of
+    // with the counts
     if (includeBetween) {
       res.add(intervalsArray[intervalIndex].getKey(), intervalsArray[intervalIndex].getCount());
       intervalIndex++;

@@ -197,8 +197,8 @@ class CloudReplicaSource implements ReplicaSource {
   @Override
   public List<String> getSliceNames() {
     // This is maybe a bug?
-    return Collections.unmodifiableList(
-        Arrays.asList(slices)); // Do not use List.of because slices could have null
+    // Do not use List.of because slices could have null
+    return Collections.unmodifiableList(Arrays.asList(slices));
   }
 
   @Override

@@ -175,12 +175,9 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       final boolean incremental =
           !Arrays.stream(entries)
               .anyMatch(entry -> entry.equals(BackupManager.TRADITIONAL_BACKUP_PROPS_FILE));
+      // incremental backups have an extra path component representing the backed up collection
       this.backupPath =
-          (incremental)
-              ? repository.resolveDirectory(backupNameUri, entries[0])
-              : // incremental backups have an extra path component representing the backed up
-              // collection
-              backupNameUri;
+          (incremental) ? repository.resolveDirectory(backupNameUri, entries[0]) : backupNameUri;
       this.zkStateReader = ccc.getZkStateReader();
       this.backupManager =
           backupId == -1
@@ -333,8 +330,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         throws Exception {
       Map<String, Object> propMap = new HashMap<>();
       propMap.put(Overseer.QUEUE_OPERATION, CREATE.toString());
-      propMap.put(
-          "fromApi", "true"); // mostly true.  Prevents autoCreated=true in the collection state.
+      // mostly true. Prevents autoCreated=true in the collection state.
+      propMap.put("fromApi", "true");
       propMap.put(REPLICATION_FACTOR, numNrtReplicas);
       propMap.put(NRT_REPLICAS, numNrtReplicas);
       propMap.put(TLOG_REPLICAS, numTlogReplicas);
@@ -369,8 +366,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       } else {
         propMap.put(CollectionHandlingUtils.NUM_SLICES, sliceNames.size());
         // ClusterStateMutator.createCollection detects that "slices" is in fact a slice structure
-        // instead of a
-        //   list of names, and if so uses this instead of building it.  We clear the replica list.
+        // instead of a list of names, and if so uses this instead of building it. We clear the
+        // replica list.
         Collection<Slice> backupSlices = backupCollectionState.getActiveSlices();
         Map<String, Slice> newSlices = new LinkedHashMap<>(backupSlices.size());
         for (Slice backupSlice : backupSlices) {

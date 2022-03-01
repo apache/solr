@@ -237,8 +237,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         maxResultsForSuggest = (int) maxResultsForSuggestParamValue;
       } else {
         // If a fractional value was passed in, this is the % of documents returned by the specified
-        // filter
-        // If no specified filter, we use the most restrictive filter of the fq parameters
+        // filter. If no specified filter, we use the most restrictive filter of the fq parameters
         String maxResultsFilterQueryString =
             params.get(SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ);
 

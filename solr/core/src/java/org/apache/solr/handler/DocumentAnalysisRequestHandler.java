@@ -121,8 +121,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     return "Provides a breakdown of the analysis process of provided documents";
   }
 
-  // ================================================ Helper Methods
-  // ==================================================
+  // ===== Helper Methods =====
 
   /**
    * Resolves the {@link DocumentAnalysisRequest} from the given solr request.

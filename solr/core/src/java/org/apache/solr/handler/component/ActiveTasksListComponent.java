@@ -105,8 +105,7 @@ public class ActiveTasksListComponent extends SearchComponent {
 
     if (rb.getTaskStatusCheckUUID() != null) {
       // We got here with the specific taskID check being specified -- this means that the taskID
-      // was not
-      // found in active tasks on any shard
+      // was not found in active tasks on any shard
       rb.rsp
           .getValues()
           .add("taskStatus", "id:" + rb.getTaskStatusCheckUUID() + ", status: inactive");

@@ -65,9 +65,8 @@ public abstract class CSVLoaderBase extends ContentStreamLoader {
   String[] fieldnames;
   CSVLoaderBase.FieldAdder[] adders;
 
-  String rowId =
-      null; // if not null, add a special field by the name given with the line number/row id as the
-  // value
+  // if not null, add a special field by the name given with the line number/row id as the value
+  String rowId = null;
   int rowIdOffset = 0; // add to line/rowid before creating the field
 
   int skipLines; // number of lines to skip at start of file

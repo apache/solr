@@ -301,8 +301,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     }
 
     // This is slightly off, a valid path is something like ./schema.xml. I don't think it's worth
-    // the effort though
-    // to fix it to handle all possibilities though.
+    // the effort though to fix it to handle all possibilities though.
     if (fname.indexOf("..") >= 0 || fname.startsWith(".")) {
       if (reportError) {
         log.error("Invalid path: {}", fname);
@@ -354,9 +353,8 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
   }
 
   // Find the file indicated by the "file=XXX" parameter or the root of the conf directory on the
-  // local
-  // file system. Respects all the "interesting" stuff around what the resource loader does to find
-  // files.
+  // local file system. Respects all the "interesting" stuff around what the resource loader does to
+  // find files.
   public static Path getAdminFileFromFileSystem(
       SolrQueryRequest req, SolrQueryResponse rsp, Set<String> hiddenFiles) {
     final SolrResourceLoader loader = req.getCore().getResourceLoader();

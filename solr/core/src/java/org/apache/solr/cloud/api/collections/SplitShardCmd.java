@@ -548,12 +548,10 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             subShardNodeName);
 
         // we first create all replicas in DOWN state without actually creating their cores in order
-        // to
-        // avoid a race condition where Overseer may prematurely activate the new sub-slices (and
-        // deactivate
-        // the parent slice) before all new replicas are added. This situation may lead to a loss of
-        // performance
-        // because the new shards will be activated with possibly many fewer replicas.
+        // to avoid a race condition where Overseer may prematurely activate the new sub-slices (and
+        // deactivate the parent slice) before all new replicas are added. This situation may lead
+        // to a loss of performance because the new shards will be activated with possibly many
+        // fewer replicas.
         ZkNodeProps props =
             new ZkNodeProps(
                 Overseer.QUEUE_OPERATION,
@@ -609,11 +607,9 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       if (hasRecordedDistributedUpdate
           && ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         // Actually add the replicas to the collection state. Note that when Overseer takes care of
-        // the state,
-        // there is no wait here for the state update to be visible, but with distributed state
-        // update done synchronously
-        // we wait (we could in theory create a thread and have it do the work if we REALLY needed,
-        // but we likely don't).
+        // the state, there is no wait here for the state update to be visible, but with distributed
+        // state update done synchronously we wait (we could in theory create a thread and have it
+        // do the work if we REALLY needed, but we likely don't).
         scr.executeStateUpdates(ccc.getSolrCloudManager(), ccc.getZkStateReader());
       }
       t.stop();
@@ -677,9 +673,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       if (repFactor == 1) {
         // A commit is needed so that documents are visible when the sub-shard replicas come up
         // (Note: This commit used to be after the state switch, but was brought here before the
-        // state switch
-        //  as per SOLR-13945 so that sub shards don't come up empty, momentarily, after being
-        // marked active)
+        // state switch as per SOLR-13945 so that sub shards don't come up empty, momentarily, after
+        // being marked active)
         t = timings.sub("finalCommit");
         CollectionHandlingUtils.commit(results, slice.get(), parentShardLeader);
         t.stop();

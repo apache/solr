@@ -342,8 +342,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     return sb.toString();
   }
 
-  // ================================================= Inner classes
-  // =================================================
+  // ===== Inner classes =====
   /**
    * TokenStream that iterates over a list of pre-existing Tokens
    *
@@ -389,11 +388,9 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
     protected void addAttributes(AttributeSource attributeSource) {
       // note: ideally we wouldn't call addAttributeImpl which is marked internal. But nonetheless
-      // it's possible
-      //  this method is used by some custom attributes, especially since Solr doesn't provide a way
-      // to customize the
-      //  AttributeFactory which is the recommended way to choose which classes implement which
-      // attributes.
+      // it's possible this method is used by some custom attributes, especially since Solr doesn't
+      // provide a way to customize the AttributeFactory which is the recommended way to choose
+      // which classes implement which attributes.
       Iterator<AttributeImpl> atts = attributeSource.getAttributeImplsIterator();
       while (atts.hasNext()) {
         addAttributeImpl(atts.next()); // adds both impl & interfaces

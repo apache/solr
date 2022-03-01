@@ -77,11 +77,9 @@ public class QueryCancellationComponent extends SearchComponent {
     }
 
     // If any shard sees the query as present, then we mark the query as successfully cancelled. If
-    // no shard found
-    // the query, then that can denote that the query was not found. This is important since the
-    // query cancellation
-    // request is broadcast to all shards, and the query might have completed on some shards but not
-    // on others
+    // no shard found the query, then that can denote that the query was not found. This is
+    // important since the query cancellation request is broadcast to all shards, and the query
+    // might have completed on some shards but not on others
 
     if (queryFound) {
       rb.rsp

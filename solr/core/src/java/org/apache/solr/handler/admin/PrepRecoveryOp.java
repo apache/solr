@@ -114,8 +114,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
                     // TODO: This is funky but I've seen this in testing where the replica asks the
                     // leader to be in recovery? Need to track down how that happens ... in the
-                    // meantime,
-                    // this is a safeguard
+                    // meantime, this is a safeguard
                     boolean leaderDoesNotNeedRecovery =
                         (onlyIfLeader != null
                             && onlyIfLeader
@@ -139,10 +138,9 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                     if (waitForState == Replica.State.RECOVERING
                         && shardTerms.registered(coreNodeName)
                         && shardTerms.skipSendingUpdatesTo(coreNodeName)) {
-                      // The replica changed it term, then published itself as RECOVERING.
-                      // This core already see replica as RECOVERING
-                      // so it is guarantees that a live-fetch will be enough for this core to see
-                      // max term published
+                      // The replica changed it term, then published itself as RECOVERING. This core
+                      // already see replica as RECOVERING so it is guarantees that a live-fetch
+                      // will be enough for this core to see max term published
                       shardTerms.refreshTerms();
                     }
 

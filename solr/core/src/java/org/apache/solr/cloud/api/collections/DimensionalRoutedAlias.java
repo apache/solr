@@ -106,12 +106,9 @@ public class DimensionalRoutedAlias extends RoutedAlias {
     StringBuilder sb = new StringBuilder(getAliasName());
     for (RoutedAlias dimension : dimensions) {
       // N. B. getAliasName is generally safe as a regex because it must conform to collection
-      // naming rules
-      // and those rules exclude regex special characters. A malicious request might do something
-      // expensive, but
-      // if you have malicious users able to run admin commands and create aliases, it is very
-      // likely that you have
-      // much bigger problems than an expensive regex.
+      // naming rules and those rules exclude regex special characters. A malicious request might do
+      // something expensive, but if you have malicious users able to run admin commands and create
+      // aliases, it is very likely that you have much bigger problems than an expensive regex.
       String routeString =
           dimension.computeInitialCollectionName().replaceAll(dimension.getAliasName(), "");
       sb.append(routeString);

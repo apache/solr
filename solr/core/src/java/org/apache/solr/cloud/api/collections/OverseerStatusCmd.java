@@ -168,8 +168,7 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
     // return any Overseer stats.
     if (ccc.getCoreContainer().getDistributedCollectionCommandRunner().isPresent()) {
       // TODO: introduce a per node status command allowing insight into how Cluster state updates,
-      // Collection API and
-      //  config set API execution went on that node...
+      // Collection API and config set API execution went on that node...
       return;
     }
 

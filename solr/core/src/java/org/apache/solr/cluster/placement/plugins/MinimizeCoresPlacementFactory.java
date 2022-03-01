@@ -105,18 +105,15 @@ public class MinimizeCoresPlacementFactory
             new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
 
         // Now place all replicas of all shards on nodes, by placing on nodes with the smallest
-        // number of cores and taking
-        // into account replicas placed during this computation. Note that for each shard we must
-        // place replicas on different
-        // nodes, when moving to the next shard we use the nodes sorted by their updated number of
-        // cores (due to replica
-        // placements for previous shards).
+        // number of cores and taking into account replicas placed during this computation. Note
+        // that for each shard we must place replicas on different nodes, when moving to the next
+        // shard we use the nodes sorted by their updated number of cores (due to replica placements
+        // for previous shards).
         for (String shardName : request.getShardNames()) {
           // Assign replicas based on the sort order of the nodesByCores tree multimap to put
-          // replicas on nodes with less
-          // cores first. We only need totalReplicasPerShard nodes given that's the number of
-          // replicas to place.
-          // We assign based on the passed nodeEntriesToAssign list so the right nodes get replicas.
+          // replicas on nodes with less cores first. We only need totalReplicasPerShard nodes given
+          // that's the number of replicas to place. We assign based on the passed
+          // nodeEntriesToAssign list so the right nodes get replicas.
           ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign =
               new ArrayList<>(totalReplicasPerShard);
           Iterator<Map.Entry<Integer, Node>> treeIterator = nodesByCores.entries().iterator();
@@ -125,8 +122,7 @@ public class MinimizeCoresPlacementFactory
           }
 
           // Update the number of cores each node will have once the assignments below got executed
-          // so the next shard picks the
-          // lowest loaded nodes for its replicas.
+          // so the next shard picks the lowest loaded nodes for its replicas.
           for (Map.Entry<Integer, Node> e : nodeEntriesToAssign) {
             int coreCount = e.getKey();
             Node node = e.getValue();

@@ -505,10 +505,8 @@ public class DistribPackageStore implements PackageStore {
           coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
       String url = baseUrl.replace("/solr", "/api") + "/node/files" + path;
       HttpDelete del = new HttpDelete(url);
-      coreContainer.runAsync(
-          () ->
-              Utils.executeHttpMethod(
-                  client, url, null, del)); // invoke delete command on all nodes asynchronously
+      // invoke delete command on all nodes asynchronously
+      coreContainer.runAsync(() -> Utils.executeHttpMethod(client, url, null, del));
     }
   }
 

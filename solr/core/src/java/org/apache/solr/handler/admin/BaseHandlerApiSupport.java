@@ -118,10 +118,9 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
         } catch (SolrException e) {
           throw e;
         } catch (Exception e) {
-          throw new SolrException(
-              BAD_REQUEST,
-              e); // TODO BAD_REQUEST is a wild guess; should we flip the default?  fail here to
-          // investigate how this happens in tests
+          // TODO BAD_REQUEST is a wild guess; should we flip the default?  fail here to investigate
+          // how this happens in tests
+          throw new SolrException(BAD_REQUEST, e);
         } finally {
           req.setParams(params);
         }

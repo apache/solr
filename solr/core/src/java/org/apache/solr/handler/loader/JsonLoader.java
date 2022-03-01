@@ -474,9 +474,8 @@ public class JsonLoader extends ContentStreamLoader {
           };
 
       RequestHandlerUtils.validateCommitParams(p);
-      p =
-          SolrParams.wrapDefaults(
-              p, req.getParams()); // default to the normal request params for commit options
+      // default to the normal request params for commit options
+      p = SolrParams.wrapDefaults(p, req.getParams());
       RequestHandlerUtils.updateCommit(cmd, p);
     }
 

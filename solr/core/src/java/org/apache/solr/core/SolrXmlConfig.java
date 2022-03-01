@@ -62,8 +62,7 @@ import org.xml.sax.InputSource;
 public class SolrXmlConfig {
 
   // TODO should these from* methods return a NodeConfigBuilder so that the caller (a test) can make
-  // further
-  //  manipulations like add properties and set the CorePropertiesLocator and "async" mode?
+  // further manipulations like add properties and set the CorePropertiesLocator and "async" mode?
 
   public static final String ZK_HOST = "zkHost";
   public static final String SOLR_XML_FILE = "solr.xml";
@@ -102,24 +101,20 @@ public class SolrXmlConfig {
     checkForIllegalConfig(config);
 
     // sanity check: if our config came from zookeeper, then there *MUST* be Node Properties that
-    // tell us
-    // what zkHost was used to read it (either via webapp context attribute, or that
-    // SolrDispatchFilter
-    // filled in for us from system properties)
+    // tell us what zkHost was used to read it (either via webapp context attribute, or that
+    // SolrDispatchFilter filled in for us from system properties)
     assert ((!fromZookeeper)
         || (null != config.getSubstituteProperties()
             && null != config.getSubstituteProperties().getProperty(ZK_HOST)));
 
     // Regardless of where/how we this XmlConfigFile was loaded from, if it contains a zkHost
-    // property,
-    // we're going to use that as our "default" and only *directly* check the system property if
-    // it's not specified.
+    // property, we're going to use that as our "default" and only *directly* check the system
+    // property if it's not specified.
     //
     // (checking the sys prop here is really just for tests that by-pass SolrDispatchFilter. In
-    // non-test situations,
-    // SolrDispatchFilter will check the system property if needed in order to try and load solr.xml
-    // from ZK, and
-    // should have put the sys prop value in the node properties for us)
+    // non-test situations, SolrDispatchFilter will check the system property if needed in order to
+    // try and load solr.xml from ZK, and should have put the sys prop value in the node properties
+    // for us)
     final String defaultZkHost =
         wrapAndSetZkHostFromSysPropIfNeeded(config.getSubstituteProperties()).getProperty(ZK_HOST);
 

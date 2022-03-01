@@ -68,8 +68,7 @@ public class BlobRepository {
 
   static {
     // We try to make things reproducible in the context of our tests by initializing the random
-    // instance
-    // based on the current seed
+    // instance based on the current seed
     String seed = System.getProperty("tests.seed");
     if (seed == null) {
       RANDOM = new Random();
@@ -311,9 +310,8 @@ public class BlobRepository {
 
   public static class BlobContent<T> {
     public final String key;
-    private final T
-        content; // holds byte buffer or cached object, holding both is a waste of memory
-    // ref counting mechanism
+    // holds byte buffer or cached object, holding both is a waste of memory ref counting mechanism
+    private final T content;
     private final Set<BlobContentRef<T>> references = new HashSet<>();
 
     @SuppressWarnings("unchecked")

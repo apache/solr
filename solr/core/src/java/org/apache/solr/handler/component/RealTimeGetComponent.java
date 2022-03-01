@@ -142,8 +142,7 @@ public class RealTimeGetComponent extends SearchComponent {
     // TODO remove this at Solr 10
     // After SOLR-14641 other nodes won't call RTG with this param.
     // Just keeping here for backward-compatibility, if we remove this, nodes with older versions
-    // will
-    // assume that this node can't handle version ranges.
+    // will assume that this node can't handle version ranges.
     String val = params.get("checkCanHandleVersionRanges");
     if (val != null) {
       rb.rsp.add("canHandleVersionRanges", true);
@@ -271,8 +270,8 @@ public class RealTimeGetComponent extends SearchComponent {
                     ulog.openRealtimeSearcher(); // force open a new realtime searcher
                     opennedRealtimeSearcher = true;
                   }
-                  o = null; // pretend we never found this record and fall through to use the
-                  // searcher
+                  // pretend we never found this record and fall through to use the searcher
+                  o = null;
                   break;
                 }
 
@@ -288,8 +287,7 @@ public class RealTimeGetComponent extends SearchComponent {
                 } else if (oper == UpdateLog.UPDATE_INPLACE) {
                   assert entry.size() == 5;
                   // For in-place update case, we have obtained the partial document till now. We
-                  // need to
-                  // resolve it to a full document to be returned to the user.
+                  // need to resolve it to a full document to be returned to the user.
                   // resolveFullDocument applies the transformer, if present.
                   doc =
                       resolveFullDocument(
@@ -484,8 +482,8 @@ public class RealTimeGetComponent extends SearchComponent {
       return mergePartialDocWithFullDocFromIndex(core, idBytes, returnFields, partialDoc);
     } else if (lastPrevPointer > 0) {
       // We were supposed to have found the last full doc also in the tlogs, but the prevPointer
-      // links led to nowhere
-      // We should reopen a new RT searcher and get the doc. This should be a rare occurrence
+      // links led to nowhere. We should reopen a new RT searcher and get the doc. This should be a
+      // rare occurrence
       Term idTerm = new Term(schema.getUniqueKeyField().getName(), idBytes);
       SolrDocument mergedDoc = reopenRealtimeSearcherAndGet(core, idTerm, returnFields);
       if (mergedDoc == null) {
@@ -597,11 +595,8 @@ public class RealTimeGetComponent extends SearchComponent {
         return doc;
       }
       for (String fieldName : partialDoc.getFieldNames()) {
-        doc.setField(
-            fieldName.toString(),
-            partialDoc.getFieldValue(
-                fieldName)); // since partial doc will only contain single valued fields, this is
-        // fine
+        // since partial doc will only contain single valued fields, this is fine
+        doc.setField(fieldName.toString(), partialDoc.getFieldValue(fieldName));
       }
 
       return doc;
@@ -730,8 +725,7 @@ public class RealTimeGetComponent extends SearchComponent {
               SolrInputDocument doc = (SolrInputDocument) entry.get(entry.size() - 1);
               try {
                 // For in-place update case, we have obtained the partial document till now. We need
-                // to
-                // resolve it to a full document to be returned to the user.
+                // to resolve it to a full document to be returned to the user.
                 SolrReturnFields returnFields = makeReturnFields(core, onlyTheseFields, resolution);
                 SolrDocument sdoc = resolveFullDocument(core, idBytes, returnFields, doc, entry);
                 if (sdoc == null) {
@@ -886,8 +880,8 @@ public class RealTimeGetComponent extends SearchComponent {
       docTransformer = null;
     }
     // TODO optimization: add feature to SolrReturnFields to exclude copyFieldTargets from wildcard
-    // matching.
-    //   Today, we filter this data out later before returning, but it's already been fetched.
+    // matching. Today, we filter this data out later before returning, but it's already been
+    // fetched.
     return new SolrReturnFields(requestedFields, docTransformer);
   }
 
@@ -970,8 +964,8 @@ public class RealTimeGetComponent extends SearchComponent {
     return new ClonedField(in);
   }
 
-  private static class ClonedField
-      extends Field { // TODO Lucene Field has no copy constructor; maybe it should?
+  // TODO Lucene Field has no copy constructor; maybe it should?
+  private static class ClonedField extends Field {
     ClonedField(IndexableField in) {
       super(in.name(), in.fieldType());
       this.fieldsData = in.numericValue();

@@ -106,8 +106,8 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
     Phaser localPhaser = phaser; // volatile read
     if (localPhaser != null) {
       assert localPhaser.getRegisteredParties() == 1;
-      localPhaser
-          .arrive(); // we should be the only ones registered, so this will advance phase each time
+      // we should be the only ones registered, so this will advance phase each time
+      localPhaser.arrive();
     }
   }
 

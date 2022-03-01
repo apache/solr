@@ -356,8 +356,8 @@ public class BackupManager {
         case FILE:
           {
             try (IndexInput is = repository.openInput(sourceDir, file, IOContext.DEFAULT)) {
-              byte[] arr =
-                  new byte[(int) is.length()]; // probably ok since the config file should be small.
+              // probably ok since the config file should be small.
+              byte[] arr = new byte[(int) is.length()];
               is.readBytes(arr, 0, (int) is.length());
               configSetService.uploadFileToConfig(configName, filePath, arr, false);
             }

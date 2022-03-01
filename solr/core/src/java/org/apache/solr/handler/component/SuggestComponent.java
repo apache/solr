@@ -508,12 +508,9 @@ public class SuggestComponent extends SearchComponent
     private final boolean buildOnStartup;
 
     // On core reload, immediately after the core is created a new searcher is opened, causing the
-    // suggester
-    // to trigger a "buildOnCommit". The only event that we want to trigger in that situation is
-    // "buildOnStartup"
-    // so if buildOnCommit is true and this is a core being reloaded, we will skip the first time
-    // this listener
-    // is called.
+    // suggester to trigger a "buildOnCommit". The only event that we want to trigger in that
+    // situation is "buildOnStartup" so if buildOnCommit is true and this is a core being reloaded,
+    // we will skip the first time this listener is called.
     private final AtomicLong callCount = new AtomicLong(0);
     private final boolean isCoreReload;
 

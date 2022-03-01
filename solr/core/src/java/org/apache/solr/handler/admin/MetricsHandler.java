@@ -459,8 +459,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       }
     }
 
-    List<MetricType> metricTypes =
-        Collections.singletonList(MetricType.all); // include all metrics by default
+    // include all metrics by default
+    List<MetricType> metricTypes = Collections.singletonList(MetricType.all);
     try {
       if (types.size() > 0) {
         metricTypes =

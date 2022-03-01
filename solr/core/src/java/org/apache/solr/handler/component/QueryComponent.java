@@ -403,8 +403,8 @@ public class QueryComponent extends SearchComponent {
     //
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     if (groupingSpec != null) {
-      cmd.setSegmentTerminateEarly(
-          false); // not supported, silently ignore any segmentTerminateEarly flag
+      // not supported, silently ignore any segmentTerminateEarly flag
+      cmd.setSegmentTerminateEarly(false);
       try {
         if (params.getBool(GroupParams.GROUP_DISTRIBUTED_FIRST, false)) {
           doProcessGroupedDistributedSearchFirstPhase(rb, cmd, result);
@@ -984,16 +984,13 @@ public class QueryComponent extends SearchComponent {
       }
 
       // if the SortSpec contains a field besides score or the Lucene docid, then the values will
-      // need to be unmarshalled from
-      // sortFieldValues.
+      // need to be unmarshalled from sortFieldValues.
       boolean needsUnmarshalling = ss.includesNonScoreOrDocField();
 
       // if we need to unmarshal the sortFieldValues for sorting but we have none, which can happen
-      // if partial results are
-      // being returned from the shard, then skip merging the results for the shard. This avoids an
-      // exception below.
-      // if the shard returned partial results but we don't need to unmarshal (a normal scoring
-      // query), then merge what we got.
+      // if partial results are being returned from the shard, then skip merging the results for the
+      // shard. This avoids an exception below. if the shard returned partial results but we don't
+      // need to unmarshal (a normal scoring query), then merge what we got.
       if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
         continue;
       }
@@ -1314,8 +1311,8 @@ public class QueryComponent extends SearchComponent {
               doc.setField("score", sdoc.score);
             } else {
               // Score might have been added (in createMainQuery) to shard-requests (and therefore
-              // in shard-response-docs)
-              // Remove score if the outer request did not ask for it returned
+              // in shard-response-docs) Remove score if the outer request did not ask for it
+              // returned
               doc.remove("score");
             }
             if (removeKeyField) {

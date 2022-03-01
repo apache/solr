@@ -126,9 +126,8 @@ public class PivotFacetFieldValueCollection implements Iterable<PivotFacetValue>
       //
       // TODO: in theory we could avoid this extra check by trimming sooner (SOLR-6331)
       // but since that's a destructive op that blows away the `valuesMap` which we (might?) still
-      // need
-      // (and pre-emptively skips the offsets) we're avoiding re-working that optimization
-      // for now until/unless someone gives it more careful thought...
+      // need (and pre-emptively skips the offsets) we're avoiding re-working that optimization for
+      // now until/unless someone gives it more careful thought...
       final List<PivotFacetValue> results = new ArrayList<>(numRefinableValues);
       for (PivotFacetValue pivotValue : explicitValues) {
         if (pivotValue.getCount() >= facetFieldMinimumCount) {

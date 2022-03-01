@@ -282,8 +282,7 @@ public class IndexFetcher {
     connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
 
     // allow a leader override for tests - you specify this in /replication follower section of
-    // solrconfig and some
-    // test don't want to define this
+    // solrconfig and some test don't want to define this
     soTimeout = Integer.getInteger("solr.indexfetcher.sotimeout", -1);
     if (soTimeout == -1) {
       soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
@@ -574,9 +573,9 @@ public class IndexFetcher {
           ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("fsyncService"));
       // use a synchronized list because the list is read by other threads (to show details)
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
-      // if the generation of leader is older than that of the follower , it means they are not
-      // compatible to be copied
-      // then a new index directory to be created and all the files need to be copied
+      // if the generation of leader is older than that of the follower, it means they are not
+      // compatible to be copied then a new index directory to be created and all the files need to
+      // be copied
       boolean isFullCopyNeeded =
           IndexDeletionPolicyWrapper.getCommitTimestamp(commit) >= latestVersion
               || commit.getGeneration() >= latestGeneration
@@ -604,10 +603,8 @@ public class IndexFetcher {
       try {
 
         // We will compare all the index files from the leader vs the index files on disk to see if
-        // there is a mismatch
-        // in the metadata. If there is a mismatch for the same index file then we download the
-        // entire index
-        // (except when differential copy is applicable) again.
+        // there is a mismatch in the metadata. If there is a mismatch for the same index file then
+        // we download the entire index (except when differential copy is applicable) again.
         if (!isFullCopyNeeded && isIndexStale(indexDir)) {
           isFullCopyNeeded = true;
         }
@@ -707,9 +704,8 @@ public class IndexFetcher {
               }
 
               log.info("Configuration files are modified, core will be reloaded");
-              logReplicationTimeAndConfFiles(
-                  modifiedConfFiles, successfulInstall); // write to a file time of replication and
-              // conf files.
+              // write to a file time of replication and conf files.
+              logReplicationTimeAndConfFiles(modifiedConfFiles, successfulInstall);
             }
           } else {
             terminateAndWaitFsyncService();
@@ -1171,8 +1167,7 @@ public class IndexFetcher {
                 file.get(CHECKSUM));
           }
           // A hard link here should survive the eventual directory move, and should be more space
-          // efficient as
-          // compared to a file copy. TODO: Maybe we could do a move safely here?
+          // efficient as compared to a file copy. TODO: Maybe we could do a move safely here?
           Files.createLink(Path.of(tmpIndexDirPath, filename), localFile.toPath());
           bytesSkippedCopying += localFile.length();
         } else {
@@ -1208,8 +1203,8 @@ public class IndexFetcher {
       File file = new File(dir);
       if (!file.exists()) {
         file = file.getParentFile();
-        if (!file.exists()) { // this is not a disk directory . so just pretend that there is enough
-          // space
+        // this is not a disk directory. so just pretend that there is enough space
+        if (!file.exists()) {
           return Long.MAX_VALUE;
         }
       }
@@ -1222,8 +1217,8 @@ public class IndexFetcher {
 
   private long getApproxTotalSpaceReqd(long totalSpaceRequired) {
     long approxTotalSpaceReqd = (long) (totalSpaceRequired * 1.05); // add 5% extra for safety
-    approxTotalSpaceReqd +=
-        (100 * 1024 * 1024); // we should have an extra of 100MB free after everything is downloaded
+    // we should have an extra of 100MB free after everything is downloaded
+    approxTotalSpaceReqd += (100 * 1024 * 1024);
     return approxTotalSpaceReqd;
   }
 
@@ -1402,11 +1397,7 @@ public class IndexFetcher {
     return false;
   }
 
-  /**
-   * Copy a file by the File#renameTo() method. If it fails, it is considered a failure
-   *
-   * <p>
-   */
+  /** Copy a file by the File#renameTo() method. If it fails, it is considered a failure */
   private boolean moveAFile(Directory tmpIdxDir, Directory indexDir, String fname) {
     log.debug("Moving file: {}", fname);
     boolean success = false;
@@ -1962,8 +1953,7 @@ public class IndexFetcher {
       // wt=filestream this is a custom protocol
       params.set(CommonParams.WT, FILE_STREAM);
       // This happen if there is a failure there is a retry. the offset=<sizedownloaded> ensures
-      // that
-      // the server starts from the offset
+      // that the server starts from the offset
       if (bytesDownloaded > 0) {
         params.set(OFFSET, Long.toString(bytesDownloaded));
       }

@@ -196,8 +196,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
    */
   public void setReserveDuration(Long indexGen, long reserveTime) {
     // since 'reserves' is a concurrent HashMap, we don't need to synchronize this method as long as
-    // all
-    // operations on 'reserves' are done atomically.
+    // all operations on 'reserves' are done atomically.
     //
     // Here we'll use Map.merge to ensure that we atomically replace any existing timestamp if
     // and only if our new reservation timetsamp is larger.
@@ -445,10 +444,8 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     // is that we have no control over what delegate is used, or how long those calls might take.
     //
     // If the hypotehtical situation above ever becomes problematic, then an alternative approach
-    // might be
-    // to *add* to the Set/Map of all known commits *before* delegating, then *remove* everything
-    // except
-    // the new (non-deleted) commits *after* delegating.
+    // might be to *add* to the Set/Map of all known commits *before* delegating, then *remove*
+    // everything except the new (non-deleted) commits *after* delegating.
 
     assert null != list;
     if (list.isEmpty()) {

@@ -207,9 +207,8 @@ public class XMLLoader extends ContentStreamLoader {
             }
 
             RequestHandlerUtils.validateCommitParams(mp);
-            SolrParams p =
-                SolrParams.wrapDefaults(
-                    mp, req.getParams()); // default to the normal request params for commit options
+            // default to the normal request params for commit options
+            SolrParams p = SolrParams.wrapDefaults(mp, req.getParams());
             RequestHandlerUtils.updateCommit(cmd, p);
 
             processor.processCommit(cmd);

@@ -266,9 +266,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
 
     // Even if Overseer does wait for the collection to be created, it sees a different cluster
-    // state than this node,
-    // so this wait is required to make sure the local node Zookeeper watches fired and now see the
-    // collection.
+    // state than this node, so this wait is required to make sure the local node Zookeeper watches
+    // fired and now see the collection.
     if (action.equals(CollectionAction.CREATE) && asyncId == null) {
       if (rsp.getException() == null) {
         waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
@@ -289,20 +288,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       ZkNodeProps m, CollectionAction action, long timeout)
       throws KeeperException, InterruptedException {
     // Collection API messages are either sent to Overseer and processed there, or processed
-    // locally.
-    // Distributing Collection API implies we're also distributing Cluster State Updates. Indeed
-    // collection creation
-    // with non distributed cluster state updates requires for "Per Replica States" that the
-    // Collection API be running
-    // on Overseer, which means that it is not possible to distributed Collection API while keeping
-    // cluster state updates
-    // on Overseer. See the call to CollectionCommandContext.submitIntraProcessMessage() in
-    // CreateCollectionCmd.call() which
-    // can only be done if the Collection API command runs on the same JVM as the Overseer based
-    // cluster state update...
-    // The configuration handling includes these checks to not allow distributing collection API
-    // without distributing
-    // cluster state updates (but the other way around is ok). See constructor of CloudConfig.
+    // locally. Distributing Collection API implies we're also distributing Cluster State Updates.
+    // Indeed collection creation with non distributed cluster state updates requires for "Per
+    // Replica States" that the Collection API be running on Overseer, which means that it is not
+    // possible to distributed Collection API while keeping cluster state updates on Overseer. See
+    // the call to CollectionCommandContext.submitIntraProcessMessage() in
+    // CreateCollectionCmd.call() which can only be done if the Collection API command runs on the
+    // same JVM as the Overseer based cluster state update... The configuration handling includes
+    // these checks to not allow distributing collection API without distributing cluster state
+    // updates (but the other way around is ok). See constructor of CloudConfig.
     if (distributedCollectionConfigSetCommandRunner.isPresent()) {
       return distributedCollectionConfigSetCommandRunner
           .get()
@@ -739,8 +733,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           Map<String, Object> params = copy(req.getParams().required(), null, NAME);
 
           // Note: success/no-op in the event of no properties supplied is intentional. Keeps code
-          // simple and one less case
-          // for api-callers to check for.
+          // simple and one less case for api-callers to check for.
           return convertPrefixToMap(req.getParams(), params, "property");
         }),
 
@@ -1182,8 +1175,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           boolean uniquePerSlice = Boolean.parseBoolean((String) map.get(SHARD_UNIQUE));
 
           // Check if we're trying to set a property with parameters that allow us to set the
-          // property on multiple replicas
-          // in a slice on properties that are known to only be one-per-slice and error out if so.
+          // property on multiple replicas in a slice on properties that are known to only be
+          // one-per-slice and error out if so.
           if (StringUtils.isNotBlank((String) map.get(SHARD_UNIQUE))
               && SliceMutator.SLICE_UNIQUE_BOOLEAN_PROPERTIES.contains(
                   property.toLowerCase(Locale.ROOT))
@@ -1301,8 +1294,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
           if (location == null) {
             // Refresh the cluster property file to make sure the value set for location is the
-            // latest
-            // Check if the location is specified in the cluster property.
+            // latest. Check if the location is specified in the cluster property.
             location =
                 new ClusterProperties(h.coreContainer.getZkController().getZkClient())
                     .getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
@@ -1382,8 +1374,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
           if (location == null) {
             // Refresh the cluster property file to make sure the value set for location is the
-            // latest
-            // Check if the location is specified in the cluster property.
+            // latest. Check if the location is specified in the cluster property.
             location =
                 new ClusterProperties(h.coreContainer.getZkController().getZkClient())
                     .getClusterProperty("location", null);
@@ -1455,8 +1446,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                 repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
             if (location == null) {
               // Refresh the cluster property file to make sure the value set for location is the
-              // latest
-              // Check if the location is specified in the cluster property.
+              // latest. Check if the location is specified in the cluster property.
               location =
                   new ClusterProperties(h.coreContainer.getZkController().getZkClient())
                       .getClusterProperty("location", null);
@@ -1527,8 +1517,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                 repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
             if (location == null) {
               // Refresh the cluster property file to make sure the value set for location is the
-              // latest
-              // Check if the location is specified in the cluster property.
+              // latest. Check if the location is specified in the cluster property.
               location =
                   new ClusterProperties(h.coreContainer.getZkController().getZkClient())
                       .getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
@@ -1977,8 +1966,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   // These "copy" methods were once SolrParams.getAll but were moved here as there is no universal
-  // way that
-  //  a SolrParams can be represented in a Map; there are various choices.
+  // way that a SolrParams can be represented in a Map; there are various choices.
 
   /** Copy all params to the given map or if the given map is null create a new one */
   static Map<String, Object> copy(

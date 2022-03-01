@@ -270,8 +270,7 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
     }
 
     // If users are being safe and only want to remove a shard if it is down, they can specify
-    // onlyIfDown=true
-    // on the command.
+    // onlyIfDown=true on the command.
     if (Boolean.parseBoolean(message.getStr(CollectionHandlingUtils.ONLY_IF_DOWN))
         && replica.getState() != Replica.State.DOWN) {
       throw new SolrException(

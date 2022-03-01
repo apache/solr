@@ -134,8 +134,8 @@ public class CollectionMutator {
             props.put(prop, message.get(prop));
           }
         }
-        if (prop
-            == REPLICATION_FACTOR) { // SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in
+        // SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in
+        if (prop == REPLICATION_FACTOR) {
           // sync
           props.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
         }

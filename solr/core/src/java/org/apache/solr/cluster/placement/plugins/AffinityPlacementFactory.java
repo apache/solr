@@ -240,8 +240,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       attributeFetcher.fetchFrom(allNodes);
       final AttributeValues attrValues = attributeFetcher.fetchAttributes();
       // Get the number of currently existing cores per node, so we can update as we place new cores
-      // to not end up
-      // always selecting the same node(s). This is used across placement requests
+      // to not end up always selecting the same node(s). This is used across placement requests
       Map<Node, Integer> allCoresOnNodes = getCoreCountPerNode(allNodes, attrValues);
 
       // Keep track with nodesWithReplicas across requests
@@ -257,17 +256,15 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         nodes = filterNodesByNodeType(placementContext.getCluster(), request, attrValues, nodes);
 
         // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can overlap
-        // if nodes accept multiple replica types)
-        // These subsets sets are actually maps, because we capture the number of cores (of any
-        // replica type) present on each node.
+        // if nodes accept multiple replica types). These subsets sets are actually maps, because we
+        // capture the number of cores (of any replica type) present on each node.
         EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes =
             getAvailableNodesForReplicaTypes(nodes, attrValues);
 
         // All available zones of live nodes. Due to some nodes not being candidates for placement,
-        // and some existing replicas
-        // being one availability zones that might be offline (i.e. their nodes are not live), this
-        // set might contain zones
-        // on which it is impossible to place replicas. That's ok.
+        // and some existing replicas being one availability zones that might be offline (i.e. their
+        // nodes are not live), this set might contain zones on which it is impossible to place
+        // replicas. That's ok.
         Set<String> availabilityZones = getZonesFromNodes(nodes, attrValues);
 
         // Build the replica placement decisions here
@@ -277,12 +274,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // for the replicas
         for (String shardName : request.getShardNames()) {
           // Inventory nodes (if any) that already have a replica of any type for the shard, because
-          // we can't be placing
-          // additional replicas on these. This data structure is updated after each replica to node
-          // assign and is used to
-          // make sure different replica types are not allocated to the same nodes (protecting same
-          // node assignments within
-          // a given replica type is done "by construction" in makePlacementDecisions()).
+          // we can't be placing additional replicas on these. This data structure is updated after
+          // each replica to node assign and is used to make sure different replica types are not
+          // allocated to the same nodes (protecting same node assignments within a given replica
+          // type is done "by construction" in makePlacementDecisions()).
           Set<Node> nodesWithReplicas =
               allNodesWithReplicas
                   .computeIfAbsent(solrCollection.getName(), col -> new HashMap<>())
@@ -302,11 +297,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
           // Iterate on the replica types in the enum order. We place more strategic replicas first
           // (NRT is more strategic than TLOG more strategic than PULL). This is in case we
-          // eventually decide that less
-          // strategic replica placement impossibility is not a problem that should lead to replica
-          // placement computation
-          // failure. Current code does fail if placement is impossible (constraint is at most one
-          // replica of a shard on any node).
+          // eventually decide that less strategic replica placement impossibility is not a problem
+          // that should lead to replica placement computation failure. Current code does fail if
+          // placement is impossible (constraint is at most one replica of a shard on any node).
           for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
             makePlacementDecisions(
                 solrCollection,
@@ -485,8 +478,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         this.azName = azName;
         this.availableNodesForPlacement = availableNodesForPlacement;
         // Once the list is sorted to an order we're happy with, this flag is set to true to avoid
-        // sorting multiple times
-        // unnecessarily.
+        // sorting multiple times unnecessarily.
         this.hasBeenSorted = false;
       }
     }
@@ -637,13 +629,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         Set<ReplicaPlacement> replicaPlacements)
         throws PlacementException {
       // Count existing replicas per AZ. We count only instances of the type of replica for which we
-      // need to do placement.
-      // If we ever want to balance replicas of any type across AZ's (and not each replica type
-      // balanced independently),
-      // we'd have to move this data structure to the caller of this method so it can be reused
-      // across different replica
-      // type placements for a given shard. Note then that this change would be risky. For example
-      // all NRT's and PULL
+      // need to do placement. If we ever want to balance replicas of any type across AZ's (and not
+      // each replica type balanced independently), we'd have to move this data structure to the
+      // caller of this method so it can be reused across different replica type placements for a
+      // given shard. Note then that this change would be risky. For example all NRT's and PULL
       // replicas for a shard my be correctly balanced over three AZ's, but then all NRT can end up
       // in the same AZ...
       Map<String, Integer> azToNumReplicas = new HashMap<>();
@@ -664,16 +653,13 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // If we're creating the collection, the shards do not exist yet.
         for (Replica replica : shard.replicas()) {
           // The node's AZ is counted as having a replica if it has a replica of the same type as
-          // the one we need
-          // to place here.
+          // the one we need to place here.
           if (replica.getType() == replicaType) {
             final String az = getNodeAZ(replica.getNode(), attrValues);
             if (azToNumReplicas.containsKey(az)) {
               // We do not count replicas on AZ's for which we don't have any node to place on
-              // because it would not help
-              // the placement decision. If we did want to do that, note the dereferencing below
-              // can't be assumed as the
-              // entry will not exist in the map.
+              // because it would not help the placement decision. If we did want to do that, note
+              // the dereferencing below can't be assumed as the entry will not exist in the map.
               azToNumReplicas.put(az, azToNumReplicas.get(az) + 1);
             }
           }
@@ -681,10 +667,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
 
       // We now have the set of real candidate nodes, we've enforced "No more than one replica of a
-      // given shard on a given node".
-      // We also counted for the shard and replica type under consideration how many replicas were
-      // per AZ, so we can place
-      // (or try to place) replicas on AZ's that have fewer replicas
+      // given shard on a given node". We also counted for the shard and replica type under
+      // consideration how many replicas were per AZ, so we can place (or try to place) replicas on
+      // AZ's that have fewer replicas
 
       // Get the candidate nodes per AZ in order to build (further down) a mapping of AZ to
       // placement candidates.
@@ -696,10 +681,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
 
       // Build a treeMap sorted by the number of replicas per AZ and including candidates nodes
-      // suitable for placement on the
-      // AZ, so we can easily select the next AZ to get a replica assignment and quickly (constant
-      // time) decide if placement
-      // on this AZ is possible or not.
+      // suitable for placement on the AZ, so we can easily select the next AZ to get a replica
+      // assignment and quickly (constant time) decide if placement on this AZ is possible or not.
       TreeMultimap<Integer, AzWithNodes> azByExistingReplicas =
           TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
       for (Map.Entry<String, List<Node>> e : nodesPerAz.entrySet()) {
@@ -712,24 +695,19 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       for (int i = 0; i < numReplicas; i++) {
         // We have for each AZ on which we might have a chance of placing a replica, the list of
-        // candidate nodes for replicas
-        // (candidate: does not already have a replica of this shard and is in the corresponding
-        // AZ).
-        // Among the AZ's with the minimal number of replicas of the given replica type for the
-        // shard, we must pick the AZ that
-        // offers the best placement (based on number of cores and free disk space). In order to do
-        // so, for these "minimal" AZ's
-        // we sort the nodes from best to worst placement candidate (based on the number of cores
-        // and free disk space) then pick
-        // the AZ that has the best best node. We don't sort all AZ's because that will not
-        // necessarily be needed.
+        // candidate nodes for replicas (candidate: does not already have a replica of this shard
+        // and is in the corresponding AZ). Among the AZ's with the minimal number of replicas of
+        // the given replica type for the shard, we must pick the AZ that offers the best placement
+        // (based on number of cores and free disk space). In order to do so, for these "minimal"
+        // AZ's we sort the nodes from best to worst placement candidate (based on the number of
+        // cores and free disk space) then pick the AZ that has the best best node. We don't sort
+        // all AZ's because that will not necessarily be needed.
         int minNumberOfReplicasPerAz = 0; // This value never observed but compiler can't tell
         Set<Map.Entry<Integer, AzWithNodes>> candidateAzEntries = null;
         // Iterate over AZ's (in the order of increasing number of replicas on that AZ) and do two
-        // things: 1. remove those AZ's that
-        // have no nodes, no use iterating over these again and again (as we compute placement for
-        // more replicas), and 2. collect
-        // all those AZ with a minimal number of replicas.
+        // things: 1. remove those AZ's that have no nodes, no use iterating over these again and
+        // again (as we compute placement for more replicas), and 2. collect all those AZ with a
+        // minimal number of replicas.
         for (Iterator<Map.Entry<Integer, AzWithNodes>> it =
                 azByExistingReplicas.entries().iterator();
             it.hasNext(); ) {
@@ -749,17 +727,15 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
             }
             candidateAzEntries.add(entry);
             // We remove all entries that are candidates: the "winner" will be modified, all entries
-            // might also be sorted,
-            // so we'll insert back the updated versions later.
+            // might also be sorted, so we'll insert back the updated versions later.
             it.remove();
           }
         }
 
         if (candidateAzEntries == null) {
           // This can happen because not enough nodes for the placement request or already too many
-          // nodes with replicas of
-          // the shard that can't accept new replicas or not enough nodes with enough free disk
-          // space.
+          // nodes with replicas of the shard that can't accept new replicas or not enough nodes
+          // with enough free disk space.
           throw new PlacementException(
               "Not enough eligible nodes to place "
                   + numReplicas
@@ -781,17 +757,13 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
           if (!azWithNodes.hasBeenSorted) {
             // Make sure we do not tend to use always the same nodes (within an AZ) if all
-            // conditions are identical (well, this
-            // likely is not the case since after having added a replica to a node its number of
-            // cores increases for the next
-            // placement decision, but let's be defensive here, given that multiple concurrent
-            // placement decisions might see
-            // the same initial cluster state, and we want placement to be reasonable even in that
-            // case without creating an
-            // unnecessary imbalance).
-            // For example, if all nodes have 0 cores and same amount of free disk space, ideally we
-            // want to pick a random node
-            // for placement, not always the same one due to some internal ordering.
+            // conditions are identical (well, this likely is not the case since after having added
+            // a replica to a node its number of cores increases for the next placement decision,
+            // but let's be defensive here, given that multiple concurrent placement decisions might
+            // see the same initial cluster state, and we want placement to be reasonable even in
+            // that case without creating an unnecessary imbalance). For example, if all nodes have
+            // 0 cores and same amount of free disk space, ideally we want to pick a random node for
+            // placement, not always the same one due to some internal ordering.
             Collections.shuffle(nodes, replicaPlacementRandom);
 
             // Sort by increasing number of cores but pushing nodes with low free disk space to the
@@ -822,14 +794,13 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
 
         // Insert back a corrected entry for the winning AZ: one more replica living there and one
-        // less node that can accept new replicas
-        // (the remaining candidate node list might be empty, in which case it will be cleaned up on
-        // the next iteration).
+        // less node that can accept new replicas (the remaining candidate node list might be empty,
+        // in which case it will be cleaned up on the next iteration).
         azByExistingReplicas.put(selectedAz.getKey() + 1, azWithNodes);
 
-        // Do not assign that node again for replicas of other replica type for this shard
-        // (this update of the set is not useful in the current execution of this method but for
-        // following ones only)
+        // Do not assign that node again for replicas of other replica type for this shard (this
+        // update of the set is not useful in the current execution of this method but for following
+        // ones only)
         nodesWithReplicas.add(assignTarget);
 
         // Track that the node has one more core. These values are only used during the current run

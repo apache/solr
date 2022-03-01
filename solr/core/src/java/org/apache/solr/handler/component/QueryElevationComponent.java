@@ -450,8 +450,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
 
       // It is allowed to define multiple times different elevations for the same query. In this
-      // case the elevations
-      // are merged in the ElevationBuilder (they will be triggered at the same time).
+      // case the elevations are merged in the ElevationBuilder (they will be triggered at the same
+      // time).
       ElevationBuilder previousElevationBuilder = elevationBuilderMap.get(elevatingQuery);
       if (previousElevationBuilder == null) {
         elevationBuilderMap.put(elevatingQuery, elevationBuilder);
@@ -704,15 +704,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
       // Not in the context yet so load it.
       boostDocs = new IntIntHashMap(boosted.size()); // docId to boost
-      int priority =
-          boosted.size()
-              + 1; // the corresponding priority for each boosted key (starts at this; decrements
-      // down)
+      // the corresponding priority for each boosted key (starts at this; decrements down)
+      int priority = boosted.size() + 1;
       for (BytesRef uniqueKey : boosted) {
         priority--; // therefore first == bosted.size(); last will be 1
-        long segAndId =
-            indexSearcher.lookupId(
-                uniqueKey); // higher 32 bits == segment ID, low 32 bits == doc ID
+        // higher 32 bits == segment ID, low 32 bits == doc ID
+        long segAndId = indexSearcher.lookupId(uniqueKey);
         if (segAndId == -1) { // not found
           continue;
         }
@@ -1277,8 +1274,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
         @Override
         public int compare(int slot1, int slot2) {
-          return values[slot1]
-              - values[slot2]; // values will be small enough that there is no overflow concern
+          // values will be small enough that there is no overflow concern
+          return values[slot1] - values[slot2];
         }
 
         @Override

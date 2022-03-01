@@ -240,8 +240,7 @@ public class CatStream extends TupleStream implements Expressible {
             .sorted()
             .forEach(
                 iPath -> {
-                  // debatable: should the separator be OS/file-system specific, or perhaps always
-                  // "/" ?
+                  // should the separator be OS/file-system specific or always "/"?
                   final String displayPathSeparator = iPath.getFileSystem().getSeparator();
                   final String itemDisplayPath =
                       seed.displayPath + displayPathSeparator + iPath.getFileName();

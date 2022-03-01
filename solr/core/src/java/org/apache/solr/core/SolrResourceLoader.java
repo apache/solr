@@ -134,11 +134,9 @@ public class SolrResourceLoader
   private volatile boolean live;
 
   // Provide a registry so that managed resources can register themselves while the XML
-  // configuration
-  // documents are being parsed ... after all are registered, they are asked by the RestManager to
-  // initialize themselves. This two-step process is required because not all resources are
-  // available
-  // (such as the SolrZkClient) when XML docs are being parsed.
+  // configuration documents are being parsed ... after all are registered, they are asked by the
+  // RestManager to initialize themselves. This two-step process is required because not all
+  // resources are available (such as the SolrZkClient) when XML docs are being parsed.
   private RestManager.Registry managedResourceRegistry;
 
   /**

@@ -450,9 +450,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // All other exceptions are will propagate to caller.
       return dataDir + "index/";
     }
-    final InputStream is =
-        new PropertiesInputStream(
-            input); // c'tor just assigns a variable here, no exception thrown.
+    // c'tor just assigns a variable here, no exception thrown.
+    final InputStream is = new PropertiesInputStream(input);
     try {
       Properties p = new Properties();
       p.load(new InputStreamReader(is, StandardCharsets.UTF_8));
@@ -929,9 +928,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     try {
       clazz = resourceLoader.findClass(className, cast);
       // most of the classes do not have constructors which takes SolrCore argument. It is
-      // recommended to obtain SolrCore by implementing SolrCoreAware.
-      // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of
-      // available constructors
+      // recommended to obtain SolrCore by implementing SolrCoreAware. So invariably always it will
+      // cause a  NoSuchMethodException. So iterate though the list of available constructors
       Constructor<?>[] cons = clazz.getConstructors();
       for (Constructor<?> con : cons) {
         Class<?>[] types = con.getParameterTypes();
@@ -969,9 +967,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     try {
       clazz = getResourceLoader().findClass(className, UpdateHandler.class);
       // most of the classes do not have constructors which takes SolrCore argument. It is
-      // recommended to obtain SolrCore by implementing SolrCoreAware.
-      // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of
-      // available constructors
+      // recommended to obtain SolrCore by implementing SolrCoreAware. So invariably always it will
+      // cause a  NoSuchMethodException. So iterate though the list of available constructors
       Constructor<?>[] cons = clazz.getConstructors();
       for (Constructor<?> con : cons) {
         Class<?>[] types = con.getParameterTypes();
@@ -1061,8 +1058,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       SolrCore prev,
       boolean reload) {
 
-    assert ObjectReleaseTracker.track(
-        searcherExecutor); // ensure that in unclean shutdown tests we still close this
+    // ensure that in unclean shutdown tests we still close this
+    assert ObjectReleaseTracker.track(searcherExecutor);
 
     final CountDownLatch latch = new CountDownLatch(1);
     try {
@@ -2138,10 +2135,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     IndexFingerprint f = null;
     f = perSegmentFingerprintCache.get(cacheHelper.getKey());
-    // fingerprint is either not cached or
-    // if we want fingerprint only up to a version less than maxVersionEncountered in the segment,
-    // or
-    // documents were deleted from segment for which fingerprint was cached
+    // fingerprint is either not cached or if we want fingerprint only up to a version less than
+    // maxVersionEncountered in the segment, or documents were deleted from segment for which
+    // fingerprint was cached
     //
     if (f == null
         || (f.getMaxInHash() > maxVersion)
@@ -2405,14 +2401,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       // Increment reference again for "realtimeSearcher" variable.  It should be at 2 after.
       // When it's decremented by both the caller of this method, and by realtimeSearcher being
-      // replaced,
-      // it will be closed.
+      // replaced, it will be closed.
       newSearcher.incref();
 
       synchronized (searcherLock) {
         // Check if the core is closed again inside the lock in case this method is racing with a
-        // close. If the core is
-        // closed, clean up the new searcher and bail.
+        // close. If the core is closed, clean up the new searcher and bail.
         if (isClosed()) {
           newSearcher.decref(); // once for caller since we're not returning it
           newSearcher.decref(); // once for ourselves since it won't be "replaced"
@@ -2564,8 +2558,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     try {
       searchHolder = openNewSearcher(updateHandlerReopens, false);
       // the searchHolder will be incremented once already (and it will eventually be assigned to
-      // _searcher when registered)
-      // increment it again if we are going to return it to the caller.
+      // _searcher when registered) increment it again if we are going to return it to the caller.
       if (returnSearcher) {
         searchHolder.incref();
       }
@@ -2718,11 +2711,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
 
         if (searchHolder != null) {
-          searchHolder
-              .decref(); // decrement 1 for _searcher (searchHolder will never become _searcher now)
+          // decrement 1 for _searcher (searchHolder will never become _searcher now)
+          searchHolder.decref();
           if (returnSearcher) {
-            searchHolder
-                .decref(); // decrement 1 because we won't be returning the searcher to the user
+            // decrement 1 because we won't be returning the searcher to the user
+            searchHolder.decref();
           }
         }
       }
@@ -2752,8 +2745,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
               resource.close();
             } catch (Exception e) {
               // do not allow decref() operations to fail since they are typically called in finally
-              // blocks
-              // and throwing another exception would be very unexpected.
+              // blocks and throwing another exception would be very unexpected.
               SolrException.log(log, "Error closing searcher:" + this, e);
             }
           }
@@ -2778,11 +2770,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
         if (_searcher == newSearcherHolder) {
           // trying to re-register the same searcher... this can now happen when a commit has been
-          // done but
-          // there were no changes to the index.
-          newSearcherHolder
-              .decref(); // decref since the caller should have still incref'd (since they didn't
-          // know the searcher was the same)
+          // done but there were no changes to the index.
+
+          // decref since the caller should have still incref'd (since they didn't know the searcher
+          // was the same)
+          newSearcherHolder.decref();
           return; // still execute the finally block to notify anyone waiting.
         }
 

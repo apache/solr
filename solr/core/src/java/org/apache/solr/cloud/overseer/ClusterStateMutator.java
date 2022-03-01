@@ -69,8 +69,8 @@ public class ClusterStateMutator {
     Object messageShardsObj = message.get("shards");
 
     Map<String, Slice> slices;
-    if (messageShardsObj
-        instanceof Map) { // we are being explicitly told the slice data (e.g. coll restore)
+    // we are being explicitly told the slice data (e.g. coll restore)
+    if (messageShardsObj instanceof Map) {
       slices = Slice.loadAllFromMap(cName, (Map<String, Object>) messageShardsObj);
     } else {
       List<String> shardNames = new ArrayList<>();

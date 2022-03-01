@@ -235,8 +235,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     // if (lastDocRequested <= 0) {
     // That causes the totalHits and export entries in the context to _not_ get set.
     // The only time that really matters is when we search against an _empty_ set. That's too
-    // obscure
-    // a condition to handle as part of this patch, if someone wants to pursue it it can be
+    // obscure a condition to handle as part of this patch, if someone wants to pursue it can be
     // reproduced with:
     // ant test  -Dtestcase=StreamingTest -Dtests.method=testAllValidExportTypes
     // -Dtests.seed=10F13879D0D1D6AD -Dtests.slow=true -Dtests.locale=es-PA
@@ -635,10 +634,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
     }
     // SingleValueSortDoc etc are specialized classes which don't have array lookups. On
-    // benchmarking large datasets
-    // This is faster than the using an array in SortDoc . So upto 4 sort fields we still want to
-    // keep specialized classes.
-    // SOLR-12616 has more details
+    // benchmarking large datasets, this is faster than the using an array in SortDoc. So upto 4
+    // sort fields we still want to keep specialized classes. SOLR-12616 has more details
     if (sortValues.length == 1) {
       return new SingleValueSortDoc(sortValues[0]);
     } else if (sortValues.length == 2) {

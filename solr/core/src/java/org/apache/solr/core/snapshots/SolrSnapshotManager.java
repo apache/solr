@@ -314,10 +314,9 @@ public class SolrSnapshotManager {
     conf.setCodec(core.getCodec());
     try (SolrIndexWriter iw = new SolrIndexWriter("SolrSnapshotCleaner", dir, conf)) {
       // Do nothing. The only purpose of opening index writer is to invoke the Lucene
-      // IndexDeletionPolicy#onInit
-      // method so that we can cleanup the files associated with specified index commit.
-      // Note the index writer creates a new commit during the close() operation (which is
-      // harmless).
+      // IndexDeletionPolicy#onInit method so that we can cleanup the files associated with
+      // specified index commit. Note the index writer creates a new commit during the close()
+      // operation (which is harmless).
     }
   }
 

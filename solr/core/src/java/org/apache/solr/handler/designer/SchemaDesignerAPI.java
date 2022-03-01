@@ -956,8 +956,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
       if (publishedVersion != -1) {
         // keep track of the version of the configSet the mutable is derived from in case another
-        // user
-        // changes the derived from schema before we publish the mutable on top of it
+        // user changes the derived from schema before we publish the mutable on top of it
         settings.setPublishedVersion(publishedVersion);
       }
 

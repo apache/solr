@@ -525,8 +525,7 @@ public class ReplicaMutator {
                 "Shard: {} - All replicas across all fellow sub-shards are now ACTIVE.", sliceName);
             String parentSliceName = (String) sliceProps.remove(Slice.PARENT);
             // now lets see if the parent leader is still the same or else there's a chance of data
-            // loss
-            // see SOLR-9438 for details
+            // loss see SOLR-9438 for details
             String shardParentZkSession = (String) sliceProps.remove("shard_parent_zk_session");
             String shardParentNode = (String) sliceProps.remove("shard_parent_node");
             boolean isLeaderSame = true;

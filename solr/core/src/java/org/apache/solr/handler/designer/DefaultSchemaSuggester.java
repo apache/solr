@@ -193,9 +193,8 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
               schemaField.getName(), schemaField.getType(), fieldProps.asShallowMap());
     }
     // TODO: other "healing" type operations here ... but we have to be careful about overriding
-    // explicit user changes
-    // such as a user making a text field a string field, we wouldn't want to revert that field back
-    // to text
+    // explicit user changes such as a user making a text field a string field, we wouldn't want to
+    // revert that field back to text
     return schema;
   }
 
@@ -366,9 +365,8 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
     }
 
     // if all values are less than some smallish threshold, then it's likely this field holds small
-    // numbers
-    // but be very conservative here as it's simply an optimization and we can always fall back to
-    // long
+    // numbers but be very conservative here as it's simply an optimization and we can always fall
+    // back to long
     return maxLong < 10000 ? "pint" : "plong";
   }
 

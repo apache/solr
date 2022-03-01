@@ -159,8 +159,7 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
       }
 
       // Update the ZK meta-data to include only cores with the snapshot. This will enable users to
-      // figure out
-      // which cores still contain the named snapshot.
+      // figure out which cores still contain the named snapshot.
       CollectionSnapshotMetaData newResult =
           new CollectionSnapshotMetaData(
               meta.get().getName(),

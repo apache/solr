@@ -175,9 +175,8 @@ public class PhrasesIdentificationComponent extends SearchComponent {
       return ResponseBuilder.STAGE_GET_FIELDS;
 
     } else if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
-      // NOTE: we don't do any actual work in this stage, but we need to ensure that even if
-      // we are being used in isolation w/o QueryComponent that SearchHandler "tracks" a
-      // STAGE_GET_FIELDS
+      // NOTE: we don't do any actual work in this stage, but we need to ensure that even if we are
+      // being used in isolation w/o QueryComponent that SearchHandler "tracks" a STAGE_GET_FIELDS.
       // so that finishStage(STAGE_GET_FIELDS) is called on us and we can add our merged results
       // (w/o needing extra code paths for merging phrase results when QueryComponent is/is not
       // used)
@@ -252,8 +251,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
       SimpleOrderedMap<Object> output = new SimpleOrderedMap<>();
       output.add("_all", Phrase.formatShardResponse(contextData.allPhrases));
       // TODO: might want to add numDocs() & getSumTotalTermFreq(f)/getDocCount(f) stats from each
-      // field...
-      // so that we can sum/merge them for use in scoring?
+      // field... so that we can sum/merge them for use in scoring?
       rb.rsp.add("phrases", output);
     } else {
       // full single node request...
@@ -531,14 +529,10 @@ public class PhrasesIdentificationComponent extends SearchComponent {
       // TODO: rather then requiring the query analyzer to produce the Phrases for us (assuming
       // Shingles)
       // we could potentially just require that it produces unigrams compatible with the unigrams in
-      // the
-      // indexed fields, and then build our own Phrases at query time -- making the
-      // maxQueryPositionLength
-      // a 100% run time configuration option.
-      // But that could be tricky given an arbitrary analyzer -- we'd have pay careful attention
-      // to positions, and we'd have to guess/assume what placeholders/fillers was used in the
-      // indexed Phrases
-      // (typically shingles)
+      // the indexed fields, and then build our own Phrases at query time -- making the
+      // maxQueryPositionLength a 100% run time configuration option. But that could be tricky given
+      // an arbitrary analyzer -- we'd have pay careful attention to positions, and we'd have to
+      // guess/assume what placeholders/fillers was used in the indexed Phrases (typically shingles)
 
       assert maxIndexedPositionLength <= maxQueryPositionLength;
 
@@ -1151,22 +1145,18 @@ public class PhrasesIdentificationComponent extends SearchComponent {
       }
 
       // NOTE: the "scaling" factors below can "increase" negative scores (by reducing the unsigned
-      // value)
-      // when they should ideally be penalizing the scores further, but since we currently don't
-      // care
-      // about any score lower then 0, it's not worth worrying about.
+      // value) when they should ideally be penalizing the scores further, but since we currently
+      // don't care about any score lower then 0, it's not worth worrying about.
 
       // Average the accumulated score over the number of actual indexed sub-phrases that
       // contributed
       //
       // NOTE: since we subsequently want to multiply the score by a fraction with
-      // num_indexed_sub_phrases
-      // in the numerator, we can skip this...
-      // SEE BELOW // field_score /= (double) num_indexed_sub_phrases;
+      // num_indexed_sub_phrases in the numerator, we can skip this... SEE BELOW // field_score /=
+      // (double) num_indexed_sub_phrases;
 
-      // If we leave field_score as is, then a phrase longer then the maxIndexedPositionLength
-      // will never score higher then the highest scoring sub-phrase it has (because we've averaged
-      // them)
+      // If we leave field_score as is, then a phrase longer then the maxIndexedPositionLength will
+      // never score higher then the highest scoring sub-phrase it has (because we've averaged them)
       // so we scale the scores against the longest possible phrase length we're considering
       //
       // NOTE: We don't use num_indexed_sub_phrases in the numerator since we skipped it when
@@ -1177,9 +1167,8 @@ public class PhrasesIdentificationComponent extends SearchComponent {
 
       // scale the field_score based on the ratio of the conjunction docCount for the whole phrase
       // realtive to the largest conjunction docCount of it's (largest indexed) sub phrases, to
-      // penalize
-      // the scores of very long phrases that exist very rarely relative to the how often their
-      // sub phrases exist in the index
+      // penalize the scores of very long phrases that exist very rarely relative to the how often
+      // their sub phrases exist in the index
       field_score *= (((double) phrase_conj_count) / max_sub_conj_count);
 
       return field_score;

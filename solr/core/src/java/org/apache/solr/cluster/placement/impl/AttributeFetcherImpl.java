@@ -97,14 +97,10 @@ public class AttributeFetcherImpl implements AttributeFetcher {
             .collect(Collectors.toMap(e -> e.getKey().getName(), e -> e.getValue()));
 
     // In order to match the returned values for the various snitches, we need to keep track of
-    // where each
-    // received value goes. Given the target maps are of different types (the maps from Node to
-    // whatever defined
-    // above) we instead pass a function taking two arguments, the node and the (non null) returned
-    // value,
-    // that will cast the value into the appropriate type for the snitch tag and insert it into the
-    // appropriate map
-    // with the node as the key.
+    // where each received value goes. Given the target maps are of different types (the maps from
+    // Node to whatever defined above) we instead pass a function taking two arguments, the node and
+    // the (non null) returned value, that will cast the value into the appropriate type for the
+    // snitch tag and insert it into the appropriate map with the node as the key.
     Map<String, BiConsumer<Node, Object>> allSnitchTagsToInsertion = new HashMap<>();
     for (String sysPropSnitch : requestedNodeSystemSnitchTags) {
       final Map<Node, String> sysPropMap = new HashMap<>();

@@ -89,9 +89,8 @@ public abstract class TransientSolrCoreCacheFactory {
           Collections.<PluginInfo>emptyList());
 
   // Need this because the plugin framework doesn't require a PluginINfo in the init method, don't
-  // see a way to
-  // pass additional parameters and we need this when we create the transient core cache, it's
-  // _really_ important.
+  // see a way to pass additional parameters and we need this when we create the transient core
+  // cache, it's _really_ important.
   public void setCoreContainer(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
