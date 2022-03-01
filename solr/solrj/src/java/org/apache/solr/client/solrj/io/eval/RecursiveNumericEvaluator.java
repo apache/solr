@@ -23,63 +23,58 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public abstract class RecursiveNumericEvaluator extends RecursiveEvaluator {
   protected static final long serialVersionUID = 1L;
-  
-  public RecursiveNumericEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public RecursiveNumericEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
-    
+
   public Object normalizeInputType(Object value) throws StreamEvaluatorException {
-    if(null == value) {
+    if (null == value) {
       return null;
     } else if (value instanceof VectorFunction) {
       return value;
-    } else if(value instanceof Double){
-      if(Double.isNaN((Double)value)){
+    } else if (value instanceof Double) {
+      if (Double.isNaN((Double) value)) {
         return Double.NaN;
       }
       return new BigDecimal(value.toString());
-    }
-    else if(value instanceof BigDecimal){
+    } else if (value instanceof BigDecimal) {
       return value;
-    } else if(value instanceof String) {
-      return new BigDecimal((String)value);
-    }
-    else if(value instanceof Number){
+    } else if (value instanceof String) {
+      return new BigDecimal((String) value);
+    } else if (value instanceof Number) {
       return new BigDecimal(value.toString());
-    }
-    else if(value instanceof Collection){
-      if(value instanceof List) {
-        if(((List)value).get(0) instanceof Number) {
-          return  value;
+    } else if (value instanceof Collection) {
+      if (value instanceof List) {
+        if (((List) value).get(0) instanceof Number) {
+          return value;
         }
       }
 
-      return ((Collection<?>) value).stream().map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
-    }
-    else if(value.getClass().isArray()){
+      return ((Collection<?>) value)
+          .stream().map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
+    } else if (value.getClass().isArray()) {
       Stream<?> stream = Stream.empty();
-      if(value instanceof double[]){
-        stream = Arrays.stream((double[])value).boxed();
+      if (value instanceof double[]) {
+        stream = Arrays.stream((double[]) value).boxed();
+      } else if (value instanceof int[]) {
+        stream = Arrays.stream((int[]) value).boxed();
+      } else if (value instanceof long[]) {
+        stream = Arrays.stream((long[]) value).boxed();
+      } else if (value instanceof String[]) {
+        stream = Arrays.stream((String[]) value);
       }
-      else if(value instanceof int[]){
-        stream = Arrays.stream((int[])value).boxed();
-      }
-      else if(value instanceof long[]){
-        stream = Arrays.stream((long[])value).boxed();
-      }
-      else if(value instanceof String[]){
-        stream = Arrays.stream((String[])value);
-      }      
       return stream.map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
+    } else {
+      throw new StreamEvaluatorException(
+          "Numeric value expected but found type %s for value %s",
+          value.getClass().getName(), value.toString());
     }
-    else{
-      throw new StreamEvaluatorException("Numeric value expected but found type %s for value %s", value.getClass().getName(), value.toString());
-    }
-  }  
+  }
 }

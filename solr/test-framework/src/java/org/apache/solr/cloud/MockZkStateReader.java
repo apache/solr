@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.util.Set;
-
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollectionWatcher;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -32,8 +31,8 @@ public class MockZkStateReader extends ZkStateReader {
     this.clusterState = clusterState;
     this.collections = collections;
   }
-  
-  public Set<String> getAllCollections(){
+
+  public Set<String> getAllCollections() {
     return collections;
   }
 

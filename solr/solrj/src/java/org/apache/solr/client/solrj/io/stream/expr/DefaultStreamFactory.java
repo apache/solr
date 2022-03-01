@@ -29,5 +29,4 @@ public class DefaultStreamFactory extends StreamFactory {
     super();
     Lang.register(this);
   }
-
 }

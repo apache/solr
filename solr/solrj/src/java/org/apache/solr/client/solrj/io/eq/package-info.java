@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Equalitors for the Streaming Aggregation API
- **/
+/** Equalitors for the Streaming Aggregation API */
 package org.apache.solr.client.solrj.io.eq;

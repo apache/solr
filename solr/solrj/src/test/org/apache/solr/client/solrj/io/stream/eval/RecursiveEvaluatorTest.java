@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
@@ -32,32 +32,31 @@ import org.apache.solr.client.solrj.io.eval.SubtractEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class RecursiveEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public RecursiveEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("and", AndEvaluator.class)
-      .withFunctionName("gt", GreaterThanEvaluator.class)
-      .withFunctionName("lt", LessThanEvaluator.class)
-      .withFunctionName("add", AddEvaluator.class)
-      .withFunctionName("sub", SubtractEvaluator.class)
-      .withFunctionName("mult", MultiplyEvaluator.class)
-      .withFunctionName("if", IfThenElseEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory =
+        new StreamFactory()
+            .withFunctionName("and", AndEvaluator.class)
+            .withFunctionName("gt", GreaterThanEvaluator.class)
+            .withFunctionName("lt", LessThanEvaluator.class)
+            .withFunctionName("add", AddEvaluator.class)
+            .withFunctionName("sub", SubtractEvaluator.class)
+            .withFunctionName("mult", MultiplyEvaluator.class)
+            .withFunctionName("if", IfThenElseEvaluator.class);
+    values = new HashMap<String, Object>();
   }
-    
+
   @Test
-  public void compoundTest() throws Exception{
+  public void compoundTest() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("add(mult(a,b),if(gt(c,d),e,f),g)");
     Object result;
-    
+
     values.clear();
     values.put("a", 10);
     values.put("b", -3);
@@ -68,7 +67,7 @@ public class RecursiveEvaluatorTest extends SolrTestCase {
     values.put("g", 5);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertEquals(-16D, result);
-    
+
     values.clear();
     values.put("a", .1);
     values.put("b", -3);

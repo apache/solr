@@ -25,7 +25,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -62,17 +61,19 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
   }
 
   /**
-   * This test reproduces the issue of trying to delete zk-nodes that have the same length. (SOLR-14961).
+   * This test reproduces the issue of trying to delete zk-nodes that have the same length.
+   * (SOLR-14961).
    *
    * @throws InterruptedException when having trouble creating test nodes
    * @throws KeeperException error when talking to zookeeper
    * @throws SolrServerException when having trouble connecting to solr
    * @throws UnsupportedEncodingException when getBytes() uses unknown encoding
-   *
    */
   @Test
-  public void testClean() throws KeeperException, InterruptedException, SolrServerException, UnsupportedEncodingException {
-    try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)){
+  public void testClean()
+      throws KeeperException, InterruptedException, SolrServerException,
+          UnsupportedEncodingException {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
       /* PREPARE */
       String path = "/myPath/isTheBest";
       String data1 = "myStringData1";
@@ -81,14 +82,20 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
       // create zk nodes that have the same path length
       zkClient.create("/myPath", null, CreateMode.PERSISTENT, true);
       zkClient.create(path, null, CreateMode.PERSISTENT, true);
-      zkClient.create(path +"/file1.txt", data1.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
-      zkClient.create(path +"/nothing.txt", null, CreateMode.PERSISTENT, true);
-      zkClient.create(path +"/file2.txt", data2.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
-      zkClient.create(path +"/some_longer_file2.txt", longData.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+      zkClient.create(
+          path + "/file1.txt", data1.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+      zkClient.create(path + "/nothing.txt", null, CreateMode.PERSISTENT, true);
+      zkClient.create(
+          path + "/file2.txt", data2.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+      zkClient.create(
+          path + "/some_longer_file2.txt",
+          longData.getBytes(StandardCharsets.UTF_8),
+          CreateMode.PERSISTENT,
+          true);
 
       /* RUN */
       // delete all nodes that contain "file"
-      ZkMaintenanceUtils.clean(zkClient,path, node -> node.contains("file"));
+      ZkMaintenanceUtils.clean(zkClient, path, node -> node.contains("file"));
 
       /* CHECK */
       String listZnode = zkClient.listZnode(path, false);
@@ -102,34 +109,25 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
 
   @Test
   public void testPaths() {
-    assertEquals("Unexpected path construction"
-        , ""
-        , ZkMaintenanceUtils.getZkParent(null));
+    assertEquals("Unexpected path construction", "", ZkMaintenanceUtils.getZkParent(null));
 
-    assertEquals("Unexpected path construction"
-        , "this/is/a"
-        , ZkMaintenanceUtils.getZkParent("this/is/a/path"));
+    assertEquals(
+        "Unexpected path construction",
+        "this/is/a",
+        ZkMaintenanceUtils.getZkParent("this/is/a/path"));
 
-    assertEquals("Unexpected path construction"
-        , "/root"
-        , ZkMaintenanceUtils.getZkParent("/root/path/"));
+    assertEquals(
+        "Unexpected path construction", "/root", ZkMaintenanceUtils.getZkParent("/root/path/"));
 
-    assertEquals("Unexpected path construction"
-        , ""
-        , ZkMaintenanceUtils.getZkParent("/"));
+    assertEquals("Unexpected path construction", "", ZkMaintenanceUtils.getZkParent("/"));
 
-    assertEquals("Unexpected path construction"
-        , ""
-        , ZkMaintenanceUtils.getZkParent(""));
+    assertEquals("Unexpected path construction", "", ZkMaintenanceUtils.getZkParent(""));
 
-    assertEquals("Unexpected path construction"
-        , ""
-        , ZkMaintenanceUtils.getZkParent("noslashesinstring"));
+    assertEquals(
+        "Unexpected path construction", "", ZkMaintenanceUtils.getZkParent("noslashesinstring"));
 
-    assertEquals("Unexpected path construction"
-        , ""
-        , ZkMaintenanceUtils.getZkParent("/leadingslashonly"));
-
+    assertEquals(
+        "Unexpected path construction", "", ZkMaintenanceUtils.getZkParent("/leadingslashonly"));
   }
 
   @Test
@@ -138,9 +136,24 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
       zkClient.makePath("/testTraverseZkTree/1/1", true, true);
       zkClient.makePath("/testTraverseZkTree/1/2", false, true);
       zkClient.makePath("/testTraverseZkTree/2", false, true);
-      assertEquals(Arrays.asList("/testTraverseZkTree", "/testTraverseZkTree/1", "/testTraverseZkTree/1/1", "/testTraverseZkTree/1/2", "/testTraverseZkTree/2"), getTraverseedZNodes(zkClient, "/testTraverseZkTree", ZkMaintenanceUtils.VISIT_ORDER.VISIT_PRE));
-      assertEquals(Arrays.asList("/testTraverseZkTree/1/1", "/testTraverseZkTree/1/2", "/testTraverseZkTree/1", "/testTraverseZkTree/2", "/testTraverseZkTree"), getTraverseedZNodes(zkClient, "/testTraverseZkTree", ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST));
-
+      assertEquals(
+          Arrays.asList(
+              "/testTraverseZkTree",
+              "/testTraverseZkTree/1",
+              "/testTraverseZkTree/1/1",
+              "/testTraverseZkTree/1/2",
+              "/testTraverseZkTree/2"),
+          getTraverseedZNodes(
+              zkClient, "/testTraverseZkTree", ZkMaintenanceUtils.VISIT_ORDER.VISIT_PRE));
+      assertEquals(
+          Arrays.asList(
+              "/testTraverseZkTree/1/1",
+              "/testTraverseZkTree/1/2",
+              "/testTraverseZkTree/1",
+              "/testTraverseZkTree/2",
+              "/testTraverseZkTree"),
+          getTraverseedZNodes(
+              zkClient, "/testTraverseZkTree", ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST));
     }
   }
 
@@ -157,20 +170,27 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
 
       try (FileInputStream fis = new FileInputStream(tmpDest.toFile())) {
         byte[] data = fis.readAllBytes();
-        assertEquals("Should have downloaded a one-byte file", data.length,  1);
+        assertEquals("Should have downloaded a one-byte file", data.length, 1);
         assertEquals("contents of the one-byte file should be 0x30", 0x30, data[0]);
       }
     }
   }
-  private List<String> getTraverseedZNodes(SolrZkClient zkClient, String path, ZkMaintenanceUtils.VISIT_ORDER visitOrder) throws KeeperException, InterruptedException {
-    List<String> result = new ArrayList<>();
-    ZkMaintenanceUtils.traverseZkTree(zkClient, path, visitOrder, new ZkMaintenanceUtils.ZkVisitor() {
 
-      @Override
-      public void visit(String path) throws InterruptedException, KeeperException {
-        result.add(path);
-      }
-    });
+  private List<String> getTraverseedZNodes(
+      SolrZkClient zkClient, String path, ZkMaintenanceUtils.VISIT_ORDER visitOrder)
+      throws KeeperException, InterruptedException {
+    List<String> result = new ArrayList<>();
+    ZkMaintenanceUtils.traverseZkTree(
+        zkClient,
+        path,
+        visitOrder,
+        new ZkMaintenanceUtils.ZkVisitor() {
+
+          @Override
+          public void visit(String path) throws InterruptedException, KeeperException {
+            result.add(path);
+          }
+        });
     return result;
   }
 }

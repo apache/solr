@@ -17,47 +17,34 @@
 
 package org.apache.solr.client.solrj.request.beans;
 
+import java.util.Map;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-import java.util.Map;
-
 public class SplitShardPayload implements ReflectMapWriter {
-  @JsonProperty
-  public String shard;
+  @JsonProperty public String shard;
 
-  @JsonProperty
-  public String ranges;
+  @JsonProperty public String ranges;
 
-  @JsonProperty
-  public String splitKey;
+  @JsonProperty public String splitKey;
 
-  @JsonProperty
-  public Integer numSubShards;
+  @JsonProperty public Integer numSubShards;
 
-  @JsonProperty
-  public String splitFuzz;
+  @JsonProperty public String splitFuzz;
 
-  @JsonProperty
-  public Boolean timing;
+  @JsonProperty public Boolean timing;
 
-  @JsonProperty
-  public Boolean splitByPrefix;
+  @JsonProperty public Boolean splitByPrefix;
 
-  @JsonProperty
-  public Boolean followAliases;
+  @JsonProperty public Boolean followAliases;
 
-  // TODO Should/can this be an enum?  Does the annotation framework have support for enums like apispec files did?
-  @JsonProperty
-  public String splitMethod;
+  // TODO Should/can this be an enum?  Does the annotation framework have support for enums like
+  // apispec files did?
+  @JsonProperty public String splitMethod;
 
+  @JsonProperty public Map<String, Object> coreProperties;
 
-  @JsonProperty
-  public Map<String, Object> coreProperties;
+  @JsonProperty public String async;
 
-  @JsonProperty
-  public String async;
-
-  @JsonProperty
-  public Boolean waitForFinalState;
+  @JsonProperty public Boolean waitForFinalState;
 }

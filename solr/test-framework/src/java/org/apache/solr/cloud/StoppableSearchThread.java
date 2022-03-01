@@ -17,10 +17,8 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -34,7 +32,7 @@ class StoppableSearchThread extends AbstractFullDistribZkTestBase.StoppableThrea
   private final CloudSolrClient cloudClient;
   private volatile boolean stop = false;
   protected final AtomicInteger queryFails = new AtomicInteger();
-  private String[] QUERIES = new String[] {"to come","their country","aid","co*"};
+  private String[] QUERIES = new String[] {"to come", "their country", "aid", "co*"};
 
   public StoppableSearchThread(CloudSolrClient cloudClient) {
     super("StoppableSearchThread");
@@ -50,7 +48,7 @@ class StoppableSearchThread extends AbstractFullDistribZkTestBase.StoppableThrea
     while (!stop) {
       numSearches++;
       try {
-        //to come to the aid of their country.
+        // to come to the aid of their country.
         cloudClient.query(new SolrQuery(QUERIES[random.nextInt(QUERIES.length)]));
       } catch (Exception e) {
         System.err.println("QUERY REQUEST FAILED:");
@@ -79,5 +77,4 @@ class StoppableSearchThread extends AbstractFullDistribZkTestBase.StoppableThrea
   public int getFails() {
     return queryFails.get();
   }
-
 }
