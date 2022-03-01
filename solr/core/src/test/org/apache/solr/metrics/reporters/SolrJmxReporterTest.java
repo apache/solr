@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.codahale.metrics.Counter;
 import org.apache.lucene.util.TestUtil;
@@ -196,39 +197,37 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
             rootName.equals(o.getObjectName().getDomain())).count());
   }
 
-  private static boolean stopped = false;
-
   @Test
   public void testClosedCore() throws Exception {
     Set<ObjectInstance> objects = TEST_MBEAN_SERVER.queryMBeans(new ObjectName("*:category=CORE,name=indexDir,*"), null);
     assertEquals("Unexpected number of indexDir beans: " + objects.toString(), 1, objects.size());
     final ObjectInstance inst = objects.iterator().next();
-    stopped = false;
+    final AtomicBoolean running = new AtomicBoolean(true);
     try {
-      Thread t = new Thread() {
-        public void run() {
-          while (!stopped) {
-            try {
-              Object value = TEST_MBEAN_SERVER.getAttribute(inst.getObjectName(), "Value");
-              assertNotNull(value);
-            } catch (InstanceNotFoundException x) {
-              // no longer present
-              break;
-            } catch (Exception e) {
-              fail("Unexpected error retrieving attribute: " + e.toString());
-            }
+      new Thread(() -> {
+        while (running.get()) {
+          try {
+            Object value = TEST_MBEAN_SERVER.getAttribute(inst.getObjectName(), "Value");
+            assertNotNull(value);
+          } catch (InstanceNotFoundException x) {
+            // no longer present
+            break;
+          } catch (Exception e) {
+            fail("Unexpected error retrieving attribute: " + e);
           }
         }
-      };
-      t.start();
+      }, "TestMBeanThread").start();
+
+      // This should be enough time for the
       Thread.sleep(500);
-      h.getCoreContainer().unload(h.getCore().getName());
-      Thread.sleep(2000);
-      objects = TEST_MBEAN_SERVER.queryMBeans(new ObjectName("*:category=CORE,name=indexDir,*"), null);
-      assertEquals("Unexpected number of beans after core closed: " + objects, 0, objects.size());
     } finally {
-      stopped = true;
+      running.set(false);
     }
+
+    h.getCoreContainer().unload(h.getCore().getName());
+    Thread.sleep(2000);
+    objects = TEST_MBEAN_SERVER.queryMBeans(new ObjectName("*:category=CORE,name=indexDir,*"), null);
+    assertEquals("Unexpected number of beans after core closed: " + objects, 0, objects.size());
   }
 
   @Test
