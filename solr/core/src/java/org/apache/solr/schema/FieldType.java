@@ -502,15 +502,36 @@ public abstract class FieldType extends FieldProperties {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
       Tokenizer ts = new Tokenizer() {
+        private boolean done = false;
+        private int finalOffset;
+
         final char[] cbuf = new char[maxChars];
         final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
         final BytesTermAttribute bytesAtt = isPointField() ? addAttribute(BytesTermAttribute.class) : null;
         final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+
         @Override
         public boolean incrementToken() throws IOException {
+          if (done) {
+            return false;
+          }
+
           clearAttributes();
-          int n = input.read(cbuf,0,maxChars);
-          if (n<=0) return false;
+          done = true;
+
+          int max = maxChars;
+          int n = 0;
+          while (max > 0) {
+            int len = input.read(cbuf, n, max);
+            if (len < 0) break;
+            max -= len;
+            n += len;
+          }
+
+          if (n == 0) {
+            return false;
+          }
+
           if (isPointField()) {
             BytesRef b = ((PointField)FieldType.this).toInternalByteRef(new String(cbuf, 0, n));
             bytesAtt.setBytesRef(b);
@@ -518,8 +539,22 @@ public abstract class FieldType extends FieldProperties {
             String s = toInternal(new String(cbuf, 0, n));
             termAtt.setEmpty().append(s);
           }
-          offsetAtt.setOffset(correctOffset(0),correctOffset(n));
+
+          finalOffset = correctOffset(n);
+          offsetAtt.setOffset(correctOffset(0), finalOffset);
           return true;
+        }
+
+        @Override
+        public void end() throws IOException {
+          super.end();
+          offsetAtt.setOffset(finalOffset, finalOffset);
+        }
+
+        @Override
+        public void reset() throws IOException {
+          super.reset();
+          this.done = false;
         }
       };
 

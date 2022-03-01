@@ -17,6 +17,9 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,7 +35,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -60,9 +62,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.ID;
-
 /**
  * @since 6.2.0
  */
@@ -72,7 +71,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   protected String zkHost;
   protected String collection;
-  protected Map<String,String> params;
+  protected Map<String, String> params;
   protected String field;
   protected String name;
   protected String outcome;
@@ -97,50 +96,73 @@ public class TextLogitStream extends TupleStream implements Expressible {
   private double learningRate = 0.01;
   private double lastError = 0;
 
-  public TextLogitStream(String zkHost,
-                     String collectionName,
-                     Map<String,String> params,
-                     String name,
-                     String field,
-                     TupleStream termsStream,
-                     List<Double> weights,
-                     String outcome,
-                     int positiveLabel,
-                     double threshold,
-                     int maxIterations) throws IOException {
+  public TextLogitStream(
+      String zkHost,
+      String collectionName,
+      Map<String, String> params,
+      String name,
+      String field,
+      TupleStream termsStream,
+      List<Double> weights,
+      String outcome,
+      int positiveLabel,
+      double threshold,
+      int maxIterations)
+      throws IOException {
 
-    init(collectionName, zkHost, params, name, field, termsStream, weights, outcome, positiveLabel, threshold, maxIterations, iteration);
+    init(
+        collectionName,
+        zkHost,
+        params,
+        name,
+        field,
+        termsStream,
+        weights,
+        outcome,
+        positiveLabel,
+        threshold,
+        maxIterations,
+        iteration);
   }
 
-  /**
-   *   logit(collection, zkHost="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20")
-   **/
-
-  public TextLogitStream(StreamExpression expression, StreamFactory factory) throws IOException{
+  /** logit(collection, zkHost="", features="a,b,c,d,e,f,g", outcome="y", maxIteration="20") */
+  public TextLogitStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't need to count it twice
-    if(expression.getParameters().size() != 1 + namedParams.size() + streamExpressions.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found",expression));
+    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't
+    // need to count it twice
+    if (expression.getParameters().size() != 1 + namedParams.size() + streamExpressions.size()) {
+      throw new IOException(
+          String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
     }
 
     // Collection Name
-    if(null == collectionName){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
+    if (null == collectionName) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - collectionName expected as first operand",
+              expression));
     }
 
     // Named parameters - passed directly to solr as solrparams
-    if(0 == namedParams.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
+    if (0 == namedParams.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",
+              expression));
     }
 
-    Map<String,String> params = new HashMap<String,String>();
-    for(StreamExpressionNamedParameter namedParam : namedParams){
-      if(!namedParam.getName().equals("zkHost")) {
+    Map<String, String> params = new HashMap<String, String>();
+    for (StreamExpressionNamedParameter namedParam : namedParams) {
+      if (!namedParam.getName().equals("zkHost")) {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
@@ -169,7 +191,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
     String maxIterationsParam = params.get("maxIterations");
     int maxIterations = 0;
-    if(maxIterationsParam != null) {
+    if (maxIterationsParam != null) {
       maxIterations = Integer.parseInt(maxIterationsParam);
       params.remove("maxIterations");
     } else {
@@ -178,7 +200,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
     String outcomeParam = params.get("outcome");
 
-    if(outcomeParam != null) {
+    if (outcomeParam != null) {
       params.remove("outcome");
     } else {
       throw new IOException("outcome param cannot be null for TextLogitStream");
@@ -186,31 +208,31 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
     String positiveLabelParam = params.get("positiveLabel");
     int positiveLabel = 1;
-    if(positiveLabelParam != null) {
+    if (positiveLabelParam != null) {
       positiveLabel = Integer.parseInt(positiveLabelParam);
       params.remove("positiveLabel");
     }
 
     String thresholdParam = params.get("threshold");
     double threshold = 0.5;
-    if(thresholdParam != null) {
+    if (thresholdParam != null) {
       threshold = Double.parseDouble(thresholdParam);
       params.remove("threshold");
     }
 
     int iteration = 0;
     String iterationParam = params.get("iteration");
-    if(iterationParam != null) {
+    if (iterationParam != null) {
       iteration = Integer.parseInt(iterationParam);
       params.remove("iteration");
     }
 
     List<Double> weights = null;
     String weightsParam = params.get("weights");
-    if(weightsParam != null) {
+    if (weightsParam != null) {
       weights = new ArrayList<>();
       String[] weightsArray = weightsParam.split(",");
-      for(String weightString : weightsArray) {
+      for (String weightString : weightsArray) {
         weights.add(Double.parseDouble(weightString));
       }
       params.remove("weights");
@@ -218,18 +240,34 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
     // zkHost, optional - if not provided then will look into factory list to get
     String zkHost = null;
-    if(null == zkHostExpression){
+    if (null == zkHostExpression) {
       zkHost = factory.getCollectionZkHost(collectionName);
+    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
+      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
     }
-    else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
-      zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
-    }
-    if(null == zkHost){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
+    if (null == zkHost) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - zkHost not found for collection '%s'",
+              expression,
+              collectionName));
     }
 
     // We've got all the required items
-    init(collectionName, zkHost, params, name, feature, stream, weights, outcomeParam, positiveLabel, threshold, maxIterations, iteration);
+    init(
+        collectionName,
+        zkHost,
+        params,
+        name,
+        feature,
+        stream,
+        weights,
+        outcomeParam,
+        positiveLabel,
+        threshold,
+        maxIterations,
+        iteration);
   }
 
   @Override
@@ -237,7 +275,8 @@ public class TextLogitStream extends TupleStream implements Expressible {
     return toExpression(factory, true);
   }
 
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
 
@@ -246,14 +285,15 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
     if (includeStreams && !(termsStream instanceof TermsStream)) {
       if (termsStream instanceof Expressible) {
-        expression.addParameter(((Expressible)termsStream).toExpression(factory));
+        expression.addParameter(((Expressible) termsStream).toExpression(factory));
       } else {
-        throw new IOException("This TextLogitStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+        throw new IOException(
+            "This TextLogitStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
     }
 
     // parameters
-    for(Entry<String,String> param : params.entrySet()){
+    for (Entry<String, String> param : params.entrySet()) {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
     }
 
@@ -265,17 +305,21 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
 
     expression.addParameter(new StreamExpressionNamedParameter("outcome", outcome));
-    if(weights != null) {
+    if (weights != null) {
       expression.addParameter(new StreamExpressionNamedParameter("weights", toString(weights)));
     }
-    expression.addParameter(new StreamExpressionNamedParameter("maxIterations", Integer.toString(maxIterations)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("maxIterations", Integer.toString(maxIterations)));
 
-    if(iteration > 0) {
-      expression.addParameter(new StreamExpressionNamedParameter("iteration", Integer.toString(iteration)));
+    if (iteration > 0) {
+      expression.addParameter(
+          new StreamExpressionNamedParameter("iteration", Integer.toString(iteration)));
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("positiveLabel", Integer.toString(positiveLabel)));
-    expression.addParameter(new StreamExpressionNamedParameter("threshold", Double.toString(threshold)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("positiveLabel", Integer.toString(positiveLabel)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("threshold", Double.toString(threshold)));
 
     // zkHost
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
@@ -283,18 +327,20 @@ public class TextLogitStream extends TupleStream implements Expressible {
     return expression;
   }
 
-  private void init(String collectionName,
-                    String zkHost,
-                    Map<String,String> params,
-                    String name,
-                    String feature,
-                    TupleStream termsStream,
-                    List<Double> weights,
-                    String outcome,
-                    int positiveLabel,
-                    double threshold,
-                    int maxIterations,
-                    int iteration) throws IOException {
+  private void init(
+      String collectionName,
+      String zkHost,
+      Map<String, String> params,
+      String name,
+      String feature,
+      TupleStream termsStream,
+      List<Double> weights,
+      String outcome,
+      int positiveLabel,
+      double threshold,
+      int maxIterations,
+      int iteration)
+      throws IOException {
     this.zkHost = zkHost;
     this.collection = collectionName;
     this.params = params;
@@ -315,10 +361,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     this.termsStream.setStreamContext(context);
   }
 
-  /**
-   * Opens the CloudSolrStream
-   *
-   ***/
+  /** Opens the CloudSolrStream */
   public void open() throws IOException {
     if (cache == null) {
       isCloseCache = true;
@@ -328,11 +371,12 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
 
     this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
-    this.executorService = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TextLogitSolrStream"));
+    this.executorService =
+        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TextLogitSolrStream"));
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(termsStream);
     return l;
   }
@@ -347,11 +391,12 @@ public class TextLogitStream extends TupleStream implements Expressible {
       Set<String> liveNodes = clusterState.getLiveNodes();
 
       List<String> baseUrls = new ArrayList<>();
-      for(Slice slice : slices) {
+      for (Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
         List<Replica> shuffler = new ArrayList<>();
-        for(Replica replica : replicas) {
-          if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
+        for (Replica replica : replicas) {
+          if (replica.getState() == Replica.State.ACTIVE
+              && liveNodes.contains(replica.getNodeName())) {
             shuffler.add(replica);
           }
         }
@@ -373,15 +418,17 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
     List<Future<Tuple>> futures = new ArrayList<>();
     for (String baseUrl : baseUrls) {
-      LogitCall lc = new LogitCall(baseUrl,
-          this.params,
-          this.field,
-          this.terms,
-          this.weights,
-          this.outcome,
-          this.positiveLabel,
-          this.learningRate,
-          this.iteration);
+      LogitCall lc =
+          new LogitCall(
+              baseUrl,
+              this.params,
+              this.field,
+              this.terms,
+              this.weights,
+              this.outcome,
+              this.positiveLabel,
+              this.learningRate,
+              this.iteration);
 
       Future<Tuple> future = executorService.submit(lc);
       futures.add(future);
@@ -402,7 +449,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
-  public StreamComparator getStreamSort(){
+  public StreamComparator getStreamSort() {
     return null;
   }
 
@@ -441,7 +488,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
   public Tuple read() throws IOException {
     try {
 
-      if(++iteration > maxIterations) {
+      if (++iteration > maxIterations) {
         return Tuple.EOF();
       } else {
 
@@ -449,7 +496,12 @@ public class TextLogitStream extends TupleStream implements Expressible {
           loadTerms();
 
           if (weights != null && terms.size() + 1 != weights.size()) {
-            throw new IOException(String.format(Locale.ROOT,"invalid expression %s - the number of weights must be %d, found %d", terms.size()+1, weights.size()));
+            throw new IOException(
+                String.format(
+                    Locale.ROOT,
+                    "invalid expression %s - the number of weights must be %d, found %d",
+                    terms.size() + 1,
+                    weights.size()));
           }
         }
 
@@ -471,13 +523,13 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
         this.weights = averageWeights(allWeights);
         Map<String, Object> map = new HashMap<>();
-        map.put(ID, name+"_"+iteration);
+        map.put(ID, name + "_" + iteration);
         map.put("name_s", name);
         map.put("field_s", field);
         map.put("terms_ss", terms);
         map.put("iteration_i", iteration);
 
-        if(weights != null) {
+        if (weights != null) {
           map.put("weights_ds", weights);
         }
 
@@ -499,25 +551,25 @@ public class TextLogitStream extends TupleStream implements Expressible {
         return new Tuple(map);
       }
 
-    } catch(Exception e) {
+    } catch (Exception e) {
       throw new IOException(e);
     }
   }
 
   private List<Double> averageWeights(List<List<Double>> allWeights) {
     double[] working = new double[allWeights.get(0).size()];
-    for(List<Double> shardWeights: allWeights) {
-      for(int i=0; i<working.length; i++) {
+    for (List<Double> shardWeights : allWeights) {
+      for (int i = 0; i < working.length; i++) {
         working[i] += shardWeights.get(i);
       }
     }
 
-    for(int i=0; i<working.length; i++) {
+    for (int i = 0; i < working.length; i++) {
       working[i] = working[i] / allWeights.size();
     }
 
     List<Double> ave = new ArrayList<>();
-    for(double d : working) {
+    for (double d : working) {
       ave.add(d);
     }
 
@@ -526,8 +578,8 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   static String toString(List<?> items) {
     StringBuilder buf = new StringBuilder();
-    for(Object item : items) {
-      if(buf.length() > 0) {
+    for (Object item : items) {
+      if (buf.length() > 0) {
         buf.append(",");
       }
 
@@ -550,10 +602,14 @@ public class TextLogitStream extends TupleStream implements Expressible {
     public void setStreamContext(StreamContext context) {}
 
     @Override
-    public List<TupleStream> children() { return new ArrayList<>(); }
+    public List<TupleStream> children() {
+      return new ArrayList<>();
+    }
 
     @Override
-    public void open() throws IOException { this.it = this.terms.iterator();}
+    public void open() throws IOException {
+      this.it = this.terms.iterator();
+    }
 
     @Override
     public void close() throws IOException {}
@@ -571,7 +627,9 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
 
     @Override
-    public StreamComparator getStreamSort() {return null;}
+    public StreamComparator getStreamSort() {
+      return null;
+    }
 
     @Override
     public Explanation toExplanation(StreamFactory factory) throws IOException {
@@ -595,15 +653,16 @@ public class TextLogitStream extends TupleStream implements Expressible {
     private double learningRate;
     private Map<String, String> paramsMap;
 
-    public LogitCall(String baseUrl,
-                     Map<String, String> paramsMap,
-                     String feature,
-                     List<String> terms,
-                     List<Double> weights,
-                     String outcome,
-                     int positiveLabel,
-                     double learningRate,
-                     int iteration) {
+    public LogitCall(
+        String baseUrl,
+        Map<String, String> paramsMap,
+        String feature,
+        List<String> terms,
+        List<Double> weights,
+        String outcome,
+        int positiveLabel,
+        double learningRate,
+        int iteration) {
 
       this.baseUrl = baseUrl;
       this.feature = feature;
@@ -621,16 +680,16 @@ public class TextLogitStream extends TupleStream implements Expressible {
       HttpSolrClient solrClient = cache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
-      params.add("fq","{!tlogit}");
+      params.add("fq", "{!tlogit}");
       params.add("feature", feature);
       params.add("terms", TextLogitStream.toString(terms));
       params.add("idfs", TextLogitStream.toString(idfs));
 
-      for(Entry<String, String> entry : paramsMap.entrySet()) {
+      for (Entry<String, String> entry : paramsMap.entrySet()) {
         params.add(entry.getKey(), entry.getValue());
       }
 
-      if(weights != null) {
+      if (weights != null) {
         params.add("weights", TextLogitStream.toString(weights));
       }
 
@@ -640,15 +699,15 @@ public class TextLogitStream extends TupleStream implements Expressible {
       params.add("threshold", Double.toString(threshold));
       params.add("alpha", Double.toString(learningRate));
 
-      QueryRequest  request= new QueryRequest(params, SolrRequest.METHOD.POST);
+      QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
       QueryResponse response = request.process(solrClient);
       NamedList<?> res = response.getResponse();
 
-      NamedList<?> logit = (NamedList<?>)res.get("logit");
+      NamedList<?> logit = (NamedList<?>) res.get("logit");
 
       @SuppressWarnings({"unchecked"})
-      List<Double> shardWeights = (List<Double>)logit.get("weights");
-      double shardError = (double)logit.get("error");
+      List<Double> shardWeights = (List<Double>) logit.get("weights");
+      double shardError = (double) logit.get("error");
 
       Tuple tuple = new Tuple();
 

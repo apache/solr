@@ -20,30 +20,33 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class TrimEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public TrimEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public TrimEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    if(1 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 1 value but found %d",expression,containedEvaluators.size()));
+    if (1 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 1 value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
-  public Object doWork(Object value){
-    if(null == value){
+  public Object doWork(Object value) {
+    if (null == value) {
       return null;
-    }
-    else if(value instanceof List){
-      return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
-    }
-    else{
+    } else if (value instanceof List) {
+      return ((List<?>) value)
+          .stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
+    } else {
       return value.toString().trim();
     }
   }

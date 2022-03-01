@@ -17,7 +17,7 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.List;
-
+import junit.framework.Assert;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -27,13 +27,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
-/**
- * Test for TermComponent's response in Solrj
- */
+/** Test for TermComponent's response in Solrj */
 public class TermsResponseTest extends EmbeddedSolrServerTestBase {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore();

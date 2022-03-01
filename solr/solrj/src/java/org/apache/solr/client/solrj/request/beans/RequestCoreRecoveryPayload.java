@@ -19,4 +19,4 @@ package org.apache.solr.client.solrj.request.beans;
 
 import org.apache.solr.common.util.ReflectMapWriter;
 
-public class RequestCoreRecoveryPayload implements ReflectMapWriter { }
+public class RequestCoreRecoveryPayload implements ReflectMapWriter {}

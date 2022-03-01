@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -27,29 +27,28 @@ import org.apache.solr.client.solrj.io.eval.CorrelationEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class CorrelationEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public CorrelationEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("corr", CorrelationEvaluator.class);
-    values = new HashMap<String,Object>();
+    values = new HashMap<String, Object>();
   }
 
   @Test
   public void test() throws IOException {
     double[] l1 = new double[] {3.4, 4.5, 6.7};
     double[] l2 = new double[] {1.2, 3.2, 3};
-    
+
     values.clear();
     values.put("l1", l1);
     values.put("l2", l2);
-    
-    Assert.assertEquals(new PearsonsCorrelation().correlation(l1, l2), factory.constructEvaluator("corr(l1,l2)").evaluate(new Tuple(values)));
+
+    Assert.assertEquals(
+        new PearsonsCorrelation().correlation(l1, l2),
+        factory.constructEvaluator("corr(l1,l2)").evaluate(new Tuple(values)));
   }
-    
 }

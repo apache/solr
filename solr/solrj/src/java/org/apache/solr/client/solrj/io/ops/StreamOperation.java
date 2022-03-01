@@ -17,13 +17,10 @@
 package org.apache.solr.client.solrj.io.ops;
 
 import java.io.Serializable;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 
-/**
- * Interface for any operation one can perform on a tuple in a TupleStream
- */
+/** Interface for any operation one can perform on a tuple in a TupleStream */
 public interface StreamOperation extends Expressible, Serializable {
   public void operate(Tuple tuple);
 }

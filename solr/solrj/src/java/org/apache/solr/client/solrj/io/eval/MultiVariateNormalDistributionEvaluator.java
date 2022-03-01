@@ -17,36 +17,45 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.Locale;
 import java.util.List;
-
+import java.util.Locale;
 import org.apache.commons.math3.distribution.MultivariateNormalDistribution;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class MultiVariateNormalDistributionEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
+public class MultiVariateNormalDistributionEvaluator extends RecursiveObjectEvaluator
+    implements TwoValueWorker {
 
   private static final long serialVersionUID = 1;
 
-  public MultiVariateNormalDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public MultiVariateNormalDistributionEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
-  public Object doWork(Object first, Object second) throws IOException{
-    if(null == first){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
+  public Object doWork(Object first, Object second) throws IOException {
+    if (null == first) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - null found for the first value",
+              toExpression(constructingFactory)));
     }
-    if(null == second){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
+    if (null == second) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - null found for the second value",
+              toExpression(constructingFactory)));
     }
 
     @SuppressWarnings({"unchecked"})
-    List<Number> means = (List<Number>)first;
-    Matrix covar = (Matrix)second;
+    List<Number> means = (List<Number>) first;
+    Matrix covar = (Matrix) second;
 
     double[] m = new double[means.size()];
-    for(int i=0; i< m.length; i++) {
+    for (int i = 0; i < m.length; i++) {
       m[i] = means.get(i).doubleValue();
     }
 

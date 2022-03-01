@@ -19,28 +19,33 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
-
-import org.apache.commons.math3.geometry.euclidean.twod.hull.ConvexHull2D;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
+import org.apache.commons.math3.geometry.euclidean.twod.hull.ConvexHull2D;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import java.util.List;
 
 public class GetBaryCenterEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   private static final long serialVersionUID = 1;
 
-  public GetBaryCenterEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public GetBaryCenterEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if(!(value instanceof ConvexHull2D)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a ConvexHull2D",toExpression(constructingFactory), value.getClass().getSimpleName()));
+    if (!(value instanceof ConvexHull2D)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting a ConvexHull2D",
+              toExpression(constructingFactory),
+              value.getClass().getSimpleName()));
     } else {
-      ConvexHull2D convexHull2D = (ConvexHull2D)value;
-      Vector2D vector2D = (Vector2D)convexHull2D.createRegion().getBarycenter();
+      ConvexHull2D convexHull2D = (ConvexHull2D) value;
+      Vector2D vector2D = (Vector2D) convexHull2D.createRegion().getBarycenter();
       List<Number> vec = new ArrayList<>();
       vec.add(vector2D.getX());
       vec.add(vector2D.getY());

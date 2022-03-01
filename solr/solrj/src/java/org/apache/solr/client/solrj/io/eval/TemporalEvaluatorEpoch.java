@@ -21,25 +21,22 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.TemporalAccessor;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-/**
- * Provides a day stream evaluator
- */
+/** Provides a day stream evaluator */
 public class TemporalEvaluatorEpoch extends RecursiveTemporalEvaluator {
   protected static final long serialVersionUID = 1L;
-  
+
   public static final String FUNCTION_NAME = "epoch";
 
-  public TemporalEvaluatorEpoch(StreamExpression expression, StreamFactory factory) throws IOException {
+  public TemporalEvaluatorEpoch(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory, FUNCTION_NAME);
   }
 
   @Override
   protected Object getDatePart(TemporalAccessor value) {
-    return ((LocalDateTime)value).atZone(ZoneOffset.UTC).toInstant().toEpochMilli();    
+    return ((LocalDateTime) value).atZone(ZoneOffset.UTC).toInstant().toEpochMilli();
   }
-
 }

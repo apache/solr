@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Common constants used by the <code>LukeRequestHandler</code>.
- */
+
+/** Common constants used by the <code>LukeRequestHandler</code>. */
 package org.apache.solr.common.luke;
-
-
