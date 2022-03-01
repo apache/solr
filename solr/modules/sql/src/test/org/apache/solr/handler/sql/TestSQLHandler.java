@@ -2483,11 +2483,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults("SELECT id FROM $ALIAS WHERE b_is >= 2 AND b_is <= 4", 3);
     expectResults("SELECT id FROM $ALIAS WHERE b_is <= 4 AND b_is >= 2", 3);
     expectResults("SELECT id FROM $ALIAS WHERE b_is <= 2 OR b_is >= 8", 4);
-    // tricky ~ with Solr, this should return 2 docs, but Calcite short-circuits this query and
-    // returns 0
-    // Calcite sees the predicate as disjoint from a single-valued field perspective ...
-    expectResults("SELECT id FROM $ALIAS WHERE b_is >= 5 AND b_is <= 2", 0);
-    // hacky work-around the aforementioned problem ^^
+    expectResults("SELECT id FROM $ALIAS WHERE b_is >= 5 AND b_is <= 2", 2);
     expectResults("SELECT id FROM $ALIAS WHERE b_is = '(+[5 TO *] +[* TO 2])'", 2);
   }
 
@@ -2509,15 +2505,18 @@ public class TestSQLHandler extends SolrCloudTestCase {
         .add("id", "6", "a_s", "world-6", "b_s", "bar", "a_i", "4", "d_s", "c")
         .add("id", "7", "a_s", "hello-7", "b_s", "foo", "c_s", "baz blah", "d_s", "x")
         .add("id", "8", "a_s", "world-8", "b_s", "bar", "a_i", "5", "d_s", "c")
+        .add("id", "9", "a_s", "world-9", "b_s", "bar", "a_i", "1", "d_s", "x")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     List<Tuple> tuples =
         expectResults(
             "SELECT a_s FROM $ALIAS WHERE a_s LIKE 'world%' AND b_s IS NOT NULL AND c_s IS NULL AND a_i BETWEEN 2 AND 4 AND d_s IN ('a','b','c') ORDER BY id ASC LIMIT 10",
             3);
+
     assertEquals("world-2", tuples.get(0).getString("a_s"));
     assertEquals("world-4", tuples.get(1).getString("a_s"));
     assertEquals("world-6", tuples.get(2).getString("a_s"));
+
     tuples =
         expectResults(
             "SELECT a_s FROM $ALIAS WHERE a_s NOT LIKE 'hello%' AND b_s IS NOT NULL AND c_s IS NULL AND a_i NOT BETWEEN 2 AND 4 AND d_s IN ('a','b','c') ORDER BY id ASC LIMIT 10",
@@ -3057,6 +3056,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
     update.add(doc);
 
     update.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults(
+        "SELECT id FROM $ALIAS WHERE stringxmv IN ('a') AND stringxmv IN ('b') ORDER BY id ASC", 1);
 
     int numIn = 200;
     List<String> bigInList = new ArrayList<>(bigList);

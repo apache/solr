@@ -51,6 +51,13 @@ public class CalciteSolrDriver extends Driver {
     configHolder.accept(config -> config.withInSubQueryThreshold(Integer.MAX_VALUE));
   }
 
+  // disable Calcite's simplify (see SOLR-16009) as it erases some query
+  // constructs that are still meaningful to Solr (such as AND'd filters on the same field,
+  // which works for multi-valued fields in Solr but looks like nonsense to Calcite.
+  static void relBuilderSimplify(Holder<Boolean> configHolder) {
+    configHolder.accept(config -> false);
+  }
+
   @Override
   protected String getConnectStringPrefix() {
     return CONNECT_STRING_PREFIX;
@@ -65,6 +72,12 @@ public class CalciteSolrDriver extends Driver {
     // Configure SqlToRelConverter to allow more values for an 'IN' clause,
     // otherwise, Calcite will transform the query into a join with a static table of literals
     Hook.SQL2REL_CONVERTER_CONFIG_BUILDER.addThread(CalciteSolrDriver::subQueryThreshold);
+
+    // See SOLR-16009 ~ Calcite's simplify logic doesn't align with Solr's multi-valued field
+    // matching so what looks
+    // like nonsense to Calcite (and thus gets "simplified" away), is a valid query against
+    // multi-valued fields in Solr
+    Hook.REL_BUILDER_SIMPLIFY.addThread(CalciteSolrDriver::relBuilderSimplify);
 
     Connection connection = super.connect(url, info);
     CalciteConnection calciteConnection = (CalciteConnection) connection;
