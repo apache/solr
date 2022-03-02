@@ -2949,6 +2949,10 @@ public class TestSQLHandler extends SolrCloudTestCase {
     update.add("id", String.valueOf(maxDocs)); // all multi-valued fields are null
     update.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
+    expectResults("SELECT longs, stringsx, booleans FROM $ALIAS WHERE longs = 2 AND longs = 4", 5);
+    expectResults("SELECT longs, pdoublexmv, booleans FROM $ALIAS WHERE pdoublexmv = 4.0 AND pdoublexmv = 5.0", 5);
+    expectResults("SELECT longs, pdoublexmv, booleans FROM $ALIAS WHERE pdoublexmv > 4.0", 5);
+    expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv = 'a' AND stringxmv = 'b' AND stringxmv = 'c'", 10);
     expectResults("SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv > 'a'", 10);
     expectResults(
         "SELECT stringxmv, stringsx, booleans FROM $ALIAS WHERE stringxmv NOT IN ('a')", 1);
@@ -3184,5 +3188,36 @@ public class TestSQLHandler extends SolrCloudTestCase {
     expectResults(
         "SELECT COUNT(*) as QUERY_COUNT FROM $ALIAS WHERE (d_s='x') AND (id='1') AND (b_s='foo') HAVING COUNT(*) > 0",
         1);
+  }
+
+  @Test
+  public void testCustomUDFArrayContains() throws Exception {
+    new UpdateRequest()
+        .add("id", "1", "name_s", "hello-1", "a_i", "1", "stringxmv", "a", "stringxmv", "b",
+            "stringxmv", "c", "pdoublexmv", "1.5", "pdoublexmv", "2.5", "longs", "1", "longs", "2")
+        .add("id", "2", "name_s", "hello-2", "a_i", "2", "stringxmv", "c", "stringxmv", "d",
+            "stringxmv", "e", "pdoublexmv", "1.5", "pdoublexmv", "3.5", "longs", "1", "longs", "3")
+        .add("id", "3", "name_s", "hello-3", "a_i", "3", "stringxmv", "e", "stringxmv", "f",
+            "stringxmv", "a", "pdoublexmv", "2.5", "pdoublexmv", "3.5", "longs", "2", "longs", "3")
+
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    expectResults("select id, pdoublexmv from $ALIAS", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(pdoublexmv, (1.5, 2.5))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(longs, (1, 3))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, 'c')", 2);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c'))", 2);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('a', 'b', 'c'))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('b', 'c'))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c', 'e'))", 1);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_all(stringxmv, ('c', 'd', 'e'))", 1);
+
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(pdoublexmv, (1.5, 2.5))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(longs, (1, 3))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a'))", 2);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'b', 'c'))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'c'))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e'))", 3);
+    expectResults("select id, stringxmv from $ALIAS WHERE array_contains_any(stringxmv, ('a', 'e', 'f'))", 3);
   }
 }

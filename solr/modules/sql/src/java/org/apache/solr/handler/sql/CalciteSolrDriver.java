@@ -23,9 +23,12 @@ import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.util.Holder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.handler.sql.functions.ArrayContainsAll;
+import org.apache.solr.handler.sql.functions.ArrayContainsAny;
 
 /**
  * JDBC driver for Calcite Solr.
@@ -87,9 +90,17 @@ public class CalciteSolrDriver extends Driver {
     final SolrSchema solrSchema = new SolrSchema(info, solrClientCache);
     rootSchema.add(schemaName, solrSchema);
 
+    registerUDFs();
+
     // Set the default schema
     calciteConnection.setSchema(schemaName);
     return calciteConnection;
+  }
+
+  private void registerUDFs() {
+    final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
+    stdOpTab.register(new ArrayContainsAll());
+    stdOpTab.register(new ArrayContainsAny());
   }
 
   public void setSolrClientCache(SolrClientCache solrClientCache) {
