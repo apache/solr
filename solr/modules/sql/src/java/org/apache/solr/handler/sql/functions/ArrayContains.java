@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler.sql.functions;
 
+import java.util.Arrays;
+import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.type.ReturnTypes;
@@ -24,14 +26,16 @@ import org.apache.calcite.sql.type.SqlOperandCountRanges;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 
-import java.util.Arrays;
-import java.util.List;
-
 public abstract class ArrayContains extends SqlFunction {
 
   public ArrayContains(String name) {
-    super(name, SqlKind.OTHER_FUNCTION, ReturnTypes.BOOLEAN,
-        null, null, SqlFunctionCategory.USER_DEFINED_FUNCTION);
+    super(
+        name,
+        SqlKind.OTHER_FUNCTION,
+        ReturnTypes.BOOLEAN,
+        null,
+        null,
+        SqlFunctionCategory.USER_DEFINED_FUNCTION);
   }
 
   @Override
@@ -40,8 +44,7 @@ public abstract class ArrayContains extends SqlFunction {
   }
 
   @Override
-  public boolean checkOperandTypes(SqlCallBinding callBinding,
-      boolean throwOnFailure) {
+  public boolean checkOperandTypes(SqlCallBinding callBinding, boolean throwOnFailure) {
     List<SqlNode> operands = callBinding.getCall().getOperandList();
     SqlNode operand1 = operands.get(0);
     SqlNode operand2 = operands.get(1);
@@ -50,7 +53,8 @@ public abstract class ArrayContains extends SqlFunction {
         return true;
       } else if (operand2.getKind() == SqlKind.ROW) {
         SqlBasicCall valuesCall = (SqlBasicCall) operand2;
-        boolean literalMatch =Arrays.stream(valuesCall.getOperands()).allMatch(op -> op.getKind() == SqlKind.LITERAL);
+        boolean literalMatch =
+            Arrays.stream(valuesCall.getOperands()).allMatch(op -> op.getKind() == SqlKind.LITERAL);
         if (literalMatch) {
           return true;
         }
@@ -63,8 +67,8 @@ public abstract class ArrayContains extends SqlFunction {
     }
   }
 
-  @Override public RelDataType deriveType(SqlValidator validator,
-      SqlValidatorScope scope, SqlCall call) {
+  @Override
+  public RelDataType deriveType(SqlValidator validator, SqlValidatorScope scope, SqlCall call) {
     // To prevent operator rewriting by SqlFunction#deriveType.
     for (SqlNode operand : call.getOperandList()) {
       RelDataType nodeType = validator.deriveType(scope, operand);

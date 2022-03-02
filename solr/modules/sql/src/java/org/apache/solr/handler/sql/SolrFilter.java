@@ -22,7 +22,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptCluster;
@@ -159,7 +158,7 @@ class SolrFilter extends Filter implements SolrRel {
         return translateArrayContainsUDF(call, "AND");
       } else if (call.op instanceof ArrayContainsAny) {
         return translateArrayContainsUDF(call, "OR");
-      } else  {
+      } else {
         throw new RuntimeException("Custom function '" + call.op + "' not supported");
       }
     }
@@ -176,17 +175,17 @@ class SolrFilter extends Filter implements SolrRel {
         } else {
           return null;
         }
-      } else if (valuesNode instanceof  RexCall) {
+      } else if (valuesNode instanceof RexCall) {
         RexCall valuesRexCall = (RexCall) operands.get(1);
         String valuesString =
-            valuesRexCall.getOperands()
-                .stream()
+            valuesRexCall.getOperands().stream()
                 .map(op -> toSolrLiteral(fieldName, (RexLiteral) op))
                 .filter(value -> !StringUtils.isEmpty(value))
-                .map(value -> "\"" + value.trim()  + "\"")
+                .map(value -> "\"" + value.trim() + "\"")
                 .collect(Collectors.joining(" " + booleanOperator + " "));
         return fieldName + ":(" + valuesString + ")";
-      } {
+      }
+      {
         return null;
       }
     }

@@ -18,9 +18,9 @@
 package org.apache.solr.handler.sql.functions;
 
 /**
- * Operator for filtering on Solr multi-valued fields with 'OR" clause.
- * Example: ARRAY_CONTAINS_ALL(field, ('val1', 'val2')) will be transformed to
- * filter query field:("val1" OR "val2")
+ * Operator for filtering on Solr multi-valued fields with 'OR" clause. Example:
+ * ARRAY_CONTAINS_ALL(field, ('val1', 'val2')) will be transformed to filter query field:("val1" OR
+ * "val2")
  */
 public class ArrayContainsAny extends ArrayContains {
   private static final String UDF_NAME = "ARRAY_CONTAINS_ANY";
