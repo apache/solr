@@ -15,5 +15,8 @@
  * limitations under the License.
  */
 
-/** Solr SQL UDFs */
+/**
+ * Solr SQL user defined functions (UDFs) needed to support filters on multi-valued fields and other
+ * query behavior that doesn't align well with SQL.
+ */
 package org.apache.solr.handler.sql.functions;
