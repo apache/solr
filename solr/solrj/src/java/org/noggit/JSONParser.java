@@ -299,7 +299,7 @@ public class JSONParser {
       }
       */
 
-      /* older code 
+      /* older code
       switch (ch) { case ' ' : case '\t' : case '\r' : case '\n' : continue outer;
       case '#' : getNewlineComment(); continue outer; case '/' : getSlashComment(); continue
       outer; default: return ch; }

@@ -1030,7 +1030,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   /**
-   * Get the entry that has the given lookupVersion in the given lookupLogs at the lookupPointer position.
+   * Get the entry that has the given lookupVersion in the given lookupLogs at the lookupPointer
+   * position.
    *
    * @return The entry if found, otherwise null
    */

@@ -1149,9 +1149,9 @@ public class RealTimeGetComponent extends SearchComponent {
   }
 
   /*
-   private void handleRegularResponses(ResponseBuilder rb, ShardRequest sreq) {
-   }
-   */
+  private void handleRegularResponses(ResponseBuilder rb, ShardRequest sreq) {
+  }
+  */
 
   @Override
   public void finishStage(ResponseBuilder rb) {
