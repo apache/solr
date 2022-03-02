@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Solr SQL UDFs
- */
+/** Solr SQL UDFs */
 package org.apache.solr.handler.sql.functions;
