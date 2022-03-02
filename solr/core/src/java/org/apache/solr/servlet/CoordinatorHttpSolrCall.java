@@ -27,6 +27,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -48,7 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CoordinatorHttpSolrCall extends HttpSolrCall {
-  public static final String SYNTHETIC_COLL_PREFIX = "SYNTHETIC-COLL-";
+  public static final String SYNTHETIC_COLL_PREFIX = Assign.SYSTEM_COLL_PREFIX+ "COORDINATOR-COLL-";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String collectionName;
 

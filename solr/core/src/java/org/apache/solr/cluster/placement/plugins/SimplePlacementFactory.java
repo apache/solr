@@ -99,7 +99,7 @@ public class SimplePlacementFactory implements PlacementPluginFactory<PlacementP
     private Map<Node, ReplicaCount> getNodeVsShardCount(PlacementContext placementContext) {
       HashMap<Node, ReplicaCount> nodeVsShardCount = new HashMap<>();
 
-      for (Node s : placementContext.getCluster().getLiveNodes()) {
+      for (Node s : placementContext.getCluster().getLiveDataNodes()) {
         nodeVsShardCount.computeIfAbsent(s, ReplicaCount::new);
       }
 

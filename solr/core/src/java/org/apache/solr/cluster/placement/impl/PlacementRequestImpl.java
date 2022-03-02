@@ -83,11 +83,11 @@ public class PlacementRequestImpl implements PlacementRequest {
     if (assignRequest.nodes != null) {
       nodes = SimpleClusterAbstractionsImpl.NodeImpl.getNodes(assignRequest.nodes);
 
-     /* for (Node n: nodes) {
+      for (Node n: nodes) {
         if (!cluster.getLiveDataNodes().contains(n)) {
           throw new Assign.AssignmentException("Bad assign request: specified node is a non-data hosting node (" + n.getName() + ") for collection " + solrCollection.getName());
         }
-      }*/
+      }
       if (nodes.isEmpty()) {
         throw new Assign.AssignmentException("Bad assign request: empty list of nodes for collection " + solrCollection.getName());
       }

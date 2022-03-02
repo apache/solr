@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String SYSTEM_COLL_PREFIX = ".sys.";
 
   public static String getCounterNodePath(String collection) {
     return ZkStateReader.COLLECTIONS_ZKNODE + "/"+collection+"/counter";
