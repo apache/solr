@@ -63,12 +63,10 @@ class SolrFilter extends Filter implements SolrRel {
   private static final class AndClause {
     boolean isBetween;
     String query;
-    boolean isNegated;
 
-    AndClause(String query, boolean isBetween, boolean isNegated) {
+    AndClause(String query, boolean isBetween) {
       this.query = query;
       this.isBetween = isBetween;
-      this.isNegated = isNegated;
     }
 
     String toQuery() {
@@ -221,7 +219,7 @@ class SolrFilter extends Filter implements SolrRel {
         log.debug("translated query match={}", query);
       }
 
-      return new AndClause(query, isBetween, isNegated);
+      return new AndClause(query, isBetween);
     }
 
     protected String translateBetween(RexNode gteNode, RexNode lteNode, boolean isNegated) {
