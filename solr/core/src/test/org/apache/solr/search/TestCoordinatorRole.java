@@ -55,11 +55,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     for (int i = 0; i < 10; i++) {
       SolrInputDocument doc2 = new SolrInputDocument();
       doc2.addField("id", "" + i);
-      doc2.addField("fld1_s", "1 value 1 value 1 value 1 value 1 value 1 value 1 value ");
-      doc2.addField("fld2_s", "2 value 2 value 2 value 2 value 2 value 2 value 2 value 2 value 2 value 2 value ");
-      doc2.addField("fld3_s", "3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value 3 value ");
-      doc2.addField("fld4_s", "4 value 4 value 4 value 4 value 4 value 4 value 4 value 4 value 4 value ");
-      doc2.addField("fld5_s", "5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value 5 value ");
       ur.add(doc2);
     }
 
