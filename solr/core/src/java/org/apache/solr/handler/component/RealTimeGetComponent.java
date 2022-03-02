@@ -1148,10 +1148,10 @@ public class RealTimeGetComponent extends SearchComponent {
         SolrException.ErrorCode.SERVER_ERROR, "Can't find shard '" + lookup + "'");
   }
 
-  /***
-   * private void handleRegularResponses(ResponseBuilder rb, ShardRequest sreq) {
-   * }
-   ***/
+  /*
+   private void handleRegularResponses(ResponseBuilder rb, ShardRequest sreq) {
+   }
+   */
 
   @Override
   public void finishStage(ResponseBuilder rb) {

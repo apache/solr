@@ -1402,9 +1402,9 @@ public class IndexSchema {
 
     // Hmmm, default field could also be implemented with a dynamic field of "*".
     // It would have to be special-cased and only used if nothing else matched.
-    /***  REMOVED -YCS
-     * if (defaultFieldType != null) return new SchemaField(fieldName,defaultFieldType);
-     ***/
+    /*  REMOVED -YCS
+    if (defaultFieldType != null) return new SchemaField(fieldName,defaultFieldType);
+    */
     throw new SolrException(ErrorCode.BAD_REQUEST, "undefined field: \"" + fieldName + "\"");
   }
 

@@ -47,9 +47,9 @@ public interface DocList {
 
   public TotalHits.Relation hitCountRelation();
 
-  /***
-   * public int getDoc(int pos);
-   ***/
+  /*
+  public int getDoc(int pos);
+  */
 
   // hmmm, what if a different slice could be generated from an existing DocSet
   // (and was before)...

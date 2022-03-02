@@ -23,7 +23,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.schema.SchemaField;
 
-/***
+/**
  * SortSpec encapsulates a Lucene Sort and a count of the number of documents
  * to return.
  */

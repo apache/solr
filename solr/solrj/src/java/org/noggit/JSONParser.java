@@ -282,28 +282,28 @@ public class JSONParser {
         return ch;
       }
 
-      /***
-       * // getCharNWS is normally called in the context of expecting certain JSON special characters
-       * // such as ":}"],"
-       * // all of these characters are below 64 (including comment chars '/' and '#', so we can make this the fast path
-       * if (ch < 64) {
-       * if (((WS_MASK >> ch) & 0x01) == 0) return ch;
-       * if (ch <= ' ') continue;  // whitespace below a normal space
-       * if (ch=='/') {
-       * getSlashComment();
-       * } else if (ch=='#') {
-       * getNewlineComment();
-       * }
-       * } else if (!isWhitespace(ch)) {  // check for higher whitespace like 0xA0
-       * return ch;
-       * }
-       ***/
+      /*
+      // getCharNWS is normally called in the context of expecting certain JSON special characters
+      // such as ":}"],"
+      // all of these characters are below 64 (including comment chars '/' and '#', so we can make this the fast path
+      if (ch < 64) {
+        if (((WS_MASK >> ch) & 0x01) == 0) return ch;
+        if (ch <= ' ') continue;  // whitespace below a normal space
+        if (ch=='/') {
+          getSlashComment();
+        } else if (ch=='#') {
+          getNewlineComment();
+        }
+      } else if (!isWhitespace(ch)) {  // check for higher whitespace like 0xA0
+        return ch;
+      }
+      */
 
-      /**
-       * older code switch (ch) { case ' ' : case '\t' : case '\r' : case '\n' : continue outer;
-       * case '#' : getNewlineComment(); continue outer; case '/' : getSlashComment(); continue
-       * outer; default: return ch; }
-       */
+      /* older code 
+      switch (ch) { case ' ' : case '\t' : case '\r' : case '\n' : continue outer;
+      case '#' : getNewlineComment(); continue outer; case '/' : getSlashComment(); continue
+      outer; default: return ch; }
+      */
     }
   }
 
@@ -815,55 +815,55 @@ public class JSONParser {
     // would checking for a-z first speed up the common case?
 
     // possibly much more liberal unquoted string handling...
-    /***
-     * switch (ch) {
-     * case -1:
-     * case ' ':
-     * case '\t':
-     * case '\r':
-     * case '\n':
-     * case '}':
-     * case ']':
-     * case ',':
-     * case ':':
-     * case '=':   // reserved for future use
-     * case '\\':  // check for backslash should come after this function call
-     * return false;
-     * }
-     * return true;
-     ***/
+    /*
+    switch (ch) {
+      case -1:
+      case ' ':
+      case '\t':
+      case '\r':
+      case '\n':
+      case '}':
+      case ']':
+      case ',':
+      case ':':
+      case '=':   // reserved for future use
+      case '\\':  // check for backslash should come after this function call
+      return false;
+    }
+    return true;
+    */
   }
 
-  /*** alternate implementation
-   * // middle is the pointer to the middle of a buffer to start scanning for a non-string
-   * // character ('"' or "/").  start<=middle<end
-   * private void readStringChars2a(CharArr arr, int middle) throws IOException {
-   * int ch=0;
-   * for(;;) {
-   * // find the next non-string char
-   * for (; middle<end; middle++) {
-   * ch = buf[middle];
-   * if (ch=='"' || ch=='\\') break;
-   * }
-   *
-   * arr.write(buf,start,middle-start);
-   * if (middle>=end) {
-   * getMore();
-   * middle=start;
-   * } else {
-   * start = middle+1;   // set buffer pointer to correct spot
-   * if (ch=='"') {
-   * valstate=0;
-   * return;
-   * } else if (ch=='\\') {
-   * arr.write(readEscapedChar());
-   * if (start>=end) getMore();
-   * middle=start;
-   * }
-   * }
-   * }
-   * }
-   ***/
+  /* alternate implementation
+  // middle is the pointer to the middle of a buffer to start scanning for a non-string
+  // character ('"' or "/").  start<=middle<end
+  private void readStringChars2a(CharArr arr, int middle) throws IOException {
+    int ch = 0;
+    for (; ; ) {
+      // find the next non-string char
+      for (; middle < end; middle++) {
+        ch = buf[middle];
+        if (ch == '"' || ch == '\\') break;
+      }
+
+      arr.write(buf, start, middle - start);
+      if (middle >= end) {
+        getMore();
+        middle = start;
+      } else {
+        start = middle + 1; // set buffer pointer to correct spot
+        if (ch == '"') {
+          valstate = 0;
+          return;
+        } else if (ch == '\\') {
+          arr.write(readEscapedChar());
+          if (start >= end) getMore();
+          middle = start;
+        }
+      }
+    }
+  }
+  */
 
   // return the next event when parser is in a neutral state (no
   // map separators or array element separators to read

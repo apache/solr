@@ -367,7 +367,7 @@ class PerSegmentSingleValuedFaceting {
 }
 
 abstract class FacetCollector {
-  /*** return true to stop collection */
+  /** return true to stop collection */
   public abstract boolean collect(BytesRef term, int count);
 
   public abstract NamedList<Integer> getFacetCounts();

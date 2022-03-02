@@ -62,18 +62,18 @@ public class QueryContext extends IdentityHashMap implements Closeable {
     return indexSearcher;
   }
 
-  /***  implementations obtained via inheritance
-   * public Object get(Object key) {
-   * return map.get(key);
-   * }
-   *
-   * public Object put(Object key, Object val) {
-   * if (map == null) {
-   * map = new IdentityHashMap();
-   * }
-   * return map.put(key, val);
-   * }
-   ***/
+  /*  implementations obtained via inheritance
+  public Object get(Object key) {
+    return map.get(key);
+  }
+
+  public Object put(Object key, Object val) {
+    if (map == null) {
+      map = new IdentityHashMap();
+    }
+    return map.put(key, val);
+  }
+  */
 
   public void addCloseHook(Closeable closeable) {
     if (closeHooks == null) {

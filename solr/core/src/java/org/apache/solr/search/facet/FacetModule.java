@@ -278,10 +278,11 @@ public class FacetModule extends SearchComponent {
       sreq.params.set(FACET_INFO, "{}");
     } else {
       // turn off faceting on other requests
-      /*** distributedProcess will need to use other requests for refinement
-       * sreq.params.remove("json.facet");  // this just saves space... the presence of FACET_INFO really control the faceting
-       * sreq.params.remove(FACET_INFO);
-       **/
+      /* distributedProcess will need to use other requests for refinement
+      // this just saves space... the presence of FACET_INFO really control the faceting
+      sreq.params.remove("json.facet");
+      sreq.params.remove(FACET_INFO);
+      */
     }
   }
 

@@ -183,20 +183,20 @@ public class TermsComponent extends SearchComponent {
             }
             continue;
           } else {
-            /***
-             * // streaming solution that is deferred until writing the response
-             * // TODO: we can't use the streaming solution until XML writer supports PushWriter!
-             * termsResult.add(field, (MapWriter) ew -> {
-             * int num = 0;
-             * for(;;) {
-             * long count = valueIterator.getNextCount();
-             * if (count < 0) break;
-             * if (count < freqmin || count > freqmax) continue;
-             * if (++num > limit) break;
-             * ew.put(Utils.OBJECT_TO_STRING.apply(mv.toObject()), (int)count); // match the numeric type of terms
-             * }
-             * });
-             ***/
+            /*
+            // streaming solution that is deferred until writing the response
+            // TODO: we can't use the streaming solution until XML writer supports PushWriter!
+            termsResult.add(field, (MapWriter) ew -> {
+              int num = 0;
+              for(;;) {
+                long count = valueIterator.getNextCount();
+                if (count < 0) break;
+                if (count < freqmin || count > freqmax) continue;
+                if (++num > limit) break;
+                ew.put(Utils.OBJECT_TO_STRING.apply(mv.toObject()), (int)count); // match the numeric type of terms
+              }
+            });
+            */
 
             int num = 0;
             for (; ; ) {

@@ -1764,13 +1764,13 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     Client iclient = client;
 
-    /*** This code was not needed yet, but may be needed if we want to force empty shard results more often.
-     * // create a new indexing client that doesn't use one shard to better test for empty or non-existent results
-     * if (!client.local()) {
-     * List<SolrClient> shards = client.getClientProvider().all();
-     * iclient = new Client(shards.subList(0, shards.size()-1), client.getClientProvider().getSeed());
-     * }
-     ***/
+    /* This code was not needed yet, but may be needed if we want to force empty shard results more often.
+    // create a new indexing client that doesn't use one shard to better test for empty or non-existent results
+    if (!client.local()) {
+      List<SolrClient> shards = client.getClientProvider().all();
+      iclient = new Client(shards.subList(0, shards.size()-1), client.getClientProvider().getSeed());
+    }
+    */
 
     SolrInputDocument doc =
         sdoc(
@@ -5030,8 +5030,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     return sb.toString();
   }
 
-  /*** test code to ensure TDigest is working as we expect. */
-
+  /** test code to ensure TDigest is working as we expect. */
   public void XtestTDigest() throws Exception {
     AVLTreeDigest t1 = new AVLTreeDigest(100);
     t1.add(10, 1);

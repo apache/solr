@@ -85,11 +85,11 @@ public class StrUtils {
       lst.add(s.substring(start, end));
     }
 
-    /***
-     * if (SolrCore.log.isLoggable(Level.FINEST)) {
-     * SolrCore.log.trace("splitCommand={}", lst);
-     * }
-     ***/
+    /*
+    if (SolrCore.log.isLoggable(Level.FINEST)) {
+      SolrCore.log.trace("splitCommand={}", lst);
+    }
+    */
 
   }
 

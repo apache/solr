@@ -96,11 +96,11 @@ public class SolrQueryResponse {
   /** Should this response be tagged with HTTP caching headers? */
   protected boolean httpCaching = true;
 
-  /***
-   * // another way of returning an error
-   * int errCode;
-   * String errMsg;
-   ***/
+  /*
+  // another way of returning an error
+  int errCode;
+  String errMsg;
+  */
 
   public SolrQueryResponse() {}
 

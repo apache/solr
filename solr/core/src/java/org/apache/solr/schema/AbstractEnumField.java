@@ -46,7 +46,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-/***
+/**
  * Abstract Field type for support of string values with custom sort order.
  */
 public abstract class AbstractEnumField extends PrimitiveFieldType {

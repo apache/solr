@@ -415,12 +415,12 @@ public class TransactionLog implements Closeable {
         long pos = fos.size(); // if we had flushed, this should be equal to channel.position()
         assert pos != 0;
 
-        /***
-         * System.out.println("###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
-         * if (pos != fos.size()) {
-         * throw new RuntimeException("ERROR" + "###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
-         * }
-         ***/
+        /*
+        System.out.println("###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
+        if (pos != fos.size()) {
+          throw new RuntimeException("ERROR" + "###writing at " + pos + " fos.size()=" + fos.size() + " raf.length()=" + raf.length());
+        }
+        */
 
         out.writeAll(fos);
         endRecord(pos);
@@ -527,12 +527,12 @@ public class TransactionLog implements Closeable {
       synchronized (this) {
         // TODO: optimize this by keeping track of what we have flushed up to
         fos.flushBuffer();
-        /***
-         * System.out.println("###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
-         * if (fos.size() != raf.length() || pos >= fos.size() ) {
-         * throw new RuntimeException("ERROR" + "###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
-         * }
-         ***/
+        /*
+        System.out.println("###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
+        if (fos.size() != raf.length() || pos >= fos.size() ) {
+          throw new RuntimeException("ERROR" + "###flushBuffer to " + fos.size() + " raf.length()=" + raf.length() + " pos="+pos);
+        }
+        */
       }
 
       ChannelFastInputStream fis = new ChannelFastInputStream(channel, pos);

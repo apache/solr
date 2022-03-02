@@ -421,15 +421,14 @@ public class UnInvertedField extends DocTermOrds {
       }
     }
 
-    /*** TODO - future optimization to handle allBuckets
-     * if (processor.allBucketsSlot >= 0) {
-     * int all = 0;  // overflow potential
-     * for (int i=0; i<numTermsInField; i++) {
-     * all += counts.getCount(i);
-     * }
-     * counts.incrementCount(processor.allBucketsSlot, all);
-     * }
-     ***/
+    /* TODO - future optimization to handle allBuckets
+    if (processor.allBucketsSlot >= 0) {
+      int all = 0;  // overflow potential
+      for (int i=0; i<numTermsInField; i++) {
+      all += counts.getCount(i);
+    }
+    counts.incrementCount(processor.allBucketsSlot, all);
+    */
   }
 
   public void collectDocs(FacetFieldProcessorByArrayUIF processor) throws IOException {

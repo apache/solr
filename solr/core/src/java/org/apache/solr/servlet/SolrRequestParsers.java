@@ -822,11 +822,12 @@ public class SolrRequestParsers {
 
       // SOLR-6787 changed the behavior of a POST without content type.  Previously it would throw
       // an exception, but now it will use the raw request parser.
-      /***
-       * if (contentType == null && isPost) {
-       * throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Must specify a Content-Type header with POST requests");
-       * }
-       ***/
+      /*
+      if (contentType == null && isPost) {
+        throw new SolrException(ErrorCode.UNSUPPORTED_MEDIA_TYPE,
+            "Must specify a Content-Type header with POST requests");
+      }
+      */
 
       // According to previous StandardRequestParser logic (this is a re-written version),
       // POST was handled normally, but other methods (PUT/DELETE)

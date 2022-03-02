@@ -139,25 +139,25 @@ public class VersionInfo {
     lock.writeLock().unlock();
   }
 
-  /***
-   * // todo: initialize... use current time to start?
-   * // a clock that increments by 1 for every operation makes it easier to detect missing
-   * // messages, but raises other issues:
-   * // - need to initialize to largest thing in index or tlog
-   * // - when becoming leader, need to make sure it's greater than
-   * // - using to detect missing messages means we need to keep track per-leader, or make
-   * //   sure a new leader starts off with 1 greater than the last leader.
-   * private final AtomicLong clock = new AtomicLong();
-   *
-   * public long getNewClock() {
-   * return clock.incrementAndGet();
-   * }
-   *
-   * // Named *old* to prevent accidental calling getClock and expecting a new updated clock.
-   * public long getOldClock() {
-   * return clock.get();
-   * }
-   ***/
+  /*
+  // todo: initialize... use current time to start?
+  // a clock that increments by 1 for every operation makes it easier to detect missing
+  // messages, but raises other issues:
+  // - need to initialize to largest thing in index or tlog
+  // - when becoming leader, need to make sure it's greater than
+  // - using to detect missing messages means we need to keep track per-leader, or make
+  //   sure a new leader starts off with 1 greater than the last leader.
+  private final AtomicLong clock = new AtomicLong();
+
+  public long getNewClock() {
+    return clock.incrementAndGet();
+  }
+
+  // Named *old* to prevent accidental calling getClock and expecting a new updated clock.
+  public long getOldClock() {
+    return clock.get();
+  }
+  */
 
   /**
    * We are currently using this time-based clock to avoid going back in time on a server restart

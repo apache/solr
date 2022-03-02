@@ -2786,17 +2786,17 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         _searcher = newSearcherHolder;
         SolrIndexSearcher newSearcher = newSearcherHolder.get();
 
-        /***
-         * // a searcher may have been warming asynchronously while the core was being closed.
-         * // if this happens, just close the searcher.
-         * if (isClosed()) {
-         * // NOTE: this should not happen now - see close() for details.
-         * // *BUT* if we left it enabled, this could still happen before
-         * // close() stopped the executor - so disable this test for now.
-         * log.error("Ignoring searcher register on closed core:{}", newSearcher);
-         * _searcher.decref();
-         * }
-         ***/
+        /*
+        // a searcher may have been warming asynchronously while the core was being closed.
+        // if this happens, just close the searcher.
+        if (isClosed()) {
+          // NOTE: this should not happen now - see close() for details.
+          // *BUT* if we left it enabled, this could still happen before
+          // close() stopped the executor - so disable this test for now.
+          log.error("Ignoring searcher register on closed core:{}", newSearcher);
+          _searcher.decref();
+        }
+        */
 
         newSearcher.register(); // register subitems (caches)
 

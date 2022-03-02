@@ -1434,11 +1434,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             } finally {
               // We don't need to save commit points for replication, the SolrDeletionPolicy
               // always saves the last commit point (and the last optimized commit point, if needed)
-              /***
-               * if(indexCommitPoint != null){
-               * core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getGeneration());
-               * }
-               ***/
+              /*
+              if(indexCommitPoint != null){
+               core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getGeneration());
+              }
+              */
             }
           }
 
@@ -1546,14 +1546,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
           // We don't need to save commit points for replication, the SolrDeletionPolicy
           // always saves the last commit point (and the last optimized commit point, if needed)
-          /***
-           * if (indexCommitPoint != null) {
-           * core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getGeneration());
-           * }
-           * if(oldCommitPoint != null){
-           * core.getDeletionPolicy().releaseCommitPointAndExtendReserve(oldCommitPoint.getGeneration());
-           * }
-           ***/
+          /*
+          if (indexCommitPoint != null) {
+            core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getGeneration());
+          }
+          if(oldCommitPoint != null){
+            core.getDeletionPolicy().releaseCommitPointAndExtendReserve(oldCommitPoint.getGeneration());
+          }
+          */
         }
         if (snapshoot) {
           try {
