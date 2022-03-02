@@ -225,8 +225,8 @@ public class AddUpdateCommand extends UpdateCommand {
         addVersionField(sdoc, versionSif);
       }
       // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is
-      // being forwarded to replicas)
-      // then we could add this field to the generated lucene document instead.
+      // being forwarded to replicas) then we could add this field to the generated lucene document
+      // instead.
     }
 
     return () ->

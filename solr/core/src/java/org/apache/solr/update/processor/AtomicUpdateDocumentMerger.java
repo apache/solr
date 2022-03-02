@@ -355,9 +355,8 @@ public class AtomicUpdateDocumentMerger {
       if (fieldValues.size() < subSif.getValueCount()) return false;
       Collection<Object> partialFieldValues = subSif.getValues();
       // filter all derived child docs from partial field values since they fail List#containsAll
-      // check (uses SolrInputDocument#equals which fails).
-      // If a child doc exists in partialDoc but not in full doc, it will not be filtered, and
-      // therefore List#containsAll will return false
+      // check (uses SolrInputDocument#equals which fails). If a child doc exists in partialDoc but
+      // not in full doc, it will not be filtered, and therefore List#containsAll will return false
       Stream<Object> nonChildDocElements =
           partialFieldValues.stream()
               .filter(
@@ -417,11 +416,9 @@ public class AtomicUpdateDocumentMerger {
     Long oldVersion = (Long) oldDocument.remove(CommonParams.VERSION_FIELD).getValue();
 
     // If the oldDocument contains any other field apart from updatedFields (or id/version field),
-    // then remove them.
-    // This can happen, despite requesting for these fields in the call to RTGC.getInputDocument, if
-    // the document was
-    // fetched from the tlog and had all these fields (possibly because it was a full document ADD
-    // operation).
+    // then remove them. This can happen, despite requesting for these fields in the call to
+    // RTGC.getInputDocument, if the document was fetched from the tlog and had all these fields
+    // (possibly because it was a full document ADD operation).
     if (updatedFields != null) {
       Collection<String> names = new HashSet<>(oldDocument.getFieldNames());
       for (String fieldName : names) {
@@ -435,15 +432,11 @@ public class AtomicUpdateDocumentMerger {
     // Copy over all supported DVs from oldDocument to partialDoc
     //
     // Assuming multiple updates to the same doc: field 'dv1' in one update, then field 'dv2' in a
-    // second
-    // update, and then again 'dv1' in a third update (without commits in between), the last update
-    // would
-    // fetch from the tlog the partial doc for the 2nd (dv2) update. If that doc doesn't copy over
-    // the
-    // previous updates to dv1 as well, then a full resolution (by following previous pointers)
-    // would
-    // need to be done to calculate the dv1 value -- so instead copy all the potentially affected DV
-    // fields.
+    // second update, and then again 'dv1' in a third update (without commits in between), the last
+    // update would fetch from the tlog the partial doc for the 2nd (dv2) update. If that doc
+    // doesn't copy over the previous updates to dv1 as well, then a full resolution (by following
+    // previous pointers) would need to be done to calculate the dv1 value -- so instead copy all
+    // the potentially affected DV fields.
     SolrInputDocument partialDoc = new SolrInputDocument();
     String uniqueKeyField = schema.getUniqueKeyField().getName();
     for (String fieldName : oldDocument.getFieldNames()) {

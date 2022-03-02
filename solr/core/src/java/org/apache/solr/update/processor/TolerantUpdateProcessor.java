@@ -169,12 +169,10 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
               t.getMessage());
       knownErrors.add(err);
 
-      // NOTE: we're not using this to dedup before adding to knownErrors.
-      // if we're lucky enough to get an immediate local failure (ie: we're a leader, or some other
-      // processor
-      // failed) then recording the multiple failures is a good thing -- helps us with an accurate
-      // fail
-      // fast if we exceed maxErrors
+      // NOTE: we're not using this to dedup before adding to knownErrors. if we're lucky enough to
+      // get an immediate local failure (ie: we're a leader, or some other processor failed) then
+      // recording the multiple failures is a good thing -- helps us with an accurate fail fast if
+      // we exceed maxErrors
       if (CmdType.DELQ.equals(err.getType())) {
         knownDBQErrors.add(err);
       }
@@ -226,8 +224,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
 
     // even if processAdd threw an error, this.finish() is still called and we might have additional
     // errors from other remote leaders that we need to check for from the finish method of
-    // downstream processors
-    // (like DUP)
+    // downstream processors (like DUP)
 
     try {
       super.finish();
@@ -237,12 +234,10 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
       // adjust our stats based on each of the distributed errors
       for (Error error : duae.errors) {
         // we can't trust the req info from the Error, because multiple original requests might have
-        // been
-        // lumped together
+        // been lumped together
         //
         // instead we trust the metadata that the TolerantUpdateProcessor running on the remote node
-        // added
-        // to the exception when it failed.
+        // added to the exception when it failed.
         if (!(error.e instanceof SolrException)) {
           log.error("async update exception is not SolrException, no metadata to process", error.e);
           continue;
@@ -290,10 +285,8 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
 
     if ((DistribPhase.TOLEADER.equals(distribPhase) ? 0 : maxErrors) < knownErrors.size()) {
       // NOTE: even if maxErrors wasn't exceeded, we need to throw an error when we have any errors
-      // if we're
-      // a leader that was forwarded to by another node so that the forwarding node knows we
-      // encountered some
-      // problems and can aggregate the results
+      // if we're a leader that was forwarded to by another node so that the forwarding node knows
+      // we encountered some problems and can aggregate the results
 
       firstErrTracker.throwFirst();
     }
@@ -383,8 +376,8 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
         first.setMetadata(firstErrMetadata);
       } else {
         // any existing metadata representing ToleratedUpdateErrors in this single exception needs
-        // removed
-        // so we can add *all* of the known ToleratedUpdateErrors (from this and other exceptions)
+        // removed. so we can add *all* of the known ToleratedUpdateErrors (from this and other
+        // exceptions)
         for (int i = 0; i < firstErrMetadata.size(); i++) {
           if (null
               != ToleratedUpdateError.parseMetadataIfToleratedUpdateError(

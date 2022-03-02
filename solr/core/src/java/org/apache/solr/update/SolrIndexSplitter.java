@@ -105,8 +105,8 @@ public class SolrIndexSplitter {
   final SplitIndexCommand cmd;
   final SolrIndexSearcher searcher;
   final SchemaField field;
-  final DocRouter.Range[]
-      rangesArr; // same as ranges list, but an array for extra speed in inner loops
+  // same as ranges list, but an array for extra speed in inner loops
+  final DocRouter.Range[] rangesArr;
   final HashBasedRouter hashRouter;
   final int numPieces;
   final String splitKey;
@@ -336,9 +336,8 @@ public class SolrIndexSplitter {
           t = timings.sub("deleteDocuments");
           t.resume();
           // apply deletions specific to this partition. As a side-effect on the first call this
-          // also populates
-          // a cache of docsets to delete per leaf reader per partition, which is reused for
-          // subsequent partitions.
+          // also populates a cache of docsets to delete per leaf reader per partition, which is
+          // reused for subsequent partitions.
           iw.deleteDocuments(
               new SplittingQuery(
                   partitionNumber,
@@ -717,9 +716,8 @@ public class SolrIndexSplitter {
           currentPartition.set((currentPartition.get() + 1) % numPieces);
         } else {
           int matchingRangesCount = 0;
-          for (int i = 0;
-              i < rangesArr.length;
-              i++) { // inner-loop: use array here for extra speed.
+          // inner-loop: use array here for extra speed.
+          for (int i = 0; i < rangesArr.length; i++) {
             if (rangesArr[i].includes(hash)) {
               if (delete) {
                 docSets[i].clear(doc);

@@ -294,10 +294,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       }
     }
 
-    // Leader will compute its fingerprint, then retrieve its recent updates versions.
-    // There are a case that some updates (gap) get into recent versions but do not exist in index
-    // (fingerprint).
-    // If the gap do not contains DBQ or DBI, it is safe to use
+    // Leader will compute its fingerprint, then retrieve its recent updates versions. There are a
+    // case that some updates (gap) get into recent versions but do not exist in index
+    // (fingerprint). If the gap do not contains DBQ or DBI, it is safe to use
     // leaderFingerprint.maxVersionEncountered as a cut point.
     // TODO leader should do fingerprint and retrieve recent updates version in atomic
     if (leaderFingerprint != null) {

@@ -74,8 +74,7 @@ public class LongSet {
     // Many values will only have significant bits just to the right of that.
 
     // For now, lets just settle to get first 8 significant mantissa bits of double or float in the
-    // lowest bits of our hash
-    // The upper bits of our hash will be irrelevant.
+    // lowest bits of our hash. The upper bits of our hash will be irrelevant.
     int h = (int) (val + (val >>> 44) + (val >>> 15));
     for (int slot = h & mask; ; slot = (slot + 1) & mask) {
       long v = vals[slot];

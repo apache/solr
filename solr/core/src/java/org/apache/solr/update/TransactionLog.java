@@ -71,14 +71,14 @@ public class TransactionLog implements Closeable {
   Path tlog;
   FileChannel channel;
   OutputStream os;
-  protected FastOutputStream
-      fos; // all accesses to this stream should be synchronized on "this" (The TransactionLog)
+  // all accesses to this stream should be synchronized on "this" (The TransactionLog)
+  protected FastOutputStream fos;
   int numRecords;
   public boolean isBuffer;
 
-  protected volatile boolean deleteOnClose =
-      true; // we can delete old tlogs since they are currently only used for real-time-get (and in
-  // the future, recovery)
+  // we can delete old tlogs since they are currently only used for real-time-get (and in the
+  // future, recovery)
+  protected volatile boolean deleteOnClose = true;
 
   protected AtomicInteger refcount = new AtomicInteger(1);
   protected Map<String, Integer> globalStringMap = new HashMap<>();
@@ -829,9 +829,10 @@ public class TransactionLog implements Closeable {
           }
         };
 
-    int nextLength; // length of the next record (the next one closer to the start of the log file)
-    long prevPos; // where we started reading from last time (so prevPos - nextLength == start of
-    // next record)
+    // length of the next record (the next one closer to the start of the log file)
+    int nextLength;
+    // where we started reading from last time (so prevPos - nextLength == start of next record)
+    long prevPos;
 
     public FSReverseReader() throws IOException {
       incref();
@@ -877,24 +878,22 @@ public class TransactionLog implements Closeable {
         // Position buffer so that this record is at the end.
         // For small records, this will cause subsequent calls to next() to be within the buffer.
         long seekPos = endOfThisRecord - fis.getBufferSize();
-        seekPos =
-            Math.min(
-                seekPos,
-                prevPos); // seek to the start of the record if it's larger then the block size.
+        // seek to the start of the record if it's larger then the block size.
+        seekPos = Math.min(seekPos, prevPos);
         seekPos = Math.max(seekPos, 0);
         fis.seek(seekPos);
         fis.peek(); // cause buffer to be filled
       }
 
       fis.seek(prevPos);
-      nextLength =
-          fis.readInt(); // this is the length of the *next* record (i.e. closer to the beginning)
+      // this is the length of the *next* record (i.e. closer to the beginning)
+      nextLength = fis.readInt();
 
       // TODO: optionally skip document data
       Object o = codec.readVal(fis);
 
-      // assert fis.position() == prevPos + 4 + thisLength;  // this is only true if we read all the
-      // data (and we currently skip reading SolrInputDocument
+      // this is only true if we read all the data (and we currently skip reading SolrInputDocument)
+      // assert fis.position() == prevPos + 4 + thisLength;
 
       return o;
     }

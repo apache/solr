@@ -64,8 +64,8 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   private final SolrCore core;
   private final NamedList<Object> tombstoneConfig;
 
-  private final DistributedUpdateProcessor
-      distribProc; // the distributed update processor following us
+  // the distributed update processor following us
+  private final DistributedUpdateProcessor distribProc;
   private final DistributedUpdateProcessor.DistribPhase phase;
   private final boolean useFieldCache;
 
@@ -427,9 +427,8 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       }
 
       try {
-        cmd.setVersion(
-            oldSolrVersion); // use optimistic concurrency to ensure that the doc has not changed in
-        // the meantime
+        // use optimistic concurrency to ensure that the doc has not changed in the meantime
+        cmd.setVersion(oldSolrVersion);
         super.processAdd(cmd);
         return;
       } catch (SolrException e) {
@@ -511,9 +510,8 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
         newCmd.solrDoc = newDoc;
         newCmd.commitWithin = cmd.commitWithin;
 
-        newCmd.setVersion(
-            oldSolrVersion); // use optimistic concurrency to ensure that the doc has not changed in
-        // the meantime
+        // use optimistic concurrency to ensure that the doc has not changed in the meantime
+        newCmd.setVersion(oldSolrVersion);
         super.processAdd(newCmd);
         return;
       } catch (SolrException e) {

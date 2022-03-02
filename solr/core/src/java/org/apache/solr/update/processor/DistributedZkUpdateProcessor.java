@@ -88,10 +88,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   // The cached immutable clusterState for the update... usually refreshed for each individual
   // update.
   // Different parts of this class used to request current clusterState views, which lead to subtle
-  // bugs and race conditions
-  // such as SOLR-13815 (live split data loss.)  Most likely, the only valid reasons for updating
-  // clusterState should be on
-  // certain types of failure + retry.
+  // bugs and race conditions such as SOLR-13815 (live split data loss.)  Most likely, the only
+  // valid reasons for updating clusterState should be on certain types of failure + retry.
   // Note: there may be other races related to
   //   1) cluster topology change across multiple adds
   //   2) use of methods directly on zkController that use a different clusterState
@@ -228,9 +226,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (isLeader) {
         if (issuedDistribCommit) {
           // defensive copy of params, which was passed into distribCommit(...) above; will
-          // unconditionally replace
-          // DISTRIB_UPDATE_PARAM, COMMIT_END_POINT, and DISTRIB_FROM if the new `params` val will
-          // actually be used
+          // unconditionally replace DISTRIB_UPDATE_PARAM, COMMIT_END_POINT, and DISTRIB_FROM if the
+          // new `params` val will actually be used
           params = new ModifiableSolrParams(params);
         }
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -254,16 +251,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       }
       if (issuedDistribCommit) {
         // TODO: according to discussion on SOLR-15045, this call (and all tracking of
-        // `issuedDistribCommit`) may
-        //  well be superfluous, and can probably simply be removed. It is left in place for now,
-        // intentionally
-        //  punting on the question of whether this internal `blockAndDoRetries()` is necessary. At
-        // worst, its
-        //  presence is misleading; but it should be harmless, and allows the change fixing
-        // SOLR-15045 to be as
-        //  tightly scoped as possible, leaving the behavior of the code otherwise functionally
-        // equivalent (for
-        //  better or worse!)
+        // `issuedDistribCommit`) may well be superfluous, and can probably simply be removed. It is
+        // left in place for now, intentionally punting on the question of whether this internal
+        // `blockAndDoRetries()` is necessary. At worst, its presence is misleading; but it should
+        // be harmless, and allows the change fixing SOLR-15045 to be as tightly scoped as possible,
+        // leaving the behavior of the code otherwise functionally equivalent (for better or worse!)
         cmdDistrib.blockAndDoRetries();
       }
     }
@@ -282,8 +274,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     setupRequest(cmd);
 
     // check if client has requested minimum replication factor information. will set
-    // replicationTracker to null if
-    // we aren't the leader or subShardLeader
+    // replicationTracker to null if we aren't the leader or subShardLeader
     checkReplicationTracker(cmd);
 
     super.processAdd(cmd);
@@ -379,8 +370,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
 
     // check if client has requested minimum replication factor information. will set
-    // replicationTracker to null if
-    // we aren't the leader or subShardLeader
+    // replicationTracker to null if we aren't the leader or subShardLeader
     checkReplicationTracker(cmd);
 
     super.doDeleteById(cmd);
@@ -474,8 +464,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
 
     // check if client has requested minimum replication factor information. will set
-    // replicationTracker to null if
-    // we aren't the leader or subShardLeader
+    // replicationTracker to null if we aren't the leader or subShardLeader
     checkReplicationTracker(cmd);
     super.doDeleteByQuery(cmd, replicas, coll);
   }
@@ -674,10 +663,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   private String getLeaderUrlZk(String id) {
     // An update we're dependent upon didn't arrive! This is unexpected. Perhaps likely our leader
-    // is
-    // down or partitioned from us for some reason. Lets force refresh cluster state, and request
-    // the
-    // leader for the update.
+    // is down or partitioned from us for some reason. Lets force refresh cluster state, and request
+    // the leader for the update.
     if (zkController == null) { // we should be in cloud mode, but wtf? could be a unit test
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
@@ -727,9 +714,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     assert TestInjection.injectUpdateRandomPause();
 
     if ((updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0) {
-      isLeader =
-          false; // we actually might be the leader, but we don't want leader-logic for these types
-      // of updates anyway.
+      // we actually might be the leader, but we don't want leader-logic for these types of updates
+      // anyway.
+      isLeader = false;
       forwardToLeader = false;
       return null;
     }
@@ -740,8 +727,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     if (slice == null) {
       // No slice found.  Most strict routers will have already thrown an exception, so a null
-      // return is
-      // a signal to use the slice of this core.
+      // return is a signal to use the slice of this core.
       // TODO: what if this core is not in the targeted collection?
       String shardId = cloudDesc.getShardId();
       slice = coll.getSlice(shardId);
@@ -768,9 +754,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
         assert TestInjection.injectFailReplicaRequests();
 
-        isLeader =
-            false; // we actually might be the leader, but we don't want leader-logic for these
-        // types of updates anyway.
+        // we actually might be the leader, but we don't want leader-logic for these types of
+        // updates anyway.
+        isLeader = false;
         forwardToLeader = false;
         return null;
       }
@@ -889,15 +875,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     SolrParams rp = cmd.getReq().getParams();
     String distribUpdate = rp.get(DISTRIB_UPDATE_PARAM);
     // Ok,we're receiving the original request, we need a rollup tracker, but only one so we
-    // accumulate over the
-    // course of a batch.
+    // accumulate over the course of a batch.
     if ((distribUpdate == null || DistribPhase.NONE.toString().equals(distribUpdate))
         && rollupReplicationTracker == null) {
       rollupReplicationTracker = new RollupRequestReplicationTracker();
     }
     // If we're a leader, we need a leader replication tracker, so let's do that. If there are
-    // multiple docs in
-    // a batch we need to use the _same_ leader replication tracker.
+    // multiple docs in a batch we need to use the _same_ leader replication tracker.
     if (isLeader && leaderReplicationTracker == null) {
       leaderReplicationTracker =
           new LeaderRequestReplicationTracker(
@@ -1308,8 +1292,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         continue; // don't have non-leaders try to recovery other nodes
 
       // commits are special -- they can run on any node irrespective of whether it is a leader or
-      // not
-      // we don't want to run recovery on a node which missed a commit command
+      // not we don't want to run recovery on a node which missed a commit command
       if (error.req.uReq.getParams().get(COMMIT_END_POINT) != null) continue;
 
       final String replicaUrl = error.req.node.getUrl();

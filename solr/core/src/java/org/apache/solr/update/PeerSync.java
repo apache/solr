@@ -195,9 +195,8 @@ public class PeerSync implements SolrMetricProducer {
 
       // Fire off the requests before getting our own recent updates (for better concurrency)
       // This also allows us to avoid getting updates we don't need... if we got our updates and
-      // then got their updates,
-      // they would
-      // have newer stuff that we also had (assuming updates are going on and are being forwarded).
+      // then got their updates, they would have newer stuff that we also had (assuming updates are
+      // going on and are being forwarded).
       for (String replica : replicas) {
         requestVersions(replica);
       }
@@ -405,8 +404,7 @@ public class PeerSync implements SolrMetricProducer {
       }
 
       // TODO: we should return the above information so that when we can request a recovery through
-      // zookeeper, we do
-      // that for these nodes
+      // zookeeper, we do that for these nodes
 
       // TODO: at least log???
       // srsp.getException().printStackTrace(System.out);
@@ -777,8 +775,7 @@ public class PeerSync implements SolrMetricProducer {
         List<Long> ourUpdates,
         long ourLowThreshold) {
       // we may endup asking for updates for too many versions, causing 2MB post payload limit.
-      // Construct a range of
-      // versions to request instead of asking individual versions
+      // Construct a range of versions to request instead of asking individual versions
       List<String> rangesToRequest = new ArrayList<>();
 
       // construct ranges to request

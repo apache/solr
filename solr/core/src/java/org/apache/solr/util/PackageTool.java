@@ -283,8 +283,9 @@ public class PackageTool extends SolrCLI.ToolBase {
       log.info("Finished: {}", cmd);
 
     } catch (Exception ex) {
-      ex.printStackTrace(); // We need to print this since SolrCLI drops the stack trace in favour
+      // We need to print this since SolrCLI drops the stack trace in favour
       // of brevity. Package tool should surely print full stacktraces!
+      ex.printStackTrace();
       throw ex;
     }
   }

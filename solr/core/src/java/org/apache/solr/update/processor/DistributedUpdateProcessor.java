@@ -305,8 +305,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     // This is only the hash for the bucket, and must be based only on the uniqueKey (i.e. do not
-    // use a pluggable hash
-    // here)
+    // use a pluggable hash here)
     int bucketHash = bucketHash(idBytes);
 
     // at this point, there is an update we need to try and apply.
@@ -338,8 +337,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     long dependentVersionFound = -1;
     // if this is an in-place update, check and wait if we should be waiting for a previous update
-    // (on which
-    // this update depends), before entering the synchronized block
+    // (on which this update depends), before entering the synchronized block
     if (!leaderLogic && cmd.isInPlaceUpdate()) {
       dependentVersionFound =
           waitForDependentUpdates(cmd, versionOnUpdate, isReplayOrPeersync, bucket);
@@ -428,8 +426,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 || (versionOnUpdate < 0 && foundVersion < 0)
                 || (versionOnUpdate == 1 && foundVersion > 0)) {
               // we're ok if versions match, or if both are negative (all missing docs are equal),
-              // or if cmd
-              // specified it must exist (versionOnUpdate==1) and it does.
+              // or if cmd specified it must exist (versionOnUpdate==1) and it does.
             } else {
               if (cmd.getReq().getParams().getBool(CommonParams.FAIL_ON_VERSION_CONFLICTS, true)
                   == false) {
@@ -467,13 +464,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
             if (lastVersion == null || Math.abs(lastVersion) < prev) {
               // this was checked for (in waitForDependentUpdates()) before entering the
-              // synchronized block.
-              // So we shouldn't be here, unless what must've happened is:
-              // by the time synchronization block was entered, the prev update was deleted by DBQ.
-              // Since
-              // now that update is not in index, the vinfo.lookupVersion() is possibly giving us a
-              // version
-              // from the deleted list (which might be older than the prev update!)
+              // synchronized block. So we shouldn't be here, unless what must've happened is: by
+              // the time synchronization block was entered, the prev update was deleted by DBQ.
+              // Since now that update is not in index, the vinfo.lookupVersion() is possibly giving
+              // us a version from the deleted list (which might be older than the prev update!)
               UpdateCommand fetchedFromLeader = fetchFullUpdateFromLeader(cmd, versionOnUpdate);
 
               if (fetchedFromLeader instanceof DeleteUpdateCommand) {
@@ -487,8 +481,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               } else {
                 assert fetchedFromLeader instanceof AddUpdateCommand;
                 // Newer document was fetched from the leader. Apply that document instead of this
-                // current in-place
-                // update.
+                // current in-place update.
                 if (log.isInfoEnabled()) {
                   log.info(
                       "In-place update of {} failed to find valid lastVersion to apply to, forced to fetch full doc from leader: {}",
@@ -496,8 +489,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                       fetchedFromLeader);
                 }
                 // Make this update to become a non-inplace update containing the full document
-                // obtained from the
-                // leader
+                // obtained from the leader
                 cmd.solrDoc = ((AddUpdateCommand) fetchedFromLeader).solrDoc;
                 cmd.prevVersion = -1;
                 cmd.setVersion((long) cmd.solrDoc.getFieldValue(CommonParams.VERSION_FIELD));
@@ -506,8 +498,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             } else {
               if (lastVersion != null && Math.abs(lastVersion) > prev) {
                 // this means we got a newer full doc update and in that case it makes no sense to
-                // apply the older
-                // inplace update. Drop this update
+                // apply the older inplace update. Drop this update
                 log.info(
                     "Update was applied on version: {}, but last version I have is: {}. Dropping current update",
                     prev,
@@ -612,10 +603,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (Math.abs(lastFoundVersion) > cmd.prevVersion) {
       // This must've been the case due to a higher version full update succeeding concurrently,
-      // while we were waiting or
-      // trying to index this partial update. Since a full update more recent than this partial
-      // update has succeeded,
-      // we can drop the current update.
+      // while we were waiting or trying to index this partial update. Since a full update more
+      // recent than this partial update has succeeded, we can drop the current update.
       if (log.isDebugEnabled()) {
         log.debug(
             "Update was applied on version: {}, but last version I have is: {} . Current update should be dropped. id={}",
@@ -840,12 +829,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   // Implementing min_rf here was a bit tricky. When a request comes in for a delete by id to a
-  // replica that does _not_
-  // have any documents specified by those IDs, the request is not forwarded to any other replicas
-  // on that shard. Thus
-  // we have to spoof the replicationTracker and set the achieved rf to the number of active
-  // replicas.
-  //
+  // replica that does _not_ have any documents specified by those IDs, the request is not forwarded
+  // to any other replicas on that shard. Thus we have to spoof the replicationTracker and set the
+  // achieved rf to the number of active replicas.
   protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
 
     setupRequest(cmd);
@@ -871,10 +857,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
       if (scratch == null) scratch = new CharsRefBuilder();
       idField.getType().indexedToReadable(cmd.getIndexedId(), scratch);
-      deleteResponse.add(
-          scratch.toString(),
-          cmd.getVersion()); // we're returning the version of the delete.. not the version of the
-      // doc we deleted.
+      // we're returning the version of the delete.. not the version of the doc we deleted.
+      deleteResponse.add(scratch.toString(), cmd.getVersion());
     }
   }
 
@@ -992,8 +976,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       // since we don't know which documents were deleted, the easiest thing to do is to invalidate
       // all real-time caches (i.e. UpdateLog) which involves also getting a new version of the
-      // IndexReader
-      // (so cache misses will see up-to-date data)
+      // IndexReader (so cache misses will see up-to-date data)
 
     } finally {
       vinfo.unblockUpdates();
@@ -1068,8 +1051,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     // This is only the hash for the bucket, and must be based only on the uniqueKey (i.e. do not
-    // use a pluggable hash
-    // here)
+    // use a pluggable hash here)
     int bucketHash = bucketHash(idBytes);
 
     // at this point, there is an update we need to try and apply.
@@ -1160,8 +1142,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 || (signedVersionOnUpdate < 0 && foundVersion < 0)
                 || (signedVersionOnUpdate == 1 && foundVersion > 0)) {
               // we're ok if versions match, or if both are negative (all missing docs are equal),
-              // or if cmd
-              // specified it must exist (versionOnUpdate==1) and it does.
+              // or if cmd specified it must exist (versionOnUpdate==1) and it does.
             } else {
               throw new SolrException(
                   ErrorCode.CONFLICT,
@@ -1352,42 +1333,34 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  //    Keeps track of the replication factor achieved for a distributed update request
-  //    originated in this distributed update processor. A RollupReplicationTracker is the only
-  // tracker that will
-  //    persist across sub-requests.
+  // Keeps track of the replication factor achieved for a distributed update request originated in
+  // this distributed update processor. A RollupReplicationTracker is the only tracker that will
+  // persist across sub-requests.
   //
-  //   Note that the replica that receives the original request has the only
-  // RollupReplicationTracker that exists for the
-  //   lifetime of the batch. The leader for each shard keeps track of its own achieved replication
-  // for its shard
-  //   and attaches that to the response to the originating node (i.e. the one with the
-  // RollupReplicationTracker).
-  //   Followers in general do not need a tracker of any sort with the sole exception of the
-  // RollupReplicationTracker
-  //   allocated on the original node that receives the top-level request.
+  // Note that the replica that receives the original request has the only RollupReplicationTracker
+  // that exists for the lifetime of the batch. The leader for each shard keeps track of its own
+  // achieved replication for its shard and attaches that to the response to the originating node
+  // (i.e. the one with the RollupReplicationTracker). Followers in general do not need a tracker of
+  // any sort with the sole exception of the RollupReplicationTracker allocated on the original node
+  // that receives the top-level request.
   //
-  //   DeleteById is tricky. Since the docs are sent one at a time, there has to be some fancy
-  // dancing. In the
-  //   deleteById case, here are the rules:
+  // DeleteById is tricky. Since the docs are sent one at a time, there has to be some fancy
+  // dancing. In the deleteById case, here are the rules:
   //
   //   If I'm leader, there are two possibilities:
   //     1> I got the original request. This is the hard one. There are two sub-cases:
   //     a> Some document in the request is deleted from the shard I lead. In this case my computed
-  // replication
-  //        factor counts.
+  // replication factor counts.
   //     b> No document in the packet is deleted from my shard. In that case I have nothing to say
-  // about the
-  //        achieved replication factor.
+  // about the achieved replication factor.
   //
   //     2> I'm a leader and I got the request from some other replica. In this case I can be
   // certain of a couple of things:
   //       a> The document in the request will be deleted from my shard
   //       b> my replication factor counts.
   //
-  //   Even the DeleteById case follows the rules for whether a RollupReplicaitonTracker is
-  // allocated.
-  //   This doesn't matter when it comes to delete-by-query since all leaders get the sub-request.
+  // Even the DeleteById case follows the rules for whether a RollupReplicaitonTracker is allocated.
+  // This doesn't matter when it comes to delete-by-query since all leaders get the sub-request.
 
   public static class RollupRequestReplicationTracker {
 
@@ -1411,22 +1384,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  // Allocate a LeaderRequestReplicatinTracker if (and only if) we're a leader. If the request comes
-  // in to the leader
-  // at first, allocate both one of these and a RollupRequestReplicationTracker.
+  // Allocate a LeaderRequestReplicationTracker if (and only if) we're a leader. If the request
+  // comes in to the leader at first, allocate both one of these and a
+  // RollupRequestReplicationTracker.
   //
   // Since these are leader-only, all they really have to do is track the individual update request
-  // for this shard
-  // and return it to be added to the rollup tracker. Which is kind of simple since we get an
-  // onSuccess method in
-  // SolrCmdDistributor
+  // for this shard and return it to be added to the rollup tracker. Which is kind of simple since
+  // we get an onSuccess method in SolrCmdDistributor
 
   public static class LeaderRequestReplicationTracker {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     // Since we only allocate one of these on the leader and, by definition, the leader has been
-    // found and is running,
-    // we have a replication factor of one by default.
+    // found and is running, we have a replication factor of one by default.
     private int achievedRf = 1;
 
     private final String myShardId;

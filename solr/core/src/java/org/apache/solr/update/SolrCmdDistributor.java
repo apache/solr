@@ -440,24 +440,20 @@ public class SolrCmdDistributor implements Closeable {
 
     // Called whenever we get results back from a sub-request.
     // The only ambiguity is if I have _both_ a rollup tracker and a leader tracker. In that case we
-    // need to handle
-    // both requests returning from leaders of other shards _and_ from my followers. This happens if
-    // a leader happens
-    // to be the aggregator too.
+    // need to handle both requests returning from leaders of other shards _and_ from my followers.
+    // This happens if a leader happens to be the aggregator too.
     //
     // This isn't really a problem because only responses _from_ some leader will have the "rf"
-    // parameter, in which case
-    // we need to add the data to the rollup tracker.
+    // parameter, in which case we need to add the data to the rollup tracker.
     //
     // In the case of a leaderTracker and rollupTracker both being present, then we need to take
-    // care when assembling
-    // the final response to check both the rollup and leader trackers on the aggregator node.
+    // care when assembling the final response to check both the rollup and leader trackers on the
+    // aggregator node.
     public void trackRequestResult(
         org.eclipse.jetty.client.api.Response resp, InputStream respBody, boolean success) {
 
       // Returning Integer.MAX_VALUE here means there was no "rf" on the response, therefore we just
-      // need to increment
-      // our achieved rf if we are a leader, i.e. have a leaderTracker.
+      // need to increment our achieved rf if we are a leader, i.e. have a leaderTracker.
       int rfFromResp = getRfFromResponse(respBody);
 
       if (leaderTracker != null && rfFromResp == Integer.MAX_VALUE) {

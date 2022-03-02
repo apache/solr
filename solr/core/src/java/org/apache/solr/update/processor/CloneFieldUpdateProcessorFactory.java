@@ -227,16 +227,14 @@ public class CloneFieldUpdateProcessorFactory extends UpdateRequestProcessorFact
    */
   private void initSimpleRegexReplacement(NamedList<?> args) {
     // The syntactic sugar for the case where there is only one regex pattern for source and the
-    // same pattern
-    // is used for the destination pattern...
+    // same pattern is used for the destination pattern...
     //
     //  pattern != null && replacement != null
     //
     // ...as top level elements, with no other config options specified
 
     // if we got here we know we had pattern and replacement, now check for the other two  so that
-    // we can give a better
-    // message than "unexpected"
+    // we can give a better message than "unexpected"
     if (0 <= args.indexOf(SOURCE_PARAM, 0) || 0 <= args.indexOf(DEST_PARAM, 0)) {
       throw new SolrException(
           SERVER_ERROR,
@@ -316,8 +314,7 @@ public class CloneFieldUpdateProcessorFactory extends UpdateRequestProcessorFact
     //   source != null && dest != null
 
     // if we got here we know we had source and dest, now check for the other two so that we can
-    // give a better
-    // message than "unexpected"
+    // give a better message than "unexpected"
     if (0 <= args.indexOf(PATTERN_PARAM, 0) || 0 <= args.indexOf(REPLACEMENT_PARAM, 0)) {
       throw new SolrException(
           SERVER_ERROR,

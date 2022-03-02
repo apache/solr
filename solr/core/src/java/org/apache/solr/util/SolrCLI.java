@@ -3361,8 +3361,7 @@ public class SolrCLI implements CLIO {
       if (isWindows) {
         // On Windows, the execution doesn't return, so we have to execute async
         // and when calling the script, it seems to be inheriting the environment that launched this
-        // app
-        // so we have to prune out env vars that may cause issues
+        // app so we have to prune out env vars that may cause issues
         Map<String, String> startEnv = new HashMap<>();
         Map<String, String> procEnv = EnvironmentUtils.getProcEnvironment();
         if (procEnv != null) {

@@ -90,8 +90,7 @@ public class FileUtils {
   // _even if it's a symlink to a directory_.
   //
   // oddly, if the path to be created just contains a symlink in intermediate levels,
-  // Files.createDirectories
-  // works just fine.
+  // Files.createDirectories works just fine.
   //
   // This works around that issue
   public static Path createDirectories(Path path) throws IOException {

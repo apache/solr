@@ -545,8 +545,8 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         // older SolrJ versions can send null values causing an NPE
         assert fieldName != null;
         if (fieldName != null) {
-          if (selector.shouldMutate(
-              fieldName)) { // returns false if the field already exists in the current schema
+          if (selector.shouldMutate(fieldName)) {
+            // returns false if the field already exists in the current schema
             List<SolrInputField> solrInputFields = unknownFields.get(fieldName);
             if (null == solrInputFields) {
               solrInputFields = new ArrayList<>();

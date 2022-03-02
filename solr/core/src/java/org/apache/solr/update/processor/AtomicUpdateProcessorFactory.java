@@ -174,15 +174,12 @@ public class AtomicUpdateProcessorFactory extends UpdateRequestProcessorFactory
           lastVersion = lastVersion == null ? -1 : lastVersion;
 
           // The AtomicUpdateDocumentMerger modifies the AddUpdateCommand.solrDoc to populate the
-          // real values of the
-          // modified fields. We don't want those absolute values because they are out-of-date due
-          // to the conflict
-          // so we restore the original document created in processAdd method and set the right
-          // version on it
+          // real values of the modified fields. We don't want those absolute values because they
+          // are out-of-date due to the conflict so we restore the original document created in
+          // processAdd method and set the right version on it
           cmd.solrDoc = clonedOriginalDoc;
-          clonedOriginalDoc =
-              clonedOriginalDoc
-                  .deepCopy(); // copy again because the old cloned ref will be modified during
+          // copy again because the old cloned ref will be modified during
+          clonedOriginalDoc = clonedOriginalDoc.deepCopy();
           // processAdd
           cmd.solrDoc.setField(VERSION, lastVersion);
 

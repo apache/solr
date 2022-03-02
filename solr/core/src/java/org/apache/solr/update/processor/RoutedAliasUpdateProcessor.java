@@ -73,8 +73,8 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
   // make sure we don't request collection properties any more frequently than once a minute during
   // slow continuous indexing, and even less frequently during bulk indexing. (cache is updated by
-  // zk
-  // watch instead of re-requested until indexing has been stopped for the duration specified here)
+  // zk watch instead of re-requested until indexing has been stopped for the duration specified
+  // here)
   public static final int CACHE_FOR_MILLIS = 60000;
 
   // refs to std infrastructure

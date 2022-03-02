@@ -198,26 +198,26 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected TransactionLog tlog;
   protected TransactionLog prevTlog;
   protected TransactionLog prevTlogOnPrecommit;
-  protected final Deque<TransactionLog> logs =
-      new LinkedList<>(); // list of recent logs, newest first
+  // list of recent logs, newest first
+  protected final Deque<TransactionLog> logs = new LinkedList<>();
   protected LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
   protected int numOldRecords; // number of records in the recent logs
 
   protected Map<BytesRef, LogPtr> map = new HashMap<>();
   protected Map<BytesRef, LogPtr> prevMap; // used while committing/reopening is happening
   protected Map<BytesRef, LogPtr> prevMap2; // used while committing/reopening is happening
-  protected TransactionLog
-      prevMapLog; // the transaction log used to look up entries found in prevMap
-  protected TransactionLog
-      prevMapLog2; // the transaction log used to look up entries found in prevMap2
+  // the transaction log used to look up entries found in prevMap
+  protected TransactionLog prevMapLog;
+  // the transaction log used to look up entries found in prevMap2
+  protected TransactionLog prevMapLog2;
 
   protected final int numDeletesToKeep = 1000;
   protected final int numDeletesByQueryToKeep = 100;
   protected int numRecordsToKeep;
   protected int maxNumLogsToKeep;
-  protected int
-      numVersionBuckets; // This should only be used to initialize VersionInfo... the actual number
-  // of buckets may be rounded up to a power of two.
+  // This should only be used to initialize VersionInfo... the actual number of buckets may be
+  // rounded up to a power of two.
+  protected int numVersionBuckets;
   protected Long maxVersionFromIndex = null;
   protected boolean existOldBufferLog = false;
 
@@ -243,8 +243,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   protected LinkedList<DBQ> deleteByQueries = new LinkedList<>();
 
-  protected String[]
-      tlogFiles; // Needs to be String because hdfs.Path is incompatible with nio.Path
+  // Needs to be String because hdfs.Path is incompatible with nio.Path
+  protected String[] tlogFiles;
   protected Path tlogDir;
   protected Collection<String> globalStrings;
 
@@ -269,9 +269,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public static class LogPtr {
     final long pointer;
     final long version;
-    final long
-        previousPointer; // used for entries that are in-place updates and need a pointer to a
-    // previous update command
+    // used for entries that are in-place updates and need a pointer to a previous update command
+    final long previousPointer;
 
     /**
      * Creates an object that contains the position and version of an update. In this constructor,
@@ -417,8 +416,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           bufferedTLogs.anyMatch(path -> path.getFileName().toString().startsWith(prefix));
     } catch (IOException e) {
       // Existance of buffered t-logs indicates previous recovery failed and lets us skip peer sync
-      // as an optimization
-      // Failing to read them is non-fatal and almost not even worth logging about
+      // as an optimization. Failing to read them is non-fatal and almost not even worth logging
+      // about
       log.debug(
           "Could not read {} directory searching for buffered transaction log files.", tlogDir, e);
       existOldBufferLog = false;
@@ -428,8 +427,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       Path path = tlogDir.resolve(oldLogName);
       try {
         oldLog = newTransactionLog(path, null, true);
-        addOldLog(
-            oldLog, false); // don't remove old logs on startup since more than one may be uncapped.
+        // don't remove old logs on startup since more than one may be uncapped.
+        addOldLog(oldLog, false);
       } catch (RuntimeException e) {
         // This could be a SolrException, why is it non-fatal?
         log.error("Failure to open existing log file (non fatal) {} ", path, e);
@@ -971,14 +970,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       List<?> entry;
       entry = getEntryFromTLog(prevPointer, prevVersion, lookupLogs);
       if (entry == null) {
-        return prevPointer; // a previous update was supposed to be found, but wasn't found (due to
-        // log rotation)
+        // a previous update was supposed to be found, but wasn't found (due to log rotation)
+        return prevPointer;
       }
       int flags = (int) entry.get(UpdateLog.FLAGS_IDX);
 
       // since updates can depend only upon ADD updates or other UPDATE_INPLACE updates, we assert
-      // that we aren't
-      // getting something else
+      // that we aren't getting something else
       if ((flags & UpdateLog.ADD) != UpdateLog.ADD
           && (flags & UpdateLog.UPDATE_INPLACE) != UpdateLog.UPDATE_INPLACE) {
         throw new SolrException(
@@ -1667,9 +1665,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             numUpdates++;
           }
 
-        } catch (IOException
-            | AssertionError e) { // catch AssertionError to handle certain test failures correctly
-          // failure to read a log record isn't fatal
+        } catch (IOException | AssertionError e) {
+          // catch AssertionError to handle certain test failures correctly failure to read a log
+          // record isn't fatal
           log.error("Exception reading versions from log", e);
         } finally {
           if (reader != null) reader.close();
@@ -1719,14 +1717,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     // TODO: what if I hand out a list of updates, then do an update, then hand out another list
-    // (and
-    // one of the updates I originally handed out fell off the list).  Over-request?
+    // (and one of the updates I originally handed out fell off the list).  Over-request?
     return new RecentUpdates(logList);
   }
 
   public void bufferUpdates() {
-    // recovery trips this assert under some race - even when
-    // it checks the state first
+    // recovery trips this assert under some race - even when it checks the state first
     // assert state == State.ACTIVE;
 
     // block all updates to eliminate race conditions
@@ -1841,9 +1837,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     Deque<TransactionLog> translogs;
     TransactionLog.LogReader tlogReader;
     boolean activeLog;
-    boolean finishing =
-        false; // state where we lock out other updates and finish those updates that snuck in
-    // before we locked
+    // state where we lock out other updates and finish those updates that snuck in before we locked
+    boolean finishing = false;
     boolean debug = loglog.isDebugEnabled();
     boolean inSortedOrder;
 
@@ -1868,8 +1863,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       params.set(DistributedUpdateProcessor.LOG_REPLAY, "true");
       req = new LocalSolrQueryRequest(uhandler.core, params);
       rsp = new SolrQueryResponse();
-      SolrRequestInfo.setRequestInfo(
-          new SolrRequestInfo(req, rsp)); // setting request info will help logging
+      // setting request info will help logging
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
 
       try {
         for (; ; ) {
@@ -2106,9 +2101,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         cmd.setFlags(UpdateCommand.REPLAY);
         try {
           if (debug) log.debug("commit {}", cmd);
-          uhandler.commit(
-              cmd); // this should cause a commit to be added to the incomplete log and avoid it
-          // being replayed again after a restart.
+          // this should cause a commit to be added to the incomplete log and avoid it being
+          // replayed again after a restart.
+          uhandler.commit(cmd);
         } catch (IOException ex) {
           recoveryInfo.errors.incrementAndGet();
           loglog.error("Replay exception: final commit.", ex);

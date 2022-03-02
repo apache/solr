@@ -380,8 +380,8 @@ public class DocumentBuilder {
       if (largestIsLast && !field.name().equals(largestField)) {
         largestIsLast = false;
       }
-      if (field.numericValue()
-          != null) { // just ignore these as non-competitive (avoid toString'ing their number)
+      if (field.numericValue() != null) {
+        // just ignore these as non-competitive (avoid toString'ing their number)
         continue;
       }
       String strVal = field.stringValue();

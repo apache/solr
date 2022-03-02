@@ -70,8 +70,8 @@ public final class DefaultSolrCoreState extends SolrCoreState
   private volatile boolean lastReplicationSuccess = true;
 
   // will we attempt recovery as if we just started up (i.e. use starting versions rather than
-  // recent versions for peersync
-  // so we aren't looking at update versions that have started buffering since we came up.
+  // recent versions for peersync so we aren't looking at update versions that have started
+  // buffering since we came up.
   private volatile boolean recoveringAfterStartup = true;
 
   private RefCounted<IndexWriter> refCntWriter;
@@ -128,8 +128,8 @@ public final class DefaultSolrCoreState extends SolrCoreState
         }
 
         refCntWriter.incref();
-        succeeded =
-            true; // the returned RefCounted<IndexWriter> will release the readLock on a decref()
+        // the returned RefCounted<IndexWriter> will release the readLock on a decref()
+        succeeded = true;
         return refCntWriter;
       }
 
@@ -143,11 +143,9 @@ public final class DefaultSolrCoreState extends SolrCoreState
 
   private void initRefCntWriter() {
     // TODO: since we moved to a read-write lock, and don't rely on the count to close the writer,
-    // we don't really
-    // need this class any more.  It could also be a singleton created at the same time as
-    // SolrCoreState
-    // or we could change the API of SolrCoreState to just return the writer and then add a
-    // releaseWriter() call.
+    // we don't really need this class any more.  It could also be a singleton created at the same
+    // time as SolrCoreState or we could change the API of SolrCoreState to just return the writer
+    // and then add a releaseWriter() call.
     if (refCntWriter == null && indexWriter != null) {
       refCntWriter =
           new RefCounted<IndexWriter>(indexWriter) {
@@ -155,8 +153,9 @@ public final class DefaultSolrCoreState extends SolrCoreState
             @Override
             public void decref() {
               iwLock.readLock().unlock();
-              super.decref(); // This is now redundant (since we switched to read-write locks), we
+              // This is now redundant (since we switched to read-write locks), we
               // don't really need to maintain our own reference count.
+              super.decref();
             }
 
             @Override
@@ -394,9 +393,9 @@ public final class DefaultSolrCoreState extends SolrCoreState
   @Override
   public void recovered() {
     recoveryStrat = null;
-    recoveringAfterStartup =
-        false; // once we have successfully recovered, we no longer need to act as if we are
-    // recovering after startup
+    // once we have successfully recovered, we no longer need to act as if we are recovering after
+    // startup
+    recoveringAfterStartup = false;
   }
 
   /** called from recoveryStrat on a failed recovery */

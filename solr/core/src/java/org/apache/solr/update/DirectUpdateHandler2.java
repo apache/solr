@@ -190,8 +190,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
     UpdateLog existingLog = updateHandler.getUpdateLog();
     if (this.ulog != null && this.ulog == existingLog) {
       // If we are reusing the existing update log, inform the log that its update handler has
-      // changed.
-      // We do this as late as possible.
+      // changed. We do this as late as possible.
       this.ulog.init(this, core);
     }
   }
@@ -541,10 +540,9 @@ public class DirectUpdateHandler2 extends UpdateHandler
             new ValueSourceRangeFilter(
                 vs, Long.toString(Math.abs(cmd.getVersion())), null, true, true);
         FunctionRangeQuery range = new FunctionRangeQuery(filt);
-        bq.add(
-            range,
-            Occur.MUST_NOT); // formulated in the "MUST_NOT" sense so we can delete docs w/o a
-        // version (some tests depend on this...)
+        // formulated in the "MUST_NOT" sense so we can delete docs w/o a version (some tests depend
+        // on this...)
+        bq.add(range, Occur.MUST_NOT);
         q = bq.build();
       }
 
@@ -738,9 +736,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
         }
 
         if (!cmd.softCommit) {
-          synchronized (
-              solrCoreState.getUpdateLock()) { // sync is currently needed to prevent preCommit
-            // from being called between preSoft and
+          synchronized (solrCoreState.getUpdateLock()) {
+            // sync is currently needed to prevent preCommit from being called between preSoft and
             // postSoft... see postSoft comments.
             if (ulog != null) ulog.preCommit(cmd);
           }
@@ -1019,8 +1016,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
    * @param writer - IndexWriter to use
    */
   private void updateDocOrDocValues(AddUpdateCommand cmd, IndexWriter writer) throws IOException {
-    assert idField
-        != null; // this code path requires an idField in order to potentially replace a doc
+    // this code path requires an idField in order to potentially replace a doc
+    assert idField != null;
     boolean hasUpdateTerm = cmd.updateTerm != null; // AKA dedupe
 
     if (cmd.isInPlaceUpdate()) {
@@ -1036,8 +1033,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
           new Term(
               idField.getName(),
               core.getLatestSchema().indexableUniqueKey(cmd.getSelfOrNestedDocIdStr()));
-      List<IndexableField> fields =
-          cmd.makeLuceneDocForInPlaceUpdate().getFields(); // skips uniqueKey and _root_
+      // skips uniqueKey and _root_
+      List<IndexableField> fields = cmd.makeLuceneDocForInPlaceUpdate().getFields();
       log.debug("updateDocValues({})", cmd);
       writer.updateDocValues(updateTerm, fields.toArray(new Field[fields.size()]));
 
@@ -1051,13 +1048,11 @@ public class DirectUpdateHandler2 extends UpdateHandler
       writer.updateDocuments(updateTerm, nestedDocs);
 
       // If hasUpdateTerm, then delete any existing documents with the same ID other than the one
-      // added above
-      //   (used in near-duplicate replacement)
+      // added above (used in near-duplicate replacement)
       if (hasUpdateTerm) { // rare
         BooleanQuery.Builder bq = new BooleanQuery.Builder();
-        bq.add(
-            new TermQuery(updateTerm),
-            Occur.MUST_NOT); // don't want the one we added above (will be unique)
+        // don't want the one we added above (will be unique)
+        bq.add(new TermQuery(updateTerm), Occur.MUST_NOT);
         bq.add(new TermQuery(idTerm), Occur.MUST); // same ID
         writer.deleteDocuments(new DeleteByQueryWrapper(bq.build(), core.getLatestSchema()));
       }

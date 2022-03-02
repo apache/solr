@@ -423,9 +423,8 @@ public class ConcurrentLRUCache<K, V> implements Cache<K, V>, Accountable {
     List<CacheEntry<K, V>> entriesInAccessOrder = new ArrayList<>(map.size());
     map.forEach(
         (o, kvCacheEntry) -> {
-          kvCacheEntry.lastAccessedCopy =
-              kvCacheEntry.lastAccessed; // important because we want to avoid volatile read during
-          // comparisons
+          // important because we want to avoid volatile read during comparisons
+          kvCacheEntry.lastAccessedCopy = kvCacheEntry.lastAccessed;
           entriesInAccessOrder.add(kvCacheEntry);
         });
 
