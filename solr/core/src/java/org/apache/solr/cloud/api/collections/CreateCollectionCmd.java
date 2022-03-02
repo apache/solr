@@ -181,7 +181,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         boolean created = false;
         while (!waitUntil.hasTimedOut()) {
           waitUntil.sleep(100);
-          created = ccc.getSolrCloudManager().getClusterStateProvider().getClusterState().hasCollection(collectionName);
+          created = ccc.getSolrCloudManager().getClusterState().hasCollection(collectionName);
           if (created) break;
         }
         if (!created) {
@@ -190,7 +190,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
         // refresh cluster state (value read below comes from Zookeeper watch firing following the update done previously,
         // be it by Overseer or by this thread when updates are distributed)
-        clusterState = ccc.getSolrCloudManager().getClusterStateProvider().getClusterState();
+        clusterState = ccc.getSolrCloudManager().getClusterState();
         newColl = clusterState.getCollection(collectionName);
       }
 
@@ -231,7 +231,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         String nodeName = replicaPosition.node;
 
         String coreName = Assign.buildSolrCoreName(ccc.getSolrCloudManager().getDistribStateManager(), collectionName,
-            ccc.getSolrCloudManager().getClusterStateProvider().getClusterState().getCollectionOrNull(collectionName),
+            ccc.getSolrCloudManager().getClusterState().getCollectionOrNull(collectionName),
             replicaPosition.shard, replicaPosition.type, true);
         if (log.isDebugEnabled()) {
           log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}"

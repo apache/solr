@@ -40,7 +40,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.core.backup.BackupId;
@@ -175,7 +174,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
 
     int nDocs = BackupRestoreUtils.indexDocs(solrClient, collectionName, docsSeed);
 
-    DocCollection collectionState = solrClient.getClusterStateProvider().getClusterState().getCollection(collectionName);
+    DocCollection collectionState = solrClient.getClusterState().getCollection(collectionName);
     assertEquals(1, collectionState.getActiveSlices().size());
     Slice shard = collectionState.getActiveSlices().iterator().next();
     assertEquals(1, shard.getReplicas().size());

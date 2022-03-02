@@ -53,7 +53,7 @@ public class SolrCloudScraper extends SolrScraper {
   public Map<String, MetricSamples> pingAllCores(MetricsQuery query) throws IOException {
     Map<String, HttpSolrClient> httpSolrClients = createHttpSolrClients();
 
-    Map<String, DocCollection> collectionState = solrClient.getClusterStateProvider().getClusterState().getCollectionsMap();
+    Map<String, DocCollection> collectionState = solrClient.getClusterState().getCollectionsMap();
 
     List<Replica> replicas = collectionState.values()
         .stream()
@@ -121,7 +121,7 @@ public class SolrCloudScraper extends SolrScraper {
   }
 
   private Set<String> getBaseUrls() throws IOException {
-    return solrClient.getClusterStateProvider().getClusterState().getCollectionsMap().values()
+    return solrClient.getClusterState().getCollectionsMap().values()
         .stream()
         .map(DocCollection::getReplicas)
         .flatMap(List::stream)
@@ -130,7 +130,7 @@ public class SolrCloudScraper extends SolrScraper {
   }
 
   private Set<String> getCollections() throws IOException {
-    return solrClient.getClusterStateProvider().getClusterState().getCollectionStates().keySet();
+    return solrClient.getClusterState().getCollectionStates().keySet();
   }
 
   @Override

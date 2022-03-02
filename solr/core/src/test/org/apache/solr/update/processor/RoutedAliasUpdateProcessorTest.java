@@ -81,7 +81,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       }
     }
     try {
-      DocCollection confirmCollection = cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollectionOrNull(collection);
+      DocCollection confirmCollection = cluster.getSolrClient().getClusterState().getCollectionOrNull(collection);
       assertNotNull("Unable to find collection we were waiting for after done waiting",confirmCollection);
     } catch (IOException e) {
       fail("exception getting collection we were waiting for and have supposedly created already");

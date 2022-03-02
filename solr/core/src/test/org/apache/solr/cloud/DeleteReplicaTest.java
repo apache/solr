@@ -453,7 +453,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     }
 
     try {
-        ZkStateReader.waitForState(cluster.getSolrClient(), collectionName, 20, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState.getReplicas().size() == 1);
+      ZkStateReader.from(cluster.getSolrClient()).waitForState(collectionName, 20, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState.getReplicas().size() == 1);
     } catch (TimeoutException e) {
       if (log.isInfoEnabled()) {
         log.info("Timeout wait for state {}", getCollectionState(collectionName));

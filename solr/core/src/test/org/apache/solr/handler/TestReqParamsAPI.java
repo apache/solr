@@ -80,7 +80,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
   private void testReqParams() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    DocCollection coll = cloudClient.getClusterStateProvider().getClusterState().getCollection(COLL_NAME);
+    DocCollection coll = cloudClient.getClusterState().getCollection(COLL_NAME);
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())

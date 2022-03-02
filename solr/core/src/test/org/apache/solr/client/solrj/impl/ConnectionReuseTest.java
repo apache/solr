@@ -40,8 +40,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
@@ -65,7 +65,12 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "config", 1, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
-      ZkStateReader.waitForState(cluster.getSolrClient(), COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+    ZkStateReader.from(cluster.getSolrClient())
+        .waitForState(
+            COLLECTION,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
   }
 
   private SolrClient buildClient(CloseableHttpClient httpClient, URL url) {

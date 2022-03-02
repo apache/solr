@@ -199,7 +199,7 @@ public class CloudUtil {
     ClusterState state = null;
     DocCollection coll = null;
     while (!timeout.hasTimedOut()) {
-      state = cloudManager.getClusterStateProvider().getClusterState();
+      state = cloudManager.getClusterState();
       coll = state.getCollectionOrNull(collection);
       // due to the way we manage collections in SimClusterStateProvider a null here
       // can mean that a collection is still being created but has no replicas

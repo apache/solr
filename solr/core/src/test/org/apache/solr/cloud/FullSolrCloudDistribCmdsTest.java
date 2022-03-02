@@ -88,7 +88,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     assertEquals(RequestStatusState.COMPLETED,
                  CollectionAdminRequest.createCollection(name, "_default", 2, 2)
                  .processAndWait(cloudClient, DEFAULT_TIMEOUT));
-      ZkStateReader.waitForState(cloudClient, name, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    ZkStateReader.from(cloudClient).waitForState(name, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
     cloudClient.setDefaultCollection(name);
     return name;
   }
@@ -142,10 +142,10 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     assertEquals(RequestStatusState.COMPLETED,
                  CollectionAdminRequest.createCollectionWithImplicitRouter(name, "_default", "shard1,shard2", 2)
                  .processAndWait(cloudClient, DEFAULT_TIMEOUT));
-      ZkStateReader.waitForState(cloudClient, name, (long) DEFAULT_TIMEOUT, TimeUnit.SECONDS, (CollectionStatePredicate) (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
+    ZkStateReader.from(cloudClient).waitForState(name, (long) DEFAULT_TIMEOUT, TimeUnit.SECONDS, (CollectionStatePredicate) (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
     cloudClient.setDefaultCollection(name);
 
-    final DocCollection docCol = cloudClient.getClusterStateProvider().getClusterState().getCollection(name);
+    final DocCollection docCol = cloudClient.getClusterState().getCollection(name);
     try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
          SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
          
@@ -237,10 +237,10 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
                  .setRouterField("routefield_s")
                  .setShards("shard1,shard2")
                  .processAndWait(cloudClient, DEFAULT_TIMEOUT));
-      ZkStateReader.waitForState(cloudClient, name, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
+    ZkStateReader.from(cloudClient).waitForState(name, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
     cloudClient.setDefaultCollection(name);
 
-    final DocCollection docCol = cloudClient.getClusterStateProvider().getClusterState().getCollection(name);
+    final DocCollection docCol = cloudClient.getClusterState().getCollection(name);
     try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
          SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
 
@@ -358,7 +358,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
                      .setCreateNodeSet(leaderToPartition.getNodeName() + "," + otherLeader.getNodeName())
                      .processAndWait(cloudClient, DEFAULT_TIMEOUT));
 
-          ZkStateReader.waitForState(cloudClient, collectionName, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
+        ZkStateReader.from(cloudClient).waitForState(collectionName, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
 
           { // HACK: Check the leaderProps for the shard hosted on the node we're going to kill...
           final Replica leaderProps = ZkStateReader.from(cloudClient)

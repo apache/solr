@@ -119,7 +119,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       Thread.sleep(5000);
 
       // Figure out if at-least one replica is "down".
-      DocCollection collState = solrClient.getClusterStateProvider().getClusterState().getCollection(collectionName);
+      DocCollection collState = solrClient.getClusterState().getCollection(collectionName);
       for (Slice s : collState.getSlices()) {
         for (Replica replica : s.getReplicas()) {
           if (replica.getState() == State.DOWN) {
@@ -143,7 +143,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     Map<String, CoreSnapshotMetaData> snapshotByCoreName = meta.getReplicaSnapshots().stream()
         .collect(Collectors.toMap(CoreSnapshotMetaData::getCoreName, Function.identity()));
 
-    DocCollection collectionState = solrClient.getClusterStateProvider().getClusterState().getCollection(collectionName);
+    DocCollection collectionState = solrClient.getClusterState().getCollection(collectionName);
     assertEquals(2, collectionState.getActiveSlices().size());
     for ( Slice shard : collectionState.getActiveSlices() ) {
       assertEquals(2, shard.getReplicas().size());
@@ -231,7 +231,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       }
 
       if (replicaToDelete != null) {
-        collectionState = solrClient.getClusterStateProvider().getClusterState().getCollection(collectionName);
+        collectionState = solrClient.getClusterState().getCollection(collectionName);
         for (Slice s : collectionState.getSlices()) {
           for (Replica r : s.getReplicas()) {
             if (r.getCoreName().equals(replicaToDelete.getCoreName())) {
@@ -254,7 +254,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
 
     // Wait for a while so that the cluster state updates are propagated to the client side.
     Thread.sleep(2000);
-    collectionState = solrClient.getClusterStateProvider().getClusterState().getCollection(collectionName);
+    collectionState = solrClient.getClusterState().getCollection(collectionName);
 
     for ( Slice shard : collectionState.getActiveSlices() ) {
       for (Replica replica : shard.getReplicas()) {

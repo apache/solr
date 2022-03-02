@@ -112,7 +112,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       CollectionAction action = getCollectionAction(operation);
       CollApiCmds.CollectionApiCommand command = commandMapper.getActionCommand(action);
       if (command != null) {
-        command.call(cloudManager.getClusterStateProvider().getClusterState(), message, results);
+        command.call(cloudManager.getClusterState(), message, results);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
             + operation);

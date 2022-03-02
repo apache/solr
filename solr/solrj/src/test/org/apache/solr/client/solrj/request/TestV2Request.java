@@ -161,7 +161,7 @@ public class TestV2Request extends SolrCloudTestCase {
             "  }" +
             "}").build());
 
-    ClusterState cs = cluster.getSolrClient().getClusterStateProvider().getClusterState();
+    ClusterState cs = cluster.getSolrClient().getClusterState();
     System.out.println("livenodes: " + cs.getLiveNodes());
 
     String[] node = new String[1];

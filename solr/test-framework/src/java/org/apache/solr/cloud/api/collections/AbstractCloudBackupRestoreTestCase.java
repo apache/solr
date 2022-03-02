@@ -200,7 +200,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
       restore.setConfigName("confFaulty");
       assertEquals(RequestStatusState.FAILED, restore.processAndWait(solrClient, 30));
-      assertThat("Failed collection is still in the clusterstate: " + cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollectionOrNull(restoreCollectionName), 
+      assertThat("Failed collection is still in the clusterstate: " + cluster.getSolrClient().getClusterState().getCollectionOrNull(restoreCollectionName), 
           CollectionAdminRequest.listCollections(solrClient), not(hasItem(restoreCollectionName)));
     }
   }

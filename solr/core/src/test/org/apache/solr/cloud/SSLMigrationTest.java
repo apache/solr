@@ -108,7 +108,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
   private List<Replica> getReplicas() throws IOException {
     List<Replica> replicas = new ArrayList<>();
 
-    DocCollection collection = cloudClient.getClusterStateProvider().getClusterState().getCollection(DEFAULT_COLLECTION);
+    DocCollection collection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     for(Slice slice : collection.getSlices()) {
       replicas.addAll(slice.getReplicas());
     }

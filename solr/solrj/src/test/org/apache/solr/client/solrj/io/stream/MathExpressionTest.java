@@ -4044,7 +4044,7 @@ public void testCache() throws Exception {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     // find a node with a replica
-    ClusterState clusterState = cluster.getSolrClient().getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cluster.getSolrClient().getClusterState();
     String collection = useAlias ? COLLECTIONORALIAS + "_collection" : COLLECTIONORALIAS;
     DocCollection coll = clusterState.getCollection(collection);
     String node = coll.getReplicas().iterator().next().getNodeName();

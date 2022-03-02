@@ -30,7 +30,6 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.BaseTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -91,7 +90,7 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
     // This tests that the replicas properly handle schema additions.
 
     getCommonCloudSolrClient();
-    int slices = cloudClient.getClusterStateProvider().getClusterState()
+    int slices = cloudClient.getClusterState()
       .getCollection("collection1").getActiveSlices().size();
     int trials = 50;
     // generate enough docs so that we can expect at least a doc per slice

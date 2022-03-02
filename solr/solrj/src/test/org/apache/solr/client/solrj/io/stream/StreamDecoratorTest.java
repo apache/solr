@@ -3672,7 +3672,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     updateRequest.commit(cluster.getSolrClient(), "uknownCollection");
 
     // find a node with a replica
-    ClusterState clusterState = cluster.getSolrClient().getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cluster.getSolrClient().getClusterState();
     DocCollection coll = clusterState.getCollection(COLLECTIONORALIAS);
     String node = coll.getReplicas().iterator().next().getNodeName();
     String url = null;

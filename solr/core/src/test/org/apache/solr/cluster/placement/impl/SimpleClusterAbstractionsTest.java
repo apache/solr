@@ -55,7 +55,7 @@ public class SimpleClusterAbstractionsTest extends SolrCloudTestCase {
 
   @Test
   public void testBasic() throws Exception {
-    ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cloudManager.getClusterState();
     Cluster cluster = new SimpleClusterAbstractionsImpl.ClusterImpl(cloudManager);
     assertNotNull(cluster);
     Set<Node> nodes = cluster.getLiveNodes();

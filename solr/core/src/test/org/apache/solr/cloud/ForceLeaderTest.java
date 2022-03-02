@@ -100,7 +100,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
       }
       waitForState(testCollectionName, leader.getName(), State.DOWN, 60000);
       ZkStateReader.from(cloudClient).forceUpdateCollection(testCollectionName);
-      ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
+      ClusterState clusterState = cloudClient.getClusterState();
       int numActiveReplicas = getNumberOfActiveReplicas(clusterState, testCollectionName, SHARD1);
       assertEquals("Expected only 0 active replica but found " + numActiveReplicas +
           "; clusterState: " + printClusterStateInfo(), 0, numActiveReplicas);
@@ -128,7 +128,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
       waitForRecoveriesToFinish(testCollectionName, ZkStateReader.from(cloudClient), true);
 
       ZkStateReader.from(cloudClient).forceUpdateCollection(testCollectionName);
-      clusterState = cloudClient.getClusterStateProvider().getClusterState();
+      clusterState = cloudClient.getClusterState();
       if (log.isInfoEnabled()) {
         log.info("After forcing leader: {}", clusterState.getCollection(testCollectionName).getSlice(SHARD1));
       }
@@ -251,7 +251,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     leaderJetty.start();
     waitForRecoveriesToFinish(collection, ZkStateReader.from(cloudClient), true);
     ZkStateReader.from(cloudClient).forceUpdateCollection(collection);
-    ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cloudClient.getClusterState();
     if (log.isInfoEnabled()) {
       log.info("After bringing back leader: {}", clusterState.getCollection(collection).getSlice(SHARD1));
     }

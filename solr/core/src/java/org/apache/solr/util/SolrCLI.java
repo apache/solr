@@ -3030,7 +3030,7 @@ public class SolrCLI implements CLIO {
         cloudClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
             .build();
         cloudClient.connect();
-        Set<String> liveNodes = cloudClient.getClusterStateProvider().getClusterState().getLiveNodes();
+        Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
         int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
         long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWaitSecs, TimeUnit.SECONDS);
         while (System.nanoTime() < timeout && numLiveNodes < numNodes) {
@@ -3041,7 +3041,7 @@ public class SolrCLI implements CLIO {
           } catch (InterruptedException ie) {
             Thread.interrupted();
           }
-          liveNodes = cloudClient.getClusterStateProvider().getClusterState().getLiveNodes();
+          liveNodes = cloudClient.getClusterState().getLiveNodes();
           numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
         }
         if (numLiveNodes < numNodes) {

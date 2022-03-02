@@ -19,8 +19,6 @@ package org.apache.solr.handler;
 
 
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
 
 public class TestSystemCollAutoCreate extends AbstractFullDistribZkTestBase {
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018

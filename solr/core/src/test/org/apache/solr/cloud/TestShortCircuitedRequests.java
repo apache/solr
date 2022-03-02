@@ -20,7 +20,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
@@ -46,7 +45,7 @@ public class TestShortCircuitedRequests extends AbstractFullDistribZkTestBase {
     doQuery("a!doc1", "q", "*:*", ShardParams._ROUTE_, "a!"); // can go to any random node
 
     // query shard3 directly with _route_=a! so that we trigger the short circuited request path
-    Replica shard3 = cloudClient.getClusterStateProvider().getClusterState().getCollection(DEFAULT_COLLECTION).getLeader("shard3");
+    Replica shard3 = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION).getLeader("shard3");
     String nodeName = shard3.getNodeName();
     SolrClient shard3Client = getClient(nodeName);
     QueryResponse response = shard3Client.query(new SolrQuery("*:*").add(ShardParams._ROUTE_, "a!").add(ShardParams.SHARDS_INFO, "true"));

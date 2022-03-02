@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
 import org.junit.Before;
@@ -174,17 +175,26 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
                  -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
     // Sanity check that a new (out of sync) replica doesn't come up in our place...
-    expectThrows(TimeoutException.class,
-                 "Did not time out waiting for new leader, out of sync replica became leader",
-                 () -> ZkStateReader.waitForState(cluster.getSolrClient(), COLLECTION, 10, TimeUnit.SECONDS, (state) -> {
-          Replica newLeader = state.getSlice("shard1").getLeader();
-          if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
-            // this is is the bad case, our "bad" state was found before timeout
-            log.error("WTF: New Leader={}", newLeader);
-            return true;
-          }
-          return false; // still no bad state, wait for timeout
-        }));
+    expectThrows(
+        TimeoutException.class,
+        "Did not time out waiting for new leader, out of sync replica became leader",
+        () ->
+            ZkStateReader.from(cluster.getSolrClient())
+                .waitForState(
+                    COLLECTION,
+                    10,
+                    TimeUnit.SECONDS,
+                    (state) -> {
+                      Replica newLeader = state.getSlice("shard1").getLeader();
+                      if (newLeader != null
+                          && !newLeader.getName().equals(leader.getName())
+                          && newLeader.getState() == Replica.State.ACTIVE) {
+                        // this is is the bad case, our "bad" state was found before timeout
+                        log.error("WTF: New Leader={}", newLeader);
+                        return true;
+                      }
+                      return false; // still no bad state, wait for timeout
+                    }));
 
     log.info("Enabling TestInjection.updateLogReplayRandomPause");
     TestInjection.updateLogReplayRandomPause = "true:100";

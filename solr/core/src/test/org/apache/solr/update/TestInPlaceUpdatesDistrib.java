@@ -1018,7 +1018,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     for (int i=0; i<100; i++) {
       Thread.sleep(10);
       ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_COLLECTION);
-      ClusterState state = cloudClient.getClusterStateProvider().getClusterState();
+      ClusterState state = cloudClient.getClusterState();
 
       int numActiveReplicas = 0;
       for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas())
@@ -1091,7 +1091,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
         for (int i=0; i<100; i++) {
           Thread.sleep(10);
           ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_COLLECTION);
-          ClusterState state = cloudClient.getClusterStateProvider().getClusterState();
+          ClusterState state = cloudClient.getClusterState();
 
           int numActiveReplicas = 0;
           for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas()) {
@@ -1203,7 +1203,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   private String getBaseUrl(String id) throws IOException {
-    DocCollection collection = cloudClient.getClusterStateProvider().getClusterState().getCollection(DEFAULT_COLLECTION);
+    DocCollection collection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     Slice slice = collection.getRouter().getTargetSlice(id, null, null, null, collection);
     String baseUrl = slice.getLeader().getCoreUrl();
     return baseUrl;
@@ -1344,7 +1344,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     for (int i=0; i<100; i++) {
       Thread.sleep(10);
       ZkStateReader.from(cloudClient).forceUpdateCollection(DEFAULT_COLLECTION);
-      ClusterState state = cloudClient.getClusterStateProvider().getClusterState();
+      ClusterState state = cloudClient.getClusterState();
 
       int numActiveReplicas = 0;
       for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas())

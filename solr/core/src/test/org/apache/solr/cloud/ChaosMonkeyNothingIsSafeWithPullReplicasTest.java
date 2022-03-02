@@ -153,7 +153,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
     // Using this low timeout will also help us catch index stalling.
     clientSoTimeout = 8000;
 
-    DocCollection docCollection = cloudClient.getClusterStateProvider().getClusterState().getCollection(DEFAULT_COLLECTION);
+    DocCollection docCollection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     assertEquals(this.sliceCount, docCollection.getSlices().size());
     Slice s = docCollection.getSlice("shard1");
     assertNotNull(s);

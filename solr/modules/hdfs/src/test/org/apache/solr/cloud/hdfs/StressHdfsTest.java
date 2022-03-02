@@ -157,7 +157,7 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
     waitForRecoveriesToFinish(DELETE_DATA_DIR_COLLECTION, false);
     
     // data dirs should be in zk, SOLR-8913
-    ClusterState clusterState = cloudClient.getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cloudClient.getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(DELETE_DATA_DIR_COLLECTION);
     assertNotNull("Could not find :"+DELETE_DATA_DIR_COLLECTION, docCollection);
     Slice slice = docCollection.getSlice("shard1");
@@ -221,7 +221,7 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
     cloudClient.request(request);
 
     final TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cloudClient.getClusterStateProvider().getClusterState().hasCollection(DELETE_DATA_DIR_COLLECTION)) {
+    while (cloudClient.getClusterState().hasCollection(DELETE_DATA_DIR_COLLECTION)) {
       if (timeout.hasTimedOut()) {
         throw new AssertionError("Timeout waiting to see removed collection leave clusterstate");
       }

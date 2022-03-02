@@ -27,7 +27,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreDescriptor;
 
