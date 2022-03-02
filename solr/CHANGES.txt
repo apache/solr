@@ -62,7 +62,7 @@ Improvements
 * SOLR-11725: Use corrected sample formula for computing stdDev and variance in JSON aggregations
   (hossman, Munendra S N, yonik)
 
-* SOLR-14387: SolrClient.getById() will escape comma separater within ids (Markus Schuch via Mike Drob)
+* SOLR-14387: SolrClient.getById() will escape comma separator within ids (Markus Schuch via Mike Drob)
 
 * SOLR-15327: Fix typos in the code base (Edward Ribeiro via Eric Pugh)
 
@@ -74,7 +74,7 @@ Improvements
 
 * SOLR-14878: Report solr.xml's coreRootDirectory property via System Settings API, when set (Alexandre Rafalovitch)
 
-* SOLR-14880: Support coreRootDirectory setting when create new cores from command line, in standalone mode
+* SOLR-14880: Support coreRootDirectory setting when creating new cores from command line in standalone mode
   (Alexandre Rafalovitch)
 
 * SOLR-14926, SOLR-14926, SOLR-13506: Modernize and clean up search results clustering module. This issue upgrades
@@ -248,7 +248,7 @@ Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
 
-* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
+* LUCENE-9411: Fail compilation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
   Deserves mention here as well as Lucene CHANGES.txt since it affects both.
 
 * SOLR-13671: Remove check for bare "var" declarations in validate-source-patterns (Erick Erickson, Alex Bulygin, janhoy)
@@ -434,7 +434,7 @@ Other Changes
 
 * SOLR-15016: Replica placement plugins should use container plugins API / configs. (ab, ilan)
 
-* SOLR-14297: Replace commons-codec Base64 with JDK8 Base64 (Andras Salamon via Houston Putman)
+* SOLR-14297: Replace commons-codec Base64 with JDK11 Base64 (Andras Salamon via Houston Putman)
 
 * SOLR-15113: Do not attempt to start Solr server when embedded ZK fails (Mike Drob)
 
@@ -506,7 +506,7 @@ Other Changes
 * SOLR-15428: Integrate the OpenJDK JMH micro benchmark framework for micro benchmarks and performance comparisons
   and investigation. (Mark Miller)
 
-* SOLR-15111: Use JDK8 Base64 instead of own implementation (Andras Salamon via janhoy)
+* SOLR-15111: Use JDK11 Base64 instead of own implementation (Andras Salamon via janhoy)
 
 * SOLR-15612: Remove unnecessary https8 jetty module (Houston Putman)
 
@@ -517,8 +517,6 @@ Other Changes
   and labels. (John Durham, Mike Drob, Christine Poerschke)
 
 * SOLR-15692: Fix parsing of -zkHost flag for the bin/solr commands (janhoy)
-
-* SOLR-15455: Facilitate joint Solr/Lucene development via local dependency substitution (Dawid Weiss, Michael Gibney)
 
 * SOLR-15699: Removal of the (unused since 5.0) "updateHandler/indexWriter/closeWaitsForMerges" solrconfig.xml element.
   (Christine Poerschke)
@@ -587,9 +585,6 @@ Other Changes
 * SOLR-15064: Atomic/partial updates to nested documents now _require_ the `\_root_` field to
   clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.
   (David Smiley)
-
-* SOLR-15949: Docker: the official image now uses Java 17 provided by Eclipse Temurin.  Formerly it was Java 11 from OpenJDK.
-  (janhoy, David Smiley)
 
 * SOLR-15943: Simplify HDFS cache to account for LUCENE-10366 / LUCENE-10376 (Kevin Risden)
 
