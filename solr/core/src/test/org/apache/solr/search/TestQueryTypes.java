@@ -523,9 +523,8 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
       }
 
       // Skipping: func, boost, raw, nested, frange, spatial*, join, surround, switch, parent,
-      // child, collapsing,
-      // complexphrase, rerank, export, mlt, hash, graph, graphTerms, igain, tlogit,
-      // significantTerms, payload*
+      // child, collapsing, complexphrase, rerank, export, mlt, hash, graph, graphTerms, igain,
+      // tlogit, significantTerms, payload*
       // Maybe add: raw, join, parent, child, collapsing, graphTerms, igain, significantTerms,
       // simple
     }

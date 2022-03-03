@@ -711,10 +711,8 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
         "//lst[@name='xxx']/lst[@name='between']/long[@name='count'][.='2']");
 
     // GBP has a symetric echange rate with USD, so these counts are *similar* to the USD based
-    // request above...
-    // but the asymetric EUR/USD rate means that when computing counts realtive to GBP the EUR based
-    // docs wind up in
-    // diff buckets
+    // request above... but the asymetric EUR/USD rate means that when computing counts realtive to
+    // GBP the EUR based docs wind up in diff buckets
     assertQ(
         "Ensure that we get correct facet counts back in GBP (facet.range)",
         req(

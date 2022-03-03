@@ -837,10 +837,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       assertQ(
           req(params),
           "*[count(//doc)=2]",
-          // since selector is bogus, group head is undefined
-          // (should be index order, but don't make absolute assumptions: segments may be
-          // re-ordered)
-          // key assertion is that there is one doc from each group & groups are in order
+          // since selector is bogus, group head is undefined (should be index order, but don't make
+          // absolute assumptions: segments may be re-ordered) key assertion is that there is one
+          // doc from each group & groups are in order
           "//result/doc[1]/*[@name='" + group + "'][starts-with(.,'1')]",
           "//result/doc[2]/*[@name='" + group + "'][starts-with(.,'2')]");
     }

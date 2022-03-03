@@ -971,8 +971,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
   public void testBlockCollapseWithExpandComponent() throws Exception {
 
     { // convert our docs + some docs w/o collapse fields, along with some commits, to update
-      // commands
-      // in a shuffled order and process all of them...
+      // commands in a shuffled order and process all of them...
       final List<String> updates =
           Stream.concat(
                   Stream.of(commit(), commit()),

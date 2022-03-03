@@ -502,21 +502,20 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req(missingA);
     assertQ(
         req,
-        facetPivotPrefix + "/arr[@name='pivot'][count(.) > 0]", // not enough values for pivot
-        facetPivotPrefix + "[7]/null[@name='value'][.='']", // not the missing place value
-        facetPivotPrefix + "[7]/int[@name='count'][.=2]", // wrong missing place count
-        facetPivotPrefix
-            + "[7]/arr[@name='pivot'][count(.) > 0]", // not enough sub-pivots for missing place
-        facetPivotPrefix
-            + "[7]/arr[@name='pivot']/lst[6]/null[@name='value'][.='']", // not the missing company
-        // value
-        facetPivotPrefix
-            + "[7]/arr[@name='pivot']/lst[6]/int[@name='count'][.=1]", // wrong missing company
-        // count
-        facetPivotPrefix
-            + "[7]/arr[@name='pivot']/lst[6][not(arr[@name='pivot'])]" // company shouldn't have
-        // sub-pivots
-        );
+        // not enough values for pivot
+        facetPivotPrefix + "/arr[@name='pivot'][count(.) > 0]",
+        // not the missing place value
+        facetPivotPrefix + "[7]/null[@name='value'][.='']",
+        // wrong missing place count
+        facetPivotPrefix + "[7]/int[@name='count'][.=2]",
+        // not enough sub-pivots for missing place
+        facetPivotPrefix + "[7]/arr[@name='pivot'][count(.) > 0]",
+        // not the missing company value
+        facetPivotPrefix + "[7]/arr[@name='pivot']/lst[6]/null[@name='value'][.='']",
+        // wrong missing company count
+        facetPivotPrefix + "[7]/arr[@name='pivot']/lst[6]/int[@name='count'][.=1]",
+        // company shouldn't have sub-pivots
+        facetPivotPrefix + "[7]/arr[@name='pivot']/lst[6][not(arr[@name='pivot'])]");
 
     SolrParams missingB =
         SolrParams.wrapDefaults(
@@ -525,21 +524,20 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     req = req(missingB);
     assertQ(
         req,
-        facetPivotPrefix + "/arr[@name='pivot'][count(.) > 0]", // not enough values for pivot
-        facetPivotPrefix + "[5]/null[@name='value'][.='']", // not the missing place value
-        facetPivotPrefix + "[5]/int[@name='count'][.=2]", // wrong missing place count
-        facetPivotPrefix
-            + "[5]/arr[@name='pivot'][count(.) > 0]", // not enough sub-pivots for missing place
-        facetPivotPrefix
-            + "[5]/arr[@name='pivot']/lst[5]/null[@name='value'][.='']", // not the missing company
-        // value
-        facetPivotPrefix
-            + "[5]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]", // wrong missing company
-        // count
-        facetPivotPrefix
-            + "[5]/arr[@name='pivot']/lst[5][not(arr[@name='pivot'])]" // company shouldn't have
-        // sub-pivots
-        );
+        // not enough values for pivot
+        facetPivotPrefix + "/arr[@name='pivot'][count(.) > 0]",
+        // not the missing place value
+        facetPivotPrefix + "[5]/null[@name='value'][.='']",
+        // wrong missing place count
+        facetPivotPrefix + "[5]/int[@name='count'][.=2]",
+        // not enough sub-pivots for missing place
+        facetPivotPrefix + "[5]/arr[@name='pivot'][count(.) > 0]",
+        // not the missing company value
+        facetPivotPrefix + "[5]/arr[@name='pivot']/lst[5]/null[@name='value'][.='']",
+        // wrong missing company count
+        facetPivotPrefix + "[5]/arr[@name='pivot']/lst[5]/int[@name='count'][.=1]",
+        // company shouldn't have sub-pivots
+        facetPivotPrefix + "[5]/arr[@name='pivot']/lst[5][not(arr[@name='pivot'])]");
 
     SolrParams missingC =
         SolrParams.wrapDefaults(
@@ -547,21 +545,20 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
 
     assertQ(
         req(missingC),
-        facetPivotPrefix + "/arr[@name='pivot'][count(.) > 0]", // not enough values for pivot
-        facetPivotPrefix + "[1]/null[@name='value'][.='']", // not the missing place value
-        facetPivotPrefix + "[1]/int[@name='count'][.=2]", // wrong missing place count
-        facetPivotPrefix
-            + "[1]/arr[@name='pivot'][count(.) > 0]", // not enough sub-pivots for missing place
-        facetPivotPrefix
-            + "[1]/arr[@name='pivot']/lst[1]/null[@name='value'][.='']", // not the missing company
-        // value
-        facetPivotPrefix
-            + "[1]/arr[@name='pivot']/lst[1]/int[@name='count'][.=1]", // wrong missing company
-        // count
-        facetPivotPrefix
-            + "[1]/arr[@name='pivot']/lst[1][not(arr[@name='pivot'])]" // company shouldn't have
-        // sub-pivots
-        );
+        // not enough values for pivot
+        facetPivotPrefix + "/arr[@name='pivot'][count(.) > 0]",
+        // not the missing place value
+        facetPivotPrefix + "[1]/null[@name='value'][.='']",
+        // wrong missing place count
+        facetPivotPrefix + "[1]/int[@name='count'][.=2]",
+        // not enough sub-pivots for missing place
+        facetPivotPrefix + "[1]/arr[@name='pivot'][count(.) > 0]",
+        // not the missing company value
+        facetPivotPrefix + "[1]/arr[@name='pivot']/lst[1]/null[@name='value'][.='']",
+        // wrong missing company count
+        facetPivotPrefix + "[1]/arr[@name='pivot']/lst[1]/int[@name='count'][.=1]",
+        // company shouldn't have sub-pivots
+        facetPivotPrefix + "[1]/arr[@name='pivot']/lst[1][not(arr[@name='pivot'])]");
   }
 
   public void testPivotFacetIndexSortMincountAndLimit() throws Exception {

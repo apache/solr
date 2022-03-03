@@ -3793,8 +3793,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     List<SolrClient> clients = client.getClientProvider().all();
 
     // carefully craft two balanced shards (assuming we have at least two) and leave any other
-    // shards
-    // empty to help check the code paths of some shards returning no buckets.
+    // shards empty to help check the code paths of some shards returning no buckets.
     //
     // if we are in a single node sitaution, these clients will be the same, and we'll have the same
     // total docs in our collection, but the numShardsWithData will be diff
@@ -4940,9 +4939,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "json.facet",
             "{cat_s:{type:terms,field:cat_s,mincount:0,missing:true,allBuckets:true,numBuckets:true,limit:1}}"),
         "/response/lst[@name='facets']/long[@name='count'][.=6]", // count
-        "/response/lst[@name='facets']/lst[@name='cat_s']/long[@name='numBuckets'][.=2]", // total
-        // no of
-        // buckets
+        // total number of buckets
+        "/response/lst[@name='facets']/lst[@name='cat_s']/long[@name='numBuckets'][.=2]",
         "*[count(/response/lst[@name='facets']/lst[@name='cat_s']/arr[@name='buckets']/lst)=1]", // no of entries
         "/response/lst[@name='facets']/lst[@name='cat_s']/lst[@name='allBuckets']/long[@name='count'][.=5]", // allBuckets
         "/response/lst[@name='facets']/lst[@name='cat_s']/lst[@name='missing']/long[@name='count'][.=1]", // missing
