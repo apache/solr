@@ -215,13 +215,15 @@ public class TestCustomSort extends SolrTestCaseJ4 {
         req("q", "text:c", "fl", "id_i", "sort", "payload asc", "rows", "20"),
         "//result[@numFound='3']", // <result name="response" numFound="3" start="0">
         "//result/doc[int='7'  and position()=1]", // <doc><int name="id">7</int></doc> 00 3c 73
-        "//result/doc[int='6'  and position()=2]", // <doc><int name="id">6</int></doc> 1a 2b 3c 00 00 03
+        // <doc><int name="id">6</int></doc> 1a 2b 3c 00 00 03
+        "//result/doc[int='6'  and position()=2]",
         "//result/doc[int='8'  and position()=3]"); // <doc><int name="id">8</int></doc> 59 2d 4d
     assertQ(
         req("q", "text:c", "fl", "id_i", "sort", "payload desc", "rows", "20"),
         "//result[@numFound='3']", // <result name="response" numFound="3" start="0">
         "//result/doc[int='8' and position()=1]", // <doc><int name="id">8</int></doc> 59 2d 4d
-        "//result/doc[int='6' and position()=2]", // <doc><int name="id">6</int></doc> 1a 2b 3c 00 00 03
+        // <doc><int name="id">6</int></doc> 1a 2b 3c 00 00 03
+        "//result/doc[int='6' and position()=2]",
         "//result/doc[int='7' and position()=3]"); // <doc><int name="id">7</int></doc> 00 3c 73
     assertQ(
         req("q", "text:d", "fl", "id_i", "sort", "payload asc", "rows", "20"),

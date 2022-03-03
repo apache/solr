@@ -491,8 +491,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
             },
             "subq1.neighbours.sort",
             "id desc"),
-        asserts.toArray(new String[] {})
-        );
+        asserts.toArray(new String[] {}));
   }
 
   @Test

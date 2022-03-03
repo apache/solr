@@ -578,8 +578,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                 "//result/doc[2][str[@name='id'][.='p3s2']]",
                 "//result/doc[3][str[@name='id'][.='p1s3']]", // 777
                 // 1234 (boosted so treated as own group)
-                "//result/doc[4][str[@name='id'][.='p3s3']]"
-                );
+                "//result/doc[4][str[@name='id'][.='p3s3']]");
             // same query, w/forceElevation to change top level order
             assertQ(
                 req(
@@ -1050,7 +1049,8 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               "/response/result/doc[5][str[@name='id'][.='z2']   and float[@name='score'][.=44.0]]",
               "*[count(" + EX + ")=2]", // groups w/o any other docs don't expand
               "*[count(" + EX + "[@name='-1']/doc)=1]",
-              EX + "[@name='-1']/doc[1][str[@name='id'][.='p1s4'] and float[@name='score'][.=48.0]]",
+              EX
+                  + "[@name='-1']/doc[1][str[@name='id'][.='p1s4'] and float[@name='score'][.=48.0]]",
               "*[count(" + EX + "[@name='0']/doc)=1]",
               EX + "[@name='0']/doc[1][str[@name='id'][.='p2s2'] and float[@name='score'][.=52.0]]"
               // no "expand" docs for group '1' because no other docs match query
