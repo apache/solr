@@ -134,7 +134,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   @Override
-  protected boolean supportsDistribedRequests() {
+  protected boolean supportsDistribRequests() {
     return true;
   }
 

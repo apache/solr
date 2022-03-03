@@ -139,7 +139,7 @@ public abstract class RequestHandlerBase implements
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     metrics = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
-    if (supportsDistribedRequests()) {
+    if (supportsDistribRequests()) {
       metricsShard = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope + "[shard]");
     }
     solrMetricsContext.gauge(() -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
@@ -150,7 +150,7 @@ public abstract class RequestHandlerBase implements
    * This is used to track metrics separately.
    * @see ShardParams#IS_SHARD
    */
-  protected boolean supportsDistribedRequests() {
+  protected boolean supportsDistribRequests() {
     return false;
   }
 
