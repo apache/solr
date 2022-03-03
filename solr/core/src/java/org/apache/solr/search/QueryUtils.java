@@ -153,24 +153,20 @@ public class QueryUtils {
   public static Query combineQueryAndFilter(Query scoreQuery, DocSet filterQuery) {
     // check for *:* is simple and avoids needless BooleanQuery wrapper even though BQ.rewrite optimizes this away
 
-    if (filterQuery == null) {
-      return null;
-    }
-    Query fq = filterQuery.makeQuery();
-
     if (scoreQuery == null || scoreQuery instanceof MatchAllDocsQuery) {
       if (filterQuery == null) {
         return new MatchAllDocsQuery(); // default if nothing -- match everything
       } else {
+        Query fq = filterQuery.makeQuery();
         return new ConstantScoreQuery(fq);
       }
     } else {
-      if (fq == null || fq instanceof MatchAllDocsQuery) {
+      if (scoreQuery instanceof MatchAllDocsQuery || filterQuery == null) {
         return scoreQuery;
       } else {
         return new BooleanQuery.Builder()
             .add(scoreQuery, Occur.MUST)
-            .add(fq, Occur.FILTER)
+            .add(filterQuery.makeQuery(), Occur.FILTER)
             .build();
       }
     }
