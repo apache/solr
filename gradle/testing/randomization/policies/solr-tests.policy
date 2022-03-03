@@ -38,11 +38,6 @@ grant {
   // TestConfigSets messes with these (wtf?)
   permission java.io.FilePermission "/path/to/solr/home/lib", "read";
 
-  // hdfs name node uses jetty, ends up with a JarResource in AllowedResourceAliasChecker#doStart
-  // which ends up needing to be able to read '/', see HttpServer2 - there is a comment I saw that
-  // indicated there may be a way to supply a custom AliasChecker
-  permission java.io.FilePermission "/", "read";
-
   permission java.nio.file.LinkPermission "hard";
 
   permission java.security.SecurityPermission "putProviderProperty.SolrTestNonSecure";

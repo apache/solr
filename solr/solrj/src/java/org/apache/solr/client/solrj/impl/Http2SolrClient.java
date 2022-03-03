@@ -227,7 +227,8 @@ public class Http2SolrClient extends SolrClient {
 
       httpClient = new HttpClient(transport);
 
-      if (builder.maxConnectionsPerHost != null) httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
+      if (builder.maxConnectionsPerHost != null)
+        httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     } else {
       log.debug("Create Http2SolrClient with HTTP/2 transport");
       ClientConnector clientConnector = new ClientConnector();

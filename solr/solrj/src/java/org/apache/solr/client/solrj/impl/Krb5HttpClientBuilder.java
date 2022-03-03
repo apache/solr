@@ -133,7 +133,9 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
     authenticationStore.addAuthentication(createSPNEGOAuthentication());
     http2Client.setAuthenticationStore(authenticationStore);
-    http2Client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
+    http2Client
+        .getProtocolHandlers()
+        .put(new WWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
   }
 
   public SolrHttpClientBuilder getBuilder(SolrHttpClientBuilder builder) {

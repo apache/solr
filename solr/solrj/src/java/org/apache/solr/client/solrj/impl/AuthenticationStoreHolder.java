@@ -17,65 +17,64 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import java.net.URI;
 import org.eclipse.jetty.client.HttpAuthenticationStore;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 
-import java.net.URI;
-
 public class AuthenticationStoreHolder implements AuthenticationStore {
 
-    private volatile AuthenticationStore authenticationStore;
+  private volatile AuthenticationStore authenticationStore;
 
-    public AuthenticationStoreHolder() {
-        this.authenticationStore = new HttpAuthenticationStore();
-    }
+  public AuthenticationStoreHolder() {
+    this.authenticationStore = new HttpAuthenticationStore();
+  }
 
-    public AuthenticationStoreHolder(AuthenticationStore authenticationStore) {
-        this.authenticationStore = authenticationStore;
-    }
+  public AuthenticationStoreHolder(AuthenticationStore authenticationStore) {
+    this.authenticationStore = authenticationStore;
+  }
 
-    public void updateAuthenticationStore(AuthenticationStore authenticationStore) {
-        this.authenticationStore = authenticationStore;
-    }
+  public void updateAuthenticationStore(AuthenticationStore authenticationStore) {
+    this.authenticationStore = authenticationStore;
+  }
 
-    @Override
-    public void addAuthentication(Authentication authentication) {
-      authenticationStore.addAuthentication(authentication);
-    }
+  @Override
+  public void addAuthentication(Authentication authentication) {
+    authenticationStore.addAuthentication(authentication);
+  }
 
-    @Override
-    public void removeAuthentication(Authentication authentication) {
-        authenticationStore.removeAuthentication(authentication);
-    }
+  @Override
+  public void removeAuthentication(Authentication authentication) {
+    authenticationStore.removeAuthentication(authentication);
+  }
 
-    @Override
-    public void clearAuthentications() {
-        authenticationStore.clearAuthentications();
-    }
+  @Override
+  public void clearAuthentications() {
+    authenticationStore.clearAuthentications();
+  }
 
-    @Override
-    public Authentication findAuthentication(String type, URI uri, String realm) {
-        return authenticationStore.findAuthentication(type, uri, realm);
-    }
+  @Override
+  public Authentication findAuthentication(String type, URI uri, String realm) {
+    return authenticationStore.findAuthentication(type, uri, realm);
+  }
 
-    @Override
-    public void addAuthenticationResult(Authentication.Result result) {
-        authenticationStore.addAuthenticationResult(result);
-    }
+  @Override
+  public void addAuthenticationResult(Authentication.Result result) {
+    authenticationStore.addAuthenticationResult(result);
+  }
 
-    @Override
-    public void removeAuthenticationResult(Authentication.Result result) {
-        authenticationStore.removeAuthenticationResult(result);
-    }
+  @Override
+  public void removeAuthenticationResult(Authentication.Result result) {
+    authenticationStore.removeAuthenticationResult(result);
+  }
 
-    @Override
-    public void clearAuthenticationResults() {
-        authenticationStore.clearAuthenticationResults();
-    }
+  @Override
+  public void clearAuthenticationResults() {
+    authenticationStore.clearAuthenticationResults();
+  }
 
-    @Override
-    public Authentication.Result findAuthenticationResult(URI uri) {
-        return authenticationStore.findAuthenticationResult(uri);
-    }
+  @Override
+  public Authentication.Result findAuthenticationResult(URI uri) {
+    return authenticationStore.findAuthenticationResult(uri);
+  }
 }
