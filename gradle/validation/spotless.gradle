@@ -44,6 +44,14 @@ configure(project(":solr").subprojects) { prj ->
 
         // Exclude certain files (generated ones, mostly).
         switch (project.path) {
+          case ":solr:core":
+            targetExclude "src/java/org/apache/solr/parser/ParseException.java",
+              "src/java/org/apache/solr/parser/QueryParser.java",
+              "src/java/org/apache/solr/parser/QueryParserConstants.java",
+              "src/java/org/apache/solr/parser/QueryParserTokenManager.java",
+              "src/java/org/apache/solr/parser/Token.java",
+              "src/java/org/apache/solr/parser/TokenMgrError.java"
+            break
           case ":solr:solrj":
             targetExclude "src/test/org/apache/solr/client/solrj/io/stream/*.java"
             break
