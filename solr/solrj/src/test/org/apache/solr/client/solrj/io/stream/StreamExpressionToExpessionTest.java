@@ -117,8 +117,6 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testDaemonStream() throws Exception {
     String expressionString;
 
@@ -262,8 +260,6 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testUpdateStream() throws Exception {
     StreamExpression expression =
         StreamExpressionParser.parse(
@@ -552,10 +548,9 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
   public void testCloudSolrStreamWithEscapedQuote() throws Exception {
 
     // The purpose of this test is to ensure that a parameter with a contained " character is
-    // properly
-    // escaped when it is turned back into an expression. This is important when an expression is
-    // passed
-    // to a worker (parallel stream) or even for other reasons when an expression is string-ified.
+    // properly escaped when it is turned back into an expression. This is important when an
+    // expression is passedto a worker (parallel stream) or even for other reasons when an
+    // expression is string-ified.
 
     // Basic test
     String originalExpressionString =

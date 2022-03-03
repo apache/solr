@@ -2678,11 +2678,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         assertEquals(12, (long) tuple.getLong(id));
         tuple = dstream.read();
         assertEquals(13, (long) tuple.getLong(id));
-        cluster
-            .getSolrClient()
-            .commit(
-                "collection1"); // We want to see if the version has been updated after reading two
-        // tuples
+        // We want to see if the version has been updated after reading two tuples
+        cluster.getSolrClient().commit("collection1");
 
         // Index a few more documents
         new UpdateRequest()
@@ -2711,9 +2708,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented 4-Sep-2018
-  // @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
-  // 2-Aug-2018
   public void testParallelTopicStream() throws Exception {
 
     Assume.assumeTrue(!useAlias);
@@ -2842,8 +2836,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
       // Run the same topic again including the initialCheckpoint. It should start where it left
-      // off.
-      // initialCheckpoint should be ignored for all but the first run.
+      // off. initialCheckpoint should be ignored for all but the first run.
       stream = factory.constructStream(expression);
       context = new StreamContext();
       context.setSolrClientCache(cache);
@@ -4082,8 +4075,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(cache);
     // use filter() to allow being parsed as 'terms in set' query instead of a (weighted/scored)
-    // BooleanQuery
-    // so we don't trip too many boolean clauses
+    // BooleanQuery so we don't trip too many boolean clauses
     String longQuery =
         "\"filter(id:("
             + IntStream.range(0, 4000).mapToObj(i -> "a").collect(Collectors.joining(" ", "", ""))
@@ -4351,10 +4343,17 @@ public class StreamExpressionTest extends SolrCloudTestCase {
    *
    * <p>The filetree created looks like:
    *
-   * <p>dataDir |- topLevel1.txt |- topLevel2.txt |- topLevel-empty.txt |- directory1 |-
-   * secondLevel1.txt |- secondLevel2.txt
+   * <pre>
+   * dataDir
+   *   |- topLevel1.txt
+   *   |- topLevel2.txt
+   *   |- topLevel-empty.txt
+   *   |- directory1
+   *        |- secondLevel1.txt
+   *        |- secondLevel2.txt
+   * </pre>
    *
-   * <p>Each file contains 4 lines. Each line looks like: "<filename> line <linenumber>"
+   * Each file contains 4 lines. Each line looks like: "<filename> line <linenumber>"
    */
   private static void populateFileStreamData(Path dataDir) throws Exception {
     Files.createDirectories(dataDir);

@@ -382,14 +382,16 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final String expr =
           "update("
               + COLLECTION_X
-              + ", batchSize=50,                   " // note batch size
+              // note batch size
+              + ", batchSize=50,                   "
               + "       search("
               + COLLECTION_Y
               + ",                          "
-              + "              q=\"foo_i:[* TO 10]\",                     " // 10 matches = 1 batch
+              // 10 matches = 1 batch
+              + "              q=\"foo_i:[* TO 10]\",                     "
               + "              rows=100,                                  "
-              + "              fl=\"id,foo_i,_version_\",                 " // pruneVersionField
-              // default true
+              // pruneVersionField default true
+              + "              fl=\"id,foo_i,_version_\",                 "
               + "              sort=\"foo_i desc\"))                      ";
 
       final SolrStream solrStream =
@@ -407,12 +409,13 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final String expr =
           "update("
               + COLLECTION_X
-              + ", batchSize=5,                    " // note batch size
+              // note batch size
+              + ", batchSize=5,                    "
               + "       search("
               + COLLECTION_Y
               + ",                          "
-              + "              q=\"foo_i:[30 TO *]\",                     " // 13 matches = 3
-              // batches
+              // 13 matches = 3 batches
+              + "              q=\"foo_i:[30 TO *]\",                     "
               + "              rows=100,                                  "
               + "              fl=\"id,foo_i\",                           "
               + "              sort=\"foo_i desc\"))                      ";
@@ -707,18 +710,18 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final String expr =
           "delete("
               + COLLECTION_X
-              + ", batchSize=5,                    " // note batch size
+              // note batch size
+              + ", batchSize=5,                    "
               + "       search("
               + COLLECTION_X
               + ",                          "
-              + "              q=\"foo_i:[* TO 10]\",                     " // 10 matches = 2
-              // batches
+              // 10 matches = 2 batches
+              + "              q=\"foo_i:[* TO 10]\",                     "
               + "              rows=100,                                  "
-              + "              fl=\"id,foo_i,_version_\",                 " // foo_i should be
-              // ignored...
-              + "              sort=\"foo_i desc\"))                      " // version constraint
-          // should be ok
-          ;
+              // foo_i should be ignored...
+              + "              fl=\"id,foo_i,_version_\",                 "
+              // version constraint should be ok
+              + "              sort=\"foo_i desc\"))                      ";
 
       final SolrStream solrStream =
           new SolrStream(solrUrl + "/" + COLLECTION_X, params("qt", "/stream", "expr", expr));
@@ -840,16 +843,18 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final String expr =
           "delete("
               + COLLECTION_X
-              + ", batchSize=50,                   " // note batch size
-              + "       pruneVersionField=true,                           " // NOTE: ignoring Y
-              // version to del X
+              // note batch size
+              + ", batchSize=50,                   "
+              // NOTE: ignoring Y version to del X
+              + "       pruneVersionField=true,                           "
               + "       search("
               + COLLECTION_Y
               + ",                          "
-              + "              q=\"foo_i:[* TO 10]\",                     " // 10 matches = 1 batch
+              // 10 matches = 1 batch
+              + "              q=\"foo_i:[* TO 10]\",                     "
               + "              rows=100,                                  "
-              + "              fl=\"id,foo_i,_version_\",                 " // foo_i & version
-              // should be ignored
+              // foo_i & version should be ignored
+              + "              fl=\"id,foo_i,_version_\",                 "
               + "              sort=\"foo_i desc\"))                      ";
 
       final SolrStream solrStream =
@@ -871,15 +876,16 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       final String expr =
           "delete("
               + COLLECTION_X
-              + ", batchSize=5,                    " // note batch size
+              // note batch size
+              + ", batchSize=5,                    "
               + "       search("
               + COLLECTION_Y
               + ",                          "
-              + "              q=\"foo_i:[30 TO *]\",                     " // 13 matches = 3
-              // batches
+              // 13 matches = 3 batches
+              + "              q=\"foo_i:[30 TO *]\",                     "
               + "              rows=100,                                  "
-              + "              fl=\"id,foo_i\",                           " // foo_i should be
-              // ignored
+              // foo_i should be ignored
+              + "              fl=\"id,foo_i\",                           "
               + "              sort=\"foo_i desc\"))                      ";
 
       final SolrStream solrStream =

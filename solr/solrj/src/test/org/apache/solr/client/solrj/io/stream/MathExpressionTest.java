@@ -2373,9 +2373,6 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void testDistributions() throws Exception {
     String cexpr =
         "let(a=normalDistribution(10, 2), "
@@ -4626,9 +4623,6 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //2018-03-10
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testMultiVariateNormalDistribution() throws Exception {
     String cexpr =
         "let(echo=true,"
@@ -5650,7 +5644,6 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testGammaDistribution() throws Exception {
     String cexpr =
         "#comment\nlet(echo=true, "

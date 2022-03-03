@@ -94,8 +94,6 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testDaemonStream() throws Exception {
     // Basic test
     try (DaemonStream stream =
@@ -209,8 +207,6 @@ public class StreamExpressionToExplanationTest extends SolrTestCase {
   }
 
   @Test
-  // commented out on: 24-Dec-2018
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testUpdateStream() throws Exception {
     StreamExpression expression =
         StreamExpressionParser.parse(

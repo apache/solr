@@ -98,15 +98,12 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     // Ok, so.....hsqldb is doing something totally weird so I thought I'd take a moment to explain
     // it.
     // According to http://www.hsqldb.org/doc/1.8/guide/guide.html#N101EF, section "Components of
-    // SQL Expressions", clause "name",
-    // "When an SQL statement is issued, any lowercase characters in unquoted identifiers are
-    // converted to uppercase."
-    // :(   Like seriously....
+    // SQL Expressions", clause "name", "When an SQL statement is issued, any lowercase characters
+    // in unquoted identifiers are converted to uppercase." :(   Like seriously....
     // So, for this reason and to simplify writing these tests I've decided that in all statements
-    // all table and column names
-    // will be in UPPERCASE. This is to ensure things look and behave consistently. Note that this
-    // is not a requirement of the
-    // JDBCStream and is only a carryover from the driver we are testing with.
+    // all table and column names will be in UPPERCASE. This is to ensure things look and behave
+    // consistently. Note that this is not a requirement of the JDBCStream and is only a carryover
+    // from the driver we are testing with.
     Class.forName("org.hsqldb.jdbcDriver").getConstructor().newInstance();
     Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
     Statement statement = connection.createStatement();

@@ -222,9 +222,8 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   public void testParallelFacetMultipleDimensionsOverAlias() throws Exception {
 
     // notice we're sorting the stream by a metric, but internally, that doesn't work for
-    // parallelization
-    // so the rollup has to sort by dimensions and then apply a final re-sort once the parallel
-    // streams are merged
+    // parallelization so the rollup has to sort by dimensions and then apply a final re-sort once
+    // the parallel streams are merged
     String facetExprTmpl =
         ""
             + "facet(\n"
@@ -245,9 +244,8 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   @Test
   public void testParallelFacetSortByDimensions() throws Exception {
     // notice we're sorting the stream by a metric, but internally, that doesn't work for
-    // parallelization
-    // so the rollup has to sort by dimensions and then apply a final re-sort once the parallel
-    // streams are merged
+    // parallelization so the rollup has to sort by dimensions and then apply a final re-sort once
+    // the parallel streams are merged
     String facetExprTmpl =
         ""
             + "facet(\n"

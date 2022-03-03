@@ -2187,8 +2187,6 @@ public class StreamingTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testZeroParallelReducerStream() throws Exception {
 
     new UpdateRequest()
@@ -2374,8 +2372,6 @@ public class StreamingTest extends SolrCloudTestCase {
   }
 
   @Test
-  // commented out on: 17-Feb-2019
-  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testParallelMergeStream() throws Exception {
 
     new UpdateRequest()
@@ -2787,8 +2783,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     // Test whether all the expected types are actually returned, including booleans and dates.
     // The contract is that the /select and /export handlers return the same format, so we can test
-    // this once each
-    // way
+    // this once each way
     new UpdateRequest()
         .add(
             id,

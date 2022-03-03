@@ -5083,12 +5083,10 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
 
     { // attempt to delete 2 docs, one with correct version, one with "stale" version that should
-      // fail
-      // but config uses TolerantUpdateProcessorFactory so batch should still be ok...
+      // fail but config uses TolerantUpdateProcessorFactory so batch should still be ok...
       //
       // It would be nice it there was a more explicit, targetted, option for update() and delete()
-      // to
-      // ensure that even if one "batch" fails it continues with other batches.
+      // to ensure that even if one "batch" fails it continues with other batches.
       // See TODO in UpdateStream
 
       final long v13_ok = versions.get("doc_13").longValue();
