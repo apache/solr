@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Unit tests for v2 "admin" API implementations.
- */
+/** Unit tests for v2 "admin" API implementations. */
 package org.apache.solr.handler.admin.api;

@@ -21,7 +21,6 @@ import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpConnectionMetrics;
 import org.apache.http.HttpException;
@@ -36,10 +35,10 @@ import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHttpRequest;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.TestInjection;
@@ -48,7 +47,7 @@ import org.junit.Test;
 
 @SuppressSSL
 public class ConnectionReuseTest extends SolrCloudTestCase {
-  
+
   private AtomicInteger id = new AtomicInteger();
   private HttpClientContext context = HttpClientContext.create();
 
@@ -58,14 +57,20 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     TestInjection.failUpdateRequests = "true:100";
     configureCluster(1)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig(
+            "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "config", 1, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+    cluster
+        .getSolrClient()
+        .waitForState(
+            COLLECTION,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
   }
 
   private SolrClient buildClient(CloseableHttpClient httpClient, URL url) {
@@ -76,13 +81,19 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
       case 1:
         return getHttpSolrClient(url.toString() + "/" + COLLECTION, httpClient);
       case 2:
-        CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean(), httpClient, 30000, 60000);
+        CloudSolrClient client =
+            getCloudSolrClient(
+                cluster.getZkServer().getZkAddress(),
+                random().nextBoolean(),
+                httpClient,
+                30000,
+                60000);
         client.setDefaultCollection(COLLECTION);
         return client;
     }
     throw new RuntimeException("impossible");
   }
-  
+
   @Test
   public void testConnectionReuse() throws Exception {
 
@@ -115,7 +126,10 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
           } catch (Exception e) {
             e.printStackTrace();
           }
-          if (!done && i > 0 && i < cnt2 - 1 && client instanceof ConcurrentUpdateSolrClient
+          if (!done
+              && i > 0
+              && i < cnt2 - 1
+              && client instanceof ConcurrentUpdateSolrClient
               && random().nextInt(10) > 8) {
             queueBreaks++;
             done = true;
@@ -127,7 +141,8 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
         }
       }
 
-      route = new HttpRoute(new HttpHost(url.getHost(), url.getPort(), isSSLMode() ? "https" : "http"));
+      route =
+          new HttpRoute(new HttpHost(url.getHost(), url.getPort(), isSSLMode() ? "https" : "http"));
 
       mConn = cm.requestConnection(route, HttpSolrClient.cacheKey);
 
@@ -138,25 +153,32 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
 
       cm.releaseConnection(conn2, null, -1, TimeUnit.MILLISECONDS);
 
-      assertNotNull("No connection metrics found - is the connection getting aborted? server closing the connection? "
-          + client.getClass().getSimpleName(), metrics);
+      assertNotNull(
+          "No connection metrics found - is the connection getting aborted? server closing the connection? "
+              + client.getClass().getSimpleName(),
+          metrics);
 
       // we try and make sure the connection we get has handled all of the requests in this test
       if (client instanceof ConcurrentUpdateSolrClient) {
         // we can't fully control queue polling breaking up requests - allow a bit of leeway
         int exp = cnt1 + queueBreaks + 2;
         assertTrue(
-            "We expected all communication via streaming client to use one connection! expected=" + exp + " got="
+            "We expected all communication via streaming client to use one connection! expected="
+                + exp
+                + " got="
                 + metrics.getRequestCount(),
-            Math.max(exp, metrics.getRequestCount()) - Math.min(exp, metrics.getRequestCount()) < 3);
+            Math.max(exp, metrics.getRequestCount()) - Math.min(exp, metrics.getRequestCount())
+                < 3);
       } else {
-        assertTrue("We expected all communication to use one connection! " + client.getClass().getSimpleName() + " "
-            + metrics.getRequestCount(),
+        assertTrue(
+            "We expected all communication to use one connection! "
+                + client.getClass().getSimpleName()
+                + " "
+                + metrics.getRequestCount(),
             cnt1 * cnt2 + 2 <= metrics.getRequestCount());
       }
 
-    }
-    finally {
+    } finally {
       HttpClientUtil.close(httpClient);
     }
   }
@@ -168,7 +190,11 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
     return conn;
   }
 
-  public void headerRequest(HttpHost target, HttpRoute route, HttpClientConnection conn, PoolingHttpClientConnectionManager cm)
+  public void headerRequest(
+      HttpHost target,
+      HttpRoute route,
+      HttpClientConnection conn,
+      PoolingHttpClientConnectionManager cm)
       throws IOException, HttpException {
     HttpRequest req = new BasicHttpRequest("OPTIONS", "*", HttpVersion.HTTP_1_1);
 
@@ -184,10 +210,9 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
     conn.receiveResponseHeader();
   }
 
-  public ConnectionRequest getClientConnectionRequest(HttpClient httpClient, HttpRoute route, PoolingHttpClientConnectionManager cm) {
+  public ConnectionRequest getClientConnectionRequest(
+      HttpClient httpClient, HttpRoute route, PoolingHttpClientConnectionManager cm) {
     ConnectionRequest mConn = cm.requestConnection(route, HttpSolrClient.cacheKey);
     return mConn;
   }
-
 }
-

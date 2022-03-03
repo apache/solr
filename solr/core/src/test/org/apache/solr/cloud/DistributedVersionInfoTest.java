@@ -16,6 +16,9 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRIB_FROM;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -27,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -56,9 +58,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRIB_FROM;
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class DistributedVersionInfoTest extends SolrCloudTestCase {
@@ -67,9 +66,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(3)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(3).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   private static final String COLLECTION = "c8n_vers_1x3";
@@ -83,7 +80,10 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     final ZkStateReader stateReader = cluster.getSolrClient().getZkStateReader();
-    stateReader.waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+    stateReader.waitForState(
+        COLLECTION,
+        DEFAULT_TIMEOUT,
+        TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, 1, 3));
 
     final Replica leader = stateReader.getLeaderRetry(COLLECTION, shardId);
@@ -95,17 +95,20 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     cluster.getSolrClient().commit(COLLECTION);
 
     // verify doc is on the leader and replica
-    final List<Replica> notLeaders = stateReader.getClusterState().getCollection(COLLECTION).getReplicas()
-        .stream()
-        .filter(r -> r.getCoreName().equals(leader.getCoreName()) == false)
-        .collect(Collectors.toList());
+    final List<Replica> notLeaders =
+        stateReader.getClusterState().getCollection(COLLECTION).getReplicas().stream()
+            .filter(r -> r.getCoreName().equals(leader.getCoreName()) == false)
+            .collect(Collectors.toList());
     assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, 1, null);
 
     // get max version from the leader and replica
     Replica replica = notLeaders.get(0);
     Long maxOnLeader = getMaxVersionFromIndex(leader);
     Long maxOnReplica = getMaxVersionFromIndex(replica);
-    assertEquals("leader and replica should have same max version: " + maxOnLeader, maxOnLeader, maxOnReplica);
+    assertEquals(
+        "leader and replica should have same max version: " + maxOnLeader,
+        maxOnLeader,
+        maxOnReplica);
 
     // send the same doc but with a lower version than the max in the index
     try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
@@ -116,14 +119,17 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
       // simulate what the leader does when sending a doc to a replica
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString());
+      params.set(
+          DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString());
       params.set(DISTRIB_FROM, leader.getCoreUrl());
 
       UpdateRequest req = new UpdateRequest();
       req.setParams(params);
       req.add(doc);
 
-      log.info("Sending doc with out-of-date version ({}) document directly to replica", maxOnReplica -1);
+      log.info(
+          "Sending doc with out-of-date version ({}) document directly to replica",
+          maxOnReplica - 1);
 
       client.request(req);
       client.commit();
@@ -136,7 +142,8 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     maxOnLeader = getMaxVersionFromIndex(leader);
     maxOnReplica = getMaxVersionFromIndex(replica);
-    assertEquals("leader and replica should have same max version after reload", maxOnLeader, maxOnReplica);
+    assertEquals(
+        "leader and replica should have same max version after reload", maxOnLeader, maxOnReplica);
 
     // now start sending docs while collection is reloading
 
@@ -146,91 +153,105 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     final Set<Integer> deletedDocs = new HashSet<>();
     final AtomicInteger docsSent = new AtomicInteger(0);
     final Random rand = new Random(5150);
-    Thread docSenderThread = new Thread() {
-      public void run() {
+    Thread docSenderThread =
+        new Thread() {
+          public void run() {
 
-        // brief delay before sending docs
-        try {
-          Thread.sleep(rand.nextInt(30)+1);
-        } catch (InterruptedException e) {}
-
-        for (int i=0; i < 1000; i++) {
-          if (i % (rand.nextInt(20)+1) == 0) {
+            // brief delay before sending docs
             try {
-              Thread.sleep(rand.nextInt(50)+1);
-            } catch (InterruptedException e) {}
-          }
+              Thread.sleep(rand.nextInt(30) + 1);
+            } catch (InterruptedException e) {
+            }
 
-          int docId = i+1;
-          try {
-            sendDoc(docId);
-            docsSent.incrementAndGet();
-          } catch (Exception e) {}
-        }
-      }
-    };
+            for (int i = 0; i < 1000; i++) {
+              if (i % (rand.nextInt(20) + 1) == 0) {
+                try {
+                  Thread.sleep(rand.nextInt(50) + 1);
+                } catch (InterruptedException e) {
+                }
+              }
 
-    Thread reloaderThread = new Thread() {
-      public void run() {
-        try {
-          Thread.sleep(rand.nextInt(300)+1);
-        } catch (InterruptedException e) {}
-
-        for (int i=0; i < 3; i++) {
-          try {
-            reloadCollection(leader, COLLECTION);
-          } catch (Exception e) {}
-
-          try {
-            Thread.sleep(rand.nextInt(300)+300);
-          } catch (InterruptedException e) {}
-        }
-      }
-    };
-
-    Thread deleteThread = new Thread() {
-      public void run() {
-
-        // brief delay before sending docs
-        try {
-          Thread.sleep(500);
-        } catch (InterruptedException e) {}
-
-        for (int i=0; i < 200; i++) {
-          try {
-            Thread.sleep(rand.nextInt(50)+1);
-          } catch (InterruptedException e) {}
-
-          int ds = docsSent.get();
-          if (ds > 0) {
-            int docToDelete = rand.nextInt(ds) + 1;
-            if (!deletedDocs.contains(docToDelete)) {
-              delI(String.valueOf(docToDelete));
-              deletedDocs.add(docToDelete);
+              int docId = i + 1;
+              try {
+                sendDoc(docId);
+                docsSent.incrementAndGet();
+              } catch (Exception e) {
+              }
             }
           }
-        }
-      }
-    };
+        };
 
-    Thread committerThread = new Thread() {
-      public void run() {
-        try {
-          Thread.sleep(rand.nextInt(200)+1);
-        } catch (InterruptedException e) {}
+    Thread reloaderThread =
+        new Thread() {
+          public void run() {
+            try {
+              Thread.sleep(rand.nextInt(300) + 1);
+            } catch (InterruptedException e) {
+            }
 
-        for (int i=0; i < 20; i++) {
-          try {
-            cluster.getSolrClient().commit(COLLECTION);
-          } catch (Exception e) {}
+            for (int i = 0; i < 3; i++) {
+              try {
+                reloadCollection(leader, COLLECTION);
+              } catch (Exception e) {
+              }
 
-          try {
-            Thread.sleep(rand.nextInt(100)+100);
-          } catch (InterruptedException e) {}
-        }
-      }
-    };
+              try {
+                Thread.sleep(rand.nextInt(300) + 300);
+              } catch (InterruptedException e) {
+              }
+            }
+          }
+        };
 
+    Thread deleteThread =
+        new Thread() {
+          public void run() {
+
+            // brief delay before sending docs
+            try {
+              Thread.sleep(500);
+            } catch (InterruptedException e) {
+            }
+
+            for (int i = 0; i < 200; i++) {
+              try {
+                Thread.sleep(rand.nextInt(50) + 1);
+              } catch (InterruptedException e) {
+              }
+
+              int ds = docsSent.get();
+              if (ds > 0) {
+                int docToDelete = rand.nextInt(ds) + 1;
+                if (!deletedDocs.contains(docToDelete)) {
+                  delI(String.valueOf(docToDelete));
+                  deletedDocs.add(docToDelete);
+                }
+              }
+            }
+          }
+        };
+
+    Thread committerThread =
+        new Thread() {
+          public void run() {
+            try {
+              Thread.sleep(rand.nextInt(200) + 1);
+            } catch (InterruptedException e) {
+            }
+
+            for (int i = 0; i < 20; i++) {
+              try {
+                cluster.getSolrClient().commit(COLLECTION);
+              } catch (Exception e) {
+              }
+
+              try {
+                Thread.sleep(rand.nextInt(100) + 100);
+              } catch (InterruptedException e) {
+              }
+            }
+          }
+        };
 
     docSenderThread.start();
     reloaderThread.start();
@@ -250,23 +271,25 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
     maxOnLeader = getMaxVersionFromIndex(leader);
     maxOnReplica = getMaxVersionFromIndex(replica);
-    assertEquals("leader and replica should have same max version before reload", maxOnLeader, maxOnReplica);
+    assertEquals(
+        "leader and replica should have same max version before reload", maxOnLeader, maxOnReplica);
 
     reloadCollection(leader, COLLECTION);
 
     maxOnLeader = getMaxVersionFromIndex(leader);
     maxOnReplica = getMaxVersionFromIndex(replica);
-    assertEquals("leader and replica should have same max version after reload", maxOnLeader, maxOnReplica);
+    assertEquals(
+        "leader and replica should have same max version after reload", maxOnLeader, maxOnReplica);
 
     assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, 1000, deletedDocs);
-
   }
 
   protected long getMaxVersionFromIndex(Replica replica) throws IOException, SolrServerException {
     return getVersionFromIndex(replica, null);
   }
 
-  protected long getVersionFromIndex(Replica replica, String docId) throws IOException, SolrServerException {
+  protected long getVersionFromIndex(Replica replica, String docId)
+      throws IOException, SolrServerException {
     Long vers = null;
     String queryStr = (docId != null) ? "id:" + docId : "_version_:[0 TO *]";
     SolrQuery query = new SolrQuery(queryStr);
@@ -278,8 +301,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
       QueryResponse qr = client.query(query);
       SolrDocumentList hits = qr.getResults();
-      if (hits.isEmpty())
-        fail("No results returned from query: "+query);
+      if (hits.isEmpty()) fail("No results returned from query: " + query);
 
       vers = (Long) hits.get(0).getFirstValue("_version_");
     }
@@ -290,22 +312,22 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     return vers.longValue();
   }
 
-  protected void assertDocsExistInAllReplicas(Replica leader, List<Replica> notLeaders,
-                                              String testCollectionName,
-                                              int firstDocId,
-                                              int lastDocId,
-                                              Set<Integer> deletedDocs)
+  protected void assertDocsExistInAllReplicas(
+      Replica leader,
+      List<Replica> notLeaders,
+      String testCollectionName,
+      int firstDocId,
+      int lastDocId,
+      Set<Integer> deletedDocs)
       throws Exception {
     HttpSolrClient leaderSolr = getHttpSolrClient(leader);
     List<HttpSolrClient> replicas = new ArrayList<HttpSolrClient>(notLeaders.size());
-    for (Replica r : notLeaders)
-      replicas.add(getHttpSolrClient(r));
+    for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r));
 
     try {
       for (int d = firstDocId; d <= lastDocId; d++) {
 
-        if (deletedDocs != null && deletedDocs.contains(d))
-          continue;
+        if (deletedDocs != null && deletedDocs.contains(d)) continue;
 
         String docId = String.valueOf(d);
         Long leaderVers = assertDocExists(leaderSolr, testCollectionName, docId, null);
@@ -330,25 +352,37 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
-    AbstractFullDistribZkTestBase.sendDocsWithRetry(cluster.getSolrClient(), COLLECTION, Collections.singletonList(doc), 2, 3, 100);
+    AbstractFullDistribZkTestBase.sendDocsWithRetry(
+        cluster.getSolrClient(), COLLECTION, Collections.singletonList(doc), 2, 3, 100);
   }
 
   /**
-   * Query the real-time get handler for a specific doc by ID to verify it
-   * exists in the provided server, using distrib=false so it doesn't route to another replica.
+   * Query the real-time get handler for a specific doc by ID to verify it exists in the provided
+   * server, using distrib=false so it doesn't route to another replica.
    */
-  protected Long assertDocExists(HttpSolrClient solr, String coll, String docId, Long expVers) throws Exception {
-    QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false", "fl", "id,_version_"));
+  protected Long assertDocExists(HttpSolrClient solr, String coll, String docId, Long expVers)
+      throws Exception {
+    QueryRequest qr =
+        new QueryRequest(
+            params("qt", "/get", "id", docId, "distrib", "false", "fl", "id,_version_"));
     NamedList<?> rsp = solr.request(qr);
-    SolrDocument doc = (SolrDocument)rsp.get("doc");
+    SolrDocument doc = (SolrDocument) rsp.get("doc");
     String match = JSONTestUtil.matchObj("/id", doc, docId);
-    assertTrue("Doc with id=" + docId + " not found in " + solr.getBaseURL() +
-        " due to: " + match + "; rsp=" + rsp, match == null);
+    assertTrue(
+        "Doc with id="
+            + docId
+            + " not found in "
+            + solr.getBaseURL()
+            + " due to: "
+            + match
+            + "; rsp="
+            + rsp,
+        match == null);
 
-    Long vers = (Long)doc.getFirstValue("_version_");
+    Long vers = (Long) doc.getFirstValue("_version_");
     assertNotNull(vers);
     if (expVers != null)
-      assertEquals("expected version of doc "+docId+" to be "+expVers, expVers, vers);
+      assertEquals("expected version of doc " + docId + " to be " + expVers, expVers, vers);
 
     return vers;
   }
@@ -365,8 +399,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
       // send reload command for the collection
       log.info("Sending RELOAD command for {}", testCollectionName);
-      CollectionAdminRequest.reloadCollection(testCollectionName)
-          .process(client);
+      CollectionAdminRequest.reloadCollection(testCollectionName).process(client);
       Thread.sleep(2000); // reload can take a short while
 
       // verify reload is done, waiting up to 30 seconds for slow test environments

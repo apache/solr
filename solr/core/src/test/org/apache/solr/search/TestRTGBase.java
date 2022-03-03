@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -23,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiBits;
 import org.apache.lucene.index.MultiTerms;
@@ -36,15 +36,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.update.UpdateLog;
 
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
-
 public class TestRTGBase extends SolrTestCaseJ4 {
 
   // means we've seen the leader and have version info (i.e. we are a non-leader replica)
   public static String FROM_LEADER = DistribPhase.FROMLEADER.toString();
 
-  protected final ConcurrentHashMap<Integer,DocInfo> model = new ConcurrentHashMap<>();
-  protected Map<Integer,DocInfo> committedModel = new HashMap<>();
+  protected final ConcurrentHashMap<Integer, DocInfo> model = new ConcurrentHashMap<>();
+  protected Map<Integer, DocInfo> committedModel = new HashMap<>();
   protected long snapshotCount;
   protected long committedModelClock;
   protected volatile int lastId;
@@ -60,13 +58,12 @@ public class TestRTGBase extends SolrTestCaseJ4 {
 
     syncArr = new Object[ndocs];
 
-    for (int i=0; i<ndocs; i++) {
+    for (int i = 0; i < ndocs; i++) {
       model.put(i, new DocInfo(0, -1L));
       syncArr[i] = new Object();
     }
     committedModel.putAll(model);
   }
-
 
   protected static class DocInfo {
     long version;
@@ -79,34 +76,32 @@ public class TestRTGBase extends SolrTestCaseJ4 {
 
     @Override
     public String toString() {
-      return "{version="+version+",val="+val+"}";
+      return "{version=" + version + ",val=" + val + "}";
     }
   }
 
   protected long badVersion(Random rand, long version) {
     if (version > 0) {
       // return a random number not equal to version
-      for (;;) {
+      for (; ; ) {
         long badVersion = rand.nextInt();
         if (badVersion != version && badVersion != 0) return badVersion;
       }
     }
 
     // if the version does not exist, then we can only specify a positive version
-    for (;;) {
-      long badVersion = rand.nextInt() & 0x7fffffff;  // mask off sign bit
+    for (; ; ) {
+      long badVersion = rand.nextInt() & 0x7fffffff; // mask off sign bit
       if (badVersion != 0) return badVersion;
     }
   }
 
-
   protected List<Long> getLatestVersions() {
-    try (UpdateLog.RecentUpdates startingRecentUpdates = h.getCore().getUpdateHandler().getUpdateLog().getRecentUpdates()) {
+    try (UpdateLog.RecentUpdates startingRecentUpdates =
+        h.getCore().getUpdateHandler().getUpdateLog().getRecentUpdates()) {
       return startingRecentUpdates.getVersions(100);
     }
   }
-
-
 
   protected int getFirstMatch(IndexReader r, Term t) throws IOException {
     Terms terms = MultiTerms.getTerms(r, t.field());
@@ -125,5 +120,4 @@ public class TestRTGBase extends SolrTestCaseJ4 {
     }
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
   }
-
 }

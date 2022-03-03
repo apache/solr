@@ -17,13 +17,11 @@
 
 package org.apache.solr.cloud;
 
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -44,7 +42,8 @@ public class DeleteNodeTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(6)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
   }
 
@@ -60,14 +59,14 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     Set<String> liveNodes = state.getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
-    CollectionAdminRequest.Create create = pickRandom(
-        CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),
-        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 1, 0),
-        CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 1),
-        // check RF=1
-        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 0, 0),
-        CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 0)
-        );
+    CollectionAdminRequest.Create create =
+        pickRandom(
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 1, 0),
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 1),
+            // check RF=1
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 0, 0),
+            CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 0));
     create.setCreateNodeSet(StrUtils.join(l, ','));
     cloudClient.request(create);
     state = cloudClient.getZkStateReader().getClusterState();
@@ -79,13 +78,14 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     List<Replica> replicas = docColl.getReplicas(node2bdecommissioned);
     if (replicas != null) {
       for (Replica replica : replicas) {
-        String shard = docColl.getShardId(node2bdecommissioned, replica.getStr(ZkStateReader.CORE_NAME_PROP));
+        String shard =
+            docColl.getShardId(node2bdecommissioned, replica.getStr(ZkStateReader.CORE_NAME_PROP));
         Slice slice = docColl.getSlice(shard);
         boolean hasOtherNonPullReplicas = false;
-        for (Replica r: slice.getReplicas()) {
-          if (!r.getName().equals(replica.getName()) &&
-              !r.getNodeName().equals(node2bdecommissioned) &&
-              r.getType() != Replica.Type.PULL) {
+        for (Replica r : slice.getReplicas()) {
+          if (!r.getName().equals(replica.getName())
+              && !r.getNodeName().equals(node2bdecommissioned)
+              && r.getType() != Replica.Type.PULL) {
             hasOtherNonPullReplicas = true;
             break;
           }
@@ -97,17 +97,21 @@ public class DeleteNodeTest extends SolrCloudTestCase {
       }
     }
     new CollectionAdminRequest.DeleteNode(node2bdecommissioned).processAsync("003", cloudClient);
-    CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus("003");
+    CollectionAdminRequest.RequestStatus requestStatus =
+        CollectionAdminRequest.requestStatus("003");
     CollectionAdminRequest.RequestStatusResponse rsp = null;
     for (int i = 0; i < 200; i++) {
       rsp = requestStatus.process(cloudClient);
-      if (rsp.getRequestStatus() == RequestStatusState.FAILED || rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
+      if (rsp.getRequestStatus() == RequestStatusState.FAILED
+          || rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
         break;
       }
       Thread.sleep(50);
     }
     if (log.isInfoEnabled()) {
-      log.info("####### DocCollection after: {}", cloudClient.getZkStateReader().getClusterState().getCollection(coll));
+      log.info(
+          "####### DocCollection after: {}",
+          cloudClient.getZkStateReader().getClusterState().getCollection(coll));
     }
     if (shouldFail) {
       assertTrue(String.valueOf(rsp), rsp.getRequestStatus() == RequestStatusState.FAILED);
