@@ -127,8 +127,7 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
             "q",
             "{!terms f=v_s method="
                 + termsMethod
-                + " }wow dude,other stuff") // terms reverse sorted to show this works
-        ,
+                + " }wow dude,other stuff"), // terms reverse sorted to show this works
         "//result[@numFound='2']");
 
     // frange and function query only work on single valued field types

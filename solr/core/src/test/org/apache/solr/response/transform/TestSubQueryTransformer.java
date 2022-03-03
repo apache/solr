@@ -490,10 +490,8 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
               "" + peopleMultiplier * 3
             },
             "subq1.neighbours.sort",
-            "id desc") // ,
-        ,
+            "id desc"),
         asserts.toArray(new String[] {})
-        //        )
         );
   }
 

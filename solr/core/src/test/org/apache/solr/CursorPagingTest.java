@@ -143,8 +143,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             params(CURSOR_MARK_PARAM, "gibberish", "sort", "id asc"))) {
       assertJQ(req(p, "qt", "/get", "fl", "id", "id", "yyy"), "=={'doc':{'id':'yyy'}}");
       assertJQ(
-          req(p, "qt", "/get", "fl", "id", "id", "xxx") // doesn't exist in our collection
-          ,
+          req(p, "qt", "/get", "fl", "id", "id", "xxx"), // doesn't exist in our collection
           "=={'doc':null}");
     }
   }

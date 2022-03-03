@@ -2054,8 +2054,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             p,
             "q",
             "*:*",
-            "json.facet" // num_d
-            ,
+            "json.facet", // num_d
             "{f1:{terms:{${terms} field:'${cat_s}', "
                 + "     prelim_sort:'count desc', sort:'n1 desc', facet:{n1:'sum(${num_d})'}  }},"
                 + " f2:{terms:{${terms} field:'${cat_s}', "
@@ -2068,8 +2067,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             p,
             "q",
             "*:*",
-            "json.facet" // num_i
-            ,
+            "json.facet", // num_i
             "{f1:{terms:{${terms} field:'${cat_s}', "
                 + "     prelim_sort:'count desc', sort:'n1 desc', facet:{n1:'sum(${num_i})'}  }},"
                 + " f2:{terms:{${terms} field:'${cat_s}', "
@@ -3034,9 +3032,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
         params(
             p,
             "q",
-            "*:*"
+            "*:*",
             // , "json.facet", "{f1:{terms:{field:'${cat_s}', mincount:3}}}"
-            ,
             "facet",
             "true",
             "facet.version",
@@ -3052,10 +3049,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
         params(
             p,
             "q",
-            "*:*"
+            "*:*",
             // , "json.facet", "{f1:{terms:{field:${super_s}, prefix:s, mincount:0 }}}"  // even
             // with mincount=0, we should only see buckets with the prefix
-            ,
             "facet",
             "true",
             "facet.version",
@@ -3074,10 +3070,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
         params(
             p,
             "q",
-            "*:*"
+            "*:*",
             // , "json.facet", "{f:{range:{field:${num_d}, start:-5, end:10, gap:5,   facet:{
             // x:'sum(${num_i})', ny:{query:'${where_s}:NY'}}   }}}"
-            ,
             "facet",
             "true",
             "facet.version",
@@ -3101,11 +3096,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
         params(
             p,
             "q",
-            "*:*"
+            "*:*",
             // , "json.facet", "{f1:{terms:{field:'${cat_s}', sort:'n1 desc',
             // facet:{n1:'sum(${num_d})'}  }}" +
             //    " , f2:{terms:{field:'${cat_s}', sort:'n1 asc', facet:{n1:'sum(${num_d})'}  }} }"
-            ,
             "facet",
             "true",
             "facet.version",
@@ -3129,10 +3123,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
         params(
             p,
             "q",
-            "id:(3 4 6)"
+            "id:(3 4 6)",
             // , "json.facet", "{f:{range:{field:${num_d}, start:-5, end:10, gap:5, other:all,
             // facet:{ x:'sum(${num_i})', ny:{query:'${where_s}:NY'}}   }}}"
-            ,
             "facet",
             "true",
             "facet.version",
@@ -3521,8 +3514,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
           params(
               p,
               "q",
-              "*:* -(+${cat_s}:A +${where_s}:NJ)" // make NY the only value in bucket A
-              ,
+              "*:* -(+${cat_s}:A +${where_s}:NJ)", // make NY the only value in bucket A
               "json.facet",
               "{"
                   + "  f1:{type:terms, field:'${cat_s}', facet:{min:'min(${where_s})', max:'max(${where_s})'}   }"

@@ -557,10 +557,8 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                     "fl", "id",
                     "sort", "num_i asc"),
                 "*[count(//doc)=3]",
-                "//result/doc[1][str[@name='id'][.='p2s4']]" // 13
-                ,
-                "//result/doc[2][str[@name='id'][.='p3s1']]" // 15
-                ,
+                "//result/doc[1][str[@name='id'][.='p2s4']]", // 13
+                "//result/doc[2][str[@name='id'][.='p3s1']]", // 15
                 "//result/doc[3][str[@name='id'][.='p1s3']]" // 777
                 );
             // same query, but boosting multiple skus from p3
@@ -575,15 +573,12 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                     "fl", "id",
                     "sort", "num_i asc"),
                 "*[count(//doc)=4]",
-                "//result/doc[1][str[@name='id'][.='p2s4']]" // 13
-                ,
-                "//result/doc[2][str[@name='id'][.='p3s2']]" // 100 (boosted so treated as own
-                // group)
-                ,
-                "//result/doc[3][str[@name='id'][.='p1s3']]" // 777
-                ,
-                "//result/doc[4][str[@name='id'][.='p3s3']]" // 1234 (boosted so treated as own
-                // group)
+                "//result/doc[1][str[@name='id'][.='p2s4']]", // 13
+                // 100 (boosted so treated as own group)
+                "//result/doc[2][str[@name='id'][.='p3s2']]",
+                "//result/doc[3][str[@name='id'][.='p1s3']]", // 777
+                // 1234 (boosted so treated as own group)
+                "//result/doc[4][str[@name='id'][.='p3s3']]"
                 );
             // same query, w/forceElevation to change top level order
             assertQ(
@@ -596,14 +591,11 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                     "fl", "id",
                     "sort", "num_i asc"),
                 "*[count(//doc)=4]",
-                "//result/doc[1][str[@name='id'][.='p3s3']]" // 1234 (boosted so treated as own
-                // group)
-                ,
-                "//result/doc[2][str[@name='id'][.='p3s2']]" // 100 (boosted so treated as own
-                // group)
-                ,
-                "//result/doc[3][str[@name='id'][.='p2s4']]" // 13
-                ,
+                // 1234 (boosted so treated as own group)
+                "//result/doc[1][str[@name='id'][.='p3s3']]",
+                // 100 (boosted so treated as own group)
+                "//result/doc[2][str[@name='id'][.='p3s2']]",
+                "//result/doc[3][str[@name='id'][.='p2s4']]", // 13
                 "//result/doc[4][str[@name='id'][.='p1s3']]" // 777
                 );
           }
@@ -900,10 +892,8 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               "//result/doc[1][str[@name='id'][.='z1']]",
               "//result/doc[2][str[@name='id'][.='z2']]",
               "//result/doc[3][str[@name='id'][.='z3']]",
-              "//result/doc[4][str[@name='id'][.='p2s4']]" // 13
-              ,
-              "//result/doc[5][str[@name='id'][.='p3s1']]" // 15
-              ,
+              "//result/doc[4][str[@name='id'][.='p2s4']]", // 13
+              "//result/doc[5][str[@name='id'][.='p3s1']]", // 15
               "//result/doc[6][str[@name='id'][.='z100']]",
               "//result/doc[7][str[@name='id'][.='p1s3']]" // 777
               );
@@ -922,13 +912,10 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               "//result/doc[1][str[@name='id'][.='z1']]",
               "//result/doc[2][str[@name='id'][.='z2']]",
               "//result/doc[3][str[@name='id'][.='z3']]",
-              "//result/doc[4][str[@name='id'][.='p3s4']]" // 4
-              ,
-              "//result/doc[5][str[@name='id'][.='p2s4']]" // 13
-              ,
+              "//result/doc[4][str[@name='id'][.='p3s4']]", // 4
+              "//result/doc[5][str[@name='id'][.='p2s4']]", // 13
               "//result/doc[6][str[@name='id'][.='z100']]",
-              "//result/doc[7][str[@name='id'][.='p1s3']]" // 777
-              ,
+              "//result/doc[7][str[@name='id'][.='p1s3']]", // 777
               "//result/doc[8][str[@name='id'][.='p3s3']]" // 1234
               );
           // same query, w/forceElevation to change top level order
@@ -942,15 +929,12 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                   "fl", "id",
                   "sort", "num_i asc"),
               "*[count(//doc)=8]",
-              "//result/doc[1][str[@name='id'][.='p3s3']]" // 1234
-              ,
+              "//result/doc[1][str[@name='id'][.='p3s3']]", // 1234
               "//result/doc[2][str[@name='id'][.='z3']]",
-              "//result/doc[3][str[@name='id'][.='p3s4']]" // 4
-              ,
+              "//result/doc[3][str[@name='id'][.='p3s4']]", // 4
               "//result/doc[4][str[@name='id'][.='z1']]",
               "//result/doc[5][str[@name='id'][.='z2']]",
-              "//result/doc[6][str[@name='id'][.='p2s4']]" // 13
-              ,
+              "//result/doc[6][str[@name='id'][.='p2s4']]", // 13
               "//result/doc[7][str[@name='id'][.='z100']]",
               "//result/doc[8][str[@name='id'][.='p1s3']]" // 777
               );
@@ -1026,23 +1010,15 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
             "*[count(/response/result/doc)=3]",
             "/response/result/doc[1]/str[@name='id'][.='p1s1']",
             "/response/result/doc[2]/str[@name='id'][.='p2s4']",
-            "/response/result/doc[3]/str[@name='id'][.='p3s1']"
-            //
-            ,
-            "*[count(" + EX + ")=count(/response/result/doc)]" // group per doc
-            //
-            ,
+            "/response/result/doc[3]/str[@name='id'][.='p3s1']",
+            "*[count(" + EX + ")=count(/response/result/doc)]", // group per doc
             "*[count(" + EX + "[@name='-1']/doc)=3]",
             EX + "[@name='-1']/doc[1]/str[@name='id'][.='p1s3']",
             EX + "[@name='-1']/doc[2]/str[@name='id'][.='p1s4']",
-            EX + "[@name='-1']/doc[3]/str[@name='id'][.='p1s2']"
-            //
-            ,
+            EX + "[@name='-1']/doc[3]/str[@name='id'][.='p1s2']",
             "*[count(" + EX + "[@name='0']/doc)=2]",
             EX + "[@name='0']/doc[1]/str[@name='id'][.='p2s3']",
-            EX + "[@name='0']/doc[2]/str[@name='id'][.='p2s1']"
-            //
-            ,
+            EX + "[@name='0']/doc[2]/str[@name='id'][.='p2s1']",
             "*[count(" + EX + "[@name='1']/doc)=2]",
             EX + "[@name='1']/doc[1]/str[@name='id'][.='p3s4']",
             EX + "[@name='1']/doc[2]/str[@name='id'][.='p3s3']");
@@ -1071,19 +1047,12 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               "/response/result/doc[2][str[@name='id'][.='p1s2'] and float[@name='score'][.=52.0]]",
               "/response/result/doc[3][str[@name='id'][.='p3s4'] and float[@name='score'][.=46.0]]",
               "/response/result/doc[4][str[@name='id'][.='z3']   and float[@name='score'][.=45.0]]",
-              "/response/result/doc[5][str[@name='id'][.='z2']   and float[@name='score'][.=44.0]]"
-              //
-              ,
-              "*[count(" + EX + ")=2]" // groups w/o any other docs don't expand
-              //
-              ,
+              "/response/result/doc[5][str[@name='id'][.='z2']   and float[@name='score'][.=44.0]]",
+              "*[count(" + EX + ")=2]", // groups w/o any other docs don't expand
               "*[count(" + EX + "[@name='-1']/doc)=1]",
-              EX + "[@name='-1']/doc[1][str[@name='id'][.='p1s4'] and float[@name='score'][.=48.0]]"
-              //
-              ,
+              EX + "[@name='-1']/doc[1][str[@name='id'][.='p1s4'] and float[@name='score'][.=48.0]]",
               "*[count(" + EX + "[@name='0']/doc)=1]",
               EX + "[@name='0']/doc[1][str[@name='id'][.='p2s2'] and float[@name='score'][.=52.0]]"
-              //
               // no "expand" docs for group '1' because no other docs match query
               // no "expand" docs for nulls unless/until SOLR-14330 is implemented
               );

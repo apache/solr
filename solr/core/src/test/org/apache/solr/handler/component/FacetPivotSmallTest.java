@@ -72,12 +72,10 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     index();
 
     assertQ(
-        req("q", "*:*", "facet", "true", "facet.pivot", "{!stats=bogus}place_t,company_t")
         // check we still get pivots...
-        ,
-        "//arr[@name='place_t,company_t']/lst[str[@name='value'][.='dublin']]"
+        req("q", "*:*", "facet", "true", "facet.pivot", "{!stats=bogus}place_t,company_t"),
+        "//arr[@name='place_t,company_t']/lst[str[@name='value'][.='dublin']]",
         // .. but sanity check we don't have any stats
-        ,
         "count(//arr[@name='place_t,company_t']/lst[str[@name='value'][.='dublin']]/lst[@name='stats'])=0");
   }
 

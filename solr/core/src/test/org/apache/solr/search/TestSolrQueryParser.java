@@ -188,8 +188,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // is not a phrase query.  As a result, docs can match that don't match phrase query "now cow"
     assertQ(req("q", "text:now-cow", "indent", "true", "sow", "false"), "//*[@numFound='2']");
     assertQ(
-        req("q", "text:now-cow", "indent", "true") // default sow=false
-        ,
+        req("q", "text:now-cow", "indent", "true"), // default sow=false
         "//*[@numFound='2']");
 
     // "text_np" field's type has WDGFF and (default) autoGeneratePhraseQueries=false
@@ -206,15 +205,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(req("q", "qaz {!term f=text}now wsx", "qq", "now"), "/response/numFound==2");
 
     assertJQ(
-        req("q", "qaz {!term f=foo_s v='a \\' \" \\\\ {! ) } ( { z'} wsx") // single quote escaping
-        ,
+        req("q", "qaz {!term f=foo_s v='a \\' \" \\\\ {! ) } ( { z'} wsx"), // single quote escaping
         "/response/numFound==1");
 
     assertJQ(
         req(
             "q",
-            "qaz {!term f=foo_s v=\"a ' \\\" \\\\ {! ) } ( { z\"} wsx") // double quote escaping
-        ,
+            "qaz {!term f=foo_s v=\"a ' \\\" \\\\ {! ) } ( { z\"} wsx"), // double quote escaping
         "/response/numFound==1");
 
     // double-join to test back-to-back local params
@@ -811,21 +808,18 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "df", "syn", "q", "wifi", "sow",
-            "true") // retrieve the single document containing literal "wifi"
-        ,
+            "true"), // retrieve the single document containing literal "wifi"
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
 
     assertJQ(
-        req("df", "syn", "q", "wi fi", "sow", "false") // trigger the "wi fi => wifi" synonym
-        ,
+        req("df", "syn", "q", "wi fi", "sow", "false"), // trigger the "wi fi => wifi" synonym
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
 
     assertJQ(req("df", "syn", "q", "wi fi", "sow", "true"), "/response/numFound==0");
     assertJQ(
-        req("df", "syn", "q", "wi fi") // default sow=false
-        ,
+        req("df", "syn", "q", "wi fi"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
 
@@ -836,8 +830,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(req("df", "syn", "q", "{!lucene sow=true}wi fi"), "/response/numFound==0");
 
     assertJQ(
-        req("df", "syn", "q", "{!lucene}wi fi") // default sow=false
-        ,
+        req("df", "syn", "q", "{!lucene}wi fi"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
   }
@@ -848,13 +841,11 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "df", "syn", "q", "wifi", "sow",
-            "true") // retrieve the single document containing literal "wifi"
-        ,
+            "true"), // retrieve the single document containing literal "wifi"
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
-        req("df", "syn", "q", "wi fi", "sow", "false") // trigger the "wi fi => wifi" synonym
-        ,
+        req("df", "syn", "q", "wi fi", "sow", "false"), // trigger the "wi fi => wifi" synonym
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
@@ -864,8 +855,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             "q",
             "wi /* foo */ fi",
             "sow",
-            "false") // trigger the "wi fi => wifi" synonym
-        ,
+            "false"), // trigger the "wi fi => wifi" synonym
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
@@ -875,8 +865,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             "q",
             "wi /* foo */ /* bar */ fi",
             "sow",
-            "false") // trigger the "wi fi => wifi" synonym
-        ,
+            "false"), // trigger the "wi fi => wifi" synonym
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
@@ -886,8 +875,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             "q",
             " /* foo */ wi fi /* bar */",
             "sow",
-            "false") // trigger the "wi fi => wifi" synonym
-        ,
+            "false"), // trigger the "wi fi => wifi" synonym
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
@@ -897,8 +885,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             "q",
             " /* foo */ wi /* bar */ fi /* baz */",
             "sow",
-            "false") // trigger the "wi fi => wifi" synonym
-        ,
+            "false"), // trigger the "wi fi => wifi" synonym
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
 
@@ -913,28 +900,23 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         "/response/numFound==0");
 
     assertJQ(
-        req("df", "syn", "q", "wi fi") // default sow=false
-        ,
+        req("df", "syn", "q", "wi fi"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
-        req("df", "syn", "q", "wi /* foo */ fi") // default sow=false
-        ,
+        req("df", "syn", "q", "wi /* foo */ fi"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
-        req("df", "syn", "q", "wi /* foo */ /* bar */ fi") // default sow=false
-        ,
+        req("df", "syn", "q", "wi /* foo */ /* bar */ fi"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
-        req("df", "syn", "q", " /* foo */ wi fi /* bar */") // default sow=false
-        ,
+        req("df", "syn", "q", " /* foo */ wi fi /* bar */"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
-        req("df", "syn", "q", " /* foo */ wi /* bar */ fi /* baz */") // default sow=false
-        ,
+        req("df", "syn", "q", " /* foo */ wi /* bar */ fi /* baz */"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
 
@@ -972,28 +954,23 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         "/response/numFound==0");
 
     assertJQ(
-        req("df", "syn", "q", "{!lucene}wi fi") // default sow=false
-        ,
+        req("df", "syn", "q", "{!lucene}wi fi"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
-        req("df", "syn", "q", "{!lucene}wi /* foo */ fi") // default sow=false
-        ,
+        req("df", "syn", "q", "{!lucene}wi /* foo */ fi"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
-        req("df", "syn", "q", "{!lucene}wi /* foo */ /* bar */ fi") // default sow=false
-        ,
+        req("df", "syn", "q", "{!lucene}wi /* foo */ /* bar */ fi"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
-        req("df", "syn", "q", "{!lucene}/* foo */ wi fi /* bar */") // default sow=false
-        ,
+        req("df", "syn", "q", "{!lucene}/* foo */ wi fi /* bar */"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
-        req("df", "syn", "q", "{!lucene}/* foo */ wi /* bar */ fi /* baz */") // default sow=false
-        ,
+        req("df", "syn", "q", "{!lucene}/* foo */ wi /* bar */ fi /* baz */"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
   }
@@ -1004,13 +981,11 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "df", "syn", "q", "wifi", "sow",
-            "true") // retrieve the single document containing literal "wifi"
-        ,
+            "true"), // retrieve the single document containing literal "wifi"
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
     assertJQ(
-        req("df", "syn", "q", "wi fi", "sow", "false") // trigger the "wi fi => wifi" synonym
-        ,
+        req("df", "syn", "q", "wi fi", "sow", "false"), // trigger the "wi fi => wifi" synonym
         "/response/numFound==1",
         "/response/docs/[0]/id=='20'");
 
@@ -1018,8 +993,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(req("df", "syn", "q", "-wi fi", "sow", "false"), "/response/numFound==0");
     assertJQ(req("df", "syn", "q", "!wi fi", "sow", "false"), "/response/numFound==0");
     assertJQ(
-        req("df", "syn", "q", "wi* fi", "sow", "false") // matches because wi* matches wifi
-        ,
+        req("df", "syn", "q", "wi* fi", "sow", "false"), // matches because wi* matches wifi
         "/response/numFound==1");
     assertJQ(req("df", "syn", "q", "w? fi", "sow", "false"), "/response/numFound==0");
     assertJQ(req("df", "syn", "q", "wi~1 fi", "sow", "false"), "/response/numFound==0");

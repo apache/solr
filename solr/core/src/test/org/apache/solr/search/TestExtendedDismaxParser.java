@@ -2273,8 +2273,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         req("qf", "text_sw title", "defType", "edismax", "q", "wi fi", "sow", "true"),
         "/response/numFound==0");
     assertJQ(
-        req("qf", "text_sw title", "defType", "edismax", "q", "wi fi") // default sow=false
-        ,
+        req("qf", "text_sw title", "defType", "edismax", "q", "wi fi"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='72'");
 
@@ -2284,8 +2283,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "/response/docs/[0]/id=='72'");
     assertJQ(req("qf", "text_sw title", "q", "{!edismax sow=true}wi fi"), "/response/numFound==0");
     assertJQ(
-        req("qf", "text_sw title", "q", "{!edismax}wi fi") // default sow=false
-        ,
+        req("qf", "text_sw title", "q", "{!edismax}wi fi"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='72'");
 
