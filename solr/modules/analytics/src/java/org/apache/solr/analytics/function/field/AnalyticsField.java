@@ -17,14 +17,13 @@
 package org.apache.solr.analytics.function.field;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 
 /**
  * An analytics wrapper for Solr Fields.
  *
- * Currently only fields with Doc Values enabled can be used in Analytics queries.
+ * <p>Currently only fields with Doc Values enabled can be used in Analytics queries.
  */
 public abstract class AnalyticsField implements AnalyticsValueStream {
   protected static final int initialArrayLength = 20;
@@ -70,5 +69,4 @@ public abstract class AnalyticsField implements AnalyticsValueStream {
    * @throws IOException if an error occurs while reading the document.
    */
   public abstract void collect(int doc) throws IOException;
-
 }

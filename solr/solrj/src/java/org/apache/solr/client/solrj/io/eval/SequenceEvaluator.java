@@ -1,4 +1,4 @@
-  /*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -20,37 +20,47 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.commons.math3.util.MathArrays;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class SequenceEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public SequenceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public SequenceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
-    if(3 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting three values but found %d",expression, containedEvaluators.size()));
+
+    if (3 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting three values but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if(3 != values.length){
-      throw new IOException(String.format(Locale.ROOT,"%s(...) only works with 3 values but %d were provided", constructingFactory.getFunctionName(getClass()), values.length));
+    if (3 != values.length) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "%s(...) only works with 3 values but %d were provided",
+              constructingFactory.getFunctionName(getClass()),
+              values.length));
     }
-    
-    Number sizeNum = (Number)values[0];
-    Number startNum = (Number)values[1];
-    Number strideNum = (Number)values[2];
-    
+
+    Number sizeNum = (Number) values[0];
+    Number startNum = (Number) values[1];
+    Number strideNum = (Number) values[2];
+
     List<Number> sequence = new ArrayList<>(sizeNum.intValue());
-    for(int number : MathArrays.sequence(sizeNum.intValue(), startNum.intValue(), strideNum.intValue())){
+    for (int number :
+        MathArrays.sequence(sizeNum.intValue(), startNum.intValue(), strideNum.intValue())) {
       sequence.add(number);
     }
-    
+
     return sequence;
   }
 }

@@ -44,4 +44,4 @@ bin/post        text eol=lf
 
 # Other files to ignore from eol normalization
 licenses/*      -text
-solr-ref-guide/src/fonts/Inconsolata/OFL.txt  -text
+solr-ref-guide/ui-src/font/Inconsolata/OFL.txt  -text

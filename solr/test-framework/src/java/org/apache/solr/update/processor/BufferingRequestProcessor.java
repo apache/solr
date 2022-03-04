@@ -19,46 +19,43 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 
-public class BufferingRequestProcessor extends UpdateRequestProcessor
-{
+public class BufferingRequestProcessor extends UpdateRequestProcessor {
   public List<AddUpdateCommand> addCommands = new ArrayList<>();
   public List<DeleteUpdateCommand> deleteCommands = new ArrayList<>();
   public List<CommitUpdateCommand> commitCommands = new ArrayList<>();
   public List<RollbackUpdateCommand> rollbackCommands = new ArrayList<>();
-  
+
   public BufferingRequestProcessor(UpdateRequestProcessor next) {
     super(next);
   }
-  
+
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    addCommands.add( cmd );
+    addCommands.add(cmd);
   }
 
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
-    deleteCommands.add( cmd );
+    deleteCommands.add(cmd);
   }
 
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
-    commitCommands.add( cmd );
+    commitCommands.add(cmd);
   }
-  
+
   @Override
-  public void processRollback(RollbackUpdateCommand cmd) throws IOException
-  {
-    rollbackCommands.add( cmd );
+  public void processRollback(RollbackUpdateCommand cmd) throws IOException {
+    rollbackCommands.add(cmd);
   }
 
   @Override
   public void finish() throws IOException {
-    // nothing?    
+    // nothing?
   }
 }

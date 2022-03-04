@@ -944,7 +944,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public static class ProcessedFilter {
     public DocSet answer; // maybe null. Sometimes we have a docSet answer that represents the complete answer / result.
-    public Query filter; // maybe null
+    public Query filter; // maybe null.  Scoring is irrelevant / unspecified.
     public DelegatingCollector postFilter; // maybe null
   }
 
@@ -2075,12 +2075,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       return a == absQ ? b.intersectionSize(positiveA) : b.andNotSize(positiveA);
     } else {
       // If there isn't a cache, then do a single filtered query
-      // NOTE: we cannot use FilteredQuery, because BitDocSet assumes it will never
-      // have deleted documents, but UninvertedField's doNegative has sets with deleted docs
       TotalHitCountCollector collector = new TotalHitCountCollector();
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
       bq.add(QueryUtils.makeQueryable(a), Occur.MUST);
-      bq.add(new ConstantScoreQuery(b.makeQuery()), Occur.MUST);
+      bq.add(b.makeQuery(), Occur.MUST);
       super.search(bq.build(), collector);
       return collector.getTotalHits();
     }

@@ -21,50 +21,61 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class ColumnEvaluator extends RecursiveEvaluator {
   protected static final long serialVersionUID = 1L;
-  
-  public ColumnEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public ColumnEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
+
     init();
   }
-  
-  public ColumnEvaluator(StreamExpression expression, StreamFactory factory, List<String> ignoredNamedParameters) throws IOException{
+
+  public ColumnEvaluator(
+      StreamExpression expression, StreamFactory factory, List<String> ignoredNamedParameters)
+      throws IOException {
     super(expression, factory, ignoredNamedParameters);
-    
+
     init();
   }
-  
-  private void init() throws IOException{
-    if(2 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 2 parameters but found %d", toExpression(constructingFactory), containedEvaluators.size()));
+
+  private void init() throws IOException {
+    if (2 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 2 parameters but found %d",
+              toExpression(constructingFactory),
+              containedEvaluators.size()));
     }
   }
-      
+
   @Override
-  public Object evaluate(Tuple tuple) throws IOException {    
-    try{
-      
+  public Object evaluate(Tuple tuple) throws IOException {
+    try {
+
       Object firstLevel = containedEvaluators.get(0).evaluate(tuple);
-      
-      if(!(firstLevel instanceof List<?>) || ((List<?>) firstLevel).stream().anyMatch(value -> !(value instanceof Tuple))){
-        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a list of tuples but found %s", toExpression(constructingFactory), firstLevel.getClass().getSimpleName()));
+
+      if (!(firstLevel instanceof List<?>)
+          || ((List<?>) firstLevel).stream().anyMatch(value -> !(value instanceof Tuple))) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "Invalid expression %s - expecting a list of tuples but found %s",
+                toExpression(constructingFactory),
+                firstLevel.getClass().getSimpleName()));
       }
 
       List<Object> column = new ArrayList<>();
-      for(Object innerTuple : (List<?>)firstLevel){
-        column.add(containedEvaluators.get(1).evaluate((Tuple)innerTuple));
+      for (Object innerTuple : (List<?>) firstLevel) {
+        column.add(containedEvaluators.get(1).evaluate((Tuple) innerTuple));
       }
 
       return normalizeOutputType(column);
-    }
-    catch(UncheckedIOException e){
+    } catch (UncheckedIOException e) {
       throw e.getCause();
     }
   }

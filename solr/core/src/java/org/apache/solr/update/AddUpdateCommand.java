@@ -28,10 +28,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -41,9 +38,6 @@ import org.apache.solr.schema.SchemaField;
  * may be involved in the event of nested documents.
  */
 public class AddUpdateCommand extends UpdateCommand {
-
-  /** In some limited circumstances of child docs, this holds the _route_ param. */
-  final String useRouteAsRoot; // lets hope this goes away in SOLR-15064
 
   /**
    * Higher level SolrInputDocument, normally used to construct the Lucene Document(s)
@@ -70,35 +64,12 @@ public class AddUpdateCommand extends UpdateCommand {
 
   public boolean isLastDocInBatch = false;
 
-  // optional id in "internal" indexed form... if it is needed and not supplied,
-  // it will be obtained from the doc.
   private BytesRef indexedId;
   private String indexedIdStr;
-  private String childDocIdStr;
+  private String selfOrNestedDocIdStr;
 
   public AddUpdateCommand(SolrQueryRequest req) {
     super(req);
-
-    // Populate useRouteParamAsIndexedId.
-    // This ought to be deprecated functionality that we remove in 9.0. SOLR-15064
-    String route = null;
-    if (req != null) { // some tests use no req
-      route = req.getParams().get(ShardParams._ROUTE_);
-      if (route == null || !req.getSchema().isUsableForChildDocs()) {
-        route = null;
-      } else {
-        // use route but there's one last exclusion: It's incompatible with SolrCloud implicit router.
-        String collectionName = req.getCore().getCoreDescriptor().getCollectionName();
-        if (collectionName != null) {
-          DocRouter router = req.getCoreContainer().getZkController().getClusterState()
-              .getCollection(collectionName).getRouter();
-          if (router instanceof ImplicitDocRouter) {
-            route = null;
-          }
-        }
-      }
-    }
-    useRouteAsRoot = route;
   }
 
   @Override
@@ -111,7 +82,7 @@ public class AddUpdateCommand extends UpdateCommand {
      solrDoc = null;
      indexedId = null;
      indexedIdStr = null;
-     childDocIdStr = null;
+     selfOrNestedDocIdStr = null;
      updateTerm = null;
      isLastDocInBatch = false;
      version = 0;
@@ -140,7 +111,8 @@ public class AddUpdateCommand extends UpdateCommand {
    }
 
   /**
-   * Returns the indexed ID for this document, or the root ID for nested documents.
+   * Returns the indexed ID that we route this document on.  Typically, this is
+   * for the unique key of the document but for a nested document, it's the ID of the root.
    *
    * @return possibly null if there's no uniqueKey field
    */
@@ -150,8 +122,10 @@ public class AddUpdateCommand extends UpdateCommand {
   }
 
   /**
-   * Returns the indexed ID for this document, or the root ID for nested documents. The returned
-   * BytesRef should be treated as immutable. It will not be re-used/modified for additional docs.
+   * Returns the indexed ID that we route this document on.  Typically, this is
+   * for the unique key of the document but for a nested document, it's the ID of the root.
+   *
+   * BytesRef should be treated as immutable.  It will not be re-used/modified for additional docs.
    *
    * @return possibly null if there's no uniqueKey field
    */
@@ -166,9 +140,9 @@ public class AddUpdateCommand extends UpdateCommand {
    *
    * @return possibly null if there's no uniqueKey field
    */
-  public String getChildDocIdStr() {
+  public String getSelfOrNestedDocIdStr() {
     extractIdsIfNeeded();
-    return childDocIdStr;
+    return selfOrNestedDocIdStr;
   }
 
   /** The ID for logging purposes. */
@@ -179,10 +153,10 @@ public class AddUpdateCommand extends UpdateCommand {
     extractIdsIfNeeded();
     if (indexedIdStr == null) {
       return "(null)";
-    } else if (indexedIdStr.equals(childDocIdStr)) {
+    } else if (indexedIdStr.equals(selfOrNestedDocIdStr)) {
       return indexedIdStr;
     } else {
-      return childDocIdStr + " (root=" + indexedIdStr + ")";
+      return selfOrNestedDocIdStr + " (root=" + indexedIdStr + ")";
     }
   }
 
@@ -204,14 +178,11 @@ public class AddUpdateCommand extends UpdateCommand {
         } else if (count  > 1) {
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + field);
         } else {
-          this.childDocIdStr = field.getFirstValue().toString();
-          // the root might be in _root_ field or _route_ param.  If neither, then uniqueKeyField.
+          this.selfOrNestedDocIdStr = field.getFirstValue().toString();
+          // the root might be in _root_ field; if not then uniqueKeyField.
           this.indexedIdStr = (String) solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME); // or here
           if (this.indexedIdStr == null) {
-            this.indexedIdStr = useRouteAsRoot;
-            if (this.indexedIdStr == null) {
-              this.indexedIdStr = childDocIdStr;
-            }
+            this.indexedIdStr = selfOrNestedDocIdStr;
           }
           indexedId = schema.indexableUniqueKey(indexedIdStr);
         }
@@ -223,7 +194,7 @@ public class AddUpdateCommand extends UpdateCommand {
   public void setIndexedId(BytesRef indexedId) {
     this.indexedId = indexedId;
     this.indexedIdStr = indexedId.utf8ToString();
-    this.childDocIdStr = indexedIdStr;
+    this.selfOrNestedDocIdStr = indexedIdStr;
   }
 
   /**

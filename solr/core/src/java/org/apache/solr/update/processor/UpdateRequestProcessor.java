@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @since solr 1.3
  */
+@SolrThreadUnsafe
 public abstract class UpdateRequestProcessor implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   

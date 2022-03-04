@@ -25,6 +25,7 @@ public class StringCheckedDataReader extends ReductionCheckedDataReader<Consumer
   public StringCheckedDataReader(DataInput inputStream, Consumer<String> applier) {
     super(inputStream, applier);
   }
+
   @Override
   public void checkedRead() throws IOException {
     applier.accept(inputStream.readUTF());

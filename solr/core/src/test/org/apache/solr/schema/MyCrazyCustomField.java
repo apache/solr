@@ -17,7 +17,6 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.PrefixQuery;
@@ -27,12 +26,11 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 
 /**
- * Custom field that overrides the PrefixQuery behaviour to map queries such that:
- * (foo* becomes bar*) and (bar* becomes foo*).
- * This is used for testing overridden prefix query for custom fields in TestOverriddenPrefixQueryForCustomFieldType
+ * Custom field that overrides the PrefixQuery behaviour to map queries such that: (foo* becomes
+ * bar*) and (bar* becomes foo*). This is used for testing overridden prefix query for custom fields
+ * in TestOverriddenPrefixQueryForCustomFieldType
  */
 public class MyCrazyCustomField extends TextField {
-
 
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
@@ -47,7 +45,7 @@ public class MyCrazyCustomField extends TextField {
 
   @Override
   public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
-    if(termStr.equals("foo")) {
+    if (termStr.equals("foo")) {
       termStr = "bar";
     } else if (termStr.equals("bar")) {
       termStr = "foo";

@@ -20,24 +20,24 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
 import org.apache.solr.analytics.value.constant.ConstantDateValue;
 
 /**
  * A single-valued analytics value that can be represented as a date.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #getDate()} and {@link #exists()},
- * resulting in different values on each call.
- * <p>
- * NOTE: Most date expressions work with the {@code long} representation of the date, so that less
- * objects need to be created during execution.
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #getDate()} and
+ * {@link #exists()}, resulting in different values on each call.
+ *
+ * <p>NOTE: Most date expressions work with the {@code long} representation of the date, so that
+ * less objects need to be created during execution.
  */
 public interface DateValue extends DateValueStream, LongValue {
   /**
    * Get the date representation of the current value.
-   * <p>
-   * NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns {@code TRUE}.
+   *
+   * <p>NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns
+   * {@code TRUE}.
    *
    * @return the current value
    */
@@ -46,26 +46,31 @@ public interface DateValue extends DateValueStream, LongValue {
   /**
    * An interface that represents all of the types a {@link DateValue} should be able to cast to.
    */
-  public static interface CastingDateValue extends DateValue, LongValue, StringValue, ComparableValue {}
+  public static interface CastingDateValue
+      extends DateValue, LongValue, StringValue, ComparableValue {}
 
   /**
-   * An abstract base for {@link CastingDateValue} that automatically casts to all types if {@link #getLong()} and {@link #exists()} are implemented.
+   * An abstract base for {@link CastingDateValue} that automatically casts to all types if {@link
+   * #getLong()} and {@link #exists()} are implemented.
    */
-  public static abstract class AbstractDateValue implements CastingDateValue {
+  public abstract static class AbstractDateValue implements CastingDateValue {
     @Override
     public Date getDate() {
       long val = getLong();
       return exists() ? new Date(val) : null;
     }
+
     @Override
     public String getString() {
       long val = getLong();
       return exists() ? Instant.ofEpochMilli(val).toString() : null;
     }
+
     @Override
     public Object getObject() {
       return getDate();
     }
+
     @Override
     public void streamDates(Consumer<Date> cons) {
       Date val = getDate();
@@ -73,6 +78,7 @@ public interface DateValue extends DateValueStream, LongValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamLongs(LongConsumer cons) {
       long val = getLong();
@@ -80,6 +86,7 @@ public interface DateValue extends DateValueStream, LongValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamStrings(Consumer<String> cons) {
       String val = getString();
@@ -87,6 +94,7 @@ public interface DateValue extends DateValueStream, LongValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamObjects(Consumer<Object> cons) {
       Object val = getObject();
@@ -94,6 +102,7 @@ public interface DateValue extends DateValueStream, LongValue {
         cons.accept(val);
       }
     }
+
     @Override
     public AnalyticsValue convertToConstant() {
       if (getExpressionType().equals(ExpressionType.CONST)) {
@@ -101,6 +110,7 @@ public interface DateValue extends DateValueStream, LongValue {
       }
       return this;
     }
+
     @Override
     public ExpressionComparator<Date> getObjectComparator(String expression) {
       return new ExpressionComparator<>(expression);

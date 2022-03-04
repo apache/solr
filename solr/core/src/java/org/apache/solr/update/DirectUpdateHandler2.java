@@ -580,7 +580,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       log.debug("start {}", cmd);
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
-        SolrIndexWriter.setCommitData(iw.get(), cmd.getVersion());
+        SolrIndexWriter.setCommitData(iw.get(), cmd.getVersion(), cmd.commitData);
         iw.get().prepareCommit();
       } finally {
         iw.decref();
@@ -657,7 +657,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           // SolrCore.verbose("writer.commit() start writer=",writer);
 
           if (writer.hasUncommittedChanges()) {
-            SolrIndexWriter.setCommitData(writer, cmd.getVersion());
+            SolrIndexWriter.setCommitData(writer, cmd.getVersion(), cmd.commitData);
             writer.commit();
           } else {
             log.debug("No uncommitted changes. Skipping IW.commit.");
@@ -859,7 +859,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
             }
 
             // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't be used)
-            SolrIndexWriter.setCommitData(writer, cmd.getVersion());
+            SolrIndexWriter.setCommitData(writer, cmd.getVersion(), null);
             writer.commit();
 
             synchronized (solrCoreState.getUpdateLock()) {
@@ -937,7 +937,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       // can't use cmd.getIndexedId because it will be a root doc if this doc is a child
       Term updateTerm = new Term(idField.getName(),
-          core.getLatestSchema().indexableUniqueKey(cmd.getChildDocIdStr()));
+          core.getLatestSchema().indexableUniqueKey(cmd.getSelfOrNestedDocIdStr()));
       List<IndexableField> fields = cmd.makeLuceneDocForInPlaceUpdate().getFields(); // skips uniqueKey and _root_
       log.debug("updateDocValues({})", cmd);
       writer.updateDocValues(updateTerm, fields.toArray(new Field[fields.size()]));

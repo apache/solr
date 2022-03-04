@@ -26,6 +26,7 @@ import org.apache.lucene.util.FixedBitSet;
 /**
  * An immutable ordered set of Lucene Document Ids.
  * It's similar to a Lucene {@link org.apache.lucene.search.DocIdSet}.
+ * Solr never puts a deleted document into a DocSet.
  *
  * <p>
  * WARNING: Any DocSet returned from SolrIndexSearcher should <b>not</b> be modified as it may have been retrieved from
@@ -118,10 +119,8 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
   }
 
   /**
-   * Returns a constant scoring Query for use in Lucene search methods, assuming this DocSet
-   * was generated from the top-level MultiReader that the Lucene search
-   * methods will be invoked with. DocSets, and thus this query, do not
-   * match deleted docs.
+   * Returns a Query matching these documents with a score of 1.
+   * Note that DocSets do not refer to deleted docs.
    */
   public abstract Query makeQuery();
 

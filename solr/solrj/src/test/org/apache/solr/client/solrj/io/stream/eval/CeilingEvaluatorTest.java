@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.CeilingEvaluator;
@@ -27,36 +27,33 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class CeilingEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public CeilingEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("ceil", CeilingEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("ceil", CeilingEvaluator.class);
+    values = new HashMap<String, Object>();
   }
-    
+
   @Test
-  public void ceilingOneField() throws Exception{
+  public void ceilingOneField() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("ceil(a)");
     Object result;
-    
+
     values.clear();
     values.put("a", 1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertEquals(1D, result);
-    
+
     values.clear();
     values.put("a", 1.1);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertEquals(2D, result);
-    
+
     values.clear();
     values.put("a", -1.1);
     result = evaluator.evaluate(new Tuple(values));
@@ -64,28 +61,28 @@ public class CeilingEvaluatorTest extends SolrTestCase {
   }
 
   @Test(expected = IOException.class)
-  public void ceilNoField() throws Exception{
+  public void ceilNoField() throws Exception {
     factory.constructEvaluator("ceil()");
   }
-  
+
   @Test(expected = IOException.class)
-  public void ceilTwoFields() throws Exception{
+  public void ceilTwoFields() throws Exception {
     factory.constructEvaluator("ceil(a,b)");
   }
 
-  @Test//(expected = NumberFormatException.class)
-  public void ceilNoValue() throws Exception{
+  @Test // (expected = NumberFormatException.class)
+  public void ceilNoValue() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("ceil(a)");
-    
+
     values.clear();
     Object result = evaluator.evaluate(new Tuple(values));
     assertNull(result);
   }
 
-  @Test//(expected = NumberFormatException.class)
-  public void ceilNullValue() throws Exception{
+  @Test // (expected = NumberFormatException.class)
+  public void ceilNullValue() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("ceil(a)");
-    
+
     values.clear();
     values.put("a", null);
     Object result = evaluator.evaluate(new Tuple(values));

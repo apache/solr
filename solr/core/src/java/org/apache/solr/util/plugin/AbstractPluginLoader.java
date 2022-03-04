@@ -257,10 +257,10 @@ public abstract class AbstractPluginLoader<T>
     for (PluginInitInfo pinfo : info) {
       try {
         init(pinfo.plugin, pinfo.node);
+      } catch (SolrException e) {
+        throw new SolrException(ErrorCode.getErrorCode(e.code()), "Plugin init failure for " + type, e);
       } catch (Exception ex) {
-        SolrException e = new SolrException
-          (ErrorCode.SERVER_ERROR, "Plugin init failure for " + type, ex);
-        throw e;
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Plugin init failure for " + type, ex);
       }
     }
     return plugin;

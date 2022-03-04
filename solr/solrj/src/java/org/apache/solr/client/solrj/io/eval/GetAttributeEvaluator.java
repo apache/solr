@@ -19,24 +19,29 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class GetAttributeEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   private static final long serialVersionUID = 1;
 
-  public GetAttributeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public GetAttributeEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
-    if(!(value1 instanceof Attributes)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting an Attributes",toExpression(constructingFactory), value1.getClass().getSimpleName()));
+    if (!(value1 instanceof Attributes)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting an Attributes",
+              toExpression(constructingFactory),
+              value1.getClass().getSimpleName()));
     } else {
-      Attributes attributes = (Attributes)value1;
-      String key = (String)value2;
+      Attributes attributes = (Attributes) value1;
+      String key = (String) value2;
       return attributes.getAttribute(key.replace("\"", ""));
     }
   }

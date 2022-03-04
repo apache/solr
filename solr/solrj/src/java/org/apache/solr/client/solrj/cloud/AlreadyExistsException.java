@@ -16,9 +16,7 @@
  */
 package org.apache.solr.client.solrj.cloud;
 
-/**
- *
- */
+/** */
 public class AlreadyExistsException extends Exception {
 
   private final String id;
@@ -31,5 +29,4 @@ public class AlreadyExistsException extends Exception {
   public String getId() {
     return id;
   }
-
 }

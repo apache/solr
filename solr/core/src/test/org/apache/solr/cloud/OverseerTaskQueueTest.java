@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -30,7 +29,6 @@ import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
 public class OverseerTaskQueueTest extends DistributedQueueTest {
-
 
   // TODO: OverseerTaskQueue specific tests.
 
@@ -57,10 +55,12 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
     props.put(CommonAdminParams.ASYNC, requestId);
     tq.offer(Utils.toJSON(props));
 
-    assertTrue("Task queue should contain task with requestid " + requestId,
+    assertTrue(
+        "Task queue should contain task with requestid " + requestId,
         tq.containsTaskWithRequestId(CommonAdminParams.ASYNC, requestId));
 
-    assertFalse("Task queue should not contain task with requestid " + nonExistentRequestId,
+    assertFalse(
+        "Task queue should not contain task with requestid " + nonExistentRequestId,
         tq.containsTaskWithRequestId(CommonAdminParams.ASYNC, nonExistentRequestId));
 
     // Create a response node as if someone is waiting for a response from the Overseer; then,
@@ -74,7 +74,8 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
     props.put(CommonAdminParams.ASYNC, requestId2);
     tq.createRequestNode(Utils.toJSON(props), watchID);
 
-    // Set a SolrResponse as the response node by removing the QueueEvent, as done in OverseerTaskProcessor
+    // Set a SolrResponse as the response node by removing the QueueEvent, as done in
+    // OverseerTaskProcessor
     List<OverseerTaskQueue.QueueEvent> queueEvents = tq.peekTopN(2, s -> false, 1000);
     OverseerTaskQueue.QueueEvent requestId2Event = null;
     for (OverseerTaskQueue.QueueEvent queueEvent : queueEvents) {
@@ -90,7 +91,8 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
     tq.remove(requestId2Event);
 
     // Make sure this call to check if requestId exists doesn't barf with Json parse exception
-    assertTrue("Task queue should contain task with requestid " + requestId,
+    assertTrue(
+        "Task queue should contain task with requestid " + requestId,
         tq.containsTaskWithRequestId(CommonAdminParams.ASYNC, requestId));
   }
 }

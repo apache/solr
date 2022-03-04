@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.cloud.api.collections.ShardSplitTest;
@@ -48,9 +47,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Test split phase that occurs when a Collection API split call is made.
- */
+/** Test split phase that occurs when a Collection API split call is made. */
 @Slow
 @Ignore("SOLR-4944")
 public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
@@ -59,12 +56,12 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 
   static final int TIMEOUT = 10000;
   private AtomicInteger killCounter = new AtomicInteger();
-  
+
   @BeforeClass
   public static void beforeSuperClass() {
     System.clearProperty("solr.httpclient.retries");
     System.clearProperty("solr.retries.on.forward");
-    System.clearProperty("solr.retries.to.followers"); 
+    System.clearProperty("solr.retries.to.followers");
   }
 
   @Test
@@ -72,9 +69,12 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-    final DocRouter router = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
-    Slice shard1 = clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getSlice(SHARD1);
-    DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
+    final DocRouter router =
+        clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
+    Slice shard1 =
+        clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getSlice(SHARD1);
+    DocRouter.Range shard1Range =
+        shard1.getRange() != null ? shard1.getRange() : router.fullRange();
     final List<DocRouter.Range> ranges = router.partitionRange(2, shard1Range);
     final int[] docCounts = new int[ranges.size()];
     int numReplicas = shard1.getReplicas().size();
@@ -92,20 +92,22 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       }
       commit();
 
-      indexThread = new Thread() {
-        @Override
-        public void run() {
-          int max = atLeast(401);
-          for (int id = 101; id < max; id++) {
-            try {
-              indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id), id, documentIds);
-              Thread.sleep(atLeast(25));
-            } catch (Exception e) {
-              log.error("Exception while adding doc", e);
+      indexThread =
+          new Thread() {
+            @Override
+            public void run() {
+              int max = atLeast(401);
+              for (int id = 101; id < max; id++) {
+                try {
+                  indexAndUpdateCount(
+                      router, ranges, docCounts, String.valueOf(id), id, documentIds);
+                  Thread.sleep(atLeast(25));
+                } catch (Exception e) {
+                  log.error("Exception while adding doc", e);
+                }
+              }
             }
-          }
-        }
-      };
+          };
       indexThread.start();
 
       // kill the leader
@@ -150,10 +152,8 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 
       // distributed commit on all shards
     } finally {
-      if (indexThread != null)
-        indexThread.join();
-      if (solrClient != null)
-        solrClient.commit();
+      if (indexThread != null) indexThread.join();
+      if (solrClient != null) solrClient.commit();
       if (killer != null) {
         killer.run = false;
         if (killerThread != null) {
@@ -227,7 +227,8 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       Collection<Replica> replicas = slice.getReplicas();
       boolean allActive = true;
       for (Replica replica : replicas) {
-        if (!clusterState.liveNodesContain(replica.getNodeName()) || replica.getState() != Replica.State.ACTIVE) {
+        if (!clusterState.liveNodesContain(replica.getNodeName())
+            || replica.getState() != Replica.State.ACTIVE) {
           allActive = false;
           break;
         }
@@ -254,23 +255,29 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
    *
    * @return SolrZkClient
    */
-  private SolrZkClient electNewOverseer(String address) throws KeeperException,
-      InterruptedException, IOException {
+  private SolrZkClient electNewOverseer(String address)
+      throws KeeperException, InterruptedException, IOException {
     SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);
-    UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+    UpdateShardHandler updateShardHandler =
+        new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     try (HttpShardHandlerFactory hshf = new HttpShardHandlerFactory()) {
-      Overseer overseer = new Overseer((HttpShardHandler) hshf.getShardHandler(), updateShardHandler, "/admin/cores",
-          reader, null, new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build());
+      Overseer overseer =
+          new Overseer(
+              (HttpShardHandler) hshf.getShardHandler(),
+              updateShardHandler,
+              "/admin/cores",
+              reader,
+              null,
+              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build());
       overseer.close();
-      ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
-          address.replaceAll("/", "_"));
+      ElectionContext ec =
+          new OverseerElectionContext(zkClient, overseer, address.replaceAll("/", "_"));
       overseerElector.setup(ec);
       overseerElector.joinElection(ec, false);
     }
     reader.close();
     return zkClient;
   }
-
 }

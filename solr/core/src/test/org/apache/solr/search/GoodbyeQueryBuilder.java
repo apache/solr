@@ -26,13 +26,12 @@ import org.w3c.dom.Element;
 
 public class GoodbyeQueryBuilder extends SolrQueryBuilder {
 
-  public GoodbyeQueryBuilder(String defaultField, Analyzer analyzer,
-      SolrQueryRequest req, QueryBuilder queryFactory) {
+  public GoodbyeQueryBuilder(
+      String defaultField, Analyzer analyzer, SolrQueryRequest req, QueryBuilder queryFactory) {
     super(defaultField, analyzer, req, queryFactory);
   }
 
   public Query getQuery(Element e) throws ParserException {
     return new MatchNoDocsQuery();
   }
-
 }

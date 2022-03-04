@@ -325,11 +325,6 @@ chmod 0640 "/etc/default/$SOLR_SERVICE.in.sh"
 # install data directories and files
 mkdir -p "$SOLR_VAR_DIR/data"
 mkdir -p "$SOLR_VAR_DIR/logs"
-if [ -f "$SOLR_VAR_DIR/data/solr.xml" ]; then
-  echo -e "\n$SOLR_VAR_DIR/data/solr.xml already exists. Skipping install ...\n"
-else
-  cp "$SOLR_INSTALL_DIR/server/solr/"{solr.xml,zoo.cfg} "$SOLR_VAR_DIR/data/"
-fi
 if [ -f "$SOLR_VAR_DIR/log4j2.xml" ]; then
   echo -e "\n$SOLR_VAR_DIR/log4j2.xml already exists. Skipping install ...\n"
 else

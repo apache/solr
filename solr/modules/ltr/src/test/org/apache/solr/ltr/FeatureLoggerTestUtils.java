@@ -18,27 +18,25 @@ package org.apache.solr.ltr;
 
 public class FeatureLoggerTestUtils {
 
-  public static String toFeatureVector(String ... keysAndValues) {
+  public static String toFeatureVector(String... keysAndValues) {
     return toFeatureVector(
         CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR,
         CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR,
         keysAndValues);
   }
 
-  public static String toFeatureVector(char keyValueSeparator, char featureSeparator,
-      String ... keysAndValues) {
-    StringBuilder sb = new StringBuilder(keysAndValues.length/2 * 3);
-    for (int ii = 0; ii+1 < keysAndValues.length; ii += 2) {
-        sb.append(keysAndValues[ii])
-        .append(keyValueSeparator)
-        .append(keysAndValues[ii+1])
-        .append(featureSeparator);
+  public static String toFeatureVector(
+      char keyValueSeparator, char featureSeparator, String... keysAndValues) {
+    StringBuilder sb = new StringBuilder(keysAndValues.length / 2 * 3);
+    for (int ii = 0; ii + 1 < keysAndValues.length; ii += 2) {
+      sb.append(keysAndValues[ii])
+          .append(keyValueSeparator)
+          .append(keysAndValues[ii + 1])
+          .append(featureSeparator);
     }
 
-    final String features = (sb.length() > 0 ?
-        sb.substring(0, sb.length() - 1) : "");
+    final String features = (sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "");
 
     return features;
   }
-
 }

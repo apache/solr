@@ -37,28 +37,22 @@ configure(project(":solr").subprojects) { prj ->
 
         lineEndings 'UNIX'
         endWithNewline()
-        googleJavaFormat('1.11.0')
+        googleJavaFormat('1.14.0')
 
         // Apply to all Java sources
         target "src/**/*.java"
 
         // Exclude certain files (generated ones, mostly).
         switch (project.path) {
-          case ":solr:modules:analytics":
-          case ":solr:modules:analysis-extras":
-          case ":solr:modules:clustering":
-          case ":solr:modules:extraction":
-          case ":solr:modules:gcs-repository":
-          case ":solr:modules:hdfs":
-          case ":solr:modules:langid":
-          case ":solr:modules:ltr":
-          case ":solr:modules:scripting":
-          case ":solr:prometheus-exporter":
           case ":solr:core":
+            targetExclude "src/java/**/*.java"
+            break
           case ":solr:solrj":
-          case ":solr:solr-ref-guide":
-          case ":solr:test-framework":
-            targetExclude "src/**/*.java"
+            targetExclude "src/test/org/apache/solr/client/solrj/io/stream/*.java"
+            break
+          case ":solr:modules:hdfs":
+            // Exclude Hadoop copied files to make upgrades easier
+            targetExclude "src/**/org/apache/hadoop/**"
             break
         }
       }

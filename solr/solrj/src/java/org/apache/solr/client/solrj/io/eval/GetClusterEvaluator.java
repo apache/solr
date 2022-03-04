@@ -18,11 +18,9 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.Locale;
-
-import java.util.List;
 import java.util.ArrayList;
-
+import java.util.List;
+import java.util.Locale;
 import org.apache.commons.math3.ml.clustering.CentroidCluster;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -30,26 +28,32 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class GetClusterEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   private static final long serialVersionUID = 1;
 
-  public GetClusterEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public GetClusterEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
-    if(!(value1 instanceof KmeansEvaluator.ClusterTuple)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a cluster result.",toExpression(constructingFactory), value1.getClass().getSimpleName()));
+    if (!(value1 instanceof KmeansEvaluator.ClusterTuple)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting a cluster result.",
+              toExpression(constructingFactory),
+              value1.getClass().getSimpleName()));
     } else {
 
-      KmeansEvaluator.ClusterTuple clusterTuple = (KmeansEvaluator.ClusterTuple)value1;
+      KmeansEvaluator.ClusterTuple clusterTuple = (KmeansEvaluator.ClusterTuple) value1;
       List<CentroidCluster<KmeansEvaluator.ClusterPoint>> clusters = clusterTuple.getClusters();
 
-      Number index = (Number)value2;
+      Number index = (Number) value2;
       CentroidCluster<KmeansEvaluator.ClusterPoint> cluster = clusters.get(index.intValue());
       List<KmeansEvaluator.ClusterPoint> points = cluster.getPoints();
       List<String> rowLabels = new ArrayList<>();
       double[][] data = new double[points.size()][];
 
-      for(int i=0; i<points.size(); i++) {
+      for (int i = 0; i < points.size(); i++) {
         KmeansEvaluator.ClusterPoint p = points.get(i);
         data[i] = p.getPoint();
         rowLabels.add(p.getId());

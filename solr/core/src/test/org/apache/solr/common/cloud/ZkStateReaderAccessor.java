@@ -18,9 +18,7 @@ package org.apache.solr.common.cloud;
 
 import java.util.Set;
 
-/**
- * Helper class to access package-private methods from ZkStateReader.
- */
+/** Helper class to access package-private methods from ZkStateReader. */
 public class ZkStateReaderAccessor {
   ZkStateReader zkStateReader;
 
@@ -31,6 +29,4 @@ public class ZkStateReaderAccessor {
   public Set<DocCollectionWatcher> getStateWatchers(String collection) {
     return zkStateReader.getStateWatchers(collection);
   }
-
-
 }

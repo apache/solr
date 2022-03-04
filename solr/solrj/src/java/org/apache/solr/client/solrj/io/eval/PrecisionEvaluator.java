@@ -21,42 +21,47 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Precision;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class PrecisionEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public PrecisionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public PrecisionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    if(2 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 2 value but found %d",expression,containedEvaluators.size()));
+    if (2 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 2 value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object value, Object value2) {
-    if(null == value){
+    if (null == value) {
       return null;
-    }
-    else if(value instanceof List){
-      return ((List<?>)value).stream().map(innerValue -> doWork(innerValue, ((Number)value2).intValue())).collect(Collectors.toList());
-    } else if(value instanceof Matrix) {
-      int p = ((Number)value2).intValue();
-      Matrix matrix = (Matrix)value;
+    } else if (value instanceof List) {
+      return ((List<?>) value)
+          .stream()
+              .map(innerValue -> doWork(innerValue, ((Number) value2).intValue()))
+              .collect(Collectors.toList());
+    } else if (value instanceof Matrix) {
+      int p = ((Number) value2).intValue();
+      Matrix matrix = (Matrix) value;
       double[][] data = matrix.getData();
-      for(int i=0; i<data.length; ++i) {
-        for(int j=0; j < data[i].length; j++) {
+      for (int i = 0; i < data.length; ++i) {
+        for (int j = 0; j < data[i].length; j++) {
           data[i][j] = Precision.round(data[i][j], p);
         }
       }
 
       return matrix;
-    }
-    else{
-      return Precision.round(((Number)value).doubleValue(), ((Number)value2).intValue());
+    } else {
+      return Precision.round(((Number) value).doubleValue(), ((Number) value2).intValue());
     }
   }
 }
