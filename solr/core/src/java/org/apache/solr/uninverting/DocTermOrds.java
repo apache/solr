@@ -289,13 +289,12 @@ public class DocTermOrds implements Accountable {
     prefix = termPrefix == null ? null : BytesRef.deepCopyOf(termPrefix);
 
     final int maxDoc = reader.maxDoc();
-    final int[] index =
-        new int
-            [maxDoc]; // immediate term numbers, or the index into the byte[] representing the last
-    // number
-    final int[] lastTerm = new int[maxDoc]; // last term we saw for this document
-    final byte[][] bytes =
-        new byte[maxDoc][]; // list of term numbers for the doc (delta encoded vInts)
+    // immediate term numbers, or the index into the byte[] representing the last number
+    final int[] index = new int[maxDoc];
+    // last term we saw for this document
+    final int[] lastTerm = new int[maxDoc];
+    // list of term numbers for the doc (delta encoded vInts)
+    final byte[][] bytes = new byte[maxDoc][];
 
     final Terms terms = reader.terms(field);
     if (terms == null) {

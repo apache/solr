@@ -194,11 +194,10 @@ public class RelatednessAgg extends AggValueSource {
     private static final int ALL_BUCKETS_UNINITIALIZED = -1;
 
     // we can't get the allBuckets info from the slotContext in collect(), b/c the whole point of
-    // sweep collection is that the "collect" methods aren't called.
-    // So this is the compromise: note in construction either that we're using a processor
-    // w/NO_ALL_BUCKETS
-    // or that we don't know the bucket yet (ALL_BUCKETS_UNINITIALIZED) and fill it in in getValues
-    // where we can check against the processor
+    // sweep collection is that the "collect" methods aren't called. So this is the compromise: note
+    // in construction either that we're using a processor w/ NO_ALL_BUCKETS or that we don't know
+    // the bucket yet (ALL_BUCKETS_UNINITIALIZED) and fill it in getValues where we can check
+    // against the processor
     private int allBucketsSlot;
 
     public SweepSKGSlotAcc(

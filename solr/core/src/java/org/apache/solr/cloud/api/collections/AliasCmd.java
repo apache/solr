@@ -52,8 +52,6 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
   /**
    * Creates a collection (for use in a routed alias), waiting for it to be ready before returning.
    * If the collection already exists then this is not an error.
-   *
-   * <p>
    */
   static NamedList<Object> createCollectionAndWait(
       ClusterState clusterState,

@@ -525,8 +525,8 @@ public class Grouping {
     public int docsPerGroup; // how many docs in each group - from "group.limit" param, default=1
     public int groupOffset; // the offset within each group (for paging within each group)
     public int numGroups; // how many groups - defaults to the "rows" parameter
-    int actualGroupsToFind; // How many groups should actually be found. Based on groupOffset and
-    // numGroups.
+    // How many groups should actually be found. Based on groupOffset and numGroups.
+    int actualGroupsToFind;
     public int offset; // offset into the list of groups
     public Format format;
     public boolean main; // use as the main result in simple format (grouped.main=true param)

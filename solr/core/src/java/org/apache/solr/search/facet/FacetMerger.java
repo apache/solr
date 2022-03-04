@@ -44,8 +44,8 @@ public abstract class FacetMerger {
   public static class Context {
     // FacetComponentState state;  // todo: is this needed?
     final int numShards;
-    private final BitSet sawShard =
-        new BitSet(); // [bucket0_shard0, bucket0_shard1, bucket0_shard2,  bucket1_shard0,
+    // [bucket0_shard0, bucket0_shard1, bucket0_shard2,  bucket1_shard0,
+    private final BitSet sawShard = new BitSet();
     // bucket1_shard1, bucket1_shard2]
     private Map<String, Integer> shardmap = new HashMap<>();
 
@@ -54,8 +54,8 @@ public abstract class FacetMerger {
     }
 
     Object root; // per-shard response
-    int maxBucket; // the current max bucket across all bucket types... incremented as we encounter
-    // more
+    // current max bucket across all bucket types... incremented as we encounter more
+    int maxBucket;
     int shardNum = -1; // TODO: keep same mapping across multiple phases...
     boolean bucketWasMissing;
 

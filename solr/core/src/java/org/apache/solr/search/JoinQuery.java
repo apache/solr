@@ -206,10 +206,11 @@ class JoinQuery extends Query {
     long fromTermHitsTotalDf; // sum of the df of the matching terms
     int toTermHits; // num if intersecting from terms that match a term in the to field
     long toTermHitsTotalDf; // sum of the df for the toTermHits
-    int toTermDirectCount; // number of toTerms that we set directly on a bitset rather than doing
-    // set intersections
-    int smallSetsDeferred; // number of small sets collected to be used later to intersect w/ bitset
-    // or create another small set
+    // number of toTerms that we set directly on a bitset rather than doing set intersections
+    int toTermDirectCount;
+    // number of small sets collected to be used later to intersect w/ bitset or create another
+    // small set
+    int smallSetsDeferred;
 
     public DocSet getDocSet() throws IOException {
       SchemaField fromSchemaField = fromSearcher.getSchema().getField(fromField);

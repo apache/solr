@@ -154,27 +154,22 @@ public class CoreContainerProvider implements ServletContextListener {
 
   public void close() {
     CoreContainer cc = cores;
+
+    // Mark Miller suggested that we should be publishing that we are down before anything else
+    // which makes good sense, but the following causes test failures, so that improvement can be
+    // the subject of another PR/issue. Also, jetty might already be refusing requests by this point
+    // so that's a potential issue too. Digging slightly I see that there's a whole mess of code
+    // looking up collections and calculating state changes associated with this call, which smells
+    // a lot like we're duplicating node state in collection stuff, but it will take a lot of code
+    // reading to figure out if that's really what it is, why we did it and if there's room for
+    // improvement.
     //    if (cc != null) {
     //      ZkController zkController = cc.getZkController();
     //      if (zkController != null) {
-    //
-    //        // Mark Miller suggested that we should be publishing that we are down before anything
-    // else which makes
-    //        // good sense, but the following causes test failures, so that improvement can be the
-    // subject of another
-    //        // PR/issue. Also, jetty might already be refusing requests by this point so that's a
-    // potential issue too.
-    //        // Digging slightly I see that there's a whole mess of code looking up collections and
-    // calculating state
-    //        // changes associated with this call, which smells a lot like we're duplicating node
-    // state in collection
-    //        // stuff, but it will take a lot of code reading to figure out if that's really what
-    // it is, why we
-    //        // did it and if there's room for improvement.
-    //
     //        zkController.publishNodeAsDown(zkController.getNodeName());
     //      }
     //    }
+
     cores = null;
     try {
       if (metricManager != null) {

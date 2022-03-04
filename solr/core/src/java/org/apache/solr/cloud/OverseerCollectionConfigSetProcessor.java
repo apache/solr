@@ -107,11 +107,9 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
             stats,
             overseer,
             overseerNodePrioritizer);
+    // coreContainer is passed instead of configSetService as configSetService is loaded late
     final OverseerConfigSetMessageHandler configMessageHandler =
-        new OverseerConfigSetMessageHandler(
-            zkStateReader,
-            overseer.getCoreContainer()); // coreContainer is passed instead of configSetService as
-    // configSetService is loaded late
+        new OverseerConfigSetMessageHandler(zkStateReader, overseer.getCoreContainer());
     return new OverseerMessageHandlerSelector() {
       @Override
       public void close() throws IOException {

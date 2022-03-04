@@ -332,26 +332,37 @@ public class SolrIndexWriter extends IndexWriter {
     super.doAfterFlush();
   }
 
-  /**
-   * use DocumentBuilder now... private final void addField(Document doc, String name, String val) {
-   * SchemaField ftype = schema.getField(name);
-   *
-   * <p>// we don't check for a null val ourselves because a solr.FieldType // might actually want
-   * to map it to something. If createField() // returns null, then we don't store the field.
-   *
-   * <p>Field field = ftype.createField(val, boost); if (field != null) doc.add(field); }
-   *
-   * <p>
-   *
-   * <p>public void addRecord(String[] fieldNames, String[] fieldValues) throws IOException {
-   * Document doc = new Document(); for (int i=0; i<fieldNames.length; i++) { String name =
-   * fieldNames[i]; String val = fieldNames[i];
-   *
-   * <p>// first null is end of list. client can reuse arrays if they want // and just write a
-   * single null if there is unused space. if (name==null) break;
-   *
-   * <p>addField(doc,name,val); } addDocument(doc); } ****
-   */
+  // use DocumentBuilder now...
+  //  private final void addField(Document doc, String name, String val) {
+  //    SchemaField ftype = schema.getField(name);
+  //
+  //    // we don't check for a null val ourselves because a solr.FieldType
+  //    // might actually want to map it to something.  If createField()
+  //    // returns null, then we don't store the field.
+  //
+  //    Field field = ftype.createField(val, boost);
+  //    if (field != null) {
+  //      doc.add(field);
+  //    }
+  //  }
+  //
+  //  public void addRecord(String[] fieldNames, String[] fieldValues) throws IOException {
+  //    Document doc = new Document();
+  //    for (int i = 0; i < fieldNames.length; i++) {
+  //      String name = fieldNames[i];
+  //      String val = fieldNames[i];
+  //
+  //      // first null is end of list.  client can reuse arrays if they want
+  //      // and just write a single null if there is unused space.
+  //      if (name == null) {
+  //        break;
+  //      }
+  //
+  //      addField(doc, name, val);
+  //    }
+  //    addDocument(doc);
+  //  }
+
   private volatile boolean isClosed = false;
 
   @Override

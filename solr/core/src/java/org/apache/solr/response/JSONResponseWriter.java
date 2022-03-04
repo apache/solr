@@ -143,10 +143,9 @@ public class JSONResponseWriter implements QueryResponseWriter {
          * ... and then we write the <code>"type":"str","value":"foo"}</code> portion.
          */
         writeTypeAndValueKey = true;
-        writeVal(
-            null,
-            elementVal); // passing null since writeVal doesn't actually use name (and we already
-        // wrote elementName above)
+        // passing null since writeVal doesn't actually use name (and we already wrote elementName
+        // above)
+        writeVal(null, elementVal);
         if (writeTypeAndValueKey) {
           throw new RuntimeException(
               "writeTypeAndValueKey should have been reset to false by writeVal('"

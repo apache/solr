@@ -1000,8 +1000,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
     if (parentSlice == null) {
       // no chance of the collection being null because ClusterState#getCollection(String) would
-      // have thrown
-      // an exception already
+      // have thrown an exception already
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "No shard with the specified name exists: " + slice);
     }

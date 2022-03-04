@@ -254,8 +254,6 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   /**
    * Reads the document from the given xml stream reader. The following document format is expected:
    *
-   * <p>
-   *
    * <pre><code>
    * &lt;doc&gt;
    *    &lt;field name="id"&gt;1&lt;/field&gt;
@@ -263,8 +261,6 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    *    &lt;field name="text"&gt;The Text Value&lt;/field&gt;
    * &lt;/doc&gt;
    * </code></pre>
-   *
-   * <p>
    *
    * <p><em>NOTE: each read document is expected to have at least one field which serves as the
    * unique key.</em>

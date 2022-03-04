@@ -388,7 +388,8 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     req.getCoreContainer().assertPathAllowed(filePath);
     if (!filePath.normalize().startsWith(configDir.normalize())) {
       log.error("Path must be inside core config directory");
-      rsp.setException(new SolrException( ErrorCode.BAD_REQUEST, "Path must be inside core config directory"));
+      rsp.setException(
+          new SolrException(ErrorCode.BAD_REQUEST, "Path must be inside core config directory"));
       return null;
     }
     return filePath;

@@ -346,8 +346,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // + core.getUpdateHandler().getUpdateLog());
     // return;
     // }
+    // don't use interruption or it will close channels though
     while (!successfulRecovery && !Thread.currentThread().isInterrupted() && !isClosed()) {
-      // don't use interruption or it will close channels though
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
         ZkNodeProps leaderprops =

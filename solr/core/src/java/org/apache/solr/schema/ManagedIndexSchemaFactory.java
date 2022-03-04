@@ -101,8 +101,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
   @Override
   public String getSchemaResourceName(String cdResourceName) {
-    return managedSchemaResourceName; // actually a guess; reality depends on the actual files in
-    // the config set :-(
+    // actually a guess; reality depends on the actual files in the config set :-(
+    return managedSchemaResourceName;
   }
 
   /**

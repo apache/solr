@@ -117,11 +117,10 @@ public final class LowerCaseTokenizer extends Tokenizer {
           buffer = termAtt.resizeBuffer(2 + length); // make sure a supplementary fits in the buffer
         }
         end += charCount;
-        length +=
-            Character.toChars(Character.toLowerCase(c), buffer, length); // buffer it, normalized
-        if (length
-            >= maxTokenLen) { // buffer overflow! make sure to check for >= surrogate pair could
-          // break == test
+        // buffer it, normalized
+        length += Character.toChars(Character.toLowerCase(c), buffer, length);
+        // buffer overflow! make sure to check for >= surrogate pair could break == test
+        if (length >= maxTokenLen) {
           break;
         }
       } else if (length > 0) { // at non-Letter w/ chars
