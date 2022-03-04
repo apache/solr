@@ -17,7 +17,6 @@
 package org.apache.solr.schema;
 
 import java.util.EnumSet;
-
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -47,47 +46,65 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     return type;
   }
 
-  private static long FLOAT_MINUS_ZERO_BITS = (long)Float.floatToIntBits(-0f);
+  private static long FLOAT_MINUS_ZERO_BITS = (long) Float.floatToIntBits(-0f);
   private static long DOUBLE_MINUS_ZERO_BITS = Double.doubleToLongBits(-0d);
 
-  protected Query getDocValuesRangeQuery(QParser parser, SchemaField field, String min, String max,
-      boolean minInclusive, boolean maxInclusive) {
+  protected Query getDocValuesRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String min,
+      String max,
+      boolean minInclusive,
+      boolean maxInclusive) {
     assert field.hasDocValues() && (field.getType().isPointField() || !field.multiValued());
-    
+
     switch (getNumberType()) {
       case INTEGER:
-        return numericDocValuesRangeQuery(field.getName(),
-              min == null ? null : (long) parseIntFromUser(field.getName(), min),
-              max == null ? null : (long) parseIntFromUser(field.getName(), max),
-              minInclusive, maxInclusive, field.multiValued());
+        return numericDocValuesRangeQuery(
+            field.getName(),
+            min == null ? null : (long) parseIntFromUser(field.getName(), min),
+            max == null ? null : (long) parseIntFromUser(field.getName(), max),
+            minInclusive,
+            maxInclusive,
+            field.multiValued());
       case FLOAT:
         if (field.multiValued()) {
-          return getRangeQueryForMultiValuedFloatDocValues(field, min, max, minInclusive, maxInclusive);
+          return getRangeQueryForMultiValuedFloatDocValues(
+              field, min, max, minInclusive, maxInclusive);
         } else {
           return getRangeQueryForFloatDoubleDocValues(field, min, max, minInclusive, maxInclusive);
         }
       case LONG:
-        return numericDocValuesRangeQuery(field.getName(),
-              min == null ? null : parseLongFromUser(field.getName(), min),
-              max == null ? null : parseLongFromUser(field.getName(),max),
-              minInclusive, maxInclusive, field.multiValued());
+        return numericDocValuesRangeQuery(
+            field.getName(),
+            min == null ? null : parseLongFromUser(field.getName(), min),
+            max == null ? null : parseLongFromUser(field.getName(), max),
+            minInclusive,
+            maxInclusive,
+            field.multiValued());
       case DOUBLE:
-        if (field.multiValued()) { 
-          return getRangeQueryForMultiValuedDoubleDocValues(field, min, max, minInclusive, maxInclusive);
+        if (field.multiValued()) {
+          return getRangeQueryForMultiValuedDoubleDocValues(
+              field, min, max, minInclusive, maxInclusive);
         } else {
           return getRangeQueryForFloatDoubleDocValues(field, min, max, minInclusive, maxInclusive);
         }
       case DATE:
-        return numericDocValuesRangeQuery(field.getName(),
-              min == null ? null : DateMathParser.parseMath(null, min).getTime(),
-              max == null ? null : DateMathParser.parseMath(null, max).getTime(),
-              minInclusive, maxInclusive, field.multiValued());
+        return numericDocValuesRangeQuery(
+            field.getName(),
+            min == null ? null : DateMathParser.parseMath(null, min).getTime(),
+            max == null ? null : DateMathParser.parseMath(null, max).getTime(),
+            minInclusive,
+            maxInclusive,
+            field.multiValued());
       default:
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for numeric field");
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Unknown type for numeric field");
     }
   }
-  
-  protected Query getRangeQueryForFloatDoubleDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
+
+  protected Query getRangeQueryForFloatDoubleDocValues(
+      SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
     Query query;
     String fieldName = sf.getName();
     long minBits, maxBits;
@@ -144,19 +161,21 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     // If min is negative (or -0d) and max is positive (or +0d), then issue a FunctionRangeQuery
     if (minNegative && !maxNegative) {
       ValueSource vs = getValueSource(sf, null);
-      query = new FunctionRangeQuery(new ValueSourceRangeFilter(vs, minVal.toString(), maxVal.toString(), true, true));
-    } else if (minNegative && maxNegative) {// If both max and min are negative (or -0d), then issue range query with max and min reversed
-      query = numericDocValuesRangeQuery
-          (fieldName, maxBits, minBits, true, true, false);
+      query =
+          new FunctionRangeQuery(
+              new ValueSourceRangeFilter(vs, minVal.toString(), maxVal.toString(), true, true));
+    } else if (minNegative && maxNegative) {
+      // If both max and min are negative (or -0d), then issue range query with max and min reversed
+      query = numericDocValuesRangeQuery(fieldName, maxBits, minBits, true, true, false);
     } else { // If both max and min are positive, then issue range query
-      query = numericDocValuesRangeQuery
-          (fieldName, minBits, maxBits, true, true, false);
+      query = numericDocValuesRangeQuery(fieldName, minBits, maxBits, true, true, false);
     }
     return query;
   }
 
-  protected Query getRangeQueryForMultiValuedDoubleDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
-    double minVal,maxVal;
+  protected Query getRangeQueryForMultiValuedDoubleDocValues(
+      SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
+    double minVal, maxVal;
     if (min == null) {
       minVal = Double.NEGATIVE_INFINITY;
     } else {
@@ -180,8 +199,9 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     return numericDocValuesRangeQuery(sf.getName(), minBits, maxBits, true, true, true);
   }
 
-  protected Query getRangeQueryForMultiValuedFloatDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
-    float minVal,maxVal;
+  protected Query getRangeQueryForMultiValuedFloatDocValues(
+      SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
+    float minVal, maxVal;
     if (min == null) {
       minVal = Float.NEGATIVE_INFINITY;
     } else {
@@ -200,15 +220,17 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
         maxVal = FloatPoint.nextDown(maxVal);
       }
     }
-    Long minBits = (long)NumericUtils.floatToSortableInt(minVal);
-    Long maxBits = (long)NumericUtils.floatToSortableInt(maxVal);
+    Long minBits = (long) NumericUtils.floatToSortableInt(minVal);
+    Long maxBits = (long) NumericUtils.floatToSortableInt(maxVal);
     return numericDocValuesRangeQuery(sf.getName(), minBits, maxBits, true, true, true);
   }
-  
+
   public static Query numericDocValuesRangeQuery(
       String field,
-      Number lowerValue, Number upperValue,
-      boolean lowerInclusive, boolean upperInclusive,
+      Number lowerValue,
+      Number upperValue,
+      boolean lowerInclusive,
+      boolean upperInclusive,
       boolean multiValued) {
 
     long actualLowerValue = Long.MIN_VALUE;
@@ -233,21 +255,26 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
       }
     }
     if (multiValued) {
-      // In multiValued case use SortedNumericDocValuesField, this won't work for Trie*Fields wince they use BinaryDV in the multiValue case
-      return SortedNumericDocValuesField.newSlowRangeQuery(field, actualLowerValue, actualUpperValue);
+      // In multiValued case use SortedNumericDocValuesField, this won't work for Trie*Fields wince
+      // they use BinaryDV in the multiValue case
+      return SortedNumericDocValuesField.newSlowRangeQuery(
+          field, actualLowerValue, actualUpperValue);
     } else {
       return NumericDocValuesField.newSlowRangeQuery(field, actualLowerValue, actualUpperValue);
     }
   }
-  
-  /** 
-   * Wrapper for {@link Long#parseLong(String)} that throws a BAD_REQUEST error if the input is not valid 
+
+  /**
+   * Wrapper for {@link Long#parseLong(String)} that throws a BAD_REQUEST error if the input is not
+   * valid
+   *
    * @param fieldName used in any exception, may be null
    * @param val string to parse, NPE if null
    */
   static long parseLongFromUser(String fieldName, String val) {
     if (val == null) {
-      throw new NullPointerException("Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
+      throw new NullPointerException(
+          "Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
     }
     try {
       return Long.parseLong(val);
@@ -256,15 +283,18 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
     }
   }
-  
-  /** 
-   * Wrapper for {@link Integer#parseInt(String)} that throws a BAD_REQUEST error if the input is not valid 
+
+  /**
+   * Wrapper for {@link Integer#parseInt(String)} that throws a BAD_REQUEST error if the input is
+   * not valid
+   *
    * @param fieldName used in any exception, may be null
    * @param val string to parse, NPE if null
    */
   static int parseIntFromUser(String fieldName, String val) {
     if (val == null) {
-      throw new NullPointerException("Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
+      throw new NullPointerException(
+          "Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
     }
     try {
       return Integer.parseInt(val);
@@ -273,15 +303,18 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
     }
   }
-  
-  /** 
-   * Wrapper for {@link Double#parseDouble(String)} that throws a BAD_REQUEST error if the input is not valid 
+
+  /**
+   * Wrapper for {@link Double#parseDouble(String)} that throws a BAD_REQUEST error if the input is
+   * not valid
+   *
    * @param fieldName used in any exception, may be null
    * @param val string to parse, NPE if null
    */
   static double parseDoubleFromUser(String fieldName, String val) {
     if (val == null) {
-      throw new NullPointerException("Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
+      throw new NullPointerException(
+          "Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
     }
     try {
       return Double.parseDouble(val);
@@ -290,15 +323,18 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
     }
   }
-  
-  /** 
-   * Wrapper for {@link Float#parseFloat(String)} that throws a BAD_REQUEST error if the input is not valid 
+
+  /**
+   * Wrapper for {@link Float#parseFloat(String)} that throws a BAD_REQUEST error if the input is
+   * not valid
+   *
    * @param fieldName used in any exception, may be null
    * @param val string to parse, NPE if null
    */
   static float parseFloatFromUser(String fieldName, String val) {
     if (val == null) {
-      throw new NullPointerException("Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
+      throw new NullPointerException(
+          "Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
     }
     try {
       return Float.parseFloat(val);
@@ -311,9 +347,10 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
   public static EnumSet<NumberType> doubleOrFloat = EnumSet.of(NumberType.FLOAT, NumberType.DOUBLE);
 
   /**
-   * For doubles and floats, unbounded range queries (which do not match NaN values) are not equivalent to existence queries (which do match NaN values).
+   * For doubles and floats, unbounded range queries (which do not match NaN values) are not
+   * equivalent to existence queries (which do match NaN values).
    *
-   * The two types of queries are equivalent for all other numeric types.
+   * <p>The two types of queries are equivalent for all other numeric types.
    *
    * @param field the schema field
    * @return false for double and float fields, true for all others
@@ -324,19 +361,26 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
   }
 
   /**
-   * Override the default existence behavior, so that the non-docValued/norms implementation matches NaN values for double and float fields.
-   * The [* TO *] query for those fields does not match 'NaN' values, so they must be matched separately.
-   * <p>
-   * For doubles and floats the query behavior is equivalent to (field:[* TO *] OR field:NaN).
+   * Override the default existence behavior, so that the non-docValued/norms implementation matches
+   * NaN values for double and float fields. The [* TO *] query for those fields does not match
+   * 'NaN' values, so they must be matched separately.
+   *
+   * <p>For doubles and floats the query behavior is equivalent to (field:[* TO *] OR field:NaN).
    * For all other numeric types, the default existence query behavior is used.
    */
   @Override
   public Query getSpecializedExistenceQuery(QParser parser, SchemaField field) {
     if (doubleOrFloat.contains(getNumberType())) {
-      return new ConstantScoreQuery(new BooleanQuery.Builder()
-          .add(getSpecializedRangeQuery(parser, field, null, null, true, true), BooleanClause.Occur.SHOULD)
-          .add(getFieldQuery(parser, field, Float.toString(Float.NaN)), BooleanClause.Occur.SHOULD)
-          .setMinimumNumberShouldMatch(1).build());
+      return new ConstantScoreQuery(
+          new BooleanQuery.Builder()
+              .add(
+                  getSpecializedRangeQuery(parser, field, null, null, true, true),
+                  BooleanClause.Occur.SHOULD)
+              .add(
+                  getFieldQuery(parser, field, Float.toString(Float.NaN)),
+                  BooleanClause.Occur.SHOULD)
+              .setMinimumNumberShouldMatch(1)
+              .build());
     } else {
       return super.getSpecializedExistenceQuery(parser, field);
     }

@@ -14,11 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * {@link org.apache.solr.schema.IndexSchema} and {@link org.apache.solr.schema.FieldType} implementations for powering schema.xml
 
+/**
+ * {@link org.apache.solr.schema.IndexSchema} and {@link org.apache.solr.schema.FieldType}
+ * implementations for powering schema.xml
  */
 package org.apache.solr.schema;
-
-

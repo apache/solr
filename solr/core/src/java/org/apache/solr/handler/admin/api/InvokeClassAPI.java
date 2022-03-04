@@ -17,6 +17,12 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.params.CoreAdminParams.ACTION;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.INVOKE;
+import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
+
+import java.util.Locale;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
@@ -24,41 +30,36 @@ import org.apache.solr.client.solrj.request.beans.InvokeClassPayload;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
-import java.util.Locale;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CoreAdminParams.ACTION;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.INVOKE;
-import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
-
 /**
  * V2 API for triggering "invocable" classes.
  *
- * This API (POST /v2/node {'invoke': {...}}) is analogous to the v1 /admin/cores?action=INVOKE command.
+ * <p>This API (POST /v2/node {'invoke': {...}}) is analogous to the v1 /admin/cores?action=INVOKE
+ * command.
  */
 @EndPoint(
-        path = {"/node"},
-        method = POST,
-        permission = CORE_EDIT_PERM)
+    path = {"/node"},
+    method = POST,
+    permission = CORE_EDIT_PERM)
 public class InvokeClassAPI {
-    public static final String INVOKE_CMD = "invoke";
+  public static final String INVOKE_CMD = "invoke";
 
-    private final CoreAdminHandler coreAdminHandler;
+  private final CoreAdminHandler coreAdminHandler;
 
-    public InvokeClassAPI(CoreAdminHandler coreAdminHandler) {
-        this.coreAdminHandler = coreAdminHandler;
+  public InvokeClassAPI(CoreAdminHandler coreAdminHandler) {
+    this.coreAdminHandler = coreAdminHandler;
+  }
+
+  @Command(name = INVOKE_CMD)
+  public void invokeClasses(PayloadObj<InvokeClassPayload> payload) throws Exception {
+    final InvokeClassPayload v2Body = payload.get();
+    final ModifiableSolrParams v1Params =
+        new ModifiableSolrParams(payload.getRequest().getParams());
+    v1Params.add(ACTION, INVOKE.name().toLowerCase(Locale.ROOT));
+    for (String clazzStr : v2Body.classes) {
+      v1Params.add("class", clazzStr);
     }
 
-    @Command(name = INVOKE_CMD)
-    public void invokeClasses(PayloadObj<InvokeClassPayload> payload) throws Exception {
-        final InvokeClassPayload v2Body = payload.get();
-        final ModifiableSolrParams v1Params = new ModifiableSolrParams(payload.getRequest().getParams());
-        v1Params.add(ACTION, INVOKE.name().toLowerCase(Locale.ROOT));
-        for (String clazzStr : v2Body.classes) {
-            v1Params.add("class", clazzStr);
-        }
-
-        payload.getRequest().setParams(v1Params);
-        coreAdminHandler.handleRequestBody(payload.getRequest(), payload.getResponse());
-    }
+    payload.getRequest().setParams(v1Params);
+    coreAdminHandler.handleRequestBody(payload.getRequest(), payload.getResponse());
+  }
 }

@@ -1652,9 +1652,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           req("qt", "/get", "id", "7"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='7']",
-          "//doc/int[@name='" + fieldToUpdate + "'][.='708']"
+          "//doc/int[@name='" + fieldToUpdate + "'][.='708']",
           // whichever field we did *NOT* update
-          ,
           "//doc/int[@name!='" + fieldToUpdate + "'][.='42']",
           "//doc/long[@name='_version_']",
           "//doc/date[@name='timestamp']",
@@ -1666,9 +1665,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           req("qt", "/get", "id", "7"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='7']",
-          "//doc/int[@name='" + fieldToUpdate + "'][.='153']"
+          "//doc/int[@name='" + fieldToUpdate + "'][.='153']",
           // whichever field we did *NOT* update
-          ,
           "//doc/int[@name!='" + fieldToUpdate + "'][.='42']",
           "//doc/long[@name='_version_']",
           "//doc/date[@name='timestamp']",
@@ -1681,9 +1679,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           req("qt", "/get", "id", "8"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='8']",
-          "//doc/int[@name='" + fieldToUpdate + "'][.='666']"
+          "//doc/int[@name='" + fieldToUpdate + "'][.='666']",
           // whichever field we did *NOT* update
-          ,
           "//doc/int[@name!='" + fieldToUpdate + "'][.='42']",
           "//doc/long[@name='_version_']",
           "//doc/date[@name='timestamp']",
@@ -1695,9 +1692,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           req("qt", "/get", "id", "8"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='8']",
-          "//doc/int[@name='" + fieldToUpdate + "'][.='111']"
+          "//doc/int[@name='" + fieldToUpdate + "'][.='111']",
           // whichever field we did *NOT* update
-          ,
           "//doc/int[@name!='" + fieldToUpdate + "'][.='42']",
           "//doc/long[@name='_version_']",
           "//doc/date[@name='timestamp']",
@@ -1710,9 +1706,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           req("qt", "/get", "id", "7"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='7']",
-          "//doc/int[@name='" + fieldToUpdate + "'][.='153']"
+          "//doc/int[@name='" + fieldToUpdate + "'][.='153']",
           // whichever field we did *NOT* update
-          ,
           "//doc/int[@name!='" + fieldToUpdate + "'][.='42']",
           "//doc/long[@name='_version_']",
           "//doc/date[@name='timestamp']",
@@ -1722,9 +1717,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           req("qt", "/get", "id", "8"),
           "count(//doc)=1",
           "//doc/str[@name='id'][.='8']",
-          "//doc/int[@name='" + fieldToUpdate + "'][.='111']"
+          "//doc/int[@name='" + fieldToUpdate + "'][.='111']",
           // whichever field we did *NOT* update
-          ,
           "//doc/int[@name!='" + fieldToUpdate + "'][.='42']",
           "//doc/long[@name='_version_']",
           "//doc/date[@name='timestamp']",

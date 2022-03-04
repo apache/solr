@@ -426,9 +426,8 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     }
 
     if (testPolygon) {
-      String polygonWKT =
-          "POLYGON((-11 12, -11 11, 10.5 12, -11 12))"; // right-angle triangle.  Counter-clockwise
-      // order
+      // right-angle triangle. Counter-clockwise order
+      String polygonWKT = "POLYGON((-11 12, -11 11, 10.5 12, -11 12))";
       assertJQ(
           req(
               "q",

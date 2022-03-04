@@ -18,15 +18,12 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.common.cloud.ZkNodeProps;
 
-/**
- * Interface for processing messages received by an {@link OverseerTaskProcessor}
- */
+/** Interface for processing messages received by an {@link OverseerTaskProcessor} */
 public interface OverseerMessageHandler {
 
   /**
    * @param message the message to process
    * @param operation the operation to process
-   *
    * @return response
    */
   OverseerSolrResponse processMessage(ZkNodeProps message, String operation);
@@ -38,7 +35,6 @@ public interface OverseerMessageHandler {
 
   /**
    * @param operation the operation to be timed
-   *
    * @return the name of the timer to use for the operation
    */
   String getTimerName(String operation);
@@ -49,15 +45,14 @@ public interface OverseerMessageHandler {
 
   /**
    * Grabs an exclusive lock for this particular task.
+   *
    * @return <code>null</code> if locking is not possible.
    */
   Lock lockTask(ZkNodeProps message, long batchSessionId);
 
   /**
    * @param message the message being processed
-   *
    * @return the taskKey for the message for handling task exclusivity
    */
   String getTaskKey(ZkNodeProps message);
-
 }

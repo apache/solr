@@ -17,13 +17,11 @@
 
 package org.apache.solr.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TreeSet;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -43,13 +41,15 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
   public static final String NAME = "significantTerms";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new SignifcantTermsQParser(qstr, localParams, params, req);
   }
 
   private static class SignifcantTermsQParser extends QParser {
 
-    public SignifcantTermsQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    public SignifcantTermsQParser(
+        String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(qstr, localParams, params, req);
     }
 
@@ -66,7 +66,7 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
 
     private String getParamWithDefault(String paramName, String defaultValue) {
       String result = getParam(paramName);
-      return (result != null)? result: defaultValue;
+      return (result != null) ? result : defaultValue;
     }
   }
 
@@ -78,13 +78,13 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
     private float minDocs;
     private int minTermLength;
 
-    public SignificantTermsQuery(String field, int numTerms, float minDocs, float maxDocs, int minTermLength) {
+    public SignificantTermsQuery(
+        String field, int numTerms, float minDocs, float maxDocs, int minTermLength) {
       this.field = field;
       this.numTerms = numTerms;
       this.minDocs = minDocs;
       this.maxDocs = maxDocs;
       this.minTermLength = minTermLength;
-
     }
 
     @Override
@@ -92,7 +92,8 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
       if (searcher.getIndexReader().maxDoc() <= 0) {
         return new NoOpTermsCollector(rb);
       }
-      return new SignifcantTermsCollector(rb, searcher, field, numTerms, minDocs, maxDocs, minTermLength);
+      return new SignifcantTermsCollector(
+          rb, searcher, field, numTerms, minDocs, maxDocs, minTermLength);
     }
   }
 
@@ -104,8 +105,7 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void collect(int doc) throws IOException {
-    }
+    public void collect(int doc) throws IOException {}
 
     @Override
     public void finish() throws IOException {
@@ -140,7 +140,14 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
     private int minTermLength;
     private int highestCollected;
 
-    public SignifcantTermsCollector(ResponseBuilder rb, IndexSearcher searcher, String field, int numTerms, float minDocs, float maxDocs, int minTermLength) {
+    public SignifcantTermsCollector(
+        ResponseBuilder rb,
+        IndexSearcher searcher,
+        String field,
+        int numTerms,
+        float minDocs,
+        float maxDocs,
+        int minTermLength) {
       this.rb = rb;
       this.searcher = searcher;
       this.field = field;
@@ -185,34 +192,34 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
       response.put("docFreq", outFreq);
       response.put("queryDocFreq", outQueryFreq);
 
-      //TODO: Use a priority queue
+      // TODO: Use a priority queue
       TreeSet<TermWithScore> topTerms = new TreeSet<>();
 
-      Terms terms = ((SolrIndexSearcher)searcher).getSlowAtomicReader().terms(field);
+      Terms terms = ((SolrIndexSearcher) searcher).getSlowAtomicReader().terms(field);
       TermsEnum termsEnum = terms == null ? TermsEnum.EMPTY : terms.iterator();
       BytesRef term;
       PostingsEnum postingsEnum = null;
 
       while ((term = termsEnum.next()) != null) {
         int docFreq = termsEnum.docFreq();
-        
-        if(minDocs < 1.0) {
-          if((float)docFreq/numDocs < minDocs) {
+
+        if (minDocs < 1.0) {
+          if ((float) docFreq / numDocs < minDocs) {
             continue;
           }
-        } else if(docFreq < minDocs) {
+        } else if (docFreq < minDocs) {
           continue;
         }
 
-        if(maxDocs < 1.0) {
-          if((float)docFreq/numDocs > maxDocs) {
+        if (maxDocs < 1.0) {
+          if ((float) docFreq / numDocs > maxDocs) {
             continue;
           }
-        } else if(docFreq > maxDocs) {
+        } else if (docFreq > maxDocs) {
           continue;
         }
 
-        if(term.length < minTermLength) {
+        if (term.length < minTermLength) {
           continue;
         }
 
@@ -223,7 +230,7 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
         while (postingsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           int docId = postingsEnum.docID();
 
-          if(docId > highestCollected) {
+          if (docId > highestCollected) {
             break POSTINGS;
           }
 
@@ -232,11 +239,13 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
           }
         }
 
-        if(tf == 0) {
+        if (tf == 0) {
           continue;
         }
 
-        float score = (float)Math.log(tf) * (float) (Math.log(((float)(numDocs + 1)) / (docFreq + 1)) + 1.0);
+        float score =
+            (float) Math.log(tf)
+                * (float) (Math.log(((float) (numDocs + 1)) / (docFreq + 1)) + 1.0);
 
         String t = term.utf8ToString();
         allFreq.add(t, docFreq);
@@ -244,7 +253,7 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
 
         if (topTerms.size() < numTerms) {
           topTerms.add(new TermWithScore(term.utf8ToString(), score));
-        } else  {
+        } else {
           if (topTerms.first().score < score) {
             topTerms.pollFirst();
             topTerms.add(new TermWithScore(term.utf8ToString(), score));
@@ -265,7 +274,7 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
     }
   }
 
-  private static class TermWithScore implements Comparable<TermWithScore>{
+  private static class TermWithScore implements Comparable<TermWithScore> {
     public final String term;
     public final double score;
 
@@ -298,5 +307,3 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
     }
   }
 }
-
-

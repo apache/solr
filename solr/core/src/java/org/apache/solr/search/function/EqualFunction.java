@@ -19,14 +19,13 @@ package org.apache.solr.search.function;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ComparisonBoolFunction;
 
 /**
- * Compares two values for equality.
- * It should work on not only numbers but strings and custom things.
+ * Compares two values for equality. It should work on not only numbers but strings and custom
+ * things.
  *
  * @since 7.4
  */
@@ -42,9 +41,9 @@ public class EqualFunction extends ComparisonBoolFunction {
     Object objR = rhs.objectVal(doc);
     if (isNumeric(objL) && isNumeric(objR)) {
       if (isInteger(objL) && isInteger(objR)) {
-        return Long.compare(((Number)objL).longValue(), ((Number)objR).longValue()) == 0;
+        return Long.compare(((Number) objL).longValue(), ((Number) objR).longValue()) == 0;
       } else {
-        return Double.compare(((Number)objL).doubleValue(), ((Number)objR).doubleValue()) == 0;
+        return Double.compare(((Number) objL).doubleValue(), ((Number) objR).doubleValue()) == 0;
       }
     } else {
       return Objects.equals(objL, objR);

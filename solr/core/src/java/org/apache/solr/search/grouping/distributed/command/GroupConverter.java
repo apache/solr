@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
@@ -38,14 +37,15 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 
-/** 
+/**
  * this is a transition class: for numeric types we use function-based distributed grouping,
- * otherwise term-based. so for now we internally use function-based but pretend like we did 
- * it all with bytes, to not change any wire serialization etc.
+ * otherwise term-based. so for now we internally use function-based but pretend like we did it all
+ * with bytes, to not change any wire serialization etc.
  */
 class GroupConverter {
-  
-  static Collection<SearchGroup<BytesRef>> fromMutable(SchemaField field, Collection<SearchGroup<MutableValue>> values) {
+
+  static Collection<SearchGroup<BytesRef>> fromMutable(
+      SchemaField field, Collection<SearchGroup<MutableValue>> values) {
     if (values == null) {
       return null;
     }
@@ -56,7 +56,8 @@ class GroupConverter {
       converted.sortValues = original.sortValues;
       if (original.groupValue.exists) {
         BytesRefBuilder binary = new BytesRefBuilder();
-        fieldType.readableToIndexed(Utils.OBJECT_TO_STRING.apply(original.groupValue.toObject()), binary);
+        fieldType.readableToIndexed(
+            Utils.OBJECT_TO_STRING.apply(original.groupValue.toObject()), binary);
         converted.groupValue = binary.get();
       } else {
         converted.groupValue = null;
@@ -65,8 +66,9 @@ class GroupConverter {
     }
     return result;
   }
-  
-  static Collection<SearchGroup<MutableValue>> toMutable(SchemaField field, Collection<SearchGroup<BytesRef>> values) {
+
+  static Collection<SearchGroup<MutableValue>> toMutable(
+      SchemaField field, Collection<SearchGroup<BytesRef>> values) {
     FieldType fieldType = field.getType();
     List<SearchGroup<MutableValue>> result = new ArrayList<>(values.size());
     for (SearchGroup<BytesRef> original : values) {
@@ -121,7 +123,7 @@ class GroupConverter {
             mutableDate.value = 0;
             mutableDate.exists = false;
           } else {
-            mutableDate.value = ((Date)fieldType.toObject(field, original.groupValue)).getTime();
+            mutableDate.value = ((Date) fieldType.toObject(field, original.groupValue)).getTime();
           }
           v = mutableDate;
           break;
@@ -133,30 +135,45 @@ class GroupConverter {
     }
     return result;
   }
-  
+
   static TopGroups<BytesRef> fromMutable(SchemaField field, TopGroups<MutableValue> values) {
     if (values == null) {
       return null;
     }
-    
+
     FieldType fieldType = field.getType();
 
     @SuppressWarnings("unchecked")
-    GroupDocs<BytesRef>[] groupDocs = (GroupDocs<BytesRef>[]) Array.newInstance(GroupDocs.class, values.groups.length);
+    GroupDocs<BytesRef>[] groupDocs =
+        (GroupDocs<BytesRef>[]) Array.newInstance(GroupDocs.class, values.groups.length);
 
     for (int i = 0; i < values.groups.length; i++) {
       GroupDocs<MutableValue> original = values.groups[i];
       final BytesRef groupValue;
       if (original.groupValue.exists) {
         BytesRefBuilder binary = new BytesRefBuilder();
-        fieldType.readableToIndexed(Utils.OBJECT_TO_STRING.apply(original.groupValue.toObject()), binary);
+        fieldType.readableToIndexed(
+            Utils.OBJECT_TO_STRING.apply(original.groupValue.toObject()), binary);
         groupValue = binary.get();
       } else {
         groupValue = null;
       }
-      groupDocs[i] = new GroupDocs<>(original.score, original.maxScore, original.totalHits, original.scoreDocs, groupValue, original.groupSortValues);
+      groupDocs[i] =
+          new GroupDocs<>(
+              original.score,
+              original.maxScore,
+              original.totalHits,
+              original.scoreDocs,
+              groupValue,
+              original.groupSortValues);
     }
-    
-    return new TopGroups<>(values.groupSort, values.withinGroupSort, values.totalHitCount, values.totalGroupedHitCount, groupDocs, values.maxScore);
+
+    return new TopGroups<>(
+        values.groupSort,
+        values.withinGroupSort,
+        values.totalHitCount,
+        values.totalGroupedHitCount,
+        groupDocs,
+        values.maxScore);
   }
 }

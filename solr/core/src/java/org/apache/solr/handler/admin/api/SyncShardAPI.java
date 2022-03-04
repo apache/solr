@@ -17,16 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import com.google.common.collect.Maps;
-import org.apache.solr.api.Command;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.SyncShardPayload;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.handler.admin.CollectionsHandler;
-
-import java.util.Map;
-
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionParams.ACTION;
@@ -34,35 +24,45 @@ import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import com.google.common.collect.Maps;
+import java.util.Map;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.PayloadObj;
+import org.apache.solr.client.solrj.request.beans.SyncShardPayload;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.handler.admin.CollectionsHandler;
+
 /**
  * V2 API for triggering a shard-sync operation within a particular collection and shard.
  *
- * This API (POST /v2/collections/collectionName/shards/shardName {'sync-shard': {}}) is analogous to the v1
- * /admin/collections?action=SYNCSHARD command.
+ * <p>This API (POST /v2/collections/collectionName/shards/shardName {'sync-shard': {}}) is
+ * analogous to the v1 /admin/collections?action=SYNCSHARD command.
  *
  * @see SyncShardPayload
  */
 @EndPoint(
-        path = {"/c/{collection}/shards/{shard}", "/collections/{collection}/shards/{shard}"},
-        method = POST,
-        permission = COLL_EDIT_PERM)
+    path = {"/c/{collection}/shards/{shard}", "/collections/{collection}/shards/{shard}"},
+    method = POST,
+    permission = COLL_EDIT_PERM)
 public class SyncShardAPI {
-    private static final String V2_SYNC_SHARD_CMD = "sync-shard";
+  private static final String V2_SYNC_SHARD_CMD = "sync-shard";
 
-    private final CollectionsHandler collectionsHandler;
+  private final CollectionsHandler collectionsHandler;
 
-    public SyncShardAPI(CollectionsHandler collectionsHandler) {
-        this.collectionsHandler = collectionsHandler;
-    }
+  public SyncShardAPI(CollectionsHandler collectionsHandler) {
+    this.collectionsHandler = collectionsHandler;
+  }
 
-    @Command(name = V2_SYNC_SHARD_CMD)
-    public void syncShard(PayloadObj<SyncShardPayload> obj) throws Exception {
-        final Map<String, Object> addedV1Params = Maps.newHashMap();
-        final Map<String, String> pathParams = obj.getRequest().getPathTemplateValues();
-        addedV1Params.put(ACTION, CollectionParams.CollectionAction.SYNCSHARD.toLower());
-        addedV1Params.put(COLLECTION, pathParams.get(COLLECTION));
-        addedV1Params.put(SHARD, pathParams.get(SHARD));
+  @Command(name = V2_SYNC_SHARD_CMD)
+  public void syncShard(PayloadObj<SyncShardPayload> obj) throws Exception {
+    final Map<String, Object> addedV1Params = Maps.newHashMap();
+    final Map<String, String> pathParams = obj.getRequest().getPathTemplateValues();
+    addedV1Params.put(ACTION, CollectionParams.CollectionAction.SYNCSHARD.toLower());
+    addedV1Params.put(COLLECTION, pathParams.get(COLLECTION));
+    addedV1Params.put(SHARD, pathParams.get(SHARD));
 
-        collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), addedV1Params), obj.getResponse());
-    }
+    collectionsHandler.handleRequestBody(
+        wrapParams(obj.getRequest(), addedV1Params), obj.getResponse());
+  }
 }

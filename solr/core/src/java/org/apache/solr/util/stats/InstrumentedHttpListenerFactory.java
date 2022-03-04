@@ -17,22 +17,21 @@
 
 package org.apache.solr.util.stats;
 
+import static org.apache.solr.metrics.SolrMetricManager.mkName;
+
+import com.codahale.metrics.Timer;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
 
-import static org.apache.solr.metrics.SolrMetricManager.mkName;
-
 /**
- * A HttpListenerFactory tracks metrics interesting to solr
- * Inspired and partially copied from dropwizard httpclient library
+ * A HttpListenerFactory tracks metrics interesting to solr Inspired and partially copied from
+ * dropwizard httpclient library
  */
 public class InstrumentedHttpListenerFactory implements SolrMetricProducer, HttpListenerFactory {
 
@@ -42,7 +41,13 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
 
   private static final NameStrategy QUERYLESS_URL_AND_METHOD =
       (scope, request) -> {
-        String schemeHostPort = request.getScheme() + "://" + request.getHost() + ":" + request.getPort() + request.getPath();
+        String schemeHostPort =
+            request.getScheme()
+                + "://"
+                + request.getHost()
+                + ":"
+                + request.getPort()
+                + request.getPath();
         return mkName(schemeHostPort + "." + methodNameString(request), scope);
       };
 
@@ -51,13 +56,14 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
 
   private static final NameStrategy HOST_AND_METHOD =
       (scope, request) -> {
-        String schemeHostPort = request.getScheme() + "://" + request.getHost() + ":" + request.getPort();
+        String schemeHostPort =
+            request.getScheme() + "://" + request.getHost() + ":" + request.getPort();
         return mkName(schemeHostPort + "." + methodNameString(request), scope);
       };
 
   public static final Map<String, NameStrategy> KNOWN_METRIC_NAME_STRATEGIES = new HashMap<>(3);
 
-  static  {
+  static {
     KNOWN_METRIC_NAME_STRATEGIES.put("queryLessURLAndMethod", QUERYLESS_URL_AND_METHOD);
     KNOWN_METRIC_NAME_STRATEGIES.put("hostAndMethod", HOST_AND_METHOD);
     KNOWN_METRIC_NAME_STRATEGIES.put("methodOnly", METHOD_ONLY);
@@ -111,4 +117,3 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
     return solrMetricsContext;
   }
 }
-

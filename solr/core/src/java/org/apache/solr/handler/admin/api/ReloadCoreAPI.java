@@ -17,6 +17,14 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
+
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
@@ -24,46 +32,37 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
-import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
-
 /**
  * V2 API for reloading an individual core.
  *
- * The new API (POST /v2/cores/coreName {'reload': {...}}) is equivalent to the v1
+ * <p>The new API (POST /v2/cores/coreName {'reload': {...}}) is equivalent to the v1
  * /admin/cores?action=reload command.
  *
  * @see ReloadCorePayload
  */
 @EndPoint(
-        path = {"/cores/{core}"},
-        method = POST,
-        permission = CORE_EDIT_PERM)
+    path = {"/cores/{core}"},
+    method = POST,
+    permission = CORE_EDIT_PERM)
 public class ReloadCoreAPI {
-    private static final String V2_RELOAD_CORE_CMD = "reload";
+  private static final String V2_RELOAD_CORE_CMD = "reload";
 
-    private final CoreAdminHandler coreHandler;
+  private final CoreAdminHandler coreHandler;
 
-    public ReloadCoreAPI(CoreAdminHandler coreHandler) {
-        this.coreHandler = coreHandler;
-    }
+  public ReloadCoreAPI(CoreAdminHandler coreHandler) {
+    this.coreHandler = coreHandler;
+  }
 
-    @Command(name = V2_RELOAD_CORE_CMD)
-    public void reloadCore(PayloadObj<ReloadCorePayload> obj) throws Exception {
-        final String coreName = obj.getRequest().getPathTemplateValues().get(CoreAdminParams.CORE);
+  @Command(name = V2_RELOAD_CORE_CMD)
+  public void reloadCore(PayloadObj<ReloadCorePayload> obj) throws Exception {
+    final String coreName = obj.getRequest().getPathTemplateValues().get(CoreAdminParams.CORE);
 
-        final Map<String, Object> v1Params = new HashMap<>();
-        v1Params.put(ACTION, CoreAdminParams.CoreAdminAction.RELOAD.name().toLowerCase(Locale.ROOT));
-        v1Params.put(CoreAdminParams.CORE, coreName);
+    final Map<String, Object> v1Params = new HashMap<>();
+    v1Params.put(ACTION, CoreAdminParams.CoreAdminAction.RELOAD.name().toLowerCase(Locale.ROOT));
+    v1Params.put(CoreAdminParams.CORE, coreName);
 
-        coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-    }
+    coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
 
-    public static class ReloadCorePayload implements ReflectMapWriter {}
+  public static class ReloadCorePayload implements ReflectMapWriter {}
 }

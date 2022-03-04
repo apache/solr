@@ -445,11 +445,11 @@ public interface JsonTextWriter extends TextWriter {
 
       indent();
 
-      /*** if key is null, just write value???
-       * if (key==null) {
-       * writeVal(null,val.getVal(i));
-       * } else {
-       ***/
+      /* if key is null, just write value???
+      if (key==null) {
+      writeVal(null,val.getVal(i));
+      } else {
+      */
 
       writeArrayOpener(1);
       incLevel();
