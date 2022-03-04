@@ -21,7 +21,7 @@
 project(":solr").subprojects {
   plugins.withType(JavaPlugin) {
     dependencies {
-      implementation enforcedPlatform('org.slf4j:slf4j-api:1.7.35')
+      implementation enforcedPlatform('org.slf4j:slf4j-api')
     }
   }
 }
@@ -29,7 +29,7 @@ project(":solr").subprojects {
 configure(project(":solr:server")) {
   afterEvaluate {
     dependencies {
-      libExt enforcedPlatform('org.slf4j:slf4j-api:1.7.35')
+      libExt enforcedPlatform('org.slf4j:slf4j-api')
     }
   }
 }
