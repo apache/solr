@@ -229,7 +229,7 @@ public class V2HttpCall extends HttpSolrCall {
     fullPath = fullPath == null ? path : fullPath;
     Api api = requestHandlers.v2lookup(path, method, parts);
     if (api == null && path.endsWith(CommonParams.INTROSPECT)) {
-      // the particular http method does not have any ,
+      // the particular http method does not have any,
       // just try if any other method has this path
       api = requestHandlers.v2lookup(path, null, parts);
     }

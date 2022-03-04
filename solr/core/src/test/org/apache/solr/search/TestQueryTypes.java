@@ -127,8 +127,7 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
             "q",
             "{!terms f=v_s method="
                 + termsMethod
-                + " }wow dude,other stuff") // terms reverse sorted to show this works
-        ,
+                + " }wow dude,other stuff"), // terms reverse sorted to show this works
         "//result[@numFound='2']");
 
     // frange and function query only work on single valued field types
@@ -523,9 +522,8 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
       }
 
       // Skipping: func, boost, raw, nested, frange, spatial*, join, surround, switch, parent,
-      // child, collapsing,
-      // complexphrase, rerank, export, mlt, hash, graph, graphTerms, igain, tlogit,
-      // significantTerms, payload*
+      // child, collapsing, complexphrase, rerank, export, mlt, hash, graph, graphTerms, igain,
+      // tlogit, significantTerms, payload*
       // Maybe add: raw, join, parent, child, collapsing, graphTerms, igain, significantTerms,
       // simple
     }

@@ -851,9 +851,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
           Math.max(1, TestUtil.nextInt(random(), -1, 3)); // 3/5th chance of being '1'
       Map<String, TermFacet> results = new LinkedHashMap<>();
       for (int i = 0; i < numFacets; i++) {
-        if (keyCounter.get()
-            < 3) { // a hard limit on the total number of facets (regardless of depth) to reduce OOM
-          // risk
+        // a hard limit on the total number of facets (regardless of depth) to reduce OOM risk
+        if (keyCounter.get() < 3) {
 
           final String sort = randomSortParam(random());
           final String facetField = randomFacetField(random());

@@ -745,9 +745,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertEquals(0, client.commit().getStatus()); // need to force since update didn't finish
     assertQueryDocIds(
         client,
-        false
-        // explicitly failed
-        ,
+        false, // explicitly failed
         S_TWO_PRE + "21",
         S_TWO_PRE + "22",
         S_TWO_PRE + "23",
@@ -855,9 +853,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         S_ONE_PRE + "z",
         S_ONE_PRE + "y",
         S_TWO_PRE + "z",
-        S_TWO_PRE + "y" // first
-        //
-        ,
+        S_TWO_PRE + "y", // first
         S_ONE_PRE + "0",
         S_ONE_PRE + "1",
         S_ONE_PRE + "2",
@@ -870,9 +866,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         S_ONE_PRE + "9");
     assertQueryDocIds(
         client,
-        false
-        // explicitly failed
-        ,
+        false, // explicitly failed
         S_TWO_PRE + "0",
         S_TWO_PRE + "1",
         S_TWO_PRE + "2",
@@ -996,8 +990,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         S_ONE_PRE + "z",
         S_ONE_PRE + "y",
         S_TWO_PRE + "z",
-        S_TWO_PRE + "y" // first
-        ,
+        S_TWO_PRE + "y", // first
         S_ONE_PRE + "x",
         S_TWO_PRE + "x" // later
         );

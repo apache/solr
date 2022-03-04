@@ -352,16 +352,14 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     for (String dir : Arrays.asList("asc", "desc")) {
       // for max3, dir shouldn't matter - should always tie..
       assertQ(
-          req("q", "*:*", "sort", "whitespace_max3_stxt " + dir + ", id desc") // max3, id desc
-          ,
+          req("q", "*:*", "sort", "whitespace_max3_stxt " + dir + ", id desc"), // max3, id desc
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.=4]",
           "//result/doc[2]/str[@name='id'][.=3]",
           "//result/doc[3]/str[@name='id'][.=2]",
           "//result/doc[4]/str[@name='id'][.=1]");
       assertQ(
-          req("q", "*:*", "sort", "whitespace_max3_stxt " + dir + ", id asc") // max3, id desc
-          ,
+          req("q", "*:*", "sort", "whitespace_max3_stxt " + dir + ", id asc"), // max3, id desc
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.=1]",
           "//result/doc[2]/str[@name='id'][.=2]",
@@ -369,26 +367,21 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
           "//result/doc[4]/str[@name='id'][.=4]");
     }
     assertQ(
-        req("q", "*:*", "sort", "whitespace_max6_stxt asc, id desc") // max6 asc, id desc
-        ,
+        req("q", "*:*", "sort", "whitespace_max6_stxt asc, id desc"), // max6 asc, id desc
         "//*[@numFound='4']",
-        "//result/doc[1]/str[@name='id'][.=4]" // no tiebreaker needed
-        ,
+        "//result/doc[1]/str[@name='id'][.=4]", // no tiebreaker needed
         "//result/doc[2]/str[@name='id'][.=3]",
         "//result/doc[3]/str[@name='id'][.=2]",
         "//result/doc[4]/str[@name='id'][.=1]");
     assertQ(
-        req("q", "*:*", "sort", "whitespace_max6_stxt asc, id asc") // max6 asc, id desc
-        ,
+        req("q", "*:*", "sort", "whitespace_max6_stxt asc, id asc"), // max6 asc, id desc
         "//*[@numFound='4']",
-        "//result/doc[1]/str[@name='id'][.=4]" // no tiebreaker needed
-        ,
+        "//result/doc[1]/str[@name='id'][.=4]", // no tiebreaker needed
         "//result/doc[2]/str[@name='id'][.=1]",
         "//result/doc[3]/str[@name='id'][.=2]",
         "//result/doc[4]/str[@name='id'][.=3]");
     assertQ(
-        req("q", "*:*", "sort", "whitespace_max6_stxt desc, id desc") // max6 desc, id desc
-        ,
+        req("q", "*:*", "sort", "whitespace_max6_stxt desc, id desc"), // max6 desc, id desc
         "//*[@numFound='4']",
         "//result/doc[1]/str[@name='id'][.=3]",
         "//result/doc[2]/str[@name='id'][.=2]",
@@ -396,8 +389,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.=4]" // no tiebreaker needed
         );
     assertQ(
-        req("q", "*:*", "sort", "whitespace_max6_stxt desc, id asc") // max6 desc, id desc
-        ,
+        req("q", "*:*", "sort", "whitespace_max6_stxt desc, id asc"), // max6 desc, id desc
         "//*[@numFound='4']",
         "//result/doc[1]/str[@name='id'][.=1]",
         "//result/doc[2]/str[@name='id'][.=2]",
