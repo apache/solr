@@ -311,33 +311,33 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
   // shard3: top bits:00  00000000:3fffffff
   // shard4: top bits:01  40000000:7fffffff
 
-  /***
-   * hash of a is 3c2569b2 high bits=0 shard=shard3
-   * hash of b is 95de7e03 high bits=2 shard=shard1
-   * hash of c is e132d65f high bits=3 shard=shard2
-   * hash of d is 27191473 high bits=0 shard=shard3
-   * hash of e is 656c4367 high bits=1 shard=shard4
-   * hash of f is 2b64883b high bits=0 shard=shard3
-   * hash of g is f18ae416 high bits=3 shard=shard2
-   * hash of h is d482b2d3 high bits=3 shard=shard2
-   * hash of i is 811a702b high bits=2 shard=shard1
-   * hash of j is ca745a39 high bits=3 shard=shard2
-   * hash of k is cfbda5d1 high bits=3 shard=shard2
-   * hash of l is 1d5d6a2c high bits=0 shard=shard3
-   * hash of m is 5ae4385c high bits=1 shard=shard4
-   * hash of n is c651d8ac high bits=3 shard=shard2
-   * hash of o is 68348473 high bits=1 shard=shard4
-   * hash of p is 986fdf9a high bits=2 shard=shard1
-   * hash of q is ff8209e8 high bits=3 shard=shard2
-   * hash of r is 5c9373f1 high bits=1 shard=shard4
-   * hash of s is ff4acaf1 high bits=3 shard=shard2
-   * hash of t is ca87df4d high bits=3 shard=shard2
-   * hash of u is 62203ae0 high bits=1 shard=shard4
-   * hash of v is bdafcc55 high bits=2 shard=shard1
-   * hash of w is ff439d1f high bits=3 shard=shard2
-   * hash of x is 3e9a9b1b high bits=0 shard=shard3
-   * hash of y is 477d9216 high bits=1 shard=shard4
-   * hash of z is c1f69a17 high bits=3 shard=shard2
-   ***/
+  /*
+  hash of a is 3c2569b2 high bits=0 shard=shard3
+  hash of b is 95de7e03 high bits=2 shard=shard1
+  hash of c is e132d65f high bits=3 shard=shard2
+  hash of d is 27191473 high bits=0 shard=shard3
+  hash of e is 656c4367 high bits=1 shard=shard4
+  hash of f is 2b64883b high bits=0 shard=shard3
+  hash of g is f18ae416 high bits=3 shard=shard2
+  hash of h is d482b2d3 high bits=3 shard=shard2
+  hash of i is 811a702b high bits=2 shard=shard1
+  hash of j is ca745a39 high bits=3 shard=shard2
+  hash of k is cfbda5d1 high bits=3 shard=shard2
+  hash of l is 1d5d6a2c high bits=0 shard=shard3
+  hash of m is 5ae4385c high bits=1 shard=shard4
+  hash of n is c651d8ac high bits=3 shard=shard2
+  hash of o is 68348473 high bits=1 shard=shard4
+  hash of p is 986fdf9a high bits=2 shard=shard1
+  hash of q is ff8209e8 high bits=3 shard=shard2
+  hash of r is 5c9373f1 high bits=1 shard=shard4
+  hash of s is ff4acaf1 high bits=3 shard=shard2
+  hash of t is ca87df4d high bits=3 shard=shard2
+  hash of u is 62203ae0 high bits=1 shard=shard4
+  hash of v is bdafcc55 high bits=2 shard=shard1
+  hash of w is ff439d1f high bits=3 shard=shard2
+  hash of x is 3e9a9b1b high bits=0 shard=shard3
+  hash of y is 477d9216 high bits=1 shard=shard4
+  hash of z is c1f69a17 high bits=3 shard=shard2
+  */
 
 }

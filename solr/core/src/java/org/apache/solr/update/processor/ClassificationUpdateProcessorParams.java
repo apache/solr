@@ -30,7 +30,8 @@ public class ClassificationUpdateProcessorParams {
 
   private int maxPredictedClasses; // the max number of classes to assign
 
-  private ClassificationUpdateProcessorFactory.Algorithm algorithm; // the Classification Algorithm to use - currently 'knn' or 'bayes'
+  // the Classification Algorithm to use - currently 'knn' or 'bayes'
+  private ClassificationUpdateProcessorFactory.Algorithm algorithm;
 
   private int minTf; // knn specific - the minimum Term Frequency for considering a term
 

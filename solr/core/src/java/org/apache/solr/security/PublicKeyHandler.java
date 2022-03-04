@@ -18,16 +18,15 @@
 package org.apache.solr.security;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.io.IOException;
+import java.net.URL;
+import java.security.spec.InvalidKeySpecException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
-
-import java.io.IOException;
-import java.net.URL;
-import java.security.spec.InvalidKeySpecException;
 
 public class PublicKeyHandler extends RequestHandlerBase {
   public static final String PATH = "/admin/info/key";
@@ -43,7 +42,8 @@ public class PublicKeyHandler extends RequestHandlerBase {
     keyPair = createKeyPair(config);
   }
 
-  private CryptoKeys.RSAKeyPair createKeyPair(CloudConfig config) throws IOException, InvalidKeySpecException {
+  private CryptoKeys.RSAKeyPair createKeyPair(CloudConfig config)
+      throws IOException, InvalidKeySpecException {
     if (config == null) {
       return new CryptoKeys.RSAKeyPair();
     }

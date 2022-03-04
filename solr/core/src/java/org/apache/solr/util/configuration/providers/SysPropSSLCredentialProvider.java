@@ -19,9 +19,7 @@ package org.apache.solr.util.configuration.providers;
 
 import java.util.EnumMap;
 
-/**
- * System property based SSL configuration provider
- */
+/** System property based SSL configuration provider */
 public class SysPropSSLCredentialProvider extends AbstractSSLCredentialProvider {
   @Override
   protected EnumMap<CredentialType, String> getCredentialKeyMap() {

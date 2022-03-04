@@ -218,14 +218,14 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     }
   }
 
-  /***
-   * @Test
-   * public void testLive() throws Exception {
-   * HttpSolrClient client = new HttpSolrClient("http://localhost:8983/techproducts/solr/");
-   * client.add( sdoc() );
-   * doiIt(client);
-   * }
-   ***/
+  /*
+  @Test
+  public void testLive() throws Exception {
+    HttpSolrClient client = new HttpSolrClient("http://localhost:8983/techproducts/solr/");
+    client.add( sdoc() );
+    doiIt(client);
+  }
+  */
 
   String getJsonDocs(int numDocs) {
     StringBuilder sb = new StringBuilder(numDocs * 20);
@@ -294,15 +294,15 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       log.error("ERROR DURING conn.getResponseCode():", th);
     }
 
-    /***
-     * java.io.IOException: Error writing to server
-     * at __randomizedtesting.SeedInfo.seed([2928C6EE314CD076:947A81A74F582526]:0)
-     * at sun.net.www.protocol.http.HttpURLConnection.writeRequests(HttpURLConnection.java:665)
-     * at sun.net.www.protocol.http.HttpURLConnection.writeRequests(HttpURLConnection.java:677)
-     * at sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1533)
-     * at sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1440)
-     * at java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:480)
-     */
+    /*
+    java.io.IOException: Error writing to server
+    at __randomizedtesting.SeedInfo.seed([2928C6EE314CD076:947A81A74F582526]:0)
+    at sun.net.www.protocol.http.HttpURLConnection.writeRequests(HttpURLConnection.java:665)
+    at sun.net.www.protocol.http.HttpURLConnection.writeRequests(HttpURLConnection.java:677)
+    at sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1533)
+    at sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1440)
+    at java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:480)
+    */
 
     log.info("CODE= {}", code);
     InputStream is;
@@ -369,18 +369,18 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       log.info("RESPONSE BODY: {}", rbody);
       assertTrue(rbody.contains("unknown_field"));
 
-      /***
-       * // can I reuse now?
-       * // writing another request doesn't actually throw an exception, but the following read does
-       * out.write(headers);
-       * out.write("\n");  // extra newline separates headers from body
-       * out.write(body);
-       * out.flush();
-       *
-       * rbody = getResponse(in);
-       * log.info("RESPONSE BODY: {}", rbody);
-       * assertTrue(rbody.contains("unknown_field"));
-       ***/
+      /*
+      // can I reuse now?
+      // writing another request doesn't actually throw an exception, but the following read does
+      out.write(headers);
+      out.write("\n");  // extra newline separates headers from body
+      out.write(body);
+      out.flush();
+
+      rbody = getResponse(in);
+      log.info("RESPONSE BODY: {}", rbody);
+      assertTrue(rbody.contains("unknown_field"));
+      */
     }
   }
 }
