@@ -139,12 +139,12 @@ dependencies {
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 
-  implementation 'io.dropwizard.metrics:metrics-core'
-  implementation ('io.dropwizard.metrics:metrics-graphite', {
+  compileOnlyApi 'io.dropwizard.metrics:metrics-core'
+  compileOnlyApi ('io.dropwizard.metrics:metrics-graphite', {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
-  implementation 'io.dropwizard.metrics:metrics-jmx'
-  implementation 'io.dropwizard.metrics:metrics-jvm'
+  compileOnlyApi 'io.dropwizard.metrics:metrics-jmx'
+  compileOnlyApi 'io.dropwizard.metrics:metrics-jvm'
 
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
