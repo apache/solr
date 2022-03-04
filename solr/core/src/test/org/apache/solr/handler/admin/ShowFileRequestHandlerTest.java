@@ -155,7 +155,8 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
   public void testAbsoluteFilename() {
     SolrClient client = getSolrClient();
-    final QueryRequest request = new QueryRequest(params("file", "/etc/passwd", "contentType", "text/plain; charset=utf-8"));
+    final QueryRequest request =
+        new QueryRequest(params("file", "/etc/passwd", "contentType", "text/plain; charset=utf-8"));
     request.setPath("/admin/file"); // absolute path not allowed
     request.setResponseParser(new NoOpResponseParser());
     expectThrows(SolrException.class, () -> client.request(request));
@@ -163,7 +164,9 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
   public void testEscapeConfDir() {
     SolrClient client = getSolrClient();
-    final QueryRequest request = new QueryRequest(params("file", "../../solr.xml", "contentType", "application/xml; charset=utf-8"));
+    final QueryRequest request =
+        new QueryRequest(
+            params("file", "../../solr.xml", "contentType", "application/xml; charset=utf-8"));
     request.setPath("/admin/file");
     request.setResponseParser(new NoOpResponseParser());
     var ex = expectThrows(SolrException.class, () -> client.request(request));
@@ -172,7 +175,13 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
   public void testPathTraversalFilename() {
     SolrClient client = getSolrClient();
-    final QueryRequest request = new QueryRequest(params("file", "../../../../../../etc/passwd", "contentType", "text/plain; charset=utf-8"));
+    final QueryRequest request =
+        new QueryRequest(
+            params(
+                "file",
+                "../../../../../../etc/passwd",
+                "contentType",
+                "text/plain; charset=utf-8"));
     request.setPath("/admin/file");
     request.setResponseParser(new NoOpResponseParser());
     expectThrows(SolrException.class, () -> client.request(request));
