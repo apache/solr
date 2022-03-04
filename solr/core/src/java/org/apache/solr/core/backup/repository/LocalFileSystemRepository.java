@@ -22,14 +22,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Objects;
 import org.apache.lucene.store.Directory;
@@ -40,6 +37,7 @@ import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.util.FileUtils;
 
 /**
  * A concrete implementation of {@linkplain BackupRepository} interface supporting backup/restore of
@@ -105,22 +103,7 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public void deleteDirectory(URI path) throws IOException {
-    Files.walkFileTree(
-        Paths.get(path),
-        new SimpleFileVisitor<Path>() {
-          @Override
-          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-              throws IOException {
-            Files.delete(file);
-            return FileVisitResult.CONTINUE;
-          }
-
-          @Override
-          public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-            Files.delete(dir);
-            return FileVisitResult.CONTINUE;
-          }
-        });
+    FileUtils.deleteDirectory(Paths.get(path));
   }
 
   @Override

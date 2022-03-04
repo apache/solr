@@ -490,7 +490,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static void useFactory(String factory) throws Exception {
     // allow calling more than once so a subclass can override a base class
     if (!changedFactory) {
-      savedFactory = System.getProperty("solr.DirectoryFactory");
+      savedFactory = System.getProperty("solr.directoryFactory");
     }
 
     if (factory == null) {

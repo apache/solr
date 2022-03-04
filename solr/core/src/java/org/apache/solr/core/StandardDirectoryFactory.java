@@ -25,7 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -35,6 +34,7 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,8 +87,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
   protected void removeDirectory(CacheValue cacheValue) throws IOException {
-    File dirFile = new File(cacheValue.path);
-    FileUtils.deleteDirectory(dirFile);
+    FileUtils.deleteDirectory(Path.of(cacheValue.path));
   }
 
   /**
