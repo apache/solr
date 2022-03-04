@@ -27,16 +27,18 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 
 public class CoordinatorV2HttpSolrCall extends V2HttpCall {
   private String collectionName;
-  public CoordinatorV2HttpSolrCall(SolrDispatchFilter solrDispatchFilter, CoreContainer cc, HttpServletRequest request,
+  CoordinatorHttpSolrCall.Factory factory;
+  public CoordinatorV2HttpSolrCall(CoordinatorHttpSolrCall.Factory factory,  SolrDispatchFilter solrDispatchFilter, CoreContainer cc, HttpServletRequest request,
                                    HttpServletResponse response, boolean retry) {
     super(solrDispatchFilter, cc, request, response, retry);
+    this.factory = factory;
   }
   @Override
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
     this.collectionName = collectionName;
     SolrCore core = super.getCoreByCollection(collectionName, isPreferLeader);
     if (core != null) return core;
-    return CoordinatorHttpSolrCall.getCore(this, collectionName, isPreferLeader);
+    return CoordinatorHttpSolrCall.getCore(factory, this, collectionName, isPreferLeader);
   }
 
   @Override

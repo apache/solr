@@ -83,6 +83,8 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   protected String abortErrorMessage = null;
 
+  private  HttpSolrCallFactory solrCallFactory;
+
   @Override
   public void setExcludePatterns(List<Pattern> excludePatterns) {
     this.excludePatterns = excludePatterns;
@@ -90,9 +92,8 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   private List<Pattern> excludePatterns;
 
-  private final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
+  public final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
 
-  private boolean isCoordinator;
   public HttpClient getHttpClient() {
     try {
       return coreService.getService().getHttpClient();
@@ -132,7 +133,16 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   public void init(FilterConfig config) throws ServletException {
     try {
       coreService = CoreContainerProvider.serviceForContext(config.getServletContext());
-      this.isCoordinator = NodeRoles.MODE_ON.equals(coreService.getService().getCoreContainer().nodeRoles.getRoleMode(NodeRoles.Role.COORDINATOR));
+      boolean isCoordinator = NodeRoles.MODE_ON.equals(coreService.getService().getCoreContainer().nodeRoles.getRoleMode(NodeRoles.Role.COORDINATOR));
+      solrCallFactory = isCoordinator ?
+              new CoordinatorHttpSolrCall.Factory()
+              : (filter, path, cores, request, response, retry) -> {
+        if (isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
+          return new V2HttpCall(this, cores, request, response, false);
+        } else {
+          return new HttpSolrCall(this, cores, request, response, retry);
+        }
+      };
       if (log.isTraceEnabled()) {
         log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
       }
@@ -256,15 +266,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     } catch (UnavailableException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Core Container Unavailable");
     }
-    if (isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
-      return isCoordinator ?
-              new CoordinatorHttpSolrCall(this, cores, request, response, false) :
-              new V2HttpCall(this, cores, request, response, false);
-    } else {
-      return isCoordinator ?
-              new CoordinatorHttpSolrCall(this, cores, request, response, retry) :
-              new HttpSolrCall(this, cores, request, response, retry);
-    }
+   return solrCallFactory.createInstance(this, path, cores, request, response, retry);
   }
 
   // TODO: make this a servlet filter
@@ -360,5 +362,9 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   @VisibleForTesting
   void replaceRateLimitManager(RateLimitManager rateLimitManager) {
     coreService.getService().setRateLimitManager(rateLimitManager);
+  }
+
+  public interface HttpSolrCallFactory {
+     public HttpSolrCall createInstance (SolrDispatchFilter filter, String path,  CoreContainer cores, HttpServletRequest request, HttpServletResponse response, boolean retry);
   }
 }

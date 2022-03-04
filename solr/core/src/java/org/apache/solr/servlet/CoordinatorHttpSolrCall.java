@@ -22,9 +22,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.solr.api.CoordinatorV2HttpSolrCall;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.api.collections.Assign;
@@ -52,10 +55,12 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
   public static final String SYNTHETIC_COLL_PREFIX = Assign.SYSTEM_COLL_PREFIX+ "COORDINATOR-COLL-";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String collectionName;
+  private final Factory factory;
 
-  public CoordinatorHttpSolrCall(SolrDispatchFilter solrDispatchFilter, CoreContainer cores, HttpServletRequest request,
+  public CoordinatorHttpSolrCall(Factory factory, SolrDispatchFilter solrDispatchFilter, CoreContainer cores, HttpServletRequest request,
                                  HttpServletResponse response, boolean retry) {
     super(solrDispatchFilter, cores, request, response, retry);
+    this.factory = factory;
   }
 
   @Override
@@ -63,15 +68,12 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     this.collectionName = collectionName;
     SolrCore core = super.getCoreByCollection(collectionName, isPreferLeader);
     if (core != null) return core;
-    return getCore(this, collectionName, isPreferLeader);
+    return getCore(factory,this, collectionName, isPreferLeader);
   }
 
   @SuppressWarnings("unchecked")
-  public static  SolrCore getCore(HttpSolrCall solrCall, String collectionName, boolean isPreferLeader) {
-    Map<String, String> coreNameMapping= (Map<String, String>) solrCall.cores.getObjectCache()
-            .computeIfAbsent(CoordinatorHttpSolrCall.class.getName(),
-            s -> new ConcurrentHashMap<>());
-    String sytheticCoreName = coreNameMapping.get(collectionName);
+  public static  SolrCore getCore( Factory factory, HttpSolrCall solrCall, String collectionName, boolean isPreferLeader) {
+    String sytheticCoreName = factory.coreNameMapping.get(collectionName);
     if (sytheticCoreName != null) {
       return solrCall.cores.getCore(sytheticCoreName);
     } else {
@@ -90,7 +92,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
         }
         SolrCore core = solrCall.getCoreByCollection(syntheticCollectionName, isPreferLeader);
         if (core != null) {
-          coreNameMapping.put(collectionName, core.getName());
+          factory.coreNameMapping.put(collectionName, core.getName());
           log.info("coordinator NODE , returns synthetic core " + core.getName());
         } else {
           //this node does not have a replica. add one
@@ -254,5 +256,20 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
         return cloudDescriptor;
       }
     };
+  }
+
+  public static class Factory implements SolrDispatchFilter.HttpSolrCallFactory {
+    private final Map<String, String> coreNameMapping = new ConcurrentHashMap<>();
+
+    @Override
+    public HttpSolrCall createInstance(SolrDispatchFilter filter,
+                                       String path, CoreContainer cores,
+                                       HttpServletRequest request, HttpServletResponse response, boolean retry) {
+      if ((path.startsWith("/____v2/") || path.equals("/____v2"))) {
+        return new CoordinatorV2HttpSolrCall(this, filter, cores, request, response, false);
+      } else {
+        return new CoordinatorHttpSolrCall( this, filter, cores, request, response, retry);
+      }
+    }
   }
 }
