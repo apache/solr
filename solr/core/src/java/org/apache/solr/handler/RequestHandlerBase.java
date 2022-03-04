@@ -63,7 +63,6 @@ public abstract class RequestHandlerBase implements
   
   protected SolrMetricsContext solrMetricsContext;
   protected HandlerMetrics metrics = HandlerMetrics.NO_OP;
-  protected HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
   private final long handlerStart;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -139,23 +138,12 @@ public abstract class RequestHandlerBase implements
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     metrics = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
-    if (supportsDistribRequests()) {
-      metricsShard = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope + "[shard]");
-    }
     solrMetricsContext.gauge(() -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
 
-  /**
-   * Does this handler receive per-shard (or similar) requests contributing to larger request?
-   * This is used to track metrics separately.
-   * @see ShardParams#IS_SHARD
-   */
-  protected boolean supportsDistribRequests() {
-    return false;
-  }
-
-  protected static class HandlerMetrics {
-    static final HandlerMetrics NO_OP =
+  /** Metrics for this handler. */
+  public static class HandlerMetrics {
+    public static final HandlerMetrics NO_OP =
         new HandlerMetrics(
             new SolrMetricsContext(
                 new SolrMetricManager(
@@ -171,7 +159,7 @@ public abstract class RequestHandlerBase implements
     private final Timer requestTimes;
     private final Counter totalTime;
 
-    HandlerMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
+    public HandlerMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
       numErrors = solrMetricsContext.meter("errors", metricPath);
       numServerErrors = solrMetricsContext.meter("serverErrors", metricPath);
       numClientErrors = solrMetricsContext.meter("clientErrors", metricPath);
@@ -199,7 +187,7 @@ public abstract class RequestHandlerBase implements
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    HandlerMetrics metrics = req.getParams().getBool(ShardParams.IS_SHARD, false) ? this.metricsShard : this.metrics;
+    HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
     
     Timer.Context timer = metrics.requestTimes.time();
@@ -265,6 +253,11 @@ public abstract class RequestHandlerBase implements
       long elapsed = timer.stop();
       metrics.totalTime.inc(elapsed);
     }
+  }
+
+  /** The metrics to be used for this request. */
+  protected HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
+    return this.metrics;
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
