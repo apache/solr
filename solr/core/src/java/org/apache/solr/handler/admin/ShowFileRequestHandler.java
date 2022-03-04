@@ -191,7 +191,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       req.setParams(params);
       ContentStreamBase content = new ContentStreamBase.ByteArrayStream(zkClient.getData(adminFile, null, null, true), adminFile);
       content.setContentType(getSafeContentType(req.getParams().get(USE_CONTENT_TYPE)));
-      
+
       rsp.add(RawResponseWriter.CONTENT, content);
     }
     rsp.setHttpCaching(false);
@@ -380,6 +380,11 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     // A leading slash is unnecessary but supported and interpreted as start of config dir
     Path filePath = configDir.resolve(fname.startsWith("/") ? fname.substring(1) : fname);
     req.getCoreContainer().assertPathAllowed(filePath);
+    if (!filePath.normalize().startsWith(configDir.normalize())) {
+      log.error("Path must be inside core config directory");
+      rsp.setException(new SolrException( ErrorCode.BAD_REQUEST, "Path must be inside core config directory"));
+      return null;
+    }
     return filePath;
   }
 
