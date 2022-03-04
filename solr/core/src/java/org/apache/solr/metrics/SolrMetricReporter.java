@@ -18,16 +18,13 @@ package org.apache.solr.metrics;
 
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
-
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Interface for 'pluggable' metric reporters.
- */
+/** Interface for 'pluggable' metric reporters. */
 public abstract class SolrMetricReporter implements Closeable, PluginInfoInitialized {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -40,8 +37,8 @@ public abstract class SolrMetricReporter implements Closeable, PluginInfoInitial
 
   /**
    * Create a reporter for metrics managed in a named registry.
-   * @param registryName registry to use, one of registries managed by
-   *                     {@link SolrMetricManager}
+   *
+   * @param registryName registry to use, one of registries managed by {@link SolrMetricManager}
    */
   protected SolrMetricReporter(SolrMetricManager metricManager, String registryName) {
     this.registryName = registryName;
@@ -70,14 +67,13 @@ public abstract class SolrMetricReporter implements Closeable, PluginInfoInitial
     doInit();
   }
 
-  /**
-   * Reporter initialization implementation.
-   */
+  /** Reporter initialization implementation. */
   protected abstract void doInit();
 
   /**
-   * Enable reporting, defaults to true. {@link #init(PluginInfo)} checks
-   * this flag before calling {@link #doInit()} to initialize reporting.
+   * Enable reporting, defaults to true. {@link #init(PluginInfo)} checks this flag before calling
+   * {@link #doInit()} to initialize reporting.
+   *
    * @param enabled - whether or not reporting is to be enabled
    */
   public void setEnabled(Boolean enabled) {
@@ -86,23 +82,19 @@ public abstract class SolrMetricReporter implements Closeable, PluginInfoInitial
     }
   }
 
-  /**
-   * @param period - in seconds
-   */
+  /** @param period - in seconds */
   public void setPeriod(int period) {
     this.period = period;
   }
 
-  /**
-   * @return period, in seconds
-   */
+  /** @return period, in seconds */
   public int getPeriod() {
     return period;
   }
 
   /**
-   * Get the effective {@link PluginInfo} instance that was used for
-   * initialization of this plugin.
+   * Get the effective {@link PluginInfo} instance that was used for initialization of this plugin.
+   *
    * @return plugin info, or null if not yet initialized.
    */
   public PluginInfo getPluginInfo() {
@@ -118,9 +110,13 @@ public abstract class SolrMetricReporter implements Closeable, PluginInfoInitial
 
   @Override
   public String toString() {
-    return getClass().getName() + "{" +
-        "registryName='" + registryName + '\'' +
-        ", pluginInfo=" + pluginInfo +
-        '}';
+    return getClass().getName()
+        + "{"
+        + "registryName='"
+        + registryName
+        + '\''
+        + ", pluginInfo="
+        + pluginInfo
+        + '}';
   }
 }

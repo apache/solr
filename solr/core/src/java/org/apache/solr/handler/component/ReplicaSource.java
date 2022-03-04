@@ -25,18 +25,12 @@ import java.util.List;
  * @lucene.experimental
  */
 interface ReplicaSource {
-  /**
-   * @return the list of slice names
-   */
+  /** @return the list of slice names */
   List<String> getSliceNames();
 
-  /**
-   * Get the list of replica urls for a 0-indexed slice number.
-   */
+  /** Get the list of replica urls for a 0-indexed slice number. */
   List<String> getReplicasBySlice(int sliceNumber);
 
-  /**
-   * @return the count of slices
-   */
+  /** @return the count of slices */
   int getSliceCount();
 }

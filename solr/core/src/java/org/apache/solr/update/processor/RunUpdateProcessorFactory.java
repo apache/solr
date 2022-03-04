@@ -22,14 +22,12 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.*;
 
-
 /**
- * Executes the update commands using the underlying UpdateHandler.
- * Almost all processor chains should end with an instance of 
- * <code>RunUpdateProcessorFactory</code> unless the user is explicitly 
- * executing the update commands in an alternative custom 
- * <code>UpdateRequestProcessorFactory</code>
- * 
+ * Executes the update commands using the underlying UpdateHandler. Almost all processor chains
+ * should end with an instance of <code>RunUpdateProcessorFactory</code> unless the user is
+ * explicitly executing the update commands in an alternative custom <code>
+ * UpdateRequestProcessorFactory</code>
+ *
  * @since solr 1.3
  * @see DistributingUpdateProcessorFactory
  */
@@ -38,7 +36,8 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
   public static final String PRE_RUN_CHAIN_NAME = "_preRun_";
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     RunUpdateProcessor runUpdateProcessor = new RunUpdateProcessor(req, next);
     UpdateRequestProcessorChain preRun = req.getCore().getUpdateProcessingChain(PRE_RUN_CHAIN_NAME);
     if (preRun != null) {
@@ -47,7 +46,6 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
       return runUpdateProcessor;
     }
   }
-
 
   static class RunUpdateProcessor extends UpdateRequestProcessor {
     private final SolrQueryRequest req;
@@ -65,9 +63,9 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
     public void processAdd(AddUpdateCommand cmd) throws IOException {
 
       if (AtomicUpdateDocumentMerger.isAtomicUpdate(cmd)) {
-        throw new SolrException
-                (SolrException.ErrorCode.BAD_REQUEST,
-                        "RunUpdateProcessor has received an AddUpdateCommand containing a document that appears to still contain Atomic document update operations, most likely because DistributedUpdateProcessorFactory was explicitly disabled from this updateRequestProcessorChain");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "RunUpdateProcessor has received an AddUpdateCommand containing a document that appears to still contain Atomic document update operations, most likely because DistributedUpdateProcessorFactory was explicitly disabled from this updateRequestProcessorChain");
       }
 
       updateHandler.addDoc(cmd);
@@ -102,16 +100,13 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
       }
     }
 
-    /**
-     * @since Solr 1.4
-     */
+    /** @since Solr 1.4 */
     @Override
     public void processRollback(RollbackUpdateCommand cmd) throws IOException {
       updateHandler.rollback(cmd);
       super.processRollback(cmd);
       changesSinceCommit = false;
     }
-
 
     @Override
     public void finish() throws IOException {
@@ -122,5 +117,3 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
     }
   }
 }
-
-

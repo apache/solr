@@ -36,7 +36,8 @@ public class CancellableCollector implements Collector, Cancellable {
   private final AtomicBoolean isQueryCancelled;
 
   public CancellableCollector(Collector collector) {
-    Objects.requireNonNull(collector, "Internal collector not provided but wrapper collector accessed");
+    Objects.requireNonNull(
+        collector, "Internal collector not provided but wrapper collector accessed");
 
     this.collector = collector;
     this.isQueryCancelled = new AtomicBoolean();

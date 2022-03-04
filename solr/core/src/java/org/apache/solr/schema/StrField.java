@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
@@ -39,7 +38,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 public class StrField extends PrimitiveFieldType {
 
   @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
+  protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
   }
 
@@ -76,15 +75,14 @@ public class StrField extends PrimitiveFieldType {
     } else return new BytesRef(value.toString());
   }
 
-
   @Override
   public boolean isUtf8Field() {
     return true;
   }
 
   @Override
-  public SortField getSortField(SchemaField field,boolean reverse) {
-    return getStringSort(field,reverse);
+  public SortField getSortField(SchemaField field, boolean reverse) {
+    return getStringSort(field, reverse);
   }
 
   @Override
@@ -123,29 +121,37 @@ public class StrField extends PrimitiveFieldType {
   }
 
   @Override
-  public ValueSource getSingleValueSource(MultiValueSelector choice, SchemaField field, QParser parser) {
+  public ValueSource getSingleValueSource(
+      MultiValueSelector choice, SchemaField field, QParser parser) {
     // trivial base case
     if (!field.multiValued()) {
       // single value matches any selector
       return getValueSource(field, parser);
     }
-    
+
     // See LUCENE-6709
-    if (! field.hasDocValues()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                              "docValues='true' is required to select '" + choice.toString() +
-                              "' value from multivalued field ("+ field.getName() +") at query time");
+    if (!field.hasDocValues()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "docValues='true' is required to select '"
+              + choice.toString()
+              + "' value from multivalued field ("
+              + field.getName()
+              + ") at query time");
     }
     SortedSetSelector.Type selectorType = choice.getSortedSetSelectorType();
     if (null == selectorType) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                              choice.toString() + " is not a supported option for picking a single value"
-                              + " from the multivalued field: " + field.getName() +
-                              " (type: " + this.getTypeName() + ")");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          choice.toString()
+              + " is not a supported option for picking a single value"
+              + " from the multivalued field: "
+              + field.getName()
+              + " (type: "
+              + this.getTypeName()
+              + ")");
     }
-    
+
     return new SortedSetFieldSource(field.getName(), selectorType);
   }
 }
-
-

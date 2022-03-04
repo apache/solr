@@ -363,11 +363,11 @@ public class XMLResponseParser extends ResponseParser {
           if (type == null) {
             type = t;
           }
-          /*** actually, there is no rule that arrays need the same type
-           * else if( type != t && !(t == KnownType.NULL || type == KnownType.NULL)) {
-           * throw new RuntimeException( "arrays must have the same type! ("+type+"!="+t+") "+parser.getLocalName() );
-           * }
-           ***/
+          /* actually, there is no rule that arrays need the same type
+          else if( type != t && !(t == KnownType.NULL || type == KnownType.NULL)) {
+            throw new RuntimeException( "arrays must have the same type! ("+type+"!="+t+") "+parser.getLocalName() );
+          }
+          */
           type = t;
 
           builder.setLength(0); // reset the text

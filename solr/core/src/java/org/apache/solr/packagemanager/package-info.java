@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * This package contains Package Manager (CLI) implementation
- */
+/** This package contains Package Manager (CLI) implementation */
 package org.apache.solr.packagemanager;

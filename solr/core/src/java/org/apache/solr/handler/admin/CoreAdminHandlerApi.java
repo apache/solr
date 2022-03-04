@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.request.ApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.ApiMapping.V2EndPoint;
 import org.apache.solr.client.solrj.request.CoreApiMapping;
@@ -39,20 +38,23 @@ public class CoreAdminHandlerApi extends BaseHandlerApiSupport {
 
       for (CoreAdminOperation op : CoreAdminOperation.values()) {
         if (op.action == meta.action) {
-          result.put(meta, new ApiCommand() {
-            @Override
-            public CommandMeta meta() {
-              return meta;
-            }
+          result.put(
+              meta,
+              new ApiCommand() {
+                @Override
+                public CommandMeta meta() {
+                  return meta;
+                }
 
-            @Override
-            public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
-              op.execute(new CoreAdminHandler.CallInfo(((CoreAdminHandlerApi) apiHandler).handler,
-                  req,
-                  rsp,
-                  op));
-            }
-          });
+                @Override
+                public void invoke(
+                    SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler)
+                    throws Exception {
+                  op.execute(
+                      new CoreAdminHandler.CallInfo(
+                          ((CoreAdminHandlerApi) apiHandler).handler, req, rsp, op));
+                }
+              });
         }
       }
     }
@@ -70,7 +72,6 @@ public class CoreAdminHandlerApi extends BaseHandlerApiSupport {
     this.handler = handler;
   }
 
-
   @Override
   protected Collection<ApiCommand> getCommands() {
     return apiCommands;
@@ -80,6 +81,4 @@ public class CoreAdminHandlerApi extends BaseHandlerApiSupport {
   protected Collection<V2EndPoint> getEndPoints() {
     return Arrays.asList(CoreApiMapping.EndPoint.values());
   }
-
-
 }

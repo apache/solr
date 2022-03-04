@@ -16,24 +16,22 @@
  */
 package org.apache.solr.search.grouping;
 
+import java.io.IOException;
+import java.util.List;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
-import java.io.IOException;
-import java.util.List;
 
 /**
- * Defines a grouping command.
- * This is an abstraction on how the {@link Collector} instances are created
- * and how the results are retrieved from the {@link Collector} instances.
+ * Defines a grouping command. This is an abstraction on how the {@link Collector} instances are
+ * created and how the results are retrieved from the {@link Collector} instances.
  *
  * @lucene.experimental
  */
 public interface Command<T> {
 
   /**
-   * Returns a list of {@link Collector} instances to be
-   * included in the search based on the .
+   * Returns a list of {@link Collector} instances to be included in the search based on the .
    *
    * @return a list of {@link Collector} instances
    * @throws IOException If I/O related errors occur
@@ -42,31 +40,25 @@ public interface Command<T> {
 
   /**
    * Run post-collection steps.
+   *
    * @throws IOException If I/O related errors occur
    */
   default void postCollect(IndexSearcher searcher) throws IOException {}
 
   /**
-   * Returns the results that the collectors created
-   * by {@link #create()} contain after a search has been executed.
+   * Returns the results that the collectors created by {@link #create()} contain after a search has
+   * been executed.
    *
    * @return The results of the collectors
    */
   T result() throws IOException;
 
-  /**
-   * @return The key of this command to uniquely identify itself
-   */
+  /** @return The key of this command to uniquely identify itself */
   String getKey();
 
-  /**
-   * @return The group sort (overall sort)
-   */
+  /** @return The group sort (overall sort) */
   Sort getGroupSort();
 
-  /**
-   * @return The sort inside a group
-   */
+  /** @return The sort inside a group */
   Sort getWithinGroupSort();
-
 }

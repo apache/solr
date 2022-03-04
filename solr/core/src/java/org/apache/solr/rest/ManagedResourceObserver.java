@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 package org.apache.solr.rest;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * Allows a Solr component to register as an observer of important
- * ManagedResource events, such as when the managed data is loaded.
+ * Allows a Solr component to register as an observer of important ManagedResource events, such as
+ * when the managed data is loaded.
  */
 public interface ManagedResourceObserver {
   /**
-   * Event notification raised once during core initialization to notify
-   * listeners that a ManagedResource is fully initialized. The most 
-   * common implementation of this method is to pull the managed data from
-   * the concrete ManagedResource and use it to initialize an analysis component.
-   * For example, the ManagedStopFilterFactory implements this method to
-   * receive the list of managed stop words needed to create a CharArraySet 
-   * for the StopFilter. 
+   * Event notification raised once during core initialization to notify listeners that a
+   * ManagedResource is fully initialized. The most common implementation of this method is to pull
+   * the managed data from the concrete ManagedResource and use it to initialize an analysis
+   * component. For example, the ManagedStopFilterFactory implements this method to receive the list
+   * of managed stop words needed to create a CharArraySet for the StopFilter.
    */
-  void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
-      throws SolrException;
+  void onManagedResourceInitialized(NamedList<?> args, ManagedResource res) throws SolrException;
 }
