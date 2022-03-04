@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.Properties;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 import org.slf4j.Logger;
@@ -74,7 +74,7 @@ public class KerberosTestServices {
         kdc = getKdc(workDir, debug);
         kdc.start();
       } catch (BindException e) {
-        FileUtils.deleteDirectory(workDir); // clean directory
+        PathUtils.deleteDirectory(workDir.toPath()); // clean directory
         numTries++;
         if (numTries == 3) {
           log.error("Failed setting up MiniKDC. Tried {} times.", numTries);

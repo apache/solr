@@ -22,7 +22,7 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -475,7 +475,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   @AfterClass
   public static void after() throws Exception {
     if (null != tmpSolrHome) {
-      FileUtils.deleteDirectory(tmpSolrHome);
+      PathUtils.deleteDirectory(tmpSolrHome.toPath());
       tmpSolrHome = null;
     }
     System.clearProperty("managed.schema.mutable");

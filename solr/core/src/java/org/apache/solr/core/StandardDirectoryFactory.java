@@ -25,7 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -87,8 +87,8 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
   protected void removeDirectory(CacheValue cacheValue) throws IOException {
-    File dirFile = new File(cacheValue.path);
-    FileUtils.deleteDirectory(dirFile);
+    Path dirPath = Path.of(cacheValue.path);
+    PathUtils.deleteDirectory(dirPath);
   }
 
   /**

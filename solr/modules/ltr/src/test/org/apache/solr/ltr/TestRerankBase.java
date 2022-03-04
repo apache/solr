@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -198,7 +199,7 @@ public class TestRerankBase extends RestTestBase {
       jetty = null;
     }
     if (null != tmpSolrHome) {
-      FileUtils.deleteDirectory(tmpSolrHome);
+      PathUtils.deleteDirectory(tmpSolrHome.toPath());
       tmpSolrHome = null;
     }
     System.clearProperty("managed.schema.mutable");

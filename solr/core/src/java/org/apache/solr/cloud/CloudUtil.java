@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -88,7 +88,7 @@ public class CloudUtil {
             }
 
             try {
-              FileUtils.deleteDirectory(desc.getInstanceDir().toFile());
+              PathUtils.deleteDirectory(desc.getInstanceDir());
             } catch (IOException e) {
               SolrException.log(
                   log,
