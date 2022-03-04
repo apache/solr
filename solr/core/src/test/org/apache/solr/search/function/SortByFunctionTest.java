@@ -260,25 +260,19 @@ public class SortByFunctionTest extends SolrTestCaseJ4 {
 
       assertQ(
           req("q", "*:*", "sort", primarySort + " asc, secondary_tl1 asc"),
-          "//*[@numFound='9']"
-          //
-          ,
+          "//*[@numFound='9']",
           "//result/doc[1]/long[@name='primary_tl1'][.='" + X + "']",
           "//result/doc[1]/long[@name='secondary_tl1'][.='0']",
           "//result/doc[2]/long[@name='primary_tl1'][.='" + X + "']",
           "//result/doc[2]/long[@name='secondary_tl1'][.='1']",
           "//result/doc[3]/long[@name='primary_tl1'][.='" + X + "']",
-          "//result/doc[3]/long[@name='secondary_tl1'][.='2']"
-          //
-          ,
+          "//result/doc[3]/long[@name='secondary_tl1'][.='2']",
           "//result/doc[4]/long[@name='primary_tl1'][.='" + Y + "']",
           "//result/doc[4]/long[@name='secondary_tl1'][.='0']",
           "//result/doc[5]/long[@name='primary_tl1'][.='" + Y + "']",
           "//result/doc[5]/long[@name='secondary_tl1'][.='1']",
           "//result/doc[6]/long[@name='primary_tl1'][.='" + Y + "']",
-          "//result/doc[6]/long[@name='secondary_tl1'][.='2']"
-          //
-          ,
+          "//result/doc[6]/long[@name='secondary_tl1'][.='2']",
           "//result/doc[7]/long[@name='primary_tl1'][.='" + Z + "']",
           "//result/doc[7]/long[@name='secondary_tl1'][.='0']",
           "//result/doc[8]/long[@name='primary_tl1'][.='" + Z + "']",

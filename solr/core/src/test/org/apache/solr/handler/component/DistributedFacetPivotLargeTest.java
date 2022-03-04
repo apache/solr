@@ -398,8 +398,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
 
     { // similar to the test above, but now force a restriction on the over request and allow
       // terms that are early in index sort -- but don't meet the mincount overall -- to be
-      // considered
-      // in the first phase. (SOLR-12954)
+      // considered in the first phase. (SOLR-12954)
       SolrParams p =
           params(
               "q",

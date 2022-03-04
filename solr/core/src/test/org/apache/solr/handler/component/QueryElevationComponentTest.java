@@ -679,10 +679,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "useConfiguredElevatedOrder=false",
           req(baseParams, "sort", "str_s1 asc,id desc", "useConfiguredElevatedOrder", "false"),
           "//*[@numFound='4']",
-          "//result/doc[1]/str[@name='id'][.='x']" // group1
-          ,
-          "//result/doc[2]/str[@name='id'][.='a']" // group1
-          ,
+          "//result/doc[1]/str[@name='id'][.='x']", // group1
+          "//result/doc[2]/str[@name='id'][.='a']", // group1
           "//result/doc[3]/str[@name='id'][.='c']",
           "//result/doc[4]/str[@name='id'][.='b']");
 
@@ -700,10 +698,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "useConfiguredElevatedOrder=false and forceElevation",
           req(baseParams, "sort", "id desc", "useConfiguredElevatedOrder", "false"),
           "//*[@numFound='4']",
-          "//result/doc[1]/str[@name='id'][.='x']" // force elevated
-          ,
-          "//result/doc[2]/str[@name='id'][.='a']" // force elevated
-          ,
+          "//result/doc[1]/str[@name='id'][.='x']", // force elevated
+          "//result/doc[2]/str[@name='id'][.='a']", // force elevated
           "//result/doc[3]/str[@name='id'][.='c']",
           "//result/doc[4]/str[@name='id'][.='b']");
 

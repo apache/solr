@@ -2307,8 +2307,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
             "{!query=$hang}place_t,company_t");
     rsp = query(params);
     // we aren't going to start calculating facet query unless the query is specified with a
-    // 'facet.query' param
-    // hence hanging an arbitrary query shouldn't work
+    // 'facet.query' param hence hanging an arbitrary query shouldn't work
     assertNullFacetTypeInsidePivot(
         FacetParams.FACET_QUERY, rsp.getFacetPivot().get("place_t,company_t"));
   }

@@ -516,8 +516,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
         "/response/docs/[0]/test_mvt_dvt_st_str/[2]==bbbb");
 
     // Currently, this test fails since stored=false. When SOLR-8740 is committed, it should not
-    // throw an exception
-    // and should succeed, returning the field in sorted order.
+    // throw an exception and should succeed, returning the field in sorted order.
     try {
       assertJQ(
           req("q", "id:2", "fl", "test_mvt_dvt_sf_str"),

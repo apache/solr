@@ -885,7 +885,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     if(info.cName.pkg == null) {
       return newInstance(info.cName.className == null?
                       type.getName():
-                      info.cName.className ,
+                      info.cName.className,
               type);
     }
     return _classLookup( info, version -> version.getLoader().newInstance(info.cName.className, type), registerCoreReloadListener);

@@ -112,7 +112,7 @@ public interface SolrQueryRequest extends AutoCloseable {
   }
 
   /** Only for V2 API.
-   * Returns a map of path segments and their values . For example ,
+   * Returns a map of path segments and their values . For example,
    * if the path is configured as /path/{segment1}/{segment2} and a reguest is made
    * as /path/x/y the returned map would contain {segment1:x ,segment2:y}
    */
