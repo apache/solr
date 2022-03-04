@@ -644,6 +644,8 @@ Bug Fixes
 
 * SOLR-15968: Hide annoying WARN log from bin/solr zk command (janhoy, Mike Drob)
 
+* SOLR-16075: ShowFileHandler path parameter is now validated to be relative to instance conf dir in standalone mode (janhoy)
+
 * SOLR-15558: Don't wait for zombie processes to exit when stopping. (Colvin Cowie)
 
 ==================  8.11.2 ==================
