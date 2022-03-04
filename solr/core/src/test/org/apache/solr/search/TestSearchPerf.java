@@ -62,11 +62,10 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
       assertU(
           adoc(
               "id",
-              Float.toString(i)
+              Float.toString(i),
               //             ,"foo1_s",t(0)
               //             ,"foo2_s",t(r.nextInt(2))
               //             ,"foo4_s",t(r.nextInt(3))
-              ,
               "foomany_s",
               t(r.nextInt(nDocs * 10))));
     }

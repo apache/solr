@@ -18,14 +18,13 @@ package org.apache.solr.response;
 
 import java.io.IOException;
 import java.io.Writer;
-
 import org.apache.solr.request.SolrQueryRequest;
 
 public class RubyResponseWriter implements QueryResponseWriter {
-  static String CONTENT_TYPE_RUBY_UTF8="text/x-ruby;charset=UTF-8";
+  static String CONTENT_TYPE_RUBY_UTF8 = "text/x-ruby;charset=UTF-8";
 
- @Override
-public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+  @Override
+  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     RubyWriter w = new RubyWriter(writer, req, rsp);
     try {
       w.writeResponse();
@@ -43,9 +42,14 @@ public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) th
 class RubyWriter extends JSONResponseWriter.NaNFloatWriter {
 
   @Override
-  protected String getNaN() { return "(0.0/0.0)"; }
+  protected String getNaN() {
+    return "(0.0/0.0)";
+  }
+
   @Override
-  protected String getInf() { return "(1.0/0.0)"; }
+  protected String getInf() {
+    return "(1.0/0.0)";
+  }
 
   public RubyWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
@@ -73,9 +77,9 @@ class RubyWriter extends JSONResponseWriter.NaNFloatWriter {
     // only escape the backslash and single quote.
     writer.write('\'');
     if (needsEscaping) {
-      for (int i=0; i<val.length(); i++) {
+      for (int i = 0; i < val.length(); i++) {
         char ch = val.charAt(i);
-        if (ch=='\'' || ch=='\\') {
+        if (ch == '\'' || ch == '\\') {
           writer.write('\\');
         }
         writer.write(ch);

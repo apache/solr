@@ -16,12 +16,11 @@
  */
 package org.apache.solr.update;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
@@ -34,30 +33,24 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 
 /**
- * An {@link UpdateCommand} for adding or updating one document.  Technically more than one Lucene documents
- * may be involved in the event of nested documents.
+ * An {@link UpdateCommand} for adding or updating one document. Technically more than one Lucene
+ * documents may be involved in the event of nested documents.
  */
 public class AddUpdateCommand extends UpdateCommand {
 
-  /**
-   * Higher level SolrInputDocument, normally used to construct the Lucene Document(s)
-   * to index.
-   */
+  /** Higher level SolrInputDocument, normally used to construct the Lucene Document(s) to index. */
   public SolrInputDocument solrDoc;
 
   /**
-   * This is the version of a document, previously indexed, on which the current
-   * update depends on. This version could be that of a previous in-place update
-   * or a full update. A negative value here, e.g. -1, indicates that this add
-   * update does not depend on a previous update.
+   * This is the version of a document, previously indexed, on which the current update depends on.
+   * This version could be that of a previous in-place update or a full update. A negative value
+   * here, e.g. -1, indicates that this add update does not depend on a previous update.
    */
   public long prevVersion = -1;
 
   public boolean overwrite = true;
 
-  /**
-   * The term to use to delete an existing document (for dedupe). (optional)
-   */
+  /** The term to use to delete an existing document (for dedupe). (optional) */
   public Term updateTerm;
 
   public int commitWithin = -1;
@@ -77,42 +70,42 @@ public class AddUpdateCommand extends UpdateCommand {
     return "add";
   }
 
-   /** Reset state to reuse this object with a different document in the same request */
-   public void clear() {
-     solrDoc = null;
-     indexedId = null;
-     indexedIdStr = null;
-     selfOrNestedDocIdStr = null;
-     updateTerm = null;
-     isLastDocInBatch = false;
-     version = 0;
-     prevVersion = -1;
-   }
+  /** Reset state to reuse this object with a different document in the same request */
+  public void clear() {
+    solrDoc = null;
+    indexedId = null;
+    indexedIdStr = null;
+    selfOrNestedDocIdStr = null;
+    updateTerm = null;
+    isLastDocInBatch = false;
+    version = 0;
+    prevVersion = -1;
+  }
 
-   public SolrInputDocument getSolrInputDocument() {
-     return solrDoc;
-   }
+  public SolrInputDocument getSolrInputDocument() {
+    return solrDoc;
+  }
 
   /**
-   * Creates and returns a lucene Document for in-place update.
-   * The SolrInputDocument itself may be modified, which will be reflected in the update log.
-   * Any changes made to the returned Document will not be reflected in the SolrInputDocument, or future calls to this
-   * method.
+   * Creates and returns a lucene Document for in-place update. The SolrInputDocument itself may be
+   * modified, which will be reflected in the update log. Any changes made to the returned Document
+   * will not be reflected in the SolrInputDocument, or future calls to this method.
    */
-   Document makeLuceneDocForInPlaceUpdate() {
-     // perhaps this should move to UpdateHandler or DocumentBuilder?
-     assert isInPlaceUpdate();
-     if (req.getSchema().isUsableForChildDocs() && solrDoc.getField(IndexSchema.ROOT_FIELD_NAME) == null) {
-       solrDoc.setField(IndexSchema.ROOT_FIELD_NAME, getIndexedIdStr());
-     }
-     final boolean forInPlaceUpdate = true;
-     final boolean ignoreNestedDocs = false; // throw an exception if found
-     return DocumentBuilder.toDocument(solrDoc, req.getSchema(), forInPlaceUpdate, ignoreNestedDocs);
-   }
+  Document makeLuceneDocForInPlaceUpdate() {
+    // perhaps this should move to UpdateHandler or DocumentBuilder?
+    assert isInPlaceUpdate();
+    if (req.getSchema().isUsableForChildDocs()
+        && solrDoc.getField(IndexSchema.ROOT_FIELD_NAME) == null) {
+      solrDoc.setField(IndexSchema.ROOT_FIELD_NAME, getIndexedIdStr());
+    }
+    final boolean forInPlaceUpdate = true;
+    final boolean ignoreNestedDocs = false; // throw an exception if found
+    return DocumentBuilder.toDocument(solrDoc, req.getSchema(), forInPlaceUpdate, ignoreNestedDocs);
+  }
 
   /**
-   * Returns the indexed ID that we route this document on.  Typically, this is
-   * for the unique key of the document but for a nested document, it's the ID of the root.
+   * Returns the indexed ID that we route this document on. Typically, this is for the unique key of
+   * the document but for a nested document, it's the ID of the root.
    *
    * @return possibly null if there's no uniqueKey field
    */
@@ -122,10 +115,11 @@ public class AddUpdateCommand extends UpdateCommand {
   }
 
   /**
-   * Returns the indexed ID that we route this document on.  Typically, this is
-   * for the unique key of the document but for a nested document, it's the ID of the root.
+   * Returns the indexed ID that we route this document on. Typically, this is for the unique key of
+   * the document but for a nested document, it's the ID of the root.
    *
-   * BytesRef should be treated as immutable.  It will not be re-used/modified for additional docs.
+   * <p>BytesRef should be treated as immutable. It will not be re-used/modified for additional
+   * docs.
    *
    * @return possibly null if there's no uniqueKey field
    */
@@ -170,17 +164,22 @@ public class AddUpdateCommand extends UpdateCommand {
       if (solrDoc != null) {
         SolrInputField field = solrDoc.getField(sf.getName());
         // check some uniqueKey constraints
-        int count = field==null ? 0 : field.getValueCount();
+        int count = field == null ? 0 : field.getValueCount();
         if (count == 0) {
           if (overwrite) {
-            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document is missing mandatory uniqueKey field: " + sf.getName());
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Document is missing mandatory uniqueKey field: " + sf.getName());
           }
-        } else if (count  > 1) {
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + field);
+        } else if (count > 1) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Document contains multiple values for uniqueKey field: " + field);
         } else {
           this.selfOrNestedDocIdStr = field.getFirstValue().toString();
           // the root might be in _root_ field; if not then uniqueKeyField.
-          this.indexedIdStr = (String) solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME); // or here
+          this.indexedIdStr =
+              (String) solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME); // or here
           if (this.indexedIdStr == null) {
             this.indexedIdStr = selfOrNestedDocIdStr;
           }
@@ -199,19 +198,19 @@ public class AddUpdateCommand extends UpdateCommand {
 
   /**
    * Computes the final flattened Lucene docs, possibly generating them on-demand (on iteration).
-   * The SolrInputDocument itself may be modified, which will be reflected in the update log.
-   * This should only be called once.
-   * Any changes made to the returned Document(s) will not be reflected in the SolrInputDocument,
-   * or future calls to this method.
+   * The SolrInputDocument itself may be modified, which will be reflected in the update log. This
+   * should only be called once. Any changes made to the returned Document(s) will not be reflected
+   * in the SolrInputDocument, or future calls to this method.
    */
   Iterable<Document> makeLuceneDocs() {
     // perhaps this should move to UpdateHandler or DocumentBuilder?
-    assert ! isInPlaceUpdate() : "We don't expect this to happen."; // but should "work"?
+    assert !isInPlaceUpdate() : "We don't expect this to happen."; // but should "work"?
     if (!req.getSchema().isUsableForChildDocs()) {
       // note if the doc is nested despite this, we'll throw an exception elsewhere
       final boolean forInPlaceUpdate = false;
       final boolean ignoreNestedDocs = false; // throw an exception if found
-      Document doc = DocumentBuilder.toDocument(solrDoc, req.getSchema(), forInPlaceUpdate, ignoreNestedDocs);
+      Document doc =
+          DocumentBuilder.toDocument(solrDoc, req.getSchema(), forInPlaceUpdate, ignoreNestedDocs);
       return Collections.singleton(doc);
     }
 
@@ -225,11 +224,13 @@ public class AddUpdateCommand extends UpdateCommand {
       if (versionSif != null) {
         addVersionField(sdoc, versionSif);
       }
-      // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is being forwarded to replicas)
-      // then we could add this field to the generated lucene document instead.
+      // TODO: if possible concurrent modification exception (if SolrInputDocument not cloned and is
+      // being forwarded to replicas) then we could add this field to the generated lucene document
+      // instead.
     }
 
-    return () -> all.stream().map(sdoc -> DocumentBuilder.toDocument(sdoc, req.getSchema())).iterator();
+    return () ->
+        all.stream().map(sdoc -> DocumentBuilder.toDocument(sdoc, req.getSchema())).iterator();
   }
 
   private void addRootField(SolrInputDocument sdoc, String rootId) {
@@ -253,8 +254,9 @@ public class AddUpdateCommand extends UpdateCommand {
   }
 
   /** Extract all child documents from parent that are saved in fields */
-  private void flattenLabelled(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
-    for (SolrInputField field: currentDoc.values()) {
+  private void flattenLabelled(
+      List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
+    for (SolrInputField field : currentDoc.values()) {
       Object value = field.getFirstValue();
       // check if value is a childDocument
       if (value instanceof SolrInputDocument) {
@@ -274,16 +276,19 @@ public class AddUpdateCommand extends UpdateCommand {
     if (!isRoot) unwrappedDocs.add(currentDoc);
   }
 
-  private void flattenLabelled(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
-    if(currentDoc.hasChildDocuments()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+  private void flattenLabelled(
+      List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
+    if (currentDoc.hasChildDocuments()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
           "Anonymous child docs can only hang from others or the root: " + currentDoc);
     }
     flattenLabelled(unwrappedDocs, currentDoc, false);
   }
 
   /** Extract all anonymous child documents from parent. */
-  private void flattenAnonymous(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
+  private void flattenAnonymous(
+      List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc, boolean isRoot) {
     List<SolrInputDocument> children = currentDoc.getChildDocuments();
     if (children != null) {
       for (SolrInputDocument child : children) {
@@ -291,22 +296,23 @@ public class AddUpdateCommand extends UpdateCommand {
       }
     }
 
-    if(!isRoot) unwrappedDocs.add(currentDoc);
+    if (!isRoot) unwrappedDocs.add(currentDoc);
   }
 
-  private void flattenAnonymous(List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
+  private void flattenAnonymous(
+      List<SolrInputDocument> unwrappedDocs, SolrInputDocument currentDoc) {
     flattenAnonymous(unwrappedDocs, currentDoc, false);
   }
 
   @Override
   public String toString() {
-     StringBuilder sb = new StringBuilder(super.toString());
-     sb.append(",id=").append(getPrintableId());
-     if (!overwrite) sb.append(",overwrite=").append(overwrite);
-     if (commitWithin != -1) sb.append(",commitWithin=").append(commitWithin);
-     sb.append('}');
-     return sb.toString();
-   }
+    StringBuilder sb = new StringBuilder(super.toString());
+    sb.append(",id=").append(getPrintableId());
+    if (!overwrite) sb.append(",overwrite=").append(overwrite);
+    if (commitWithin != -1) sb.append(",commitWithin=").append(commitWithin);
+    sb.append('}');
+    return sb.toString();
+  }
 
   /**
    * Is this add update an in-place update? An in-place update is one where only docValues are

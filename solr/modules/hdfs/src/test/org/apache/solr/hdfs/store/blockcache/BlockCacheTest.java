@@ -107,12 +107,12 @@ public class BlockCacheTest extends SolrTestCase {
     final long totalMemory =
         2 * slabSize; // 2 slabs of memory, so only half of what is needed for all blocks
 
-    /***
-     * final int blocksInTest = 16384;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
-     * final int blockSize = 1024;
-     * final int slabSize = blocksInTest * blockSize / 4;
-     * final long totalMemory = 2 * slabSize;  // 2 slabs of memory, so only half of what is needed for all blocks
-     ***/
+    /*
+    final int blocksInTest = 16384;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
+    final int blockSize = 1024;
+    final int slabSize = blocksInTest * blockSize / 4;
+    final long totalMemory = 2 * slabSize;  // 2 slabs of memory, so only half of what is needed for all blocks
+    */
 
     final int nThreads = 64;
     final int nReads = 1000000;

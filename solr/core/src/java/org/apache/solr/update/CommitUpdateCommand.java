@@ -16,17 +16,14 @@
  */
 package org.apache.solr.update;
 
+import java.util.Map;
 import org.apache.solr.request.SolrQueryRequest;
 
-import java.util.Map;
-
-/**
- * A commit index command encapsulated in an object.
- */
+/** A commit index command encapsulated in an object. */
 public class CommitUpdateCommand extends UpdateCommand {
   public boolean optimize;
-  public boolean openSearcher=true;     // open a new searcher as part of a hard commit
-  public boolean waitSearcher=true;
+  public boolean openSearcher = true; // open a new searcher as part of a hard commit
+  public boolean waitSearcher = true;
   public boolean expungeDeletes = false;
   public boolean softCommit = false;
   public boolean prepareCommit = false;
@@ -34,7 +31,7 @@ public class CommitUpdateCommand extends UpdateCommand {
   public Map<String, String> commitData;
 
   /**
-   * During optimize, optimize down to &lt;= this many segments.  Must be &gt;= 1
+   * During optimize, optimize down to &lt;= this many segments. Must be &gt;= 1
    *
    * @see org.apache.lucene.index.IndexWriter#forceMerge(int)
    */
@@ -42,7 +39,7 @@ public class CommitUpdateCommand extends UpdateCommand {
 
   public CommitUpdateCommand(SolrQueryRequest req, boolean optimize) {
     super(req);
-    this.optimize=optimize;
+    this.optimize = optimize;
   }
 
   @Override
@@ -52,12 +49,18 @@ public class CommitUpdateCommand extends UpdateCommand {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder(super.toString())
-        .append(",optimize=").append(optimize)
-        .append(",openSearcher=").append(openSearcher)
-        .append(",expungeDeletes=").append(expungeDeletes)
-        .append(",softCommit=").append(softCommit)
-        .append(",prepareCommit=").append(prepareCommit);
+    StringBuilder sb =
+        new StringBuilder(super.toString())
+            .append(",optimize=")
+            .append(optimize)
+            .append(",openSearcher=")
+            .append(openSearcher)
+            .append(",expungeDeletes=")
+            .append(expungeDeletes)
+            .append(",softCommit=")
+            .append(softCommit)
+            .append(",prepareCommit=")
+            .append(prepareCommit);
     if (commitData != null) {
       sb.append(",commitData=").append(commitData);
     }

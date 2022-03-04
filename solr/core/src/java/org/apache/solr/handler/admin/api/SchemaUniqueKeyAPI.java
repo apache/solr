@@ -17,32 +17,32 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-
 /**
  * V2 API for getting the name of the unique-key field for an in-use schema.
  *
- * This API (GET /v2/collections/collectionName/schema/uniquekey) is analogous to the v1
+ * <p>This API (GET /v2/collections/collectionName/schema/uniquekey) is analogous to the v1
  * /solr/collectionName/schema/uniquekey API.
  */
 public class SchemaUniqueKeyAPI {
-    private final SchemaHandler schemaHandler;
+  private final SchemaHandler schemaHandler;
 
-    public SchemaUniqueKeyAPI(SchemaHandler schemaHandler) {
-        this.schemaHandler = schemaHandler;
-    }
+  public SchemaUniqueKeyAPI(SchemaHandler schemaHandler) {
+    this.schemaHandler = schemaHandler;
+  }
 
-    @EndPoint(
-            path = {"/schema/uniquekey"},
-            method = GET,
-            permission = PermissionNameProvider.Name.SCHEMA_READ_PERM)
-    public void getSchemaUniqueKey(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        schemaHandler.handleRequestBody(req, rsp);
-    }
+  @EndPoint(
+      path = {"/schema/uniquekey"},
+      method = GET,
+      permission = PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public void getSchemaUniqueKey(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    schemaHandler.handleRequestBody(req, rsp);
+  }
 }

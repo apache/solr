@@ -17,6 +17,13 @@
 
 package org.apache.solr.util;
 
+import static org.apache.solr.common.params.CommonParams.FL;
+import static org.apache.solr.common.params.CommonParams.JAVABIN;
+import static org.apache.solr.common.params.CommonParams.Q;
+import static org.apache.solr.common.params.CommonParams.SORT;
+import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
+
+import com.google.common.collect.ImmutableSet;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -46,8 +53,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.zip.GZIPOutputStream;
-
-import com.google.common.collect.ImmutableSet;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.lucene.util.SuppressForbidden;
@@ -77,12 +82,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
-import static org.apache.solr.common.params.CommonParams.FL;
-import static org.apache.solr.common.params.CommonParams.JAVABIN;
-import static org.apache.solr.common.params.CommonParams.Q;
-import static org.apache.solr.common.params.CommonParams.SORT;
-import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
-
 public class ExportTool extends SolrCLI.ToolBase {
   @Override
   public String getName() {
@@ -94,7 +93,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     return OPTIONS;
   }
 
-  public static abstract class Info {
+  public abstract static class Info {
     String baseurl;
     String format;
     String query;
@@ -109,11 +108,9 @@ public class ExportTool extends SolrCLI.ToolBase {
     CloudSolrClient solrClient;
     DocsSink sink;
 
-
     public Info(String url) {
       setUrl(url);
       setOutFormat(null, "jsonl");
-
     }
 
     public void setUrl(String url) {
@@ -137,11 +134,8 @@ public class ExportTool extends SolrCLI.ToolBase {
 
       this.out = out;
       if (this.out == null) {
-        this.out = JAVABIN.equals(format) ?
-            coll + ".javabin" :
-            coll + ".json";
+        this.out = JAVABIN.equals(format) ? coll + ".javabin" : coll + ".json";
       }
-
     }
 
     DocsSink getSink() {
@@ -152,8 +146,12 @@ public class ExportTool extends SolrCLI.ToolBase {
 
     void fetchUniqueKey() throws SolrServerException, IOException {
       solrClient = new CloudSolrClient.Builder(Collections.singletonList(baseurl)).build();
-      NamedList<Object> response = solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/schema/uniquekey",
-          new MapSolrParams(Collections.singletonMap("collection", coll))));
+      NamedList<Object> response =
+          solrClient.request(
+              new GenericSolrRequest(
+                  SolrRequest.METHOD.GET,
+                  "/schema/uniquekey",
+                  new MapSolrParams(Collections.singletonMap("collection", coll))));
       uniqueKey = (String) response.get("uniqueKey");
     }
 
@@ -169,12 +167,9 @@ public class ExportTool extends SolrCLI.ToolBase {
         }
 
         @Override
-        public void streamDocListInfo(long numFound, long start, Float maxScore) {
-
-        }
+        public void streamDocListInfo(long numFound, long start, Float maxScore) {}
       };
     }
-
   }
 
   static Set<String> formats = ImmutableSet.of(JAVABIN, "jsonl");
@@ -191,11 +186,11 @@ public class ExportTool extends SolrCLI.ToolBase {
     info.exportDocs();
   }
 
-  static abstract class DocsSink {
+  abstract static class DocsSink {
     Info info;
     OutputStream fos;
 
-    abstract void start() throws IOException ;
+    abstract void start() throws IOException;
 
     @SuppressForbidden(reason = "Command line tool prints out to console")
     void accept(SolrDocument document) throws IOException {
@@ -204,45 +199,43 @@ public class ExportTool extends SolrCLI.ToolBase {
       if (count % 100000 == 0) {
         System.out.println("\nDOCS: " + count);
       }
-
-
     }
 
-    void end() throws IOException {
-    }
+    void end() throws IOException {}
   }
 
   private static final Option[] OPTIONS = {
-      Option.builder("url")
-          .hasArg()
-          .required()
-          .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
-          .build(),
-      Option.builder("out")
-          .hasArg()
-          .required(false)
-          .desc("File name, defaults to 'collection-name.<format>'.")
-          .build(),
-      Option.builder("format")
-          .hasArg()
-          .required(false)
-          .desc("Output format for exported docs (json or javabin), defaulting to json. File extension would be .json.")
-          .build(),
-      Option.builder("limit")
-          .hasArg()
-          .required(false)
-          .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
-          .build(),
-      Option.builder("query")
-          .hasArg()
-          .required(false)
-          .desc("A custom query, default is '*:*'.")
-          .build(),
-      Option.builder("fields")
-          .hasArg()
-          .required(false)
-          .desc("Comma separated list of fields to export. By default all fields are fetched.")
-          .build()
+    Option.builder("url")
+        .hasArg()
+        .required()
+        .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
+        .build(),
+    Option.builder("out")
+        .hasArg()
+        .required(false)
+        .desc("File name, defaults to 'collection-name.<format>'.")
+        .build(),
+    Option.builder("format")
+        .hasArg()
+        .required(false)
+        .desc(
+            "Output format for exported docs (json or javabin), defaulting to json. File extension would be .json.")
+        .build(),
+    Option.builder("limit")
+        .hasArg()
+        .required(false)
+        .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
+        .build(),
+    Option.builder("query")
+        .hasArg()
+        .required(false)
+        .desc("A custom query, default is '*:*'.")
+        .build(),
+    Option.builder("fields")
+        .hasArg()
+        .required(false)
+        .desc("Comma separated list of fields to export. By default all fields are fetched.")
+        .build()
   };
 
   static class JsonSink extends DocsSink {
@@ -257,12 +250,12 @@ public class ExportTool extends SolrCLI.ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
-      if(info.out.endsWith(".json.gz") || info.out.endsWith(".json.")) fos = new GZIPOutputStream(fos);
+      if (info.out.endsWith(".json.gz") || info.out.endsWith(".json."))
+        fos = new GZIPOutputStream(fos);
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
       }
       writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
-
     }
 
     @Override
@@ -276,24 +269,25 @@ public class ExportTool extends SolrCLI.ToolBase {
     public synchronized void accept(SolrDocument doc) throws IOException {
       charArr.reset();
       Map<String, Object> m = new LinkedHashMap<>(doc.size());
-      doc.forEach((s, field) -> {
-        if (s.equals("_version_") || s.equals("_roor_")) return;
-        if (field instanceof List) {
-          if (((List<?>) field).size() == 1) {
-            field = ((List<?>) field).get(0);
-          }
-        }
-        field = constructDateStr(field);
-        if (field instanceof List) {
-          List<?> list = (List<?>) field;
-          if (hasdate(list)) {
-            ArrayList<Object> listCopy = new ArrayList<>(list.size());
-            for (Object o : list) listCopy.add(constructDateStr(o));
-            field = listCopy;
-          }
-        }
-        m.put(s, field);
-      });
+      doc.forEach(
+          (s, field) -> {
+            if (s.equals("_version_") || s.equals("_roor_")) return;
+            if (field instanceof List) {
+              if (((List<?>) field).size() == 1) {
+                field = ((List<?>) field).get(0);
+              }
+            }
+            field = constructDateStr(field);
+            if (field instanceof List) {
+              List<?> list = (List<?>) field;
+              if (hasdate(list)) {
+                ArrayList<Object> listCopy = new ArrayList<>(list.size());
+                for (Object o : list) listCopy.add(constructDateStr(o));
+                field = listCopy;
+              }
+            }
+            m.put(s, field);
+          });
       jsonWriter.write(m);
       writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
       writer.append('\n');
@@ -303,7 +297,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     private boolean hasdate(List<?> list) {
       boolean hasDate = false;
       for (Object o : list) {
-        if(o instanceof Date){
+        if (o instanceof Date) {
           hasDate = true;
           break;
         }
@@ -313,7 +307,8 @@ public class ExportTool extends SolrCLI.ToolBase {
 
     private Object constructDateStr(Object field) {
       if (field instanceof Date) {
-        field = DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(((Date) field).getTime()));
+        field =
+            DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(((Date) field).getTime()));
       }
       return field;
     }
@@ -329,7 +324,8 @@ public class ExportTool extends SolrCLI.ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
-      if(info.out.endsWith(".json.gz") || info.out.endsWith(".json.")) fos = new GZIPOutputStream(fos);
+      if (info.out.endsWith(".json.gz") || info.out.endsWith(".json."))
+        fos = new GZIPOutputStream(fos);
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
       }
@@ -339,7 +335,6 @@ public class ExportTool extends SolrCLI.ToolBase {
       codec.writeNamedList(new NamedList<>());
       codec.writeStr("docs");
       codec.writeTag(JavaBinCodec.ITERATOR);
-
     }
 
     @Override
@@ -348,26 +343,27 @@ public class ExportTool extends SolrCLI.ToolBase {
       codec.close();
       fos.flush();
       fos.close();
-
     }
-    private BiConsumer<String, Object> bic= new BiConsumer<>() {
-      @Override
-      public void accept(String s, Object o) {
-        try {
-          if (s.equals("_version_") || s.equals("_root_")) return;
-          codec.writeExternString(s);
-          codec.writeVal(o);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    };
+
+    private BiConsumer<String, Object> bic =
+        new BiConsumer<>() {
+          @Override
+          public void accept(String s, Object o) {
+            try {
+              if (s.equals("_version_") || s.equals("_root_")) return;
+              codec.writeExternString(s);
+              codec.writeVal(o);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
 
     @Override
     public synchronized void accept(SolrDocument doc) throws IOException {
       int sz = doc.size();
-      if(doc.containsKey("_version_")) sz--;
-      if(doc.containsKey("_root_")) sz--;
+      if (doc.containsKey("_version_")) sz--;
+      if (doc.containsKey("_root_")) sz--;
       codec.writeTag(SOLRINPUTDOC, sz);
       codec.writeFloat(1f); // document boost
       doc.forEach(bic);
@@ -381,14 +377,13 @@ public class ExportTool extends SolrCLI.ToolBase {
     SolrDocument EOFDOC = new SolrDocument();
     volatile boolean failed = false;
     Map<String, CoreHandler> corehandlers = new HashMap<>();
-    private long startTime ;
+    private long startTime;
 
     @SuppressForbidden(reason = "Need to print out time")
     public MultiThreadedRunner(String url) {
       super(url);
-      startTime= System.currentTimeMillis();
+      startTime = System.currentTimeMillis();
     }
-
 
     @Override
     @SuppressForbidden(reason = "Need to print out time")
@@ -398,10 +393,12 @@ public class ExportTool extends SolrCLI.ToolBase {
       ClusterStateProvider stateProvider = solrClient.getClusterStateProvider();
       DocCollection coll = stateProvider.getCollection(this.coll);
       Map<String, Slice> m = coll.getSlicesMap();
-      producerThreadpool = ExecutorUtil.newMDCAwareFixedThreadPool(m.size(),
-          new SolrNamedThreadFactory("solrcli-exporter-producers"));
-      consumerThreadpool = ExecutorUtil.newMDCAwareFixedThreadPool(1,
-          new SolrNamedThreadFactory("solrcli-exporter-consumer"));
+      producerThreadpool =
+          ExecutorUtil.newMDCAwareFixedThreadPool(
+              m.size(), new SolrNamedThreadFactory("solrcli-exporter-producers"));
+      consumerThreadpool =
+          ExecutorUtil.newMDCAwareFixedThreadPool(
+              1, new SolrNamedThreadFactory("solrcli-exporter-consumer"));
       sink.start();
       CountDownLatch consumerlatch = new CountDownLatch(1);
       try {
@@ -411,15 +408,17 @@ public class ExportTool extends SolrCLI.ToolBase {
           output.println("NO: of shards : " + corehandlers.size());
         }
         CountDownLatch producerLatch = new CountDownLatch(corehandlers.size());
-        corehandlers.forEach((s, coreHandler) -> producerThreadpool.submit(() -> {
-          try {
-            coreHandler.exportDocsFromCore();
-          } catch (Exception e) {
-            if(output != null) output.println("Error exporting docs from : "+s);
-
-          }
-          producerLatch.countDown();
-        }));
+        corehandlers.forEach(
+            (s, coreHandler) ->
+                producerThreadpool.submit(
+                    () -> {
+                      try {
+                        coreHandler.exportDocsFromCore();
+                      } catch (Exception e) {
+                        if (output != null) output.println("Error exporting docs from : " + s);
+                      }
+                      producerLatch.countDown();
+                    }));
 
         producerLatch.await();
         queue.offer(EOFDOC, 10, TimeUnit.SECONDS);
@@ -433,11 +432,15 @@ public class ExportTool extends SolrCLI.ToolBase {
           try {
             Files.delete(new File(out).toPath());
           } catch (IOException e) {
-            //ignore
+            // ignore
           }
         }
-        System.out.println("\nTotal Docs exported: "+ (docsWritten.get() -1)+
-            ". Time taken: "+( (System.currentTimeMillis() - startTime)/1000) + "secs");
+        System.out.println(
+            "\nTotal Docs exported: "
+                + (docsWritten.get() - 1)
+                + ". Time taken: "
+                + ((System.currentTimeMillis() - startTime) / 1000)
+                + "secs");
       }
     }
 
@@ -445,36 +448,37 @@ public class ExportTool extends SolrCLI.ToolBase {
       for (Map.Entry<String, Slice> entry : m.entrySet()) {
         Slice slice = entry.getValue();
         Replica replica = slice.getLeader();
-        if (replica == null) replica = slice.getReplicas().iterator().next();// get a random replica
+        if (replica == null)
+          replica = slice.getReplicas().iterator().next(); // get a random replica
         CoreHandler coreHandler = new CoreHandler(replica);
         corehandlers.put(replica.getCoreName(), coreHandler);
       }
     }
 
     private void addConsumer(CountDownLatch consumerlatch) {
-      consumerThreadpool.submit(() -> {
-        while (true) {
-          SolrDocument doc = null;
-          try {
-            doc = queue.poll(30, TimeUnit.SECONDS);
-          } catch (InterruptedException e) {
-            if (output != null) output.println("Consumer interrupted");
-            failed = true;
-            break;
-          }
-          if (doc == EOFDOC) break;
-          try {
-            if (docsWritten.get() > limit) continue;
-            sink.accept(doc);
-          } catch (Exception e) {
-            if (output != null) output.println("Failed to write to file " + e.getMessage());
-            failed = true;
-          }
-        }
-        consumerlatch.countDown();
-      });
+      consumerThreadpool.submit(
+          () -> {
+            while (true) {
+              SolrDocument doc = null;
+              try {
+                doc = queue.poll(30, TimeUnit.SECONDS);
+              } catch (InterruptedException e) {
+                if (output != null) output.println("Consumer interrupted");
+                failed = true;
+                break;
+              }
+              if (doc == EOFDOC) break;
+              try {
+                if (docsWritten.get() > limit) continue;
+                sink.accept(doc);
+              } catch (Exception e) {
+                if (output != null) output.println("Failed to write to file " + e.getMessage());
+                failed = true;
+              }
+            }
+            consumerlatch.countDown();
+          });
     }
-
 
     class CoreHandler {
       final Replica replica;
@@ -485,8 +489,7 @@ public class ExportTool extends SolrCLI.ToolBase {
         this.replica = replica;
       }
 
-      boolean exportDocsFromCore()
-          throws IOException, SolrServerException {
+      boolean exportDocsFromCore() throws IOException, SolrServerException {
         HttpSolrClient client = new HttpSolrClient.Builder(baseurl).build();
         try {
           expectedDocs = getDocCount(replica.getCoreName(), client);
@@ -498,33 +501,41 @@ public class ExportTool extends SolrCLI.ToolBase {
           params.add(CommonParams.DISTRIB, "false");
           params.add(CommonParams.ROWS, "1000");
           String cursorMark = CursorMarkParams.CURSOR_MARK_START;
-          Consumer<SolrDocument> wrapper = doc -> {
-            try {
-              queue.offer(doc, 10, TimeUnit.SECONDS);
-              receivedDocs.incrementAndGet();
-            } catch (InterruptedException e) {
-              failed = true;
-              if (output != null) output.println("Failed to write docs from" + e.getMessage());
-            }
-          };
-          StreamingBinaryResponseParser responseParser = new StreamingBinaryResponseParser(getStreamer(wrapper));
+          Consumer<SolrDocument> wrapper =
+              doc -> {
+                try {
+                  queue.offer(doc, 10, TimeUnit.SECONDS);
+                  receivedDocs.incrementAndGet();
+                } catch (InterruptedException e) {
+                  failed = true;
+                  if (output != null) output.println("Failed to write docs from" + e.getMessage());
+                }
+              };
+          StreamingBinaryResponseParser responseParser =
+              new StreamingBinaryResponseParser(getStreamer(wrapper));
           while (true) {
             if (failed) return false;
             if (docsWritten.get() > limit) return true;
             params.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-            request = new GenericSolrRequest(SolrRequest.METHOD.GET,
-                "/" + replica.getCoreName() + "/select", params);
+            request =
+                new GenericSolrRequest(
+                    SolrRequest.METHOD.GET, "/" + replica.getCoreName() + "/select", params);
             request.setResponseParser(responseParser);
             try {
               NamedList<Object> rsp = client.request(request);
               String nextCursorMark = (String) rsp.get(CursorMarkParams.CURSOR_MARK_NEXT);
               if (nextCursorMark == null || Objects.equals(cursorMark, nextCursorMark)) {
                 if (output != null)
-                  output.println(StrUtils.formatString("\nExport complete for : {0}, docs : {1}", replica.getCoreName(), receivedDocs.get()));
+                  output.println(
+                      StrUtils.formatString(
+                          "\nExport complete for : {0}, docs : {1}",
+                          replica.getCoreName(), receivedDocs.get()));
                 if (expectedDocs != receivedDocs.get()) {
                   if (output != null) {
-                    output.println(StrUtils.formatString("Could not download all docs for core {0} , expected: {1} , actual",
-                        replica.getCoreName(), expectedDocs, receivedDocs));
+                    output.println(
+                        StrUtils.formatString(
+                            "Could not download all docs for core {0} , expected: {1} , actual",
+                            replica.getCoreName(), expectedDocs, receivedDocs));
                     return false;
                   }
                 }
@@ -533,7 +544,12 @@ public class ExportTool extends SolrCLI.ToolBase {
               cursorMark = nextCursorMark;
               if (output != null) output.print(".");
             } catch (SolrServerException e) {
-              if(output != null) output.println("Error reading from server "+ replica.getBaseUrl()+"/"+ replica.getCoreName());
+              if (output != null)
+                output.println(
+                    "Error reading from server "
+                        + replica.getBaseUrl()
+                        + "/"
+                        + replica.getCoreName());
               failed = true;
               return false;
             }
@@ -545,13 +561,13 @@ public class ExportTool extends SolrCLI.ToolBase {
     }
   }
 
-
-  static long getDocCount(String coreName, HttpSolrClient client) throws SolrServerException, IOException {
+  static long getDocCount(String coreName, HttpSolrClient client)
+      throws SolrServerException, IOException {
     SolrQuery q = new SolrQuery("*:*");
     q.setRows(0);
     q.add("distrib", "false");
-    GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET,
-        "/" + coreName + "/select", q);
+    GenericSolrRequest request =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/" + coreName + "/select", q);
     NamedList<Object> res = client.request(request);
     SolrDocumentList sdl = (SolrDocumentList) res.get("response");
     return sdl.getNumFound();

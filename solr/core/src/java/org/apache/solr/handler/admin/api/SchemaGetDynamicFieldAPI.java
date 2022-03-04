@@ -17,32 +17,32 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-
 /**
  * V2 API for getting information about a single dynamic field definition from an in-use schema.
  *
- * This API (GET /v2/collections/collectionName/schema/dynamicfields/fieldName) is analogous to the v1
- * /solr/collectionName/schema/dynamicfields/fieldName API.
+ * <p>This API (GET /v2/collections/collectionName/schema/dynamicfields/fieldName) is analogous to
+ * the v1 /solr/collectionName/schema/dynamicfields/fieldName API.
  */
 public class SchemaGetDynamicFieldAPI {
-    private final SchemaHandler schemaHandler;
+  private final SchemaHandler schemaHandler;
 
-    public SchemaGetDynamicFieldAPI(SchemaHandler schemaHandler) {
-        this.schemaHandler = schemaHandler;
-    }
+  public SchemaGetDynamicFieldAPI(SchemaHandler schemaHandler) {
+    this.schemaHandler = schemaHandler;
+  }
 
-    @EndPoint(
-            path = {"/schema/dynamicfields/{name}"},
-            method = GET,
-            permission = PermissionNameProvider.Name.SCHEMA_READ_PERM)
-    public void getSingleDynamicField(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        schemaHandler.handleRequestBody(req, rsp);
-    }
+  @EndPoint(
+      path = {"/schema/dynamicfields/{name}"},
+      method = GET,
+      permission = PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public void getSingleDynamicField(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    schemaHandler.handleRequestBody(req, rsp);
+  }
 }

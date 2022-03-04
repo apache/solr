@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.handler.component.HttpShardHandler;
@@ -28,17 +27,14 @@ import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-
 public class RealTimeGetHandler extends SearchHandler {
   @Override
-  protected List<String> getDefaultComponents()
-  {
+  protected List<String> getDefaultComponents() {
     List<String> names = new ArrayList<>(1);
     names.add(RealTimeGetComponent.COMPONENT_NAME);
     return names;
   }
-  
-  
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // Tell HttpShardHandlerthat this request should only be distributed to NRT replicas
@@ -63,10 +59,3 @@ public class RealTimeGetHandler extends SearchHandler {
     return Boolean.TRUE;
   }
 }
-
-
-
-
-
-
-

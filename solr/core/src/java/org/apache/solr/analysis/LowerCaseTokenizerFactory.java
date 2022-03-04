@@ -16,31 +16,34 @@
  */
 package org.apache.solr.analysis;
 
-import java.util.Map;
+import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LENGTH_LIMIT;
 
+import java.util.Map;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
 import org.apache.lucene.analysis.util.CharTokenizer;
-import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
-
-import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LENGTH_LIMIT;
 
 /**
  * Factory for {@link LowerCaseTokenizer}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_lwrcase" class="solr.TextField" positionIncrementGap="100"&gt;
  * &lt;analyzer&gt;
  * &lt;tokenizer class="solr.LowerCaseTokenizerFactory" maxTokenLen="256"/&gt;
  * &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * <p>
- * Options:
+ *
+ * <p>Options:
+ *
  * <ul>
- * <li>maxTokenLen: max token length, should be greater than 0 and less than MAX_TOKEN_LENGTH_LIMIT (1024*1024).
- *     It is rare to need to change this
- * else {@link CharTokenizer}::DEFAULT_MAX_WORD_LEN</li>
+ *   <li>maxTokenLen: max token length, should be greater than 0 and less than
+ *       MAX_TOKEN_LENGTH_LIMIT (1024*1024). It is rare to need to change this else {@link
+ *       CharTokenizer}::DEFAULT_MAX_WORD_LEN
  * </ul>
- * @deprecated Use {@link org.apache.lucene.analysis.core.LetterTokenizerFactory} and {@link LowerCaseFilterFactory}
+ *
+ * @deprecated Use {@link org.apache.lucene.analysis.core.LetterTokenizerFactory} and {@link
+ *     LowerCaseFilterFactory}
  * @lucene.spi {@value #NAME}
  */
 @Deprecated
@@ -51,14 +54,16 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory {
 
   private final int maxTokenLen;
 
-  /**
-   * Creates a new LowerCaseTokenizerFactory
-   */
+  /** Creates a new LowerCaseTokenizerFactory */
   public LowerCaseTokenizerFactory(Map<String, String> args) {
     super(args);
     maxTokenLen = getInt(args, "maxTokenLen", CharTokenizer.DEFAULT_MAX_WORD_LEN);
     if (maxTokenLen > MAX_TOKEN_LENGTH_LIMIT || maxTokenLen <= 0) {
-      throw new IllegalArgumentException("maxTokenLen must be greater than 0 and less than " + MAX_TOKEN_LENGTH_LIMIT + " passed: " + maxTokenLen);
+      throw new IllegalArgumentException(
+          "maxTokenLen must be greater than 0 and less than "
+              + MAX_TOKEN_LENGTH_LIMIT
+              + " passed: "
+              + maxTokenLen);
     }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
@@ -74,5 +79,4 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory {
   public LowerCaseTokenizer create(AttributeFactory factory) {
     return new LowerCaseTokenizer(factory, maxTokenLen);
   }
-
 }

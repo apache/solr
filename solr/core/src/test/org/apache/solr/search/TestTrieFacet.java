@@ -167,12 +167,10 @@ public class TestTrieFacet extends SolrTestCaseJ4 {
             "facet.mincount",
             "0",
             "facet.method",
-            method)
+            method),
         // trivial sanity check we're at least getting facet counts in output
-        ,
-        "*[count(//lst[@name='facet_fields']/lst[@name='" + field + "']/int)!=0]"
+        "*[count(//lst[@name='facet_fields']/lst[@name='" + field + "']/int)!=0]",
         // main point of test
-        ,
         "*[count(//lst[@name='facet_fields']/lst[@name='" + field + "']/int[@name='0'])=0]");
   }
 

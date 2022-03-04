@@ -58,7 +58,7 @@ public interface SimpleMap<T> extends MapWriter {
    * iterate through all keys but abort in between if required The default impl is suboptimal.
    * Proper implementations must do it more efficiently
    *
-   * @param fun Consume each key and return a boolean to signal whether to proceed or not. If true ,
+   * @param fun Consume each key and return a boolean to signal whether to proceed or not. If true,
    *     continue. If false stop
    */
   default void abortableForEachKey(Function<String, Boolean> fun) {
