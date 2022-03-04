@@ -50,6 +50,12 @@ dependencies {
   // compatible with recent Jetty
   testImplementation 'org.springframework.boot:spring-boot'
 
+  testImplementation 'com.amazonaws:aws-java-sdk-core'
+  testImplementation 'org.apache.httpcomponents:httpclient'
+  testImplementation 'org.hamcrest:hamcrest'
+  testImplementation 'software.amazon.awssdk:url-connection-client'
+  testImplementation 'software.amazon.awssdk:utils'
+
   testImplementation('com.adobe.testing:s3mock-junit4') {
     // Don't pull in separate versions of these libs, just use what Solr already has
     exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'

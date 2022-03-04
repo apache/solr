@@ -42,7 +42,6 @@ dependencies {
   implementation 'org.eclipse.jetty:jetty-client'
   implementation 'org.eclipse.jetty:jetty-util'
   implementation 'org.eclipse.jetty:jetty-io'
-  implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
   runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-client'
 
   api('org.apache.httpcomponents:httpmime', {
@@ -77,6 +76,7 @@ dependencies {
   testImplementation 'commons-io:commons-io'
 
   testImplementation 'javax.servlet:javax.servlet-api'
+  testImplementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
   testImplementation 'org.eclipse.jetty:jetty-server'
   testImplementation 'org.eclipse.jetty:jetty-servlet'

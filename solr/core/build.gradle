@@ -122,6 +122,8 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
+  compileOnlyApi 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+
   implementation 'org.eclipse.jetty:jetty-client'
 
   // ZooKeeper

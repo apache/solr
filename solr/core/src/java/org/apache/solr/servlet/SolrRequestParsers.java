@@ -622,7 +622,8 @@ public class SolrRequestParsers {
         throw new SolrException(
             ErrorCode.BAD_REQUEST, "Not multipart content! " + req.getContentType());
       }
-      // Magic way to tell Jetty dynamically we want multi-part processing.  "Request" here is a Jetty class
+      // Magic way to tell Jetty dynamically we want multi-part processing.  "Request" here is a
+      // Jetty class
       req.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, multipartConfigElement);
 
       MultiMapSolrParams params = parseQueryString(req.getQueryString());
@@ -834,6 +835,11 @@ public class SolrRequestParsers {
           return raw.parseParamsAndFillStreams(req, streams);
         }
         if (contentType == null) {
+          return parseQueryString(req.getQueryString());
+        }
+
+        // This happens when Jetty redirected a request that initially had no content body
+        if (contentType.equals("application/octet-stream") && req.getContentLength() == 0) {
           return parseQueryString(req.getQueryString());
         }
 

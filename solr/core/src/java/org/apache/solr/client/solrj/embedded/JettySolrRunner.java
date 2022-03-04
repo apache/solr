@@ -307,7 +307,7 @@ public class JettySolrRunner {
         SecureRequestCustomizer customizer = new SecureRequestCustomizer(false);
         sslcontext.setSniRequired(false);
         customizer.setSniHostCheck(false);
-       
+
         configuration.addCustomizer(customizer);
         HttpConnectionFactory http1ConnectionFactory = new HttpConnectionFactory(configuration);
 
@@ -371,11 +371,13 @@ public class JettySolrRunner {
 
     HandlerWrapper chain;
     {
-    // Initialize the servlets
-    final ServletContextHandler root = new ServletContextHandler(server, config.context, ServletContextHandler.SESSIONS);
-    root.setResourceBase(".");
+      // Initialize the servlets
+      final ServletContextHandler root =
+          new ServletContextHandler(server, config.context, ServletContextHandler.SESSIONS);
+      root.setResourceBase(".");
 
-    server.addEventListener(new LifeCycle.Listener() {
+      server.addEventListener(
+          new LifeCycle.Listener() {
 
             @Override
             public void lifeCycleStopping(LifeCycle arg0) {}
