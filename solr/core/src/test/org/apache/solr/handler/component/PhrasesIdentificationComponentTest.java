@@ -698,24 +698,15 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     for (String p : Arrays.asList("q", "phrases.q")) {
       // basic request...
       assertQ(
-          req("qt", HANDLER, p, input)
-          // expect no search results...
-          ,
-          "count(//result)=0"
-
-          // just phrase info...
-          ,
+          req("qt", HANDLER, p, input), // expect no search results...
+          "count(//result)=0", // just phrase info...
           "//lst[@name='phrases']/str[@name='input'][.='" + input + "']",
           "//lst[@name='phrases']/str[@name='summary'][.='" + expected + "']",
-          "count(//lst[@name='phrases']/arr[@name='details']/lst) = 2"
-          //
-          ,
+          "count(//lst[@name='phrases']/arr[@name='details']/lst) = 2",
           "//lst[@name='phrases']/arr[@name='details']/lst[1]/str[@name='text'][.='the lazy dog']",
           "//lst[@name='phrases']/arr[@name='details']/lst[1]/int[@name='offset_start'][.='50']",
           "//lst[@name='phrases']/arr[@name='details']/lst[1]/int[@name='offset_end'][.='62']",
-          "//lst[@name='phrases']/arr[@name='details']/lst[1]/double[@name='score'][number(.) > 0]"
-          //
-          ,
+          "//lst[@name='phrases']/arr[@name='details']/lst[1]/double[@name='score'][number(.) > 0]",
           "//lst[@name='phrases']/arr[@name='details']/lst[2]/str[@name='text'][.='brown FOX']",
           "//lst[@name='phrases']/arr[@name='details']/lst[2]/int[@name='offset_start'][.='17']",
           "//lst[@name='phrases']/arr[@name='details']/lst[2]/int[@name='offset_end'][.='26']",
@@ -723,12 +714,8 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
 
       // empty input, empty phrases (and no error)...
       assertQ(
-          req("qt", HANDLER, p, "")
-          // expect no search results...
-          ,
-          "count(//result)=0"
-          // just empty phrase info for our empty input...
-          ,
+          req("qt", HANDLER, p, ""), // expect no search results...
+          "count(//result)=0", // just empty phrase info for our empty input...
           "//lst[@name='phrases']/str[@name='input'][.='']",
           "//lst[@name='phrases']/str[@name='summary'][.='']",
           "count(//lst[@name='phrases']/arr[@name='details']) = 1",
@@ -740,25 +727,19 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     final String input = "\"brown fox\"";
 
     assertQ(
-        req("q", input)
-        // basic search should have worked...
-        ,
+        req("q", input), // basic search should have worked...
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='42']",
-        "//result/doc/str[@name='id'][.='43']"
+        "//result/doc/str[@name='id'][.='43']",
         // and phrases should not be returned since they weren't requested...
-        ,
         "0=count(//lst[@name='phrases'])");
 
     assertQ(
-        req("phrases", "false", "q", input)
-        // basic search should have worked...
-        ,
+        req("phrases", "false", "q", input), // basic search should have worked...
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='42']",
-        "//result/doc/str[@name='id'][.='43']"
+        "//result/doc/str[@name='id'][.='43']",
         // and phrases should not be returned since they were explicitly disabled...
-        ,
         "0=count(//lst[@name='phrases'])");
 
     // with input this short, all of these permutations of requests should produce the same
@@ -787,15 +768,10 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
                 "phrases.analysis.field",
                 "multigrams_title_short"))) {
       assertQ(
-          req
-          // basic search should have worked...
-          ,
+          req, // basic search should have worked...
           "//result[@numFound='2']",
           "//result/doc/str[@name='id'][.='42']",
-          "//result/doc/str[@name='id'][.='43']"
-
-          // and we should have gotten phrase info...
-          ,
+          "//result/doc/str[@name='id'][.='43']", // and we should have gotten phrase info...
           "//lst[@name='phrases']/str[@name='input'][.='" + input + "']",
           "//lst[@name='phrases']/str[@name='summary'][.='\"{brown fox}\"']",
           "count(//lst[@name='phrases']/arr[@name='details']/lst)=1",
@@ -807,12 +783,10 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
 
     // override the query string to get different phrases
     assertQ(
-        req("phrases", "true", "q", "*:*", "phrases.q", input)
+        req("phrases", "true", "q", "*:*", "phrases.q", input),
         // basic search should have found all docs...
-        ,
-        "//result[@numFound='4']"
+        "//result[@numFound='4']",
         // and we should have gotten phrase info for our alternative q string...
-        ,
         "//lst[@name='phrases']/str[@name='input'][.='" + input + "']",
         "//lst[@name='phrases']/str[@name='summary'][.='\"{brown fox}\"']",
         "count(//lst[@name='phrases']/arr[@name='details']/lst)=1",
@@ -823,12 +797,10 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
 
     // empty input, empty phrases (but no error)
     assertQ(
-        req("phrases", "true", "q", "*:*", "phrases.q", "")
+        req("phrases", "true", "q", "*:*", "phrases.q", ""),
         // basic search should have found all docs...
-        ,
-        "//result[@numFound='4']"
+        "//result[@numFound='4']",
         // and we should have gotten (empty) phrase info for our alternative q string...
-        ,
         "//lst[@name='phrases']/str[@name='input'][.='']",
         "//lst[@name='phrases']/str[@name='summary'][.='']",
         "count(//lst[@name='phrases']/arr[@name='details'])     = 1",
@@ -851,27 +823,22 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
             ShardParams.IS_SHARD,
             "true",
             ShardParams.SHARDS_PURPOSE,
-            "" + PhrasesIdentificationComponent.SHARD_PURPOSE)
+            "" + PhrasesIdentificationComponent.SHARD_PURPOSE),
 
         // this shard request should have caused stats to be returned about all phrases...
-        ,
-        "10=count(" + all_phrase_xpath + "/lst)"
+        "10=count(" + all_phrase_xpath + "/lst)",
         // "quick" ...
-        ,
         all_phrase_xpath + "/lst[1]/lst[@name='ttf']/long[@name='multigrams_body'][.='1']",
-        all_phrase_xpath + "/lst[1]/lst[@name='ttf']/long[@name='multigrams_title'][.='0']"
-        // ...
-        // "brown fox"
-        ,
+        all_phrase_xpath + "/lst[1]/lst[@name='ttf']/long[@name='multigrams_title'][.='0']",
+        // ... "brown fox"
         all_phrase_xpath + "/lst[6]/lst[@name='ttf']/long[@name='multigrams_body'][.='3']",
         all_phrase_xpath + "/lst[6]/lst[@name='ttf']/long[@name='multigrams_title'][.='1']",
         all_phrase_xpath + "/lst[6]/lst[@name='df']/long[@name='multigrams_body'][.='2']",
         all_phrase_xpath + "/lst[6]/lst[@name='df']/long[@name='multigrams_title'][.='1']",
         all_phrase_xpath + "/lst[6]/lst[@name='conj_dc']/long[@name='multigrams_body'][.='2']",
-        all_phrase_xpath + "/lst[6]/lst[@name='conj_dc']/long[@name='multigrams_title'][.='1']"
+        all_phrase_xpath + "/lst[6]/lst[@name='conj_dc']/long[@name='multigrams_title'][.='1']",
 
         // but no computed "scores"...
-        ,
         "0=count(" + phrase_xpath + "//*[@name='score'])");
 
     // phrases requested, but incorrect request stage / shard purpose ...

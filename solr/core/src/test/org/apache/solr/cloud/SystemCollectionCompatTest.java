@@ -170,8 +170,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
         .getIsCollectionApiDistributed()) {
       log.info("Skipping test because Collection API is distributed");
       // TODO once we completely remove Overseer, do we need to move the back compat check to some
-      // other place, for example
-      //  to when the .system collection is opened?
+      // other place, for example to when the .system collection is opened?
       return;
     }
 

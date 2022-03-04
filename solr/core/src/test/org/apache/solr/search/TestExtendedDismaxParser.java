@@ -1952,8 +1952,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       // The results for these two appear odd, but are correct as per BooleanQuery processing.
       // See: http://searchhub.org/2011/12/28/why-not-and-or-and-not/
       // Non-parenthesis OR/AND precedence is not true to abstract boolean logic in solr when q.op =
-      // AND
-      //   and when q.op = OR all three clauses are top-level and optional so mm takes over
+      // AND and when q.op = OR all three clauses are top-level and optional so mm takes over
       assertQ(
           "test minShouldMatch (top level optional with explicit OR without parens)",
           req(
@@ -2274,8 +2273,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         req("qf", "text_sw title", "defType", "edismax", "q", "wi fi", "sow", "true"),
         "/response/numFound==0");
     assertJQ(
-        req("qf", "text_sw title", "defType", "edismax", "q", "wi fi") // default sow=false
-        ,
+        req("qf", "text_sw title", "defType", "edismax", "q", "wi fi"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='72'");
 
@@ -2285,8 +2283,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         "/response/docs/[0]/id=='72'");
     assertJQ(req("qf", "text_sw title", "q", "{!edismax sow=true}wi fi"), "/response/numFound==0");
     assertJQ(
-        req("qf", "text_sw title", "q", "{!edismax}wi fi") // default sow=false
-        ,
+        req("qf", "text_sw title", "q", "{!edismax}wi fi"), // default sow=false
         "/response/numFound==1",
         "/response/docs/[0]/id=='72'");
 

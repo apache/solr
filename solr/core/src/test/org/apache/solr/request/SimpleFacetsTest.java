@@ -297,14 +297,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   public void testDefaultsAndAppends() throws Exception {
     // all defaults
     assertQ(
-        req("indent", "true", "q", "*:*", "rows", "0", "facet", "true", "qt", "/search-facet-def")
+        req("indent", "true", "q", "*:*", "rows", "0", "facet", "true", "qt", "/search-facet-def"),
         // only one default facet.field
-        ,
         "//lst[@name='facet_fields']/lst[@name='foo_s']",
         "count(//lst[@name='facet_fields']/lst[@name='foo_s'])=1",
-        "count(//lst[@name='facet_fields']/lst)=1"
+        "count(//lst[@name='facet_fields']/lst)=1",
         // only one default facet.query
-        ,
         "//lst[@name='facet_queries']/int[@name='foo_s:bar']",
         "count(//lst[@name='facet_queries']/int[@name='foo_s:bar'])=1",
         "count(//lst[@name='facet_queries']/int)=1");
@@ -325,14 +323,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet.field",
             "bar_s",
             "facet.query",
-            "bar_s:yak")
+            "bar_s:yak"),
         // override single default facet.field
-        ,
         "//lst[@name='facet_fields']/lst[@name='bar_s']",
         "count(//lst[@name='facet_fields']/lst[@name='bar_s'])=1",
-        "count(//lst[@name='facet_fields']/lst)=1"
+        "count(//lst[@name='facet_fields']/lst)=1",
         // add an additional facet.query
-        ,
         "//lst[@name='facet_queries']/int[@name='foo_s:bar']",
         "//lst[@name='facet_queries']/int[@name='bar_s:yak']",
         "count(//lst[@name='facet_queries']/int[@name='foo_s:bar'])=1",
@@ -359,14 +355,12 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ff,
                 "bar_s",
                 fq,
-                "bar_s:yak")
+                "bar_s:yak"),
             // only one invariant facet.field
-            ,
             "//lst[@name='facet_fields']/lst[@name='foo_s']",
             "count(//lst[@name='facet_fields']/lst[@name='foo_s'])=1",
-            "count(//lst[@name='facet_fields']/lst)=1"
+            "count(//lst[@name='facet_fields']/lst)=1",
             // only one invariant facet.query
-            ,
             "//lst[@name='facet_queries']/int[@name='foo_s:bar']",
             "count(//lst[@name='facet_queries']/int[@name='foo_s:bar'])=1",
             "count(//lst[@name='facet_queries']/int)=1");
@@ -873,14 +867,11 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
               "facet.query",
               "{!ex=1}trait_s:Obnoxious",
               "facet.query",
-              "{!ex=2 key=foo}id_i1:[42 TO 45]" // tag=2 same as 1
-              ,
+              "{!ex=2 key=foo}id_i1:[42 TO 45]", // tag=2 same as 1
               "facet.query",
-              "{!ex=3,4 key=bar}id_i1:[43 TO 47]" // tag=3,4 don't exist
-              ,
+              "{!ex=3,4 key=bar}id_i1:[43 TO 47]", // tag=3,4 don't exist
               "facet.field",
-              "{!ex=3,1}trait_s" // 3,1 same as 1
-              ,
+              "{!ex=3,1}trait_s", // 3,1 same as 1
               "fq",
               "{!tag=1,2}id:47" // tagged as 1 and 2
               ),
@@ -1511,11 +1502,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p,
             f,
             p + ".start",
-            "-0200-01-01T00:00:00Z" // BC
-            ,
+            "-0200-01-01T00:00:00Z", // BC
             p + ".end",
-            "+0200-01-01T00:00:00Z" // AD
-            ,
+            "+0200-01-01T00:00:00Z", // AD
             p + ".gap",
             "+100YEARS",
             p + ".other",
@@ -1571,9 +1560,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".other",
             "all",
             p + ".include",
-            "lower")
+            "lower"),
         // 15 days + pre+post+inner = 18
-        ,
         "*[count(" + pre + "/int)=15]",
         pre + "/int[@name='1976-07-01T00:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-02T00:00:00Z'][.='0']",
@@ -1589,9 +1577,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='1976-07-12T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-13T00:00:00Z'][.='2'  ]",
         pre + "/int[@name='1976-07-14T00:00:00Z'][.='0']",
-        pre + "/int[@name='1976-07-15T00:00:00Z'][.='1'  ]"
-        //
-        ,
+        pre + "/int[@name='1976-07-15T00:00:00Z'][.='1'  ]",
         meta + "/int[@name='before' ][.='1']",
         meta + "/int[@name='after'  ][.='1']",
         meta + "/int[@name='between'][.='8']");
@@ -1616,9 +1602,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".other",
             "all",
             p + ".include",
-            "upper")
+            "upper"),
         // 15 days + pre+post+inner = 18
-        ,
         "*[count(" + pre + "/int)=15]",
         pre + "/int[@name='1976-07-01T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-02T00:00:00Z'][.='0']",
@@ -1634,9 +1619,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='1976-07-12T00:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-13T00:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-14T00:00:00Z'][.='0']",
-        pre + "/int[@name='1976-07-15T00:00:00Z'][.='1'  ]"
-        //
-        ,
+        pre + "/int[@name='1976-07-15T00:00:00Z'][.='1'  ]",
         meta + "/int[@name='before' ][.='2']",
         meta + "/int[@name='after'  ][.='1']",
         meta + "/int[@name='between'][.='7']");
@@ -1663,9 +1646,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".include",
             "lower",
             p + ".include",
-            "upper")
+            "upper"),
         // 15 days + pre+post+inner = 18
-        ,
         "*[count(" + pre + "/int)=15]",
         pre + "/int[@name='1976-07-01T00:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-02T00:00:00Z'][.='0']",
@@ -1681,9 +1663,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='1976-07-12T00:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-13T00:00:00Z'][.='2'  ]",
         pre + "/int[@name='1976-07-14T00:00:00Z'][.='0']",
-        pre + "/int[@name='1976-07-15T00:00:00Z'][.='1'  ]"
-        //
-        ,
+        pre + "/int[@name='1976-07-15T00:00:00Z'][.='1'  ]",
         meta + "/int[@name='before' ][.='1']",
         meta + "/int[@name='after'  ][.='1']",
         meta + "/int[@name='between'][.='8']");
@@ -1710,9 +1690,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".include",
             "upper",
             p + ".include",
-            "edge")
+            "edge"),
         // 15 days + pre+post+inner = 18
-        ,
         "*[count(" + pre + "/int)=15]",
         pre + "/int[@name='1976-07-01T00:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-02T00:00:00Z'][.='0']",
@@ -1728,9 +1707,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='1976-07-12T00:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-13T00:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-14T00:00:00Z'][.='0']",
-        pre + "/int[@name='1976-07-15T00:00:00Z'][.='1'  ]"
-        //
-        ,
+        pre + "/int[@name='1976-07-15T00:00:00Z'][.='1'  ]",
         meta + "/int[@name='before' ][.='1']",
         meta + "/int[@name='after'  ][.='1']",
         meta + "/int[@name='between'][.='8']");
@@ -1749,8 +1726,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
-            "1976-07-13T00:00:00.000Z" // smaller now
-            ,
+            "1976-07-13T00:00:00.000Z", // smaller now
             p + ".gap",
             "+1DAY",
             p + ".other",
@@ -1758,9 +1734,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".include",
             "upper",
             p + ".include",
-            "outer")
+            "outer"),
         // 12 days + pre+post+inner = 15
-        ,
         "*[count(" + pre + "/int)=12]",
         pre + "/int[@name='1976-07-01T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-02T00:00:00Z'][.='0']",
@@ -1773,9 +1748,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='1976-07-09T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-10T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-11T00:00:00Z'][.='0']",
-        pre + "/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
-        //
-        ,
+        pre + "/int[@name='1976-07-12T00:00:00Z'][.='1'  ]",
         meta + "/int[@name='before' ][.='2']",
         meta + "/int[@name='after'  ][.='4']",
         meta + "/int[@name='between'][.='5']");
@@ -1794,8 +1767,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
-            "1976-07-13T00:00:00.000Z" // smaller now
-            ,
+            "1976-07-13T00:00:00.000Z", // smaller now
             p + ".gap",
             "+1DAY",
             p + ".other",
@@ -1803,9 +1775,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".include",
             "lower",
             p + ".include",
-            "edge")
+            "edge"),
         // 12 days + pre+post+inner = 15
-        ,
         "*[count(" + pre + "/int)=12]",
         pre + "/int[@name='1976-07-01T00:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-02T00:00:00Z'][.='0']",
@@ -1818,9 +1789,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='1976-07-09T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-10T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-11T00:00:00Z'][.='0']",
-        pre + "/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
-        //
-        ,
+        pre + "/int[@name='1976-07-12T00:00:00Z'][.='1'  ]",
         meta + "/int[@name='before' ][.='1']",
         meta + "/int[@name='after'  ][.='3']",
         meta + "/int[@name='between'][.='6']");
@@ -1839,8 +1808,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
-            "1976-07-13T00:00:00.000Z" // smaller now
-            ,
+            "1976-07-13T00:00:00.000Z", // smaller now
             p + ".gap",
             "+1DAY",
             p + ".other",
@@ -1848,9 +1816,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".include",
             "lower",
             p + ".include",
-            "outer")
+            "outer"),
         // 12 days + pre+post+inner = 15
-        ,
         "*[count(" + pre + "/int)=12]",
         pre + "/int[@name='1976-07-01T00:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-02T00:00:00Z'][.='0']",
@@ -1863,9 +1830,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='1976-07-09T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-10T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-11T00:00:00Z'][.='0']",
-        pre + "/int[@name='1976-07-12T00:00:00Z'][.='0']"
-        //
-        ,
+        pre + "/int[@name='1976-07-12T00:00:00Z'][.='0']",
         meta + "/int[@name='before' ][.='2']",
         meta + "/int[@name='after'  ][.='4']",
         meta + "/int[@name='between'][.='5']");
@@ -1884,8 +1849,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
-            "1976-07-13T00:00:00.000Z" // smaller now
-            ,
+            "1976-07-13T00:00:00.000Z", // smaller now
             p + ".gap",
             "+1DAY",
             p + ".other",
@@ -1895,9 +1859,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".include",
             "edge",
             p + ".include",
-            "outer")
+            "outer"),
         // 12 days + pre+post+inner = 15
-        ,
         "*[count(" + pre + "/int)=12]",
         pre + "/int[@name='1976-07-01T00:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-02T00:00:00Z'][.='0']",
@@ -1910,9 +1873,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='1976-07-09T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-10T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-11T00:00:00Z'][.='0']",
-        pre + "/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
-        //
-        ,
+        pre + "/int[@name='1976-07-12T00:00:00Z'][.='1'  ]",
         meta + "/int[@name='before' ][.='2']",
         meta + "/int[@name='after'  ][.='4']",
         meta + "/int[@name='between'][.='6']");
@@ -1931,16 +1892,14 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".start",
             "1976-07-01T00:00:00.000Z",
             p + ".end",
-            "1976-07-13T00:00:00.000Z" // smaller now
-            ,
+            "1976-07-13T00:00:00.000Z", // smaller now
             p + ".gap",
             "+1DAY",
             p + ".other",
             "all",
             p + ".include",
-            "all")
+            "all"),
         // 12 days + pre+post+inner = 15
-        ,
         "*[count(" + pre + "/int)=12]",
         pre + "/int[@name='1976-07-01T00:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-02T00:00:00Z'][.='0']",
@@ -1953,9 +1912,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='1976-07-09T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-10T00:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-11T00:00:00Z'][.='0']",
-        pre + "/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
-        //
-        ,
+        pre + "/int[@name='1976-07-12T00:00:00Z'][.='1'  ]",
         meta + "/int[@name='before' ][.='2']",
         meta + "/int[@name='after'  ][.='4']",
         meta + "/int[@name='between'][.='6']");
@@ -1989,8 +1946,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             "NOW",
-            "205078333000" // 1976-07-01T14:12:13.000Z
-            ,
+            "205078333000", // 1976-07-01T14:12:13.000Z
             "TZ",
             TZ,
             p,
@@ -2004,9 +1960,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".other",
             "all",
             p + ".include",
-            "lower")
+            "lower"),
         // 15 days + pre+post+inner = 18
-        ,
         "*[count(" + pre + "/int)=15]",
         pre + "/int[@name='1976-07-01T07:00:00Z'][.='0']",
         pre + "/int[@name='1976-07-02T07:00:00Z'][.='0']",
@@ -2022,9 +1977,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='1976-07-12T07:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-13T07:00:00Z'][.='1'  ]",
         pre + "/int[@name='1976-07-14T07:00:00Z'][.='0']",
-        pre + "/int[@name='1976-07-15T07:00:00Z'][.='1'  ]"
-        //
-        ,
+        pre + "/int[@name='1976-07-15T07:00:00Z'][.='1'  ]",
         meta + "/int[@name='before' ][.='2']",
         meta + "/int[@name='after'  ][.='1']",
         meta + "/int[@name='between'][.='7']");
@@ -2041,8 +1994,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet",
             "true",
             "NOW",
-            "1288606136000" // 2010-11-01T10:08:56.235Z
-            ,
+            "1288606136000", // 2010-11-01T10:08:56.235Z
             "TZ",
             TZ,
             p,
@@ -2056,9 +2008,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             p + ".other",
             "all",
             p + ".include",
-            "lower")
+            "lower"),
         // 15 days + pre+post+inner = 18
-        ,
         "*[count(" + pre + "/int)=15]",
         pre + "/int[@name='2010-11-01T07:00:00Z'][.='0']",
         pre + "/int[@name='2010-11-02T07:00:00Z'][.='0']",
@@ -2067,8 +2018,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='2010-11-05T07:00:00Z'][.='0']",
         pre + "/int[@name='2010-11-06T07:00:00Z'][.='0']",
         pre + "/int[@name='2010-11-07T07:00:00Z'][.='0']",
-        pre + "/int[@name='2010-11-08T08:00:00Z'][.='0']" // BOOM!
-        ,
+        pre + "/int[@name='2010-11-08T08:00:00Z'][.='0']", // BOOM!
         pre + "/int[@name='2010-11-09T08:00:00Z'][.='0']",
         pre + "/int[@name='2010-11-10T08:00:00Z'][.='0']",
         pre + "/int[@name='2010-11-11T08:00:00Z'][.='0']",
@@ -2144,9 +2094,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "lower"),
         "*[count(" + pre + "/int)=3]",
         pre + "/int[@name='" + start + "'][.='6'  ]",
-        pre + "/int[@name='" + mid + "'][.='0'  ]"
-        //
-        ,
+        pre + "/int[@name='" + mid + "'][.='0'  ]",
         meta + "/double[@name='end' ][.='" + end + "']",
         meta + "/int[@name='before' ][.='0']",
         meta + "/int[@name='after'  ][.='0']",
@@ -2181,9 +2129,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='10.0'][.='1'  ]",
         pre + "/int[@name='20.0'][.='3'  ]",
         pre + "/int[@name='30.0'][.='2'  ]",
-        pre + "/int[@name='40.0'][.='0'  ]"
-        //
-        ,
+        pre + "/int[@name='40.0'][.='0'  ]",
         meta + "/int[@name='before' ][.='0']",
         meta + "/int[@name='after'  ][.='0']",
         meta + "/int[@name='between'][.='6']");
@@ -2205,9 +2151,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='10.0'][.='2'  ]",
         pre + "/int[@name='20.0'][.='3'  ]",
         pre + "/int[@name='30.0'][.='1'  ]",
-        pre + "/int[@name='40.0'][.='0'  ]"
-        //
-        ,
+        pre + "/int[@name='40.0'][.='0'  ]",
         meta + "/int[@name='before' ][.='0']",
         meta + "/int[@name='after'  ][.='0']",
         meta + "/int[@name='between'][.='6']");
@@ -2230,9 +2174,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         pre + "/int[@name='10.0'][.='2'  ]",
         pre + "/int[@name='20.0'][.='4'  ]",
         pre + "/int[@name='30.0'][.='2'  ]",
-        pre + "/int[@name='40.0'][.='0'  ]"
-        //
-        ,
+        pre + "/int[@name='40.0'][.='0'  ]",
         meta + "/int[@name='before' ][.='0']",
         meta + "/int[@name='after'  ][.='0']",
         meta + "/int[@name='between'][.='6']");
@@ -2254,9 +2196,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         "*[count(" + pre + "/int)=3]",
         pre + "/int[@name='20.0'][.='4'  ]",
         pre + "/int[@name='30.0'][.='1'  ]",
-        pre + "/int[@name='40.0'][.='0'  ]"
-        //
-        ,
+        pre + "/int[@name='40.0'][.='0'  ]",
         meta + "/int[@name='before' ][.='1']",
         meta + "/int[@name='after'  ][.='0']",
         meta + "/int[@name='between'][.='5']");
@@ -2277,9 +2217,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet.range.include", "outer"),
         "*[count(" + pre + "/int)=2]",
         pre + "/int[@name='10.0'][.='2'  ]",
-        pre + "/int[@name='20.0'][.='3'  ]"
-        //
-        ,
+        pre + "/int[@name='20.0'][.='3'  ]",
         meta + "/int[@name='before' ][.='0']",
         meta + "/int[@name='after'  ][.='2']",
         meta + "/int[@name='between'][.='5']");
@@ -2300,9 +2238,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet.range.include", "edge"),
         "*[count(" + pre + "/int)=2]",
         pre + "/int[@name='10.0'][.='1'  ]",
-        pre + "/int[@name='20.0'][.='4'  ]"
-        //
-        ,
+        pre + "/int[@name='20.0'][.='4'  ]",
         meta + "/int[@name='before' ][.='0']",
         meta + "/int[@name='after'  ][.='1']",
         meta + "/int[@name='between'][.='5']");
@@ -2323,9 +2259,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet.range.include", "outer"),
         "*[count(" + pre + "/int)=2]",
         pre + "/int[@name='20.0'][.='3'  ]",
-        pre + "/int[@name='30.0'][.='2'  ]"
-        //
-        ,
+        pre + "/int[@name='30.0'][.='2'  ]",
         meta + "/int[@name='before' ][.='2']",
         meta + "/int[@name='after'  ][.='0']",
         meta + "/int[@name='between'][.='5']");
@@ -2348,9 +2282,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet.range.include", "outer"),
         "*[count(" + pre + "/int)=2]",
         pre + "/int[@name='20.0'][.='3'  ]",
-        pre + "/int[@name='30.0'][.='2'  ]"
-        //
-        ,
+        pre + "/int[@name='30.0'][.='2'  ]",
         meta + "/int[@name='before' ][.='2']",
         meta + "/int[@name='after'  ][.='1']",
         meta + "/int[@name='between'][.='5']");
@@ -2371,9 +2303,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "facet.range.include", "all"),
         "*[count(" + pre + "/int)=2]",
         pre + "/int[@name='20.0'][.='4'  ]",
-        pre + "/int[@name='30.0'][.='2'  ]"
-        //
-        ,
+        pre + "/int[@name='30.0'][.='2'  ]",
         meta + "/int[@name='before' ][.='2']",
         meta + "/int[@name='after'  ][.='1']",
         meta + "/int[@name='between'][.='5']");
@@ -2445,9 +2375,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "lower"),
         "*[count(" + pre + "/int)=3]",
         pre + "/int[@name='" + start + "'][.='6'  ]",
-        pre + "/int[@name='" + mid + "'][.='0'  ]"
-        //
-        ,
+        pre + "/int[@name='" + mid + "'][.='0'  ]",
         meta + "/long[@name='end'   ][.='" + end + "']",
         meta + "/int[@name='before' ][.='0']",
         meta + "/int[@name='after'  ][.='0']",
@@ -2483,9 +2411,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         "*[count(" + pre + "/int)=3]",
         pre + "/int[@name='35'][.='0'  ]",
         pre + "/int[@name='40'][.='3'  ]",
-        pre + "/int[@name='45'][.='3'  ]"
-        //
-        ,
+        pre + "/int[@name='45'][.='3'  ]",
         meta + "/int[@name='before' ][.='0']",
         meta + "/int[@name='after'  ][.='0']",
         meta + "/int[@name='between'][.='6']");
@@ -2506,9 +2432,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         "*[count(" + pre + "/int)=3]",
         pre + "/int[@name='35'][.='0'  ]",
         pre + "/int[@name='40'][.='4'  ]",
-        pre + "/int[@name='45'][.='2'  ]"
-        //
-        ,
+        pre + "/int[@name='45'][.='2'  ]",
         meta + "/int[@name='before' ][.='0']",
         meta + "/int[@name='after'  ][.='0']",
         meta + "/int[@name='between'][.='6']");

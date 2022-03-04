@@ -145,8 +145,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     cloudSolrClient.commit();
 
     // do some random iterations of replacing docs, atomic updates against segment sort field, and
-    // commits
-    // (at this point we're just sanity checking no serious failures)
+    // commits (at this point we're just sanity checking no serious failures)
     for (int iter = 0; iter < 20; iter++) {
       final int iterSize = atLeast(20);
       for (int i = 0; i < iterSize; i++) {
