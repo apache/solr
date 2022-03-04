@@ -17,28 +17,26 @@
 
 package org.apache.solr.util.configuration.providers;
 
-import java.util.EnumMap;
-import java.util.Map;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-
 import static org.apache.solr.util.configuration.SSLCredentialProvider.CredentialType.SSL_CLIENT_KEY_STORE_PASSWORD;
 import static org.apache.solr.util.configuration.SSLCredentialProvider.CredentialType.SSL_CLIENT_TRUST_STORE_PASSWORD;
 import static org.apache.solr.util.configuration.SSLCredentialProvider.CredentialType.SSL_KEY_STORE_PASSWORD;
 import static org.apache.solr.util.configuration.SSLCredentialProvider.CredentialType.SSL_TRUST_STORE_PASSWORD;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+import java.util.EnumMap;
+import java.util.Map;
 
-/**
- * Environment variable based SSL configuration provider
- */
+/** Environment variable based SSL configuration provider */
 public class EnvSSLCredentialProvider extends AbstractSSLCredentialProvider {
 
   public static class EnvVars {
-    public static final String SOLR_SSL_CLIENT_KEY_STORE_PASSWORD = "SOLR_SSL_CLIENT_KEY_STORE_PASSWORD";
+    public static final String SOLR_SSL_CLIENT_KEY_STORE_PASSWORD =
+        "SOLR_SSL_CLIENT_KEY_STORE_PASSWORD";
     public static final String SOLR_SSL_KEY_STORE_PASSWORD = "SOLR_SSL_KEY_STORE_PASSWORD";
-    public static final String SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD = "SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD";
+    public static final String SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD =
+        "SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD";
     public static final String SOLR_SSL_TRUST_STORE_PASSWORD = "SOLR_SSL_TRUST_STORE_PASSWORD";
   }
 
@@ -49,12 +47,12 @@ public class EnvSSLCredentialProvider extends AbstractSSLCredentialProvider {
   }
 
   protected EnumMap<CredentialType, String> getCredentialKeyMap() {
-    return Maps.newEnumMap(ImmutableMap.of(
-        SSL_KEY_STORE_PASSWORD, EnvVars.SOLR_SSL_KEY_STORE_PASSWORD,
-        SSL_TRUST_STORE_PASSWORD, EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD,
-        SSL_CLIENT_KEY_STORE_PASSWORD, EnvVars.SOLR_SSL_CLIENT_KEY_STORE_PASSWORD,
-        SSL_CLIENT_TRUST_STORE_PASSWORD, EnvVars.SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD
-    ));
+    return Maps.newEnumMap(
+        ImmutableMap.of(
+            SSL_KEY_STORE_PASSWORD, EnvVars.SOLR_SSL_KEY_STORE_PASSWORD,
+            SSL_TRUST_STORE_PASSWORD, EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD,
+            SSL_CLIENT_KEY_STORE_PASSWORD, EnvVars.SOLR_SSL_CLIENT_KEY_STORE_PASSWORD,
+            SSL_CLIENT_TRUST_STORE_PASSWORD, EnvVars.SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD));
   }
 
   protected String getCredential(String envKey) {

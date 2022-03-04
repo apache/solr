@@ -16,6 +16,12 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
@@ -23,16 +29,11 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
-
 /**
  * V2 API for deleting collections.
  *
- * This API (DELETE /v2/collections/collectionName) is equivalent to the v1 /admin/collections?action=DELETE command.
+ * <p>This API (DELETE /v2/collections/collectionName) is equivalent to the v1
+ * /admin/collections?action=DELETE command.
  */
 public class DeleteCollectionAPI {
 
@@ -42,13 +43,18 @@ public class DeleteCollectionAPI {
     this.collectionsHandler = collectionsHandler;
   }
 
-  @EndPoint(path = {"/c/{collection}", "/collections/{collection}"},
-          method = DELETE,
-          permission = COLL_EDIT_PERM)
+  @EndPoint(
+      path = {"/c/{collection}", "/collections/{collection}"},
+      method = DELETE,
+      permission = COLL_EDIT_PERM)
   public void deleteCollection(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req = wrapParams(req, ACTION,
+    req =
+        wrapParams(
+            req,
+            ACTION,
             CollectionParams.CollectionAction.DELETE.toString(),
-            NAME, req.getPathTemplateValues().get(ZkStateReader.COLLECTION_PROP));
+            NAME,
+            req.getPathTemplateValues().get(ZkStateReader.COLLECTION_PROP));
     collectionsHandler.handleRequestBody(req, rsp);
   }
 }

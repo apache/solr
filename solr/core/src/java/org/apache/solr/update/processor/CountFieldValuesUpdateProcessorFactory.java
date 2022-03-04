@@ -16,29 +16,25 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
+
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
-
 /**
- * <p>
- * Replaces any list of values for a field matching the specified 
- * conditions with the count of the number of values for that field.
- * </p>
- * <p>
- * By default, this processor matches no fields.
- * </p>
- * <p>
- * The typical use case for this processor would be in combination with the 
- * {@link CloneFieldUpdateProcessorFactory} so that it's possible to query by 
- * the quantity of values in the source field.
- * <p>
- * For example, in the configuration below, the end result will be that the
- * <code>category_count</code> field can be used to search for documents based 
- * on how many values they contain in the <code>category</code> field.
- * </p>
+ * Replaces any list of values for a field matching the specified conditions with the count of the
+ * number of values for that field.
+ *
+ * <p>By default, this processor matches no fields.
+ *
+ * <p>The typical use case for this processor would be in combination with the {@link
+ * CloneFieldUpdateProcessorFactory} so that it's possible to query by the quantity of values in the
+ * source field.
+ *
+ * <p>For example, in the configuration below, the end result will be that the <code>category_count
+ * </code> field can be used to search for documents based on how many values they contain in the
+ * <code>category</code> field.
  *
  * <pre class="prettyprint">
  * &lt;processor class="solr.CloneFieldUpdateProcessorFactory"&gt;
@@ -53,29 +49,28 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.muta
  *   &lt;int name="value"&gt;0&lt;/int&gt;
  * &lt;/processor&gt;</pre>
  *
- * <p>
- * <b>NOTE:</b> The use of {@link DefaultValueUpdateProcessorFactory} is 
- * important in this example to ensure that all documents have a value for the 
- * <code>category_count</code> field, because 
- * <code>CountFieldValuesUpdateProcessorFactory</code> only <i>replaces</i> the
- * list of values with the size of that list.  If 
- * <code>DefaultValueUpdateProcessorFactory</code> was not used, then any 
- * document that had no values for the <code>category</code> field, would also 
- * have no value in the <code>category_count</code> field.
- * </p>
+ * <p><b>NOTE:</b> The use of {@link DefaultValueUpdateProcessorFactory} is important in this
+ * example to ensure that all documents have a value for the <code>category_count</code> field,
+ * because <code>CountFieldValuesUpdateProcessorFactory</code> only <i>replaces</i> the list of
+ * values with the size of that list. If <code>DefaultValueUpdateProcessorFactory</code> was not
+ * used, then any document that had no values for the <code>category</code> field, would also have
+ * no value in the <code>category_count</code> field.
+ *
  * @since 4.0.0
  */
-public final class CountFieldValuesUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
+public final class CountFieldValuesUpdateProcessorFactory
+    extends FieldMutatingUpdateProcessorFactory {
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req,
-                                            SolrQueryResponse rsp,
-                                            UpdateRequestProcessor next) {
-    return mutator(getSelector(), next, src -> {
-      SolrInputField result = new SolrInputField(src.getName());
-      result.setValue(src.getValueCount());
-      return result;
-    });
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    return mutator(
+        getSelector(),
+        next,
+        src -> {
+          SolrInputField result = new SolrInputField(src.getName());
+          result.setValue(src.getValueCount());
+          return result;
+        });
   }
 }
-

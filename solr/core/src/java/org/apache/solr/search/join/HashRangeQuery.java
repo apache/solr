@@ -17,6 +17,9 @@
 
 package org.apache.solr.search.join;
 
+import java.io.IOException;
+import java.util.Locale;
+import java.util.Objects;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -26,10 +29,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
-
-import java.io.IOException;
-import java.util.Locale;
-import java.util.Objects;
 
 public class HashRangeQuery extends Query {
 
@@ -46,7 +45,8 @@ public class HashRangeQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
@@ -59,18 +59,19 @@ public class HashRangeQuery extends Query {
         SortedDocValues docValues = context.reader().getSortedDocValues(field);
         int[] cache = getCache(context);
 
-        TwoPhaseIterator iterator = new TwoPhaseIterator(docValues) {
-          @Override
-          public boolean matches() throws IOException {
-            int hash = cache != null ? cache[docValues.docID()] : hash(docValues);
-            return hash >= lower && hash <= upper;
-          }
+        TwoPhaseIterator iterator =
+            new TwoPhaseIterator(docValues) {
+              @Override
+              public boolean matches() throws IOException {
+                int hash = cache != null ? cache[docValues.docID()] : hash(docValues);
+                return hash >= lower && hash <= upper;
+              }
 
-          @Override
-          public float matchCost() {
-            return cache != null ? 2 : 100;
-          }
-        };
+              @Override
+              public float matchCost() {
+                return cache != null ? 2 : 100;
+              }
+            };
 
         return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
@@ -82,25 +83,27 @@ public class HashRangeQuery extends Query {
         }
         @SuppressWarnings("unchecked")
         final SolrCache<IndexReader.CacheKey, int[]> cache =
-                ((SolrIndexSearcher) searcher).getCache(CACHE_KEY_PREFIX + field);
+            ((SolrIndexSearcher) searcher).getCache(CACHE_KEY_PREFIX + field);
         if (cache == null) {
           return null;
         }
 
         IndexReader.CacheKey cacheKey = cacheHelper.getKey();
-        return cache.computeIfAbsent(cacheKey, ck -> {
-          int[] hashes = new int[context.reader().maxDoc()];
-          SortedDocValues docValues = context.reader().getSortedDocValues(field);
-          int doc;
-          while ((doc = docValues.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            hashes[doc] = hash(docValues);
-          }
-          return hashes;
-        });
+        return cache.computeIfAbsent(
+            cacheKey,
+            ck -> {
+              int[] hashes = new int[context.reader().maxDoc()];
+              SortedDocValues docValues = context.reader().getSortedDocValues(field);
+              int doc;
+              while ((doc = docValues.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                hashes[doc] = hash(docValues);
+              }
+              return hashes;
+            });
       }
 
       private int hash(SortedDocValues docValues) throws IOException {
-        //TODO maybe cache hashCode if same ord as prev doc to save lookupOrd?
+        // TODO maybe cache hashCode if same ord as prev doc to save lookupOrd?
         BytesRef bytesRef = docValues.lookupOrd(docValues.ordValue());
         return Hash.murmurhash3_x86_32(bytesRef.bytes, bytesRef.offset, bytesRef.length, 0);
       }
@@ -119,8 +122,7 @@ public class HashRangeQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-            equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(HashRangeQuery other) {

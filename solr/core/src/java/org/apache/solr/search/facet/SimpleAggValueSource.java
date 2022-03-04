@@ -16,11 +16,11 @@
  */
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import java.io.IOException;
-import java.util.Map;
 
 public abstract class SimpleAggValueSource extends AggValueSource {
   ValueSource arg;
@@ -35,14 +35,15 @@ public abstract class SimpleAggValueSource extends AggValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public boolean equals(Object o) {
     if (!super.equals(o)) return false;
-    ValueSource otherArg = ((SimpleAggValueSource)o).arg;
+    ValueSource otherArg = ((SimpleAggValueSource) o).arg;
     if (arg == otherArg) return true;
     return (arg != null && arg.equals(otherArg));
   }
@@ -54,9 +55,6 @@ public abstract class SimpleAggValueSource extends AggValueSource {
 
   @Override
   public String description() {
-    return name() + "(" + (arg==null ? "" : arg.description()) + ")";
+    return name() + "(" + (arg == null ? "" : arg.description()) + ")";
   }
-
 }
-
-

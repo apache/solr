@@ -1158,13 +1158,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     controlClient.deleteByQuery(q);
     cloudClient.deleteByQuery(q);
 
-    /***
-     * for (SolrServer client : clients) {
-     * UpdateRequest ureq = new UpdateRequest();
-     * // ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
-     * ureq.deleteByQuery(q).process(client);
-     * }
-     ***/
+    //     for (SolrServer client : clients) {
+    //       UpdateRequest ureq = new UpdateRequest();
+    //       // ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
+    //       ureq.deleteByQuery(q).process(client);
+    //     }
   } // serial commit...
 
   protected void waitForRecoveriesToFinish(boolean verbose) throws Exception {

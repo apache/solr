@@ -16,17 +16,13 @@
  */
 package org.apache.solr.metrics.reporters.jmx;
 
+import com.codahale.metrics.jmx.ObjectNameFactory;
+import java.util.Arrays;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-
-import java.util.Arrays;
-
-import com.codahale.metrics.jmx.ObjectNameFactory;
 import org.apache.solr.metrics.SolrMetricInfo;
 
-/**
- * Factory to create MBean names for a given metric.
- */
+/** Factory to create MBean names for a given metric. */
 public class JmxObjectNameFactory implements ObjectNameFactory {
 
   private final String domain;
@@ -36,6 +32,7 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
 
   /**
    * Create ObjectName factory.
+   *
    * @param reporterName name of the reporter
    * @param domain JMX domain name
    * @param additionalProperties additional properties as key, value pairs.
@@ -45,21 +42,18 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
     this.domain = domain;
     this.subdomains = domain.replaceAll(":", "_").split("\\.");
     if (additionalProperties != null && (additionalProperties.length % 2) != 0) {
-      throw new IllegalArgumentException("additionalProperties length must be even: " + Arrays.toString(additionalProperties));
+      throw new IllegalArgumentException(
+          "additionalProperties length must be even: " + Arrays.toString(additionalProperties));
     }
     this.props = additionalProperties;
   }
 
-  /**
-   * Return current domain.
-   */
+  /** Return current domain. */
   public String getDomain() {
     return domain;
   }
 
-  /**
-   * Return current reporterName.
-   */
+  /** Return current reporterName. */
   public String getReporterName() {
     return reporterName;
   }
@@ -67,9 +61,9 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
   /**
    * Create a hierarchical name.
    *
-   * @param type    metric class, eg. "counters", may be null for non-metric MBeans
-   * @param currentDomain  JMX domain
-   * @param name    object name
+   * @param type metric class, eg. "counters", may be null for non-metric MBeans
+   * @param currentDomain JMX domain
+   * @param name object name
    */
   @Override
   public ObjectName createName(String type, String currentDomain, String name) {
@@ -145,7 +139,8 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
         if (i > 0) {
           sb.append(',');
         }
-        sb.append("name"); sb.append(String.valueOf(i));
+        sb.append("name");
+        sb.append(String.valueOf(i));
         sb.append('=');
         sb.append(path[i]);
       }

@@ -38,10 +38,10 @@ public class BitSetPerf {
       } while (target2.getAndSet(idx));
       target1.set(idx);
     }
-    /***
-     * int i=target1.cardinality();
-     * if (i!=bitsToSet || i!=target2.cardinality()) throw new RuntimeException();
-     ***/
+    /*
+    int i=target1.cardinality();
+    if (i!=bitsToSet || i!=target2.cardinality()) throw new RuntimeException();
+    */
   }
 
   public static void main(String[] args) {

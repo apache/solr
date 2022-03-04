@@ -17,16 +17,15 @@
 package org.apache.solr.search.function;
 
 import java.io.IOException;
-
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
 /**
- * <code>ConcatStringFunction</code> concatenates the string values of its 
- * components in the order given.
+ * <code>ConcatStringFunction</code> concatenates the string values of its components in the order
+ * given.
  */
 public class ConcatStringFunction extends MultiStringFunction {
-  public final static String NAME = "concat";
+  public static final String NAME = "concat";
 
   public ConcatStringFunction(ValueSource[] sources) {
     super(sources);
@@ -41,7 +40,7 @@ public class ConcatStringFunction extends MultiStringFunction {
     StringBuilder sb = new StringBuilder();
     for (FunctionValues val : valsArr) {
       String v = val.strVal(doc);
-      if(v == null){
+      if (v == null) {
         return null;
       } else {
         sb.append(v);
@@ -49,5 +48,4 @@ public class ConcatStringFunction extends MultiStringFunction {
     }
     return sb.toString();
   }
-
 }
