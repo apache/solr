@@ -33,7 +33,8 @@ public abstract class ReductionDataArrayWriter<C> extends ReductionDataWriter<C>
   }
 
   /**
-   * Write an array of data, retrieved from the extractor, and its size, received from the sizeSupplier, to the output stream.
+   * Write an array of data, retrieved from the extractor, and its size, received from the
+   * sizeSupplier, to the output stream.
    *
    * @throws IOException if an exception occurs while writing to the output stream
    */

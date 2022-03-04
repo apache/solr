@@ -17,22 +17,22 @@
 package org.apache.solr.analytics.value;
 
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 import org.apache.solr.analytics.value.constant.ConstantBooleanValue;
 
 /**
  * A single-valued analytics value that can be represented as a boolean.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #getBoolean()} and {@link #exists()},
- * resulting in different values on each call.
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #getBoolean()} and
+ * {@link #exists()}, resulting in different values on each call.
  */
 public interface BooleanValue extends BooleanValueStream, AnalyticsValue {
   /**
    * Get the boolean representation of the current value.
-   * <p>
-   * NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns {@code TRUE}.
+   *
+   * <p>NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns
+   * {@code TRUE}.
    *
    * @return the current value
    */
@@ -44,19 +44,22 @@ public interface BooleanValue extends BooleanValueStream, AnalyticsValue {
   public static interface CastingBooleanValue extends BooleanValue, StringValue, ComparableValue {}
 
   /**
-   * An abstract base for {@link CastingBooleanValue} that automatically casts to all types if {@link #getBoolean()} and {@link #exists()} are implemented.
+   * An abstract base for {@link CastingBooleanValue} that automatically casts to all types if
+   * {@link #getBoolean()} and {@link #exists()} are implemented.
    */
-  public static abstract class AbstractBooleanValue implements CastingBooleanValue {
+  public abstract static class AbstractBooleanValue implements CastingBooleanValue {
     @Override
     public String getString() {
       boolean val = getBoolean();
       return exists() ? Boolean.toString(val) : null;
     }
+
     @Override
     public Object getObject() {
       boolean val = getBoolean();
       return exists() ? val : null;
     }
+
     @Override
     public void streamBooleans(BooleanConsumer cons) {
       boolean val = getBoolean();
@@ -64,6 +67,7 @@ public interface BooleanValue extends BooleanValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamStrings(Consumer<String> cons) {
       String val = getString();
@@ -71,6 +75,7 @@ public interface BooleanValue extends BooleanValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public void streamObjects(Consumer<Object> cons) {
       Object val = getObject();
@@ -78,6 +83,7 @@ public interface BooleanValue extends BooleanValueStream, AnalyticsValue {
         cons.accept(val);
       }
     }
+
     @Override
     public AnalyticsValue convertToConstant() {
       if (getExpressionType().equals(ExpressionType.CONST)) {
@@ -85,6 +91,7 @@ public interface BooleanValue extends BooleanValueStream, AnalyticsValue {
       }
       return this;
     }
+
     @Override
     public ExpressionComparator<Boolean> getObjectComparator(String expression) {
       return new ExpressionComparator<>(expression);

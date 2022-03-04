@@ -20,127 +20,141 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 import org.apache.solr.analytics.value.AnalyticsValue;
-import org.apache.solr.analytics.value.AnalyticsValueStream;
-import org.apache.solr.analytics.value.BooleanValue;
-import org.apache.solr.analytics.value.BooleanValueStream;
-import org.apache.solr.analytics.value.DateValue;
-import org.apache.solr.analytics.value.DateValueStream;
-import org.apache.solr.analytics.value.DoubleValue;
-import org.apache.solr.analytics.value.DoubleValueStream;
-import org.apache.solr.analytics.value.FloatValue;
-import org.apache.solr.analytics.value.FloatValueStream;
-import org.apache.solr.analytics.value.IntValue;
-import org.apache.solr.analytics.value.IntValueStream;
-import org.apache.solr.analytics.value.LongValue;
-import org.apache.solr.analytics.value.LongValueStream;
-import org.apache.solr.analytics.value.StringValue;
-import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.AnalyticsValue.AbstractAnalyticsValue;
+import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.AnalyticsValueStream.AbstractAnalyticsValueStream;
+import org.apache.solr.analytics.value.BooleanValue;
 import org.apache.solr.analytics.value.BooleanValue.AbstractBooleanValue;
+import org.apache.solr.analytics.value.BooleanValueStream;
 import org.apache.solr.analytics.value.BooleanValueStream.AbstractBooleanValueStream;
+import org.apache.solr.analytics.value.DateValue;
 import org.apache.solr.analytics.value.DateValue.AbstractDateValue;
+import org.apache.solr.analytics.value.DateValueStream;
 import org.apache.solr.analytics.value.DateValueStream.AbstractDateValueStream;
+import org.apache.solr.analytics.value.DoubleValue;
 import org.apache.solr.analytics.value.DoubleValue.AbstractDoubleValue;
+import org.apache.solr.analytics.value.DoubleValueStream;
 import org.apache.solr.analytics.value.DoubleValueStream.AbstractDoubleValueStream;
+import org.apache.solr.analytics.value.FloatValue;
 import org.apache.solr.analytics.value.FloatValue.AbstractFloatValue;
+import org.apache.solr.analytics.value.FloatValueStream;
 import org.apache.solr.analytics.value.FloatValueStream.AbstractFloatValueStream;
+import org.apache.solr.analytics.value.IntValue;
 import org.apache.solr.analytics.value.IntValue.AbstractIntValue;
+import org.apache.solr.analytics.value.IntValueStream;
 import org.apache.solr.analytics.value.IntValueStream.AbstractIntValueStream;
+import org.apache.solr.analytics.value.LongValue;
 import org.apache.solr.analytics.value.LongValue.AbstractLongValue;
+import org.apache.solr.analytics.value.LongValueStream;
 import org.apache.solr.analytics.value.LongValueStream.AbstractLongValueStream;
+import org.apache.solr.analytics.value.StringValue;
 import org.apache.solr.analytics.value.StringValue.AbstractStringValue;
+import org.apache.solr.analytics.value.StringValueStream;
 import org.apache.solr.analytics.value.StringValueStream.AbstractStringValueStream;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
  * A mapping function to fill all non-existing values with a given value.
- * <p>
- * Uses:
+ *
+ * <p>Uses:
+ *
  * <ul>
- * <li>If two Values are passed in, a Value mimicking the first parameter with the second parameter used as filler will be returned.
- * <li>If two ValueStreams are passed in, a ValueStream mimicking the first parameter with the second parameter used as filler will be returned.
+ *   <li>If two Values are passed in, a Value mimicking the first parameter with the second
+ *       parameter used as filler will be returned.
+ *   <li>If two ValueStreams are passed in, a ValueStream mimicking the first parameter with the
+ *       second parameter used as filler will be returned.
  * </ul>
- * <p>
- * The resulting Value or ValueStream will be typed with the closest super-type of the two parameters.
- * (e.g. {@value #name}(double,int) will return a double)
+ *
+ * <p>The resulting Value or ValueStream will be typed with the closest super-type of the two
+ * parameters. (e.g. {@value #name}(double,int) will return a double)
  */
 public class FillMissingFunction {
   public static final String name = "fill_missing";
 
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length != 2) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 2 paramaters, " + params.length + " found.");
-    }
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length != 2) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "The " + name + " function requires 2 paramaters, " + params.length + " found.");
+        }
 
-    AnalyticsValueStream baseExpr = params[0];
-    AnalyticsValueStream fillExpr = params[1];
-    if (baseExpr instanceof DateValue && fillExpr instanceof DateValue) {
-      return new DateFillMissingFunction((DateValue)baseExpr,(DateValue)fillExpr);
-    }
-    if (baseExpr instanceof DateValueStream && fillExpr instanceof DateValueStream) {
-      return new DateStreamFillMissingFunction((DateValueStream)baseExpr,(DateValueStream)fillExpr);
-    }
-    if (baseExpr instanceof BooleanValue && fillExpr instanceof BooleanValue) {
-      return new BooleanFillMissingFunction((BooleanValue)baseExpr,(BooleanValue)fillExpr);
-    }
-    if (baseExpr instanceof BooleanValueStream && fillExpr instanceof BooleanValueStream) {
-      return new BooleanStreamFillMissingFunction((BooleanValueStream)baseExpr,(BooleanValueStream)fillExpr);
-    }
-    if (baseExpr instanceof IntValue && fillExpr instanceof IntValue) {
-      return new IntFillMissingFunction((IntValue)baseExpr,(IntValue)fillExpr);
-    }
-    if (baseExpr instanceof IntValueStream && fillExpr instanceof IntValueStream) {
-      return new IntStreamFillMissingFunction((IntValueStream)baseExpr,(IntValueStream)fillExpr);
-    }
-    if (baseExpr instanceof LongValue && fillExpr instanceof LongValue) {
-      return new LongFillMissingFunction((LongValue)baseExpr,(LongValue)fillExpr);
-    }
-    if (baseExpr instanceof LongValueStream && fillExpr instanceof LongValueStream) {
-      return new LongStreamFillMissingFunction((LongValueStream)baseExpr,(LongValueStream)fillExpr);
-    }
-    if (baseExpr instanceof FloatValue && fillExpr instanceof FloatValue) {
-      return new FloatFillMissingFunction((FloatValue)baseExpr,(FloatValue)fillExpr);
-    }
-    if (baseExpr instanceof FloatValueStream && fillExpr instanceof FloatValueStream) {
-      return new FloatStreamFillMissingFunction((FloatValueStream)baseExpr,(FloatValueStream)fillExpr);
-    }
-    if (baseExpr instanceof DoubleValue && fillExpr instanceof DoubleValue) {
-      return new DoubleFillMissingFunction((DoubleValue)baseExpr,(DoubleValue)fillExpr);
-    }
-    if (baseExpr instanceof DoubleValueStream && fillExpr instanceof DoubleValueStream) {
-      return new DoubleStreamFillMissingFunction((DoubleValueStream)baseExpr,(DoubleValueStream)fillExpr);
-    }
-    if (baseExpr instanceof StringValue && fillExpr instanceof StringValue) {
-      return new StringFillMissingFunction((StringValue)baseExpr,(StringValue)fillExpr);
-    }
-    if (baseExpr instanceof StringValueStream && fillExpr instanceof StringValueStream) {
-      return new StringStreamFillMissingFunction((StringValueStream)baseExpr,(StringValueStream)fillExpr);
-    }
-    if (baseExpr instanceof AnalyticsValue && fillExpr instanceof AnalyticsValue) {
-      return new ValueFillMissingFunction((AnalyticsValue)baseExpr,(AnalyticsValue)fillExpr);
-    }
-    return new StreamFillMissingFunction(baseExpr,fillExpr);
-  });
+        AnalyticsValueStream baseExpr = params[0];
+        AnalyticsValueStream fillExpr = params[1];
+        if (baseExpr instanceof DateValue && fillExpr instanceof DateValue) {
+          return new DateFillMissingFunction((DateValue) baseExpr, (DateValue) fillExpr);
+        }
+        if (baseExpr instanceof DateValueStream && fillExpr instanceof DateValueStream) {
+          return new DateStreamFillMissingFunction(
+              (DateValueStream) baseExpr, (DateValueStream) fillExpr);
+        }
+        if (baseExpr instanceof BooleanValue && fillExpr instanceof BooleanValue) {
+          return new BooleanFillMissingFunction((BooleanValue) baseExpr, (BooleanValue) fillExpr);
+        }
+        if (baseExpr instanceof BooleanValueStream && fillExpr instanceof BooleanValueStream) {
+          return new BooleanStreamFillMissingFunction(
+              (BooleanValueStream) baseExpr, (BooleanValueStream) fillExpr);
+        }
+        if (baseExpr instanceof IntValue && fillExpr instanceof IntValue) {
+          return new IntFillMissingFunction((IntValue) baseExpr, (IntValue) fillExpr);
+        }
+        if (baseExpr instanceof IntValueStream && fillExpr instanceof IntValueStream) {
+          return new IntStreamFillMissingFunction(
+              (IntValueStream) baseExpr, (IntValueStream) fillExpr);
+        }
+        if (baseExpr instanceof LongValue && fillExpr instanceof LongValue) {
+          return new LongFillMissingFunction((LongValue) baseExpr, (LongValue) fillExpr);
+        }
+        if (baseExpr instanceof LongValueStream && fillExpr instanceof LongValueStream) {
+          return new LongStreamFillMissingFunction(
+              (LongValueStream) baseExpr, (LongValueStream) fillExpr);
+        }
+        if (baseExpr instanceof FloatValue && fillExpr instanceof FloatValue) {
+          return new FloatFillMissingFunction((FloatValue) baseExpr, (FloatValue) fillExpr);
+        }
+        if (baseExpr instanceof FloatValueStream && fillExpr instanceof FloatValueStream) {
+          return new FloatStreamFillMissingFunction(
+              (FloatValueStream) baseExpr, (FloatValueStream) fillExpr);
+        }
+        if (baseExpr instanceof DoubleValue && fillExpr instanceof DoubleValue) {
+          return new DoubleFillMissingFunction((DoubleValue) baseExpr, (DoubleValue) fillExpr);
+        }
+        if (baseExpr instanceof DoubleValueStream && fillExpr instanceof DoubleValueStream) {
+          return new DoubleStreamFillMissingFunction(
+              (DoubleValueStream) baseExpr, (DoubleValueStream) fillExpr);
+        }
+        if (baseExpr instanceof StringValue && fillExpr instanceof StringValue) {
+          return new StringFillMissingFunction((StringValue) baseExpr, (StringValue) fillExpr);
+        }
+        if (baseExpr instanceof StringValueStream && fillExpr instanceof StringValueStream) {
+          return new StringStreamFillMissingFunction(
+              (StringValueStream) baseExpr, (StringValueStream) fillExpr);
+        }
+        if (baseExpr instanceof AnalyticsValue && fillExpr instanceof AnalyticsValue) {
+          return new ValueFillMissingFunction((AnalyticsValue) baseExpr, (AnalyticsValue) fillExpr);
+        }
+        return new StreamFillMissingFunction(baseExpr, fillExpr);
+      });
 
-  static class StreamFillMissingFunction extends AbstractAnalyticsValueStream implements Consumer<Object> {
+  static class StreamFillMissingFunction extends AbstractAnalyticsValueStream
+      implements Consumer<Object> {
     private final AnalyticsValueStream baseExpr;
     private final AnalyticsValueStream fillExpr;
     public static final String name = FillMissingFunction.name;
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public StreamFillMissingFunction(AnalyticsValueStream baseExpr, AnalyticsValueStream fillExpr) throws SolrException {
+    public StreamFillMissingFunction(AnalyticsValueStream baseExpr, AnalyticsValueStream fillExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -155,6 +169,7 @@ public class FillMissingFunction {
         fillExpr.streamObjects(cons);
       }
     }
+
     @Override
     public void accept(Object value) {
       exists = true;
@@ -165,10 +180,12 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -182,11 +199,12 @@ public class FillMissingFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public ValueFillMissingFunction(AnalyticsValue baseExpr, AnalyticsValue fillExpr) throws SolrException {
+    public ValueFillMissingFunction(AnalyticsValue baseExpr, AnalyticsValue fillExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -201,6 +219,7 @@ public class FillMissingFunction {
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -210,28 +229,32 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
     }
   }
 
-  static class BooleanStreamFillMissingFunction extends AbstractBooleanValueStream implements BooleanConsumer {
+  static class BooleanStreamFillMissingFunction extends AbstractBooleanValueStream
+      implements BooleanConsumer {
     private final BooleanValueStream baseExpr;
     private final BooleanValueStream fillExpr;
     public static final String name = FillMissingFunction.name;
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public BooleanStreamFillMissingFunction(BooleanValueStream baseExpr, BooleanValueStream fillExpr) throws SolrException {
+    public BooleanStreamFillMissingFunction(
+        BooleanValueStream baseExpr, BooleanValueStream fillExpr) throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -246,6 +269,7 @@ public class FillMissingFunction {
         fillExpr.streamBooleans(cons);
       }
     }
+
     @Override
     public void accept(boolean value) {
       exists = true;
@@ -256,10 +280,12 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -273,11 +299,12 @@ public class FillMissingFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public BooleanFillMissingFunction(BooleanValue baseExpr, BooleanValue fillExpr) throws SolrException {
+    public BooleanFillMissingFunction(BooleanValue baseExpr, BooleanValue fillExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -292,6 +319,7 @@ public class FillMissingFunction {
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -301,10 +329,12 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -318,11 +348,12 @@ public class FillMissingFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public IntStreamFillMissingFunction(IntValueStream baseExpr, IntValueStream fillExpr) throws SolrException {
+    public IntStreamFillMissingFunction(IntValueStream baseExpr, IntValueStream fillExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -337,6 +368,7 @@ public class FillMissingFunction {
         fillExpr.streamInts(cons);
       }
     }
+
     @Override
     public void accept(int value) {
       exists = true;
@@ -347,10 +379,12 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -367,8 +401,8 @@ public class FillMissingFunction {
     public IntFillMissingFunction(IntValue baseExpr, IntValue fillExpr) throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -383,6 +417,7 @@ public class FillMissingFunction {
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -392,28 +427,32 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
     }
   }
 
-  static class LongStreamFillMissingFunction extends AbstractLongValueStream implements LongConsumer {
+  static class LongStreamFillMissingFunction extends AbstractLongValueStream
+      implements LongConsumer {
     private final LongValueStream baseExpr;
     private final LongValueStream fillExpr;
     public static final String name = FillMissingFunction.name;
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public LongStreamFillMissingFunction(LongValueStream baseExpr, LongValueStream fillExpr) throws SolrException {
+    public LongStreamFillMissingFunction(LongValueStream baseExpr, LongValueStream fillExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -428,6 +467,7 @@ public class FillMissingFunction {
         fillExpr.streamLongs(cons);
       }
     }
+
     @Override
     public void accept(long value) {
       exists = true;
@@ -438,10 +478,12 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -458,8 +500,8 @@ public class FillMissingFunction {
     public LongFillMissingFunction(LongValue baseExpr, LongValue fillExpr) throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -474,6 +516,7 @@ public class FillMissingFunction {
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -483,28 +526,32 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
     }
   }
 
-  static class FloatStreamFillMissingFunction extends AbstractFloatValueStream implements FloatConsumer {
+  static class FloatStreamFillMissingFunction extends AbstractFloatValueStream
+      implements FloatConsumer {
     private final FloatValueStream baseExpr;
     private final FloatValueStream fillExpr;
     public static final String name = FillMissingFunction.name;
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public FloatStreamFillMissingFunction(FloatValueStream baseExpr, FloatValueStream fillExpr) throws SolrException {
+    public FloatStreamFillMissingFunction(FloatValueStream baseExpr, FloatValueStream fillExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -519,6 +566,7 @@ public class FillMissingFunction {
         fillExpr.streamFloats(cons);
       }
     }
+
     @Override
     public void accept(float value) {
       exists = true;
@@ -529,10 +577,12 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -549,8 +599,8 @@ public class FillMissingFunction {
     public FloatFillMissingFunction(FloatValue baseExpr, FloatValue fillExpr) throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -565,6 +615,7 @@ public class FillMissingFunction {
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -574,28 +625,32 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
     }
   }
 
-  static class DoubleStreamFillMissingFunction extends AbstractDoubleValueStream implements DoubleConsumer {
+  static class DoubleStreamFillMissingFunction extends AbstractDoubleValueStream
+      implements DoubleConsumer {
     private final DoubleValueStream baseExpr;
     private final DoubleValueStream fillExpr;
     public static final String name = FillMissingFunction.name;
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public DoubleStreamFillMissingFunction(DoubleValueStream baseExpr, DoubleValueStream fillExpr) throws SolrException {
+    public DoubleStreamFillMissingFunction(DoubleValueStream baseExpr, DoubleValueStream fillExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -610,6 +665,7 @@ public class FillMissingFunction {
         fillExpr.streamDoubles(cons);
       }
     }
+
     @Override
     public void accept(double value) {
       exists = true;
@@ -620,10 +676,12 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -637,11 +695,12 @@ public class FillMissingFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public DoubleFillMissingFunction(DoubleValue baseExpr, DoubleValue fillExpr) throws SolrException {
+    public DoubleFillMissingFunction(DoubleValue baseExpr, DoubleValue fillExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -656,6 +715,7 @@ public class FillMissingFunction {
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -665,28 +725,32 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
     }
   }
 
-  static class DateStreamFillMissingFunction extends AbstractDateValueStream implements LongConsumer {
+  static class DateStreamFillMissingFunction extends AbstractDateValueStream
+      implements LongConsumer {
     private final DateValueStream baseExpr;
     private final DateValueStream fillExpr;
     public static final String name = FillMissingFunction.name;
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public DateStreamFillMissingFunction(DateValueStream baseExpr, DateValueStream fillExpr) throws SolrException {
+    public DateStreamFillMissingFunction(DateValueStream baseExpr, DateValueStream fillExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -701,6 +765,7 @@ public class FillMissingFunction {
         fillExpr.streamLongs(cons);
       }
     }
+
     @Override
     public void accept(long value) {
       exists = true;
@@ -711,10 +776,12 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -731,8 +798,8 @@ public class FillMissingFunction {
     public DateFillMissingFunction(DateValue baseExpr, DateValue fillExpr) throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -747,6 +814,7 @@ public class FillMissingFunction {
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -756,28 +824,32 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
     }
   }
 
-  static class StringStreamFillMissingFunction extends AbstractStringValueStream implements Consumer<String> {
+  static class StringStreamFillMissingFunction extends AbstractStringValueStream
+      implements Consumer<String> {
     private final StringValueStream baseExpr;
     private final StringValueStream fillExpr;
     public static final String name = FillMissingFunction.name;
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public StringStreamFillMissingFunction(StringValueStream baseExpr, StringValueStream fillExpr) throws SolrException {
+    public StringStreamFillMissingFunction(StringValueStream baseExpr, StringValueStream fillExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -792,6 +864,7 @@ public class FillMissingFunction {
         fillExpr.streamStrings(cons);
       }
     }
+
     @Override
     public void accept(String value) {
       exists = true;
@@ -802,10 +875,12 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
@@ -819,11 +894,12 @@ public class FillMissingFunction {
     private final String exprStr;
     private final ExpressionType funcType;
 
-    public StringFillMissingFunction(StringValue baseExpr, StringValue fillExpr) throws SolrException {
+    public StringFillMissingFunction(StringValue baseExpr, StringValue fillExpr)
+        throws SolrException {
       this.baseExpr = baseExpr;
       this.fillExpr = fillExpr;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,fillExpr);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,fillExpr);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, baseExpr, fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, baseExpr, fillExpr);
     }
 
     boolean exists = false;
@@ -838,6 +914,7 @@ public class FillMissingFunction {
       }
       return value;
     }
+
     @Override
     public boolean exists() {
       return exists;
@@ -847,14 +924,15 @@ public class FillMissingFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
     }
   }
 }
-

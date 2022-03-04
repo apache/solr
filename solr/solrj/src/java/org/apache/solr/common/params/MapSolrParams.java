@@ -19,30 +19,31 @@ package org.apache.solr.common.params;
 import java.util.Iterator;
 import java.util.Map;
 
-/**
- * {@link SolrParams} implementation that can be built from and is backed by a {@link Map}.
- */
+/** {@link SolrParams} implementation that can be built from and is backed by a {@link Map}. */
 public class MapSolrParams extends SolrParams {
-  protected final Map<String,String> map;
+  protected final Map<String, String> map;
 
-  public MapSolrParams(Map<String,String> map) {
-    assert map.entrySet().stream().allMatch(e -> {
-      boolean hasStringKey = e.getKey() == null || e.getKey().getClass() == String.class;
-      boolean hasStringValue = e.getValue() == null || e.getValue().getClass() == String.class;
-      return hasStringKey && hasStringValue;
-    });
+  public MapSolrParams(Map<String, String> map) {
+    assert map.entrySet().stream()
+        .allMatch(
+            e -> {
+              boolean hasStringKey = e.getKey() == null || e.getKey().getClass() == String.class;
+              boolean hasStringValue =
+                  e.getValue() == null || e.getValue().getClass() == String.class;
+              return hasStringKey && hasStringValue;
+            });
     this.map = map;
   }
 
   @Override
   public String get(String name) {
-      return map.get(name);
+    return map.get(name);
   }
 
   @Override
   public String[] getParams(String name) {
     String val = map.get(name);
-    return val == null ? null : new String[] { val };
+    return val == null ? null : new String[] {val};
   }
 
   @Override
@@ -50,6 +51,7 @@ public class MapSolrParams extends SolrParams {
     return map.keySet().iterator();
   }
 
-  public Map<String,String> getMap() { return map; }
-
+  public Map<String, String> getMap() {
+    return map;
+  }
 }

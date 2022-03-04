@@ -20,13 +20,12 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-
 import org.apache.solr.analytics.util.function.FloatConsumer;
 
 /**
  * A multi-valued analytics value that can be represented as a int.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #streamInts},
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #streamInts},
  * resulting in different values on each call.
  */
 public interface IntValueStream extends AnalyticsValueStream {
@@ -38,35 +37,46 @@ public interface IntValueStream extends AnalyticsValueStream {
   void streamInts(IntConsumer cons);
 
   /**
-   * An interface that represents all of the types a {@link IntValueStream} should be able to cast to.
+   * An interface that represents all of the types a {@link IntValueStream} should be able to cast
+   * to.
    */
-  public static interface CastingIntValueStream extends IntValueStream, LongValueStream, FloatValueStream,
-                                                        DoubleValueStream, StringValueStream {}
+  public static interface CastingIntValueStream
+      extends IntValueStream,
+          LongValueStream,
+          FloatValueStream,
+          DoubleValueStream,
+          StringValueStream {}
 
   /**
-   * An abstract base for {@link CastingIntValueStream} that automatically casts to all types if {@link #streamInts} is implemented.
+   * An abstract base for {@link CastingIntValueStream} that automatically casts to all types if
+   * {@link #streamInts} is implemented.
    */
-  public static abstract class AbstractIntValueStream implements CastingIntValueStream {
+  public abstract static class AbstractIntValueStream implements CastingIntValueStream {
     @Override
     public void streamLongs(LongConsumer cons) {
       streamInts((int val) -> cons.accept(val));
     }
+
     @Override
     public void streamFloats(FloatConsumer cons) {
       streamInts((int val) -> cons.accept(val));
     }
+
     @Override
     public void streamDoubles(DoubleConsumer cons) {
       streamInts((int val) -> cons.accept(val));
     }
+
     @Override
     public void streamStrings(Consumer<String> cons) {
       streamInts((int val) -> cons.accept(Integer.toString(val)));
     }
+
     @Override
     public void streamObjects(Consumer<Object> cons) {
       streamInts((int val) -> cons.accept(val));
     }
+
     @Override
     public AnalyticsValueStream convertToConstant() {
       return this;

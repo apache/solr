@@ -370,7 +370,7 @@ public class AtomicUpdateDocumentMerger {
   public boolean doInPlaceUpdateMerge(AddUpdateCommand cmd, Set<String> updatedFields) throws IOException {
     SolrInputDocument inputDoc = cmd.getSolrInputDocument();
     BytesRef rootIdBytes = cmd.getIndexedId();
-    BytesRef idBytes = schema.indexableUniqueKey(cmd.getChildDocIdStr());
+    BytesRef idBytes = schema.indexableUniqueKey(cmd.getSelfOrNestedDocIdStr());
 
     updatedFields.add(CommonParams.VERSION_FIELD); // add the version field so that it is fetched too
     SolrInputDocument oldDocument = RealTimeGetComponent.getInputDocument

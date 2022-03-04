@@ -16,95 +16,103 @@
  */
 package org.apache.solr.client.solrj.io.stream.expr;
 
-
 import java.util.Objects;
 
-/**
- * Provides a named parameter
- */
+/** Provides a named parameter */
 public class StreamExpressionNamedParameter implements StreamExpressionParameter {
   private String name;
   private StreamExpressionParameter parameter;
-  
-  public StreamExpressionNamedParameter(String name){
+
+  public StreamExpressionNamedParameter(String name) {
     this.name = name;
   }
-  public StreamExpressionNamedParameter(String name, String parameter){
-    this.name = name;
-    setParameter(parameter);
-  }
-  public StreamExpressionNamedParameter(String name, StreamExpressionParameter parameter){
+
+  public StreamExpressionNamedParameter(String name, String parameter) {
     this.name = name;
     setParameter(parameter);
   }
-  
-  public String getName(){
+
+  public StreamExpressionNamedParameter(String name, StreamExpressionParameter parameter) {
+    this.name = name;
+    setParameter(parameter);
+  }
+
+  public String getName() {
     return this.name;
   }
-  public void setName(String name){
-    if(null == name || 0 == name.length()){
+
+  public void setName(String name) {
+    if (null == name || 0 == name.length()) {
       throw new IllegalArgumentException("Null or empty name is not allowed is not allowed.");
     }
-    
+
     this.name = name;
   }
-  
-  public StreamExpressionParameter getParameter(){
+
+  public StreamExpressionParameter getParameter() {
     return this.parameter;
   }
-  public void setParameter(StreamExpressionParameter parameter){
+
+  public void setParameter(StreamExpressionParameter parameter) {
     this.parameter = parameter;
   }
-  public StreamExpressionNamedParameter withParameter(StreamExpressionParameter parameter){
+
+  public StreamExpressionNamedParameter withParameter(StreamExpressionParameter parameter) {
     setParameter(parameter);
     return this;
   }
-  public void setParameter(String parameter){
+
+  public void setParameter(String parameter) {
     this.parameter = new StreamExpressionValue(parameter);
   }
-  public StreamExpressionNamedParameter withParameter(String parameter){
+
+  public StreamExpressionNamedParameter withParameter(String parameter) {
     setParameter(parameter);
     return this;
-  }  
-  
+  }
+
   @Override
-  public String toString(){
+  public String toString() {
     StringBuilder sb = new StringBuilder(name);
     sb.append("=");
-    
+
     // check if we require quoting
     boolean requiresQuote = false;
-    if(parameter instanceof StreamExpressionValue){
-      String value = ((StreamExpressionValue)parameter).getValue();
+    if (parameter instanceof StreamExpressionValue) {
+      String value = ((StreamExpressionValue) parameter).getValue();
       requiresQuote = !StreamExpressionParser.wordToken(value);
     }
-    
-    if(requiresQuote){ sb.append("\""); }
+
+    if (requiresQuote) {
+      sb.append("\"");
+    }
     sb.append(parameter.toString());
-    if(requiresQuote){ sb.append("\""); }
-    
+    if (requiresQuote) {
+      sb.append("\"");
+    }
+
     return sb.toString();
   }
-  
+
   @Override
-  public boolean equals(Object other){
-    if(other.getClass() != StreamExpressionNamedParameter.class){
+  public boolean equals(Object other) {
+    if (other.getClass() != StreamExpressionNamedParameter.class) {
       return false;
     }
-    
-    StreamExpressionNamedParameter check = (StreamExpressionNamedParameter)other;
-    
-    if(null == this.name && null != check.name){
+
+    StreamExpressionNamedParameter check = (StreamExpressionNamedParameter) other;
+
+    if (null == this.name && null != check.name) {
       return false;
     }
-    if(null != this.name && null == check.name){
+    if (null != this.name && null == check.name) {
       return false;
     }
-    
-    if(null != this.name && null != check.name && !this.name.equals(check.name)){
+
+    if (null != this.name && null != check.name && !this.name.equals(check.name)) {
       return false;
     }
-    
+
     return this.parameter.equals(check.parameter);
   }
 

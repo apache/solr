@@ -17,10 +17,8 @@
 
 package org.apache.solr.prometheus.exporter;
 
-import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
@@ -42,7 +40,8 @@ public class SolrClientFactory {
 
     standaloneBuilder.withBaseSolrUrl(solrHost);
 
-    standaloneBuilder.withConnectionTimeout(settings.getHttpConnectionTimeout())
+    standaloneBuilder
+        .withConnectionTimeout(settings.getHttpConnectionTimeout())
         .withSocketTimeout(settings.getHttpReadTimeout());
 
     HttpSolrClient httpSolrClient = standaloneBuilder.build();
@@ -57,13 +56,15 @@ public class SolrClientFactory {
 
     ConnectStringParser parser = new ConnectStringParser(zookeeperConnectionString);
 
-    CloudSolrClient.Builder cloudBuilder = new CloudSolrClient.Builder(
-        parser.getServerAddresses().stream()
-            .map(address -> String.format(Locale.ROOT, "%s:%s", address.getHostString(), address.getPort()))
-            .collect(Collectors.toList()),
-        Optional.ofNullable(parser.getChrootPath()));
+    CloudSolrClient.Builder cloudBuilder =
+        new CloudSolrClient.Builder(
+            parser.getServerAddresses().stream()
+                .map(address -> address.getHostString() + ":" + address.getPort())
+                .collect(Collectors.toList()),
+            Optional.ofNullable(parser.getChrootPath()));
 
-    cloudBuilder.withConnectionTimeout(settings.getHttpConnectionTimeout())
+    cloudBuilder
+        .withConnectionTimeout(settings.getHttpConnectionTimeout())
         .withSocketTimeout(settings.getHttpReadTimeout());
 
     CloudSolrClient client = cloudBuilder.build();
@@ -73,6 +74,4 @@ public class SolrClientFactory {
 
     return client;
   }
-
-
 }

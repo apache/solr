@@ -25,7 +25,6 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.Watcher;
@@ -35,75 +34,80 @@ import org.apache.zookeeper.ZooKeeper;
 @SuppressWarnings({"try"})
 public class SolrZooKeeper extends ZooKeeper {
   final Set<Thread> spawnedThreads = new CopyOnWriteArraySet<>();
-  
-  // for test debug
-  //static Map<SolrZooKeeper,Exception> clients = new ConcurrentHashMap<SolrZooKeeper,Exception>();
 
-  public SolrZooKeeper(String connectString, int sessionTimeout,
-      Watcher watcher) throws IOException {
+  // for test debug
+  // static Map<SolrZooKeeper,Exception> clients = new ConcurrentHashMap<SolrZooKeeper,Exception>();
+
+  public SolrZooKeeper(String connectString, int sessionTimeout, Watcher watcher)
+      throws IOException {
     super(connectString, sessionTimeout, watcher);
-    //clients.put(this, new RuntimeException());
+    // clients.put(this, new RuntimeException());
   }
-  
+
   public ClientCnxn getConnection() {
     return cnxn;
   }
-  
+
   public SocketAddress getSocketAddress() {
     return testableLocalSocketAddress();
   }
-  
+
   public void closeCnxn() {
-    final Thread t = new Thread(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          AccessController.doPrivileged((PrivilegedAction<Void>) this::closeZookeeperChannel);
-        } finally {
-          spawnedThreads.remove(Thread.currentThread());
-        }
-      }
-      
-      @SuppressForbidden(reason = "Hack for Zookeeper needs access to private methods.")
-      private Void closeZookeeperChannel() {
-        final ClientCnxn cnxn = getConnection();
-        synchronized (cnxn) {
-          try {
-            final Field sendThreadFld = cnxn.getClass().getDeclaredField("sendThread");
-            sendThreadFld.setAccessible(true);
-            Object sendThread = sendThreadFld.get(cnxn);
-            if (sendThread != null) {
-              Method method = sendThread.getClass().getDeclaredMethod("testableCloseSocket");
-              method.setAccessible(true);
-              try {
-                method.invoke(sendThread);
-              } catch (InvocationTargetException e) {
-                // is fine
+    final Thread t =
+        new Thread(
+            new Runnable() {
+              @Override
+              public void run() {
+                try {
+                  AccessController.doPrivileged(
+                      (PrivilegedAction<Void>) this::closeZookeeperChannel);
+                } finally {
+                  spawnedThreads.remove(Thread.currentThread());
+                }
               }
-            }
-          } catch (Exception e) {
-            throw new RuntimeException("Closing Zookeeper send channel failed.", e);
-          }
-        }
-        return null; // Void
-      }
-    }, "closeCnxn");
+
+              @SuppressForbidden(reason = "Hack for Zookeeper needs access to private methods.")
+              private Void closeZookeeperChannel() {
+                final ClientCnxn cnxn = getConnection();
+                synchronized (cnxn) {
+                  try {
+                    final Field sendThreadFld = cnxn.getClass().getDeclaredField("sendThread");
+                    sendThreadFld.setAccessible(true);
+                    Object sendThread = sendThreadFld.get(cnxn);
+                    if (sendThread != null) {
+                      Method method =
+                          sendThread.getClass().getDeclaredMethod("testableCloseSocket");
+                      method.setAccessible(true);
+                      try {
+                        method.invoke(sendThread);
+                      } catch (InvocationTargetException e) {
+                        // is fine
+                      }
+                    }
+                  } catch (Exception e) {
+                    throw new RuntimeException("Closing Zookeeper send channel failed.", e);
+                  }
+                }
+                return null; // Void
+              }
+            },
+            "closeCnxn");
     spawnedThreads.add(t);
     t.start();
   }
-  
+
   @Override
   public synchronized void close() throws InterruptedException {
     super.close();
   }
-  
-//  public static void assertCloses() {
-//    if (clients.size() > 0) {
-//      Iterator<Exception> stacktraces = clients.values().iterator();
-//      Exception cause = null;
-//      cause = stacktraces.next();
-//      throw new RuntimeException("Found a bad one!", cause);
-//    }
-//  }
-  
+
+  //  public static void assertCloses() {
+  //    if (clients.size() > 0) {
+  //      Iterator<Exception> stacktraces = clients.values().iterator();
+  //      Exception cause = null;
+  //      cause = stacktraces.next();
+  //      throw new RuntimeException("Found a bad one!", cause);
+  //    }
+  //  }
+
 }

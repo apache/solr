@@ -51,6 +51,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrPaths;
 import org.apache.solr.filestore.PackageStoreAPI.MetaData;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -79,7 +80,6 @@ public class DistribPackageStore implements PackageStore {
   public DistribPackageStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     this.solrhome = Paths.get(this.coreContainer.getSolrHome());
-    ensurePackageStoreDir(Paths.get(coreContainer.getSolrHome()));
   }
 
   @Override
@@ -91,11 +91,16 @@ public class DistribPackageStore implements PackageStore {
     if (File.separatorChar == '\\') {
       path = path.replace('/', File.separatorChar);
     }
-    if (!path.isEmpty() && path.charAt(0) != File.separatorChar) {
-      path = File.separator + path;
+    SolrPaths.assertNotUnc(Path.of(path));
+    while (path.startsWith(File.separator)) { // Trim all leading slashes
+      path = path.substring(1);
     }
-    // Use concat because path might start with a slash and be incorrectly interpreted as absolute
-    return solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY + path);
+    var finalPath = getPackageStoreDirPath(solrHome).resolve(path);
+    // Guard against path traversal by asserting final path is sub path of filestore
+    if (!finalPath.normalize().startsWith(getPackageStoreDirPath(solrHome).normalize())) {
+      throw new SolrException(BAD_REQUEST, "Illegal path " + path);
+    }
+    return finalPath;
   }
 
   class FileInfo {
@@ -557,22 +562,17 @@ public class DistribPackageStore implements PackageStore {
     return file.charAt(0) == '.' && file.endsWith(".json");
   }
 
-  private void ensurePackageStoreDir(Path solrHome) {
-    final File packageStoreDir = getPackageStoreDirPath(solrHome).toFile();
-    if (!packageStoreDir.exists()) {
+  public static synchronized Path getPackageStoreDirPath(Path solrHome) {
+    var path = solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
+    if (!Files.exists(path)) {
       try {
-        final boolean created = packageStoreDir.mkdirs();
-        if (!created) {
-          log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", packageStoreDir, solrHome);
-        }
-      } catch (Exception e) {
-        log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", packageStoreDir, solrHome, e);
+        Files.createDirectories(path);
+        log.info("Created filestore folder {}", path);
+      } catch (IOException e) {
+        throw new SolrException(SERVER_ERROR, "Failed creating 'filestore' folder in SOLR_HOME", e);
       }
     }
-  }
-
-  public static Path getPackageStoreDirPath(Path solrHome) {
-    return solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
+    return path;
   }
 
   private static String _getMetapath(String path) {

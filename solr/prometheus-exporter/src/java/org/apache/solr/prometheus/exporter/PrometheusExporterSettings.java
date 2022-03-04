@@ -18,9 +18,8 @@
 package org.apache.solr.prometheus.exporter;
 
 import java.util.List;
-
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.NamedList;
 import org.w3c.dom.Node;
 
 public class PrometheusExporterSettings {
@@ -36,9 +35,7 @@ public class PrometheusExporterSettings {
     private int httpConnectionTimeout = 10000;
     private int httpReadTimeout = 60000;
 
-    private Builder() {
-
-    }
+    private Builder() {}
 
     public Builder withConnectionHttpTimeout(int httpConnectionTimeout) {
       this.httpConnectionTimeout = httpConnectionTimeout;
@@ -53,7 +50,6 @@ public class PrometheusExporterSettings {
     public PrometheusExporterSettings build() {
       return new PrometheusExporterSettings(httpConnectionTimeout, httpReadTimeout);
     }
-
   }
 
   public static PrometheusExporterSettings from(Node settings) {
@@ -79,9 +75,7 @@ public class PrometheusExporterSettings {
     return builder.build();
   }
 
-  private PrometheusExporterSettings(
-      int httpConnectionTimeout,
-      int httpReadTimeout) {
+  private PrometheusExporterSettings(int httpConnectionTimeout, int httpReadTimeout) {
     this.httpConnectionTimeout = httpConnectionTimeout;
     this.httpReadTimeout = httpReadTimeout;
   }
@@ -93,5 +87,4 @@ public class PrometheusExporterSettings {
   public int getHttpReadTimeout() {
     return httpReadTimeout;
   }
-
 }

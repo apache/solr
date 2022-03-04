@@ -22,13 +22,17 @@ import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
-
 import org.apache.solr.analytics.stream.reservation.read.DoubleDataArrayReader;
 import org.apache.solr.analytics.stream.reservation.write.DoubleDataArrayWriter;
 
-public class DoubleArrayReservation extends ReductionDataArrayReservation<DoubleConsumer, DoubleSupplier> {
+public class DoubleArrayReservation
+    extends ReductionDataArrayReservation<DoubleConsumer, DoubleSupplier> {
 
-  public DoubleArrayReservation(DoubleConsumer applier, IntConsumer sizeApplier, DoubleSupplier extractor, IntSupplier sizeExtractor) {
+  public DoubleArrayReservation(
+      DoubleConsumer applier,
+      IntConsumer sizeApplier,
+      DoubleSupplier extractor,
+      IntSupplier sizeExtractor) {
     super(applier, sizeApplier, extractor, sizeExtractor);
   }
 

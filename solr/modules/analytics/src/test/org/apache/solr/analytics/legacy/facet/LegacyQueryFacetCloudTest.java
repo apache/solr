@@ -16,10 +16,8 @@
  */
 package org.apache.solr.analytics.legacy.facet;
 
-
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
@@ -51,15 +49,15 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
   @Before
   public void beforeTest() throws Exception {
 
-    //INT
+    // INT
     int1TestStart.add(new ArrayList<Integer>());
     int2TestStart.add(new ArrayList<Integer>());
 
-    //LONG
+    // LONG
     longTestStart.add(new ArrayList<Long>());
     longTestStart.add(new ArrayList<Long>());
 
-    //FLOAT
+    // FLOAT
     floatTestStart.add(new ArrayList<Float>());
     floatTestStart.add(new ArrayList<Float>());
     floatTestStart.add(new ArrayList<Float>());
@@ -67,27 +65,34 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
     UpdateRequest req = new UpdateRequest();
 
     for (int j = 0; j < NUM_LOOPS; ++j) {
-      int i = j%INT;
-      long l = j%LONG;
-      float f = j%FLOAT;
-      double d = j%DOUBLE;
-      int dt = j%DATE;
-      int s = j%STRING;
+      int i = j % INT;
+      long l = j % LONG;
+      float f = j % FLOAT;
+      double d = j % DOUBLE;
+      int dt = j % DATE;
+      int s = j % STRING;
 
       List<String> fields = new ArrayList<>();
-      fields.add("id"); fields.add("1000"+j);
-      fields.add("int_id"); fields.add("" + i);
-      fields.add("long_ld"); fields.add("" + l);
-      fields.add("float_fd"); fields.add("" + f);
-      fields.add("double_dd"); fields.add("" + d);
-      fields.add("date_dtd"); fields.add((1000+dt) + "-01-01T23:59:59Z");
-      fields.add("string_sd"); fields.add("abc" + s);
+      fields.add("id");
+      fields.add("1000" + j);
+      fields.add("int_id");
+      fields.add("" + i);
+      fields.add("long_ld");
+      fields.add("" + l);
+      fields.add("float_fd");
+      fields.add("" + f);
+      fields.add("double_dd");
+      fields.add("" + d);
+      fields.add("date_dtd");
+      fields.add((1000 + dt) + "-01-01T23:59:59Z");
+      fields.add("string_sd");
+      fields.add("abc" + s);
       req.add(fields.toArray(new String[0]));
 
-      if (f<=50) {
+      if (f <= 50) {
         int1TestStart.get(0).add(i);
       }
-      if (f<=30) {
+      if (f <= 30) {
         int2TestStart.get(0).add(i);
       }
       if (s == 1) {
@@ -96,13 +101,13 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
       if (s == 2) {
         longTestStart.get(1).add(l);
       }
-      if (l>=30) {
+      if (l >= 30) {
         floatTestStart.get(0).add(f);
       }
-      if (d<=50) {
+      if (d <= 50) {
         floatTestStart.get(1).add(f);
       }
-      if (l>=20) {
+      if (l >= 20) {
         floatTestStart.get(2).add(f);
       }
     }
@@ -113,55 +118,56 @@ public class LegacyQueryFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
   @SuppressWarnings("unchecked")
   @Test
   public void queryTest() throws Exception {
-    String[] params = new String[] {
-        "o.ir.s.sum", "sum(int_id)",
-        "o.ir.s.mean", "mean(int_id)",
-        "o.ir.s.median", "median(int_id)",
-        "o.ir.s.percentile_8", "percentile(8,int_id)",
-        "o.ir.qf", "float1",
-        "o.ir.qf.float1.q", "float_fd:[* TO 50]",
-        "o.ir.qf", "float2",
-        "o.ir.qf.float2.q", "float_fd:[* TO 30]",
-
-        "o.lr.s.sum", "sum(long_ld)",
-        "o.lr.s.mean", "mean(long_ld)",
-        "o.lr.s.median", "median(long_ld)",
-        "o.lr.s.percentile_8", "percentile(8,long_ld)",
-        "o.lr.qf", "string",
-        "o.lr.qf.string.q", "string_sd:abc1",
-        "o.lr.qf.string.q", "string_sd:abc2",
-
-        "o.fr.s.sum", "sum(float_fd)",
-        "o.fr.s.mean", "mean(float_fd)",
-        "o.fr.s.median", "median(float_fd)",
-        "o.fr.s.percentile_8", "percentile(8,float_fd)",
-        "o.fr.qf", "lad",
-        "o.fr.qf.lad.q", "long_ld:[20 TO *]",
-        "o.fr.qf.lad.q", "long_ld:[30 TO *]",
-        "o.fr.qf.lad.q", "double_dd:[* TO 50]"
-    };
+    String[] params =
+        new String[] {
+          "o.ir.s.sum", "sum(int_id)",
+          "o.ir.s.mean", "mean(int_id)",
+          "o.ir.s.median", "median(int_id)",
+          "o.ir.s.percentile_8", "percentile(8,int_id)",
+          "o.ir.qf", "float1",
+          "o.ir.qf.float1.q", "float_fd:[* TO 50]",
+          "o.ir.qf", "float2",
+          "o.ir.qf.float2.q", "float_fd:[* TO 30]",
+          "o.lr.s.sum", "sum(long_ld)",
+          "o.lr.s.mean", "mean(long_ld)",
+          "o.lr.s.median", "median(long_ld)",
+          "o.lr.s.percentile_8", "percentile(8,long_ld)",
+          "o.lr.qf", "string",
+          "o.lr.qf.string.q", "string_sd:abc1",
+          "o.lr.qf.string.q", "string_sd:abc2",
+          "o.fr.s.sum", "sum(float_fd)",
+          "o.fr.s.mean", "mean(float_fd)",
+          "o.fr.s.median", "median(float_fd)",
+          "o.fr.s.percentile_8", "percentile(8,float_fd)",
+          "o.fr.qf", "lad",
+          "o.fr.qf.lad.q", "long_ld:[20 TO *]",
+          "o.fr.qf.lad.q", "long_ld:[30 TO *]",
+          "o.fr.qf.lad.q", "double_dd:[* TO 50]"
+        };
 
     NamedList<Object> response = queryLegacyCloudAnalytics(params);
     String responseStr = response.toString();
 
-    //Int One
+    // Int One
     ArrayList<Double> int1 = getValueList(response, "ir", "queryFacets", "float1", "sum", false);
     ArrayList<Double> int1Test = calculateFacetedNumberStat(int1TestStart, "sum");
     assertEquals(responseStr, int1, int1Test);
-    //Int Two
-    ArrayList<Integer> int2 = getValueList(response, "ir", "queryFacets", "float2", "percentile_8", false);
-    ArrayList<Integer> int2Test = (ArrayList<Integer>)calculateFacetedStat(int2TestStart, "perc_8");
+    // Int Two
+    ArrayList<Integer> int2 =
+        getValueList(response, "ir", "queryFacets", "float2", "percentile_8", false);
+    ArrayList<Integer> int2Test =
+        (ArrayList<Integer>) calculateFacetedStat(int2TestStart, "perc_8");
     assertEquals(responseStr, int2, int2Test);
 
-    //Long
-    ArrayList<Double> long1 = getValueList(response, "lr", "queryFacets", "string", "median", false);
+    // Long
+    ArrayList<Double> long1 =
+        getValueList(response, "lr", "queryFacets", "string", "median", false);
     ArrayList<Double> long1Test = calculateFacetedNumberStat(longTestStart, "median");
-    assertEquals(responseStr,long1,long1Test);
+    assertEquals(responseStr, long1, long1Test);
 
-    //Float
+    // Float
     ArrayList<Double> float1 = getValueList(response, "fr", "queryFacets", "lad", "mean", false);
     ArrayList<Double> float1Test = calculateFacetedNumberStat(floatTestStart, "mean");
     assertEquals(responseStr, float1, float1Test);
   }
-
 }

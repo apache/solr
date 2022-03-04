@@ -23,29 +23,31 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A class with which to safely build a streaming expression. Three types of parameters
- * (String, Numeric, Expression) are accepted and minimally type checked. All parameters
- * are positional (unnamed) so the order in which parameters are added must correspond to
- * the order of the parameters in the supplied expression string.<br><br>
+ * A class with which to safely build a streaming expression. Three types of parameters (String,
+ * Numeric, Expression) are accepted and minimally type checked. All parameters are positional
+ * (unnamed) so the order in which parameters are added must correspond to the order of the
+ * parameters in the supplied expression string.<br>
+ * <br>
  *
- * <p>Specifically, this class verifies that the parameter substitutions do not inject
- * additional expressions, and that the parameters are strings, valid numbers or valid
- * expressions producing the expected number of sub-expressions. The idea is not to provide
- * full type safety but rather to heuristically prevent the injection of malicious
- * expressions. The template expression and the parameters supplied must not contain
- * comments since injection of  comments could be used to hide one or more of the expected
- * expressions. Use {@link #stripComments(String)} to remove comments.<br><br>
+ * <p>Specifically, this class verifies that the parameter substitutions do not inject additional
+ * expressions, and that the parameters are strings, valid numbers or valid expressions producing
+ * the expected number of sub-expressions. The idea is not to provide full type safety but rather to
+ * heuristically prevent the injection of malicious expressions. The template expression and the
+ * parameters supplied must not contain comments since injection of comments could be used to hide
+ * one or more of the expected expressions. Use {@link #stripComments(String)} to remove comments.
+ * <br>
+ * <br>
  *
  * <p>Valid patterns for parameters are:
+ *
  * <ul>
- * <li>?$? for strings</li>
- * <li>?#? for numeric parameters in integer or decimal format (no exponents)</li>
- * <li>?(n)? for expressions producing n sub-expressions (minimum n=1)</li>
+ *   <li>?$? for strings
+ *   <li>?#? for numeric parameters in integer or decimal format (no exponents)
+ *   <li>?(n)? for expressions producing n sub-expressions (minimum n=1)
  * </ul>
  *
  * @since 8.0.0
  */
-
 public class InjectionDefense {
 
   private static final Pattern STRING_PARAM = Pattern.compile("\\?\\$\\?");
@@ -85,8 +87,13 @@ public class InjectionDefense {
     StreamExpression parsed = StreamExpressionParser.parse(exprStr);
     int actual = countExpressions(parsed);
     if (actual != expressionCount) {
-      throw new InjectedExpressionException("Expected Expression count ("+expressionCount+") does not match actual final " +
-          "expression count ("+actual+")! (possible injection attack?)");
+      throw new InjectedExpressionException(
+          "Expected Expression count ("
+              + expressionCount
+              + ") does not match actual final "
+              + "expression count ("
+              + actual
+              + ")! (possible injection attack?)");
     } else {
       return parsed;
     }
@@ -103,12 +110,12 @@ public class InjectionDefense {
     String exprStr = buildExpression();
     StreamExpression parsed = StreamExpressionParser.parse(exprStr);
     if (countExpressions(parsed) != expressionCount) {
-      throw new InjectedExpressionException("Expected Expression count does not match Actual final " +
-          "expression count! (possible injection attack?)");
+      throw new InjectedExpressionException(
+          "Expected Expression count does not match Actual final "
+              + "expression count! (possible injection attack?)");
     } else {
       return exprStr;
     }
-
   }
 
   String buildExpression() {
@@ -131,9 +138,10 @@ public class InjectionDefense {
     String result = buff.toString().trim();
     String noComments = stripComments(result).trim();
     if (!result.equals(noComments)) {
-      throw new IllegalStateException("Comments are not allowed in prepared expressions for security reasons " +
-          "please pre-process stripComments() first. If there were no comments, then they have been injected by " +
-          "a parameter value.");
+      throw new IllegalStateException(
+          "Comments are not allowed in prepared expressions for security reasons "
+              + "please pre-process stripComments() first. If there were no comments, then they have been injected by "
+              + "a parameter value.");
     }
     return buff.toString().trim();
   }
@@ -154,8 +162,9 @@ public class InjectionDefense {
       if (counter.find()) {
         Integer subExprCount = Integer.valueOf(counter.group());
         if (subExprCount < 1) {
-          throw new IllegalStateException("Expression Param must contribute at least 1 expression!" +
-              " ?(1)? is the minimum allowed ");
+          throw new IllegalStateException(
+              "Expression Param must contribute at least 1 expression!"
+                  + " ?(1)? is the minimum allowed ");
         }
         expressionCount += (subExprCount - 1); // the noop() we insert will get counted later.
       }
@@ -194,5 +203,4 @@ public class InjectionDefense {
     }
     return result;
   }
-
 }

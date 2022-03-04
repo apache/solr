@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -56,8 +55,8 @@ public class ExceptionStream extends TupleStream {
   }
 
   public Tuple read() {
-    if(openException != null) {
-      //There was an exception during the open.
+    if (openException != null) {
+      // There was an exception during the open.
       SolrException.log(log, openException);
       return Tuple.EXCEPTION(openException.getMessage(), true);
     }
@@ -69,15 +68,15 @@ public class ExceptionStream extends TupleStream {
       return Tuple.EXCEPTION(e.getMessage(), true);
     }
   }
-  
+
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
     return new StreamExplanation(getStreamNodeId().toString())
-      .withFunctionName("non-expressible")
-      .withImplementingClass(this.getClass().getName())
-      .withExpressionType(ExpressionType.STREAM_SOURCE)
-      .withExpression("non-expressible");
+        .withFunctionName("non-expressible")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_SOURCE)
+        .withExpression("non-expressible");
   }
 
   public StreamComparator getStreamSort() {

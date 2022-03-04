@@ -2911,7 +2911,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       //Lets sleep long enough for daemon updates to run.
       //Lets stop the daemons
-      ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream", "action", "list"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream", "action", "list"));
 
       int workersComplete = 0;
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
@@ -3085,7 +3085,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuples.size() == 2);
 
 
-      ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream", "action", "list"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream", "action", "list"));
 
       int workersComplete = 0;
 
@@ -3467,7 +3467,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       //Lets sleep long enough for daemon updates to run.
       //Lets stop the daemons
-      ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream", "action", "list"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream", "action", "list"));
 
       int workersComplete = 0;
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {

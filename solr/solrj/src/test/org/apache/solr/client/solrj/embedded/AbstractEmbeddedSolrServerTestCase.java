@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.File;
 import java.nio.file.Path;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -49,22 +48,23 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
     super.setUp();
 
     System.setProperty("solr.solr.home", SOLR_HOME.toString());
-    System.setProperty("configSetBaseDir", CONFIG_HOME.resolve("../configsets").normalize().toString());
+    System.setProperty(
+        "configSetBaseDir", CONFIG_HOME.resolve("../configsets").normalize().toString());
     System.out.println("Solr home: " + SOLR_HOME.toString());
 
-    //The index is always stored within a temporary directory
+    // The index is always stored within a temporary directory
     tempDir = createTempDir().toFile();
-    
-    File dataDir = new File(tempDir,"data1");
-    File dataDir2 = new File(tempDir,"data2");
+
+    File dataDir = new File(tempDir, "data1");
+    File dataDir2 = new File(tempDir, "data2");
     System.setProperty("dataDir1", dataDir.getAbsolutePath());
     System.setProperty("dataDir2", dataDir2.getAbsolutePath());
     System.setProperty("tempDir", tempDir.getAbsolutePath());
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
-    //cores.setPersistent(false);
+    // cores.setPersistent(false);
   }
-  
+
   protected Path getSolrXml() throws Exception {
     return SOLR_HOME.resolve("solr.xml");
   }
@@ -72,8 +72,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
   @Override
   @After
   public void tearDown() throws Exception {
-    if (cores != null)
-      cores.shutdown();
+    if (cores != null) cores.shutdown();
 
     System.clearProperty("dataDir1");
     System.clearProperty("dataDir2");
@@ -91,9 +90,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
     }
   }
 
-  protected void deleteAdditionalFiles() {
-
-  }
+  protected void deleteAdditionalFiles() {}
 
   protected SolrClient getSolrCore0() {
     return getSolrCore("core0");
@@ -106,5 +103,4 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
   protected SolrClient getSolrCore(String name) {
     return new EmbeddedSolrServer(cores, name);
   }
-
 }

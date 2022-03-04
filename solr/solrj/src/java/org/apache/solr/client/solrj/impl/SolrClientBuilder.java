@@ -29,49 +29,45 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
 
   /** The solution for the unchecked cast warning. */
   public abstract B getThis();
-  
-  /**
-   * Provides a {@link HttpClient} for the builder to use when creating clients.
-   */
+
+  /** Provides a {@link HttpClient} for the builder to use when creating clients. */
   public B withHttpClient(HttpClient httpClient) {
     this.httpClient = httpClient;
     return getThis();
   }
-  
-  /**
-   * Provides a {@link ResponseParser} for created clients to use when handling requests.
-   */
+
+  /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
   public B withResponseParser(ResponseParser responseParser) {
     this.responseParser = responseParser;
     return getThis();
   }
-  
+
   /**
-   * Tells {@link Builder} that created clients should obey the following timeout when connecting to Solr servers.
-   * <p>
-   * For valid values see {@link org.apache.http.client.config.RequestConfig#getConnectTimeout()}
-   * </p>
+   * Tells {@link Builder} that created clients should obey the following timeout when connecting to
+   * Solr servers.
+   *
+   * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getConnectTimeout()}
    */
   public B withConnectionTimeout(int connectionTimeoutMillis) {
     if (connectionTimeoutMillis < 0) {
       throw new IllegalArgumentException("connectionTimeoutMillis must be a non-negative integer.");
     }
-    
+
     this.connectionTimeoutMillis = connectionTimeoutMillis;
     return getThis();
   }
-  
+
   /**
-   * Tells {@link Builder} that created clients should set the following read timeout on all sockets.
-   * <p>
-   * For valid values see {@link org.apache.http.client.config.RequestConfig#getSocketTimeout()}
-   * </p>
+   * Tells {@link Builder} that created clients should set the following read timeout on all
+   * sockets.
+   *
+   * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getSocketTimeout()}
    */
   public B withSocketTimeout(int socketTimeoutMillis) {
     if (socketTimeoutMillis < 0) {
       throw new IllegalArgumentException("socketTimeoutMillis must be a non-negative integer.");
     }
-    
+
     this.socketTimeoutMillis = socketTimeoutMillis;
     return getThis();
   }

@@ -115,7 +115,7 @@ def noJavaPackageClasses(desc, file):
   with zipfile.ZipFile(file) as z2:
     for name2 in z2.namelist():
       if name2.endswith('.class') and (name2.startswith('java/') or name2.startswith('javax/')):
-        raise RuntimeError('%s contains sheisty class "%s"' %  (desc, name2))
+        raise RuntimeError('%s contains java or javax class "%s"' % (desc, name2))
 
 
 def decodeUTF8(bytes):
@@ -200,11 +200,13 @@ def checkAllJARs(topDir, gitRevision, version):
     if normRoot.endswith('/server/lib'):
       # Solr's example intentionally ships servlet JAR:
       continue
-    
+
     for file in files:
       if file.lower().endswith('.jar'):
-        if ((normRoot.endswith('/test-framework/lib') and file.startswith('jersey-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('xml-apis-'))):
+        if ((normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.activation-'))
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.annotation-api-'))
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.xml.bind-api-'))
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))):
           print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
           continue
         fullPath = '%s/%s' % (root, file)
@@ -229,6 +231,8 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   artifacts = []
 
   for text, subURL in ents:
+    if text == '.gitrev':
+      continue # Allow this in the distribution build directory
     if text == 'KEYS':
       raise RuntimeError('solr: release dir should not contain a KEYS file - only toplevel /dist/solr/KEYS is used')
     elif text == 'maven/':
@@ -714,7 +718,7 @@ def testSolrExample(unpackPath, javaPath, isSrc):
       if not cygwin:
         subprocess.call(['bin/solr','stop','-p','8983'])
       else:
-        subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True) 
+        subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
   except:
       print('      Stop failed due to: '+sys.exc_info()[0])
 
@@ -723,8 +727,8 @@ def testSolrExample(unpackPath, javaPath, isSrc):
     if not cygwin:
       runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
     else:
-      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True) 
-      
+      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True)
+
     if runExampleStatus != 0:
       raise RuntimeError('Failed to run the techproducts example, check log for previous errors.')
 
@@ -747,17 +751,17 @@ def testSolrExample(unpackPath, javaPath, isSrc):
       os.chdir(unpackPath+'/solr')
     else:
       os.chdir(unpackPath)
-    
+
     if not cygwin:
       subprocess.call(['bin/solr','stop','-p','8983'])
     else:
-      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True) 
+      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
 
   if isSrc:
     os.chdir(unpackPath+'/solr')
   else:
     os.chdir(unpackPath)
-    
+
 
 def removeTrailingZeros(version):
   return re.sub(r'(\.0)*$', '', version)
@@ -1102,9 +1106,14 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     print('  unshortened: %s' % newBaseURL)
     baseURL = newBaseURL
 
-  for text, subURL in getDirEntries(baseURL):
-    if text.lower().find('solr') != -1:
-      solrPath = subURL
+  if baseURL.endswith('distribution/build/release'):
+    # Used when building release locally in Jenkins
+    solrPath = baseURL
+  else:
+    # An ordinary release has a 'solr' sub folder
+    for text, subURL in getDirEntries(baseURL):
+      if text.lower() == 'solr/':
+        solrPath = subURL
 
   if solrPath is None:
     raise RuntimeError('could not find solr subdir')
