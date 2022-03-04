@@ -25,10 +25,9 @@ public abstract class SolrQueryBuilder implements QueryBuilder {
   protected final SolrQueryRequest req;
   protected final QueryBuilder queryFactory;
 
-  public SolrQueryBuilder(String defaultField, Analyzer analyzer,
-      SolrQueryRequest req, QueryBuilder queryFactory) {
+  public SolrQueryBuilder(
+      String defaultField, Analyzer analyzer, SolrQueryRequest req, QueryBuilder queryFactory) {
     this.req = req;
     this.queryFactory = queryFactory;
   }
-
 }

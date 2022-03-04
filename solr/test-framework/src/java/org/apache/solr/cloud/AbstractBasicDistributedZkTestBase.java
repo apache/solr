@@ -621,15 +621,15 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     query(
         false, new Object[] {"q", "*:*", "sort", i1 + " desc", "stats", "true", "stats.field", i1});
 
-    /*** TODO: the failure may come back in "exception"
-     * try {
-     * // test error produced for field that is invalid for schema
-     * query("q","*:*", "rows",100, "facet","true", "facet.field",invalidField, "facet.mincount",2);
-     * TestCase.fail("SolrServerException expected for invalid field that is not in schema");
-     * } catch (SolrServerException ex) {
-     * // expected
-     * }
-     ***/
+    /* TODO: the failure may come back in "exception"
+    try {
+      // test error produced for field that is invalid for schema
+      query("q","*:*", "rows",100, "facet","true", "facet.field",invalidField, "facet.mincount",2);
+      TestCase.fail("SolrServerException expected for invalid field that is not in schema");
+    } catch (SolrServerException ex) {
+      // expected
+    }
+    */
 
     // Try to get better coverage for refinement queries by turning off over requesting.
     // This makes it much more likely that we may not get the top facet values and hence

@@ -30,42 +30,41 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-
 /**
- * 
  * @since solr 1.3
  */
-public class VersionedFile 
-{
+public class VersionedFile {
   /* Open the latest version of a file... fileName if that exists, or
    * the last fileName.* after being sorted lexicographically.
    * Older versions of the file are deleted (and queued for deletion if
    * that fails).
    */
-  public static InputStream getLatestFile(String dirName, String fileName) throws FileNotFoundException 
-  {
-    Collection<File> oldFiles=null;
-    final String prefix = fileName+'.';
+  public static InputStream getLatestFile(String dirName, String fileName)
+      throws FileNotFoundException {
+    Collection<File> oldFiles = null;
+    final String prefix = fileName + '.';
     File f = new File(dirName, fileName);
     InputStream is = null;
 
     // there can be a race between checking for a file and opening it...
     // the user may have just put a new version in and deleted an old version.
     // try multiple times in a row.
-    for (int retry=0; retry<10 && is==null; retry++) {
+    for (int retry = 0; retry < 10 && is == null; retry++) {
       try {
         if (!f.exists()) {
           File dir = new File(dirName);
-          String[] names = dir.list(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-              return name.startsWith(prefix);
-            }
-          });
+          String[] names =
+              dir.list(
+                  new FilenameFilter() {
+                    @Override
+                    public boolean accept(File dir, String name) {
+                      return name.startsWith(prefix);
+                    }
+                  });
           Arrays.sort(names);
-          f = new File(dir, names[names.length-1]);
+          f = new File(dir, names[names.length - 1]);
           oldFiles = new ArrayList<>();
-          for (int i=0; i<names.length-1; i++) {
+          for (int i = 0; i < names.length - 1; i++) {
             oldFiles.add(new File(dir, names[i]));
           }
         }
@@ -90,6 +89,7 @@ public class VersionedFile
   }
 
   private static final Set<File> deleteList = new HashSet<>();
+
   private static synchronized void delete(Collection<File> files) {
     synchronized (deleteList) {
       deleteList.addAll(files);

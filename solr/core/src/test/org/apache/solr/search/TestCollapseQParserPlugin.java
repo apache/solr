@@ -837,10 +837,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
       assertQ(
           req(params),
           "*[count(//doc)=2]",
-          // since selector is bogus, group head is undefined
-          // (should be index order, but don't make absolute assumptions: segments may be
-          // re-ordered)
-          // key assertion is that there is one doc from each group & groups are in order
+          // since selector is bogus, group head is undefined (should be index order, but don't make
+          // absolute assumptions: segments may be re-ordered) key assertion is that there is one
+          // doc from each group & groups are in order
           "//result/doc[1]/*[@name='" + group + "'][starts-with(.,'1')]",
           "//result/doc[2]/*[@name='" + group + "'][starts-with(.,'2')]");
     }
@@ -1385,10 +1384,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                       "fq",
                       "{!collapse field=" + f + " nullPolicy=ignore " + selector + "}")),
               "*[count(//doc)=3]",
-              "//result/doc[1]/str[@name='id'][.='9']" // group C
-              ,
-              "//result/doc[2]/str[@name='id'][.='8']" // group A
-              ,
+              "//result/doc[1]/str[@name='id'][.='9']", // group C
+              "//result/doc[2]/str[@name='id'][.='8']", // group A
               "//result/doc[3]/str[@name='id'][.='3']" // group B
               );
           assertQ(
@@ -1403,12 +1400,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                       "fq",
                       "{!collapse field=" + f + " nullPolicy=ignore " + selector + "}")),
               "*[count(//doc)=4]",
-              "//result/doc[1]/str[@name='id'][.='1']" // elevated, prevents group A
-              ,
-              "//result/doc[2]/str[@name='id'][.='5']" // elevated, (also) prevents group A
-              ,
-              "//result/doc[3]/str[@name='id'][.='9']" // group C
-              ,
+              "//result/doc[1]/str[@name='id'][.='1']", // elevated, prevents group A
+              "//result/doc[2]/str[@name='id'][.='5']", // elevated, (also) prevents group A
+              "//result/doc[3]/str[@name='id'][.='9']", // group C
               "//result/doc[4]/str[@name='id'][.='3']" // group B
               );
           assertQ(
@@ -1423,14 +1417,10 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                       "fq",
                       "{!collapse field=" + f + " nullPolicy=ignore " + selector + "}")),
               "*[count(//doc)=5]",
-              "//result/doc[1]/str[@name='id'][.='0']" // elevated (null)
-              ,
-              "//result/doc[2]/str[@name='id'][.='7']" // elevated (null)
-              ,
-              "//result/doc[3]/str[@name='id'][.='9']" // group C
-              ,
-              "//result/doc[4]/str[@name='id'][.='8']" // group A
-              ,
+              "//result/doc[1]/str[@name='id'][.='0']", // elevated (null)
+              "//result/doc[2]/str[@name='id'][.='7']", // elevated (null)
+              "//result/doc[3]/str[@name='id'][.='9']", // group C
+              "//result/doc[4]/str[@name='id'][.='8']", // group A
               "//result/doc[5]/str[@name='id'][.='3']" // group B
               );
           assertQ(
@@ -1445,12 +1435,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                       "fq",
                       "{!collapse field=" + f + " nullPolicy=ignore " + selector + "}")),
               "*[count(//doc)=4]",
-              "//result/doc[1]/str[@name='id'][.='6']" // elevated, prevents group C
-              ,
-              "//result/doc[2]/str[@name='id'][.='0']" // elevated (null)
-              ,
-              "//result/doc[3]/str[@name='id'][.='8']" // group A
-              ,
+              "//result/doc[1]/str[@name='id'][.='6']", // elevated, prevents group C
+              "//result/doc[2]/str[@name='id'][.='0']", // elevated (null)
+              "//result/doc[3]/str[@name='id'][.='8']", // group A
               "//result/doc[4]/str[@name='id'][.='3']" // group B
               );
 
@@ -1463,12 +1450,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                       "fq",
                       "{!collapse field=" + f + " nullPolicy=collapse " + selector + "}")),
               "*[count(//doc)=4]",
-              "//result/doc[1]/str[@name='id'][.='9']" // group C
-              ,
-              "//result/doc[2]/str[@name='id'][.='8']" // group A
-              ,
-              "//result/doc[3]/str[@name='id'][.='7']" // group null
-              ,
+              "//result/doc[1]/str[@name='id'][.='9']", // group C
+              "//result/doc[2]/str[@name='id'][.='8']", // group A
+              "//result/doc[3]/str[@name='id'][.='7']", // group null
               "//result/doc[4]/str[@name='id'][.='3']" // group B
               );
           assertQ(
@@ -1483,14 +1467,10 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                       "fq",
                       "{!collapse field=" + f + " nullPolicy=collapse " + selector + "}")),
               "*[count(//doc)=5]",
-              "//result/doc[1]/str[@name='id'][.='1']" // elevated, prevents group A
-              ,
-              "//result/doc[2]/str[@name='id'][.='5']" // elevated, (also) prevents group A
-              ,
-              "//result/doc[3]/str[@name='id'][.='9']" // group C
-              ,
-              "//result/doc[4]/str[@name='id'][.='7']" // group null
-              ,
+              "//result/doc[1]/str[@name='id'][.='1']", // elevated, prevents group A
+              "//result/doc[2]/str[@name='id'][.='5']", // elevated, (also) prevents group A
+              "//result/doc[3]/str[@name='id'][.='9']", // group C
+              "//result/doc[4]/str[@name='id'][.='7']", // group null
               "//result/doc[5]/str[@name='id'][.='3']" // group B
               );
           assertQ(
@@ -1505,14 +1485,10 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                       "fq",
                       "{!collapse field=" + f + " nullPolicy=collapse " + selector + "}")),
               "*[count(//doc)=5]",
-              "//result/doc[1]/str[@name='id'][.='0']" // elevated (null)
-              ,
-              "//result/doc[2]/str[@name='id'][.='7']" // elevated (null)
-              ,
-              "//result/doc[3]/str[@name='id'][.='9']" // group C
-              ,
-              "//result/doc[4]/str[@name='id'][.='8']" // group A
-              ,
+              "//result/doc[1]/str[@name='id'][.='0']", // elevated (null)
+              "//result/doc[2]/str[@name='id'][.='7']", // elevated (null)
+              "//result/doc[3]/str[@name='id'][.='9']", // group C
+              "//result/doc[4]/str[@name='id'][.='8']", // group A
               "//result/doc[5]/str[@name='id'][.='3']" // group B
               );
           assertQ(
@@ -1527,12 +1503,9 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                       "fq",
                       "{!collapse field=" + f + " nullPolicy=collapse " + selector + "}")),
               "*[count(//doc)=4]",
-              "//result/doc[1]/str[@name='id'][.='6']" // elevated, prevents group C
-              ,
-              "//result/doc[2]/str[@name='id'][.='0']" // elevated (null)
-              ,
-              "//result/doc[3]/str[@name='id'][.='8']" // group A
-              ,
+              "//result/doc[1]/str[@name='id'][.='6']", // elevated, prevents group C
+              "//result/doc[2]/str[@name='id'][.='0']", // elevated (null)
+              "//result/doc[3]/str[@name='id'][.='8']", // group A
               "//result/doc[4]/str[@name='id'][.='3']" // group B
               );
 
@@ -1545,16 +1518,11 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                       "fq",
                       "{!collapse field=" + f + " nullPolicy=expand " + selector + "}")),
               "*[count(//doc)=6]",
-              "//result/doc[1]/str[@name='id'][.='9']" // group C
-              ,
-              "//result/doc[2]/str[@name='id'][.='8']" // group A
-              ,
-              "//result/doc[3]/str[@name='id'][.='7']" // null
-              ,
-              "//result/doc[4]/str[@name='id'][.='4']" // null
-              ,
-              "//result/doc[5]/str[@name='id'][.='3']" // group B
-              ,
+              "//result/doc[1]/str[@name='id'][.='9']", // group C
+              "//result/doc[2]/str[@name='id'][.='8']", // group A
+              "//result/doc[3]/str[@name='id'][.='7']", // null
+              "//result/doc[4]/str[@name='id'][.='4']", // null
+              "//result/doc[5]/str[@name='id'][.='3']", // group B
               "//result/doc[6]/str[@name='id'][.='0']" // null
               );
           assertQ(
@@ -1569,18 +1537,12 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                       "fq",
                       "{!collapse field=" + f + " nullPolicy=expand " + selector + "}")),
               "*[count(//doc)=7]",
-              "//result/doc[1]/str[@name='id'][.='1']" // elevated, prevents group A
-              ,
-              "//result/doc[2]/str[@name='id'][.='5']" // elevated, (also) prevents group A
-              ,
-              "//result/doc[3]/str[@name='id'][.='9']" // group C
-              ,
-              "//result/doc[4]/str[@name='id'][.='7']" // null
-              ,
-              "//result/doc[5]/str[@name='id'][.='4']" // null
-              ,
-              "//result/doc[6]/str[@name='id'][.='3']" // group B
-              ,
+              "//result/doc[1]/str[@name='id'][.='1']", // elevated, prevents group A
+              "//result/doc[2]/str[@name='id'][.='5']", // elevated, (also) prevents group A
+              "//result/doc[3]/str[@name='id'][.='9']", // group C
+              "//result/doc[4]/str[@name='id'][.='7']", // null
+              "//result/doc[5]/str[@name='id'][.='4']", // null
+              "//result/doc[6]/str[@name='id'][.='3']", // group B
               "//result/doc[7]/str[@name='id'][.='0']" // null
               );
           assertQ(
@@ -1595,16 +1557,11 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                       "fq",
                       "{!collapse field=" + f + " nullPolicy=expand " + selector + "}")),
               "*[count(//doc)=6]",
-              "//result/doc[1]/str[@name='id'][.='0']" // elevated (null)
-              ,
-              "//result/doc[2]/str[@name='id'][.='7']" // elevated (null)
-              ,
-              "//result/doc[3]/str[@name='id'][.='9']" // group C
-              ,
-              "//result/doc[4]/str[@name='id'][.='8']" // group A
-              ,
-              "//result/doc[5]/str[@name='id'][.='4']" // null
-              ,
+              "//result/doc[1]/str[@name='id'][.='0']", // elevated (null)
+              "//result/doc[2]/str[@name='id'][.='7']", // elevated (null)
+              "//result/doc[3]/str[@name='id'][.='9']", // group C
+              "//result/doc[4]/str[@name='id'][.='8']", // group A
+              "//result/doc[5]/str[@name='id'][.='4']", // null
               "//result/doc[6]/str[@name='id'][.='3']" // group B
               );
           assertQ(
@@ -1619,16 +1576,11 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                       "fq",
                       "{!collapse field=" + f + " nullPolicy=expand " + selector + "}")),
               "*[count(//doc)=6]",
-              "//result/doc[1]/str[@name='id'][.='6']" // elevated, prevents group C
-              ,
-              "//result/doc[2]/str[@name='id'][.='0']" // elevated (null)
-              ,
-              "//result/doc[3]/str[@name='id'][.='8']" // group A
-              ,
-              "//result/doc[4]/str[@name='id'][.='7']" // null
-              ,
-              "//result/doc[5]/str[@name='id'][.='4']" // null
-              ,
+              "//result/doc[1]/str[@name='id'][.='6']", // elevated, prevents group C
+              "//result/doc[2]/str[@name='id'][.='0']", // elevated (null)
+              "//result/doc[3]/str[@name='id'][.='8']", // group A
+              "//result/doc[4]/str[@name='id'][.='7']", // null
+              "//result/doc[5]/str[@name='id'][.='4']", // null
               "//result/doc[6]/str[@name='id'][.='3']" // group B
               );
         }

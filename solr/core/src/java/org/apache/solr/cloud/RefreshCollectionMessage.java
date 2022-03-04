@@ -22,9 +22,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.data.Stat;
 
-/**
- * Refresh the Cluster State for a given collection
- */
+/** Refresh the Cluster State for a given collection */
 public class RefreshCollectionMessage implements Overseer.Message {
   public final String collection;
 
@@ -33,14 +31,18 @@ public class RefreshCollectionMessage implements Overseer.Message {
   }
 
   public ClusterState run(ClusterState clusterState, Overseer overseer) throws Exception {
-    Stat stat = overseer.getZkStateReader().getZkClient().exists(ZkStateReader.getCollectionPath(collection), null, true);
+    Stat stat =
+        overseer
+            .getZkStateReader()
+            .getZkClient()
+            .exists(ZkStateReader.getCollectionPath(collection), null, true);
     if (stat == null) {
-      //collection does not exist
+      // collection does not exist
       return clusterState.copyWith(collection, null);
     }
     DocCollection coll = clusterState.getCollectionOrNull(collection);
     if (coll != null && !coll.isModified(stat.getVersion(), stat.getCversion())) {
-      //our state is up to date
+      // our state is up to date
       return clusterState;
     } else {
       coll = overseer.getZkStateReader().getCollectionLive(collection);

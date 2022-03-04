@@ -20,14 +20,15 @@ package org.apache.solr.util.configuration;
 import com.google.common.annotations.VisibleForTesting;
 
 public class SSLConfigurationsFactory {
-  static private SSLConfigurations currentConfigurations;
+  private static SSLConfigurations currentConfigurations;
 
   /**
-   * Creates if necessary and returns singleton object of Configurations. Can be used for
-   * static accessor of application-wide instance.
+   * Creates if necessary and returns singleton object of Configurations. Can be used for static
+   * accessor of application-wide instance.
+   *
    * @return Configurations object
    */
-  static public SSLConfigurations current() {
+  public static SSLConfigurations current() {
     if (currentConfigurations == null) {
       synchronized (SSLConfigurationsFactory.class) {
         if (currentConfigurations == null) {
@@ -43,7 +44,7 @@ public class SSLConfigurationsFactory {
   }
 
   @VisibleForTesting
-  static public synchronized void setCurrent(SSLConfigurations configurations) {
+  public static synchronized void setCurrent(SSLConfigurations configurations) {
     currentConfigurations = configurations;
   }
 }

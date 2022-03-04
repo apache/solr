@@ -762,13 +762,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       leaderJetty.start();
 
+      final TimeOut waitForLeaderToStart = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      waitForLeaderToStart.waitFor(
+          "Gave up after waiting an obscene amount of time for leader to start",
+          () -> leaderJetty.isRunning());
+
       // poll interval on follower is 1 second, so we just sleep for a few seconds
       Thread.sleep(2000);
       // get docs from follower and assert that they are still the same as before
       followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
-      followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
       assertEquals(nDocs, numFound(followerQueryRsp));
-
     } finally {
       resetFactory();
     }

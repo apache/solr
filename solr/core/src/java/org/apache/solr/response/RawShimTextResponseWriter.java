@@ -16,17 +16,17 @@
  */
 package org.apache.solr.response;
 
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.ReturnFields;
 
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
-
 /**
- * Utility class that delegates to another {@link TextResponseWriter}, but converts normal write requests
- * into "raw" requests that write field values directly to the delegate {@link TextResponseWriter}'s backing writer.
+ * Utility class that delegates to another {@link TextResponseWriter}, but converts normal write
+ * requests into "raw" requests that write field values directly to the delegate {@link
+ * TextResponseWriter}'s backing writer.
  */
 class RawShimTextResponseWriter extends TextResponseWriter {
 
@@ -50,12 +50,15 @@ class RawShimTextResponseWriter extends TextResponseWriter {
 
   // Other stuff; just no-op delegation
   @Override
-  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException {
+  public void writeStartDocumentList(
+      String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact)
+      throws IOException {
     backing.writeStartDocumentList(name, start, size, numFound, maxScore, numFoundExact);
   }
 
   @Override
-  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields fields, int idx) throws IOException {
+  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields fields, int idx)
+      throws IOException {
     backing.writeSolrDocument(name, doc, fields, idx);
   }
 
@@ -65,7 +68,8 @@ class RawShimTextResponseWriter extends TextResponseWriter {
   }
 
   @Override
-  public void writeMap(String name, Map<?, ?> val, boolean excludeOuter, boolean isFirstVal) throws IOException {
+  public void writeMap(String name, Map<?, ?> val, boolean excludeOuter, boolean isFirstVal)
+      throws IOException {
     backing.writeMap(name, val, excludeOuter, isFirstVal);
   }
 

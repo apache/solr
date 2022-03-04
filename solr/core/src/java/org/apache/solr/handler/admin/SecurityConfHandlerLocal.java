@@ -25,22 +25,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.common.util.CommandOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Security Configuration Handler which works on standalone local files
- */
+/** Security Configuration Handler which works on standalone local files */
 public class SecurityConfHandlerLocal extends SecurityConfHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected Path securityJsonPath;
-  
+
   public SecurityConfHandlerLocal(CoreContainer coreContainer) {
     super(coreContainer);
     securityJsonPath = Paths.get(coreContainer.getSolrHome()).resolve("security.json");
@@ -48,16 +45,21 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
 
   /**
    * Fetches security props from SOLR_HOME
+   *
    * @param getFresh NOP
-   * @return SecurityConfig whose data property either contains security.json, or an empty map if not found
+   * @return SecurityConfig whose data property either contains security.json, or an empty map if
+   *     not found
    */
   @Override
   public SecurityConfig getSecurityConfig(boolean getFresh) {
     if (Files.exists(securityJsonPath)) {
       try (InputStream securityJsonIs = Files.newInputStream(securityJsonPath)) {
         return new SecurityConfig().setData(securityJsonIs);
-      } catch (Exception e) { 
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed opening existing security.json file: " + securityJsonPath, e);
+      } catch (Exception e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Failed opening existing security.json file: " + securityJsonPath,
+            e);
       }
     }
     return new SecurityConfig();
@@ -70,24 +72,27 @@ public class SecurityConfHandlerLocal extends SecurityConfHandler {
     if (o == null) {
       rsp.add(CommandOperation.ERR_MSGS, Collections.singletonList("No " + key + " configured"));
     } else {
-      rsp.add(key+".enabled", getPlugin(key)!=null);
+      rsp.add(key + ".enabled", getPlugin(key) != null);
       rsp.add(key, o);
     }
   }
-  
+
   @Override
   protected boolean persistConf(SecurityConfig securityConfig) throws IOException {
     if (securityConfig == null || securityConfig.getData().isEmpty()) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
           "Failed persisting security.json to SOLR_HOME. Object was empty.");
     }
-    try(OutputStream securityJsonOs = Files.newOutputStream(securityJsonPath)) {
+    try (OutputStream securityJsonOs = Files.newOutputStream(securityJsonPath)) {
       securityJsonOs.write(Utils.toJSON(securityConfig.getData()));
       log.debug("Persisted security.json to {}", securityJsonPath);
       return true;
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
-          "Failed persisting security.json to " + securityJsonPath, e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Failed persisting security.json to " + securityJsonPath,
+          e);
     }
   }
 

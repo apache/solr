@@ -510,8 +510,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
         "//result/doc[1]/long[@name='regular_l'][.='999']",
         "//result/doc[2]/long[@name='regular_l'][.='2']",
         "//result/doc[3]/long[@name='regular_l'][.='3']",
-        "0=count(//result/doc[1]/float[@name='inplace_updatable_float'])" // not in new doc
-        ,
+        "0=count(//result/doc[1]/float[@name='inplace_updatable_float'])", // not in new doc
         "//result/doc[2]/float[@name='inplace_updatable_float'][.='44.0']",
         "//result/doc[3]/float[@name='inplace_updatable_float'][.='46.0']",
         "//result/doc[1]/long[@name='_version_'][.='" + version1 + "']",

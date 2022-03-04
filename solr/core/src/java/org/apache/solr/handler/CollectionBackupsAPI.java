@@ -16,6 +16,13 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
@@ -24,21 +31,11 @@ import org.apache.solr.client.solrj.request.beans.ListBackupPayload;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
-
-/**
- * V2 API definitions for
- */
+/** V2 API definitions for */
 @EndPoint(
-        path = {"/c/backups", "/collections/backups"},
-        method = POST,
-        permission = COLL_EDIT_PERM)
+    path = {"/c/backups", "/collections/backups"},
+    method = POST,
+    permission = COLL_EDIT_PERM)
 public class CollectionBackupsAPI {
 
   public static final String LIST_BACKUP_CMD = "list-backups";
