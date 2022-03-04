@@ -2678,7 +2678,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                         .getIndexCommit()
                         .getUserData()
                         .get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
-                if (servingVersion != null && Long.parseLong(servingVersion) == replicaIndexVersion) {
+                if (servingVersion != null
+                    && Long.parseLong(servingVersion) == replicaIndexVersion) {
                   break;
                 } else {
                   if (log.isInfoEnabled()) {
@@ -2715,7 +2716,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           }
           if (timeout.hasTimedOut()) {
             logReplicaTypesReplicationInfo(collectionName, zkStateReader);
-            fail(String.format(Locale.ROOT, "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)", pullReplica.getName(), replicaIndexVersion, leader.getName(), leaderIndexVersion));
+            fail(
+                String.format(
+                    Locale.ROOT,
+                    "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)",
+                    pullReplica.getName(),
+                    replicaIndexVersion,
+                    leader.getName(),
+                    leaderIndexVersion));
           }
           Thread.sleep(1000);
         }
