@@ -17,7 +17,6 @@
 package org.apache.solr.spelling.suggest.fst;
 
 import java.nio.charset.StandardCharsets;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.analyzing.FreeTextSuggester;
@@ -26,60 +25,52 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.spelling.suggest.LookupFactory;
 
-/** 
- * LookupFactory implementation for {@link FreeTextSuggester}
- * */
+/** LookupFactory implementation for {@link FreeTextSuggester} */
 public class FreeTextLookupFactory extends LookupFactory {
-  
-  /**
-   * The analyzer used at "query-time" and "build-time" to analyze suggestions.
-   */
+
+  /** The analyzer used at "query-time" and "build-time" to analyze suggestions. */
   public static final String QUERY_ANALYZER = "suggestFreeTextAnalyzerFieldType";
-  
-  /** 
-   * The n-gram model to use in the underlying suggester; Default value is 2.
-   * */
+
+  /** The n-gram model to use in the underlying suggester; Default value is 2. */
   public static final String NGRAMS = "ngrams";
-  
-  /**
-   * The separator to use in the underlying suggester;
-   * */
+
+  /** The separator to use in the underlying suggester; */
   public static final String SEPARATOR = "separator";
-  
-  /**
-   * File name for the automaton.
-   */
+
+  /** File name for the automaton. */
   private static final String FILENAME = "ftsta.bin";
-  
-  
+
   @Override
   public Lookup create(NamedList<?> params, SolrCore core) {
     Object fieldTypeName = params.get(QUERY_ANALYZER);
     if (fieldTypeName == null) {
-      throw new IllegalArgumentException("Error in configuration: " + QUERY_ANALYZER + " parameter is mandatory");
+      throw new IllegalArgumentException(
+          "Error in configuration: " + QUERY_ANALYZER + " parameter is mandatory");
     }
     FieldType ft = core.getLatestSchema().getFieldTypeByName(fieldTypeName.toString());
     if (ft == null) {
-      throw new IllegalArgumentException("Error in configuration: " + fieldTypeName.toString() + " is not defined in the schema");
+      throw new IllegalArgumentException(
+          "Error in configuration: " + fieldTypeName.toString() + " is not defined in the schema");
     }
-    
+
     Analyzer indexAnalyzer = ft.getIndexAnalyzer();
     Analyzer queryAnalyzer = ft.getQueryAnalyzer();
-    
-    int grams = (params.get(NGRAMS) != null) 
-        ? Integer.parseInt(params.get(NGRAMS).toString()) 
-        : FreeTextSuggester.DEFAULT_GRAMS;
-    
-    byte separator = (params.get(SEPARATOR) != null) 
-        ? params.get(SEPARATOR).toString().getBytes(StandardCharsets.UTF_8)[0]
-        : FreeTextSuggester.DEFAULT_SEPARATOR;
-    
+
+    int grams =
+        (params.get(NGRAMS) != null)
+            ? Integer.parseInt(params.get(NGRAMS).toString())
+            : FreeTextSuggester.DEFAULT_GRAMS;
+
+    byte separator =
+        (params.get(SEPARATOR) != null)
+            ? params.get(SEPARATOR).toString().getBytes(StandardCharsets.UTF_8)[0]
+            : FreeTextSuggester.DEFAULT_SEPARATOR;
+
     return new FreeTextSuggester(indexAnalyzer, queryAnalyzer, grams, separator);
   }
-  
+
   @Override
   public String storeFileName() {
     return FILENAME;
   }
-  
 }

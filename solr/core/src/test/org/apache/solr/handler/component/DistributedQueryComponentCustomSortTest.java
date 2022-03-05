@@ -17,14 +17,11 @@
 package org.apache.solr.handler.component;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -178,14 +175,10 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
     // sanity check function sorting
     rsp =
         query(
-            "q",
-            "id_i:[1 TO 10]",
-            "fl",
-            "id",
-            "rows",
-            "20",
-            "sort",
-            "abs(sub(5,id_i)) asc, id desc");
+            "q", "id_i:[1 TO 10]",
+            "fl", "id",
+            "rows", "20",
+            "sort", "abs(sub(5,id_i)) asc, id desc");
     assertFieldValues(rsp.getResults(), id, "5", "6", "4", "7", "3", "8", "2", "9", "1", "10");
 
     // Add two more docs with same payload as in doc #4
@@ -244,26 +237,23 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
         "1",
         "7");
 
-    // Regression check on timeAllowed in combination with sorting, SOLR-14758
-    // Should see either a complete result or a partial result, but never an NPE
+    // Regression check on timeAllowed in combination with sorting, SOLR-14758.
+    // Should see either a complete result or a partial result, but never an NPE.
+    // Only query a non-control client, as the control and non-control might get different partial
+    // results.
     rsp =
-        queryAllowPartialResults(
-            "q", "text:d", "fl", "id", "sort", "payload desc", "rows", "20", "timeAllowed", "1");
+        queryServer(
+            createParams(
+                "q", "text:d",
+                "fl", "id",
+                "sort", "payload desc",
+                "rows", "20",
+                "timeAllowed", "1000",
+                "shards", shards));
     if (!Objects.equals(
         Boolean.TRUE,
         rsp.getHeader().getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
       assertFieldValues(rsp.getResults(), id, "11", "13", "12");
     }
-  }
-
-  /**
-   * Modified version of {@link BaseDistributedSearchTestCase#query(Object...)} that allows partial
-   * results.
-   */
-  private QueryResponse queryAllowPartialResults(Object... q)
-      throws SolrServerException, IOException {
-    ModifiableSolrParams params = createParams(q);
-    setDistributedParams(params);
-    return queryServer(params);
   }
 }

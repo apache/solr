@@ -106,16 +106,13 @@ public class TestMissingGroups extends SolrTestCaseJ4 {
               "group.field",
               special.field,
               "group.ngroups",
-              "true")
+              "true"),
           // basic grouping checks
-          ,
           xpre + "/int[@name='ngroups'][.='3']",
-          xpre + "/arr[@name='groups'][count(lst)=3]"
+          xpre + "/arr[@name='groups'][count(lst)=3]",
           // sanity check one group is the missing values
-          ,
-          xpre + "/arr[@name='groups']/lst/null[@name='groupValue']"
+          xpre + "/arr[@name='groups']/lst/null[@name='groupValue']",
           // check we have the correct groups for the special values with a single doc
-          ,
           xpre
               + "/arr[@name='groups']/lst/*[@name='groupValue'][.='"
               + special.valueX
@@ -145,16 +142,13 @@ public class TestMissingGroups extends SolrTestCaseJ4 {
               "group.field",
               special.field,
               "group.ngroups",
-              "true")
+              "true"),
           // basic grouping checks
-          ,
           xpre + "/int[@name='ngroups'][.='2']",
-          xpre + "/arr[@name='groups'][count(lst)=2]"
+          xpre + "/arr[@name='groups'][count(lst)=2]",
           // sanity check one group is the missing values
-          ,
-          xpre + "/arr[@name='groups']/lst/null[@name='groupValue']"
+          xpre + "/arr[@name='groups']/lst/null[@name='groupValue']",
           // check we have the correct group for the special value with a single doc
-          ,
           xpre
               + "/arr[@name='groups']/lst/*[@name='groupValue'][.='"
               + val
@@ -178,13 +172,11 @@ public class TestMissingGroups extends SolrTestCaseJ4 {
               "group.field",
               special.field,
               "group.ngroups",
-              "true")
+              "true"),
           // basic grouping checks
-          ,
           xpre + "/int[@name='ngroups'][.='1']",
-          xpre + "/arr[@name='groups'][count(lst)=1]"
+          xpre + "/arr[@name='groups'][count(lst)=1]",
           // the only group should be the missing values
-          ,
           xpre + "/arr[@name='groups']/lst/null[@name='groupValue']");
     }
   }

@@ -207,8 +207,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
 
       // the behavior should be the same, regardless of wether we pass actual_end to the shards
       // because in a "mixed mode" rolling update, the shards should be smart enough to re-compute
-      // if
-      // the merging node is running an older version that doesn't send it
+      // if the merging node is running an older version that doesn't send it
       for (String actual_end : Arrays.asList(", _actual_end:'9'", "")) {
         client.testJQ(
             params(
@@ -620,9 +619,8 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
         "/response/lst[@name='facets']/long[@name='count'][.=6]", // count
         "/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst[1]/int[@name='val'][.=2]", // value
         "/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst[1]/long[@name='count'][.=2]", // count
-        "*[count(/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst)=2]", // no
-        // of
-        // entries
+        // number of entries
+        "*[count(/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst)=2]",
         "/response/lst[@name='facets']/lst[@name='num']/lst[@name='before']/long[@name='count'][.=2]", // before
         "/response/lst[@name='facets']/lst[@name='num']/lst[@name='after']/long[@name='count'][.=0]", // after
         "/response/lst[@name='facets']/lst[@name='num']/lst[@name='between']/long[@name='count'][.=3]" // between
@@ -640,9 +638,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
         "/response/lst[@name='facets']/long[@name='count'][.=6]", // count
         "/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst[1]/str[@name='val'][.='[0,4)']", // value
         "/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst[1]/long[@name='count'][.=2]", // count
-        "*[count(/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst)=1]" // no
-        // of
-        // entries
-        );
+        // number of entries
+        "*[count(/response/lst[@name='facets']/lst[@name='num']/arr[@name='buckets']/lst)=1]");
   }
 }

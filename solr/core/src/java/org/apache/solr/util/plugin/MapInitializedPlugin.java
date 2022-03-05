@@ -20,10 +20,9 @@ import java.util.Map;
 
 /**
  * A plugin that can be initialized with a Map&lt;String,String&gt;
- * 
  *
  * @since solr 1.3
  */
 public interface MapInitializedPlugin {
-  void init( Map<String,String> args );
+  void init(Map<String, String> args);
 }

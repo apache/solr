@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -47,7 +46,7 @@ class StringValue implements SortValue {
   private int lastOrd = -1;
   private int leafOrd = -1;
 
-  public StringValue(SortedDocValues globalDocValues, String field, IntComp comp)  {
+  public StringValue(SortedDocValues globalDocValues, String field, IntComp comp) {
     this.globalDocValues = globalDocValues;
     this.docValues = globalDocValues;
     if (globalDocValues instanceof MultiDocValues.MultiSortedDocValues) {
@@ -75,7 +74,7 @@ class StringValue implements SortValue {
   }
 
   public void setCurrentValue(int docId) throws IOException {
-    //System.out.println(docId +":"+lastDocID);
+    // System.out.println(docId +":"+lastDocID);
     /*
     if (docId < lastDocID) {
       throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
@@ -125,12 +124,13 @@ class StringValue implements SortValue {
     lastOrd = currentOrd;
     StringValue sv = (StringValue) previousValue;
     if (sv.lastOrd == currentOrd) {
-      //Take the global ord from the previousValue unless we are a -1 which is the same in both global and leaf ordinal
-      if(this.currentOrd != -1) {
+      // Take the global ord from the previousValue unless we are a -1 which is the same in both
+      // global and leaf ordinal
+      if (this.currentOrd != -1) {
         this.currentOrd = sv.currentOrd;
       }
     } else {
-      if(this.currentOrd > -1) {
+      if (this.currentOrd > -1) {
         this.currentOrd = (int) toGlobal.get(this.currentOrd);
       }
     }

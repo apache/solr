@@ -16,17 +16,15 @@
  */
 package org.apache.solr.update;
 
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.solr.request.SolrQueryRequest;
-
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * A merge indexes command encapsulated in an object.
  *
  * @since solr 1.4
- *
  */
 public class MergeIndexesCommand extends UpdateCommand {
   public List<DirectoryReader> readers;
@@ -44,7 +42,10 @@ public class MergeIndexesCommand extends UpdateCommand {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder(super.toString());
-    sb.append(readers.stream().map(reader-> reader.directory().toString()).collect(Collectors.joining(",")));
+    sb.append(
+        readers.stream()
+            .map(reader -> reader.directory().toString())
+            .collect(Collectors.joining(",")));
     sb.append('}');
     return sb.toString();
   }

@@ -59,7 +59,7 @@ configurations {
 
 dependencies {
   changesHtml project(path: ":solr:documentation", configuration: "changesHtml")
-  docker project(path: ':solr:docker', configuration: project.ext.withSignedArtifacts ? 'packagingOfficial' : 'packaging')
+  docker project(path: ':solr:docker', configuration: project.ext.withSignedArtifacts ? 'packagingOfficial' : 'packagingLocal')
 }
 
 def distTarTask = rootProject.getTasksByName("distTar", true)[0]

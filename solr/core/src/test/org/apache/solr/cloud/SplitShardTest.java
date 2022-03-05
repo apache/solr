@@ -247,15 +247,14 @@ public class SplitShardTest extends SolrCloudTestCase {
                       // Try all docs in the same update request
                       UpdateRequest updateReq = new UpdateRequest();
                       updateReq.add(sdoc("id", docId));
-                      // UpdateResponse ursp = updateReq.commit(client, collectionName);  //
+                      // UpdateResponse ursp = updateReq.commit(client, collectionName);
                       // uncomment this if you want a commit each time
                       UpdateResponse ursp = updateReq.process(client, collectionName);
                       assertEquals(0, ursp.getStatus()); // for now, don't accept any failures
                       if (ursp.getStatus() == 0) {
-                        model.put(
-                            docId,
-                            1L); // in the future, keep track of a version per document and reuse
-                        // ids to keep index from growing too large
+                        // in the future, keep track of a version per document and reuse ids to keep
+                        // index from growing too large
+                        model.put(docId, 1L);
                       }
                     } catch (Exception e) {
                       fail(e.getMessage());

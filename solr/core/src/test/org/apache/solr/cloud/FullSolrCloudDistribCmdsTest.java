@@ -218,8 +218,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       checkShardCounts.run();
 
       { // Send a delete request to core hosting shard1 with a route param for a document that is
-        // actually in shard2
-        // Should delete.
+        // actually in shard2 should delete.
         final UpdateRequest deleteRequest = new UpdateRequest();
         deleteRequest.deleteById("4").withRoute("shard2");
         shard1.request(deleteRequest);
@@ -229,9 +228,9 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       checkShardCounts.run();
 
       { // Send a delete request to core hosting shard1 with NO route param for a document that is
-        // actually in shard2
-        // Shouldn't delete, since deleteById requests are not broadcast to all shard leaders.
-        // (This is effictively a request to delete "5" if an only if it is on shard1)
+        // actually in shard2. Shouldn't delete, since deleteById requests are not broadcast to all
+        // shard leaders. (This is effictively a request to delete "5" if an only if it is on
+        // shard1)
         final UpdateRequest deleteRequest = new UpdateRequest();
         deleteRequest.deleteById("5");
         shard1.request(deleteRequest);

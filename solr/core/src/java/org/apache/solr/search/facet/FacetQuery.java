@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
@@ -36,7 +35,7 @@ public class FacetQuery extends FacetRequest {
   public FacetMerger createFacetMerger(Object prototype) {
     return new FacetModule.FacetQueryMerger(this);
   }
-  
+
   @Override
   public Map<String, Object> getFacetDescription() {
     Map<String, Object> descr = new HashMap<String, Object>();
@@ -44,9 +43,6 @@ public class FacetQuery extends FacetRequest {
     return descr;
   }
 }
-
-
-
 
 class FacetQueryProcessor extends FacetProcessor<FacetQuery> {
   FacetQueryProcessor(FacetContext fcontext, FacetQuery freq) {
@@ -61,9 +57,11 @@ class FacetQueryProcessor extends FacetProcessor<FacetQuery> {
       // FIXME - what needs to be done here?
     }
     response = new SimpleOrderedMap<>();
-    fillBucket(response, freq.q, null, (fcontext.flags & FacetContext.SKIP_FACET)!=0, fcontext.facetInfo);
+    fillBucket(
+        response,
+        freq.q,
+        null,
+        (fcontext.flags & FacetContext.SKIP_FACET) != 0,
+        fcontext.facetInfo);
   }
-
-
 }
-

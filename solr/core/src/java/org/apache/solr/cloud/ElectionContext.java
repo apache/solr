@@ -35,8 +35,12 @@ public abstract class ElectionContext implements Closeable {
   volatile String leaderSeqPath;
   private SolrZkClient zkClient;
 
-  public ElectionContext(final String coreNodeName,
-      final String electionPath, final String leaderPath, final ZkNodeProps leaderProps, final SolrZkClient zkClient) {
+  public ElectionContext(
+      final String coreNodeName,
+      final String electionPath,
+      final String leaderPath,
+      final ZkNodeProps leaderProps,
+      final SolrZkClient zkClient) {
     assert zkClient != null;
     this.id = coreNodeName;
     this.electionPath = electionPath;
@@ -44,11 +48,9 @@ public abstract class ElectionContext implements Closeable {
     this.leaderProps = leaderProps;
     this.zkClient = zkClient;
   }
-  
-  public void close() {
 
-  }
-  
+  public void close() {}
+
   public void cancelElection() throws InterruptedException, KeeperException {
     if (leaderSeqPath != null) {
       try {
@@ -63,15 +65,14 @@ public abstract class ElectionContext implements Closeable {
     }
   }
 
-  abstract void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException, InterruptedException, IOException;
+  abstract void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
+      throws KeeperException, InterruptedException, IOException;
 
   public void checkIfIamLeaderFired() {}
 
   public void joinedElectionFired() {}
 
-  public  ElectionContext copy(){
+  public ElectionContext copy() {
     throw new UnsupportedOperationException("copy");
   }
 }
-
-

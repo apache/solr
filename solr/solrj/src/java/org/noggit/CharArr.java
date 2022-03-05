@@ -176,12 +176,12 @@ public class CharArr implements CharSequence, Appendable {
 
   public int read(CharBuffer cb) throws IOException {
 
-    /***
-     * int sz = size();
-     * if (sz<=0) return -1;
-     * if (sz>0) cb.put(buf, start, sz);
-     * return -1;
-     ***/
+    /*
+    int sz = size();
+    if (sz<=0) return -1;
+    if (sz>0) cb.put(buf, start, sz);
+    return -1;
+    */
 
     int sz = size();
     if (sz > 0) cb.put(buf, start, sz);
@@ -291,14 +291,14 @@ public class CharArr implements CharSequence, Appendable {
         end = size();
         start = 0;
       }
-      /***
-       * // fill fully or not???
-       * do {
-       * int sz = in.read(buf,end,buf.length-end);
-       * if (sz==-1) return;
-       * end+=sz;
-       * } while (end < buf.length);
-       ***/
+      /*
+      // fill fully or not???
+      do {
+        int sz = in.read(buf,end,buf.length-end);
+        if (sz==-1) return;
+        end+=sz;
+      } while (end < buf.length);
+      */
 
       int sz = in.read(buf, end, buf.length - end);
       if (sz > 0) end += sz;

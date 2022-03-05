@@ -91,21 +91,21 @@ public class TestIndexingPerformance extends SolrTestCaseJ4 {
       "just how fast is this text indexing?"
     };
 
-    /***
-     * String[] fields = {
-     * "a_i","1"
-     * ,"b_i","2"
-     * ,"c_i","3"
-     * ,"d_i","4"
-     * ,"e_i","5"
-     * ,"f_i","6"
-     * ,"g_i","7"
-     * ,"h_i","8"
-     * ,"i_i","9"
-     * ,"j_i","0"
-     * ,"k_i","0"
-     * };
-     ***/
+    /*
+    String[] fields = {
+      "a_i","1"
+      ,"b_i","2"
+      ,"c_i","3"
+      ,"d_i","4"
+      ,"e_i","5"
+      ,"f_i","6"
+      ,"g_i","7"
+      ,"h_i","8"
+      ,"i_i","9"
+      ,"j_i","0"
+      ,"k_i","0"
+    };
+    */
 
     final RTimer timer = new RTimer();
 

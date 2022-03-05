@@ -26,22 +26,24 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * Create a boosted query from the input value.  The main value is the query to be boosted.
- * <br>Other parameters: <code>b</code>, the function query to use as the boost.
- * <p>Example: <code>{!boost b=log(popularity)}foo</code> creates a query "foo"
- * which is boosted (scores are multiplied) by the function query <code>log(popularity)</code>.
- * The query to be boosted may be of any type.
+ * Create a boosted query from the input value. The main value is the query to be boosted. <br>
+ * Other parameters: <code>b</code>, the function query to use as the boost.
  *
- * <p>Example: <code>{!boost b=recip(ms(NOW,mydatefield),3.16e-11,1,1)}foo</code> creates a query "foo"
- * which is boosted by the date boosting function referenced in
- * {@link org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction}
+ * <p>Example: <code>{!boost b=log(popularity)}foo</code> creates a query "foo" which is boosted
+ * (scores are multiplied) by the function query <code>log(popularity)</code>. The query to be
+ * boosted may be of any type.
+ *
+ * <p>Example: <code>{!boost b=recip(ms(NOW,mydatefield),3.16e-11,1,1)}foo</code> creates a query
+ * "foo" which is boosted by the date boosting function referenced in {@link
+ * org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction}
  */
 public class BoostQParserPlugin extends QParserPlugin {
   public static final String NAME = "boost";
   public static String BOOSTFUNC = "b";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       QParser baseParser;
       ValueSource vs;
@@ -56,19 +58,18 @@ public class BoostQParserPlugin extends QParserPlugin {
         if (b == null) return q;
         Query bq = subQuery(b, FunctionQParserPlugin.NAME).getQuery();
         if (bq instanceof FunctionQuery) {
-          vs = ((FunctionQuery)bq).getValueSource();
+          vs = ((FunctionQuery) bq).getValueSource();
         } else {
           vs = new QueryValueSource(bq, 0.0f);
         }
         return FunctionScoreQuery.boostByValue(q, vs.asDoubleValuesSource());
       }
 
-
       @Override
       public String[] getDefaultHighlightFields() {
         return baseParser.getDefaultHighlightFields();
       }
-                                           
+
       @Override
       public Query getHighlightQuery() throws SyntaxError {
         return baseParser.getHighlightQuery();
@@ -78,10 +79,9 @@ public class BoostQParserPlugin extends QParserPlugin {
       public void addDebugInfo(NamedList<Object> debugInfo) {
         // encapsulate base debug info in a sub-list?
         baseParser.addDebugInfo(debugInfo);
-        debugInfo.add("boost_str",b);
-        debugInfo.add("boost_parsed",vs);
+        debugInfo.add("boost_str", b);
+        debugInfo.add("boost_parsed", vs);
       }
     };
   }
-
 }
