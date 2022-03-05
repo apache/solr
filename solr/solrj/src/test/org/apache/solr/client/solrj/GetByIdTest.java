@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj;
 
 import java.util.Arrays;
-
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -39,12 +38,26 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
   public void setUp() throws Exception {
     super.setUp();
     getSolrClient().deleteByQuery("*:*");
-    getSolrClient().add(Arrays.asList(
-        sdoc("id", "1", "term_s", "Microsoft", "term2_s", "MSFT"),
-        sdoc("id", "2", "term_s", "Apple", "term2_s", "AAPL"),
-        sdoc("id", "3", "term_s", "Yahoo", "term2_s", "YHOO"),
-        sdoc("id", ",", "term_s", "b00m! 1", "term2_s", "id separator escape test document 1"),
-        sdoc("id", "1,2", "term_s", "b00m! 2", "term2_s", "id separator escape test document 2")));
+    getSolrClient()
+        .add(
+            Arrays.asList(
+                sdoc("id", "1", "term_s", "Microsoft", "term2_s", "MSFT"),
+                sdoc("id", "2", "term_s", "Apple", "term2_s", "AAPL"),
+                sdoc("id", "3", "term_s", "Yahoo", "term2_s", "YHOO"),
+                sdoc(
+                    "id",
+                    ",",
+                    "term_s",
+                    "b00m! 1",
+                    "term2_s",
+                    "id separator escape test document 1"),
+                sdoc(
+                    "id",
+                    "1,2",
+                    "term_s",
+                    "b00m! 2",
+                    "term2_s",
+                    "id separator escape test document 2")));
 
     getSolrClient().commit(true, true);
   }
@@ -125,7 +138,8 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testGetIdsWithParams() throws Exception {
-    SolrDocumentList rsp = getSolrClient().getById(Arrays.asList("0", "1", "2"), params(CommonParams.FL, "id"));
+    SolrDocumentList rsp =
+        getSolrClient().getById(Arrays.asList("0", "1", "2"), params(CommonParams.FL, "id"));
     assertEquals(2, rsp.getNumFound());
 
     assertEquals("1", rsp.get(0).get("id"));

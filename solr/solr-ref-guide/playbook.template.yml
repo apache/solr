@@ -16,7 +16,7 @@ content:
   edit_url: '{web_url}/tree/main/{path}'
   sources:
   - url: '${source_url}'
-    branches: '${source_branches}'
+    branches: ${source_branches}
     start_path: '${start_path}'
 
 ui:

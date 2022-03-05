@@ -16,9 +16,9 @@
  */
 package org.apache.solr.client.solrj.io.eval;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 
 public class VectorFunction extends ArrayList<Number> {
@@ -30,7 +30,7 @@ public class VectorFunction extends ArrayList<Number> {
 
   public VectorFunction(Object function, double[] results) {
     this.function = function;
-    for(double d : results) {
+    for (double d : results) {
       add(d);
     }
   }
@@ -51,5 +51,4 @@ public class VectorFunction extends ArrayList<Number> {
   public Object getFromContext(Object key) {
     return this.context.get(key);
   }
-
 }

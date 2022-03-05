@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
@@ -27,8 +27,6 @@ import org.apache.solr.client.solrj.io.eval.NaturalLogEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
-
-import junit.framework.Assert;
 
 public class NaturalLogEvaluatorTest extends SolrTestCase {
 
@@ -38,13 +36,15 @@ public class NaturalLogEvaluatorTest extends SolrTestCase {
   public NaturalLogEvaluatorTest() {
     super();
 
-    factory = new StreamFactory()
-        .withFunctionName("log", NaturalLogEvaluator.class).withFunctionName("add", AddEvaluator.class);
-    values = new HashMap<String,Object>();
+    factory =
+        new StreamFactory()
+            .withFunctionName("log", NaturalLogEvaluator.class)
+            .withFunctionName("add", AddEvaluator.class);
+    values = new HashMap<String, Object>();
   }
 
   @Test
-  public void logOneField() throws Exception{
+  public void logOneField() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("log(a)");
     Object result;
 
@@ -53,11 +53,10 @@ public class NaturalLogEvaluatorTest extends SolrTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Double);
     Assert.assertTrue(result.equals(Math.log(100)));
-
   }
 
   @Test
-  public void logNestedField() throws Exception{
+  public void logNestedField() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("log(add(50,50))");
     Object result;
 
@@ -65,21 +64,20 @@ public class NaturalLogEvaluatorTest extends SolrTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Double);
     Assert.assertTrue(result.equals(Math.log(100)));
-
   }
 
   @Test(expected = IOException.class)
-  public void logNoField() throws Exception{
+  public void logNoField() throws Exception {
     factory.constructEvaluator("log()");
   }
 
   @Test(expected = IOException.class)
-  public void logTwoFields() throws Exception{
+  public void logTwoFields() throws Exception {
     factory.constructEvaluator("log(a,b)");
   }
 
   @Test
-  public void logNoValue() throws Exception{
+  public void logNoValue() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("log(a)");
 
     values.clear();
@@ -88,7 +86,7 @@ public class NaturalLogEvaluatorTest extends SolrTestCase {
   }
 
   @Test
-  public void logNullValue() throws Exception{
+  public void logNullValue() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("log(a)");
 
     values.clear();

@@ -23,9 +23,12 @@ import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.util.Holder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.handler.sql.functions.ArrayContainsAll;
+import org.apache.solr.handler.sql.functions.ArrayContainsAny;
 
 /**
  * JDBC driver for Calcite Solr.
@@ -51,6 +54,10 @@ public class CalciteSolrDriver extends Driver {
     configHolder.accept(config -> config.withInSubQueryThreshold(Integer.MAX_VALUE));
   }
 
+  static void relBuilderSimplify(Holder<Boolean> configHolder) {
+    configHolder.accept(config -> false);
+  }
+
   @Override
   protected String getConnectStringPrefix() {
     return CONNECT_STRING_PREFIX;
@@ -66,6 +73,11 @@ public class CalciteSolrDriver extends Driver {
     // otherwise, Calcite will transform the query into a join with a static table of literals
     Hook.SQL2REL_CONVERTER_CONFIG_BUILDER.addThread(CalciteSolrDriver::subQueryThreshold);
 
+    // disable Calcite's simplify (see SOLR-16009) as it erases some query
+    // constructs that are still meaningful to Solr (such as AND'd filters on the same field,
+    // which works for multi-valued fields in Solr but looks like nonsense to Calcite.
+    Hook.REL_BUILDER_SIMPLIFY.addThread(CalciteSolrDriver::relBuilderSimplify);
+
     Connection connection = super.connect(url, info);
     CalciteConnection calciteConnection = (CalciteConnection) connection;
 
@@ -78,9 +90,17 @@ public class CalciteSolrDriver extends Driver {
     final SolrSchema solrSchema = new SolrSchema(info, solrClientCache);
     rootSchema.add(schemaName, solrSchema);
 
+    registerUDFs();
+
     // Set the default schema
     calciteConnection.setSchema(schemaName);
     return calciteConnection;
+  }
+
+  private void registerUDFs() {
+    final SqlStdOperatorTable stdOpTab = SqlStdOperatorTable.instance();
+    stdOpTab.register(new ArrayContainsAll());
+    stdOpTab.register(new ArrayContainsAny());
   }
 
   public void setSolrClientCache(SolrClientCache solrClientCache) {

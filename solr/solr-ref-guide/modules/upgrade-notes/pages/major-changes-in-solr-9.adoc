@@ -125,6 +125,8 @@ This is only applicable for users returning information in JSON format, which is
 * SOLR-14660: HDFS storage support has been moved to a module. Existing Solr configurations do not need any HDFS-related
 changes, however the module needs to be installed - see the section xref:deployment-guide:solr-on-hdfs.adoc[].
 
+* SOLR-16040: If you are using the HDFS backup repository, you need to change the repository class to `org.apache.solr.hdfs.backup.repository.HdfsBackupRepository` - see the xref:deployment-guide:backup-restore.adoc#hdfsbackuprepository[HDFS Backup Repository] section.
+
 * SOLR-13989: Hadoop authentication support has been moved to the hadoop-auth module. Existing Solr configurations do not need any Hadoop authentication related
 changes, however the module needs to be installed - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
 

@@ -17,17 +17,12 @@
 
 package org.apache.solr.client.solrj.util;
 
-/**
- * Listener for async requests
- */
+/** Listener for async requests */
 public interface AsyncListener<T> {
-  /**
-   * Callback method invoked before processing the request
-   */
-  default void onStart() {
+  /** Callback method invoked before processing the request */
+  default void onStart() {}
 
-  }
   void onSuccess(T t);
-  void onFailure(Throwable throwable);
 
+  void onFailure(Throwable throwable);
 }

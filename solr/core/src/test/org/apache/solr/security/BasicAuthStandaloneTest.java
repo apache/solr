@@ -16,6 +16,11 @@
  */
 package org.apache.solr.security;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.cloud.SolrCloudAuthTestCase.NOT_NULL_PREDICATE;
+import static org.apache.solr.security.BasicAuthIntegrationTest.STD_CONF;
+import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecurityStatus;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
@@ -25,7 +30,6 @@ import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Properties;
-
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -47,25 +51,20 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.cloud.SolrCloudAuthTestCase.NOT_NULL_PREDICATE;
-import static org.apache.solr.security.BasicAuthIntegrationTest.STD_CONF;
-import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecurityStatus;
-
 public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Path ROOT_DIR = Paths.get(TEST_HOME());
-  private static final Path CONF_DIR = ROOT_DIR.resolve("configsets").resolve("configset-2").resolve("conf");
+  private static final Path CONF_DIR =
+      ROOT_DIR.resolve("configsets").resolve("configset-2").resolve("conf");
 
   SecurityConfHandlerLocalForTesting securityConfHandler;
   SolrInstance instance = null;
   JettySolrRunner jetty;
-      
+
   @Before
   @Override
-  public void setUp() throws Exception
-  {
+  public void setUp() throws Exception {
     super.setUp();
     instance = new SolrInstance("inst", null);
     instance.setUp();
@@ -94,49 +93,56 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     HttpSolrClient httpSolrClient = null;
     try {
       cl = HttpClientUtil.createClient(null);
-      String baseUrl = buildUrl(jetty.getLocalPort(), "/solr"); 
+      String baseUrl = buildUrl(jetty.getLocalPort(), "/solr");
       httpSolrClient = getHttpSolrClient(baseUrl);
-      
+
       verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
 
       // Write security.json locally. Should cause security to be initialized
-      securityConfHandler.persistConf(new SecurityConfHandler.SecurityConfig()
-          .setData(Utils.fromJSONString(STD_CONF.replaceAll("'", "\""))));
+      securityConfHandler.persistConf(
+          new SecurityConfHandler.SecurityConfig()
+              .setData(Utils.fromJSONString(STD_CONF.replaceAll("'", "\""))));
       securityConfHandler.securityConfEdited();
-      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
+      verifySecurityStatus(
+          cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
-      String command = "{\n" +
-          "'set-user': {'harry':'HarryIsCool'}\n" +
-          "}";
+      String command = "{\n" + "'set-user': {'harry':'HarryIsCool'}\n" + "}";
 
       doHttpPost(cl, baseUrl + authcPrefix, command, null, null, 401);
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
 
-      command = "{\n" +
-          "'set-user': {'harry':'HarryIsUberCool'}\n" +
-          "}";
-
+      command = "{\n" + "'set-user': {'harry':'HarryIsUberCool'}\n" + "}";
 
       doHttpPost(cl, baseUrl + authcPrefix, command, "solr", "SolrRocks");
-      verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/credentials/harry", NOT_NULL_PREDICATE, 20);
+      verifySecurityStatus(
+          cl, baseUrl + authcPrefix, "authentication/credentials/harry", NOT_NULL_PREDICATE, 20);
 
       // Read file from SOLR_HOME and verify that it contains our new user
-      assertTrue(new String(Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()), 
-          Charset.forName("UTF-8")).contains("harry"));
+      assertTrue(
+          new String(
+                  Utils.toJSON(securityConfHandler.getSecurityConfig(false).getData()),
+                  Charset.forName("UTF-8"))
+              .contains("harry"));
 
       // Edit authorization
-      verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[1]/role", null, 20);
-      doHttpPost(cl, baseUrl + authzPrefix, "{'set-permission': {'name': 'update', 'role':'updaterole'}}", "solr", "SolrRocks");
-      command = "{\n" +
-          "'set-permission': {'name': 'read', 'role':'solr'}\n" +
-          "}";
+      verifySecurityStatus(
+          cl, baseUrl + authzPrefix, "authorization/permissions[1]/role", null, 20);
+      doHttpPost(
+          cl,
+          baseUrl + authzPrefix,
+          "{'set-permission': {'name': 'update', 'role':'updaterole'}}",
+          "solr",
+          "SolrRocks");
+      command = "{\n" + "'set-permission': {'name': 'read', 'role':'solr'}\n" + "}";
       doHttpPost(cl, baseUrl + authzPrefix, command, "solr", "SolrRocks");
       try {
-        httpSolrClient.query("collection1", new MapSolrParams(Collections.singletonMap("q", "foo")));
+        httpSolrClient.query(
+            "collection1", new MapSolrParams(Collections.singletonMap("q", "foo")));
         fail("Should return a 401 response");
       } catch (Exception e) {
         // Test that the second doPost request to /security/authorization went through
-        verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20);
+        verifySecurityStatus(
+            cl, baseUrl + authzPrefix, "authorization/permissions[2]/role", "solr", 20);
       }
     } finally {
       if (cl != null) {
@@ -146,15 +152,27 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     }
   }
 
-  static void doHttpPost(HttpClient cl, String url, String jsonCommand, String basicUser, String basicPass) throws IOException {
+  static void doHttpPost(
+      HttpClient cl, String url, String jsonCommand, String basicUser, String basicPass)
+      throws IOException {
     doHttpPost(cl, url, jsonCommand, basicUser, basicPass, 200);
   }
 
-  static void doHttpPost(HttpClient cl, String url, String jsonCommand, String basicUser, String basicPass, int expectStatusCode) throws IOException {
-    doHttpPostWithHeader(cl, url, jsonCommand, getBasicAuthHeader(basicUser, basicPass), expectStatusCode);
+  static void doHttpPost(
+      HttpClient cl,
+      String url,
+      String jsonCommand,
+      String basicUser,
+      String basicPass,
+      int expectStatusCode)
+      throws IOException {
+    doHttpPostWithHeader(
+        cl, url, jsonCommand, getBasicAuthHeader(basicUser, basicPass), expectStatusCode);
   }
 
-  static void doHttpPostWithHeader(HttpClient cl, String url, String jsonCommand, Header header, int expectStatusCode) throws IOException {
+  static void doHttpPostWithHeader(
+      HttpClient cl, String url, String jsonCommand, Header header, int expectStatusCode)
+      throws IOException {
     HttpPost httpPost = new HttpPost(url);
     httpPost.setHeader(header);
     httpPost.setEntity(new ByteArrayEntity(jsonCommand.replaceAll("'", "\"").getBytes(UTF_8)));
@@ -182,22 +200,23 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
   static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir().toString());
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir().toString(), nodeProperties, buildJettyConfig("/solr"));
+    JettySolrRunner jetty =
+        new JettySolrRunner(
+            instance.getHomeDir().toString(), nodeProperties, buildJettyConfig("/solr"));
     jetty.start();
     return jetty;
   }
-  
-  
+
   static class SolrInstance {
     String name;
     Integer port;
     Path homeDir;
     Path confDir;
     Path dataDir;
-    
+
     /**
-     * if leaderPort is null, this instance is a leader -- otherwise this instance is a follower, and assumes the leader is
-     * on localhost at the specified port.
+     * if leaderPort is null, this instance is a leader -- otherwise this instance is a follower,
+     * and assumes the leader is on localhost at the specified port.
      */
     public SolrInstance(String name, Integer port) {
       this.name = name;
@@ -228,7 +247,6 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       return ROOT_DIR.resolve("solr.xml");
     }
 
-
     public void setUp() throws Exception {
       homeDir = createTempDir(name).toAbsolutePath();
       dataDir = homeDir.resolve("collection1").resolve("data");
@@ -244,6 +262,5 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
       Files.createFile(homeDir.resolve("collection1").resolve("core.properties"));
     }
-
   }
 }

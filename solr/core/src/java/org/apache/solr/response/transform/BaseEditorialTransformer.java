@@ -16,19 +16,14 @@
  */
 package org.apache.solr.response.transform;
 
-
 import java.util.Set;
-
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.schema.FieldType;
 
-/**
- *
- *
- **/
+/** */
 public abstract class BaseEditorialTransformer extends DocTransformer {
 
   final String name;
@@ -48,13 +43,14 @@ public abstract class BaseEditorialTransformer extends DocTransformer {
 
   @Override
   public void transform(SolrDocument doc, int docid) {
-    //this only gets added if QueryElevationParams.MARK_EXCLUDED is true
+    // this only gets added if QueryElevationParams.MARK_EXCLUDED is true
     Set<BytesRef> ids = getIdSet();
     if (ids != null && ids.isEmpty() == false) {
       BytesRef key = getKey(doc);
       doc.setField(name, ids.contains(key));
     } else {
-      //if we have no ids, that means we weren't marking, but the user still asked for the field to be added, so just mark everything as false
+      // if we have no ids, that means we weren't marking, but the user still asked for the field to
+      // be added, so just mark everything as false
       doc.setField(name, Boolean.FALSE);
     }
   }
@@ -74,7 +70,7 @@ public abstract class BaseEditorialTransformer extends DocTransformer {
       }
       return bytesRefBuilder.get();
     } else if (obj instanceof String) { // Allows the idField to be stored=false, docValues=true
-      return new BytesRef(((String)obj));
+      return new BytesRef(((String) obj));
     }
     throw new AssertionError("Expected an IndexableField but got: " + obj.getClass());
   }

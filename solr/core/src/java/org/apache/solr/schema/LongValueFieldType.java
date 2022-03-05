@@ -16,8 +16,5 @@
  */
 package org.apache.solr.schema;
 
-/**
- * Marker interface for long-valued field types.
- */
-public interface LongValueFieldType extends NumericValueFieldType {
-}
+/** Marker interface for long-valued field types. */
+public interface LongValueFieldType extends NumericValueFieldType {}

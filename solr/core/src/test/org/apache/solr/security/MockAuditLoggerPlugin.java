@@ -22,17 +22,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MockAuditLoggerPlugin extends AuditLoggerPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public List<AuditEvent> events = new ArrayList<>();
-  public Map<String,AtomicInteger> typeCounts = new HashMap<>();
+  public Map<String, AtomicInteger> typeCounts = new HashMap<>();
 
   /**
    * Audits an event to an internal list that can be inspected later by the test code
+   *
    * @param event the audit event
    */
   @Override
@@ -45,8 +45,7 @@ public class MockAuditLoggerPlugin extends AuditLoggerPlugin {
   }
 
   private void incrementType(String type) {
-    if (!typeCounts.containsKey(type))
-      typeCounts.put(type, new AtomicInteger(0));
+    if (!typeCounts.containsKey(type)) typeCounts.put(type, new AtomicInteger(0));
     typeCounts.get(type).incrementAndGet();
   }
 

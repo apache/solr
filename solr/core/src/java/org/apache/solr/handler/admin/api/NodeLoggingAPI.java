@@ -17,33 +17,33 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
+
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.admin.LoggingHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
-
 /**
  * V2 API for getting or setting log levels on an individual node.
  *
- * This API (GET /v2/node/logging) is analogous to the v1 /admin/info/logging.
+ * <p>This API (GET /v2/node/logging) is analogous to the v1 /admin/info/logging.
  */
 public class NodeLoggingAPI {
 
-    private final LoggingHandler handler;
+  private final LoggingHandler handler;
 
-    public NodeLoggingAPI(LoggingHandler handler) {
-        this.handler = handler;
-    }
+  public NodeLoggingAPI(LoggingHandler handler) {
+    this.handler = handler;
+  }
 
-    // TODO See SOLR-15823 for background on the (less than ideal) permission chosen here.
-    @EndPoint(
-            path = {"/node/logging"},
-            method = GET,
-            permission = CONFIG_EDIT_PERM)
-    public void getOrSetLogLevels(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        handler.handleRequestBody(req, rsp);
-    }
+  // TODO See SOLR-15823 for background on the (less than ideal) permission chosen here.
+  @EndPoint(
+      path = {"/node/logging"},
+      method = GET,
+      permission = CONFIG_EDIT_PERM)
+  public void getOrSetLogLevels(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    handler.handleRequestBody(req, rsp);
+  }
 }

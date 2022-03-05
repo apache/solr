@@ -35,7 +35,7 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
 
 Optimizations
 ---------------------
@@ -58,6 +58,14 @@ Other Changes
 * SOLR-9529: Consistency in how dynamic fields are defined in sample schema.xml files (Eric Pugh, Trey Grainger)
 
 * SOLR-15886: Remove deprecated showItems configuration value from solrconfig.xml files (Andy Lester via Eric Pugh)
+
+* SOLR-16039: Upgrade to Hadoop 3.3.2 (Kevin Risden)
+
+Build
+---------------------
+* SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
+
+* SOLR-16050: Upgrade to errorprone 2.11.0 (Kevin Risden)
 
 ==================  9.0.0 ==================
 
@@ -106,6 +114,8 @@ New Features
 * SOLR-15880: Introduce support for k nearest neighbors search (Alessandro Benedetti, Elia Porciani)
 
 * SOLR-14660: Move HDFS support to a new HDFS module (Istvan Farkas, Kevin Risden)
+
+* SOLR-16040: Fix split packages in hdfs module (Kevin Risden)
 
 * SOLR-13989: Move Hadoop Authentication support to a new hadoop-auth module (Kevin Risden)
 
@@ -333,6 +343,8 @@ Build
 * SOLR-15987: Upgrade slf4j to 1.7.35 and remove ant-compat/force-versions.gradle (Kevin Risden)
 
 * SOLR-15992: Globally forbid and exclude known bad dependencies (Kevin Risden)
+
+* SOLR-12228: Move bin-test scripts to packaging project and create gradle task for running them. (Mike Drob)
 
 Other Changes
 ----------------------
@@ -610,6 +622,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-16042: Fix TestSolrCloudWithKerberosAlt.testBasics failure due to minikdc locale (Kevin Risden)
 
+* SOLR-16043: Fix HDFS tests - "Command processor" thread leak (Mike Drob, Kevin Risden)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
@@ -662,6 +676,8 @@ Bug Fixes
 
 * SOLR-15968: Hide annoying WARN log from bin/solr zk command (janhoy, Mike Drob)
 
+* SOLR-16075: ShowFileHandler path parameter is now validated to be relative to instance conf dir in standalone mode (janhoy)
+
 * SOLR-15558: Don't wait for zombie processes to exit when stopping. (Colvin Cowie)
 
 * SOLR-15333: Reduced spurious warn logging by AbstractSpatialPrefixTreeFieldType field properties (Steffen Moldenhauer, David Smiley, Mike Drob)
@@ -682,6 +698,9 @@ Bug Fixes
   in secured Solr. (Isabelle Giguere, Jason Gerlowski, Anshum Gupta, Mark Mark Miller)
 
 * SOLR-15974: Remove Calcite's ENUMERABLE_AGGREGATE_RULE as Solr only supports push-down for LogicalAggregate (Timothy Potter, Kiran Chitturi)
+
+* SOLR-16009: Force Calcite's Rel simplify config flag to false to avoid erasing filters that are meaningful to Solr,
+  but look like nonsense to Calcite, such as AND'd filters on the same multi-valued field (Timothy Potter, Kiran Chitturi)
 
 ==================  8.11.1 ==================
 

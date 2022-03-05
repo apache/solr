@@ -199,7 +199,9 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
    * @see #pattern
    */
   private String dest = null;
-  /** @see #dest */
+  /**
+   * @see #dest
+   */
   private Pattern pattern = null;
 
   protected final FieldNameSelector getSourceSelector() {

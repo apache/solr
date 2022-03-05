@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -49,7 +48,8 @@ import org.junit.Test;
 /**
  * Example SolrJ usage of the JSON Request API.
  *
- * Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference Guide.
+ * <p>Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference
+ * Guide.
  */
 public class JsonRequestApiTest extends SolrCloudTestCase {
   private static final String COLLECTION_NAME = "techproducts";
@@ -64,7 +64,8 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
 
-    CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
@@ -81,9 +82,8 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     final int expectedResults = 4;
 
     // tag::solrj-json-query-simple[]
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest()
-        .setQuery("memory")
-        .withFilter("inStock:true");
+    final JsonQueryRequest simpleQuery =
+        new JsonQueryRequest().setQuery("memory").withFilter("inStock:true");
     QueryResponse queryResponse = simpleQuery.process(solrClient, COLLECTION_NAME);
     // end::solrj-json-query-simple[]
 
@@ -95,14 +95,16 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     SolrClient solrClient = cluster.getSolrClient();
     final int expectedResults = 4;
 
-    // This subtest has its own scope so that it and its twin below can can have identical variable declarations (as they appear as separate snippets in the ref-guide)
+    // This subtest has its own scope so that it and its twin below can can have identical variable
+    // declarations (as they appear as separate snippets in the ref-guide)
     {
       // tag::solrj-json-query-param-overrides[]
       final ModifiableSolrParams overrideParams = new ModifiableSolrParams();
-      final JsonQueryRequest queryWithParamOverrides = new JsonQueryRequest(overrideParams)
-          .setQuery("memory")
-          .setLimit(10)
-          .withFilter("inStock:true");
+      final JsonQueryRequest queryWithParamOverrides =
+          new JsonQueryRequest(overrideParams)
+              .setQuery("memory")
+              .setLimit(10)
+              .withFilter("inStock:true");
       overrideParams.set("json.limit", 5);
       overrideParams.add("json.filter", "\"cat:electronics\"");
       QueryResponse queryResponse = queryWithParamOverrides.process(solrClient, COLLECTION_NAME);
@@ -112,11 +114,12 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     }
 
     // tag::solrj-json-query-param-overrides-equivalent[]
-    final JsonQueryRequest query = new JsonQueryRequest()
-        .setQuery("memory")
-        .setLimit(5)
-        .withFilter("inStock:true")
-        .withFilter("cat:electronics");
+    final JsonQueryRequest query =
+        new JsonQueryRequest()
+            .setQuery("memory")
+            .setLimit(5)
+            .withFilter("inStock:true")
+            .withFilter("cat:electronics");
     QueryResponse queryResponse = query.process(solrClient, COLLECTION_NAME);
     // end::solrj-json-query-param-overrides-equivalent[]
 
@@ -127,38 +130,44 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testJsonFacetWithAllQueryParams() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    // This subtest has its own scope so that it and its twin below can can have identical variable declarations (as they appear as separate snippets in the ref-guide)
+    // This subtest has its own scope so that it and its twin below can can have identical variable
+    // declarations (as they appear as separate snippets in the ref-guide)
     {
-      //tag::solrj-json-facet-all-query-params[]
+      // tag::solrj-json-facet-all-query-params[]
       final ModifiableSolrParams params = new ModifiableSolrParams();
       final SolrQuery query = new SolrQuery("*:*");
       query.setRows(1);
       query.setParam("json.facet.avg_price", "\"avg(price)\"");
       query.setParam("json.facet.top_cats", "{type:terms,field:\"cat\",limit:3}");
       QueryResponse queryResponse = solrClient.query(COLLECTION_NAME, query);
-      //end::solrj-json-facet-all-query-params[]
+      // end::solrj-json-facet-all-query-params[]
 
       NestableJsonFacet topLevelFacet = queryResponse.getJsonFacetingResponse();
       assertResponseFoundNumDocs(queryResponse, 1);
-      assertHasFacetWithBucketValues(topLevelFacet, "top_cats",
+      assertHasFacetWithBucketValues(
+          topLevelFacet,
+          "top_cats",
           new FacetBucket("electronics", 12),
           new FacetBucket("currency", 4),
           new FacetBucket("memory", 3));
     }
 
     {
-      //tag::solrj-json-facet-all-query-params-equivalent[]
-      final JsonQueryRequest jsonQueryRequest = new JsonQueryRequest()
-          .setQuery("*:*")
-          .setLimit(1)
-          .withStatFacet("avg_price", "avg(price)")
-          .withFacet("top_cats", new TermsFacetMap("cat").setLimit(3));
+      // tag::solrj-json-facet-all-query-params-equivalent[]
+      final JsonQueryRequest jsonQueryRequest =
+          new JsonQueryRequest()
+              .setQuery("*:*")
+              .setLimit(1)
+              .withStatFacet("avg_price", "avg(price)")
+              .withFacet("top_cats", new TermsFacetMap("cat").setLimit(3));
       QueryResponse queryResponse = jsonQueryRequest.process(solrClient, COLLECTION_NAME);
-      //end::solrj-json-facet-all-query-params-equivalent[]
+      // end::solrj-json-facet-all-query-params-equivalent[]
 
       NestableJsonFacet topLevelFacet = queryResponse.getJsonFacetingResponse();
       assertResponseFoundNumDocs(queryResponse, 1);
-      assertHasFacetWithBucketValues(topLevelFacet, "top_cats",
+      assertHasFacetWithBucketValues(
+          topLevelFacet,
+          "top_cats",
           new FacetBucket("electronics", 12),
           new FacetBucket("currency", 4),
           new FacetBucket("memory", 3));
@@ -169,12 +178,11 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testJsonQueryUsingParamsBlock() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-query-params-block[]
+    // tag::solrj-json-query-params-block[]
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("fl", "name", "price");
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest(params)
-        .withParam("q", "memory")
-        .withParam("rows", 1);
+    final JsonQueryRequest simpleQuery =
+        new JsonQueryRequest(params).withParam("q", "memory").withParam("rows", 1);
     QueryResponse queryResponse = simpleQuery.process(solrClient, COLLECTION_NAME);
     // end::solrj-json-query-params-block[]
 
@@ -191,12 +199,11 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testJsonQueryMacroExpansion() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-query-macro-expansion[]
+    // tag::solrj-json-query-macro-expansion[]
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("FIELD", "text");
     params.set("TERM", "memory");
-    final JsonQueryRequest simpleQuery = new JsonQueryRequest(params)
-        .setQuery("${FIELD}:${TERM}");
+    final JsonQueryRequest simpleQuery = new JsonQueryRequest(params).setQuery("${FIELD}:${TERM}");
     QueryResponse queryResponse = simpleQuery.process(solrClient, COLLECTION_NAME);
     // end::solrj-json-query-macro-expansion[]
 
@@ -208,45 +215,42 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     SolrClient solrClient = cluster.getSolrClient();
 
     {
-      //tag::solrj-ipod-query-basic[]
+      // tag::solrj-ipod-query-basic[]
       final SolrQuery query = new SolrQuery("name:iPod");
       final QueryResponse response = solrClient.query(COLLECTION_NAME, query);
-      //end::solrj-ipod-query-basic[]
+      // end::solrj-ipod-query-basic[]
 
       assertResponseFoundNumDocs(response, 3);
     }
 
     {
-      //tag::solrj-ipod-query-dsl-1[]
-      final JsonQueryRequest query = new JsonQueryRequest()
-          .setQuery("name:iPod");
+      // tag::solrj-ipod-query-dsl-1[]
+      final JsonQueryRequest query = new JsonQueryRequest().setQuery("name:iPod");
       final QueryResponse response = query.process(solrClient, COLLECTION_NAME);
-      //end::solrj-ipod-query-dsl-1[]
+      // end::solrj-ipod-query-dsl-1[]
 
       assertResponseFoundNumDocs(response, 3);
     }
 
     {
-      //tag::solrj-ipod-query-dsl-2[]
-      final JsonQueryRequest query = new JsonQueryRequest()
-          .setQuery("{!lucene df=name}iPod");
+      // tag::solrj-ipod-query-dsl-2[]
+      final JsonQueryRequest query = new JsonQueryRequest().setQuery("{!lucene df=name}iPod");
       final QueryResponse response = query.process(solrClient, COLLECTION_NAME);
-      //end::solrj-ipod-query-dsl-2[]
+      // end::solrj-ipod-query-dsl-2[]
 
       assertResponseFoundNumDocs(response, 3);
     }
 
     {
-      //tag::solrj-ipod-query-dsl-3[]
+      // tag::solrj-ipod-query-dsl-3[]
       final Map<String, Object> queryTopLevel = new HashMap<>();
       final Map<String, Object> luceneQueryProperties = new HashMap<>();
       queryTopLevel.put("lucene", luceneQueryProperties);
       luceneQueryProperties.put("df", "name");
       luceneQueryProperties.put("query", "iPod");
-      final JsonQueryRequest query = new JsonQueryRequest()
-          .setQuery(queryTopLevel);
+      final JsonQueryRequest query = new JsonQueryRequest().setQuery(queryTopLevel);
       final QueryResponse response = query.process(solrClient, COLLECTION_NAME);
-      //end::solrj-ipod-query-dsl-3[]
+      // end::solrj-ipod-query-dsl-3[]
 
       assertResponseFoundNumDocs(response, 3);
     }
@@ -258,31 +262,31 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     QueryResponse[] responses = new QueryResponse[3];
 
     {
-      //tag::solrj-ipod-query-boosted-basic[]
-      final SolrQuery query = new SolrQuery("{!boost b=log(popularity) v=\'{!lucene df=name}iPod\'}");
+      // tag::solrj-ipod-query-boosted-basic[]
+      final SolrQuery query =
+          new SolrQuery("{!boost b=log(popularity) v=\'{!lucene df=name}iPod\'}");
       final QueryResponse response = solrClient.query(COLLECTION_NAME, query);
-      //end::solrj-ipod-query-boosted-basic[]
+      // end::solrj-ipod-query-boosted-basic[]
 
       responses[0] = response;
     }
 
     {
-      //tag::solrj-ipod-query-boosted-dsl-1[]
+      // tag::solrj-ipod-query-boosted-dsl-1[]
       final Map<String, Object> queryTopLevel = new HashMap<>();
       final Map<String, Object> boostQuery = new HashMap<>();
       queryTopLevel.put("boost", boostQuery);
       boostQuery.put("b", "log(popularity)");
       boostQuery.put("query", "{!lucene df=name}iPod");
-      final JsonQueryRequest query = new JsonQueryRequest()
-          .setQuery(queryTopLevel);
+      final JsonQueryRequest query = new JsonQueryRequest().setQuery(queryTopLevel);
       final QueryResponse response = query.process(solrClient, COLLECTION_NAME);
-      //end::solrj-ipod-query-boosted-dsl-1[]
+      // end::solrj-ipod-query-boosted-dsl-1[]
 
       responses[1] = response;
     }
 
     {
-      //tag::solrj-ipod-query-boosted-dsl-2[]
+      // tag::solrj-ipod-query-boosted-dsl-2[]
       final Map<String, Object> queryTopLevel = new HashMap<>();
       final Map<String, Object> boostProperties = new HashMap<>();
       final Map<String, Object> luceneTopLevel = new HashMap<>();
@@ -293,10 +297,9 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
       luceneTopLevel.put("lucene", luceneProperties);
       luceneProperties.put("df", "name");
       luceneProperties.put("query", "iPod");
-      final JsonQueryRequest query = new JsonQueryRequest()
-          .setQuery(queryTopLevel);
+      final JsonQueryRequest query = new JsonQueryRequest().setQuery(queryTopLevel);
       final QueryResponse response = query.process(solrClient, COLLECTION_NAME);
-      //end::solrj-ipod-query-boosted-dsl-2[]
+      // end::solrj-ipod-query-boosted-dsl-2[]
 
       responses[2] = response;
     }
@@ -315,7 +318,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     QueryResponse[] responses = new QueryResponse[3];
 
     {
-      //tag::solrj-ipod-query-bool[]
+      // tag::solrj-ipod-query-bool[]
       final Map<String, Object> queryTopLevel = new HashMap<>();
       final Map<String, Object> boolProperties = new HashMap<>();
       final List<Object> mustClauses = new ArrayList<>();
@@ -334,16 +337,15 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
       frangeProperties.put("query", "popularity");
       mustNotClauses.add(frangeTopLevel);
 
-      final JsonQueryRequest query = new JsonQueryRequest()
-          .setQuery(queryTopLevel);
+      final JsonQueryRequest query = new JsonQueryRequest().setQuery(queryTopLevel);
       final QueryResponse response = query.process(solrClient, COLLECTION_NAME);
-      //end::solrj-ipod-query-bool[]
+      // end::solrj-ipod-query-bool[]
 
       responses[0] = response;
     }
 
     {
-      //tag::solrj-ipod-query-bool-condensed[]
+      // tag::solrj-ipod-query-bool-condensed[]
       final Map<String, Object> queryTopLevel = new HashMap<>();
       final Map<String, Object> boolProperties = new HashMap<>();
       final List<Object> mustClauses = new ArrayList<>();
@@ -352,26 +354,24 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
       boolProperties.put("must", "name:iPod");
       boolProperties.put("must_not", "{!frange l=0 u=5}popularity");
 
-      final JsonQueryRequest query = new JsonQueryRequest()
-          .setQuery(queryTopLevel);
+      final JsonQueryRequest query = new JsonQueryRequest().setQuery(queryTopLevel);
       final QueryResponse response = query.process(solrClient, COLLECTION_NAME);
-      //end::solrj-ipod-query-bool-condensed[]
+      // end::solrj-ipod-query-bool-condensed[]
 
       responses[1] = response;
     }
 
     {
-      //tag::solrj-ipod-query-bool-filter[]
+      // tag::solrj-ipod-query-bool-filter[]
       final Map<String, Object> queryTopLevel = new HashMap<>();
       final Map<String, Object> boolProperties = new HashMap<>();
       queryTopLevel.put("bool", boolProperties);
-      boolProperties.put("must_not","{!frange l=0 u=5}popularity");
+      boolProperties.put("must_not", "{!frange l=0 u=5}popularity");
 
-      final JsonQueryRequest query = new JsonQueryRequest()
-          .setQuery(queryTopLevel)
-          .withFilter("name:iPod");
+      final JsonQueryRequest query =
+          new JsonQueryRequest().setQuery(queryTopLevel).withFilter("name:iPod");
       final QueryResponse response = query.process(solrClient, COLLECTION_NAME);
-      //end::solrj-ipod-query-bool-filter[]
+      // end::solrj-ipod-query-bool-filter[]
 
       responses[2] = response;
     }
@@ -386,17 +386,18 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testJsonTaggedQuery() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-tagged-query[]
+    // tag::solrj-tagged-query[]
     final Map<String, Object> titleTaggedQuery = new HashMap<>();
     titleTaggedQuery.put("#titleTag", "name:Solr");
     final Map<String, Object> inStockTaggedQuery = new HashMap<>();
     inStockTaggedQuery.put("#inStockTag", "inStock:true");
-    final JsonQueryRequest query = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFilter(titleTaggedQuery)
-        .withFilter(inStockTaggedQuery);
+    final JsonQueryRequest query =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withFilter(titleTaggedQuery)
+            .withFilter(inStockTaggedQuery);
     final QueryResponse response = query.process(solrClient, COLLECTION_NAME);
-    //end::solrj-tagged-query[]
+    // end::solrj-tagged-query[]
 
     assertResponseFoundNumDocs(response, 1);
     assertEquals("SOLR1000", response.getResults().get(0).get("id"));
@@ -406,20 +407,21 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testSimpleJsonTermsFacet() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-simple-terms-facet[]
+    // tag::solrj-json-simple-terms-facet[]
     final TermsFacetMap categoryFacet = new TermsFacetMap("cat").setLimit(3);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("categories", categoryFacet);
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("categories", categoryFacet);
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-simple-terms-facet[]
+    // end::solrj-json-simple-terms-facet[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(32, queryResponse.getResults().getNumFound());
     assertEquals(10, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetingData,"categories",
-        new FacetBucket("electronics",12),
+    assertHasFacetWithBucketValues(
+        topLevelFacetingData,
+        "categories",
+        new FacetBucket("electronics", 12),
         new FacetBucket("currency", 4),
         new FacetBucket("memory", 3));
   }
@@ -428,20 +430,21 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testTermsFacet2() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-terms-facet-2[]
+    // tag::solrj-json-terms-facet-2[]
     final TermsFacetMap categoryFacet = new TermsFacetMap("cat").setLimit(5);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("categories", categoryFacet);
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("categories", categoryFacet);
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-terms-facet-2[]
+    // end::solrj-json-terms-facet-2[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(32, queryResponse.getResults().getNumFound());
     assertEquals(10, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetingData,"categories",
-        new FacetBucket("electronics",12),
+    assertHasFacetWithBucketValues(
+        topLevelFacetingData,
+        "categories",
+        new FacetBucket("electronics", 12),
         new FacetBucket("currency", 4),
         new FacetBucket("memory", 3),
         new FacetBucket("connector", 2),
@@ -452,16 +455,17 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testStatFacet1() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-metrics-facet-1[]
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("memory")
-        .withFilter("inStock:true")
-        .withStatFacet("avg_price", "avg(price)")
-        .withStatFacet("min_manufacturedate_dt", "min(manufacturedate_dt)")
-        .withStatFacet("num_suppliers", "unique(manu_exact)")
-        .withStatFacet("median_weight", "percentile(weight,50)");
+    // tag::solrj-json-metrics-facet-1[]
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("memory")
+            .withFilter("inStock:true")
+            .withStatFacet("avg_price", "avg(price)")
+            .withStatFacet("min_manufacturedate_dt", "min(manufacturedate_dt)")
+            .withStatFacet("num_suppliers", "unique(manu_exact)")
+            .withStatFacet("median_weight", "percentile(weight,50)");
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-metrics-facet-1[]
+    // end::solrj-json-metrics-facet-1[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(4, queryResponse.getResults().getNumFound());
@@ -473,22 +477,23 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
 
     Object val = topLevelFacetingData.getStatValue("min_manufacturedate_dt");
     assertTrue(val instanceof Date);
-    assertEquals("2006-02-13T15:26:37Z", ((Date)val).toInstant().toString());
+    assertEquals("2006-02-13T15:26:37Z", ((Date) val).toInstant().toString());
   }
 
   @Test
   public void testStatFacetSimple() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-metrics-facet-simple[]
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFilter("price:[1.0 TO *]")
-        .withFilter("popularity:[0 TO 10]")
-        .withStatFacet("min_manu_id_s", "min(manu_id_s)")
-        .withStatFacet("avg_value", "avg(div(popularity,price))");
+    // tag::solrj-json-metrics-facet-simple[]
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withFilter("price:[1.0 TO *]")
+            .withFilter("popularity:[0 TO 10]")
+            .withStatFacet("min_manu_id_s", "min(manu_id_s)")
+            .withStatFacet("avg_value", "avg(div(popularity,price))");
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-metrics-facet-simple[]
+    // end::solrj-json-metrics-facet-simple[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(13, queryResponse.getResults().getNumFound());
@@ -504,19 +509,20 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testStatFacetExpanded() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-metrics-facet-expanded[]
-    final  Map<String, Object> expandedStatFacet = new HashMap<>();
+    // tag::solrj-json-metrics-facet-expanded[]
+    final Map<String, Object> expandedStatFacet = new HashMap<>();
     expandedStatFacet.put("type", "func");
     expandedStatFacet.put("func", "avg(div($numer,$denom))");
     expandedStatFacet.put("numer", "mul(popularity,3.0)");
     expandedStatFacet.put("denom", "price");
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFilter("price:[1.0 TO *]")
-        .withFilter("popularity:[0 TO 10]")
-        .withFacet("avg_value", expandedStatFacet);
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withFilter("price:[1.0 TO *]")
+            .withFilter("popularity:[0 TO 10]")
+            .withFacet("avg_value", expandedStatFacet);
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-metrics-facet-expanded[]
+    // end::solrj-json-metrics-facet-expanded[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(13, queryResponse.getResults().getNumFound());
@@ -529,13 +535,12 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testQueryFacetSimple() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-query-facet-simple[]
+    // tag::solrj-json-query-facet-simple[]
     QueryFacetMap queryFacet = new QueryFacetMap("popularity:[8 TO 10]");
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("high_popularity", queryFacet);
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("high_popularity", queryFacet);
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-query-facet-simple[]
+    // end::solrj-json-query-facet-simple[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(32, queryResponse.getResults().getNumFound());
@@ -548,41 +553,42 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testQueryFacetExpanded() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-query-facet-expanded[]
-    QueryFacetMap queryFacet = new QueryFacetMap("popularity:[8 TO 10]")
-        .withStatSubFacet("average_price", "avg(price)");
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("high_popularity", queryFacet);
+    // tag::solrj-json-query-facet-expanded[]
+    QueryFacetMap queryFacet =
+        new QueryFacetMap("popularity:[8 TO 10]").withStatSubFacet("average_price", "avg(price)");
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("high_popularity", queryFacet);
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-query-facet-expanded[]
+    // end::solrj-json-query-facet-expanded[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(32, queryResponse.getResults().getNumFound());
     assertEquals(10, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
     assertEquals(2, topLevelFacetingData.getQueryFacet("high_popularity").getCount());
-    assertEquals(199.5, topLevelFacetingData.getQueryFacet("high_popularity").getStatValue("average_price"));
+    assertEquals(
+        199.5, topLevelFacetingData.getQueryFacet("high_popularity").getStatValue("average_price"));
   }
 
   @Test
   public void testRangeFacetSimple() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-range-facet-simple[]
+    // tag::solrj-json-range-facet-simple[]
     RangeFacetMap rangeFacet = new RangeFacetMap("price", 0.0, 100.0, 20.0);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("prices", rangeFacet);
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("prices", rangeFacet);
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-range-facet-simple[]
+    // end::solrj-json-range-facet-simple[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(32, queryResponse.getResults().getNumFound());
     assertEquals(10, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetingData,"prices",
-        new FacetBucket(0.0f,5),
+    assertHasFacetWithBucketValues(
+        topLevelFacetingData,
+        "prices",
+        new FacetBucket(0.0f, 5),
         new FacetBucket(20.0f, 0),
         new FacetBucket(40.0f, 0),
         new FacetBucket(60.0f, 1),
@@ -593,56 +599,60 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testNestedFacetSimple() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-nested-cat-facet[]
+    // tag::solrj-json-nested-cat-facet[]
     final TermsFacetMap topCategoriesFacet = new TermsFacetMap("cat").setLimit(3);
     final TermsFacetMap topManufacturerFacet = new TermsFacetMap("manu_id_s").setLimit(1);
     topCategoriesFacet.withSubFacet("top_manufacturers", topManufacturerFacet);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("categories", topCategoriesFacet);
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("categories", topCategoriesFacet);
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-nested-cat-facet[]
+    // end::solrj-json-nested-cat-facet[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(32, queryResponse.getResults().getNumFound());
     assertEquals(10, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
 
-    assertHasFacetWithBucketValues(topLevelFacetingData, "categories",
+    assertHasFacetWithBucketValues(
+        topLevelFacetingData,
+        "categories",
         new FacetBucket("electronics", 12),
         new FacetBucket("currency", 4),
         new FacetBucket("memory", 3));
 
     // Check the top manufacturer for each category
-    List<BucketJsonFacet> catBuckets = topLevelFacetingData.getBucketBasedFacets("categories").getBuckets();
-    assertHasFacetWithBucketValues(catBuckets.get(0), "top_manufacturers",
-        new FacetBucket("corsair", 3));
-    assertHasFacetWithBucketValues(catBuckets.get(1), "top_manufacturers",
-        new FacetBucket("boa", 1));
-    assertHasFacetWithBucketValues(catBuckets.get(2), "top_manufacturers",
-        new FacetBucket("corsair", 3));
+    List<BucketJsonFacet> catBuckets =
+        topLevelFacetingData.getBucketBasedFacets("categories").getBuckets();
+    assertHasFacetWithBucketValues(
+        catBuckets.get(0), "top_manufacturers", new FacetBucket("corsair", 3));
+    assertHasFacetWithBucketValues(
+        catBuckets.get(1), "top_manufacturers", new FacetBucket("boa", 1));
+    assertHasFacetWithBucketValues(
+        catBuckets.get(2), "top_manufacturers", new FacetBucket("corsair", 3));
   }
 
   @Test
   public void testFacetSortedByNestedMetric() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-nested-cat-facet-sorted[]
-    final TermsFacetMap topCategoriesFacet = new TermsFacetMap("cat")
-        .setLimit(3)
-        .withStatSubFacet("avg_price", "avg(price)")
-        .setSort("avg_price desc");
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("categories", topCategoriesFacet);
+    // tag::solrj-json-nested-cat-facet-sorted[]
+    final TermsFacetMap topCategoriesFacet =
+        new TermsFacetMap("cat")
+            .setLimit(3)
+            .withStatSubFacet("avg_price", "avg(price)")
+            .setSort("avg_price desc");
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("categories", topCategoriesFacet);
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-nested-cat-facet-sorted[]
+    // end::solrj-json-nested-cat-facet-sorted[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(32, queryResponse.getResults().getNumFound());
     assertEquals(10, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetingData, "categories",
+    assertHasFacetWithBucketValues(
+        topLevelFacetingData,
+        "categories",
         new FacetBucket("electronics and computer1", 1),
         new FacetBucket("graphics card", 2),
         new FacetBucket("music", 1));
@@ -652,21 +662,23 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testFacetFilteredDomain() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-facet-filtered-domain[]
-    final TermsFacetMap categoryFacet = new TermsFacetMap("cat")
-        .setLimit(3)
-        .withDomain(new DomainMap().withFilter("popularity:[5 TO 10]"));
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("categories", categoryFacet);
+    // tag::solrj-json-facet-filtered-domain[]
+    final TermsFacetMap categoryFacet =
+        new TermsFacetMap("cat")
+            .setLimit(3)
+            .withDomain(new DomainMap().withFilter("popularity:[5 TO 10]"));
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("categories", categoryFacet);
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-facet-filtered-domain[]
+    // end::solrj-json-facet-filtered-domain[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(32, queryResponse.getResults().getNumFound());
     assertEquals(10, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetingData, "categories",
+    assertHasFacetWithBucketValues(
+        topLevelFacetingData,
+        "categories",
         new FacetBucket("electronics", 9),
         new FacetBucket("graphics card", 2),
         new FacetBucket("hard drive", 2));
@@ -676,26 +688,29 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testFacetWidenedExcludeTagsDomain() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-facet-excludetags-domain[]
+    // tag::solrj-json-facet-excludetags-domain[]
     final TermsFacetMap inStockFacet = new TermsFacetMap("inStock").setLimit(2);
-    final TermsFacetMap allManufacturersFacet = new TermsFacetMap("manu_id_s")
-        .setLimit(2)
-        .withDomain(new DomainMap().withTagsToExclude("MANU"));
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("cat:electronics")
-        .withFilter("{!tag=MANU}manu_id_s:apple")
-        .withFacet("stock", inStockFacet)
-        .withFacet("manufacturers", allManufacturersFacet);
+    final TermsFacetMap allManufacturersFacet =
+        new TermsFacetMap("manu_id_s")
+            .setLimit(2)
+            .withDomain(new DomainMap().withTagsToExclude("MANU"));
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("cat:electronics")
+            .withFilter("{!tag=MANU}manu_id_s:apple")
+            .withFacet("stock", inStockFacet)
+            .withFacet("manufacturers", allManufacturersFacet);
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-facet-excludetags-domain[]
+    // end::solrj-json-facet-excludetags-domain[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(1, queryResponse.getResults().getNumFound());
     assertEquals(1, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetingData, "stock",
-        new FacetBucket(true, 1));
-    assertHasFacetWithBucketValues(topLevelFacetingData, "manufacturers",
+    assertHasFacetWithBucketValues(topLevelFacetingData, "stock", new FacetBucket(true, 1));
+    assertHasFacetWithBucketValues(
+        topLevelFacetingData,
+        "manufacturers",
         new FacetBucket("corsair", 3),
         new FacetBucket("belkin", 2));
   }
@@ -704,22 +719,26 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   public void testFacetWidenedUsingQueryDomain() throws Exception {
     SolrClient solrClient = cluster.getSolrClient();
 
-    //tag::solrj-json-facet-query-domain[]
+    // tag::solrj-json-facet-query-domain[]
     final TermsFacetMap inStockFacet = new TermsFacetMap("inStock").setLimit(2);
-    final TermsFacetMap popularCategoriesFacet = new TermsFacetMap("cat")
-        .withDomain(new DomainMap().withQuery("popularity:[8 TO 10]"))
-        .setLimit(3);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("apple")
-        .withFacet("popular_categories", popularCategoriesFacet);
+    final TermsFacetMap popularCategoriesFacet =
+        new TermsFacetMap("cat")
+            .withDomain(new DomainMap().withQuery("popularity:[8 TO 10]"))
+            .setLimit(3);
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("apple")
+            .withFacet("popular_categories", popularCategoriesFacet);
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
-    //end::solrj-json-facet-query-domain[]
+    // end::solrj-json-facet-query-domain[]
 
     assertEquals(0, queryResponse.getStatus());
     assertEquals(1, queryResponse.getResults().getNumFound());
     assertEquals(1, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetingData, "popular_categories",
+    assertHasFacetWithBucketValues(
+        topLevelFacetingData,
+        "popular_categories",
         new FacetBucket("electronics", 1),
         new FacetBucket("music", 1),
         new FacetBucket("search", 1));
@@ -728,19 +747,28 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   private class FacetBucket {
     private final Object val;
     private final int count;
+
     FacetBucket(Object val, int count) {
       this.val = val;
       this.count = count;
     }
 
-    public Object getVal() { return val; }
-    public int getCount() { return count; }
+    public Object getVal() {
+      return val;
+    }
+
+    public int getCount() {
+      return count;
+    }
   }
 
-  private void assertHasFacetWithBucketValues(NestableJsonFacet response, String expectedFacetName, FacetBucket... expectedBuckets) {
-    assertTrue("Expected response to have facet with name " + expectedFacetName,
+  private void assertHasFacetWithBucketValues(
+      NestableJsonFacet response, String expectedFacetName, FacetBucket... expectedBuckets) {
+    assertTrue(
+        "Expected response to have facet with name " + expectedFacetName,
         response.getBucketBasedFacets(expectedFacetName) != null);
-    final List<BucketJsonFacet> buckets = response.getBucketBasedFacets(expectedFacetName).getBuckets();
+    final List<BucketJsonFacet> buckets =
+        response.getBucketBasedFacets(expectedFacetName).getBuckets();
     assertEquals(expectedBuckets.length, buckets.size());
     for (int i = 0; i < expectedBuckets.length; i++) {
       final FacetBucket expectedBucket = expectedBuckets[i];

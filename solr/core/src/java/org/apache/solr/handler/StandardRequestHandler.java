@@ -19,8 +19,7 @@ package org.apache.solr.handler;
 import org.apache.solr.handler.component.*;
 
 @Deprecated
-public class StandardRequestHandler extends SearchHandler 
-{
+public class StandardRequestHandler extends SearchHandler {
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
@@ -28,10 +27,3 @@ public class StandardRequestHandler extends SearchHandler
     return "The standard Solr request handler";
   }
 }
-
-
-
-
-
-
-

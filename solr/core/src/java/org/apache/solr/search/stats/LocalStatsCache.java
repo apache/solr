@@ -17,9 +17,7 @@
 package org.apache.solr.search.stats;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.List;
-
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
@@ -29,8 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Default implementation that simply ignores global term statistics, and always
- * uses local term statistics.
+ * Default implementation that simply ignores global term statistics, and always uses local term
+ * statistics.
  */
 public class LocalStatsCache extends StatsCache {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -51,8 +49,7 @@ public class LocalStatsCache extends StatsCache {
   }
 
   @Override
-  protected void doMergeToGlobalStats(SolrQueryRequest req,
-          List<ShardResponse> responses) {
+  protected void doMergeToGlobalStats(SolrQueryRequest req, List<ShardResponse> responses) {
     if (log.isDebugEnabled()) {
       log.debug("## MTGS {}", req);
       for (ShardResponse r : responses) {

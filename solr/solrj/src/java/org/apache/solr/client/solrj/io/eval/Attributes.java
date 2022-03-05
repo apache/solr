@@ -18,9 +18,10 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.util.Map;
 
-
 public interface Attributes {
   Object getAttribute(String key);
+
   void setAttribute(String key, Object value);
-  Map<?,?> getAttributes();
+
+  Map<?, ?> getAttributes();
 }

@@ -21,51 +21,53 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Explanation containing details about a stream expression
- */
+/** Explanation containing details about a stream expression */
 public class StreamExplanation extends Explanation {
-  
+
   private List<Explanation> children;
-  
-  public StreamExplanation(String expressionNodeId){
+
+  public StreamExplanation(String expressionNodeId) {
     super(expressionNodeId);
   }
-  
-  public List<Explanation> getChildren(){
+
+  public List<Explanation> getChildren() {
     return children;
   }
-  public void setChildren(List<Explanation> children){
+
+  public void setChildren(List<Explanation> children) {
     this.children = children;
   }
-  public StreamExplanation withChildren(List<Explanation> children){
+
+  public StreamExplanation withChildren(List<Explanation> children) {
     setChildren(children);
     return this;
   }
-  public StreamExplanation withChildren(Explanation[] children){
-    for(Explanation child : children){
+
+  public StreamExplanation withChildren(Explanation[] children) {
+    for (Explanation child : children) {
       addChild(child);
     }
     return this;
   }
-  public void addChild(Explanation child){
-    if(null == children){
+
+  public void addChild(Explanation child) {
+    if (null == children) {
       children = new ArrayList<Explanation>(1);
     }
     children.add(child);
   }
-  
-  public Map<String,Object> toMap(Map<String,Object> map){
+
+  public Map<String, Object> toMap(Map<String, Object> map) {
     map = super.toMap(map);
-    
-    if(null != children && 0 != children.size()){
-      List<Map<String,Object>> childrenMaps = new ArrayList<Map<String,Object>>();
-      for(Explanation child : children){
+
+    if (null != children && 0 != children.size()) {
+      List<Map<String, Object>> childrenMaps = new ArrayList<Map<String, Object>>();
+      for (Explanation child : children) {
         childrenMaps.add(child.toMap(new LinkedHashMap<>()));
       }
       map.put("children", childrenMaps);
     }
-    
+
     return map;
   }
 }

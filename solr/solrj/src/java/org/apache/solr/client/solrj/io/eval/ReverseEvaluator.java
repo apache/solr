@@ -20,37 +20,39 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class ReverseEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public ReverseEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public ReverseEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
-    if(1 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 1 value but found %d",expression,containedEvaluators.size()));
+
+    if (1 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 1 value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
-  public Object doWork(Object value){
-    if(null == value){
+  public Object doWork(Object value) {
+    if (null == value) {
       return null;
-    }
-    else if(value instanceof List){
-      List<?> actual = (List<?>)value;
-      
+    } else if (value instanceof List) {
+      List<?> actual = (List<?>) value;
+
       List<Object> reversed = new ArrayList<>();
-      for(int idx = actual.size() - 1; idx >= 0; --idx){
+      for (int idx = actual.size() - 1; idx >= 0; --idx) {
         reversed.add(actual.get(idx));
       }
-      
+
       return reversed;
-    }
-    else{
+    } else {
       return value;
     }
   }

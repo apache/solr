@@ -16,12 +16,11 @@
  */
 package org.apache.solr.response.transform;
 
+import com.google.common.base.Strings;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-
-import com.google.common.base.Strings;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -32,26 +31,24 @@ import org.apache.solr.response.QueryResponseWriter;
 /**
  * @since solr 5.2
  */
-public class RawValueTransformerFactory extends TransformerFactory implements TransformerFactory.FieldRenamer
-{
+public class RawValueTransformerFactory extends TransformerFactory
+    implements TransformerFactory.FieldRenamer {
   String applyToWT = null;
-  
-  public RawValueTransformerFactory() {
-    
-  }
+
+  public RawValueTransformerFactory() {}
 
   public RawValueTransformerFactory(String wt) {
     this.applyToWT = wt;
   }
-  
+
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
-    if(defaultUserArgs!=null&&defaultUserArgs.startsWith("wt=")) {
+    if (defaultUserArgs != null && defaultUserArgs.startsWith("wt=")) {
       applyToWT = defaultUserArgs.substring(3);
     }
   }
-  
+
   @Override
   public DocTransformer create(String display, SolrParams params, SolrQueryRequest req) {
     throw new UnsupportedOperationException();
@@ -59,15 +56,20 @@ public class RawValueTransformerFactory extends TransformerFactory implements Tr
 
   @Override
   public boolean mayModifyValue() {
-    // The only thing we may modify is the _serialization_; field values per se are guaranteed to be unmodified.
+    // The only thing we may modify is the _serialization_; field values per se are guaranteed to be
+    // unmodified.
     return false;
   }
 
   @Override
-  public DocTransformer create(String display, SolrParams params, SolrQueryRequest req,
-                               Map<String, String> renamedFields, Set<String> reqFieldNames) {
+  public DocTransformer create(
+      String display,
+      SolrParams params,
+      SolrQueryRequest req,
+      Map<String, String> renamedFields,
+      Set<String> reqFieldNames) {
     String field = params.get("f");
-    if(Strings.isNullOrEmpty(field)) {
+    if (Strings.isNullOrEmpty(field)) {
       field = display;
     }
     field = renamedFields.getOrDefault(field, field);
@@ -78,47 +80,43 @@ public class RawValueTransformerFactory extends TransformerFactory implements Tr
     }
     // When a 'wt' is specified in the transformer, only apply it to the same wt
     boolean apply = true;
-    if(applyToWT!=null) {
+    if (applyToWT != null) {
       String qwt = req.getParams().get(CommonParams.WT);
-      if(qwt==null) {
+      if (qwt == null) {
         QueryResponseWriter qw = req.getCore().getQueryResponseWriter(req);
         QueryResponseWriter dw = req.getCore().getQueryResponseWriter(applyToWT);
-        if(qw!=dw) {
+        if (qw != dw) {
           apply = false;
         }
-      }
-      else {
+      } else {
         apply = applyToWT.equals(qwt);
       }
     }
 
-    if(apply) {
-      return new RawTransformer( field, display, copy );
+    if (apply) {
+      return new RawTransformer(field, display, copy);
     }
-    
+
     if (!rename) {
       // we have to ensure the field is returned
       return new DocTransformer.NoopFieldTransformer(field);
     }
-    return new RenameFieldTransformer( field, display, copy );
+    return new RenameFieldTransformer(field, display, copy);
   }
 
-  static class RawTransformer extends DocTransformer
-  {
+  static class RawTransformer extends DocTransformer {
     final String field;
     final String display;
     final boolean copy;
 
-    public RawTransformer( String field, String display, boolean copy )
-    {
+    public RawTransformer(String field, String display, boolean copy) {
       this.field = field;
       this.display = display;
       this.copy = copy;
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
       return display;
     }
 
@@ -130,7 +128,7 @@ public class RawValueTransformerFactory extends TransformerFactory implements Tr
     @Override
     public void transform(SolrDocument doc, int docid) {
       Object val = copy ? doc.get(field) : doc.remove(field);
-      if(val != null) {
+      if (val != null) {
         doc.setField(display, val);
       }
     }
@@ -141,5 +139,3 @@ public class RawValueTransformerFactory extends TransformerFactory implements Tr
     }
   }
 }
-
-

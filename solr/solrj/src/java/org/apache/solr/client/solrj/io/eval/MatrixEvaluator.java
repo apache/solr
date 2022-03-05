@@ -17,32 +17,35 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class MatrixEvaluator extends RecursiveNumericListEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public MatrixEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public MatrixEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    if(containedEvaluators.size() < 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
+    if (containedEvaluators.size() < 1) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting at least one value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
     double[][] data = new double[values.length][];
-    for(int i=0; i<values.length; i++) {
+    for (int i = 0; i < values.length; i++) {
       @SuppressWarnings({"unchecked"})
-      List<Number> vec = (List<Number>)values[i];
+      List<Number> vec = (List<Number>) values[i];
       double[] array = new double[vec.size()];
-      for(int j=0; j<array.length; j++) {
+      for (int j = 0; j < array.length; j++) {
         array[j] = vec.get(j).doubleValue();
       }
       data[i] = array;

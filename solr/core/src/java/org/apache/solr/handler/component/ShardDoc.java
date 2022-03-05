@@ -16,23 +16,22 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.List;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.solr.common.util.NamedList;
 
-import java.util.List;
-
 public class ShardDoc extends FieldDoc {
   public String shard;
-  public String shardAddress;  // TODO
-  
+  public String shardAddress; // TODO
+
   public int orderInShard;
-    // the position of this doc within the shard... this can be used
-    // to short-circuit comparisons if the shard is equal, and can
-    // also be used to break ties within the same shard.
+  // the position of this doc within the shard... this can be used
+  // to short-circuit comparisons if the shard is equal, and can
+  // also be used to break ties within the same shard.
 
   public Object id;
-    // this is currently the uniqueKeyField but
-    // may be replaced with internal docid in a future release.
+  // this is currently the uniqueKeyField but
+  // may be replaced with internal docid in a future release.
 
   public NamedList<List<Object>> sortFieldValues;
   // sort field values for *all* docs in a particular shard.
@@ -45,12 +44,12 @@ public class ShardDoc extends FieldDoc {
   // retrieval stage.
 
   public int positionInResponse;
-  // the ordinal position in the merged response arraylist  
+  // the ordinal position in the merged response arraylist
 
   public ShardDoc(float score, Object[] fields, Object uniqueId, String shard) {
-      super(-1, score, fields);
-      this.id = uniqueId;
-      this.shard = shard;
+    super(-1, score, fields);
+    this.id = uniqueId;
+    this.shard = shard;
   }
 
   public ShardDoc() {
@@ -75,12 +74,18 @@ public class ShardDoc extends FieldDoc {
   }
 
   @Override
-  public String toString(){
-    return "id="+id
-            +" ,score="+score
-            +" ,shard="+shard
-            +" ,orderInShard="+orderInShard
-            +" ,positionInResponse="+positionInResponse
-            +" ,sortFieldValues="+sortFieldValues;
+  public String toString() {
+    return "id="
+        + id
+        + " ,score="
+        + score
+        + " ,shard="
+        + shard
+        + " ,orderInShard="
+        + orderInShard
+        + " ,positionInResponse="
+        + positionInResponse
+        + " ,sortFieldValues="
+        + sortFieldValues;
   }
 }

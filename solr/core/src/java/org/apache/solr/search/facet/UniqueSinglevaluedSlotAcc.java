@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.function.IntFunction;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.OrdinalMap;
@@ -36,7 +35,9 @@ class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
   LongValues toGlobal;
   SortedDocValues subDv;
 
-  public UniqueSinglevaluedSlotAcc(FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
+  public UniqueSinglevaluedSlotAcc(
+      FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory)
+      throws IOException {
     super(fcontext, field, numSlots, factory);
   }
 
@@ -46,8 +47,8 @@ class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
     topLevel = FieldUtil.getSortedDocValues(fcontext.qcontext, field, null);
     nTerms = topLevel.getValueCount();
     if (topLevel instanceof MultiDocValues.MultiSortedDocValues) {
-      ordMap = ((MultiDocValues.MultiSortedDocValues)topLevel).mapping;
-      subDvs = ((MultiDocValues.MultiSortedDocValues)topLevel).values;
+      ordMap = ((MultiDocValues.MultiSortedDocValues) topLevel).mapping;
+      subDvs = ((MultiDocValues.MultiSortedDocValues) topLevel).values;
     } else {
       ordMap = null;
       subDvs = null;
@@ -67,17 +68,18 @@ class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
       toGlobal = ordMap.getGlobalOrds(readerContext.ord);
       assert toGlobal != null;
     } else {
-      assert readerContext.ord==0 || topLevel.getValueCount() == 0;
+      assert readerContext.ord == 0 || topLevel.getValueCount() == 0;
       subDv = topLevel;
     }
     assert subDv.docID() == -1; // make sure we haven't used this iterator before
   }
 
   @Override
-  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext)
+      throws IOException {
     if (subDv.advanceExact(doc)) {
       int segOrd = subDv.ordValue();
-      int ord = toGlobal==null ? segOrd : (int)toGlobal.get(segOrd);
+      int ord = toGlobal == null ? segOrd : (int) toGlobal.get(segOrd);
 
       collectOrdToSlot(slotNum, ord);
     }

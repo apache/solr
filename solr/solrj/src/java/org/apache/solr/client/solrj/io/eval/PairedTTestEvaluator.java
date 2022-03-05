@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.commons.math3.stat.inference.TTest;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -29,11 +28,17 @@ import org.apache.solr.common.params.StreamParams;
 public class PairedTTestEvaluator extends RecursiveNumericListEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public PairedTTestEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public PairedTTestEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
 
-    if(containedEvaluators.size() != 2){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two parameters but found %d",expression,containedEvaluators.size()));
+    if (containedEvaluators.size() != 2) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting two parameters but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
@@ -42,16 +47,16 @@ public class PairedTTestEvaluator extends RecursiveNumericListEvaluator implemen
 
     TTest tTest = new TTest();
     Tuple tuple = new Tuple();
-    if(value1 instanceof List) {
+    if (value1 instanceof List) {
       @SuppressWarnings({"unchecked"})
-      List<Number> values1 = (List<Number>)value1;
+      List<Number> values1 = (List<Number>) value1;
       double[] samples1 = new double[values1.size()];
 
-      for(int i=0; i< samples1.length; i++) {
+      for (int i = 0; i < samples1.length; i++) {
         samples1[i] = values1.get(i).doubleValue();
       }
 
-      if(value2 instanceof List) {
+      if (value2 instanceof List) {
         @SuppressWarnings({"unchecked"})
         List<Number> values2 = (List<Number>) value2;
         double[] samples2 = new double[values2.size()];
