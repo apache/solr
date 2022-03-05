@@ -755,9 +755,8 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     // a cut-n-paste of the first big query, but this time it will be retrieved from the index
-    // rather than the transaction log
-    // this requires ChildDocTransformer to get the whole block, since the document is retrieved
-    // using an index lookup
+    // rather than the transaction log. this requires ChildDocTransformer to get the whole block,
+    // since the document is retrieved using an index lookup
     assertJQ(
         req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
         "=={'doc':{'id':'1'"
@@ -906,9 +905,8 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     // a cut-n-paste of the first big query, but this time it will be retrieved from the index
-    // rather than the transaction log
-    // this requires ChildDocTransformer to get the whole block, since the document is retrieved
-    // using an index lookup
+    // rather than the transaction log. this requires ChildDocTransformer to get the whole block,
+    // since the document is retrieved using an index lookup
     assertJQ(
         req("qt", "/get", "id", "1", "fl", "id, cat_ss, child1, [child]"),
         "=={'doc':{'id':'1'"
@@ -938,8 +936,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
   private void testBlockAtomicSetToNullOrEmpty(boolean empty) throws Exception {
     // latlon field is included to ensure reading from LatLonDocValuesField is working due to atomic
-    // update.
-    // See SOLR-13966 for further details.
+    // update. See SOLR-13966 for further details.
     SolrInputDocument sdoc2 = sdoc("id", "2", "cat_ss", "child");
     SolrInputDocument doc =
         sdoc(
@@ -999,10 +996,8 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     // a cut-n-paste of the first big query, but this time it will be retrieved from the index
-    // rather than the
-    // transaction log
-    // this requires ChildDocTransformer to get the whole block, since the document is retrieved
-    // using an index lookup
+    // rather than the transaction log. this requires ChildDocTransformer to get the whole block,
+    // since the document is retrieved using an index lookup
     assertJQ(
         req("qt", "/get", "id", "1", "fl", "id, latlon, cat_ss, child1, [child]"),
         "=={\"doc\":{'id':\"1\", \"latlon\":\"0,0\", cat_ss:[\"aaa\",\"ccc\"]}}");

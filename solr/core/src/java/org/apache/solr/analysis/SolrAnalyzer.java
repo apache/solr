@@ -16,14 +16,10 @@
  */
 package org.apache.solr.analysis;
 
+import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 
-import java.io.Reader;
-
-/**
- *
- * @since 3.1
- */
+/** @since 3.1 */
 public abstract class SolrAnalyzer extends Analyzer {
   int posIncGap = 0;
 

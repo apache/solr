@@ -423,8 +423,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
             "pt",
             "3,4"),
         1e-3,
-        "/response/docs/[0]/id=='101'" // FLIPPED
-        ,
+        "/response/docs/[0]/id=='101'", // FLIPPED
         "/response/docs/[1]/id=='100'" // FLIPPED
         );
 
@@ -445,8 +444,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         req(
             "q", radiusQuery(3, 4, 9, "distance", null),
             "fl", "id,score",
-            "sort", "score asc") // want ascending due to increasing distance
-        ,
+            "sort", "score asc"), // want ascending due to increasing distance
         1e-3,
         "/response/docs/[0]/id=='100'",
         "/response/docs/[0]/score==2.827493",
@@ -457,8 +455,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         req(
             "q", radiusQuery(3, 4, 9, "recipDistance", null),
             "fl", "id,score",
-            "sort", "score desc") // want descending
-        ,
+            "sort", "score desc"), // want descending
         1e-3,
         "/response/docs/[0]/id=='100'",
         "/response/docs/[0]/score==0.3099695",
@@ -471,8 +468,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
             // circle radius is small and shouldn't match either, but we disable filtering
             "q", radiusQuery(3, 4, 0.000001, "distance", "false"),
             "fl", "id,score",
-            "sort", "score asc") // want ascending due to increasing distance
-        ,
+            "sort", "score asc"), // want ascending due to increasing distance
         1e-3,
         "/response/docs/[0]/id=='100'",
         "/response/docs/[0]/score==2.827493",
@@ -484,8 +480,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         req(
             "q", radiusQuery(4, 0, 9, "distance", null),
             "fl", "id,score",
-            "sort", "score asc") // want ascending due to increasing distance
-        ,
+            "sort", "score asc"), // want ascending due to increasing distance
         1e-4,
         "/response/docs/[0]/id=='101'",
         "/response/docs/[1]/id=='100'");
@@ -569,8 +564,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         req(
             "q", radiusQuery(3, 4, 9, "distance", null),
             "fl", "id,score",
-            "sort", "score asc") // want ascending due to increasing distance
-        ,
+            "sort", "score asc"), // want ascending due to increasing distance
         1e-4,
         "/response/docs/[0]/id=='101'",
         "/response/docs/[0]/score==0.99862987" // dist to 3,5

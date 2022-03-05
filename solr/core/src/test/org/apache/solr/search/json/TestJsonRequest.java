@@ -591,8 +591,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
             "json",
             random().nextBoolean()
                 ? "{params:{ref1:'{!field f=cat_s}A'}}" // string param
-                : "{queries:{ref1:{field:{f:cat_s,query:A}}}}") // qdsl
-        ,
+                : "{queries:{ref1:{field:{f:cat_s,query:A}}}}"), // qdsl
         "response/numFound==2");
     { // shortest top level ref
       final ModifiableSolrParams params = params("json", "{query:{param:'ref1'}}");

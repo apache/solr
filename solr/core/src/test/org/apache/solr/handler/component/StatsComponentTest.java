@@ -208,10 +208,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
                 "fq",
                 "{!tag=key_ex_tag}-id:4",
                 "stats.field",
-                "{!key=" + key + " ex=key_ex_tag," + all_possible_ex + "}" + f)
+                "{!key=" + key + " ex=key_ex_tag," + all_possible_ex + "}" + f),
 
             // field name key, fq is applied
-            ,
             fpre + "double[@name='min'][.='-30.0']",
             fpre + "double[@name='max'][.='-10.0']",
             fpre + "double[@name='sum'][.='-60.0']",
@@ -221,10 +220,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             "count(" + fpre + "arr[@name='distinctValues']/*)=3",
             fpre + "double[@name='sumOfSquares'][.='1400.0']",
             fpre + "double[@name='mean'][.='-20.0']",
-            fpre + "double[@name='stddev'][.='10.0']"
+            fpre + "double[@name='stddev'][.='10.0']",
 
             // overridden key, fq is excluded
-            ,
             kpre + "double[@name='min'][.='-40.0']",
             kpre + "double[@name='max'][.='-10.0']",
             kpre + "double[@name='sum'][.='-100.0']",
@@ -414,9 +412,8 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       if (!json) { // checking stats.facet makes no sense for json faceting
         assertQ(
             "test stats.facet (using boolean facet field)",
-            req(baseParams, "q", "*:*", "stats.calcdistinct", "true", "stats.facet", "active_s")
+            req(baseParams, "q", "*:*", "stats.calcdistinct", "true", "stats.facet", "active_s"),
             // baseline
-            ,
             "//lst[@name='" + f + "']/double[@name='min'][.='-100.0']",
             "//lst[@name='" + f + "']/double[@name='max'][.='200.0']",
             "//lst[@name='" + f + "']/double[@name='sum'][.='9.0']",
@@ -426,9 +423,8 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             "count(//lst[@name='" + f + "']/arr[@name='distinctValues']/*)=8",
             "//lst[@name='" + f + "']/double[@name='sumOfSquares'][.='53101.0']",
             "//lst[@name='" + f + "']/double[@name='mean'][.='1.125']",
-            "//lst[@name='" + f + "']/double[@name='stddev'][.='87.08852228787508']"
+            "//lst[@name='" + f + "']/double[@name='stddev'][.='87.08852228787508']",
             // facet 'true'
-            ,
             "//lst[@name='true']/double[@name='min'][.='-100.0']",
             "//lst[@name='true']/double[@name='max'][.='200.0']",
             "//lst[@name='true']/double[@name='sum'][.='70.0']",
@@ -438,9 +434,8 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             "count(//lst[@name='true']/arr[@name='distinctValues']/*)=4",
             "//lst[@name='true']/double[@name='sumOfSquares'][.='50500.0']",
             "//lst[@name='true']/double[@name='mean'][.='17.5']",
-            "//lst[@name='true']/double[@name='stddev'][.='128.16005617976296']"
+            "//lst[@name='true']/double[@name='stddev'][.='128.16005617976296']",
             // facet 'false'
-            ,
             "//lst[@name='false']/double[@name='min'][.='-40.0']",
             "//lst[@name='false']/double[@name='max'][.='10.0']",
             "//lst[@name='false']/double[@name='sum'][.='-61.0']",
@@ -553,8 +548,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
           "//double[@name='min'][.='0.75']",
           "//double[@name='max'][.='0.875']",
           "//double[@name='sum'][.='2.375']",
-          json ? "//*" : "//long[@name='count'][.='3']" // SOLR-14010
-          ,
+          json ? "//*" : "//long[@name='count'][.='3']", // SOLR-14010
           "//long[@name='missing'][.='1']");
     }
   }
@@ -822,9 +816,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
           "count(" + pre + "/lst[@name='true']/arr[@name='distinctValues']/*)=2",
           pre + "/lst[@name='true']/double[@name='sumOfSquares'][.='500.0']",
           pre + "/lst[@name='true']/double[@name='mean'][.='15.0']",
-          pre + "/lst[@name='true']/double[@name='stddev'][.='7.0710678118654755']"
-          //
-          ,
+          pre + "/lst[@name='true']/double[@name='stddev'][.='7.0710678118654755']",
           pre + "/lst[@name='false']/double[@name='min'][.='30.0']",
           pre + "/lst[@name='false']/double[@name='max'][.='40.0']",
           pre + "/lst[@name='false']/double[@name='sum'][.='70.0']",
@@ -936,9 +928,8 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='active_i']/double[@name='sum'][.='0.0']",
         "//lst[@name='active_i']/double[@name='sumOfSquares'][.='0.0']",
         "//lst[@name='active_i']/double[@name='stddev'][.='0.0']",
-        "//lst[@name='active_i']/double[@name='mean'][.='NaN']"
+        "//lst[@name='active_i']/double[@name='mean'][.='NaN']",
         // if new stats are supported, this will break - update test to assert values for each
-        ,
         "count(//lst[@name='active_i']/*)=8");
 
     // NOTE: empty set percentiles covered in testPercentiles()
@@ -971,9 +962,8 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='active_s']/long[@name='count'][.='0']",
         "//lst[@name='active_s']/long[@name='missing'][.='4']",
         "//lst[@name='active_s']/null[@name='min']",
-        "//lst[@name='active_s']/null[@name='max']"
+        "//lst[@name='active_s']/null[@name='max']",
         // if new stats are supported, this will break - update test to assert values for each
-        ,
         "count(//lst[@name='active_s']/*)=4");
 
     assertQ(
@@ -1009,10 +999,9 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         "//lst[@name='active_dt']/null[@name='mean']",
         "//lst[@name='active_dt']/double[@name='sum'][.='0.0']",
         "//lst[@name='active_dt']/double[@name='sumOfSquares'][.='0.0']",
-        "//lst[@name='active_dt']/double[@name='stddev'][.='0.0']"
+        "//lst[@name='active_dt']/double[@name='stddev'][.='0.0']",
 
         // if new stats are supported, this will break - update test to assert values for each
-        ,
         "count(//lst[@name='active_dt']/*)=8");
 
     assertQ(
@@ -1383,12 +1372,10 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
           "//lst[@name='" + fieldName + "']/double[@name='stddev'][.='5.638074031784151']",
           "//lst[@name='" + fieldName + "']/double[@name='sumOfSquares'][.='470.0']",
           "//lst[@name='" + fieldName + "']/long[@name='missing'][.='0']",
-          "//lst[@name='" + fieldName + "']/long[@name='countDistinct'][.='9']"
+          "//lst[@name='" + fieldName + "']/long[@name='countDistinct'][.='9']",
           // always comes along with countDistinct
-          ,
-          "count(//lst[@name='" + fieldName + "']/arr[@name='distinctValues']/float)=9"
+          "count(//lst[@name='" + fieldName + "']/arr[@name='distinctValues']/float)=9",
           // if new default stats are added, this will break - update test to assert values for each
-          ,
           "count(//lst[@name='" + fieldName + "']/*)=10");
     }
 
@@ -1579,12 +1566,10 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertQ(
         "min=false: localparam stat means ignore default set, "
             + "but since only local param is false no stats should be returned",
-        req("q", "*:*", "stats", "true", "stats.field", "{!key=k min=false}a_i")
+        req("q", "*:*", "stats", "true", "stats.field", "{!key=k min=false}a_i"),
         // section of stats for this field should exist ...
-        ,
-        XPRE + "lst[@name='stats_fields']/lst[@name='k']"
+        XPRE + "lst[@name='stats_fields']/lst[@name='k']",
         // ...but be empty
-        ,
         "count(" + kpre + "*)=0");
 
     double sum = 0;

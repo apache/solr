@@ -47,11 +47,11 @@ public class SolrExceptionTest extends SolrTestCase {
       httpClient.close();
     } catch (SolrServerException sse) {
       gotExpectedError = true;
-      /***
-       * assertTrue(UnknownHostException.class == sse.getRootCause().getClass()
-       * //If one is using OpenDNS, then you don't get UnknownHostException, instead you get back that the query couldn't execute
-       * || (sse.getRootCause().getClass() == SolrException.class && ((SolrException) sse.getRootCause()).code() == 302 && sse.getMessage().equals("Error executing query")));
-       ***/
+      /*
+      assertTrue(UnknownHostException.class == sse.getRootCause().getClass()
+      //If one is using OpenDNS, then you don't get UnknownHostException, instead you get back that the query couldn't execute
+      || (sse.getRootCause().getClass() == SolrException.class && ((SolrException) sse.getRootCause()).code() == 302 && sse.getMessage().equals("Error executing query")));
+      */
     } finally {
       if (httpClient != null) HttpClientUtil.close(httpClient);
     }

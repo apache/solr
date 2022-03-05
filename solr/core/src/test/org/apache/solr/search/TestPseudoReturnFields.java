@@ -270,9 +270,8 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         assertQ(
             "id=" + id + ", params=" + p,
             req(p),
-            "count(//doc)=1"
+            "count(//doc)=1",
             // true for both these specific docs
-            ,
             "//doc/double[@name='log(val_i)'][.='0.0']",
             "//doc/float[@name='abs(val_i)'][.='1.0']",
             "//doc[count(*)=2]");
@@ -307,9 +306,8 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         assertQ(
             id + " " + p,
             req(p, "qt", "/get", "wt", "xml", "id", id),
-            "count(//doc)=1"
+            "count(//doc)=1",
             // true for both these specific docs
-            ,
             "//doc/double[@name='log(val_i)'][.='0.0']",
             "//doc/int[@name='val_i'][.='1']",
             "//doc[count(*)=2]");
@@ -413,8 +411,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
             req(p, "qt", "/get", "id", id, "wt", "xml"),
             "count(//doc)=1",
             "//doc/int[@name='val_i'][.=1]",
-            "//doc/str[@name='subject']" // value differs between docs
-            ,
+            "//doc/str[@name='subject']", // value differs between docs
             "//doc/str[@name='ssto'][.='X']",
             "//doc[count(*)=3]");
       }
@@ -599,9 +596,8 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
             "count(//doc)=1",
             "//doc/int[@name='[docid]'][.>=-1]",
             "//doc/float[@name='abs(val_i)'][.='1.0']",
-            "//doc/str[@name='[shard]'][.='[not a shard request]']"
+            "//doc/str[@name='[shard]'][.='[not a shard request]']",
             // RTG: [explain] should be missing (ignored)
-            ,
             "//doc/int[@name='x_alias'][.=10]",
             "//doc[count(*)=4]");
       }
@@ -658,9 +654,8 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
             "count(//doc)=1",
             "//doc/str[@name='id']",
             "//doc/int[@name='[docid]'][.>=-1]",
-            "//doc/float[@name='abs(val_i)'][.='1.0']"
+            "//doc/float[@name='abs(val_i)'][.='1.0']",
             // RTG: [explain] should be missing (ignored)
-            ,
             "//doc/int[@name='x_alias'][.=10]",
             "//doc[count(*)=4]");
       }
@@ -739,13 +734,10 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         assertQ(
             p.toString(),
             req(p, "qt", "/get", "id", id, "wt", "xml"),
-            "//doc/int[@name='[docid]']" // TODO
-            ,
+            "//doc/int[@name='[docid]']", // TODO
             "//doc/float[@name='abs(val_i)'][.='1.0']",
-            "//doc/int[@name='x_alias'][.=10]"
+            "//doc/int[@name='x_alias'][.=10]",
             // RTG: [explain] and score should be missing (ignored)
-
-            ,
             "//doc[count(*)=3]");
       }
     }
@@ -810,9 +802,8 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
               "count(//doc)=1",
               "//doc/str[@name='id']",
               "//doc/int[@name='[docid]'][.>=-1]",
-              "//doc/float[@name='abs(val_i)'][.='1.0']"
+              "//doc/float[@name='abs(val_i)'][.='1.0']",
               // RTG: [explain] and score should be missing (ignored)
-              ,
               "//doc/int[@name='val_i'][.=1]",
               "//doc/str[@name='subject']",
               "//doc[count(*)=5]");

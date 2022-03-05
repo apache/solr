@@ -22,17 +22,18 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 
 /**
- * Create a prefix query from the input value.  Currently no analysis or
- * value transformation is done to create this prefix query (subject to change).
- * <br>Other parameters: <code>f</code>, the field
- * <br>Example: <code>{!prefix f=myfield}foo</code> is generally equivalent
- * to the Lucene query parser expression <code>myfield:foo*</code>
+ * Create a prefix query from the input value. Currently no analysis or value transformation is done
+ * to create this prefix query (subject to change). <br>
+ * Other parameters: <code>f</code>, the field <br>
+ * Example: <code>{!prefix f=myfield}foo</code> is generally equivalent to the Lucene query parser
+ * expression <code>myfield:foo*</code>
  */
 public class PrefixQParserPlugin extends QParserPlugin {
   public static final String NAME = "prefix";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       @Override
       public Query parse() {
@@ -42,4 +43,3 @@ public class PrefixQParserPlugin extends QParserPlugin {
     };
   }
 }
-

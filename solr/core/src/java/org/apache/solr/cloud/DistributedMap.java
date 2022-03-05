@@ -29,9 +29,8 @@ import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.data.Stat;
 
 /**
- * A distributed map.
- * This supports basic map functions e.g. get, put, contains for interaction with zk which
- * don't have to be ordered i.e. DistributedQueue.
+ * A distributed map. This supports basic map functions e.g. get, put, contains for interaction with
+ * zk which don't have to be ordered i.e. DistributedQueue.
  */
 public class DistributedMap {
   protected final String dir;
@@ -56,18 +55,21 @@ public class DistributedMap {
     this.zookeeper = zookeeper;
   }
 
-
   public void put(String trackingId, byte[] data) throws KeeperException, InterruptedException {
-    zookeeper.makePath(dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, false, true);
+    zookeeper.makePath(
+        dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, false, true);
   }
-  
+
   /**
    * Puts an element in the map only if there isn't one with the same trackingId already
+   *
    * @return True if the the element was added. False if it wasn't (because the key already exists)
    */
-  public boolean putIfAbsent(String trackingId, byte[] data) throws KeeperException, InterruptedException {
+  public boolean putIfAbsent(String trackingId, byte[] data)
+      throws KeeperException, InterruptedException {
     try {
-      zookeeper.makePath(dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, true, true);
+      zookeeper.makePath(
+          dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, true, true);
       return true;
     } catch (NodeExistsException e) {
       return false;
@@ -89,9 +91,8 @@ public class DistributedMap {
   }
 
   /**
-   * return true if the znode was successfully deleted
-   *        false if the node didn't exist and therefore not deleted
-   *        exception an exception occurred while deleting
+   * return true if the znode was successfully deleted false if the node didn't exist and therefore
+   * not deleted exception an exception occurred while deleting
    */
   public boolean remove(String trackingId) throws KeeperException, InterruptedException {
     try {
@@ -102,26 +103,19 @@ public class DistributedMap {
     return true;
   }
 
-  /**
-   * Helper method to clear all child nodes for a parent node.
-   */
+  /** Helper method to clear all child nodes for a parent node. */
   public void clear() throws KeeperException, InterruptedException {
     List<String> childNames = zookeeper.getChildren(dir, null, true);
-    for(String childName: childNames) {
+    for (String childName : childNames) {
       zookeeper.delete(dir + "/" + childName, -1, true);
     }
-
   }
-  
-  /**
-   * Returns the keys of all the elements in the map
-   */
+
+  /** Returns the keys of all the elements in the map */
   public Collection<String> keys() throws KeeperException, InterruptedException {
     List<String> childs = zookeeper.getChildren(dir, null, true);
     final List<String> ids = new ArrayList<>(childs.size());
     childs.stream().forEach((child) -> ids.add(child.substring(PREFIX.length())));
     return ids;
-
   }
-
 }

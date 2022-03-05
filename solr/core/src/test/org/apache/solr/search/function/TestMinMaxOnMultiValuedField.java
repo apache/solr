@@ -147,33 +147,29 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
         adoc(
             sdoc(
                 "id",
-                "1"
+                "1",
                 // int
-                ,
                 intField,
                 "42",
                 intField,
                 "9",
                 intField,
-                "-54"
+                "-54",
                 // long
-                ,
                 longField,
                 "420",
                 longField,
                 "90",
                 longField,
-                "-540"
+                "-540",
                 // float
-                ,
                 floatField,
                 "-42.5",
                 floatField,
                 "-4.5",
                 floatField,
-                "-13.5"
+                "-13.5",
                 // double
-                ,
                 doubleField,
                 "-420.5",
                 doubleField,
@@ -185,9 +181,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     assertQ(
         req(
             "q",
-            "id:1"
+            "id:1",
             // int
-            ,
             "fl",
             "exists_min_i:exists(field(" + intField + ",min))",
             "fl",
@@ -195,9 +190,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
             "fl",
             "min_i:field(" + intField + ",min)",
             "fl",
-            "max_i:field(" + intField + ",max)"
+            "max_i:field(" + intField + ",max)",
             // long
-            ,
             "fl",
             "exists_min_l:exists(field(" + longField + ",min))",
             "fl",
@@ -205,9 +199,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
             "fl",
             "min_l:field(" + longField + ",min)",
             "fl",
-            "max_l:field(" + longField + ",max)"
+            "max_l:field(" + longField + ",max)",
             // float
-            ,
             "fl",
             "exists_min_f:exists(field(" + floatField + ",min))",
             "fl",
@@ -215,9 +208,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
             "fl",
             "min_f:field(" + floatField + ",min)",
             "fl",
-            "max_f:field(" + floatField + ",max)"
+            "max_f:field(" + floatField + ",max)",
             // double
-            ,
             "fl",
             "exists_min_d:exists(field(" + doubleField + ",min))",
             "fl",
@@ -226,27 +218,23 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
             "min_d:field(" + doubleField + ",min)",
             "fl",
             "max_d:field(" + doubleField + ",max)"),
-        "//*[@numFound='1']"
+        "//*[@numFound='1']",
         // int
-        ,
         "//bool[@name='exists_min_i']='true'",
         "//bool[@name='exists_max_i']='true'",
         "//int[@name='min_i']='-54'",
-        "//int[@name='max_i']='42'"
+        "//int[@name='max_i']='42'",
         // long
-        ,
         "//bool[@name='exists_min_l']='true'",
         "//bool[@name='exists_max_l']='true'",
         "//long[@name='min_l']='-540'",
-        "//long[@name='max_l']='420'"
+        "//long[@name='max_l']='420'",
         // float
-        ,
         "//bool[@name='exists_min_f']='true'",
         "//bool[@name='exists_max_f']='true'",
         "//float[@name='min_f']='-42.5'",
-        "//float[@name='max_f']='-4.5'"
+        "//float[@name='max_f']='-4.5'",
         // double
-        ,
         "//bool[@name='exists_min_d']='true'",
         "//bool[@name='exists_max_d']='true'",
         "//double[@name='min_d']='-420.5'",
@@ -704,9 +692,8 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
                   "q", "*:*",
                   "fl", "id",
                   "sort", func + " " + dir),
-              "//*[@numFound='2']"
+              "//*[@numFound='2']",
               // no assumptions about order for now, see bug: SOLR-8005
-              ,
               "//str[@name='id']='1'",
               "//str[@name='id']='2'");
         }

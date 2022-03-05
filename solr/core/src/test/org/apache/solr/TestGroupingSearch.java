@@ -332,14 +332,12 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             "group.sort",
             "weight desc"),
         "*[count(//arr[@name='groups']/lst) = 2]",
-        "//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author1']"
+        "//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author1']",
         //        ,"//arr[@name='groups']/lst[1]/int[@name='matches'][.='2']"
-        ,
         "//arr[@name='groups']/lst[1]/result[@numFound='2']",
         "//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='1']",
-        "//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author2']"
+        "//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author2']",
         //        ,"//arr[@name='groups']/lst[2]/int[@name='matches'][.='2']"
-        ,
         "//arr[@name='groups']/lst[2]/result[@numFound='2']",
         "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='4']");
   }
@@ -807,13 +805,12 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
     assertJQ(
         req("fq", filt, "q", "{!func}" + f2, "group", "true", "group.field", f, "fl", "id"),
-        "/responseHeader/status==0" // exact match
-        ,
-        "/responseHeader=={'_SKIP_':'QTime', 'status':0}" // partial match by skipping some elements
-        ,
-        "/responseHeader=={'_MATCH_':'status', 'status':0}" // partial match by only including some
-        // elements
-        ,
+        // exact match
+        "/responseHeader/status==0",
+        // partial match by skipping some elements
+        "/responseHeader=={'_SKIP_':'QTime', 'status':0}",
+        // partial match by only including some elements
+        "/responseHeader=={'_MATCH_':'status', 'status':0}",
         "/grouped=={'"
             + f
             + "':{'matches':10,'groups':[\n"
@@ -1787,9 +1784,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
                 sortStr == null ? "nosort" : "sort",
                 sortStr == null ? "" : sortStr,
                 "fl",
-                "*,score_ff,foo_ii,foo_bdv,"
-                    + FOO_STRING_DOCVAL_FIELD // only docValued fields are not returned by default
-                ,
+                // only docValued fields are not returned by default
+                "*,score_ff,foo_ii,foo_bdv," + FOO_STRING_DOCVAL_FIELD,
                 (groupSortStr == null || groupSortStr == sortStr) ? "noGroupsort" : "group.sort",
                 groupSortStr == null ? "" : groupSortStr,
                 "rows",

@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 class DoubleValueSortDoc extends SingleValueSortDoc {

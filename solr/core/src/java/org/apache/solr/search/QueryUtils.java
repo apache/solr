@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.util.Collection;
-
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -28,30 +27,30 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 
-/**
- *
- */
+/** */
 public class QueryUtils {
 
   /** return true if this query has no positive components */
   public static boolean isNegative(Query q) {
     if (!(q instanceof BooleanQuery)) return false;
-    BooleanQuery bq = (BooleanQuery)q;
+    BooleanQuery bq = (BooleanQuery) q;
     Collection<BooleanClause> clauses = bq.clauses();
-    if (clauses.size()==0) return false;
+    if (clauses.size() == 0) return false;
     for (BooleanClause clause : clauses) {
       if (!clause.isProhibited()) return false;
     }
     return true;
   }
 
-  /** Returns the original query if it was already a positive query, otherwise
-   * return the negative of the query (i.e., a positive query).
-   * <p>
-   * Example: both id:10 and id:-10 will return id:10
-   * <p>
-   * The caller can tell the sign of the original by a reference comparison between
-   * the original and returned query.
+  /**
+   * Returns the original query if it was already a positive query, otherwise return the negative of
+   * the query (i.e., a positive query).
+   *
+   * <p>Example: both id:10 and id:-10 will return id:10
+   *
+   * <p>The caller can tell the sign of the original by a reference comparison between the original
+   * and returned query.
+   *
    * @param q Query to create the absolute version of
    * @return Absolute version of the Query
    */
@@ -65,24 +64,23 @@ public class QueryUtils {
     }
 
     if (q instanceof WrappedQuery) {
-      Query subQ = ((WrappedQuery)q).getWrappedQuery();
+      Query subQ = ((WrappedQuery) q).getWrappedQuery();
       Query absSubQ = getAbs(subQ);
       if (absSubQ == subQ) return q;
       return new WrappedQuery(absSubQ);
     }
 
     if (!(q instanceof BooleanQuery)) return q;
-    BooleanQuery bq = (BooleanQuery)q;
+    BooleanQuery bq = (BooleanQuery) q;
 
     Collection<BooleanClause> clauses = bq.clauses();
-    if (clauses.size()==0) return q;
-
+    if (clauses.size() == 0) return q;
 
     for (BooleanClause clause : clauses) {
       if (!clause.isProhibited()) return q;
     }
 
-    if (clauses.size()==1) {
+    if (clauses.size() == 1) {
       // if only one clause, dispense with the wrapping BooleanQuery
       Query negClause = clauses.iterator().next().getQuery();
       // we shouldn't need to worry about adjusting the boosts since the negative
@@ -101,18 +99,17 @@ public class QueryUtils {
     }
   }
 
-  /** Makes negative queries suitable for querying by
-   * lucene.
-   */
+  /** Makes negative queries suitable for querying by lucene. */
   public static Query makeQueryable(Query q) {
     if (q instanceof WrappedQuery) {
-      return makeQueryable(((WrappedQuery)q).getWrappedQuery());
+      return makeQueryable(((WrappedQuery) q).getWrappedQuery());
     }
     return isNegative(q) ? fixNegativeQuery(q) : q;
   }
 
-  /** Fixes a negative query by adding a MatchAllDocs query clause.
-   * The query passed in *must* be a negative query.
+  /**
+   * Fixes a negative query by adding a MatchAllDocs query clause. The query passed in *must* be a
+   * negative query.
    */
   public static Query fixNegativeQuery(Query q) {
     float boost = 1f;
@@ -134,24 +131,31 @@ public class QueryUtils {
 
   /** @lucene.experimental throw exception if max boolean clauses are exceeded */
   public static BooleanQuery build(BooleanQuery.Builder builder, QParser parser) {
-    int configuredMax = parser != null ? parser.getReq().getCore().getSolrConfig().booleanQueryMaxClauseCount : IndexSearcher.getMaxClauseCount();
+    int configuredMax =
+        parser != null
+            ? parser.getReq().getCore().getSolrConfig().booleanQueryMaxClauseCount
+            : IndexSearcher.getMaxClauseCount();
     BooleanQuery bq = builder.build();
     if (bq.clauses().size() > configuredMax) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Too many clauses in boolean query: encountered=" + bq.clauses().size() + " configured in solrconfig.xml via maxBooleanClauses=" + configuredMax);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Too many clauses in boolean query: encountered="
+              + bq.clauses().size()
+              + " configured in solrconfig.xml via maxBooleanClauses="
+              + configuredMax);
     }
     return bq;
   }
 
   /**
-   * Combines a scoring query with a non-scoring (filter) query.
-   * If both parameters are null then return a {@link MatchAllDocsQuery}.
-   * If only {@code scoreQuery} is present then return it.
-   * If only {@code filterQuery} is present then return it wrapped with constant scoring.
-   * If neither are null then we combine with a BooleanQuery.
+   * Combines a scoring query with a non-scoring (filter) query. If both parameters are null then
+   * return a {@link MatchAllDocsQuery}. If only {@code scoreQuery} is present then return it. If
+   * only {@code filterQuery} is present then return it wrapped with constant scoring. If neither
+   * are null then we combine with a BooleanQuery.
    */
   public static Query combineQueryAndFilter(Query scoreQuery, Query filterQuery) {
-    // check for *:* is simple and avoids needless BooleanQuery wrapper even though BQ.rewrite optimizes this away
+    // check for *:* is simple and avoids needless BooleanQuery wrapper even though BQ.rewrite
+    // optimizes this away
     if (scoreQuery == null || scoreQuery instanceof MatchAllDocsQuery) {
       if (filterQuery == null) {
         return new MatchAllDocsQuery(); // default if nothing -- match everything

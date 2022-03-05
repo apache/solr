@@ -108,7 +108,7 @@ fi
 if [ -n "${SOLR_JAVA_HOME:-}" ]; then
   JAVA="$SOLR_JAVA_HOME/bin/java"
   JSTACK="$SOLR_JAVA_HOME/bin/jstack"
-elif [ -v JAVA_HOME ]; then
+elif [ -n "${JAVA_HOME:-}" ]; then
   for java in "$JAVA_HOME"/bin/amd64 "$JAVA_HOME"/bin; do
     if [ -x "$java/java" ]; then
       JAVA="$java/java"

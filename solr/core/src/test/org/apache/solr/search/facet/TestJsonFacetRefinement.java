@@ -1415,17 +1415,17 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // Shard responses should be A=1, B=2, A=2, merged should be "A=3, B=2"
     // One shard will have _facet_={"refine":{"cat0":{"_l":["A"]}}} on the second phase
 
-    /****
-     * // fake a refinement request... good for development/debugging
-     * assertJQ(clients.get(1),
-     * params(p, "q", "*:*",     "_facet_","{refine:{cat0:{_l:[A]}}}", "isShard","true", "distrib","false", "shards.purpose","2097216", "ids","11,12,13",
-     * "json.facet", "{" +
-     * "cat0:{type:terms, field:cat_s, sort:'count desc', limit:1, overrequest:0, refine:true}" +
-     * "}"
-     * )
-     * , "facets=={foo:555}"
-     * );
-     ****/
+    /*
+    // fake a refinement request... good for development/debugging
+    assertJQ(clients.get(1),
+      params(p, "q", "*:*",     "_facet_","{refine:{cat0:{_l:[A]}}}", "isShard","true", "distrib","false", "shards.purpose","2097216", "ids","11,12,13",
+      "json.facet", "{" +
+      "cat0:{type:terms, field:cat_s, sort:'count desc', limit:1, overrequest:0, refine:true}" +
+      "}"
+      )
+      , "facets=={foo:555}"
+    );
+    */
     for (String method :
         new String[] {"", "dv", "dvhash", "stream", "uif", "enum", "stream", "smart"}) {
       if (method.equals("")) {
