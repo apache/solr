@@ -46,6 +46,7 @@ dependencies {
   // hadoop dependencies for tests
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
+  testImplementation 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
   testRuntimeOnly 'org.apache.hadoop:hadoop-client-minicluster'
 
   testImplementation 'org.slf4j:jcl-over-slf4j'

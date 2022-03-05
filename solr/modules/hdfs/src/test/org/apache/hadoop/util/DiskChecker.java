@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.annotations.VisibleForTesting;
+import org.apache.hadoop.thirdparty.com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 public class DiskChecker {
   public static final Object SOLR_HACK_FOR_CLASS_VERIFICATION = new Object();
 
-  public static final Logger log = LoggerFactory.getLogger(DiskChecker.class); // nowarn_valid_logger
+  public static final Logger LOG = LoggerFactory.getLogger(DiskChecker.class); // nowarn_valid_logger
 
   public static class DiskErrorException extends IOException {
     public DiskErrorException(String msg) {
@@ -113,7 +113,7 @@ public class DiskChecker {
    * @throws IOException exception checking dir
    */
   public static void checkDir(LocalFileSystem localFS, Path dir,
-                              FsPermission expected)
+      FsPermission expected)
       throws DiskErrorException, IOException {
     checkDirInternal(localFS, dir, expected);
   }
@@ -131,14 +131,14 @@ public class DiskChecker {
    * @throws IOException exception checking dir
    */
   public static void checkDirWithDiskIo(LocalFileSystem localFS, Path dir,
-                                        FsPermission expected)
+      FsPermission expected)
       throws DiskErrorException, IOException {
     checkDirInternal(localFS, dir, expected);
     doDiskIo(localFS.pathToFile(dir));
   }
 
   private static void checkDirInternal(LocalFileSystem localFS, Path dir,
-                                       FsPermission expected)
+      FsPermission expected)
       throws DiskErrorException, IOException {
     mkdirsWithExistsAndPermissionCheck(localFS, dir, expected);
     checkAccessByFileMethods(localFS.pathToFile(dir));
@@ -293,7 +293,7 @@ public class DiskChecker {
       }
       file = null;
     } finally {
-      IOUtils.cleanupWithLogger(log, fos);
+      IOUtils.cleanupWithLogger(LOG, fos);
       FileUtils.deleteQuietly(file);
     }
   }
