@@ -79,7 +79,7 @@ public class HardLink {
    * @param linkDir - where the hardlinks should be put. It must already exist.
    */
   public static void createHardLinkMult(File parentDir, String[] fileBaseNames,
-                                        File linkDir) throws IOException {
+      File linkDir) throws IOException {
     if (parentDir == null) {
       throw new IOException(
           "invalid arguments to createHardLinkMult: parent directory is null");
@@ -119,7 +119,7 @@ public class HardLink {
 
   /* Create an IOException for failing to get link count. */
   private static IOException createIOException(File f, String message,
-                                               String error, int exitvalue, Exception cause) {
+      String error, int exitvalue, Exception cause) {
 
     final String s = "Failed to get link count on file " + f
         + ": message=" + message
