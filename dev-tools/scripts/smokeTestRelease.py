@@ -592,7 +592,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin', 'bin-test', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
+    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
@@ -628,6 +628,8 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     java.run_java11('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
     print("    compile jars w/ Java 11")
     java.run_java11('./gradlew --no-daemon jar -Dversion.release=%s' % version, '%s/compile.log' % unpackPath)
+    print("    run interation tests w/ Java 11")
+    java.run_java11('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
     testSolrExample(unpackPath, java.java11_home, True)
 
     if java.run_java17:
@@ -635,6 +637,9 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
       java.run_java17('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
       print("    compile jars w/ Java 17")
       java.run_java17('./gradlew --no-daemon jar -Dversion.release=%s' % version, '%s/compile.log' % unpackPath)
+      print("    run interation tests w/ Java 17")
+      java.run_java17('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
+      testSolrExample(unpackPath, java.java17_home, True)
 
   else:
     checkAllJARs(os.getcwd(), gitRevision, version)
