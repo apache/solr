@@ -21,7 +21,6 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLResolver;
-import org.apache.http.impl.io.EmptyInputStream;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 
@@ -41,7 +40,7 @@ public final class EmptyEntityResolver {
       new EntityResolver() {
         @Override
         public InputSource resolveEntity(String publicId, String systemId) {
-          return new InputSource(EmptyInputStream.INSTANCE);
+          return new InputSource(InputStream.nullInputStream());
         }
       };
 
@@ -50,7 +49,7 @@ public final class EmptyEntityResolver {
         @Override
         public InputStream resolveEntity(
             String publicId, String systemId, String baseURI, String namespace) {
-          return EmptyInputStream.INSTANCE;
+          return InputStream.nullInputStream();
         }
       };
 
