@@ -52,10 +52,7 @@ public abstract class ContentStreamBase implements ContentStream {
   public static final String APPLICATION_XML = "application/xml";
   public static final String APPLICATION_JSON = "application/json";
   private static final List<String> UNHELPFUL_TYPES =
-      Arrays.asList(
-          APPLICATION_OCTET_STREAM,
-          APPLICATION_GZIP,
-          "content/unknown");
+      Arrays.asList(APPLICATION_OCTET_STREAM, APPLICATION_GZIP, "content/unknown");
   private static final List<String> XML_SUF = Arrays.asList(".xml", ".xml.gz", ".xml.gzip");
   private static final List<String> JSON_SUF = Arrays.asList(".json", ".json.gz", ".json.gzip");
   private static final List<String> CSV_SUF = Arrays.asList(".csv", ".csv.gz", ".csv.gzip");
