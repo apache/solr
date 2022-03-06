@@ -868,6 +868,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
    *
    * @deprecated Please use {@link Http2SolrClient}
    */
+  @Deprecated(since = "9.0")
   public static class Builder extends SolrClientBuilder<Builder> {
     protected String baseSolrUrl;
     protected boolean compression;
