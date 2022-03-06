@@ -36,7 +36,10 @@ import org.apache.solr.common.util.NamedList;
  * SolrJ client class to communicate with SolrCloud. Instances of this class communicate with
  * Zookeeper to discover Solr endpoints for SolrCloud collections, and then use the {@link
  * LBHttpSolrClient} to issue requests.
+ *
+ * @deprecated Please use {@link CloudHttp2SolrClient}
  */
+@Deprecated(since = "9.0")
 public class CloudSolrClient extends BaseCloudSolrClient {
 
   private final ClusterStateProvider stateProvider;

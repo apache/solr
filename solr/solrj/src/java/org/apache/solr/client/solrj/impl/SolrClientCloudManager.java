@@ -47,7 +47,13 @@ import org.apache.solr.common.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Class that implements {@link SolrCloudManager} using a SolrClient */
+/**
+ * Class that implements {@link SolrCloudManager} using a SolrClient. TODO: Write a Http2 version of
+ * this class
+ *
+ * @deprecated Please look into using Solr's new Http2 clients
+ */
+@Deprecated(since = "9.0")
 public class SolrClientCloudManager implements SolrCloudManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

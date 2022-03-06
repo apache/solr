@@ -33,7 +33,12 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** The SolrClientCache caches SolrClients so they can be reused by different TupleStreams. */
+/**
+ * The SolrClientCache caches SolrClients so they can be reused by different TupleStreams.
+ *
+ * @deprecated Please look into using Solr's new Http2 clients
+ */
+@Deprecated(since = "9.0")
 public class SolrClientCache implements Serializable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
