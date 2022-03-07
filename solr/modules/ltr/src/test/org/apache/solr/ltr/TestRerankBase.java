@@ -137,7 +137,7 @@ public class TestRerankBase extends RestTestBase {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
     tmpConfDir.toFile().deleteOnExit();
-    PathUtils.copyDirectory(Path.of(TEST_HOME()), tmpSolrHome.toAbsolutePath());
+    PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
 
     final Path fstore = tmpConfDir.resolve(FEATURE_FILE_NAME);
     final Path mstore = tmpConfDir.resolve(MODEL_FILE_NAME);
@@ -161,21 +161,13 @@ public class TestRerankBase extends RestTestBase {
     }
     if (!solrconfig.equals("solrconfig.xml")) {
       Files.copy(
-          tmpSolrHome.toAbsolutePath().resolve("collection1").resolve("conf").resolve(solrconfig),
-          tmpSolrHome
-              .toAbsolutePath()
-              .resolve("collection1")
-              .resolve("conf")
-              .resolve("solrconfig.xml"));
+          tmpSolrHome.resolve(CONF_DIR).resolve(solrconfig),
+          tmpSolrHome.resolve(CONF_DIR).resolve("solrconfig.xml"));
     }
     if (!schema.equals("schema.xml")) {
       Files.copy(
-          tmpSolrHome.toAbsolutePath().resolve("collection1").resolve("conf").resolve(schema),
-          tmpSolrHome
-              .toAbsolutePath()
-              .resolve("collection1")
-              .resolve("conf")
-              .resolve("schema.xml"));
+          tmpSolrHome.resolve(CONF_DIR).resolve(schema),
+          tmpSolrHome.resolve(CONF_DIR).resolve("schema.xml"));
     }
 
     System.setProperty("managed.schema.mutable", "true");
