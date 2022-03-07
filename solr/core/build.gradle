@@ -53,7 +53,7 @@ dependencies {
   // we only want them to show up in server/lib when packaged
   // and NOT in server/solr-webapp/webapp/WEB-INF/lib. So any
   // "api" dependency in server/build.gradle that is needed in
-  // core/build.grade needs to be defined as "compileOnlyApi"
+  // core/build.gradle needs to be defined as "compileOnlyApi"
   // below.
 
   compileOnlyApi 'io.dropwizard.metrics:metrics-core'
