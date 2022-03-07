@@ -21,7 +21,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -36,25 +35,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
-  
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private static final Charset DATA_ENCODING = Charset.forName("UTF-8");
-  
+
   protected ZkTestServer zkServer;
 
   protected Path zkDir;
-  
+
   @BeforeClass
   public static void beforeClass() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
   }
-  
+
   @AfterClass
   public static void afterClass() throws InterruptedException {
     System.clearProperty("solrcloud.skip.autorecovery");
   }
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -67,19 +66,30 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
-    
+
     System.setProperty("zkHost", zkServer.getZkAddress());
-    
+
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    zkClient.create("/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
-    zkClient.makePath("/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
-    zkClient.create("/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
-    zkClient.makePath("/unprotectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
-    zkClient.create(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+    zkClient.create(
+        "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+    zkClient.makePath(
+        "/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+    zkClient.create(
+        "/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+    zkClient.makePath(
+        "/unprotectedMakePathNode",
+        "content".getBytes(DATA_ENCODING),
+        CreateMode.PERSISTENT,
+        false);
+    zkClient.create(
+        SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
+        "content".getBytes(DATA_ENCODING),
+        CreateMode.PERSISTENT,
+        false);
     zkClient.close();
 
     if (log.isInfoEnabled()) {
@@ -90,7 +100,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     zkServer.shutdown();
-    
+
     super.tearDown();
   }
 
@@ -98,14 +108,13 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   public void testOutOfBoxSolrZkClient() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(zkClient,
-          true, true, true, true, true,
-          true, true, true, true, true);
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
+          zkClient, true, true, true, true, true, true, true, true, true, true);
     } finally {
       zkClient.close();
     }
   }
-  
+
   @Test
   public void testOpenACLUnsafeAllover() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
@@ -123,26 +132,29 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     }
   }
 
-  
-  protected void assertOpenACLUnsafeAllover(SolrZkClient zkClient, String path, List<String> verifiedList) throws Exception {
+  protected void assertOpenACLUnsafeAllover(
+      SolrZkClient zkClient, String path, List<String> verifiedList) throws Exception {
     List<ACL> acls = zkClient.getSolrZooKeeper().getACL(path, new Stat());
     if (log.isInfoEnabled()) {
       log.info("Verifying {}", path);
     }
     if (ZooDefs.CONFIG_NODE.equals(path)) {
       // Treat this node specially, from the ZK docs:
-      // The dynamic configuration is stored in a special znode ZooDefs.CONFIG_NODE = /zookeeper/config.
+      // The dynamic configuration is stored in a special znode ZooDefs.CONFIG_NODE =
+      // /zookeeper/config.
       // This node by default is read only for all users, except super user and
       // users that's explicitly configured for write access.
-      assertEquals("Path " + path + " does not have READ_ACL_UNSAFE", ZooDefs.Ids.READ_ACL_UNSAFE, acls);
+      assertEquals(
+          "Path " + path + " does not have READ_ACL_UNSAFE", ZooDefs.Ids.READ_ACL_UNSAFE, acls);
     } else {
-      assertEquals("Path " + path + " does not have OPEN_ACL_UNSAFE", ZooDefs.Ids.OPEN_ACL_UNSAFE, acls);
+      assertEquals(
+          "Path " + path + " does not have OPEN_ACL_UNSAFE", ZooDefs.Ids.OPEN_ACL_UNSAFE, acls);
     }
     verifiedList.add(path);
     List<String> children = zkClient.getChildren(path, null, false);
     for (String child : children) {
-      assertOpenACLUnsafeAllover(zkClient, path + ((path.endsWith("/")) ? "" : "/") + child, verifiedList);
+      assertOpenACLUnsafeAllover(
+          zkClient, path + ((path.endsWith("/")) ? "" : "/") + child, verifiedList);
     }
   }
-  
 }

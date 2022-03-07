@@ -16,13 +16,14 @@
  */
 package org.apache.solr.handler;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
+import static org.apache.solr.core.RequestParams.USEPARAM;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
@@ -46,20 +47,20 @@ import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.core.RequestParams.USEPARAM;
-
-/**
- * Base class for all request handlers.
- */
-public abstract class RequestHandlerBase implements
-    SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport, PermissionNameProvider {
+/** Base class for all request handlers. */
+public abstract class RequestHandlerBase
+    implements SolrRequestHandler,
+        SolrInfoBean,
+        NestedRequestHandler,
+        ApiSupport,
+        PermissionNameProvider {
 
   protected NamedList<?> initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
   protected SolrParams invariants;
   protected boolean httpCaching = true;
-  
+
   protected SolrMetricsContext solrMetricsContext;
   protected HandlerMetrics metrics = HandlerMetrics.NO_OP;
   private final long handlerStart;
@@ -74,7 +75,9 @@ public abstract class RequestHandlerBase implements
   }
 
   /**
-   * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link org.apache.solr.common.params.SolrParams} named.
+   * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link
+   * org.apache.solr.common.params.SolrParams} named.
+   *
    * <table style="border: 1px solid">
    * <caption>table of parameters</caption>
    * <tr><th>Name</th><th>Description</th></tr>
@@ -82,8 +85,9 @@ public abstract class RequestHandlerBase implements
    * <tr><td>appends</td><td>Contains all of the named arguments contained within the list element named "appends".</td></tr>
    * <tr><td>invariants</td><td>Contains all of the named arguments contained within the list element named "invariants".</td></tr>
    * </table>
-   * <p>
-   * Example:
+   *
+   * <p>Example:
+   *
    * <pre>
    * &lt;lst name="defaults"&gt;
    * &lt;str name="echoParams"&gt;explicit&lt;/str&gt;
@@ -104,12 +108,15 @@ public abstract class RequestHandlerBase implements
    * </pre>
    *
    * @param args The {@link org.apache.solr.common.util.NamedList} to initialize from
-   * @see #handleRequest(org.apache.solr.request.SolrQueryRequest, org.apache.solr.response.SolrQueryResponse)
-   * @see #handleRequestBody(org.apache.solr.request.SolrQueryRequest, org.apache.solr.response.SolrQueryResponse)
-   * @see org.apache.solr.util.SolrPluginUtils#setDefaults(org.apache.solr.request.SolrQueryRequest, org.apache.solr.common.params.SolrParams, org.apache.solr.common.params.SolrParams, org.apache.solr.common.params.SolrParams)
+   * @see #handleRequest(org.apache.solr.request.SolrQueryRequest,
+   *     org.apache.solr.response.SolrQueryResponse)
+   * @see #handleRequestBody(org.apache.solr.request.SolrQueryRequest,
+   *     org.apache.solr.response.SolrQueryResponse)
+   * @see org.apache.solr.util.SolrPluginUtils#setDefaults(org.apache.solr.request.SolrQueryRequest,
+   *     org.apache.solr.common.params.SolrParams, org.apache.solr.common.params.SolrParams,
+   *     org.apache.solr.common.params.SolrParams)
    * @see NamedList#toSolrParams()
-   * <p>
-   * See also the example solrconfig.xml located in the Solr codebase (example/solr/conf).
+   *     <p>See also the example solrconfig.xml located in the Solr codebase (example/solr/conf).
    */
   @Override
   public void init(NamedList<?> args) {
@@ -125,7 +132,6 @@ public abstract class RequestHandlerBase implements
       Object caching = initArgs.get("httpCaching");
       httpCaching = caching != null ? Boolean.parseBoolean(caching.toString()) : true;
     }
-
   }
 
   @Override
@@ -137,7 +143,8 @@ public abstract class RequestHandlerBase implements
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     metrics = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
+    solrMetricsContext.gauge(
+        () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
 
   /** Metrics for this handler. */
@@ -167,9 +174,8 @@ public abstract class RequestHandlerBase implements
       requestTimes = solrMetricsContext.timer("requestTimes", metricPath);
       totalTime = solrMetricsContext.counter("totalTime", metricPath);
     }
-
   }
-  
+
   public static SolrParams getSolrParamsFromNamedList(NamedList<?> args, String key) {
     Object o = args.get(key);
     if (o != null && o instanceof NamedList) {
@@ -182,13 +188,14 @@ public abstract class RequestHandlerBase implements
     return initArgs;
   }
 
-  public abstract void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception;
+  public abstract void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws Exception;
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
-    
+
     Timer.Context timer = metrics.requestTimes.time();
     try {
       TestInjection.injectLeaderTragedy(req.getCore());
@@ -201,8 +208,8 @@ public abstract class RequestHandlerBase implements
       // count timeouts
       NamedList<?> header = rsp.getResponseHeader();
       if (header != null) {
-        if (Boolean.TRUE.equals(header.getBooleanArg(
-            SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+        if (Boolean.TRUE.equals(
+            header.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
           metrics.numTimeouts.mark();
           rsp.setHttpCaching(false);
         }
@@ -279,13 +286,13 @@ public abstract class RequestHandlerBase implements
     return null;
   }
 
-
   /**
    * Get the request handler registered to a given name.
-   * <p>
-   * This function is thread safe.
+   *
+   * <p>This function is thread safe.
    */
-  public static SolrRequestHandler getRequestHandler(String handlerName, PluginBag<SolrRequestHandler> reqHandlers) {
+  public static SolrRequestHandler getRequestHandler(
+      String handlerName, PluginBag<SolrRequestHandler> reqHandlers) {
     if (handlerName == null) return null;
     SolrRequestHandler handler = reqHandlers.get(handlerName);
     int idx = 0;

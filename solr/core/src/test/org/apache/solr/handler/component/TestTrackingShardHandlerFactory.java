@@ -19,7 +19,6 @@ package org.apache.solr.handler.component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -31,8 +30,8 @@ import org.apache.solr.core.CoreContainer;
 import org.junit.Test;
 
 /**
- * Test for {@link org.apache.solr.handler.component.TrackingShardHandlerFactory}
- * See SOLR-7147 for more information
+ * Test for {@link org.apache.solr.handler.component.TrackingShardHandlerFactory} See SOLR-7147 for
+ * more information
  */
 @SolrTestCaseJ4.SuppressSSL
 public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBase {
@@ -54,7 +53,8 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
     List<JettySolrRunner> runners = new ArrayList<>(jettys);
     runners.add(controlJetty);
 
-    TrackingShardHandlerFactory.RequestTrackingQueue trackingQueue = new TrackingShardHandlerFactory.RequestTrackingQueue();
+    TrackingShardHandlerFactory.RequestTrackingQueue trackingQueue =
+        new TrackingShardHandlerFactory.RequestTrackingQueue();
     TrackingShardHandlerFactory.setTrackingQueue(runners, trackingQueue);
 
     for (JettySolrRunner runner : runners) {
@@ -62,7 +62,8 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
       ShardHandlerFactory factory = container.getShardHandlerFactory();
       assert factory instanceof TrackingShardHandlerFactory;
       @SuppressWarnings("resource")
-      TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
+      TrackingShardHandlerFactory trackingShardHandlerFactory =
+          (TrackingShardHandlerFactory) factory;
       assertSame(trackingQueue, trackingShardHandlerFactory.getTrackingQueue());
     }
 
@@ -70,17 +71,19 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
 
     waitForRecoveriesToFinish(collectionName, true);
 
-    List<TrackingShardHandlerFactory.ShardRequestAndParams> coreAdminRequests = trackingQueue.getCoreAdminRequests();
+    List<TrackingShardHandlerFactory.ShardRequestAndParams> coreAdminRequests =
+        trackingQueue.getCoreAdminRequests();
     assertNotNull(coreAdminRequests);
-    assertEquals("Unexpected number of core admin requests were found", 2, coreAdminRequests.size());
+    assertEquals(
+        "Unexpected number of core admin requests were found", 2, coreAdminRequests.size());
 
     CloudSolrClient client = cloudClient;
 
     client.setDefaultCollection(collectionName);
-        /*
-        hash of b is 95de7e03 high bits=2 shard=shard1
-        hash of e is 656c4367 high bits=1 shard=shard2
-         */
+    /*
+    hash of b is 95de7e03 high bits=2 shard=shard1
+    hash of e is 656c4367 high bits=1 shard=shard2
+     */
     for (int i = 0; i < 10; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", (i % 2 == 0 ? "b!" : "e!") + i);
@@ -92,19 +95,29 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
 
     client.query(new SolrQuery("*:*"));
 
-    TrackingShardHandlerFactory.ShardRequestAndParams getTopIdsRequest = trackingQueue.getShardRequestByPurpose(client.getZkStateReader(), collectionName, "shard1", ShardRequest.PURPOSE_GET_TOP_IDS);
+    TrackingShardHandlerFactory.ShardRequestAndParams getTopIdsRequest =
+        trackingQueue.getShardRequestByPurpose(
+            client.getZkStateReader(), collectionName, "shard1", ShardRequest.PURPOSE_GET_TOP_IDS);
     assertNotNull(getTopIdsRequest);
-    getTopIdsRequest = trackingQueue.getShardRequestByPurpose(client.getZkStateReader(), collectionName, "shard2", ShardRequest.PURPOSE_GET_TOP_IDS);
+    getTopIdsRequest =
+        trackingQueue.getShardRequestByPurpose(
+            client.getZkStateReader(), collectionName, "shard2", ShardRequest.PURPOSE_GET_TOP_IDS);
     assertNotNull(getTopIdsRequest);
 
-    TrackingShardHandlerFactory.ShardRequestAndParams getFieldsRequest = trackingQueue.getShardRequestByPurpose(client.getZkStateReader(), collectionName, "shard1", ShardRequest.PURPOSE_GET_FIELDS);
+    TrackingShardHandlerFactory.ShardRequestAndParams getFieldsRequest =
+        trackingQueue.getShardRequestByPurpose(
+            client.getZkStateReader(), collectionName, "shard1", ShardRequest.PURPOSE_GET_FIELDS);
     assertNotNull(getFieldsRequest);
-    getFieldsRequest = trackingQueue.getShardRequestByPurpose(client.getZkStateReader(), collectionName, "shard2", ShardRequest.PURPOSE_GET_FIELDS);
+    getFieldsRequest =
+        trackingQueue.getShardRequestByPurpose(
+            client.getZkStateReader(), collectionName, "shard2", ShardRequest.PURPOSE_GET_FIELDS);
     assertNotNull(getFieldsRequest);
 
     int numRequests = 0;
-    Map<String, List<TrackingShardHandlerFactory.ShardRequestAndParams>> allRequests = trackingQueue.getAllRequests();
-    for (Map.Entry<String, List<TrackingShardHandlerFactory.ShardRequestAndParams>> entry : allRequests.entrySet()) {
+    Map<String, List<TrackingShardHandlerFactory.ShardRequestAndParams>> allRequests =
+        trackingQueue.getAllRequests();
+    for (Map.Entry<String, List<TrackingShardHandlerFactory.ShardRequestAndParams>> entry :
+        allRequests.entrySet()) {
       numRequests += entry.getValue().size();
     }
     // 4 shard requests + 2 core admin requests (invoked by create collection API)
@@ -118,7 +131,8 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
       ShardHandlerFactory factory = container.getShardHandlerFactory();
       assert factory instanceof TrackingShardHandlerFactory;
       @SuppressWarnings("resource")
-      TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
+      TrackingShardHandlerFactory trackingShardHandlerFactory =
+          (TrackingShardHandlerFactory) factory;
       assertFalse(trackingShardHandlerFactory.isTracking());
     }
 
@@ -126,7 +140,8 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
     client.query(new SolrQuery("*:*"));
     numRequests = 0;
     allRequests = trackingQueue.getAllRequests();
-    for (Map.Entry<String, List<TrackingShardHandlerFactory.ShardRequestAndParams>> entry : allRequests.entrySet()) {
+    for (Map.Entry<String, List<TrackingShardHandlerFactory.ShardRequestAndParams>> entry :
+        allRequests.entrySet()) {
       numRequests += entry.getValue().size();
     }
     // should still be 6

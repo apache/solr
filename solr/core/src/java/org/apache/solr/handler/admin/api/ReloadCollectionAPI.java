@@ -16,16 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import org.apache.solr.api.Command;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.ReloadCollectionPayload;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.handler.admin.CollectionsHandler;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CommonParams.ACTION;
@@ -33,18 +23,27 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.PayloadObj;
+import org.apache.solr.client.solrj.request.beans.ReloadCollectionPayload;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.handler.admin.CollectionsHandler;
+
 /**
  * V2 API for reloading collections.
  *
- * The new API (POST /v2/collections/collectionName {'reload': {...}}) is analogous to the v1
+ * <p>The new API (POST /v2/collections/collectionName {'reload': {...}}) is analogous to the v1
  * /admin/collections?action=RELOAD command.
  *
  * @see ReloadCollectionPayload
  */
 @EndPoint(
-        path = {"/c/{collection}", "/collections/{collection}"},
-        method = POST,
-        permission = COLL_EDIT_PERM) // TODO Does this permission make sense for reload?
+    path = {"/c/{collection}", "/collections/{collection}"},
+    method = POST,
+    permission = COLL_EDIT_PERM) // TODO Does this permission make sense for reload?
 public class ReloadCollectionAPI {
   private static final String V2_RELOAD_COLLECTION_CMD = "reload";
 

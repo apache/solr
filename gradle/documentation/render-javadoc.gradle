@@ -163,19 +163,6 @@ configure(project(":solr:test-framework")) {
   }
 }
 
-configure(project(":solr:modules:hdfs")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.solr.core",
-        "org.apache.solr.core.backup.repository",
-        "org.apache.solr.core.snapshots",
-        "org.apache.solr.update",
-        "org.apache.solr.util"
-    ]
-  }
-}
-
 // Fix for Java 11 Javadoc tool that cannot handle split packages between modules correctly.
 // (by removing all the packages which are part of lucene-core)
 // See: https://issues.apache.org/jira/browse/LUCENE-8738?focusedCommentId=16818106&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-16818106

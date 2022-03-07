@@ -19,9 +19,7 @@ package org.apache.solr.handler.component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import junit.framework.Assert;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -37,19 +35,18 @@ import org.junit.Test;
  * Test for SpellCheckComponent's distributed querying
  *
  * @since solr 1.5
- *
  * @see org.apache.solr.handler.component.SpellCheckComponent
  */
 @Slow
-@SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
+@SuppressTempFileChecks(
+    bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {
-  
-  public DistributedSpellCheckComponentTest()
-  {
-    //Helpful for debugging
-    //fixShardCount=true;
-    //shardCount=2;
-    //stress=0;
+
+  public DistributedSpellCheckComponentTest() {
+    // Helpful for debugging
+    // fixShardCount=true;
+    // shardCount=2;
+    // stress=0;
   }
 
   @BeforeClass
@@ -72,16 +69,15 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     SolrClient client = clients.get(which);
     client.query(params);
   }
-  
+
   @Override
-  public void validateControlData(QueryResponse control) throws Exception
-  {    
+  public void validateControlData(QueryResponse control) throws Exception {
     NamedList<Object> nl = control.getResponse();
     @SuppressWarnings("unchecked")
     NamedList<Object> sc = (NamedList<Object>) nl.get("spellcheck");
     @SuppressWarnings("unchecked")
     NamedList<Object> sug = (NamedList<Object>) sc.get("suggestions");
-    if(sug.size()==0) {
+    if (sug.size() == 0) {
       Assert.fail("Control data did not return any suggestions.");
     }
   }
@@ -122,16 +118,16 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     // we care only about the spellcheck results
     handle.put("response", SKIP);
     handle.put("grouped", SKIP);
-    
-    //Randomly select either IndexBasedSpellChecker or DirectSolrSpellChecker
+
+    // Randomly select either IndexBasedSpellChecker or DirectSolrSpellChecker
     String requestHandlerName = "/spellCheckCompRH_Direct";
     String reqHandlerWithWordbreak = "/spellCheckWithWordbreak_Direct";
-    if(random().nextBoolean()) {
+    if (random().nextBoolean()) {
       requestHandlerName = "/spellCheckCompRH";
       reqHandlerWithWordbreak = "/spellCheckWithWordbreak";
-    } 
-    
-    //Shortcut names
+    }
+
+    // Shortcut names
     String build = SpellingParams.SPELLCHECK_BUILD;
     String extended = SpellingParams.SPELLCHECK_EXTENDED_RESULTS;
     String count = SpellingParams.SPELLCHECK_COUNT;
@@ -141,88 +137,260 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     String maxCollations = SpellingParams.SPELLCHECK_MAX_COLLATIONS;
     String altTermCount = SpellingParams.SPELLCHECK_ALTERNATIVE_TERM_COUNT;
     String maxResults = SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST;
-     
-    //Build the dictionary for IndexBasedSpellChecker
+
+    // Build the dictionary for IndexBasedSpellChecker
     q(buildRequest("*:*", false, "/spellCheckCompRH", false, build, "true"));
-    
-    //Test Basic Functionality
-    query(buildRequest("toyata", true, requestHandlerName, random().nextBoolean(), (String[]) null));
-    query(buildRequest("toyata", true, requestHandlerName, random().nextBoolean(), extended, "true"));
-    query(buildRequest("bluo", true, requestHandlerName, random().nextBoolean(), extended, "true", count, "4"));
-    
-    //Test Collate functionality
-    query(buildRequest("The quick reb fox jumped over the lazy brown dogs", 
-        false, requestHandlerName, random().nextBoolean(), extended, "true", count, "4", collate, "true"));    
-    query(buildRequest("lowerfilt:(+quock +reb)", 
-        false, requestHandlerName, random().nextBoolean(), extended, "true", count, "10", 
-        collate, "true", maxCollationTries, "10", maxCollations, "10", collateExtended, "true"));
-    query(buildRequest("lowerfilt:(+quock +reb)", 
-        false, requestHandlerName, random().nextBoolean(), extended, "true", count, "10", 
-        collate, "true", maxCollationTries, "10", maxCollations, "10", collateExtended, "false"));
-    query(buildRequest("lowerfilt:(+quock +reb)", 
-        false, requestHandlerName, random().nextBoolean(), extended, "true", count, "10", 
-        collate, "true", maxCollationTries, "0", maxCollations, "1", collateExtended, "false"));
-    
-    //Test context-sensitive collate
-    query(buildRequest("lowerfilt:(\"quick red fox\")", 
-        false, requestHandlerName, random().nextBoolean(), extended, "true", count, "10", 
-        collate, "true", maxCollationTries, "10", maxCollations, "1", collateExtended, "false",
-        altTermCount, "5", maxResults, "10"));
-    query(buildRequest("lowerfilt:(\"rod fix\")", 
-        false, requestHandlerName, random().nextBoolean(), extended, "true", count, "10", 
-        collate, "true", maxCollationTries, "10", maxCollations, "1", collateExtended, "false",
-        altTermCount, "5", maxResults, "10"));
-    query(buildRequest("lowerfilt:(\"rod fix\")", 
-        false, requestHandlerName, random().nextBoolean(), extended, "true", count, "10", 
-        collate, "true", maxCollationTries, "10", maxCollations, "1", collateExtended, "false",
-        altTermCount, "5", maxResults, ".10", "fq", "id:[13 TO 22]"));
-    
-    //Test word-break spellchecker
-    query(buildRequest("lowerfilt:(+quock +redfox +jum +ped)", 
-        false, reqHandlerWithWordbreak, random().nextBoolean(), extended, "true", count, "10", 
-        collate, "true", maxCollationTries, "0", maxCollations, "1", collateExtended, "true"));
-    query(buildRequest("lowerfilt:(+rodfix)", 
-        false, reqHandlerWithWordbreak, random().nextBoolean(), extended, "true", count, "10", 
-        collate, "true", maxCollationTries, "0", maxCollations, "1", collateExtended, "true"));
-    query(buildRequest("lowerfilt:(+son +ata)", 
-        false, reqHandlerWithWordbreak, random().nextBoolean(), extended, "true", count, "10", 
-        collate, "true", maxCollationTries, "0", maxCollations, "1", collateExtended, "true"));
+
+    // Test Basic Functionality
+    query(
+        buildRequest("toyata", true, requestHandlerName, random().nextBoolean(), (String[]) null));
+    query(
+        buildRequest("toyata", true, requestHandlerName, random().nextBoolean(), extended, "true"));
+    query(
+        buildRequest(
+            "bluo",
+            true,
+            requestHandlerName,
+            random().nextBoolean(),
+            extended,
+            "true",
+            count,
+            "4"));
+
+    // Test Collate functionality
+    query(
+        buildRequest(
+            "The quick reb fox jumped over the lazy brown dogs",
+            false,
+            requestHandlerName,
+            random().nextBoolean(),
+            extended,
+            "true",
+            count,
+            "4",
+            collate,
+            "true"));
+    query(
+        buildRequest(
+            "lowerfilt:(+quock +reb)",
+            false,
+            requestHandlerName,
+            random().nextBoolean(),
+            extended,
+            "true",
+            count,
+            "10",
+            collate,
+            "true",
+            maxCollationTries,
+            "10",
+            maxCollations,
+            "10",
+            collateExtended,
+            "true"));
+    query(
+        buildRequest(
+            "lowerfilt:(+quock +reb)",
+            false,
+            requestHandlerName,
+            random().nextBoolean(),
+            extended,
+            "true",
+            count,
+            "10",
+            collate,
+            "true",
+            maxCollationTries,
+            "10",
+            maxCollations,
+            "10",
+            collateExtended,
+            "false"));
+    query(
+        buildRequest(
+            "lowerfilt:(+quock +reb)",
+            false,
+            requestHandlerName,
+            random().nextBoolean(),
+            extended,
+            "true",
+            count,
+            "10",
+            collate,
+            "true",
+            maxCollationTries,
+            "0",
+            maxCollations,
+            "1",
+            collateExtended,
+            "false"));
+
+    // Test context-sensitive collate
+    query(
+        buildRequest(
+            "lowerfilt:(\"quick red fox\")",
+            false,
+            requestHandlerName,
+            random().nextBoolean(),
+            extended,
+            "true",
+            count,
+            "10",
+            collate,
+            "true",
+            maxCollationTries,
+            "10",
+            maxCollations,
+            "1",
+            collateExtended,
+            "false",
+            altTermCount,
+            "5",
+            maxResults,
+            "10"));
+    query(
+        buildRequest(
+            "lowerfilt:(\"rod fix\")",
+            false,
+            requestHandlerName,
+            random().nextBoolean(),
+            extended,
+            "true",
+            count,
+            "10",
+            collate,
+            "true",
+            maxCollationTries,
+            "10",
+            maxCollations,
+            "1",
+            collateExtended,
+            "false",
+            altTermCount,
+            "5",
+            maxResults,
+            "10"));
+    query(
+        buildRequest(
+            "lowerfilt:(\"rod fix\")",
+            false,
+            requestHandlerName,
+            random().nextBoolean(),
+            extended,
+            "true",
+            count,
+            "10",
+            collate,
+            "true",
+            maxCollationTries,
+            "10",
+            maxCollations,
+            "1",
+            collateExtended,
+            "false",
+            altTermCount,
+            "5",
+            maxResults,
+            ".10",
+            "fq",
+            "id:[13 TO 22]"));
+
+    // Test word-break spellchecker
+    query(
+        buildRequest(
+            "lowerfilt:(+quock +redfox +jum +ped)",
+            false,
+            reqHandlerWithWordbreak,
+            random().nextBoolean(),
+            extended,
+            "true",
+            count,
+            "10",
+            collate,
+            "true",
+            maxCollationTries,
+            "0",
+            maxCollations,
+            "1",
+            collateExtended,
+            "true"));
+    query(
+        buildRequest(
+            "lowerfilt:(+rodfix)",
+            false,
+            reqHandlerWithWordbreak,
+            random().nextBoolean(),
+            extended,
+            "true",
+            count,
+            "10",
+            collate,
+            "true",
+            maxCollationTries,
+            "0",
+            maxCollations,
+            "1",
+            collateExtended,
+            "true"));
+    query(
+        buildRequest(
+            "lowerfilt:(+son +ata)",
+            false,
+            reqHandlerWithWordbreak,
+            random().nextBoolean(),
+            extended,
+            "true",
+            count,
+            "10",
+            collate,
+            "true",
+            maxCollationTries,
+            "0",
+            maxCollations,
+            "1",
+            collateExtended,
+            "true"));
   }
-  private Object[] buildRequest(String q, boolean useSpellcheckQ, String handlerName, boolean useGrouping, String... addlParams) {
+
+  private Object[] buildRequest(
+      String q,
+      boolean useSpellcheckQ,
+      String handlerName,
+      boolean useGrouping,
+      String... addlParams) {
     List<Object> params = new ArrayList<>();
-    
+
     params.add("q");
     params.add(useSpellcheckQ ? "*:*" : q);
-    
-    if(useSpellcheckQ) {
+
+    if (useSpellcheckQ) {
       params.add("spellcheck.q");
       params.add(q);
     }
-    
+
     params.add("fl");
     params.add("id,lowerfilt");
-    
+
     params.add("qt");
     params.add(handlerName);
-    
+
     params.add("shards.qt");
     params.add(handlerName);
-    
+
     params.add("spellcheck");
     params.add("true");
-    
-    if(useGrouping) {
+
+    if (useGrouping) {
       params.add("group");
       params.add("true");
-      
+
       params.add("group.field");
       params.add("id");
     }
-    
-    if(addlParams!=null) {
+
+    if (addlParams != null) {
       params.addAll(Arrays.asList(addlParams));
     }
-    return params.toArray(new Object[params.size()]);    
+    return params.toArray(new Object[params.size()]);
   }
-  
 }

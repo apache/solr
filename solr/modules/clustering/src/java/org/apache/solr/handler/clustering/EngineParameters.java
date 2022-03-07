@@ -33,70 +33,114 @@ public final class EngineParameters implements Cloneable {
   /** Common prefix for configuration of engine settings. */
   private static final String PARAM_PREFIX = "clustering.";
 
-  /** @see #algorithmName() */
+  /**
+   * @see #algorithmName()
+   */
   public static final String PARAM_ALGORITHM = PARAM_PREFIX + "algorithm";
 
-  /** @see #maxLabels() */
+  /**
+   * @see #maxLabels()
+   */
   public static final String PARAM_MAX_LABELS = PARAM_PREFIX + "maxLabels";
 
-  /** @see #includeSubclusters() */
+  /**
+   * @see #includeSubclusters()
+   */
   public static final String PARAM_INCLUDE_SUBCLUSTERS = PARAM_PREFIX + "includeSubclusters";
 
-  /** @see #includeOtherTopics() */
+  /**
+   * @see #includeOtherTopics()
+   */
   public static final String PARAM_INCLUDE_OTHER_TOPICS = PARAM_PREFIX + "includeOtherTopics";
 
-  /** @see #language() */
+  /**
+   * @see #language()
+   */
   public static final String PARAM_LANGUAGE = PARAM_PREFIX + "language";
 
-  /** @see #languageField() */
+  /**
+   * @see #languageField()
+   */
   public static final String PARAM_LANGUAGE_FIELD = PARAM_PREFIX + "languageField";
 
-  /** @see #resources() */
+  /**
+   * @see #resources()
+   */
   public static final String PARAM_RESOURCES = PARAM_PREFIX + "resources";
 
-  /** @see #fields() */
+  /**
+   * @see #fields()
+   */
   public static final String PARAM_FIELDS = PARAM_PREFIX + "fields";
 
-  /** @see #preferQueryContext() */
+  /**
+   * @see #preferQueryContext()
+   */
   public static final String PARAM_PREFER_QUERY_CONTEXT = PARAM_PREFIX + "preferQueryContext";
 
-  /** @see #contextSize() */
+  /**
+   * @see #contextSize()
+   */
   public static final String PARAM_CONTEXT_SIZE = PARAM_PREFIX + "contextSize";
 
-  /** @see #contextCount() */
+  /**
+   * @see #contextCount()
+   */
   public static final String PARAM_CONTEXT_COUNT = PARAM_PREFIX + "contextCount";
 
-  /** @see #PARAM_MAX_LABELS */
+  /**
+   * @see #PARAM_MAX_LABELS
+   */
   private int maxLabels = Integer.MAX_VALUE;
 
-  /** @see #PARAM_INCLUDE_SUBCLUSTERS */
+  /**
+   * @see #PARAM_INCLUDE_SUBCLUSTERS
+   */
   private boolean includeSubclusters = true;
 
-  /** @see #PARAM_INCLUDE_OTHER_TOPICS */
+  /**
+   * @see #PARAM_INCLUDE_OTHER_TOPICS
+   */
   private boolean includeOtherTopics = true;
 
-  /** @see #PARAM_ALGORITHM */
+  /**
+   * @see #PARAM_ALGORITHM
+   */
   private String algorithmName;
 
-  /** @see #PARAM_RESOURCES */
+  /**
+   * @see #PARAM_RESOURCES
+   */
   private String resources;
 
-  /** @see #PARAM_LANGUAGE */
+  /**
+   * @see #PARAM_LANGUAGE
+   */
   private String language = "English";
 
-  /** @see #PARAM_LANGUAGE_FIELD */
+  /**
+   * @see #PARAM_LANGUAGE_FIELD
+   */
   private String languageField;
 
-  /** @see #PARAM_PREFER_QUERY_CONTEXT */
+  /**
+   * @see #PARAM_PREFER_QUERY_CONTEXT
+   */
   private boolean preferQueryContext;
 
-  /** @see #PARAM_CONTEXT_SIZE */
+  /**
+   * @see #PARAM_CONTEXT_SIZE
+   */
   private int contextSize = 80 * 4;
 
-  /** @see #PARAM_CONTEXT_COUNT */
+  /**
+   * @see #PARAM_CONTEXT_COUNT
+   */
   private int contextCount = 3;
 
-  /** @see #PARAM_FIELDS */
+  /**
+   * @see #PARAM_FIELDS
+   */
   private LinkedHashSet<String> fields = new LinkedHashSet<>();
 
   /** Non-engine configuration parameters (algorithm parameters). */
@@ -167,7 +211,9 @@ public final class EngineParameters implements Cloneable {
     return this;
   }
 
-  /** @return Maximum number of returned cluster labels (even if the algorithm returns more). */
+  /**
+   * @return Maximum number of returned cluster labels (even if the algorithm returns more).
+   */
   int maxLabels() {
     return maxLabels;
   }
@@ -196,7 +242,9 @@ public final class EngineParameters implements Cloneable {
     return algorithmName;
   }
 
-  /** @return Return Solr component-configuration relative language resources path. */
+  /**
+   * @return Return Solr component-configuration relative language resources path.
+   */
   String resources() {
     return resources;
   }

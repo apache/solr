@@ -18,44 +18,42 @@ package org.apache.solr.servlet;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 
-/**
- * Response helper methods.
- */
+/** Response helper methods. */
 public class ResponseUtils {
   private ResponseUtils() {}
 
   /**
    * Adds the given Throwable's message to the given NamedList.
-   * <p>
-   * If the response code is not a regular code, the Throwable's
-   * stack trace is both logged and added to the given NamedList.
-   * <p>
-   * Status codes less than 100 are adjusted to be 500.
+   *
+   * <p>If the response code is not a regular code, the Throwable's stack trace is both logged and
+   * added to the given NamedList.
+   *
+   * <p>Status codes less than 100 are adjusted to be 500.
    */
   public static int getErrorInfo(Throwable ex, NamedList<Object> info, Logger log) {
     int code = 500;
     if (ex instanceof SolrException) {
-      SolrException solrExc = (SolrException)ex;
+      SolrException solrExc = (SolrException) ex;
       code = solrExc.code();
       NamedList<String> errorMetadata = solrExc.getMetadata();
       if (errorMetadata == null) {
         errorMetadata = new NamedList<>();
       }
       errorMetadata.add(SolrException.ERROR_CLASS, ex.getClass().getName());
-      errorMetadata.add(SolrException.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
+      errorMetadata.add(
+          SolrException.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
       info.add("metadata", errorMetadata);
       if (ex instanceof ApiBag.ExceptionWithErrObject) {
         ApiBag.ExceptionWithErrObject exception = (ApiBag.ExceptionWithErrObject) ex;
-        info.add("details", exception.getErrs() );
+        info.add("details", exception.getErrs());
       }
     }
-    
+
     for (Throwable th = ex; th != null; th = th.getCause()) {
       String msg = th.getMessage();
       if (msg != null) {
@@ -63,7 +61,7 @@ public class ResponseUtils {
         break;
       }
     }
-    
+
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
       StringWriter sw = new StringWriter();
@@ -77,7 +75,7 @@ public class ResponseUtils {
         code = 500;
       }
     }
-    
+
     info.add("code", code);
     return code;
   }

@@ -21,11 +21,11 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Type of Principal object that can contain also a list of roles the user has.
- * One use case can be to keep track of user-role mappings in an Identity Server
- * external to Solr and pass the information to Solr in a signed JWT token or in 
- * another secure manner. The role information can then be used to authorize
- * requests without the need to maintain or lookup what roles each user belongs to. 
+ * Type of Principal object that can contain also a list of roles the user has. One use case can be
+ * to keep track of user-role mappings in an Identity Server external to Solr and pass the
+ * information to Solr in a signed JWT token or in another secure manner. The role information can
+ * then be used to authorize requests without the need to maintain or lookup what roles each user
+ * belongs to.
  */
 public class PrincipalWithUserRoles implements Principal, VerifiedUserRoles {
   private final String username;
@@ -34,6 +34,7 @@ public class PrincipalWithUserRoles implements Principal, VerifiedUserRoles {
 
   /**
    * User principal with user name as well as one or more roles that he/she belong to
+   *
    * @param username string with user name for user
    * @param roles a set of roles that we know this user belongs to, or empty list for no roles
    */
@@ -55,9 +56,7 @@ public class PrincipalWithUserRoles implements Principal, VerifiedUserRoles {
     return this.username;
   }
 
-  /**
-   * Gets the list of roles
-   */
+  /** Gets the list of roles */
   @Override
   public Set<String> getVerifiedRoles() {
     return roles;
@@ -83,9 +82,6 @@ public class PrincipalWithUserRoles implements Principal, VerifiedUserRoles {
 
   @Override
   public String toString() {
-    return "PrincipalWithUserRoles{" +
-        "username='" + username + '\'' +
-        ", roles=" + roles +
-        '}';
+    return "PrincipalWithUserRoles{" + "username='" + username + '\'' + ", roles=" + roles + '}';
   }
 }

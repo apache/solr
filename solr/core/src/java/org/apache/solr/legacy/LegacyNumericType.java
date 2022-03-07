@@ -16,19 +16,20 @@
  */
 package org.apache.solr.legacy;
 
-/** Data type of the numeric value
- * @since 3.2
+/**
+ * Data type of the numeric value
  *
+ * @since 3.2
  * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
  */
 @Deprecated
 public enum LegacyNumericType {
   /** 32-bit integer numeric type */
-  INT, 
+  INT,
   /** 64-bit long numeric type */
-  LONG, 
+  LONG,
   /** 32-bit float numeric type */
-  FLOAT, 
+  FLOAT,
   /** 64-bit double numeric type */
   DOUBLE
 }

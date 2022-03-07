@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.request;
 
 import java.util.Date;
-
 import org.apache.solr.common.util.NamedList;
 
 public class CoreStatus {

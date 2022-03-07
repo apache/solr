@@ -16,10 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -31,17 +32,10 @@ import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-
-/**
- * A {@link OverseerMessageHandler} that handles ConfigSets API related
- * overseer messages.
- */
+/** A {@link OverseerMessageHandler} that handles ConfigSets API related overseer messages. */
 public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
 
-  /**
-   * Prefix to specify an action should be handled by this handler.
-   */
+  /** Prefix to specify an action should be handled by this handler. */
   public static final String CONFIGSETS_ACTION_PREFIX = "configsets:";
 
   private ZkStateReader zkStateReader;
@@ -54,8 +48,8 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   // in this way, we prevent a Base ConfigSet from being deleted while it is being copied
   // but don't prevent different ConfigSets from being created with the same Base ConfigSet
   // at the same time.
-  final private Set<String> configSetWriteWip;
-  final private Set<String> configSetReadWip;
+  private final Set<String> configSetWriteWip;
+  private final Set<String> configSetReadWip;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -71,9 +65,12 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     NamedList<Object> results = new NamedList<>();
     try {
       if (!operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Operation does not contain proper prefix: " + operation
-                + " expected: " + CONFIGSETS_ACTION_PREFIX);
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "Operation does not contain proper prefix: "
+                + operation
+                + " expected: "
+                + CONFIGSETS_ACTION_PREFIX);
       }
       operation = operation.substring(CONFIGSETS_ACTION_PREFIX.length());
       log.info("OverseerConfigSetMessageHandler.processMessage : {}, {}", operation, message);
@@ -90,8 +87,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
           ConfigSetCmds.deleteConfigSet(message, coreContainer);
           break;
         default:
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
-              + operation);
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:" + operation);
       }
     } catch (Exception e) {
       String configSetName = message.getStr(NAME);
@@ -99,8 +95,8 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       if (configSetName == null) {
         SolrException.log(log, "Operation " + operation + " failed", e);
       } else {
-        SolrException.log(log, "ConfigSet: " + configSetName + " operation: " + operation
-            + " failed", e);
+        SolrException.log(
+            log, "ConfigSet: " + configSetName + " operation: " + operation + " failed", e);
       }
 
       results.add("Operation " + operation + " caused exception:", e);
@@ -137,7 +133,6 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     return message.getStr(NAME);
   }
 
-
   private void markExclusiveTask(String configSetName, ZkNodeProps message) {
     String baseConfigSet = getBaseConfigSetIfCreate(message);
     markExclusive(configSetName, baseConfigSet);
@@ -162,7 +157,6 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     }
   }
 
-
   private boolean canExecute(String configSetName, ZkNodeProps message) {
     String baseConfigSetName = getBaseConfigSetIfCreate(message);
 
@@ -181,14 +175,10 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
     return true;
   }
 
-
   private String getBaseConfigSetIfCreate(ZkNodeProps message) {
-    String operation = message.getStr(Overseer.QUEUE_OPERATION).substring(CONFIGSETS_ACTION_PREFIX.length());
+    String operation =
+        message.getStr(Overseer.QUEUE_OPERATION).substring(CONFIGSETS_ACTION_PREFIX.length());
     ConfigSetParams.ConfigSetAction action = ConfigSetParams.ConfigSetAction.get(operation);
     return ConfigSetCmds.getBaseConfigSetName(action, message.getStr(ConfigSetCmds.BASE_CONFIGSET));
   }
-
-
-
-
 }

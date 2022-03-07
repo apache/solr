@@ -19,55 +19,55 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class MinMaxScaleEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public MinMaxScaleEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public MinMaxScaleEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
 
-    if(null == values){
+    if (null == values) {
       return null;
     }
 
     double min = 0;
     double max = 1;
 
-    if(values.length == 3) {
-      min = ((Number)values[1]).doubleValue();
-      max = ((Number)values[2]).doubleValue();
+    if (values.length == 3) {
+      min = ((Number) values[1]).doubleValue();
+      max = ((Number) values[2]).doubleValue();
     }
 
-    if(values[0] instanceof Matrix) {
-      Matrix matrix = (Matrix)values[0];
+    if (values[0] instanceof Matrix) {
+      Matrix matrix = (Matrix) values[0];
       double[][] data = matrix.getData();
       double[][] scaled = new double[data.length][];
-      for(int i=0; i<scaled.length; i++) {
+      for (int i = 0; i < scaled.length; i++) {
         double[] row = data[i];
         scaled[i] = scale(row, min, max);
       }
 
       return new Matrix(scaled);
 
-    } else if(values[0] instanceof List) {
+    } else if (values[0] instanceof List) {
       @SuppressWarnings({"unchecked"})
-      List<Number> vec = (List<Number>)values[0];
+      List<Number> vec = (List<Number>) values[0];
       double[] data = new double[vec.size()];
 
-      for(int i=0; i<vec.size(); i++) {
+      for (int i = 0; i < vec.size(); i++) {
         data[i] = vec.get(i).doubleValue();
       }
 
       data = scale(data, min, max);
       List<Number> scaled = new ArrayList<>(data.length);
-      for(double d : data) {
+      for (double d : data) {
         scaled.add(d);
       }
 
@@ -91,7 +91,7 @@ public class MinMaxScaleEvaluator extends RecursiveObjectEvaluator implements Ma
       }
     }
 
-    //First scale between 0 and 1
+    // First scale between 0 and 1
 
     double[] scaled = new double[values.length];
 
@@ -102,7 +102,7 @@ public class MinMaxScaleEvaluator extends RecursiveObjectEvaluator implements Ma
     }
 
     if (min != 0 || max != 1) {
-      //Next scale between specific min/max
+      // Next scale between specific min/max
       double scale = max - min;
 
       for (int i = 0; i < scaled.length; i++) {

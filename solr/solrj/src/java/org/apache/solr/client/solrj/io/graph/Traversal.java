@@ -17,8 +17,8 @@
 
 package org.apache.solr.client.solrj.io.graph;
 
-import org.apache.solr.client.solrj.io.Tuple;
 import java.util.*;
+import org.apache.solr.client.solrj.io.Tuple;
 
 public class Traversal {
 
@@ -47,10 +47,10 @@ public class Traversal {
   }
 
   public boolean visited(String nodeId, String ancestorId, Tuple tuple) {
-    for(Map<String, Node> level : graph) {
+    for (Map<String, Node> level : graph) {
       Node node = level.get(nodeId);
-      if(node != null) {
-        node.add(depth+"^"+ancestorId, tuple);
+      if (node != null) {
+        node.add(depth + "^" + ancestorId, tuple);
         return true;
       }
     }

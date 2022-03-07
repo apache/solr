@@ -42,6 +42,8 @@ public class BadHdfsThreadsFilter implements ThreadFilter {
       return true;
     } else if (name.startsWith("nioEventLoopGroup")) {
       return true; // netty threads waiting for a web server stop confirm that won't happen
+    } else if (name.startsWith("Command processor")) { // SOLR-16043 and HDFS-14997
+      return true;
     }
 
     return false;
