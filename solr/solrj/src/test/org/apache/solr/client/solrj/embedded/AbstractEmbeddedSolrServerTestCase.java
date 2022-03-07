@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.embedded;
 import java.io.File;
 import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.core.CoreContainer;
@@ -86,7 +87,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
   @AfterClass
   public static void tearDownHome() throws Exception {
     if (SOLR_HOME != null) {
-      FileUtils.deleteDirectory(SOLR_HOME.toFile());
+      PathUtils.deleteDirectory(SOLR_HOME);
     }
   }
 

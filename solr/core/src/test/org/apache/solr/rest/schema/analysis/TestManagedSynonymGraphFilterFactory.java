@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -67,7 +68,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
       jetty = null;
     }
     if (null != tmpSolrHome) {
-      FileUtils.deleteDirectory(tmpSolrHome);
+      PathUtils.deleteDirectory(tmpSolrHome.toPath());
     }
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
