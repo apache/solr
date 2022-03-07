@@ -69,7 +69,6 @@ public class TestAdapterModel extends TestRerankBase {
                 Files.newOutputStream(scoreValueFile), StandardCharsets.UTF_8))) {
       writer.write(Float.toString(scoreValue));
     }
-    scoreValueFile.toFile().deleteOnExit();
 
     final String modelJson =
         getModelInJson(

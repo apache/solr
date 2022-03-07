@@ -72,7 +72,6 @@ public class TestDefaultWrapperModel extends TestRerankBase {
             new OutputStreamWriter(Files.newOutputStream(baseModelFile), StandardCharsets.UTF_8))) {
       writer.write(baseModelJson);
     }
-    baseModelFile.toFile().deleteOnExit();
   }
 
   @After

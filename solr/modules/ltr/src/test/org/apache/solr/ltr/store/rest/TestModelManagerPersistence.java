@@ -235,7 +235,6 @@ public class TestModelManagerPersistence extends TestRerankBase {
             new OutputStreamWriter(Files.newOutputStream(baseModelFile), StandardCharsets.UTF_8))) {
       writer.write(baseModelJson);
     }
-    baseModelFile.toFile().deleteOnExit();
 
     // setup wrapper model
     String wrapperModelJson =
