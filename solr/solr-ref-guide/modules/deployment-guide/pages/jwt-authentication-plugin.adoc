@@ -222,7 +222,14 @@ Example:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{"set-property": {"blockUnknown":true, "wellKnownUrl": "https://example.com/.well-knwon/openid-configuration", "scope": "solr:read solr:write"}}'
+curl http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{
+  "set-property": {
+    "blockUnknown":true,
+    "wellKnownUrl": "https://example.com/.well-known/openid-configuration",
+    "scope": "solr:read solr:write"
+  }
+}
+'
 ----
 ====
 
@@ -232,7 +239,14 @@ curl http://localhost:8983/solr/admin/authentication -H 'Content-type:applicatio
 
 [source,bash]
 ----
-curl http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d -d '{"set-property": {"blockUnknown":true, "wellKnownUrl": "https://example.com/.well-knwon/openid-configuration", "scope": "solr:read solr:write"}}'
+curl http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{
+  "set-property": {
+    "blockUnknown":true,
+    "wellKnownUrl": "https://example.com/.well-known/openid-configuration",
+    "scope": "solr:read solr:write"
+  }
+}
+'
 ----
 ====
 --
