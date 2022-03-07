@@ -85,7 +85,6 @@ distributions {
   main {
     distributionBaseName = 'solr'
     contents {
-      // TODO: This is missing module README files, as compared to 8x
 
       from(rootDir, {
         include "LICENSE.txt"
