@@ -359,8 +359,7 @@ public class TestRerankBase extends RestTestBase {
 
   public static void loadFeatures(String fileName) throws Exception {
     final URL url = TestRerankBase.class.getResource("/featureExamples/" + fileName);
-    final String multipleFeatures =
-        Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
+    final String multipleFeatures = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
     log.info("send \n{}", multipleFeatures);
 
     assertJPut(ManagedFeatureStore.REST_END_POINT, multipleFeatures, "/responseHeader/status==0");
