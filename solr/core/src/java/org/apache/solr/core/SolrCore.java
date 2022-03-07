@@ -64,7 +64,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
@@ -3276,7 +3276,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             public void postClose(SolrCore core) {
               if (desc != null) {
                 try {
-                  FileUtils.deleteDirectory(desc.getInstanceDir().toFile());
+                  PathUtils.deleteDirectory(desc.getInstanceDir());
                 } catch (IOException e) {
                   SolrException.log(
                       log,
@@ -3294,20 +3294,20 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public static void deleteUnloadedCore(
       CoreDescriptor cd, boolean deleteDataDir, boolean deleteInstanceDir) {
     if (deleteDataDir) {
-      File dataDir = cd.getInstanceDir().resolve(cd.getDataDir()).toFile();
+      Path dataDir = cd.getInstanceDir().resolve(cd.getDataDir());
       try {
-        FileUtils.deleteDirectory(dataDir);
+        PathUtils.deleteDirectory(dataDir);
       } catch (IOException e) {
         log.error(
             "Failed to delete data dir for unloaded core: {} dir: {}",
             cd.getName(),
-            dataDir.getAbsolutePath(),
+            dataDir.toAbsolutePath(),
             e);
       }
     }
     if (deleteInstanceDir) {
       try {
-        FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
+        PathUtils.deleteDirectory(cd.getInstanceDir());
       } catch (IOException e) {
         log.error(
             "Failed to delete instance dir for unloaded core: {} dir: {}",

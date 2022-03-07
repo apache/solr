@@ -16,18 +16,18 @@
  */
 package org.apache.solr.ltr;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -48,10 +48,10 @@ public class TestRerankBase extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static final SolrResourceLoader solrResourceLoader =
-      new SolrResourceLoader(Paths.get("").toAbsolutePath());
+      new SolrResourceLoader(Path.of("").toAbsolutePath());
 
-  protected static File tmpSolrHome;
-  protected static File tmpConfDir;
+  protected static Path tmpSolrHome;
+  protected static Path tmpConfDir;
 
   public static final String FEATURE_FILE_NAME = "_schema_feature-store.json";
   public static final String MODEL_FILE_NAME = "_schema_model-store.json";
@@ -60,8 +60,8 @@ public class TestRerankBase extends RestTestBase {
   protected static final String COLLECTION = "collection1";
   protected static final String CONF_DIR = COLLECTION + "/conf";
 
-  protected static File fstorefile = null;
-  protected static File mstorefile = null;
+  protected static Path fstorefile = null;
+  protected static Path mstorefile = null;
 
   private static final String SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT =
       "solr.ltr.transformer.fv.defaultFormat";
@@ -133,40 +133,40 @@ public class TestRerankBase extends RestTestBase {
 
   protected static void setupTestInit(String solrconfig, String schema, boolean isPersistent)
       throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, CONF_DIR);
-    tmpConfDir.deleteOnExit();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    tmpSolrHome = createTempDir();
+    tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
+    tmpConfDir.toFile().deleteOnExit();
+    PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
 
-    final File fstore = new File(tmpConfDir, FEATURE_FILE_NAME);
-    final File mstore = new File(tmpConfDir, MODEL_FILE_NAME);
+    final Path fstore = tmpConfDir.resolve(FEATURE_FILE_NAME);
+    final Path mstore = tmpConfDir.resolve(MODEL_FILE_NAME);
 
     if (isPersistent) {
       fstorefile = fstore;
       mstorefile = mstore;
     }
 
-    if (fstore.exists()) {
+    if (Files.exists(fstore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove feature store config file in {}", fstore.getAbsolutePath());
+        log.info("remove feature store config file in {}", fstore.toAbsolutePath());
       }
-      Files.delete(fstore.toPath());
+      Files.delete(fstore);
     }
-    if (mstore.exists()) {
+    if (Files.exists(mstore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove model store config file in {}", mstore.getAbsolutePath());
+        log.info("remove model store config file in {}", mstore.toAbsolutePath());
       }
-      Files.delete(mstore.toPath());
+      Files.delete(mstore);
     }
     if (!solrconfig.equals("solrconfig.xml")) {
-      FileUtils.copyFile(
-          new File(tmpSolrHome.getAbsolutePath() + "/collection1/conf/" + solrconfig),
-          new File(tmpSolrHome.getAbsolutePath() + "/collection1/conf/solrconfig.xml"));
+      Files.copy(
+          tmpSolrHome.resolve(CONF_DIR).resolve(solrconfig),
+          tmpSolrHome.resolve(CONF_DIR).resolve("solrconfig.xml"));
     }
     if (!schema.equals("schema.xml")) {
-      FileUtils.copyFile(
-          new File(tmpSolrHome.getAbsolutePath() + "/collection1/conf/" + schema),
-          new File(tmpSolrHome.getAbsolutePath() + "/collection1/conf/schema.xml"));
+      Files.copy(
+          tmpSolrHome.resolve(CONF_DIR).resolve(schema),
+          tmpSolrHome.resolve(CONF_DIR).resolve("schema.xml"));
     }
 
     System.setProperty("managed.schema.mutable", "true");
@@ -177,14 +177,16 @@ public class TestRerankBase extends RestTestBase {
     setupTestInit(solrconfig, schema, false);
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(
+        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
   }
 
   public static void setupPersistentTest(String solrconfig, String schema) throws Exception {
 
     setupTestInit(solrconfig, schema, true);
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(
+        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
   }
 
   protected static void aftertest() throws Exception {
@@ -197,7 +199,7 @@ public class TestRerankBase extends RestTestBase {
       jetty = null;
     }
     if (null != tmpSolrHome) {
-      FileUtils.deleteDirectory(tmpSolrHome);
+      PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
     System.clearProperty("managed.schema.mutable");
@@ -276,7 +278,7 @@ public class TestRerankBase extends RestTestBase {
 
   public static void loadModels(String fileName) throws Exception {
     final URL url = TestRerankBase.class.getResource("/modelExamples/" + fileName);
-    final String multipleModels = FileUtils.readFileToString(new File(url.toURI()), "UTF-8");
+    final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(ManagedModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
   }
@@ -291,11 +293,11 @@ public class TestRerankBase extends RestTestBase {
       String modelFileName, String featureFileName, String featureStoreName)
       throws ModelException, Exception {
     URL url = TestRerankBase.class.getResource("/modelExamples/" + modelFileName);
-    final String modelJson = FileUtils.readFileToString(new File(url.toURI()), "UTF-8");
+    final String modelJson = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
     final ManagedModelStore ms = getManagedModelStore();
 
     url = TestRerankBase.class.getResource("/featureExamples/" + featureFileName);
-    final String featureJson = FileUtils.readFileToString(new File(url.toURI()), "UTF-8");
+    final String featureJson = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     Object parsedFeatureJson = null;
     try {
@@ -333,7 +335,7 @@ public class TestRerankBase extends RestTestBase {
 
   public static void loadFeatures(String fileName) throws Exception {
     final URL url = TestRerankBase.class.getResource("/featureExamples/" + fileName);
-    final String multipleFeatures = FileUtils.readFileToString(new File(url.toURI()), "UTF-8");
+    final String multipleFeatures = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
     log.info("send \n{}", multipleFeatures);
 
     assertJPut(ManagedFeatureStore.REST_END_POINT, multipleFeatures, "/responseHeader/status==0");
