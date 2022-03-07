@@ -18,7 +18,7 @@ package org.apache.solr.ltr;
 import static java.util.stream.Collectors.toList;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -326,9 +326,9 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   private void setupSolrCluster(int numShards, int numReplicas, int numServers) throws Exception {
     JettyConfig jc = buildJettyConfig("/solr");
     jc = JettyConfig.builder(jc).build();
-    solrCluster = new MiniSolrCloudCluster(numServers, tmpSolrHome.toPath(), jc);
-    File configDir = tmpSolrHome.toPath().resolve("collection1/conf").toFile();
-    solrCluster.uploadConfigSet(configDir.toPath(), "conf1");
+    solrCluster = new MiniSolrCloudCluster(numServers, tmpSolrHome, jc);
+    Path configDir = tmpSolrHome.resolve("collection1/conf");
+    solrCluster.uploadConfigSet(configDir, "conf1");
 
     solrCluster.getSolrClient().setDefaultCollection(COLLECTION);
 
@@ -475,7 +475,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   @AfterClass
   public static void after() throws Exception {
     if (null != tmpSolrHome) {
-      PathUtils.deleteDirectory(tmpSolrHome.toPath());
+      PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
     System.clearProperty("managed.schema.mutable");

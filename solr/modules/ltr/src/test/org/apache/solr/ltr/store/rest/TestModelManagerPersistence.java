@@ -17,14 +17,13 @@
 package org.apache.solr.ltr.store.rest;
 
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.Feature;
@@ -82,8 +81,8 @@ public class TestModelManagerPersistence extends TestRerankBase {
         new String[] {"feature1"},
         "test1",
         "{\"weights\":{\"feature1\":1.0}}");
-    final String fstorecontent = FileUtils.readFileToString(fstorefile, "UTF-8");
-    final String mstorecontent = FileUtils.readFileToString(mstorefile, "UTF-8");
+    final String fstorecontent = Files.readString(fstorefile, StandardCharsets.UTF_8);
+    final String mstorecontent = Files.readString(mstorefile, StandardCharsets.UTF_8);
 
     // check feature/model stores on deletion
     @SuppressWarnings({"unchecked"})
@@ -230,13 +229,13 @@ public class TestModelManagerPersistence extends TestRerankBase {
             new String[] {"popularity", "const"},
             FS_NAME,
             "{\"weights\":{\"popularity\":-1.0, \"const\":1.0}}");
-    File baseModelFile = new File(tmpConfDir, "baseModelForPersistence.json");
+    Path baseModelFile = tmpConfDir.resolve("baseModelForPersistence.json");
     try (BufferedWriter writer =
         new BufferedWriter(
-            new OutputStreamWriter(new FileOutputStream(baseModelFile), StandardCharsets.UTF_8))) {
+            new OutputStreamWriter(Files.newOutputStream(baseModelFile), StandardCharsets.UTF_8))) {
       writer.write(baseModelJson);
     }
-    baseModelFile.deleteOnExit();
+    baseModelFile.toFile().deleteOnExit();
 
     // setup wrapper model
     String wrapperModelJson =
@@ -245,18 +244,18 @@ public class TestModelManagerPersistence extends TestRerankBase {
             DefaultWrapperModel.class.getName(),
             new String[0],
             FS_NAME,
-            "{\"resource\":\"" + baseModelFile.getName() + "\"}");
+            "{\"resource\":\"" + baseModelFile.getFileName() + "\"}");
     assertJPut(ManagedModelStore.REST_END_POINT, wrapperModelJson, "/responseHeader/status==0");
-    doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getName());
+    doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getFileName().toString());
 
     // check persistence after reload
     restTestHarness.reload();
-    doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getName());
+    doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getFileName().toString());
 
     // check persistence after restart
     jetty.stop();
     jetty.start();
-    doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getName());
+    doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getFileName().toString());
 
     // delete test settings
     restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/" + modelName);

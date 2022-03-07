@@ -18,10 +18,10 @@
 package org.apache.solr.ltr.model;
 
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -37,7 +37,7 @@ import org.junit.Test;
 public class TestDefaultWrapperModel extends TestRerankBase {
 
   private static final String featureStoreName = "test";
-  private static File baseModelFile = null;
+  private static Path baseModelFile = null;
 
   static List<Feature> features = null;
 
@@ -66,13 +66,13 @@ public class TestDefaultWrapperModel extends TestRerankBase {
             featureStoreName,
             "{\"weights\":{\"popularity\":-1.0, \"const\":1.0}}");
     // prepare the base model as a file resource
-    baseModelFile = new File(tmpConfDir, "baseModel.json");
+    baseModelFile = tmpConfDir.resolve("baseModel.json");
     try (BufferedWriter writer =
         new BufferedWriter(
-            new OutputStreamWriter(new FileOutputStream(baseModelFile), StandardCharsets.UTF_8))) {
+            new OutputStreamWriter(Files.newOutputStream(baseModelFile), StandardCharsets.UTF_8))) {
       writer.write(baseModelJson);
     }
-    baseModelFile.deleteOnExit();
+    baseModelFile.toFile().deleteOnExit();
   }
 
   @After
@@ -92,7 +92,9 @@ public class TestDefaultWrapperModel extends TestRerankBase {
   public void testLoadModelFromResource() throws Exception {
     String wrapperModelJson =
         getDefaultWrapperModelInJson(
-            "fileWrapper", new String[0], "{\"resource\":\"" + baseModelFile.getName() + "\"}");
+            "fileWrapper",
+            new String[0],
+            "{\"resource\":\"" + baseModelFile.getFileName().toString() + "\"}");
     assertJPut(ManagedModelStore.REST_END_POINT, wrapperModelJson, "/responseHeader/status==0");
 
     final SolrQuery query = new SolrQuery();
@@ -116,12 +118,12 @@ public class TestDefaultWrapperModel extends TestRerankBase {
         getDefaultWrapperModelInJson(
             "otherNestedWrapper",
             new String[0],
-            "{\"resource\":\"" + baseModelFile.getName() + "\"}");
-    File otherWrapperModelFile = new File(tmpConfDir, "nestedWrapperModel.json");
+            "{\"resource\":\"" + baseModelFile.getFileName().toString() + "\"}");
+    Path otherWrapperModelFile = tmpConfDir.resolve("nestedWrapperModel.json");
     try (BufferedWriter writer =
         new BufferedWriter(
             new OutputStreamWriter(
-                new FileOutputStream(otherWrapperModelFile), StandardCharsets.UTF_8))) {
+                Files.newOutputStream(otherWrapperModelFile), StandardCharsets.UTF_8))) {
       writer.write(otherWrapperModelJson);
     }
 
@@ -129,7 +131,7 @@ public class TestDefaultWrapperModel extends TestRerankBase {
         getDefaultWrapperModelInJson(
             "nestedWrapper",
             new String[0],
-            "{\"resource\":\"" + otherWrapperModelFile.getName() + "\"}");
+            "{\"resource\":\"" + otherWrapperModelFile.getFileName().toString() + "\"}");
     assertJPut(ManagedModelStore.REST_END_POINT, wrapperModelJson, "/responseHeader/status==0");
     final SolrQuery query = new SolrQuery();
     query.setQuery("{!func}pow(popularity,2)");
