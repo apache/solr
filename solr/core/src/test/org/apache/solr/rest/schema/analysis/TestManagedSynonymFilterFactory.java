@@ -20,7 +20,6 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 
 import java.net.URLEncoder;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,7 +42,7 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
   @Before
   public void before() throws Exception {
     tmpSolrHome = createTempDir();
-    PathUtils.copyDirectory(Paths.get(TEST_HOME()), tmpSolrHome.toAbsolutePath());
+    PathUtils.copyDirectory(Path.of(TEST_HOME()), tmpSolrHome.toAbsolutePath());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 

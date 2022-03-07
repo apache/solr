@@ -22,7 +22,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -50,7 +49,7 @@ public class TestRerankBase extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static final SolrResourceLoader solrResourceLoader =
-      new SolrResourceLoader(Paths.get("").toAbsolutePath());
+      new SolrResourceLoader(Path.of("").toAbsolutePath());
 
   protected static Path tmpSolrHome;
   protected static Path tmpConfDir;
@@ -138,7 +137,7 @@ public class TestRerankBase extends RestTestBase {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
     tmpConfDir.toFile().deleteOnExit();
-    PathUtils.copyDirectory(Paths.get(TEST_HOME()), tmpSolrHome.toAbsolutePath());
+    PathUtils.copyDirectory(Path.of(TEST_HOME()), tmpSolrHome.toAbsolutePath());
 
     final Path fstore = tmpConfDir.resolve(FEATURE_FILE_NAME);
     final Path mstore = tmpConfDir.resolve(MODEL_FILE_NAME);
@@ -303,7 +302,7 @@ public class TestRerankBase extends RestTestBase {
 
   public static void loadModels(String fileName) throws Exception {
     final URL url = TestRerankBase.class.getResource("/modelExamples/" + fileName);
-    final String multipleModels = Files.readString(Paths.get(url.toURI()), StandardCharsets.UTF_8);
+    final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(ManagedModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
   }
@@ -318,11 +317,11 @@ public class TestRerankBase extends RestTestBase {
       String modelFileName, String featureFileName, String featureStoreName)
       throws ModelException, Exception {
     URL url = TestRerankBase.class.getResource("/modelExamples/" + modelFileName);
-    final String modelJson = Files.readString(Paths.get(url.toURI()), StandardCharsets.UTF_8);
+    final String modelJson = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
     final ManagedModelStore ms = getManagedModelStore();
 
     url = TestRerankBase.class.getResource("/featureExamples/" + featureFileName);
-    final String featureJson = Files.readString(Paths.get(url.toURI()), StandardCharsets.UTF_8);
+    final String featureJson = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     Object parsedFeatureJson = null;
     try {
@@ -361,7 +360,7 @@ public class TestRerankBase extends RestTestBase {
   public static void loadFeatures(String fileName) throws Exception {
     final URL url = TestRerankBase.class.getResource("/featureExamples/" + fileName);
     final String multipleFeatures =
-        Files.readString(Paths.get(url.toURI()), StandardCharsets.UTF_8);
+        Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
     log.info("send \n{}", multipleFeatures);
 
     assertJPut(ManagedFeatureStore.REST_END_POINT, multipleFeatures, "/responseHeader/status==0");
