@@ -72,6 +72,7 @@ import org.apache.commons.exec.Executor;
 import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.http.HttpEntity;
@@ -1830,7 +1831,7 @@ public class SolrCLI implements CLIO {
         }
       } catch (Exception e) {
         /* create-core failed, cleanup the copied configset before propagating the error. */
-        FileUtils.deleteDirectory(coreInstanceDir);
+        PathUtils.deleteDirectory(coreInstanceDir.toPath());
         throw e;
       }
     }

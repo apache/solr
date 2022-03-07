@@ -23,6 +23,7 @@ import static org.apache.solr.util.SolrCLI.parseCmdLine;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -51,7 +52,7 @@ public class AuthToolTest extends SolrCloudTestCase {
   public void tearDown() throws Exception {
     super.tearDown();
     if (null != dir) {
-      org.apache.commons.io.FileUtils.deleteDirectory(dir.toFile());
+      PathUtils.deleteDirectory(dir);
       dir = null;
     }
   }

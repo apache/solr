@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.Locale;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.CreateMode;
@@ -49,7 +49,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
       zkServer = null;
     }
     if (null != zkDir) {
-      FileUtils.deleteDirectory(zkDir.toFile());
+      PathUtils.deleteDirectory(zkDir);
       zkDir = null;
     }
   }

@@ -25,7 +25,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkTestServer;
@@ -55,7 +55,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
       zkServer = null;
     }
     if (null != zkDir) {
-      FileUtils.deleteDirectory(zkDir.toFile());
+      PathUtils.deleteDirectory(zkDir);
       zkDir = null;
     }
   }
