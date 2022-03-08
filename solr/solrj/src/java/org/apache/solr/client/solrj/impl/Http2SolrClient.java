@@ -719,7 +719,7 @@ public class Http2SolrClient extends SolrClient {
       switch (httpStatus) {
         case HttpStatus.OK_200:
         case HttpStatus.BAD_REQUEST_400:
-        case HttpStatus.CONFLICT_409: // 409
+        case HttpStatus.CONFLICT_409:
           break;
         case HttpStatus.MOVED_PERMANENTLY_301:
         case HttpStatus.MOVED_TEMPORARILY_302:
