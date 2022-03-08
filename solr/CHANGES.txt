@@ -38,8 +38,6 @@ Other Changes
 
 * SOLR-15886: Remove deprecated showItems configuration value from solrconfig.xml files (Andy Lester via Eric Pugh)
 
-* SOLR-16039: Upgrade to Hadoop 3.3.2 (Kevin Risden)
-
 Build
 ---------------------
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
@@ -604,6 +602,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 * SOLR-16043: Fix HDFS tests - "Command processor" thread leak (Mike Drob, Kevin Risden)
 
 * SOLR-16074: Use PathUtils.deleteDirectory(path) to try to avoid commons-io IO-751 (Houston Putman, Mike Drob, Kevin Risden)
+
+* SOLR-16039: Upgrade to Hadoop 3.3.2 (Kevin Risden)
 
 Bug Fixes
 ---------------------
