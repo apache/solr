@@ -57,8 +57,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpGet;
@@ -1211,7 +1211,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
             });
       }
     } finally {
-      FileUtils.deleteDirectory(tmpDirectory.toFile());
+      PathUtils.deleteDirectory(tmpDirectory);
     }
     return baos.toByteArray();
   }

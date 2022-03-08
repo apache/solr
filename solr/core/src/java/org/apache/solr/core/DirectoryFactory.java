@@ -22,12 +22,13 @@ import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
@@ -394,9 +395,9 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   // Extension point to allow sub-classes to infuse additional code when deleting old index
   // directories
   protected boolean deleteOldIndexDirectory(String oldDirPath) throws IOException {
-    File dirToRm = new File(oldDirPath);
-    FileUtils.deleteDirectory(dirToRm);
-    return !dirToRm.isDirectory();
+    Path dirToRm = Path.of(oldDirPath);
+    PathUtils.deleteDirectory(dirToRm);
+    return !Files.isDirectory(dirToRm);
   }
 
   public void initCoreContainer(CoreContainer cc) {

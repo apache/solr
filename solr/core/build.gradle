@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
@@ -45,7 +44,38 @@ dependencies {
 
   api project(':solr:solrj')
   api project(':solr:server')
+
   permitUnusedDeclared project(':solr:server')
+
+  // --- start of server/build.grade declared dependencies ---
+
+  // Note: server/build.gradle declares these dependencies yet
+  // we only want them to show up in server/lib when packaged
+  // and NOT in server/solr-webapp/webapp/WEB-INF/lib. So any
+  // "api" dependency in server/build.gradle that is needed in
+  // core/build.gradle needs to be defined as "compileOnlyApi"
+  // below.
+
+  compileOnlyApi 'io.dropwizard.metrics:metrics-core'
+  compileOnlyApi ('io.dropwizard.metrics:metrics-graphite', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
+  compileOnlyApi 'io.dropwizard.metrics:metrics-jmx'
+  compileOnlyApi 'io.dropwizard.metrics:metrics-jvm'
+
+  compileOnlyApi 'org.eclipse.jetty:jetty-alpn-server'
+  compileOnlyApi 'org.eclipse.jetty:jetty-http'
+  compileOnlyApi 'org.eclipse.jetty:jetty-io'
+  compileOnlyApi 'org.eclipse.jetty:jetty-rewrite'
+  compileOnlyApi 'org.eclipse.jetty:jetty-server'
+  compileOnlyApi 'org.eclipse.jetty:jetty-servlet'
+  compileOnlyApi 'org.eclipse.jetty:jetty-util'
+
+  compileOnlyApi 'org.eclipse.jetty.http2:http2-common'
+  compileOnlyApi 'org.eclipse.jetty.http2:http2-server'
+
+  compileOnlyApi 'javax.servlet:javax.servlet-api'
+  // --- end of server/build.gradle declared dependencies ---
 
   // Non-API below; although there are exceptions
 
@@ -89,19 +119,7 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
-  compileOnlyApi 'javax.servlet:javax.servlet-api'
-
   implementation 'org.eclipse.jetty:jetty-client'
-
-  compileOnlyApi 'org.eclipse.jetty.http2:http2-common'
-  compileOnlyApi 'org.eclipse.jetty.http2:http2-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-alpn-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-http'
-  compileOnlyApi 'org.eclipse.jetty:jetty-io'
-  compileOnlyApi 'org.eclipse.jetty:jetty-rewrite'
-  compileOnlyApi 'org.eclipse.jetty:jetty-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-servlet'
-  compileOnlyApi 'org.eclipse.jetty:jetty-util'
 
   // ZooKeeper
   implementation('org.apache.zookeeper:zookeeper', {
@@ -138,13 +156,6 @@ dependencies {
   implementation 'org.apache.logging.log4j:log4j-api'
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
-
-  implementation 'io.dropwizard.metrics:metrics-core'
-  implementation ('io.dropwizard.metrics:metrics-graphite', {
-    exclude group: "com.rabbitmq", module: "amqp-client"
-  })
-  implementation 'io.dropwizard.metrics:metrics-jmx'
-  implementation 'io.dropwizard.metrics:metrics-jvm'
 
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
