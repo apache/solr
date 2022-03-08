@@ -253,7 +253,7 @@ curl http://localhost:8983/api/cluster/security/authentication -H 'Content-type:
 
 Insert a valid JWT access token in compact serialization format (`xxx.yyy.zzz` above) to authenticate with Solr once the plugin is active, or leave `blockUnknown=false` until configuration is complete and then switch it to `true` to start enforcing.
 
-NOTE: There is currently no support for adding multiple token issuers though REST API, but you can configure one issuer through the API by using the 'issuer' properties as top-level properties.
+NOTE: There is currently no support for adding multiple token issuers though REST API, however you can work around this by configuring a single issuer through the API by using the 'issuer' properties as top-level properties.
 
 == Using Clients with JWT Auth
 
