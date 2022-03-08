@@ -44,12 +44,12 @@ import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * Queries a single Solr instance and maps SolrDocs to a Stream of Tuples. TODO: Move this to
- * Http2SolrClient
+ * Queries a single Solr instance and maps SolrDocs to a Stream of Tuples.
+ *
+ * <p>TODO: Move this to Http2SolrClient
  *
  * @since 5.1.0
  */
-@Deprecated(since = "9.0")
 public class SolrStream extends TupleStream {
 
   private static final long serialVersionUID = 1;
