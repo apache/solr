@@ -618,8 +618,6 @@ Bug Fixes
 
 * SOLR-15162: Allow readOnly parameter to be used with v2 modify collection command (Eric Pugh)
 
-* SOLR-15317: Correctly handle user principals with whitespace in PKIAuthPlugin (Dominik Dresel, Mike Drob)
-
 * SOLR-15334: Return error response when failing auth in PKIAuthPlugin (Mike Drob)
 
 * SOLR-15449: Edismax sow incorrectly affect mm parameter in multi field search (Alessandro Benedetti, Michael Gibney, David Smiley)
