@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.zip.GZIPInputStream;
-import org.apache.http.entity.ContentType;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 
@@ -47,11 +46,13 @@ public abstract class ContentStreamBase implements ContentStream {
 
   public static final String DEFAULT_CHARSET = StandardCharsets.UTF_8.name();
   private static final String TEXT_CSV = "text/csv";
+  public static final String TEXT_XML = "text/xml";
+  public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
+  public static final String APPLICATION_GZIP = "application/gzip";
+  public static final String APPLICATION_XML = "application/xml";
+  public static final String APPLICATION_JSON = "application/json";
   private static final List<String> UNHELPFUL_TYPES =
-      Arrays.asList(
-          ContentType.APPLICATION_OCTET_STREAM.getMimeType(),
-          "application/gzip",
-          "content/unknown");
+      Arrays.asList(APPLICATION_OCTET_STREAM, APPLICATION_GZIP, "content/unknown");
   private static final List<String> XML_SUF = Arrays.asList(".xml", ".xml.gz", ".xml.gzip");
   private static final List<String> JSON_SUF = Arrays.asList(".json", ".json.gz", ".json.gzip");
   private static final List<String> CSV_SUF = Arrays.asList(".csv", ".csv.gz", ".csv.gzip");
@@ -80,9 +81,9 @@ public abstract class ContentStreamBase implements ContentStream {
       Predicate<String> endsWith = suffix -> name.toLowerCase(Locale.ROOT).endsWith(suffix);
 
       if (XML_SUF.stream().anyMatch(endsWith)) {
-        type = ContentType.APPLICATION_XML.getMimeType();
+        type = APPLICATION_XML;
       } else if (JSON_SUF.stream().anyMatch(endsWith)) {
-        type = ContentType.APPLICATION_JSON.getMimeType();
+        type = APPLICATION_JSON;
       } else if (CSV_SUF.stream().anyMatch(endsWith)) {
         type = TEXT_CSV;
       } else {
@@ -102,9 +103,9 @@ public abstract class ContentStreamBase implements ContentStream {
         data = stream.read();
       }
       if ((char) data == '<') {
-        type = ContentType.APPLICATION_XML.getMimeType();
+        type = APPLICATION_XML;
       } else if ((char) data == '{') {
-        type = ContentType.APPLICATION_JSON.getMimeType();
+        type = APPLICATION_JSON;
       }
     } catch (Exception ex) {
       // This code just eats, the exception and leaves
@@ -230,9 +231,9 @@ public abstract class ContentStreamBase implements ContentStream {
                     || str.charAt(i + 1) == '*')) // single line or multi-line comment
             || (ch == '{' || ch == '[') // start of JSON object
         ) {
-          detectedContentType = "application/json";
+          detectedContentType = APPLICATION_JSON;
         } else if (ch == '<') {
-          detectedContentType = "text/xml";
+          detectedContentType = TEXT_XML;
         }
         break;
       }
