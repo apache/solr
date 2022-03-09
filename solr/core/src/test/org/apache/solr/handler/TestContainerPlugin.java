@@ -23,7 +23,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -117,7 +116,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
       // let's test the plugin
       TestDistribPackageStore.assertResponseValues(
-          10,
           getPlugin("/plugin/my/plugin"),
           Map.of("/testkey", "testval"));
 
@@ -152,14 +150,12 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
       // let's test the plugin
       TestDistribPackageStore.assertResponseValues(
-          10,
           getPlugin("/my-random-name/my/plugin"),
-          ImmutableMap.of("/method.name", "m1"));
+          Map.of("/method.name", "m1"));
 
       TestDistribPackageStore.assertResponseValues(
-          10,
           getPlugin("/my-random-prefix/their/plugin"),
-          ImmutableMap.of("/method.name", "m2"));
+          Map.of("/method.name", "m2"));
       // now remove the plugin
       new V2Request.Builder("/cluster/plugin")
           .POST()
@@ -212,7 +208,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
       TestDistribPackageStore.assertResponseValues(
-          10,
           getPlugin("hello/plugin"),
           Map.of(
               "/config/boolVal", "true", "/config/strVal", "Something", "/config/longVal", "1234"));
@@ -227,7 +222,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
       TestDistribPackageStore.assertResponseValues(
-          10,
           getPlugin("hello/plugin"),
           Map.of(
               "/config/boolVal", "true", "/config/strVal", cfg.strVal, "/config/longVal", "1234"));
@@ -314,19 +308,18 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
       // verify the plugin creation
       TestDistribPackageStore.assertResponseValues(
-          10,
           () ->
               new V2Request.Builder("/cluster/plugin")
                   .GET()
                   .build()
                   .process(cluster.getSolrClient()),
-          ImmutableMap.of(
+          Map.of(
               "/plugin/myplugin/class", plugin.klass,
               "/plugin/myplugin/version", plugin.version));
       // let's test this now
       Callable<V2Response> invokePlugin = getPlugin("/plugin/my/path");
       TestDistribPackageStore.assertResponseValues(
-          10, invokePlugin, ImmutableMap.of("/myplugin.version", "1.0"));
+          invokePlugin, Map.of("/myplugin.version", "1.0"));
 
       // now let's upload the jar file for version 2.0 of the plugin
       add.version = "2.0";
@@ -345,13 +338,12 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
       // now verify if it is indeed updated
       TestDistribPackageStore.assertResponseValues(
-          10,
           getPlugin("/cluster/plugin"),
           Map.of(
               "/plugin/myplugin/class", plugin.klass, "/plugin/myplugin/version", "2.0"));
       // invoke the plugin and test thye output
       TestDistribPackageStore.assertResponseValues(
-          10, invokePlugin, Map.of("/myplugin.version", "2.0"));
+          invokePlugin, Map.of("/myplugin.version", "2.0"));
 
       plugin.name = "plugin2";
       plugin.klass = "mypkg:" + C5.class.getName();
@@ -502,7 +494,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
       String url = baseUrl + path + "?wt=javabin";
-      TestDistribPackageStore.assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
+      TestDistribPackageStore.assertResponseValues(new Fetcher(url, jettySolrRunner), expected);
     }
   }
 

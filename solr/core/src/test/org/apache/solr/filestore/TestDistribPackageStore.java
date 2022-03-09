@@ -229,6 +229,11 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     }
   }
 
+  public static <T extends NavigableObject> T assertResponseValues(
+      Callable<T> callable, Map<String, Object> vals) throws Exception {
+    return assertResponseValues(1, callable, vals);
+  }
+
   public static NavigableObject assertResponseValues(
       int repeats, SolrClient client, SolrRequest<?> req, Map<String, Object> vals)
       throws Exception {
@@ -293,6 +298,9 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
               val,
               Utils.toJSONString(actual));
         }
+      }
+      if (passed) {
+        return rsp;
       }
     }
     return rsp;
