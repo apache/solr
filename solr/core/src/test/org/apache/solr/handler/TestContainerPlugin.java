@@ -49,7 +49,6 @@ import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
@@ -61,6 +60,7 @@ import org.apache.solr.pkg.TestPackages;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.ErrorLogMuter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,62 +69,57 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   private Phaser phaser;
 
   @Before
-  public void setup() {
+  public void setup() throws Exception {
     System.setProperty("enable.packages", "true");
     phaser = new Phaser();
+
+    int nodes = TEST_NIGHTLY ? 4 : 2;
+    cluster = configureCluster(nodes).withJettyConfig(jetty -> jetty.enableV2(true)).configure();
+    cluster.getOpenOverseer().getCoreContainer().getContainerPluginsRegistry().setPhaser(phaser);
   }
 
   @After
-  public void teardown() {
+  public void teardown() throws Exception {
+    shutdownCluster();
     System.clearProperty("enable.packages");
   }
 
   @Test
   public void testApi() throws Exception {
-    MiniSolrCloudCluster cluster =
-        configureCluster(4).withJettyConfig(jetty -> jetty.enableV2(true)).configure();
-    ContainerPluginsRegistry pluginsRegistry =
-        cluster.getOpenOverseer().getCoreContainer().getContainerPluginsRegistry();
-    pluginsRegistry.setPhaser(phaser);
-
     int version = phaser.getPhase();
 
-    String errPath = "/error/details[0]/errorMessages[0]";
-    try {
       PluginMeta plugin = new PluginMeta();
+    V2Request addPlugin =
+        new V2Request.Builder("/cluster/plugin")
+            .forceV2(true)
+            .POST()
+            .withPayload(singletonMap("add", plugin))
+            .build();
+
+      // test with an invalid class
+    try (ErrorLogMuter errors = ErrorLogMuter.substring("TestContainerPlugin$C2")) {
       plugin.name = "testplugin";
       plugin.klass = C2.class.getName();
-      // test with an invalid class
-      V2Request req =
-          new V2Request.Builder("/cluster/plugin")
-              .forceV2(true)
-              .POST()
-              .withPayload(singletonMap("add", plugin))
-              .build();
-      expectError(req, cluster.getSolrClient(), errPath, "No method with @Command in class");
+      expectError(addPlugin, "No method with @Command in class");
+      assertEquals(1, errors.getCount());
+    }
 
       // test with a valid class. This should succeed now
       plugin.klass = C3.class.getName();
-      req.process(cluster.getSolrClient());
+      addPlugin.process(cluster.getSolrClient());
 
       version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
       // just check if the plugin is indeed registered
-      V2Request readPluginState =
-          new V2Request.Builder("/cluster/plugin").forceV2(true).GET().build();
-      V2Response rsp = readPluginState.process(cluster.getSolrClient());
+      Callable<V2Response> readPluginState = getPlugin("/cluster/plugin");
+      V2Response rsp = readPluginState.call();
       assertEquals(C3.class.getName(), rsp._getStr("/plugin/testplugin/class", null));
 
       // let's test the plugin
       TestDistribPackageStore.assertResponseValues(
           10,
-          () ->
-              new V2Request.Builder("/plugin/my/plugin")
-                  .forceV2(true)
-                  .GET()
-                  .build()
-                  .process(cluster.getSolrClient()),
-          ImmutableMap.of("/testkey", "testval"));
+          getPlugin("/plugin/my/plugin"),
+          Map.of("/testkey", "testval"));
 
       // now remove the plugin
       new V2Request.Builder("/cluster/plugin")
@@ -137,41 +132,33 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
       // verify it is removed
-      rsp = readPluginState.process(cluster.getSolrClient());
-      assertEquals(null, rsp._get("/plugin/testplugin/class", null));
+      rsp = readPluginState.call();
+    assertNull(rsp._get("/plugin/testplugin/class", null));
 
+    try (ErrorLogMuter errors = ErrorLogMuter.substring("TestContainerPlugin$C4")) {
       // test with a class  @EndPoint methods. This also uses a template in the path name
       plugin.klass = C4.class.getName();
       plugin.name = "collections";
       plugin.pathPrefix = "collections";
-      expectError(
-          req, cluster.getSolrClient(), errPath, "path must not have a prefix: collections");
+      expectError(addPlugin, "path must not have a prefix: collections");
+      assertEquals(1, errors.getCount());
+    }
 
       plugin.name = "my-random-name";
       plugin.pathPrefix = "my-random-prefix";
 
-      req.process(cluster.getSolrClient());
+      addPlugin.process(cluster.getSolrClient());
       version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
       // let's test the plugin
       TestDistribPackageStore.assertResponseValues(
           10,
-          () ->
-              new V2Request.Builder("/my-random-name/my/plugin")
-                  .forceV2(true)
-                  .GET()
-                  .build()
-                  .process(cluster.getSolrClient()),
+          getPlugin("/my-random-name/my/plugin"),
           ImmutableMap.of("/method.name", "m1"));
 
       TestDistribPackageStore.assertResponseValues(
           10,
-          () ->
-              new V2Request.Builder("/my-random-prefix/their/plugin")
-                  .forceV2(true)
-                  .GET()
-                  .build()
-                  .process(cluster.getSolrClient()),
+          getPlugin("/my-random-prefix/their/plugin"),
           ImmutableMap.of("/method.name", "m2"));
       // now remove the plugin
       new V2Request.Builder("/cluster/plugin")
@@ -183,30 +170,19 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
       version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
-      expectFail(
-          () ->
-              new V2Request.Builder("/my-random-prefix/their/plugin")
-                  .forceV2(true)
-                  .GET()
-                  .build()
-                  .process(cluster.getSolrClient()));
-      expectFail(
-          () ->
-              new V2Request.Builder("/my-random-prefix/their/plugin")
-                  .forceV2(true)
-                  .GET()
-                  .build()
-                  .process(cluster.getSolrClient()));
+      try (ErrorLogMuter errors = ErrorLogMuter.substring("/my-random-prefix/their/plugin")) {
+        expectFail(() -> getPlugin("/my-random-prefix/their/plugin").call());
+        assertEquals(2, errors.getCount());
+      }
 
       // test ClusterSingleton plugin
       plugin.name = "clusterSingleton";
       plugin.klass = C6.class.getName();
-      req.process(cluster.getSolrClient());
+      addPlugin.process(cluster.getSolrClient());
       version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
       // just check if the plugin is indeed registered
-      readPluginState = new V2Request.Builder("/cluster/plugin").forceV2(true).GET().build();
-      rsp = readPluginState.process(cluster.getSolrClient());
+      rsp = readPluginState.call();
       assertEquals(C6.class.getName(), rsp._getStr("/plugin/clusterSingleton/class", null));
 
       assertTrue("ccProvided", C6.ccProvided);
@@ -237,13 +213,8 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
       TestDistribPackageStore.assertResponseValues(
           10,
-          () ->
-              new V2Request.Builder("hello/plugin")
-                  .forceV2(true)
-                  .GET()
-                  .build()
-                  .process(cluster.getSolrClient()),
-          ImmutableMap.of(
+          getPlugin("hello/plugin"),
+          Map.of(
               "/config/boolVal", "true", "/config/strVal", "Something", "/config/longVal", "1234"));
 
       cfg.strVal = "Something else";
@@ -257,13 +228,8 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
       TestDistribPackageStore.assertResponseValues(
           10,
-          () ->
-              new V2Request.Builder("hello/plugin")
-                  .forceV2(true)
-                  .GET()
-                  .build()
-                  .process(cluster.getSolrClient()),
-          ImmutableMap.of(
+          getPlugin("hello/plugin"),
+          Map.of(
               "/config/boolVal", "true", "/config/strVal", cfg.strVal, "/config/longVal", "1234"));
 
       // kill the Overseer leader
@@ -274,9 +240,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
         }
       }
       assertTrue("stopCalled", C6.stopCalled);
-    } finally {
-      cluster.shutdown();
-    }
   }
 
   private void expectFail(ThrowingRunnable runnable) throws Exception {
@@ -293,18 +256,12 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   @Test
   public void testApiFromPackage() throws Exception {
-    MiniSolrCloudCluster cluster =
-        configureCluster(4).withJettyConfig(jetty -> jetty.enableV2(true)).configure();
     String FILE1 = "/myplugin/v1.jar";
     String FILE2 = "/myplugin/v2.jar";
-    ContainerPluginsRegistry pluginsRegistry =
-        cluster.getOpenOverseer().getCoreContainer().getContainerPluginsRegistry();
-    pluginsRegistry.setPhaser(phaser);
 
     int version = phaser.getPhase();
 
     String errPath = "/error/details[0]/errorMessages[0]";
-    try {
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
       uploadKey(derFile, PackageStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
       TestPackages.postFileAndWait(
@@ -367,13 +324,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
               "/plugin/myplugin/class", plugin.klass,
               "/plugin/myplugin/version", plugin.version));
       // let's test this now
-      Callable<NavigableObject> invokePlugin =
-          () ->
-              new V2Request.Builder("/plugin/my/path")
-                  .forceV2(true)
-                  .GET()
-                  .build()
-                  .process(cluster.getSolrClient());
+      Callable<V2Response> invokePlugin = getPlugin("/plugin/my/path");
       TestDistribPackageStore.assertResponseValues(
           10, invokePlugin, ImmutableMap.of("/myplugin.version", "1.0"));
 
@@ -395,16 +346,12 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       // now verify if it is indeed updated
       TestDistribPackageStore.assertResponseValues(
           10,
-          () ->
-              new V2Request.Builder("/cluster/plugin")
-                  .GET()
-                  .build()
-                  .process(cluster.getSolrClient()),
-          ImmutableMap.of(
+          getPlugin("/cluster/plugin"),
+          Map.of(
               "/plugin/myplugin/class", plugin.klass, "/plugin/myplugin/version", "2.0"));
       // invoke the plugin and test thye output
       TestDistribPackageStore.assertResponseValues(
-          10, invokePlugin, ImmutableMap.of("/myplugin.version", "2.0"));
+          10, invokePlugin, Map.of("/myplugin.version", "2.0"));
 
       plugin.name = "plugin2";
       plugin.klass = "mypkg:" + C5.class.getName();
@@ -413,9 +360,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
       assertNotNull(C5.classData);
       assertEquals(1452, C5.classData.limit());
-    } finally {
-      cluster.shutdown();
-    }
   }
 
   public static class CC1 extends CC {}
@@ -548,6 +492,11 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
   }
 
+  private Callable<V2Response> getPlugin(String path) {
+    V2Request req = new V2Request.Builder(path).GET().build();
+    return () -> req.process(cluster.getSolrClient());
+  }
+
   public static void waitForAllNodesToSync(
       MiniSolrCloudCluster cluster, String path, Map<String, Object> expected) throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
@@ -557,7 +506,13 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
   }
 
-  private void expectError(V2Request req, SolrClient client, String errPath, String expectErrorMsg)
+  private void expectError(V2Request req, String expectErrorMsg)
+      throws IOException, SolrServerException {
+    String errPath = "/error/details[0]/errorMessages[0]";
+    expectError(req, cluster.getSolrClient(), errPath, expectErrorMsg);
+  }
+
+  private static void expectError(V2Request req, SolrClient client, String errPath, String expectErrorMsg)
       throws IOException, SolrServerException {
     RemoteExecutionException e =
         expectThrows(RemoteExecutionException.class, () -> req.process(client));
