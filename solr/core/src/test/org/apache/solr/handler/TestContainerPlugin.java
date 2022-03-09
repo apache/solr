@@ -304,8 +304,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     // verify the plugin creation
     TestDistribPackageStore.assertResponseValues(
-        () ->
-            new V2Request.Builder("/cluster/plugin").GET().build().process(cluster.getSolrClient()),
+        getPlugin("/cluster/plugin"),
         Map.of(
             "/plugin/myplugin/class", plugin.klass,
             "/plugin/myplugin/version", plugin.version));
