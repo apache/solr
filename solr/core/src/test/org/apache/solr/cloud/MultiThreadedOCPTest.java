@@ -50,15 +50,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  public void test() throws Exception {
-    testParallelCollectionAPICalls();
-    testTaskExclusivity();
-    testDeduplicationOfSubmittedTasks();
-    testLongAndShortRunningParallelApiCalls();
-    testFillWorkQueue();
-  }
-
-  private void testFillWorkQueue() throws Exception {
+  public void testFillWorkQueue() throws Exception {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       // This test does not make sense when the Collection API execution is distributed. There is no
       // queue to fill
@@ -89,8 +81,8 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
         // Make sure the long running task did not finish, otherwise no way the B_COLL task can be
         // tested to run in parallel with it
-        assertNull(
-            "Long running task finished too early, can't test", checkTaskHasCompleted(client, 2));
+        assumeTrue("Long running task finished too early, can't test",
+            null == checkTaskHasCompleted(client, 2));
 
         // Enqueue a task on another collection not competing with the lock on A_COLL and see that
         // it can be executed right away
@@ -151,7 +143,8 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     return null;
   }
 
-  private void testParallelCollectionAPICalls() throws IOException, SolrServerException {
+  @Test
+  public void testParallelCollectionAPICalls() throws IOException, SolrServerException {
     final int ASYNC_SHIFT = 10000;
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       for (int i = 1 + ASYNC_SHIFT; i <= NUM_COLLECTIONS + ASYNC_SHIFT; i++) {
@@ -192,7 +185,8 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  private void testTaskExclusivity() throws Exception, SolrServerException {
+  @Test
+  public void testTaskExclusivity() throws Exception, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
 
       Create createCollectionRequest =
@@ -249,7 +243,8 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  private void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
+  @Test
+  public void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
       CollectionAdminRequest.createCollection("ocptest_shardsplit2", "conf1", 3, 1)
           .processAsync("3000", client);
@@ -286,7 +281,8 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
     }
   }
 
-  private void testLongAndShortRunningParallelApiCalls()
+  @Test
+  public void testLongAndShortRunningParallelApiCalls()
       throws InterruptedException, IOException, SolrServerException {
     Thread indexThread =
         new Thread() {
