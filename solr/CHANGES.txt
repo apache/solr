@@ -37,6 +37,8 @@ Improvements
 ---------------------
 * SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
 
+* SOLR-15652: Add Slack channel for community support to Admin UI footer, update links.  (Eric Pugh)
+
 Optimizations
 ---------------------
 (No changes)
