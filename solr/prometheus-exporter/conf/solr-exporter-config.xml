@@ -97,7 +97,7 @@
       (if $parent_key_item_len == 5 then ($collection + "_" + $shard + "_" + $replica) else $core end) as $core |
       $parent.value | to_entries | .[] | {KEYSELECTOR} as $object |
       $object.key | split(".")[0] as $category |
-      $object.key | split(".")[1] as $handler |
+      $object.key | split(".")[1] | rtrimstr("]") | split("[") | .[0] as $handler | .[1] // "false" as $internal |
       select($handler | startswith("/")) |
       {METRIC} as $value |
       if $parent_key_item_len == 3 then
@@ -105,8 +105,8 @@
       name: "solr_metrics_core_{UNIQUE}",
       type: "{TYPE}",
       help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
-      label_names: ["category", "handler", "core"],
-      label_values: [$category, $handler, $core],
+      label_names: ["category", "handler", "internal", "core"],
+      label_values: [$category, $handler, $internal, $core],
       value: $value
       }
       else
@@ -114,8 +114,8 @@
       name: "solr_metrics_core_{UNIQUE}",
       type: "{TYPE}",
       help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
-      label_names: ["category", "handler", "core", "collection", "shard", "replica"],
-      label_values: [$category, $handler, $core, $collection, $shard, $replica],
+      label_names: ["category", "handler", "internal", "core", "collection", "shard", "replica"],
+      label_values: [$category, $handler, $internal, $core, $collection, $shard, $replica],
       value: $value
       }
       end
