@@ -1414,8 +1414,7 @@ public class SolrCLI implements CLIO {
           new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
               .build()) {
         cloudSolrClient.connect();
-        Set<String> liveNodes =
-            ZkStateReader.from(cloudSolrClient).getClusterState().getLiveNodes();
+        Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
         if (liveNodes.isEmpty())
           throw new IllegalStateException(
               "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
@@ -1551,7 +1550,7 @@ public class SolrCLI implements CLIO {
 
     protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
 
-      Set<String> liveNodes = ZkStateReader.from(cloudSolrClient).getClusterState().getLiveNodes();
+      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
       if (liveNodes.isEmpty())
         throw new IllegalStateException(
             "No live nodes found! Cannot create a collection until "
@@ -2511,7 +2510,7 @@ public class SolrCLI implements CLIO {
 
     protected void deleteCollection(CloudSolrClient cloudSolrClient, CommandLine cli)
         throws Exception {
-      Set<String> liveNodes = ZkStateReader.from(cloudSolrClient).getClusterState().getLiveNodes();
+      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
       if (liveNodes.isEmpty())
         throw new IllegalStateException(
             "No live nodes found! Cannot delete a collection until "

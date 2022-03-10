@@ -182,7 +182,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
             fail("Sub-shards did not become active even after waiting for 1 minute");
           }
 
-          int liveNodeCount = ZkStateReader.from(client).getClusterState().getLiveNodes().size();
+          int liveNodeCount = client.getClusterState().getLiveNodes().size();
 
           // restart the sub-shard leader node
           String stoppedNodeName = null;
@@ -212,7 +212,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           // use control client because less chances of it being the node being restarted
           // this is to avoid flakiness of test because of NoHttpResponseExceptions
           String control_collection =
-              ZkStateReader.from(client)
+              client
                   .getClusterState()
                   .getCollection("control_collection")
                   .getReplicas()
@@ -255,7 +255,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
             newReplicaLatch.await(30, TimeUnit.SECONDS);
             // check consistency of sub-shard replica explicitly because checkShardConsistency
             // methods doesn't handle new shards/replica so well.
-            ClusterState clusterState = ZkStateReader.from(client).getClusterState();
+            ClusterState clusterState = client.getClusterState();
             DocCollection collection = clusterState.getCollection(collectionName);
             int numReplicasChecked = assertConsistentReplicas(collection.getSlice(SHARD1_0));
             assertEquals(

@@ -114,7 +114,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
     sysQuery.setRequestHandler("/admin/info/system");
 
     CloudSolrClient cloudSolrClient = this.connection.getClient();
-    Set<String> liveNodes = ZkStateReader.from(cloudSolrClient).getClusterState().getLiveNodes();
+    Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
     SolrClient solrClient = null;
     for (String node : liveNodes) {
       try {

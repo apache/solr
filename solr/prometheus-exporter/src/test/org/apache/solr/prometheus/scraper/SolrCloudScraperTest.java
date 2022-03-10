@@ -70,7 +70,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
   }
 
   private ClusterState getClusterState() {
-    return ZkStateReader.from(cluster.getSolrClient()).getClusterState();
+    return cluster.getSolrClient().getClusterState();
   }
 
   private DocCollection getCollectionState() {

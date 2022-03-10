@@ -39,7 +39,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -85,7 +84,8 @@ public class SplitShardTest extends SolrCloudTestCase {
     splitShard.process(cluster.getSolrClient());
     waitForState(
         "Timed out waiting for sub shards to be active. Number of active shards="
-            + ZkStateReader.from(cluster.getSolrClient())
+            + cluster
+                .getSolrClient()
                 .getClusterState()
                 .getCollection(COLLECTION_NAME)
                 .getActiveSlices()
@@ -151,15 +151,15 @@ public class SplitShardTest extends SolrCloudTestCase {
     splitShard.process(cluster.getSolrClient());
     waitForState(
         "Timed out waiting for sub shards to be active. Number of active shards="
-            + ZkStateReader.from(cluster.getSolrClient())
+            + cluster
+                .getSolrClient()
                 .getClusterState()
                 .getCollection(collectionName)
                 .getActiveSlices()
                 .size(),
         collectionName,
         activeClusterShape(3, 4));
-    DocCollection coll =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(collectionName);
+    DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(collectionName);
     Slice s1_0 = coll.getSlice("shard1_0");
     Slice s1_1 = coll.getSlice("shard1_1");
     long fuzz = ((long) Integer.MAX_VALUE >> 3) + 1L;
@@ -185,8 +185,7 @@ public class SplitShardTest extends SolrCloudTestCase {
 
   long getNumDocs(CloudSolrClient client) throws Exception {
     String collectionName = client.getDefaultCollection();
-    DocCollection collection =
-        ZkStateReader.from(client).getClusterState().getCollection(collectionName);
+    DocCollection collection = client.getClusterState().getCollection(collectionName);
     Collection<Slice> slices = collection.getSlices();
 
     long totCount = 0;

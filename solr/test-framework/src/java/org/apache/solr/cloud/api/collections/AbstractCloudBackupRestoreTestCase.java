@@ -289,7 +289,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   }
 
   private int getActiveSliceCount(String collectionName) {
-    return ZkStateReader.from(cluster.getSolrClient())
+    return cluster
+        .getSolrClient()
         .getClusterState()
         .getCollection(collectionName)
         .getActiveSlices()
@@ -328,8 +329,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     String backupName = BACKUPNAME_PREFIX + testSuffix;
 
     CloudSolrClient client = cluster.getSolrClient();
-    DocCollection backupCollection =
-        ZkStateReader.from(client).getClusterState().getCollection(collectionName);
+    DocCollection backupCollection = client.getClusterState().getCollection(collectionName);
 
     Map<String, Integer> origShardToDocCount = getShardToDocCountMap(client, backupCollection);
     assert origShardToDocCount.isEmpty() == false;
@@ -402,8 +402,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
         restoreCollectionName, ZkStateReader.from(client), log.isDebugEnabled(), true, 30);
 
     // Check the number of results are the same
-    DocCollection restoreCollection =
-        ZkStateReader.from(client).getClusterState().getCollection(restoreCollectionName);
+    DocCollection restoreCollection = client.getClusterState().getCollection(restoreCollectionName);
     assertEquals(origShardToDocCount, getShardToDocCountMap(client, restoreCollection));
     // Re-index same docs (should be identical docs given same random seed) and test we have the
     // same result.  Helps

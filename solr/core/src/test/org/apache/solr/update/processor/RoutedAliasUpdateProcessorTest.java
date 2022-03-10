@@ -81,14 +81,10 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         Thread.sleep(500);
       }
     }
-    try {
-      DocCollection confirmCollection =
-          cluster.getSolrClient().getClusterState().getCollectionOrNull(collection);
-      assertNotNull(
-          "Unable to find collection we were waiting for after done waiting", confirmCollection);
-    } catch (IOException e) {
-      fail("exception getting collection we were waiting for and have supposedly created already");
-    }
+    var confirmCollection =
+        cluster.getSolrClient().getClusterState().getCollectionOrNull(collection);
+    assertNotNull(
+        "Unable to find collection we were waiting for after done waiting", confirmCollection);
   }
 
   private boolean haveCollection(String alias, String collection) {

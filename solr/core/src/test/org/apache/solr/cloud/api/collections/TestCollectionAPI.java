@@ -708,10 +708,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
       Map<String, Slice> slices =
-          ZkStateReader.from(client)
-              .getClusterState()
-              .getCollection(COLLECTION_NAME)
-              .getSlicesMap();
+          client.getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
       List<String> sliceList = new ArrayList<>(slices.keySet());
       String c1_s1 = sliceList.get(0);
       List<String> replicasList = new ArrayList<>(slices.get(c1_s1).getReplicasMap().keySet());
@@ -722,11 +719,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       replicasList = new ArrayList<>(slices.get(c1_s2).getReplicasMap().keySet());
       String c1_s2_r1 = replicasList.get(0);
 
-      slices =
-          ZkStateReader.from(client)
-              .getClusterState()
-              .getCollection(COLLECTION_NAME1)
-              .getSlicesMap();
+      slices = client.getClusterState().getCollection(COLLECTION_NAME1).getSlicesMap();
       sliceList = new ArrayList<>(slices.keySet());
       String c2_s1 = sliceList.get(0);
       replicasList = new ArrayList<>(slices.get(c2_s1).getReplicasMap().keySet());
@@ -1217,7 +1210,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       throws KeeperException, InterruptedException {
 
     ZkStateReader.from(client).forceUpdateCollection(collectionName);
-    ClusterState clusterState = ZkStateReader.from(client).getClusterState();
+    ClusterState clusterState = client.getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
     if (docCollection == null || docCollection.getReplica(replicaName) == null) {
       fail("Could not find collection/replica pair! " + collectionName + "/" + replicaName);

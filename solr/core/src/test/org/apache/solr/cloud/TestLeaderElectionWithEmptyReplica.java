@@ -99,7 +99,8 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     // now query each replica and check for consistency
     assertConsistentReplicas(
         solrClient,
-        ZkStateReader.from(cluster.getSolrClient())
+        cluster
+            .getSolrClient()
             .getClusterState()
             .getCollection(COLLECTION_NAME)
             .getSlice("shard1"));

@@ -195,8 +195,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     // check the collection's corelessness
     int coreCount = 0;
-    DocCollection docCollection =
-        ZkStateReader.from(client).getClusterState().getCollection(collectionName);
+    DocCollection docCollection = client.getClusterState().getCollection(collectionName);
     for (Map.Entry<String, Slice> entry : docCollection.getSlicesMap().entrySet()) {
       coreCount += entry.getValue().getReplicasMap().entrySet().size();
     }

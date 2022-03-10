@@ -121,10 +121,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         jetty.start();
       }
     }
-    if (ZkStateReader.from(cluster.getSolrClient())
-            .getClusterState()
-            .getCollectionOrNull(collectionName)
-        != null) {
+    if (cluster.getSolrClient().getClusterState().getCollectionOrNull(collectionName) != null) {
       log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
       waitForDeletion(collectionName);
@@ -847,8 +844,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         (liveNodes, collectionState) -> {
           Replica leader = collectionState.getLeader(shardName);
           if (leader == null
-              || !leader.isActive(
-                  ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes())) {
+              || !leader.isActive(cluster.getSolrClient().getClusterState().getLiveNodes())) {
             return false;
           }
           return oldLeaderJetty == null
@@ -932,7 +928,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private String getBaseUrl() {
     DocCollection collection =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(collectionName);
+        cluster.getSolrClient().getClusterState().getCollection(collectionName);
     Slice slice = collection.getSlice("shard1");
     return slice.getLeader().getCoreUrl();
   }
@@ -986,8 +982,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       throws IOException, SolrServerException, InterruptedException {
     TimeOut t = new TimeOut(timeout, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r : replicas) {
-      if (!r.isActive(
-          ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes())) {
+      if (!r.isActive(cluster.getSolrClient().getClusterState().getLiveNodes())) {
         continue;
       }
       try (HttpSolrClient replicaClient = getHttpSolrClient(r.getCoreUrl())) {
@@ -1012,9 +1007,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
     TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (ZkStateReader.from(cluster.getSolrClient())
-        .getClusterState()
-        .hasCollection(collection)) {
+    while (cluster.getSolrClient().getClusterState().hasCollection(collection)) {
       try {
         Thread.sleep(100);
         if (t.hasTimedOut()) {

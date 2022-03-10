@@ -334,7 +334,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // Test that queries with _route_ params are routed by the client
 
     // Track request counts on each node before query calls
-    ClusterState clusterState = ZkStateReader.from(cluster.getSolrClient()).getClusterState();
+    ClusterState clusterState = cluster.getSolrClient().getClusterState();
     DocCollection col = clusterState.getCollection("routing_collection");
     Map<String, Long> requestCountsMap = Maps.newHashMap();
     for (Slice slice : col.getSlices()) {
@@ -745,8 +745,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
-    DocCollection coll =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION);
+    DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(COLLECTION);
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
 
     SolrQuery q = new SolrQuery().setQuery("*:*");
@@ -788,8 +787,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       }
     }
     String theNode = null;
-    Set<String> liveNodes =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes();
+    Set<String> liveNodes = cluster.getSolrClient().getClusterState().getLiveNodes();
     for (String s : liveNodes) {
       String n = ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(s);
       if (!allNodesOfColl.contains(n)) {
@@ -950,10 +948,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // determine the coreNodeName of only current replica
     Collection<Slice> slices =
-        ZkStateReader.from(cluster.getSolrClient())
-            .getClusterState()
-            .getCollection(COL)
-            .getSlices();
+        cluster.getSolrClient().getClusterState().getCollection(COL).getSlices();
     assertEquals(1, slices.size()); // sanity check
     Slice slice = slices.iterator().next();
     assertEquals(1, slice.getReplicas().size()); // sanity check

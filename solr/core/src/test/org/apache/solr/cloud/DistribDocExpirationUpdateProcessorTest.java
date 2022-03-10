@@ -248,7 +248,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     int coresCompared = 0;
     int totalDocsOnAllShards = 0;
     final DocCollection collectionState =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION);
+        cluster.getSolrClient().getClusterState().getCollection(COLLECTION);
     for (Slice shard : collectionState) {
       boolean firstReplica = true;
       for (Replica replica : shard) {
@@ -304,7 +304,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     Map<String, ReplicaData> results = new HashMap<>();
 
     DocCollection collectionState =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION);
+        cluster.getSolrClient().getClusterState().getCollection(COLLECTION);
 
     for (Replica replica : collectionState.getReplicas()) {
 

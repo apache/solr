@@ -126,9 +126,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /** Get the collection state for a particular collection */
   protected static DocCollection getCollectionState(String collectionName) {
-    return ZkStateReader.from(cluster.getSolrClient())
-        .getClusterState()
-        .getCollection(collectionName);
+    return cluster.getSolrClient().getClusterState().getCollection(collectionName);
   }
 
   protected static void waitForState(

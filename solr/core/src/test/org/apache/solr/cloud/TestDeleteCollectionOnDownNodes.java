@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,8 +64,6 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
 
     assertFalse(
         "Still found collection that should be gone",
-        ZkStateReader.from(cluster.getSolrClient())
-            .getClusterState()
-            .hasCollection("halfdeletedcollection2"));
+        cluster.getSolrClient().getClusterState().hasCollection("halfdeletedcollection2"));
   }
 }

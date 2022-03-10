@@ -199,8 +199,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     // We can use the router to find the shards for the middle prefixes and they should be
     // different.
 
-    DocCollection collection =
-        ZkStateReader.from(client).getClusterState().getCollection(COLLECTION_NAME);
+    DocCollection collection = client.getClusterState().getCollection(COLLECTION_NAME);
     Collection<Slice> slices1 =
         collection
             .getRouter()
@@ -239,7 +238,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
         COLLECTION_NAME,
         activeClusterShape(4, 7));
 
-    collection = ZkStateReader.from(client).getClusterState().getCollection(COLLECTION_NAME);
+    collection = client.getClusterState().getCollection(COLLECTION_NAME);
     slices1 =
         collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
     slices2 =
@@ -267,7 +266,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
         COLLECTION_NAME,
         activeClusterShape(5, 9));
 
-    collection = ZkStateReader.from(client).getClusterState().getCollection(COLLECTION_NAME);
+    collection = client.getClusterState().getCollection(COLLECTION_NAME);
     slices1 =
         collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
     slice1 = slices1.iterator().next();
@@ -290,7 +289,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
         COLLECTION_NAME,
         activeClusterShape(6, 11));
 
-    collection = ZkStateReader.from(client).getClusterState().getCollection(COLLECTION_NAME);
+    collection = client.getClusterState().getCollection(COLLECTION_NAME);
     slices1 =
         collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
 

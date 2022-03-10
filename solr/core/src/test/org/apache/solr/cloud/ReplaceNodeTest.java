@@ -151,7 +151,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
           status.getCoreStatus().size());
     }
 
-    collection = ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(coll);
+    collection = cluster.getSolrClient().getClusterState().getCollection(coll);
     assertEquals(create.getNumShards().intValue(), collection.getSlices().size());
     for (Slice s : collection.getSlices()) {
       assertEquals(

@@ -109,9 +109,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     ArrayList<String> result = null;
 
     for (int i = 0; i < 10; i++) {
-      result =
-          new ArrayList<>(
-              ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes());
+      result = new ArrayList<>(cluster.getSolrClient().getClusterState().getLiveNodes());
       if (expectedCount != result.size()) {
         if (log.isInfoEnabled()) {
           log.info(

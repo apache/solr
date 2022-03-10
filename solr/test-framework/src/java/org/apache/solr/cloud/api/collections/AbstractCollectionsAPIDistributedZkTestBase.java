@@ -330,8 +330,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     CollectionAdminRequest.createCollection("nodes_used_collection", "conf", 2, 2)
         .process(cluster.getSolrClient());
 
-    Set<String> liveNodes =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes();
+    Set<String> liveNodes = cluster.getSolrClient().getClusterState().getLiveNodes();
 
     List<String> createNodeList = new ArrayList<>(liveNodes);
 
@@ -650,8 +649,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
     ArrayList<String> nodeList =
-        new ArrayList<>(
-            ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes());
+        new ArrayList<>(cluster.getSolrClient().getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
 
     CollectionAdminResponse response =

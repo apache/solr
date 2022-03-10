@@ -117,10 +117,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    if (ZkStateReader.from(cluster.getSolrClient())
-            .getClusterState()
-            .getCollectionOrNull(collectionName)
-        != null) {
+    if (cluster.getSolrClient().getClusterState().getCollectionOrNull(collectionName) != null) {
       log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
       log.info("Collection deleted");
@@ -352,9 +349,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
 
   private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
     TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (ZkStateReader.from(cluster.getSolrClient())
-        .getClusterState()
-        .hasCollection(collection)) {
+    while (cluster.getSolrClient().getClusterState().hasCollection(collection)) {
       log.info("Collection not yet deleted");
       try {
         Thread.sleep(100);

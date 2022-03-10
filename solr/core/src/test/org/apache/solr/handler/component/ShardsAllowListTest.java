@@ -34,7 +34,6 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.MultiSolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -283,7 +282,8 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
   }
 
   private String getShardUrl(String shardName, MiniSolrCloudCluster cluster) {
-    return ZkStateReader.from(cluster.getSolrClient())
+    return cluster
+        .getSolrClient()
         .getClusterState()
         .getCollection(COLLECTION_NAME)
         .getSlice(shardName)

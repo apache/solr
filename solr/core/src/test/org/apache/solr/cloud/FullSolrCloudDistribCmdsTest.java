@@ -415,7 +415,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
         { // HACK: Check the leaderProps for the shard hosted on the node we're going to kill...
           final Replica leaderProps =
-              ZkStateReader.from(cloudClient)
+              cloudClient
                   .getClusterState()
                   .getCollection(collectionName)
                   .getLeaderReplicas(leaderToPartition.getNodeName())
@@ -739,7 +739,8 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
     final SolrParams perReplicaParams = SolrParams.wrapDefaults(params("distrib", "false"), params);
     final DocCollection collection =
-        ZkStateReader.from(cluster.getSolrClient())
+        cluster
+            .getSolrClient()
             .getClusterState()
             .getCollection(cluster.getSolrClient().getDefaultCollection());
     log.info("Checking shard consistency via: {}", perReplicaParams);
