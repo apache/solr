@@ -231,7 +231,8 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
 
     assertEquals(
         4,
-        ClusterStateUtil.getLiveAndActiveReplicaCount(ZkStateReader.from(cloudClient), collection1));
+        ClusterStateUtil.getLiveAndActiveReplicaCount(
+            ZkStateReader.from(cloudClient), collection1));
     assertTrue(
         ClusterStateUtil.getLiveAndActiveReplicaCount(ZkStateReader.from(cloudClient), collection2)
             < 4);
@@ -253,7 +254,8 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
     // collection1 should still be at 4
     assertEquals(
         4,
-        ClusterStateUtil.getLiveAndActiveReplicaCount(ZkStateReader.from(cloudClient), collection1));
+        ClusterStateUtil.getLiveAndActiveReplicaCount(
+            ZkStateReader.from(cloudClient), collection1));
     // and collection2 less than 4
     assertTrue(
         ClusterStateUtil.getLiveAndActiveReplicaCount(ZkStateReader.from(cloudClient), collection2)

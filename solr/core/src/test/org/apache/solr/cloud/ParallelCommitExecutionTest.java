@@ -16,13 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -35,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -109,8 +103,8 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assert null != client.getDefaultCollection();
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-              ZkStateReader.from(client), true, true, 330);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
 
   public static class CheckFactory extends UpdateRequestProcessorFactory {

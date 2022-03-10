@@ -49,8 +49,9 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(testCollectionName, "conf", 1, 1)
         .process(cluster.getSolrClient());
 
-    Replica leader
-      = ZkStateReader.from(cluster.getSolrClient()).getLeaderRetry(testCollectionName, "shard1", DEFAULT_TIMEOUT);
+    Replica leader =
+        ZkStateReader.from(cluster.getSolrClient())
+            .getLeaderRetry(testCollectionName, "shard1", DEFAULT_TIMEOUT);
 
     long coreStartTime = getCoreStatus(leader).getCoreStartTime().getTime();
     CollectionAdminRequest.reloadCollection(testCollectionName).process(cluster.getSolrClient());

@@ -21,6 +21,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 
 public class TestSystemCollAutoCreate extends AbstractFullDistribZkTestBase {
   public void testAutoCreate() throws Exception {
-    TestBlobHandler.checkBlobPost(cloudJettys.get(0).jetty.getBaseUrl().toExternalForm(), cloudClient);
+    TestBlobHandler.checkBlobPost(
+        cloudJettys.get(0).jetty.getBaseUrl().toExternalForm(), cloudClient);
   }
 }

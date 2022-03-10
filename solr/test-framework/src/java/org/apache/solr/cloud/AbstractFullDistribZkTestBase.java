@@ -429,13 +429,20 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         0,
         CollectionAdminRequest.createCollection(
                 DEFAULT_COLLECTION, "conf1", sliceCount, 1) // not real rep factor!
-                 .setCreateNodeSet("") // empty node set prevents creation of cores
-                 .process(cloudClient).getStatus());
+            .setCreateNodeSet("") // empty node set prevents creation of cores
+            .process(cloudClient)
+            .getStatus());
 
-      // expect sliceCount active shards, but no active replicas
-    ZkStateReader.from(cloudClient).waitForState(DEFAULT_COLLECTION, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(sliceCount, 0));
+    // expect sliceCount active shards, but no active replicas
+    ZkStateReader.from(cloudClient)
+        .waitForState(
+            DEFAULT_COLLECTION,
+            30,
+            TimeUnit.SECONDS,
+            SolrCloudTestCase.activeClusterShape(sliceCount, 0));
 
-    ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
+    ExecutorService customThreadPool =
+        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     int numOtherReplicas = numJettys - getPullReplicaCount() * sliceCount;
 
@@ -634,7 +641,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     this.jettys.addAll(jettys);
     this.clients.addAll(clients);
 
-
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     // make sure we have a leader for each shard
     for (int i = 1; i <= sliceCount; i++) {
@@ -662,8 +668,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (log.isInfoEnabled()) {
       log.info("waitForLiveNode: {}", j.getNodeName());
     }
-    ZkStateReader.from(cloudClient
-        )
+    ZkStateReader.from(cloudClient)
         .waitForLiveNodes(
             30, TimeUnit.SECONDS, SolrCloudTestCase.containsLiveNode(j.getNodeName()));
   }
@@ -2098,8 +2103,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
 
     try {
-      ZkStateReader.from(cloudClient).waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(numShards,
-              numShards * (numNrtReplicas + numTlogReplicas + numPullReplicas)));
+      ZkStateReader.from(cloudClient)
+          .waitForState(
+              collectionName,
+              30,
+              TimeUnit.SECONDS,
+              SolrCloudTestCase.activeClusterShape(
+                  numShards, numShards * (numNrtReplicas + numTlogReplicas + numPullReplicas)));
     } catch (TimeoutException e) {
       throw new RuntimeException(
           "Timeout waiting for "
@@ -2224,7 +2234,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   private String checkCollectionExpectations(
       String collectionName,
       List<Integer> numShardsNumReplicaList,
-      List<String> nodesAllowedToRunShards) throws IOException {
+      List<String> nodesAllowedToRunShards)
+      throws IOException {
     getCommonCloudSolrClient();
     ClusterState clusterState = cloudClient.getClusterState();
     int expectedSlices = numShardsNumReplicaList.get(0);
@@ -2454,7 +2465,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     long maxWaitMs = maxWaitSecs * 1000L;
     Replica leader;
     ZkShardTerms zkShardTerms =
-        new ZkShardTerms(testCollectionName, shardId, ZkStateReader.from(cloudClient).getZkClient());
+        new ZkShardTerms(
+            testCollectionName, shardId, ZkStateReader.from(cloudClient).getZkClient());
     while (waitMs < maxWaitMs && !allReplicasUp) {
       cs = cloudClient.getClusterState();
       assertNotNull(cs);

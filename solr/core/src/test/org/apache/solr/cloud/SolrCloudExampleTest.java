@@ -115,7 +115,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     tool.runTool(cli);
     assertTrue(
         "Collection '" + testCollectionName + "' doesn't exist after trying to create it!",
-      cloudClient.getClusterState().hasCollection(testCollectionName));
+        cloudClient.getClusterState().hasCollection(testCollectionName));
 
     // verify the collection is usable ...
     ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 20);
@@ -181,7 +181,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     doTestConfigUpdate(testCollectionName, solrUrl);
 
     log.info("Running healthcheck for {}", testCollectionName);
-      doTestHealthcheck(testCollectionName, cloudClient.getClusterStateProvider().getQuorumHosts());
+    doTestHealthcheck(testCollectionName, cloudClient.getClusterStateProvider().getQuorumHosts());
 
     // verify the delete action works too
     log.info("Running delete for {}", testCollectionName);
@@ -267,9 +267,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         SolrCLI.atPath("/config/requestHandler/\\/query/defaults/echoParams", configJson));
 
     if (log.isInfoEnabled()) {
-      log.info(
-          "live_nodes_count :  {}",
-          cloudClient.getClusterState().getLiveNodes());
+      log.info("live_nodes_count :  {}", cloudClient.getClusterState().getLiveNodes());
     }
 
     // Since it takes some time for this command to complete we need to make sure all the reloads

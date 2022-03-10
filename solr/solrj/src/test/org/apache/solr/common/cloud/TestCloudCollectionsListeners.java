@@ -108,12 +108,14 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    ZkStateReader.from(client).waitForState(
-        "testcollection1",
-        MAX_WAIT_TIMEOUT,
-        TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    ZkStateReader.from(client)
+        .waitForState(
+            "testcollection1",
+            MAX_WAIT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
 
-      assertFalse(
+    assertFalse(
         "CloudCollectionsListener has new collection in old set of collections",
         oldResults.get(1).contains("testcollection1"));
     assertFalse(

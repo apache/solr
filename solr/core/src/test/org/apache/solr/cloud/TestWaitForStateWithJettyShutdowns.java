@@ -50,9 +50,10 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
           .process(cluster.getSolrClient());
 
       log.info("Sanity check that our collection has come online");
-      ZkStateReader.from(cluster.getSolrClient()).waitForState(col_name, 30, TimeUnit.SECONDS, clusterShape(1, 1));
+      ZkStateReader.from(cluster.getSolrClient())
+          .waitForState(col_name, 30, TimeUnit.SECONDS, clusterShape(1, 1));
 
-        log.info("Shutdown 1 node");
+      log.info("Shutdown 1 node");
       final JettySolrRunner nodeToStop = cluster.getJettySolrRunner(0);
       nodeToStop.stop();
       log.info("Wait to confirm our node is fully shutdown");
@@ -62,9 +63,8 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       // call will detect the missing replica -- shouldn't need long wait times (we know it's
       // down)...
       log.info("Now check if waitForState will recognize we already have the exepcted state");
-      ZkStateReader.from(cluster
-          .getSolrClient()
-          ).waitForState(col_name, 500, TimeUnit.MILLISECONDS, clusterShape(1, 0));
+      ZkStateReader.from(cluster.getSolrClient())
+          .waitForState(col_name, 500, TimeUnit.MILLISECONDS, clusterShape(1, 0));
 
     } finally {
       cluster.shutdown();
@@ -84,11 +84,10 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
           .process(cluster.getSolrClient());
 
       log.info("Sanity check that our collection has come online");
-      ZkStateReader.from(cluster
-          .getSolrClient()
-          ).waitForState(col_name, 30, TimeUnit.SECONDS, SolrCloudTestCase.clusterShape(1, 1));
+      ZkStateReader.from(cluster.getSolrClient())
+          .waitForState(col_name, 30, TimeUnit.SECONDS, SolrCloudTestCase.clusterShape(1, 1));
 
-        // HACK implementation detail...
+      // HACK implementation detail...
       //
       // we know that in the current implementation, waitForState invokes the predicate twice
       // independently of the current state of the collection and/or wether the predicate succeeds.
@@ -102,15 +101,18 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
           executor.submit(
               () -> {
                 try {
-                  ZkStateReader.from(cluster
-                      .getSolrClient()
-                      ).waitForState(col_name, 180, TimeUnit.SECONDS, new LatchCountingPredicateWrapper(latch,
-                      clusterShape(1, 0)));
-          } catch (Exception e) {
-            log.error("background thread got exception", e);
-            throw new RuntimeException(e);
-          }
-          return;},
+                  ZkStateReader.from(cluster.getSolrClient())
+                      .waitForState(
+                          col_name,
+                          180,
+                          TimeUnit.SECONDS,
+                          new LatchCountingPredicateWrapper(latch, clusterShape(1, 0)));
+                } catch (Exception e) {
+                  log.error("background thread got exception", e);
+                  throw new RuntimeException(e);
+                }
+                return;
+              },
               null);
       log.info("Awaiting latch...");
       if (!latch.await(120, TimeUnit.SECONDS)) {

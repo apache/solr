@@ -538,9 +538,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     }
 
     try {
-      ZkStateReader.from(cluster
-          .getSolrClient()
-          ).waitForState(
+      ZkStateReader.from(cluster.getSolrClient())
+          .waitForState(
               collectionName,
               20,
               TimeUnit.SECONDS,

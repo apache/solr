@@ -1414,7 +1414,8 @@ public class SolrCLI implements CLIO {
           new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
               .build()) {
         cloudSolrClient.connect();
-        Set<String> liveNodes = ZkStateReader.from(cloudSolrClient).getClusterState().getLiveNodes();
+        Set<String> liveNodes =
+            ZkStateReader.from(cloudSolrClient).getClusterState().getLiveNodes();
         if (liveNodes.isEmpty())
           throw new IllegalStateException(
               "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
@@ -1572,8 +1573,12 @@ public class SolrCLI implements CLIO {
       String confdir = cli.getOptionValue("confdir");
       String configsetsDir = cli.getOptionValue("configsetsDir");
 
-        boolean configExistsInZk = confname != null && !"".equals(confname.trim()) &&
-                ZkStateReader.from(cloudSolrClient).getZkClient().exists("/configs/" + confname, true);
+      boolean configExistsInZk =
+          confname != null
+              && !"".equals(confname.trim())
+              && ZkStateReader.from(cloudSolrClient)
+                  .getZkClient()
+                  .exists("/configs/" + confname, true);
 
       if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
         // do nothing
@@ -1585,11 +1590,19 @@ public class SolrCLI implements CLIO {
         }
         Path confPath = ConfigSetService.getConfigsetPath(confdir, configsetsDir);
 
-          echoIfVerbose("Uploading " + confPath.toAbsolutePath() +
-            " for config " + confname + " to ZooKeeper at " + cloudSolrClient.getClusterStateProvider().getQuorumHosts(), cli);
-        ZkMaintenanceUtils.uploadToZK(ZkStateReader.from(cloudSolrClient).getZkClient(),
-              confPath, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confname,
-              ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
+        echoIfVerbose(
+            "Uploading "
+                + confPath.toAbsolutePath()
+                + " for config "
+                + confname
+                + " to ZooKeeper at "
+                + cloudSolrClient.getClusterStateProvider().getQuorumHosts(),
+            cli);
+        ZkMaintenanceUtils.uploadToZK(
+            ZkStateReader.from(cloudSolrClient).getZkClient(),
+            confPath,
+            ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confname,
+            ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
       }
 
       // since creating a collection is a heavy-weight operation, check for existence first

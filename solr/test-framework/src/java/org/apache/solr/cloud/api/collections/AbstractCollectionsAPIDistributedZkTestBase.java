@@ -650,7 +650,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
     ArrayList<String> nodeList =
-       new ArrayList<>(
+        new ArrayList<>(
             ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
 
@@ -662,7 +662,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
 
     assertEquals(
         "Replica should be created on the right node",
-      ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(nodeList.get(0)),
+        ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(nodeList.get(0)),
         newReplica.getBaseUrl());
 
     Path instancePath = createTempDir();

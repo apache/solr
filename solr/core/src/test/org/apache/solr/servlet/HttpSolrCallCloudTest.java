@@ -53,7 +53,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION, "config", NUM_SHARD, REPLICA_FACTOR)
         .process(cluster.getSolrClient());
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         COLLECTION, ZkStateReader.from(cluster.getSolrClient()), false, true, 30);
   }
 

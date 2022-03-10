@@ -159,11 +159,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     Replica notLeader = null;
 
     Collection<Replica> replicas =
-        cloudClient
-            .getClusterState()
-            .getCollection("football")
-            .getSlice("shard1")
-            .getReplicas();
+        cloudClient.getClusterState().getCollection("football").getSlice("shard1").getReplicas();
     for (Replica replica : replicas) {
       if (replica.getStr(ZkStateReader.LEADER_PROP) != null) {
         leader = replica;

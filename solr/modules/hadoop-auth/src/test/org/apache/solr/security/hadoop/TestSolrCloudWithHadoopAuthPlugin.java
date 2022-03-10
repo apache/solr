@@ -87,8 +87,8 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
     CollectionAdminRequest.Delete deleteReq =
         CollectionAdminRequest.deleteCollection(collectionName);
     deleteReq.process(solrClient);
-      AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
-            ZkStateReader.from(solrClient), true, 330);
+    AbstractDistribZkTestBase.waitForCollectionToDisappear(
+        collectionName, ZkStateReader.from(solrClient), true, 330);
     // cookie was used to avoid re-authentication
     assertAuthMetricsMinimums(6, 4, 0, 2, 0, 0);
   }

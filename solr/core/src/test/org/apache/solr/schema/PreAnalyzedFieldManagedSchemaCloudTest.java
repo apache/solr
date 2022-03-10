@@ -41,9 +41,7 @@ public class PreAnalyzedFieldManagedSchemaCloudTest extends SolrCloudTestCase {
     configureCluster(2).addConfig(CONFIG, configset(CONFIG)).configure();
     CollectionAdminRequest.createCollection(COLLECTION, CONFIG, 2, 1)
         .process(cluster.getSolrClient());
-    ZkStateReader.from(cluster
-        .getSolrClient()
-        )
+    ZkStateReader.from(cluster.getSolrClient())
         .waitForState(
             COLLECTION,
             DEFAULT_TIMEOUT,

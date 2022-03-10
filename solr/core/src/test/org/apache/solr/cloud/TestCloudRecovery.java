@@ -123,7 +123,10 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
     cluster.waitForAllNodes(30);
 
-    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(ZkStateReader.from(cloudClient), COLLECTION, 120000));
+    assertTrue(
+        "Timeout waiting for all live and active",
+        ClusterStateUtil.waitForAllActiveAndLiveReplicas(
+            ZkStateReader.from(cloudClient), COLLECTION, 120000));
 
     resp = cloudClient.query(COLLECTION, params);
     assertEquals(4, resp.getResults().getNumFound());
@@ -224,7 +227,10 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
     Thread.sleep(1000);
 
-    assertTrue("Timeout waiting for all live and active", ClusterStateUtil.waitForAllActiveAndLiveReplicas(ZkStateReader.from(cloudClient), COLLECTION, 120000));
+    assertTrue(
+        "Timeout waiting for all live and active",
+        ClusterStateUtil.waitForAllActiveAndLiveReplicas(
+            ZkStateReader.from(cloudClient), COLLECTION, 120000));
     cluster.waitForActiveCollection(COLLECTION, 2, 2 * (nrtReplicas + tlogReplicas));
 
     ZkStateReader.from(cloudClient).forceUpdateCollection(COLLECTION);

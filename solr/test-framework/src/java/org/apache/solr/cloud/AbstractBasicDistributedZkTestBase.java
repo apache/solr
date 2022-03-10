@@ -877,8 +877,8 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       throws Exception {
     AtomicLong total = new AtomicLong(-1);
     try {
-        getCommonCloudSolrClient();
-        ZkStateReader.from(cloudClient)
+      getCommonCloudSolrClient();
+      ZkStateReader.from(cloudClient)
           .waitForState(
               DEFAULT_COLLECTION,
               waitMillis,
@@ -1353,8 +1353,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     // no one should be recovering
     getCommonCloudSolrClient();
-    waitForRecoveriesToFinish(
-        oneInstanceCollection2, ZkStateReader.from(cloudClient), false, true);
+    waitForRecoveriesToFinish(oneInstanceCollection2, ZkStateReader.from(cloudClient), false, true);
 
     getCommonCloudSolrClient();
     assertAllActive(oneInstanceCollection2, ZkStateReader.from(cloudClient));
@@ -1400,8 +1399,12 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     assertNotNull(slices);
 
     getCommonCloudSolrClient();
-    ZkCoreNodeProps props = new ZkCoreNodeProps(cloudClient.getClusterState()
-      .getCollection(oneInstanceCollection2).getLeader("shard1"));
+    ZkCoreNodeProps props =
+        new ZkCoreNodeProps(
+            cloudClient
+                .getClusterState()
+                .getCollection(oneInstanceCollection2)
+                .getLeader("shard1"));
 
     // now test that unloading a core gets us a new leader
     try (HttpSolrClient unloadClient =
@@ -1427,8 +1430,8 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
           });
 
       try {
-          getCommonCloudSolrClient();
-          ZkStateReader.from(cloudClient)
+        getCommonCloudSolrClient();
+        ZkStateReader.from(cloudClient)
             .waitForState(
                 oneInstanceCollection2,
                 20000,
@@ -1507,8 +1510,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     SolrClient client4 = collectionClients.get(3);
 
     getCommonCloudSolrClient();
-    waitForRecoveriesToFinish(
-        oneInstanceCollection, ZkStateReader.from(cloudClient), false);
+    waitForRecoveriesToFinish(oneInstanceCollection, ZkStateReader.from(cloudClient), false);
     getCommonCloudSolrClient();
     assertAllActive(oneInstanceCollection, ZkStateReader.from(cloudClient));
 

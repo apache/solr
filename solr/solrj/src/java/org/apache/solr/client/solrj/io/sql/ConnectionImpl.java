@@ -164,7 +164,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public String getCatalog() throws SQLException {
-      return client.getClusterStateProvider().getQuorumHosts();
+    return client.getClusterStateProvider().getQuorumHosts();
   }
 
   @Override

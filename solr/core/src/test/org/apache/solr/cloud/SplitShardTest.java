@@ -83,9 +83,15 @@ public class SplitShardTest extends SolrCloudTestCase {
             .setNumSubShards(5)
             .setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
-      waitForState("Timed out waiting for sub shards to be active. Number of active shards=" +
-          ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION_NAME).getActiveSlices().size(),
-        COLLECTION_NAME, activeClusterShape(6, 7));
+    waitForState(
+        "Timed out waiting for sub shards to be active. Number of active shards="
+            + ZkStateReader.from(cluster.getSolrClient())
+                .getClusterState()
+                .getCollection(COLLECTION_NAME)
+                .getActiveSlices()
+                .size(),
+        COLLECTION_NAME,
+        activeClusterShape(6, 7));
 
     try {
       splitShard =
@@ -143,10 +149,17 @@ public class SplitShardTest extends SolrCloudTestCase {
     CollectionAdminRequest.SplitShard splitShard =
         CollectionAdminRequest.splitShard(collectionName).setSplitFuzz(0.5f).setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
-    waitForState("Timed out waiting for sub shards to be active. Number of active shards=" +
-            cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices().size(),
-        collectionName, activeClusterShape(3, 4));
-    DocCollection coll = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
+    waitForState(
+        "Timed out waiting for sub shards to be active. Number of active shards="
+            + ZkStateReader.from(cluster.getSolrClient())
+                .getClusterState()
+                .getCollection(collectionName)
+                .getActiveSlices()
+                .size(),
+        collectionName,
+        activeClusterShape(3, 4));
+    DocCollection coll =
+        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(collectionName);
     Slice s1_0 = coll.getSlice("shard1_0");
     Slice s1_1 = coll.getSlice("shard1_1");
     long fuzz = ((long) Integer.MAX_VALUE >> 3) + 1L;

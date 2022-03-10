@@ -47,7 +47,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.common.AlreadyClosedException;
@@ -229,7 +228,8 @@ public class ZkStateReader implements SolrCloseable {
   public static ZkStateReader from(BaseCloudSolrClient solrClient) {
     client = solrClient;
     if (solrClient.getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
-      ZkClientClusterStateProvider provider = (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
+      ZkClientClusterStateProvider provider =
+          (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
       solrClient.getClusterStateProvider().connect();
       return provider.getZkStateReader();
     }
@@ -1667,7 +1667,7 @@ public class ZkStateReader implements SolrCloseable {
    * ZooKeeper watchers needed, and reduce the amount of network/cpu used.
    *
    * @param collection the collection to watch
-   * @param stateWatcher    a watcher that will be called when the state changes
+   * @param stateWatcher a watcher that will be called when the state changes
    * @see #registerDocCollectionWatcher
    * @see #registerLiveNodesListener
    */
@@ -1689,10 +1689,8 @@ public class ZkStateReader implements SolrCloseable {
   /**
    * Register a DocCollectionWatcher to be called when the cluster state for a collection changes.
    *
-   * <p>
-   * The Watcher will automatically be removed when it's
-   * <code>onStateChanged</code> returns <code>true</code>
-   * </p>
+   * <p>The Watcher will automatically be removed when it's <code>onStateChanged</code> returns
+   * <code>true</code>
    */
   public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
     client.getClusterStateProvider().connect();

@@ -77,7 +77,9 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   public void removeAllProperties() throws KeeperException, InterruptedException {
     forceUpdateCollectionStatus();
     DocCollection docCollection =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION_NAME);
+        ZkStateReader.from(cluster.getSolrClient())
+            .getClusterState()
+            .getCollection(COLLECTION_NAME);
     for (Slice slice : docCollection.getSlices()) {
       for (Replica rep : slice.getReplicas()) {
         rep.getProperties()
@@ -159,7 +161,9 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     // First set the property in some replica in some slice
     forceUpdateCollectionStatus();
     DocCollection docCollection =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION_NAME);
+        ZkStateReader.from(cluster.getSolrClient())
+            .getClusterState()
+            .getCollection(COLLECTION_NAME);
 
     Slice[] slices = docCollection.getSlices().toArray(new Slice[0]);
     Slice slice = slices[random().nextInt(slices.length)];
@@ -181,9 +185,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       while (timeout.hasTimedOut() == false) {
         forceUpdateCollectionStatus();
         modColl =
-            ZkStateReader.from(cluster
-                .getSolrClient()
-                )
+            ZkStateReader.from(cluster.getSolrClient())
                 .getClusterState()
                 .getCollection(COLLECTION_NAME);
         modSlice = modColl.getSlice(slice.getName());
@@ -232,9 +234,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
 
     log.error(
         "Leaders are not all preferres {}",
-        ZkStateReader.from(cluster
-            .getSolrClient()
-            )
+        ZkStateReader.from(cluster.getSolrClient())
             .getClusterState()
             .getCollection(COLLECTION_NAME));
     // Show the errors
@@ -247,7 +247,9 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   private void checkElectionQueues() throws KeeperException, InterruptedException {
 
     DocCollection docCollection =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION_NAME);
+        ZkStateReader.from(cluster.getSolrClient())
+            .getClusterState()
+            .getCollection(COLLECTION_NAME);
     Set<String> liveNodes =
         ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes();
 
@@ -270,14 +272,12 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       throws KeeperException, InterruptedException {
 
     List<String> leaderQueue =
-        ZkStateReader.from(cluster
-            .getSolrClient()
-            )
+        ZkStateReader.from(cluster.getSolrClient())
             .getZkClient()
             .getChildren(
                 "/collections/"
                     + COLLECTION_NAME
-      + "/leader_elect/"
+                    + "/leader_elect/"
                     + slice.getName()
                     + "/election",
                 null,
@@ -309,7 +309,9 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       throws KeeperException, InterruptedException {
     forceUpdateCollectionStatus();
     DocCollection docCollection =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION_NAME);
+        ZkStateReader.from(cluster.getSolrClient())
+            .getClusterState()
+            .getCollection(COLLECTION_NAME);
     for (Slice slice : docCollection.getSlices()) {
       for (Replica rep : slice.getReplicas()) {
         if (rep.getBool("property.preferredleader", false)) {
@@ -365,9 +367,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     while (timeout.hasTimedOut() == false) {
       forceUpdateCollectionStatus();
       docCollection =
-          ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+          ZkStateReader.from(cluster.getSolrClient())
               .getClusterState()
               .getCollection(COLLECTION_NAME);
       int maxPropCount = Integer.MAX_VALUE;
@@ -400,9 +400,8 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     DocCollection docCollection = null;
     while (timeout.hasTimedOut() == false) {
       forceUpdateCollectionStatus();
-        docCollection = ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+      docCollection =
+          ZkStateReader.from(cluster.getSolrClient())
               .getClusterState()
               .getCollection(COLLECTION_NAME);
       failure = false;
@@ -639,9 +638,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     while (timeout.hasTimedOut() == false) {
       forceUpdateCollectionStatus();
       docCollection =
-          ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+          ZkStateReader.from(cluster.getSolrClient())
               .getClusterState()
               .getCollection(COLLECTION_NAME);
       liveNodes = ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes();
@@ -677,9 +674,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     while (timeout.hasTimedOut() == false) {
       forceUpdateCollectionStatus();
       DocCollection docCollection =
-          ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+          ZkStateReader.from(cluster.getSolrClient())
               .getClusterState()
               .getCollection(COLLECTION_NAME);
       Set<String> liveNodes =
@@ -714,7 +709,9 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     Map<String, String> uniquePropMap = new TreeMap<>();
     forceUpdateCollectionStatus();
     DocCollection docCollection =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION_NAME);
+        ZkStateReader.from(cluster.getSolrClient())
+            .getClusterState()
+            .getCollection(COLLECTION_NAME);
     for (Slice slice : docCollection.getSlices()) {
       Replica changedRep = null;
       int livePos = Integer.MAX_VALUE;
@@ -751,10 +748,11 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       }
       TimeUnit.MILLISECONDS.sleep(10);
     }
-    fail("There should be exactly one replica with value " + prop + " set to true per shard: "
-      + ZkStateReader.from(cluster
-                .getSolrClient()
-                )
+    fail(
+        "There should be exactly one replica with value "
+            + prop
+            + " set to true per shard: "
+            + ZkStateReader.from(cluster.getSolrClient())
                 .getClusterState()
                 .getCollection(COLLECTION_NAME)
                 .toString());
@@ -766,7 +764,9 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       throws KeeperException, InterruptedException {
     forceUpdateCollectionStatus();
     DocCollection docCollection =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COLLECTION_NAME);
+        ZkStateReader.from(cluster.getSolrClient())
+            .getClusterState()
+            .getCollection(COLLECTION_NAME);
 
     for (Slice slice : docCollection.getSlices()) {
       int propfCount = 0;

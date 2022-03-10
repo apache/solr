@@ -110,8 +110,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     }
     if (log.isInfoEnabled()) {
       log.info(
-          "####### DocCollection after: {}",
-          cloudClient.getClusterState().getCollection(coll));
+          "####### DocCollection after: {}", cloudClient.getClusterState().getCollection(coll));
     }
     if (shouldFail) {
       assertTrue(String.valueOf(rsp), rsp.getRequestStatus() == RequestStatusState.FAILED);

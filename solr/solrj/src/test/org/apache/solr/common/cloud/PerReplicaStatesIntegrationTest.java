@@ -206,9 +206,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       CollectionAdminRequest.modifyCollection(
               COLL, Collections.singletonMap(PER_REPLICA_STATE, "false"))
           .process(cluster.getSolrClient());
-      ZkStateReader.from(cluster
-          .getSolrClient()
-          )
+      ZkStateReader.from(cluster.getSolrClient())
           .waitForState(
               COLL,
               5,
@@ -218,9 +216,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       CollectionAdminRequest.modifyCollection(
               COLL, Collections.singletonMap(PER_REPLICA_STATE, "true"))
           .process(cluster.getSolrClient());
-      ZkStateReader.from(cluster
-          .getSolrClient()
-          )
+      ZkStateReader.from(cluster.getSolrClient())
           .waitForState(
               COLL,
               5,

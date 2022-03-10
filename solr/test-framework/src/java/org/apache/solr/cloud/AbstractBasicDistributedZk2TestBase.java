@@ -266,8 +266,7 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     query("q", "*:*", "sort", "n_tl1 desc");
 
     int oldLiveNodes =
-        ZkStateReader.from(cloudClient
-            )
+        ZkStateReader.from(cloudClient)
             .getZkClient()
             .getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true)
             .size();

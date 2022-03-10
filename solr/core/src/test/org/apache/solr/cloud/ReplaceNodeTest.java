@@ -252,8 +252,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
                 + create.getNumPullReplicas()
                 + create.getNumTlogReplicas()));
 
-    DocCollection initialCollection =
-        cloudClient.getClusterState().getCollection(coll);
+    DocCollection initialCollection = cloudClient.getClusterState().getCollection(coll);
     log.debug("### Before decommission: {}", initialCollection);
     log.info("excluded_nodes : {}  ", emptyNodes);
     List<Integer> initialReplicaCounts =
@@ -306,8 +305,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(coll, 5, 5);
 
-    String liveNode =
-        cloudClient.getClusterState().getLiveNodes().iterator().next();
+    String liveNode = cloudClient.getClusterState().getLiveNodes().iterator().next();
     expectThrows(
         SolrException.class,
         () -> createReplaceNodeRequest(liveNode, null, null).process(cloudClient));

@@ -104,11 +104,10 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
 
     sendDoc(4);
-    
+
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 4);
 
-    Replica leader =
-      ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
+    Replica leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     String leaderNode = leader.getNodeName();
     assertNotNull(
         "Could not find leader for shard1 of "
@@ -155,7 +154,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     Thread.sleep(10000); // give chance for new leader to be elected.
 
     Replica newLeader =
-      ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1", 60000);
+        ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1", 60000);
 
     assertNotNull(
         "No new leader was elected after 60 seconds; clusterState: "

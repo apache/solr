@@ -207,10 +207,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         boolean created = false;
         while (!waitUntil.hasTimedOut()) {
           waitUntil.sleep(100);
-          created =
-              ccc.getSolrCloudManager()
-                  .getClusterState()
-                  .hasCollection(collectionName);
+          created = ccc.getSolrCloudManager().getClusterState().hasCollection(collectionName);
           if (created) break;
         }
         if (!created) {
@@ -279,9 +276,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             Assign.buildSolrCoreName(
                 ccc.getSolrCloudManager().getDistribStateManager(),
                 collectionName,
-                ccc.getSolrCloudManager()
-                    .getClusterState()
-                    .getCollectionOrNull(collectionName),
+                ccc.getSolrCloudManager().getClusterState().getCollectionOrNull(collectionName),
                 replicaPosition.shard,
                 replicaPosition.type,
                 true);

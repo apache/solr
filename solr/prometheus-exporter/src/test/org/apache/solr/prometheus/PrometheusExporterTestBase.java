@@ -66,8 +66,8 @@ public class PrometheusExporterTestBase extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, CONF_NAME, NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
 
-    AbstractDistribZkTestBase
-      .waitForRecoveriesToFinish(COLLECTION, ZkStateReader.from(cluster.getSolrClient()), true, true, TIMEOUT);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        COLLECTION, ZkStateReader.from(cluster.getSolrClient()), true, true, TIMEOUT);
 
     Helpers.indexAllDocs(cluster.getSolrClient());
   }

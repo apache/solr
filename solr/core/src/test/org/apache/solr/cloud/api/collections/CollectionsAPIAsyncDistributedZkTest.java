@@ -167,8 +167,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     assertSame("AddReplica did not complete", RequestStatusState.COMPLETED, state);
 
     // cloudClient watch might take a couple of seconds to reflect it
-    ZkStateReader.from(cluster.getSolrClient()
-        ).waitForState(
+    ZkStateReader.from(cluster.getSolrClient())
+        .waitForState(
             collection,
             20,
             TimeUnit.SECONDS,
@@ -207,9 +207,13 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     }
 
     Slice shard1 =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(collection).getSlice("shard1");
+        ZkStateReader.from(cluster.getSolrClient())
+            .getClusterState()
+            .getCollection(collection)
+            .getSlice("shard1");
     Replica replica = shard1.getReplicas().iterator().next();
-    for (String liveNode : ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes()) {
+    for (String liveNode :
+        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getLiveNodes()) {
       if (!replica.getNodeName().equals(liveNode)) {
         state =
             new CollectionAdminRequest.MoveReplica(collection, replica.getName(), liveNode)
@@ -221,7 +225,10 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection(collection);
 
     shard1 =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(collection).getSlice("shard1");
+        ZkStateReader.from(cluster.getSolrClient())
+            .getClusterState()
+            .getCollection(collection)
+            .getSlice("shard1");
     String replicaName = shard1.getReplicas().iterator().next().getName();
     state =
         CollectionAdminRequest.deleteReplica(collection, "shard1", replicaName)

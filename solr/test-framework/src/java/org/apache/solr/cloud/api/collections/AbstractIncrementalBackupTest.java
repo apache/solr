@@ -176,11 +176,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       log.info("Restored from backup, took {}ms", timeTaken);
       t = System.nanoTime();
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-          restoreCollectionName,
-          ZkStateReader.from(solrClient),
-          log.isDebugEnabled(),
-          false,
-          3);
+          restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), false, 3);
       timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t);
       log.info("Restored collection healthy, took {}ms", timeTaken);
       numFound =
@@ -414,11 +410,8 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         .setRepositoryName(BACKUP_REPO_NAME)
         .process(solrClient);
 
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-            restoreCollectionName, ZkStateReader.from(solrClient),
-        log.isDebugEnabled(),
-        true,
-        30);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), true, 30);
 
     // check num docs are the same
     assertEquals(

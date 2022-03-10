@@ -152,8 +152,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       assertTrue(rsp.getResponseHeader().getBooleanArg("zkConnected"));
 
       Collection<Slice> slices =
-          ZkStateReader.from(cloudSolrClient
-              )
+          ZkStateReader.from(cloudSolrClient)
               .getClusterState()
               .getCollection(collectionName)
               .getSlices();
@@ -203,8 +202,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       assertTrue(rsp.getResponseHeader().getBooleanArg("zkConnected"));
 
       Collection<Slice> slices =
-          ZkStateReader.from(cloudSolrClient
-              )
+          ZkStateReader.from(cloudSolrClient)
               .getClusterState()
               .getCollection(collectionName)
               .getSlices();
@@ -259,8 +257,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       assertTrue(rsp.getResponseHeader().getBooleanArg("zkConnected"));
 
       Collection<Slice> slices =
-          ZkStateReader.from(cloudSolrClient
-              )
+          ZkStateReader.from(cloudSolrClient)
               .getClusterState()
               .getCollection(collectionName)
               .getSlices();

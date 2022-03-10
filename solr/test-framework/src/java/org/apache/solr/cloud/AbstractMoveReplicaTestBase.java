@@ -133,8 +133,7 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
     }
     assertNotNull(targetNode);
     String shardId = null;
-    for (Slice slice :
-        cloudClient.getClusterState().getCollection(coll).getSlices()) {
+    for (Slice slice : cloudClient.getClusterState().getCollection(coll).getSlices()) {
       if (slice.getReplicas().contains(replica)) {
         shardId = slice.getName();
       }
@@ -327,8 +326,7 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
 
     if (log.isInfoEnabled()) {
       log.info(
-          "--- current collection state: {}",
-          cloudClient.getClusterState().getCollection(coll));
+          "--- current collection state: {}", cloudClient.getClusterState().getCollection(coll));
     }
     assertEquals(
         100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
@@ -345,8 +343,7 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
   }
 
   private Replica getRandomReplica(String coll, CloudSolrClient cloudClient) throws IOException {
-    List<Replica> replicas =
-        cloudClient.getClusterState().getCollection(coll).getReplicas();
+    List<Replica> replicas = cloudClient.getClusterState().getCollection(coll).getReplicas();
     Collections.shuffle(replicas, random());
     return replicas.get(0);
   }

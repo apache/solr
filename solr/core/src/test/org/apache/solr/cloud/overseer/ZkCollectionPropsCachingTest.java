@@ -88,9 +88,8 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
   }
 
   private void checkValue(String propertyName, String expectedValue) {
-    final Object value = ZkStateReader.from(cluster
-            .getSolrClient()
-            )
+    final Object value =
+        ZkStateReader.from(cluster.getSolrClient())
             .getCollectionProperties(collectionName)
             .get(propertyName);
     assertEquals("Unexpected value for collection property: " + propertyName, expectedValue, value);

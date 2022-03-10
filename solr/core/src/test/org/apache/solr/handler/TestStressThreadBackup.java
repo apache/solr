@@ -362,9 +362,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   private void initCoreNameAndSolrCoreClient() {
     // Sigh.
     Replica r =
-        ZkStateReader.from(cluster
-            .getSolrClient()
-            )
+        ZkStateReader.from(cluster.getSolrClient())
             .getClusterState()
             .getCollection(DEFAULT_TEST_COLLECTION_NAME)
             .getActiveSlices()

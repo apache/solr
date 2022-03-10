@@ -399,8 +399,9 @@ public class MiniSolrCloudCluster {
     }
     log.info("waitForNode: {}", nodeName);
 
-    ZkStateReader.from(solrClient).waitForLiveNodes(
-        timeoutSeconds, TimeUnit.SECONDS, (o, n) -> n != null && n.contains(nodeName));
+    ZkStateReader.from(solrClient)
+        .waitForLiveNodes(
+            timeoutSeconds, TimeUnit.SECONDS, (o, n) -> n != null && n.contains(nodeName));
   }
 
   /**
@@ -603,10 +604,10 @@ public class MiniSolrCloudCluster {
       final CountDownLatch latch = new CountDownLatch(1);
       reader.registerCloudCollectionsListener(
           (oldCollections, newCollections) -> {
-        if (newCollections != null && newCollections.size() == 0) {
-          latch.countDown();
-        }
-      });
+            if (newCollections != null && newCollections.size() == 0) {
+              latch.countDown();
+            }
+          });
 
       reader.createClusterStateWatchersAndUpdate(); // up to date aliases & collections
       reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
@@ -621,11 +622,7 @@ public class MiniSolrCloudCluster {
       }
 
       for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
-        reader.waitForState(
-            collection,
-            15,
-            TimeUnit.SECONDS,
-            Objects::isNull);
+        reader.waitForState(collection, 15, TimeUnit.SECONDS, Objects::isNull);
       }
     }
 
@@ -837,8 +834,8 @@ public class MiniSolrCloudCluster {
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-        ZkStateReader.from(getSolrClient()
-          ).waitForState(
+      ZkStateReader.from(getSolrClient())
+          .waitForState(
               collection,
               wait,
               unit,
@@ -871,8 +868,8 @@ public class MiniSolrCloudCluster {
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-        ZkStateReader.from(getSolrClient()
-          ).waitForState(
+      ZkStateReader.from(getSolrClient())
+          .waitForState(
               collection,
               wait,
               unit,
@@ -1226,8 +1223,7 @@ public class MiniSolrCloudCluster {
       }
 
       if (clusterProperties.size() > 0) {
-        ClusterProperties props =
-            new ClusterProperties(ZkStateReader.from(client).getZkClient());
+        ClusterProperties props = new ClusterProperties(ZkStateReader.from(client).getZkClient());
         for (Map.Entry<String, Object> entry : clusterProperties.entrySet()) {
           props.setClusterProperty(entry.getKey(), entry.getValue());
         }

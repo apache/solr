@@ -224,8 +224,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
     final String collection = "deleted_collection";
     try (CloudSolrClient client = createCloudClient(null)) {
-        copyConfigUp(
-          TEST_PATH().resolve("configsets"), "cloud-minimal", configSet, client.getClusterStateProvider().getQuorumHosts());
+      copyConfigUp(
+          TEST_PATH().resolve("configsets"),
+          "cloud-minimal",
+          configSet,
+          client.getClusterStateProvider().getQuorumHosts());
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());
@@ -396,11 +399,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       // to the restarted server.
       // If this is the case, it will throw an HTTP Exception, and we don't retry Admin requests.
       try (CloudSolrClient newClient = createCloudClient(null)) {
-        newClient
-            .getZkStateReader()
+        ZkStateReader.from(newClient)
             .waitForLiveNodes(30, TimeUnit.SECONDS, (o, n) -> n != null && n.contains(nodeName));
-        newClient
-            .getZkStateReader()
+        ZkStateReader.from(newClient)
             .waitForState(
                 COLLECTION_NAME,
                 30,
@@ -707,7 +708,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
       Map<String, Slice> slices =
-          ZkStateReader.from(client).getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
+          ZkStateReader.from(client)
+              .getClusterState()
+              .getCollection(COLLECTION_NAME)
+              .getSlicesMap();
       List<String> sliceList = new ArrayList<>(slices.keySet());
       String c1_s1 = sliceList.get(0);
       List<String> replicasList = new ArrayList<>(slices.get(c1_s1).getReplicasMap().keySet());
@@ -719,8 +723,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       String c1_s2_r1 = replicasList.get(0);
 
       slices =
-          ZkStateReader.from(client
-              )
+          ZkStateReader.from(client)
               .getClusterState()
               .getCollection(COLLECTION_NAME1)
               .getSlicesMap();

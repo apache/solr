@@ -63,11 +63,14 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    ZkStateReader.from(cluster
-        .getSolrClient()
-        ).waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, sliceCount, 1));
+    ZkStateReader.from(cluster.getSolrClient())
+        .waitForState(
+            COLLECTION,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c) -> DocCollection.isFullyActive(n, c, sliceCount, 1));
 
-      new UpdateRequest()
+    new UpdateRequest()
         .add(
             sdoc(
                 id,
@@ -722,7 +725,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
       int purpose,
       String... values) {
     TrackingShardHandlerFactory.ShardRequestAndParams getByIdRequest =
-       trackingQueue.getShardRequestByPurpose(
+        trackingQueue.getShardRequestByPurpose(
             ZkStateReader.from(cluster.getSolrClient()), collection, shard, purpose);
     assertParamsEquals(getByIdRequest, paramName, values);
   }

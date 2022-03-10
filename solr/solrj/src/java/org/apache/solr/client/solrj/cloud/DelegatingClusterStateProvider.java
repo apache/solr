@@ -125,11 +125,11 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     }
   }
 
-    @Override
-    public String getQuorumHosts() {
-        if (delegate != null) {
-            return delegate.getQuorumHosts();
-        }
-        return null;
+  @Override
+  public String getQuorumHosts() {
+    if (delegate != null) {
+      return delegate.getQuorumHosts();
     }
+    return null;
+  }
 }

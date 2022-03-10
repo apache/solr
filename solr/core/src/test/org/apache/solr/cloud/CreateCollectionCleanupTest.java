@@ -96,10 +96,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     // Confirm using LIST that the collection does not exist
     assertThat(
         "Failed collection is still in the clusterstate: "
-            + cluster
-                .getSolrClient()
-                .getClusterState()
-                .getCollectionOrNull(collectionName),
+            + cluster.getSolrClient().getClusterState().getCollectionOrNull(collectionName),
         CollectionAdminRequest.listCollections(cloudClient),
         not(hasItem(collectionName)));
   }
@@ -131,10 +128,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     // Confirm using LIST that the collection does not exist
     assertThat(
         "Failed collection is still in the clusterstate: "
-            + cluster
-                .getSolrClient()
-                .getClusterState()
-                .getCollectionOrNull(collectionName),
+            + cluster.getSolrClient().getClusterState().getCollectionOrNull(collectionName),
         CollectionAdminRequest.listCollections(cloudClient),
         not(hasItem(collectionName)));
   }

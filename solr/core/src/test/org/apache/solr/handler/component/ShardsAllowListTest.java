@@ -283,9 +283,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
   }
 
   private String getShardUrl(String shardName, MiniSolrCloudCluster cluster) {
-    return ZkStateReader.from(cluster
-        .getSolrClient()
-        )
+    return ZkStateReader.from(cluster.getSolrClient())
         .getClusterState()
         .getCollection(COLLECTION_NAME)
         .getSlice(shardName)

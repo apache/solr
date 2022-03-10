@@ -175,7 +175,8 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
     cloudClient.setDefaultCollection(DELETE_DATA_DIR_COLLECTION);
     ZkStateReader.from(cloudClient).forceUpdateCollection(DELETE_DATA_DIR_COLLECTION);
     for (int i = 1; i < nShards + 1; i++) {
-      ZkStateReader.from(cloudClient).getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);
+      ZkStateReader.from(cloudClient)
+          .getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);
     }
 
     // collect the data dirs
@@ -225,9 +226,7 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
     cloudClient.request(request);
 
     final TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cloudClient
-        .getClusterState()
-        .hasCollection(DELETE_DATA_DIR_COLLECTION)) {
+    while (cloudClient.getClusterState().hasCollection(DELETE_DATA_DIR_COLLECTION)) {
       if (timeout.hasTimedOut()) {
         throw new AssertionError("Timeout waiting to see removed collection leave clusterstate");
       }

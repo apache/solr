@@ -90,9 +90,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    ZkStateReader.from(cluster
-        .getSolrClient()
-        )
+    ZkStateReader.from(cluster.getSolrClient())
         .waitForState(
             COLLECTION,
             DEFAULT_TIMEOUT,

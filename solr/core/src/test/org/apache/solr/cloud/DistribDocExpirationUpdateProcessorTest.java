@@ -118,9 +118,12 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     setAuthIfNeeded(CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2))
         .process(cluster.getSolrClient());
 
-    ZkStateReader.from(cluster
-        .getSolrClient()
-        ).waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    ZkStateReader.from(cluster.getSolrClient())
+        .waitForState(
+            COLLECTION,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
   }
 
   public void testNoAuth() throws Exception {

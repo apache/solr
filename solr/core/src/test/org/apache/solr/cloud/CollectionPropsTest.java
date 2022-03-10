@@ -149,9 +149,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
   private void checkValue(String propertyName, String expectedValue) throws InterruptedException {
     final Object value =
-        ZkStateReader.from(cluster
-            .getSolrClient()
-            )
+        ZkStateReader.from(cluster.getSolrClient())
             .getCollectionProperties(collectionName)
             .get(propertyName);
     assertEquals("Unexpected value for collection property: " + propertyName, expectedValue, value);
@@ -185,9 +183,8 @@ public class CollectionPropsTest extends SolrCloudTestCase {
       log.error("Could not get collectionprops from ZooKeeper for assertion mesage", e);
     }
 
-    String propertiesInZkReader = ZkStateReader.from(cluster
-            .getSolrClient()
-            )
+    String propertiesInZkReader =
+        ZkStateReader.from(cluster.getSolrClient())
             .getCollectionProperties(collectionName)
             .toString();
 

@@ -65,9 +65,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "config", 1, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
-    ZkStateReader.from(cluster
-        .getSolrClient()
-        )
+    ZkStateReader.from(cluster.getSolrClient())
         .waitForState(
             COLLECTION,
             DEFAULT_TIMEOUT,

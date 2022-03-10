@@ -107,8 +107,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
     Thread.sleep(sleepMsBeforeHealPartition);
 
-    ZkStateReader.from(cloudClient
-        )
+    ZkStateReader.from(cloudClient)
         .forceUpdateCollection(testCollectionName); // get the latest state
     leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
@@ -158,7 +157,8 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     sendCommitWithRetry(replica);
     Thread.sleep(sleepMsBeforeHealPartition);
 
-    ZkStateReader.from(cloudClient).forceUpdateCollection(testCollectionName); // get the latest state
+    ZkStateReader.from(cloudClient)
+        .forceUpdateCollection(testCollectionName); // get the latest state
     leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
 

@@ -150,7 +150,10 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
 
       // Should be able to set non-unique-per-slice values in several places.
       Map<String, Slice> slices =
-          ZkStateReader.from(client).getClusterState().getCollection(COLLECTION_NAME).getSlicesMap();
+          ZkStateReader.from(client)
+              .getClusterState()
+              .getCollection(COLLECTION_NAME)
+              .getSlicesMap();
       List<String> sliceList = new ArrayList<>(slices.keySet());
       String c1_s1 = sliceList.get(0);
       List<String> replicasList = new ArrayList<>(slices.get(c1_s1).getReplicasMap().keySet());

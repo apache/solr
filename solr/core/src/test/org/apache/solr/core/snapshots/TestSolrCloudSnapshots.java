@@ -123,8 +123,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       Thread.sleep(5000);
 
       // Figure out if at-least one replica is "down".
-      DocCollection collState =
-          solrClient.getClusterState().getCollection(collectionName);
+      DocCollection collState = solrClient.getClusterState().getCollection(collectionName);
       for (Slice s : collState.getSlices()) {
         for (Replica replica : s.getReplicas()) {
           if (replica.getState() == State.DOWN) {
@@ -152,8 +151,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         meta.getReplicaSnapshots().stream()
             .collect(Collectors.toMap(CoreSnapshotMetaData::getCoreName, Function.identity()));
 
-    DocCollection collectionState =
-        solrClient.getClusterState().getCollection(collectionName);
+    DocCollection collectionState = solrClient.getClusterState().getCollection(collectionName);
     assertEquals(2, collectionState.getActiveSlices().size());
     for (Slice shard : collectionState.getActiveSlices()) {
       assertEquals(2, shard.getReplicas().size());
@@ -220,10 +218,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(solrClient, 30)); // async
       }
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        restoreCollectionName, ZkStateReader.from(solrClient),
-          log.isDebugEnabled(),
-          true,
-          30);
+          restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), true, 30);
       BackupRestoreUtils.verifyDocs(nDocs, solrClient, restoreCollectionName);
     }
 
@@ -254,8 +249,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       }
 
       if (replicaToDelete != null) {
-        collectionState =
-            solrClient.getClusterState().getCollection(collectionName);
+        collectionState = solrClient.getClusterState().getCollection(collectionName);
         for (Slice s : collectionState.getSlices()) {
           for (Replica r : s.getReplicas()) {
             if (r.getCoreName().equals(replicaToDelete.getCoreName())) {

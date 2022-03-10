@@ -126,9 +126,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /** Get the collection state for a particular collection */
   protected static DocCollection getCollectionState(String collectionName) {
-    return ZkStateReader.from(cluster
-        .getSolrClient()
-        )
+    return ZkStateReader.from(cluster.getSolrClient())
         .getClusterState()
         .getCollection(collectionName);
   }
@@ -157,9 +155,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-        ZkStateReader.from(cluster
-          .getSolrClient()
-          ).waitForState(
+      ZkStateReader.from(cluster.getSolrClient())
+          .waitForState(
               collection,
               timeout,
               timeUnit,

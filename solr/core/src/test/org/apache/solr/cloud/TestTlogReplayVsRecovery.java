@@ -185,9 +185,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
         TimeoutException.class,
         "Did not time out waiting for new leader, out of sync replica became leader",
         () ->
-            ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+            ZkStateReader.from(cluster.getSolrClient())
                 .waitForState(
                     COLLECTION,
                     10,

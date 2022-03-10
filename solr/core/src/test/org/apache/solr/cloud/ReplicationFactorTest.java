@@ -94,9 +94,9 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
     if (log.isInfoEnabled()) {
-        log.info(
+      log.info(
           "replication factor testing complete! final clusterState is: {}",
-        cloudClient.getClusterState());
+          cloudClient.getClusterState());
     }
   }
 

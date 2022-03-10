@@ -962,7 +962,10 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     // determine the coreNodeName of only current replica
     Collection<Slice> slices =
-        ZkStateReader.from(cluster.getSolrClient()).getClusterState().getCollection(COL).getSlices();
+        ZkStateReader.from(cluster.getSolrClient())
+            .getClusterState()
+            .getCollection(COL)
+            .getSlices();
     assertEquals(1, slices.size()); // sanity check
     Slice slice = slices.iterator().next();
     assertEquals(1, slice.getReplicas().size()); // sanity check
@@ -993,7 +996,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
               .process(cluster.getSolrClient())
               .getStatus());
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-      COL, ZkStateReader.from(cluster.getSolrClient()), true, true, 330);
+          COL, ZkStateReader.from(cluster.getSolrClient()), true, true, 330);
       // ...and delete our original leader.
       assertEquals(
           "Couldn't create collection",
@@ -1004,7 +1007,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
               .process(cluster.getSolrClient())
               .getStatus());
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-      COL, ZkStateReader.from(cluster.getSolrClient()), true, true, 330);
+          COL, ZkStateReader.from(cluster.getSolrClient()), true, true, 330);
 
       // stale_client's collection state cache should now only point at a leader that no longer
       // exists.

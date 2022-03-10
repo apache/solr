@@ -130,15 +130,13 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     sleepTime.set(1000);
     runner.start();
     cluster.waitForAllNodes(30);
-    ZkStateReader.from(solrClient)
-        .registerCollectionStateWatcher(collectionName, stateWatcher);
+    ZkStateReader.from(solrClient).registerCollectionStateWatcher(collectionName, stateWatcher);
     cluster.waitForActiveCollection(collectionName, 1, 1);
     assertNull(
         "No replica should have been active without registering a searcher, found: "
             + failingCoreNodeName.get(),
         failingCoreNodeName.get());
-    ZkStateReader.from(solrClient)
-        .removeCollectionStateWatcher(collectionName, stateWatcher);
+    ZkStateReader.from(solrClient).removeCollectionStateWatcher(collectionName, stateWatcher);
   }
 
   @Test
@@ -187,8 +185,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
     CollectionStateWatcher stateWatcher =
         createActiveReplicaSearcherWatcher(expectedDocs, failingCoreNodeName);
-    ZkStateReader.from(solrClient)
-        .registerCollectionStateWatcher(collectionName, stateWatcher);
+    ZkStateReader.from(solrClient).registerCollectionStateWatcher(collectionName, stateWatcher);
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
@@ -241,8 +238,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     waitForState("", collectionName, clusterShape(1, 2));
     // invoke statewatcher explicitly to avoid race condition where the assert happens before the
     // state watcher is invoked by ZkStateReader
-    ZkStateReader.from(solrClient)
-        .registerCollectionStateWatcher(collectionName, stateWatcher);
+    ZkStateReader.from(solrClient).registerCollectionStateWatcher(collectionName, stateWatcher);
     assertNull(
         "No replica should have been active without registering a searcher, found: "
             + failingCoreNodeName.get(),
@@ -269,14 +265,12 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     waitForState("", collectionName, clusterShape(1, 2));
     // invoke statewatcher explicitly to avoid race condition where the assert happens before the
     // state watcher is invoked by ZkStateReader
-    ZkStateReader.from(solrClient)
-        .registerCollectionStateWatcher(collectionName, stateWatcher);
+    ZkStateReader.from(solrClient).registerCollectionStateWatcher(collectionName, stateWatcher);
     assertNull(
         "No replica should have been active without registering a searcher, found: "
             + failingCoreNodeName.get(),
         failingCoreNodeName.get());
-    ZkStateReader.from(solrClient)
-        .removeCollectionStateWatcher(collectionName, stateWatcher);
+    ZkStateReader.from(solrClient).removeCollectionStateWatcher(collectionName, stateWatcher);
   }
 
   private CollectionStateWatcher createActiveReplicaSearcherWatcher(

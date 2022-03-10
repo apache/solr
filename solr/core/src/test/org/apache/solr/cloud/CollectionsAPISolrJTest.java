@@ -148,15 +148,11 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         Thread.sleep(10);
       }
       Object clusterProperty =
-          ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+          ZkStateReader.from(cluster.getSolrClient())
               .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
       assertEquals("2", String.valueOf(clusterProperty));
       clusterProperty =
-          ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+          ZkStateReader.from(cluster.getSolrClient())
               .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
       assertEquals("2", String.valueOf(clusterProperty));
       CollectionAdminResponse response =
@@ -167,11 +163,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
       cluster.waitForActiveCollection(COLL_NAME, 2, 4);
 
-      DocCollection coll =
-          cluster
-              .getSolrClient()
-              .getClusterState()
-              .getCollection(COLL_NAME);
+      DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(COLL_NAME);
       Map<String, Slice> slices = coll.getSlicesMap();
       assertEquals(2, slices.size());
       for (Slice slice : slices.values()) {
@@ -199,17 +191,13 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, new TimeSource.NanoTimeSource());
       while (!timeOut.hasTimedOut()) {
         clusterProperty =
-            ZkStateReader.from(cluster
-                .getSolrClient()
-                )
+            ZkStateReader.from(cluster.getSolrClient())
                 .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
         if (clusterProperty == null) break;
       }
       assertNull(clusterProperty);
       clusterProperty =
-          ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+          ZkStateReader.from(cluster.getSolrClient())
               .getClusterProperty(ImmutableList.of(COLLECTION_DEF, NRT_REPLICAS), null);
       assertNull(clusterProperty);
 
@@ -224,17 +212,13 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       timeOut = new TimeOut(5, TimeUnit.SECONDS, new TimeSource.NanoTimeSource());
       while (!timeOut.hasTimedOut()) {
         clusterProperty =
-            ZkStateReader.from(cluster
-                .getSolrClient()
-                )
+            ZkStateReader.from(cluster.getSolrClient())
                 .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
         if (clusterProperty == null) break;
       }
       assertNull(clusterProperty);
       clusterProperty =
-          ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+          ZkStateReader.from(cluster.getSolrClient())
               .getClusterProperty(ImmutableList.of(COLLECTION_DEF, NUM_SHARDS_PROP), null);
       assertNull(clusterProperty);
     } finally {
@@ -267,15 +251,11 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         Thread.sleep(10);
       }
       Object clusterProperty =
-          ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+          ZkStateReader.from(cluster.getSolrClient())
               .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
       assertEquals("2", String.valueOf(clusterProperty));
       clusterProperty =
-          ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+          ZkStateReader.from(cluster.getSolrClient())
               .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
       assertEquals("2", String.valueOf(clusterProperty));
       CollectionAdminResponse response =
@@ -286,11 +266,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertTrue(response.isSuccess());
       cluster.waitForActiveCollection(COLL_NAME, 2, 4);
 
-      DocCollection coll =
-          cluster
-              .getSolrClient()
-              .getClusterState()
-              .getCollection(COLL_NAME);
+      DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(COLL_NAME);
       Map<String, Slice> slices = coll.getSlicesMap();
       assertEquals(2, slices.size());
       for (Slice slice : slices.values()) {
@@ -319,9 +295,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, new TimeSource.NanoTimeSource());
       while (!timeOut.hasTimedOut()) {
         clusterProperty =
-            ZkStateReader.from(cluster
-                .getSolrClient()
-                )
+            ZkStateReader.from(cluster.getSolrClient())
                 .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
         if (clusterProperty == null) break;
       }
@@ -337,17 +311,13 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       timeOut = new TimeOut(5, TimeUnit.SECONDS, new TimeSource.NanoTimeSource());
       while (!timeOut.hasTimedOut()) {
         clusterProperty =
-            ZkStateReader.from(cluster
-                .getSolrClient()
-                )
+            ZkStateReader.from(cluster.getSolrClient())
                 .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
         if (clusterProperty == null) break;
       }
       assertNull(clusterProperty);
       clusterProperty =
-          ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+          ZkStateReader.from(cluster.getSolrClient())
               .getClusterProperty(ImmutableList.of(COLLECTION_DEF, NUM_SHARDS_PROP), null);
       assertNull(clusterProperty);
     } finally {
@@ -457,9 +427,12 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 
-    ZkStateReader.from(cluster
-        .getSolrClient()
-        ).waitForState(collectionName, 30, TimeUnit.SECONDS, (l, c) -> c != null && c.getSlice("shardC") != null);
+    ZkStateReader.from(cluster.getSolrClient())
+        .waitForState(
+            collectionName,
+            30,
+            TimeUnit.SECONDS,
+            (l, c) -> c != null && c.getSlice("shardC") != null);
     coresStatus = response.getCollectionCoresStatus();
     assertEquals(3, coresStatus.size());
     int replicaTlog = 0;
@@ -599,7 +572,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collectionName, 1, 2);
 
-    ArrayList<String> nodeList = new ArrayList<>(cluster.getSolrClient().getClusterState().getLiveNodes());
+    ArrayList<String> nodeList =
+        new ArrayList<>(cluster.getSolrClient().getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
     final String node = nodeList.get(0);
 
@@ -701,9 +675,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     while (!timeout.hasTimedOut()) {
       Thread.sleep(10);
       if (Objects.equals(
-          ZkStateReader.from(cluster
-              .getSolrClient()
-              )
+          ZkStateReader.from(cluster.getSolrClient())
               .getCollectionProperties(collection)
               .get(propertyName),
           propertyValue)) {
@@ -771,11 +743,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertNotNull(
         Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "fields", "id", "flags"));
     // test for replicas not active - SOLR-13882
-    DocCollection coll =
-        cluster
-            .getSolrClient()
-            .getClusterState()
-            .getCollection(collectionName);
+    DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(collectionName);
     Replica firstReplica = coll.getSlice("shard1").getReplicas().iterator().next();
     String firstNode = firstReplica.getNodeName();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
@@ -878,8 +846,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     }
     solrClient.add(docs);
 
-    Replica leader
-      = ZkStateReader.from(solrClient).getLeaderRetry(collectionName, "shard1", DEFAULT_TIMEOUT);
+    Replica leader =
+        ZkStateReader.from(solrClient).getLeaderRetry(collectionName, "shard1", DEFAULT_TIMEOUT);
 
     final AtomicReference<Long> coreStartTime =
         new AtomicReference<>(getCoreStatus(leader).getCoreStartTime().getTime());
@@ -889,8 +857,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
             collectionName, Collections.singletonMap(ZkStateReader.READ_ONLY, "true"))
         .process(solrClient);
 
-    DocCollection coll =
-        solrClient.getClusterState().getCollection(collectionName);
+    DocCollection coll = solrClient.getClusterState().getCollection(collectionName);
     assertNotNull(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY));
     assertEquals(
         coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY).toString(), "true");
@@ -963,8 +930,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminRequest.modifyCollection(
             collectionName, Collections.singletonMap(ZkStateReader.READ_ONLY, ""))
         .process(cluster.getSolrClient());
-    coll =
-        solrClient.getClusterState().getCollection(collectionName);
+    coll = solrClient.getClusterState().getCollection(collectionName);
     assertNull(coll.toString(), coll.getProperties().get(ZkStateReader.READ_ONLY));
 
     // wait for the expected collection reload
@@ -1160,14 +1126,15 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         () -> {
           try {
             ZkStateReader.from(solrClient).aliasesManager.update();
-            return ZkStateReader.from(solrClient
-                ).getAliases()
-          .resolveSimpleAlias(collectionName1).equals(collectionName2);
-      } catch (Exception e) {
-        fail("exception caught refreshing aliases: " + e);
-        return false;
-      }
-    });
+            return ZkStateReader.from(solrClient)
+                .getAliases()
+                .resolveSimpleAlias(collectionName1)
+                .equals(collectionName2);
+          } catch (Exception e) {
+            fail("exception caught refreshing aliases: " + e);
+            return false;
+          }
+        });
 
     // both results should come from collection 2
     assertDoc(solrClient, collectionName1, "2"); // aliased

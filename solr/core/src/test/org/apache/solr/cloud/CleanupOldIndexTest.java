@@ -116,9 +116,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     indexThread.safeStop();
     indexThread.join();
 
-    ZkStateReader.from(cluster
-        .getSolrClient()
-        )
+    ZkStateReader.from(cluster.getSolrClient())
         .waitForState(
             COLLECTION,
             DEFAULT_TIMEOUT,

@@ -115,9 +115,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         jetty.start();
       }
     }
-    if (ZkStateReader.from(cluster
-            .getSolrClient()
-            )
+    if (ZkStateReader.from(cluster.getSolrClient())
             .getClusterState()
             .getCollectionOrNull(collectionName)
         != null) {
@@ -412,9 +410,8 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 0));
     addDocs(500);
     List<Replica.State> statesSeen = new ArrayList<>(3);
-    ZkStateReader.from(cluster
-        .getSolrClient()
-        ).registerCollectionStateWatcher(
+    ZkStateReader.from(cluster.getSolrClient())
+        .registerCollectionStateWatcher(
             collectionName,
             (liveNodes, collectionState) -> {
               Replica r = collectionState.getSlice("shard1").getReplica("core_node2");
@@ -725,7 +722,9 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   static void waitForDeletion(String collection) throws InterruptedException, KeeperException {
     TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (ZkStateReader.from(cluster.getSolrClient()).getClusterState().hasCollection(collection)) {
+    while (ZkStateReader.from(cluster.getSolrClient())
+        .getClusterState()
+        .hasCollection(collection)) {
       log.info("Collection not yet deleted");
       try {
         Thread.sleep(100);

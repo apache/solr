@@ -116,8 +116,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
 
   @Test
   public void test() throws Exception {
-    DocCollection docCollection =
-        cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
+    DocCollection docCollection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     assertEquals(this.sliceCount, docCollection.getSlices().size());
     Slice s = docCollection.getSlice("shard1");
     assertNotNull(s);
@@ -232,7 +231,9 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
       log.info("collection state: {}", printClusterStateInfo(DEFAULT_COLLECTION)); // nowarn
     }
 
-    waitForReplicationFromReplicas(DEFAULT_COLLECTION, ZkStateReader.from(cloudClient),
+    waitForReplicationFromReplicas(
+        DEFAULT_COLLECTION,
+        ZkStateReader.from(cloudClient),
         new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME));
     //    waitForAllWarmingSearchers();
 

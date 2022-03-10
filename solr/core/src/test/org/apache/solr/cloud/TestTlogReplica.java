@@ -121,9 +121,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         jetty.start();
       }
     }
-    if (ZkStateReader.from(cluster
-            .getSolrClient()
-            )
+    if (ZkStateReader.from(cluster.getSolrClient())
             .getClusterState()
             .getCollectionOrNull(collectionName)
         != null) {
@@ -773,8 +771,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), collectionName);
 
     // Find a replica which isn't leader
-    DocCollection docCollection =
-        cloudClient.getClusterState().getCollection(collectionName);
+    DocCollection docCollection = cloudClient.getClusterState().getCollection(collectionName);
     Slice slice = docCollection.getSlices().iterator().next();
     Replica newLeader = null;
     for (Replica replica : slice.getReplicas()) {
@@ -800,10 +797,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeout.hasTimedOut()) {
       Map<String, Slice> slices =
-          cloudClient
-              .getClusterState()
-              .getCollection(collectionName)
-              .getSlicesMap();
+          cloudClient.getClusterState().getCollection(collectionName).getSlicesMap();
       Replica me = slices.get(slice.getName()).getReplica(newLeader.getName());
       if (me.getBool("property.preferredleader", false)) {
         break;
@@ -828,8 +822,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       Replica leader = docCollection.getSlice(slice.getName()).getLeader();
       if (leader != null
           && leader.getName().equals(newLeader.getName())
-        && leader.isActive(
-              cloudClient.getClusterState().getLiveNodes())) {
+          && leader.isActive(cloudClient.getClusterState().getLiveNodes())) {
         break;
       }
       Thread.sleep(100);
@@ -1019,7 +1012,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
     TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (ZkStateReader.from(cluster.getSolrClient()).getClusterState().hasCollection(collection)) {
+    while (ZkStateReader.from(cluster.getSolrClient())
+        .getClusterState()
+        .hasCollection(collection)) {
       try {
         Thread.sleep(100);
         if (t.hasTimedOut()) {
@@ -1118,8 +1113,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     List<SolrCore> rs = new ArrayList<>();
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    DocCollection docCollection =
-        cloudClient.getClusterState().getCollection(collectionName);
+    DocCollection docCollection = cloudClient.getClusterState().getCollection(collectionName);
 
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
       if (solrRunner.getCoreContainer() == null) continue;
@@ -1157,8 +1151,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   private List<JettySolrRunner> getSolrRunner(boolean isLeader) throws IOException {
     List<JettySolrRunner> rs = new ArrayList<>();
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    DocCollection docCollection =
-        cloudClient.getClusterState().getCollection(collectionName);
+    DocCollection docCollection = cloudClient.getClusterState().getCollection(collectionName);
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
       if (solrRunner.getCoreContainer() == null) continue;
       for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {

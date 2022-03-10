@@ -63,10 +63,9 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
         "halfdeletedcollection2",
         (n, c) -> c == null);
 
-    assertFalse("Still found collection that should be gone",
-      ZkStateReader.from(cluster
-            .getSolrClient()
-            )
+    assertFalse(
+        "Still found collection that should be gone",
+        ZkStateReader.from(cluster.getSolrClient())
             .getClusterState()
             .hasCollection("halfdeletedcollection2"));
   }

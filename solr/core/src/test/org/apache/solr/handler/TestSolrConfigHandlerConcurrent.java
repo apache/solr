@@ -138,8 +138,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         return;
       }
 
-      DocCollection coll =
-          cloudClient.getClusterState().getCollection("collection1");
+      DocCollection coll = cloudClient.getClusterState().getCollection("collection1");
       List<String> urls = new ArrayList<>();
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas())

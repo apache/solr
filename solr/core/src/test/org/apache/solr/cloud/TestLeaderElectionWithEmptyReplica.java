@@ -62,7 +62,8 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     solrClient.commit();
 
     // find the leader node
-    Replica replica = ZkStateReader.from(cluster.getSolrClient()).getLeaderRetry(COLLECTION_NAME, "shard1");
+    Replica replica =
+        ZkStateReader.from(cluster.getSolrClient()).getLeaderRetry(COLLECTION_NAME, "shard1");
     JettySolrRunner replicaJetty = null;
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
     for (JettySolrRunner jettySolrRunner : jettySolrRunners) {
@@ -88,11 +89,18 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     replicaJetty.start();
 
     // wait until everyone is active
-    ZkStateReader.from(cluster.getSolrClient()).waitForState( COLLECTION_NAME, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
+    ZkStateReader.from(cluster.getSolrClient())
+        .waitForState(
+            COLLECTION_NAME,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
 
-      // now query each replica and check for consistency
-    assertConsistentReplicas(solrClient, ZkStateReader.from(cluster.getSolrClient()
-            ).getClusterState()
+    // now query each replica and check for consistency
+    assertConsistentReplicas(
+        solrClient,
+        ZkStateReader.from(cluster.getSolrClient())
+            .getClusterState()
             .getCollection(COLLECTION_NAME)
             .getSlice("shard1"));
 

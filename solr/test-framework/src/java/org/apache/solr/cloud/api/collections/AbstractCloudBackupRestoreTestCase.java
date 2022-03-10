@@ -194,9 +194,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     String backupLocation = getBackupLocation();
     String backupName = BACKUPNAME_PREFIX + testSuffix;
 
-    DocCollection backupCollection =
-        solrClient.getZkStateReader().getClusterState().getCollection(getCollectionName());
-
     log.info("Triggering Backup command");
 
     {
@@ -292,9 +289,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   }
 
   private int getActiveSliceCount(String collectionName) {
-    return ZkStateReader.from(cluster
-        .getSolrClient()
-        )
+    return ZkStateReader.from(cluster.getSolrClient())
         .getClusterState()
         .getCollection(collectionName)
         .getActiveSlices()
@@ -404,10 +399,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(client, 60)); // async
     }
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-      restoreCollectionName, ZkStateReader.from(client),
-        log.isDebugEnabled(),
-        true,
-        30);
+        restoreCollectionName, ZkStateReader.from(client), log.isDebugEnabled(), true, 30);
 
     // Check the number of results are the same
     DocCollection restoreCollection =

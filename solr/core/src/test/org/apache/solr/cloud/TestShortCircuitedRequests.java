@@ -37,11 +37,7 @@ public class TestShortCircuitedRequests extends AbstractFullDistribZkTestBase {
     waitForRecoveriesToFinish(false);
     assertEquals(
         4,
-        cloudClient
-            .getClusterStateProvider()
-            .getCollection(DEFAULT_COLLECTION)
-            .getSlices()
-            .size());
+        cloudClient.getClusterStateProvider().getCollection(DEFAULT_COLLECTION).getSlices().size());
     index("id", "a!doc1"); // shard3
     index("id", "b!doc1"); // shard1
     index("id", "c!doc1"); // shard2
@@ -52,10 +48,7 @@ public class TestShortCircuitedRequests extends AbstractFullDistribZkTestBase {
 
     // query shard3 directly with _route_=a! so that we trigger the short circuited request path
     Replica shard3 =
-        cloudClient
-            .getClusterState()
-            .getCollection(DEFAULT_COLLECTION)
-            .getLeader("shard3");
+        cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION).getLeader("shard3");
     String nodeName = shard3.getNodeName();
     SolrClient shard3Client = getClient(nodeName);
     QueryResponse response =

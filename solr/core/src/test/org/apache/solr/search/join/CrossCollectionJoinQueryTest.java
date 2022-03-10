@@ -193,9 +193,11 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
               "{!join method=crossCollection solrUrl=\"%s\" fromIndex=products from=product_id_s to=product_id_s}size_s:M",
               getSolrUrl()),
           true);
-        testCcJoinQuery(String.format(Locale.ROOT,
-          "{!join method=crossCollection zkHost=\"%s\" fromIndex=products from=product_id_s to=product_id_s}size_s:M",
-                        client.getClusterStateProvider().getQuorumHosts()),
+      testCcJoinQuery(
+          String.format(
+              Locale.ROOT,
+              "{!join method=crossCollection zkHost=\"%s\" fromIndex=products from=product_id_s to=product_id_s}size_s:M",
+              client.getClusterStateProvider().getQuorumHosts()),
           true);
 
       // Test the ability to set other parameters on crossCollection join and have them passed

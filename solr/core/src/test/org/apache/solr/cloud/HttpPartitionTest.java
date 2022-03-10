@@ -198,8 +198,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       String notLeaderNodeName = notLeaderJetty.getNodeName();
       notLeaderJetty.stop();
 
-      ZkStateReader.from(cloudClient
-          )
+      ZkStateReader.from(cloudClient)
           .waitForLiveNodes(
               15, TimeUnit.SECONDS, SolrCloudTestCase.missingLiveNode(notLeaderNodeName));
 
@@ -434,8 +433,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
             + printClusterStateInfo(testCollectionName),
         notLeaders.size() == 1);
 
-    Replica leader =
-      ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
+    Replica leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     String leaderNode = leader.getNodeName();
     assertNotNull(
         "Could not find leader for shard1 of "
@@ -458,7 +456,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       String currentLeaderName = null;
       try {
         Replica currentLeader =
-          ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
+            ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
         currentLeaderName = currentLeader.getName();
       } catch (Exception exc) {
       }
@@ -470,7 +468,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     }
 
     Replica currentLeader =
-      ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
+        ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     assertEquals(expectedNewLeaderCoreNodeName, currentLeader.getName());
 
     // TODO: This test logic seems to be timing dependent and fails on Jenkins
@@ -539,7 +537,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       List<Replica> notLeaders, String testCollectionName, int firstDocId, int lastDocId)
       throws Exception {
     Replica leader =
-      ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1", 10000);
+        ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1", 10000);
     HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
     List<HttpSolrClient> replicas = new ArrayList<HttpSolrClient>(notLeaders.size());
 
