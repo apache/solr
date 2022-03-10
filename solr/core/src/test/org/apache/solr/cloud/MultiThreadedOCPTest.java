@@ -81,7 +81,8 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
         // Make sure the long running task did not finish, otherwise no way the B_COLL task can be
         // tested to run in parallel with it
-        assumeTrue("Long running task finished too early, can't test",
+        assumeTrue(
+            "Long running task finished too early, can't test",
             null == checkTaskHasCompleted(client, 2));
 
         // Enqueue a task on another collection not competing with the lock on A_COLL and see that
