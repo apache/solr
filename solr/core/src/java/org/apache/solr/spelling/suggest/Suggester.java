@@ -26,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
@@ -53,24 +52,19 @@ import org.slf4j.LoggerFactory;
 
 public class Suggester extends SolrSpellChecker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  /** Location of the source data - either a path to a file, or null for the
-   * current IndexReader.
-   */
+
+  /** Location of the source data - either a path to a file, or null for the current IndexReader. */
   public static final String LOCATION = "sourceLocation";
   /** Fully-qualified class of the {@link Lookup} implementation. */
   public static final String LOOKUP_IMPL = "lookupImpl";
-  /**
-   * Minimum frequency of terms to consider when building the dictionary.
-   */
+  /** Minimum frequency of terms to consider when building the dictionary. */
   public static final String THRESHOLD_TOKEN_FREQUENCY = "threshold";
   /**
-   * Name of the location where to persist the dictionary. If this location
-   * is relative then the data will be stored under the core's dataDir. If this
-   * is null the storing will be disabled.
+   * Name of the location where to persist the dictionary. If this location is relative then the
+   * data will be stored under the core's dataDir. If this is null the storing will be disabled.
    */
   public static final String STORE_DIR = "storeDir";
-  
+
   protected String sourceLocation;
   protected Path storeDir;
   protected float threshold;
@@ -81,18 +75,21 @@ public class Suggester extends SolrSpellChecker {
   protected SolrCore core;
 
   private LookupFactory factory;
-  
+
   @Override
   public String init(NamedList<?> config, SolrCore core) {
     log.info("init: {}", config);
     String name = super.init(config, core);
-    threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
-            : (Float)config.get(THRESHOLD_TOKEN_FREQUENCY);
+    threshold =
+        config.get(THRESHOLD_TOKEN_FREQUENCY) == null
+            ? 0.0f
+            : (Float) config.get(THRESHOLD_TOKEN_FREQUENCY);
     sourceLocation = (String) config.get(LOCATION);
-    lookupImpl = (String)config.get(LOOKUP_IMPL);
+    lookupImpl = (String) config.get(LOOKUP_IMPL);
 
     // support the old classnames without -Factory for config file backwards compatibility.
-    if (lookupImpl == null || "org.apache.solr.spelling.suggest.jaspell.JaspellLookup".equals(lookupImpl)) {
+    if (lookupImpl == null
+        || "org.apache.solr.spelling.suggest.jaspell.JaspellLookup".equals(lookupImpl)) {
       lookupImpl = JaspellLookupFactory.class.getName();
     } else if ("org.apache.solr.spelling.suggest.tst.TSTLookup".equals(lookupImpl)) {
       lookupImpl = TSTLookupFactory.class.getName();
@@ -101,26 +98,28 @@ public class Suggester extends SolrSpellChecker {
     }
 
     factory = core.getResourceLoader().newInstance(lookupImpl, LookupFactory.class);
-    
+
     lookup = factory.create(config, core);
-    core.addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-        if (lookup instanceof Closeable) {
-          try {
-            ((Closeable) lookup).close();
-          } catch (IOException e) {
-            log.warn("Could not close the suggester lookup.", e);
+    core.addCloseHook(
+        new CloseHook() {
+          @Override
+          public void preClose(SolrCore core) {
+            if (lookup instanceof Closeable) {
+              try {
+                ((Closeable) lookup).close();
+              } catch (IOException e) {
+                log.warn("Could not close the suggester lookup.", e);
+              }
+            }
           }
-        }
-      }
-    });
+        });
 
     // TODO: Duplicated with SolrSuggester
-    String store = (String)config.get(STORE_DIR);
+    String store = (String) config.get(STORE_DIR);
     if (store != null) {
       storeDir = Path.of(store);
-      storeDir = Path.of(core.getDataDir()).resolve(storeDir); // if store dir is absolute this won't change it
+      // if store dir is absolute this won't change it
+      storeDir = Path.of(core.getDataDir()).resolve(storeDir);
       try {
         Files.createDirectories(storeDir);
       } catch (IOException e) {
@@ -136,10 +135,10 @@ public class Suggester extends SolrSpellChecker {
         }
       }
     }
-    
+
     return name;
   }
-  
+
   @Override
   public void build(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     log.info("build()");
@@ -148,8 +147,10 @@ public class Suggester extends SolrSpellChecker {
       dictionary = new HighFrequencyDictionary(reader, field, threshold);
     } else {
       try {
-        dictionary = new FileDictionary(new InputStreamReader(
-                core.getResourceLoader().openResource(sourceLocation), StandardCharsets.UTF_8));
+        dictionary =
+            new FileDictionary(
+                new InputStreamReader(
+                    core.getResourceLoader().openResource(sourceLocation), StandardCharsets.UTF_8));
       } catch (UnsupportedEncodingException e) {
         // should not happen
         log.error("should not happen", e);
@@ -159,10 +160,13 @@ public class Suggester extends SolrSpellChecker {
     lookup.build(dictionary);
     if (storeDir != null) {
       Path target = storeDir.resolve(factory.storeFileName());
-      if(!lookup.store(Files.newOutputStream(target))) {
+      if (!lookup.store(Files.newOutputStream(target))) {
         if (sourceLocation == null) {
           assert reader != null && field != null;
-          log.error("Store Lookup build from index on field: {} failed reader has: {} docs", field, reader.maxDoc());
+          log.error(
+              "Store Lookup build from index on field: {} failed reader has: {} docs",
+              field,
+              reader.maxDoc());
         } else {
           log.error("Store Lookup build from sourceloaction: {} failed", sourceLocation);
         }
@@ -180,7 +184,7 @@ public class Suggester extends SolrSpellChecker {
     if (dictionary == null && storeDir != null) {
       // this may be a firstSearcher event, try loading it
       if (lookup.load(Files.newInputStream(storeDir.resolve(factory.storeFileName())))) {
-        return;  // loaded ok
+        return; // loaded ok
       }
       log.debug("load failed, need to build Lookup again");
     }
@@ -203,9 +207,10 @@ public class Suggester extends SolrSpellChecker {
       scratch.chars = t.buffer();
       scratch.offset = 0;
       scratch.length = t.length();
-      boolean onlyMorePopular = (options.suggestMode == SuggestMode.SUGGEST_MORE_POPULAR) &&
-        !(lookup instanceof WFSTCompletionLookup) &&
-        !(lookup instanceof AnalyzingSuggester);
+      boolean onlyMorePopular =
+          (options.suggestMode == SuggestMode.SUGGEST_MORE_POPULAR)
+              && !(lookup instanceof WFSTCompletionLookup)
+              && !(lookup instanceof AnalyzingSuggester);
       List<LookupResult> suggestions = lookup.lookup(scratch, onlyMorePopular, options.count);
       if (suggestions == null) {
         continue;
@@ -214,7 +219,7 @@ public class Suggester extends SolrSpellChecker {
         Collections.sort(suggestions);
       }
       for (LookupResult lr : suggestions) {
-        res.add(t, lr.key.toString(), (int)lr.value);
+        res.add(t, lr.key.toString(), (int) lr.value);
       }
     }
     return res;

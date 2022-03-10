@@ -17,11 +17,10 @@
 
 package org.apache.solr.cluster.placement.impl;
 
+import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.Maps;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.*;
@@ -31,24 +30,24 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
 
-import javax.annotation.Nonnull;
-
 /**
- * <p>The implementation of the cluster abstractions from {@link org.apache.solr.cluster} as static inner classes of this
- * one are a very straightforward approach
- * for an initial implementation of the placement plugins, but are likely not the right implementations for the long term.</p>
+ * The implementation of the cluster abstractions from {@link org.apache.solr.cluster} as static
+ * inner classes of this one are a very straightforward approach for an initial implementation of
+ * the placement plugins, but are likely not the right implementations for the long term.
  *
- * <p>Indeed there's a delay between the moment the Collection API computes a placement for a given command and when
- * this placement decision is actually executed and Zookeeper for example updated with the new state (and that state visible
- * to the node or nodes). Under high load when a large number of placement requests are computed, the naive implementation
- * presented here could in some cases provide the same cluster state view to all placement requests over a period of time
- * that can extend to over a minute and have the resulting placement decisions all place replicas on the same nodes,
- * eventually leading to severe imbalance of the cluster.</p>
+ * <p>Indeed there's a delay between the moment the Collection API computes a placement for a given
+ * command and when this placement decision is actually executed and Zookeeper for example updated
+ * with the new state (and that state visible to the node or nodes). Under high load when a large
+ * number of placement requests are computed, the naive implementation presented here could in some
+ * cases provide the same cluster state view to all placement requests over a period of time that
+ * can extend to over a minute and have the resulting placement decisions all place replicas on the
+ * same nodes, eventually leading to severe imbalance of the cluster.
  *
- * <p>By modifying the cluster abstractions implementations (without changing the API seen by placement plugins) to provide
- * a view of the cluster that anticipates the way the cluster will be after in flight placement decisions are taken
- * into account, the underlying Solr side framework supporting placement plugins can compensate to a point the delay
- * between placement decision and that decision being observable.</p>
+ * <p>By modifying the cluster abstractions implementations (without changing the API seen by
+ * placement plugins) to provide a view of the cluster that anticipates the way the cluster will be
+ * after in flight placement decisions are taken into account, the underlying Solr side framework
+ * supporting placement plugins can compensate to a point the delay between placement decision and
+ * that decision being observable.
  */
 class SimpleClusterAbstractionsImpl {
 
@@ -59,11 +58,13 @@ class SimpleClusterAbstractionsImpl {
 
     ClusterImpl(SolrCloudManager solrCloudManager) throws IOException {
       Set<String> liveNodes = solrCloudManager.getClusterStateProvider().getLiveNodes();
-      Collection<String> liveNodesWithData = Assign.filterNonDataNodes( solrCloudManager.getDistribStateManager(), liveNodes);
+      Collection<String> liveNodesWithData =
+          Assign.filterNonDataNodes(solrCloudManager.getDistribStateManager(), liveNodes);
       this.liveNodes = NodeImpl.getNodes(liveNodes);
-      this.liveNodesWithData = liveNodesWithData.size() == liveNodes.size() ?
-              this.liveNodes :
-              NodeImpl.getNodes(liveNodesWithData);
+      this.liveNodesWithData =
+          liveNodesWithData.size() == liveNodes.size()
+              ? this.liveNodes
+              : NodeImpl.getNodes(liveNodesWithData);
       clusterState = solrCloudManager.getClusterState();
     }
 
@@ -82,9 +83,11 @@ class SimpleClusterAbstractionsImpl {
     }
 
     @Override
-    @Nonnull
     public Iterator<SolrCollection> iterator() {
-      return clusterState.getCollectionsMap().values().stream().map(SolrCollectionImpl::fromDocCollection).collect(Collectors.toSet()).iterator();
+      return clusterState.getCollectionsMap().values().stream()
+          .map(SolrCollectionImpl::fromDocCollection)
+          .collect(Collectors.toSet())
+          .iterator();
     }
 
     @Override
@@ -93,13 +96,10 @@ class SimpleClusterAbstractionsImpl {
     }
   }
 
-
   static class NodeImpl implements Node {
     public final String nodeName;
 
-    /**
-     * Transforms a collection of node names into a set of {@link Node} instances.
-     */
+    /** Transforms a collection of node names into a set of {@link Node} instances. */
     static Set<Node> getNodes(Collection<String> nodeNames) {
       return nodeNames.stream().map(NodeImpl::new).collect(Collectors.toSet());
     }
@@ -119,9 +119,10 @@ class SimpleClusterAbstractionsImpl {
     }
 
     /**
-     * This class ends up as a key in Maps in {@link org.apache.solr.cluster.placement.AttributeValues}.
-     * It is important to implement this method comparing node names given that new instances of {@link Node} are created
-     * with names equal to existing instances (See {@link ReplicaImpl} constructor).
+     * This class ends up as a key in Maps in {@link
+     * org.apache.solr.cluster.placement.AttributeValues}. It is important to implement this method
+     * comparing node names given that new instances of {@link Node} are created with names equal to
+     * existing instances (See {@link ReplicaImpl} constructor).
      */
     public boolean equals(Object obj) {
       if (obj == null) {
@@ -142,13 +143,11 @@ class SimpleClusterAbstractionsImpl {
     }
   }
 
-
   static class SolrCollectionImpl implements SolrCollection {
     private final String collectionName;
-    /**
-     * Map from {@link Shard#getShardName()} to {@link Shard}
-     */
+    /** Map from {@link Shard#getShardName()} to {@link Shard} */
     private final Map<String, Shard> shards;
+
     private final DocCollection docCollection;
 
     static SolrCollection createCollectionFacade(ClusterState clusterState, String collectionName) {
@@ -176,7 +175,6 @@ class SimpleClusterAbstractionsImpl {
     }
 
     @Override
-    @Nonnull
     public Iterator<Shard> iterator() {
       return shards.values().iterator();
     }
@@ -193,11 +191,15 @@ class SimpleClusterAbstractionsImpl {
 
     @Override
     public String toString() {
-      return "SolrCollectionImpl{" +
-              "collectionName='" + collectionName + '\'' +
-              ", shards=" + shards.keySet() +
-              ", docCollection=" + docCollection +
-              '}';
+      return "SolrCollectionImpl{"
+          + "collectionName='"
+          + collectionName
+          + '\''
+          + ", shards="
+          + shards.keySet()
+          + ", docCollection="
+          + docCollection
+          + '}';
     }
 
     @Override
@@ -205,7 +207,6 @@ class SimpleClusterAbstractionsImpl {
       return docCollection.getStr(CollectionAdminParams.PROPERTY_PREFIX + customPropertyName);
     }
   }
-
 
   static class ShardImpl implements Shard {
     private final String shardName;
@@ -215,8 +216,8 @@ class SimpleClusterAbstractionsImpl {
     private final Replica leader;
 
     /**
-     * Transforms {@link Slice}'s of a {@link org.apache.solr.common.cloud.DocCollection} into a map of {@link Shard}'s,
-     * keyed by shard name ({@link Shard#getShardName()}).
+     * Transforms {@link Slice}'s of a {@link org.apache.solr.common.cloud.DocCollection} into a map
+     * of {@link Shard}'s, keyed by shard name ({@link Shard#getShardName()}).
      */
     static Map<String, Shard> getShards(SolrCollection solrCollection, Collection<Slice> slices) {
       Map<String, Shard> shards = Maps.newHashMap();
@@ -272,7 +273,6 @@ class SimpleClusterAbstractionsImpl {
     }
 
     @Override
-    @Nonnull
     public Iterator<Replica> iterator() {
       return replicas.values().iterator();
     }
@@ -316,16 +316,22 @@ class SimpleClusterAbstractionsImpl {
 
     @Override
     public String toString() {
-      return "ShardImpl{" +
-              "shardName='" + shardName + '\'' +
-              ", collection='" + collection.getName() + '\'' +
-              ", shardState=" + shardState +
-              ", replicas=" + replicas.size() +
-              ", leader=" + leader +
-              '}';
+      return "ShardImpl{"
+          + "shardName='"
+          + shardName
+          + '\''
+          + ", collection='"
+          + collection.getName()
+          + '\''
+          + ", shardState="
+          + shardState
+          + ", replicas="
+          + replicas.size()
+          + ", leader="
+          + leader
+          + '}';
     }
   }
-
 
   static class ReplicaImpl implements Replica {
     private final String replicaName;
@@ -336,10 +342,12 @@ class SimpleClusterAbstractionsImpl {
     private final Node node;
 
     /**
-     * Transforms {@link org.apache.solr.common.cloud.Replica}'s of a {@link Slice} into a map of {@link Replica}'s,
-     * keyed by replica name ({@link Replica#getReplicaName()}). Also returns in the
+     * Transforms {@link org.apache.solr.common.cloud.Replica}'s of a {@link Slice} into a map of
+     * {@link Replica}'s, keyed by replica name ({@link Replica#getReplicaName()}). Also returns in
+     * the
      */
-    static Pair<Map<String, Replica>, Replica> getReplicas(Collection<org.apache.solr.common.cloud.Replica> sliceReplicas, Shard shard) {
+    static Pair<Map<String, Replica>, Replica> getReplicas(
+        Collection<org.apache.solr.common.cloud.Replica> sliceReplicas, Shard shard) {
       Map<String, Replica> replicas = Maps.newHashMap();
       Replica leader = null;
 
@@ -356,13 +364,15 @@ class SimpleClusterAbstractionsImpl {
       return new Pair<>(replicas, leader);
     }
 
-    private ReplicaImpl(String replicaName, Shard shard, org.apache.solr.common.cloud.Replica sliceReplica) {
+    private ReplicaImpl(
+        String replicaName, Shard shard, org.apache.solr.common.cloud.Replica sliceReplica) {
       this.replicaName = replicaName;
       this.coreName = sliceReplica.getCoreName();
       this.shard = shard;
       this.replicaType = translateType(sliceReplica.getType());
       this.replicaState = translateState(sliceReplica.getState());
-      // Note this node might not be live, and if it is it is a different instance from the Nodes in Cluster, but that's ok.
+      // Note this node might not be live, and if it is it is a different instance from the Nodes in
+      // Cluster, but that's ok.
       this.node = new NodeImpl(sliceReplica.getNodeName());
     }
 
@@ -425,9 +435,10 @@ class SimpleClusterAbstractionsImpl {
     }
 
     /**
-     * Translating a plugin visible ReplicaType to the internal Solr enum {@link org.apache.solr.common.cloud.Replica.Type}.
-     * The obvious approach would have been to add the internal Solr enum value as a parameter in the ReplicaType enum,
-     * but that would have leaked an internal SolrCloud implementation class to the plugin API.
+     * Translating a plugin visible ReplicaType to the internal Solr enum {@link
+     * org.apache.solr.common.cloud.Replica.Type}. The obvious approach would have been to add the
+     * internal Solr enum value as a parameter in the ReplicaType enum, but that would have leaked
+     * an internal SolrCloud implementation class to the plugin API.
      */
     static org.apache.solr.common.cloud.Replica.Type toCloudReplicaType(ReplicaType type) {
       switch (type) {
@@ -467,14 +478,24 @@ class SimpleClusterAbstractionsImpl {
 
     @Override
     public String toString() {
-      return "ReplicaImpl{" +
-              "replicaName='" + replicaName + '\'' +
-              ", coreName='" + coreName + '\'' +
-              ", shard='" + shard.getShardName() + '\'' +
-              ", replicaType=" + replicaType +
-              ", replicaState=" + replicaState +
-              ", node='" + node + '\'' +
-              '}';
+      return "ReplicaImpl{"
+          + "replicaName='"
+          + replicaName
+          + '\''
+          + ", coreName='"
+          + coreName
+          + '\''
+          + ", shard='"
+          + shard.getShardName()
+          + '\''
+          + ", replicaType="
+          + replicaType
+          + ", replicaState="
+          + replicaState
+          + ", node='"
+          + node
+          + '\''
+          + '}';
     }
   }
 }

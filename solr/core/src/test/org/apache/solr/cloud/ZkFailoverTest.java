@@ -35,12 +35,13 @@ public class ZkFailoverTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     useFactory("solr.StandardDirectoryFactory");
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
   }
 
   @AfterClass
-  public static void resetWaitForZk(){
+  public static void resetWaitForZk() {
     System.setProperty("waitForZk", "30");
   }
 
@@ -61,13 +62,13 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     restartSolrAndZk();
     waitForLiveNodes(2);
     waitForState("Timeout waiting for " + coll, coll, clusterShape(2, 2));
-    QueryResponse rsp = new QueryRequest(new SolrQuery("*:*")).process(cluster.getSolrClient(), coll);
+    QueryResponse rsp =
+        new QueryRequest(new SolrQuery("*:*")).process(cluster.getSolrClient(), coll);
     assertEquals(1, rsp.getResults().getNumFound());
     zkTestServer.shutdown();
   }
 
-  private void restartSolrAndZk()
-      throws Exception {
+  private void restartSolrAndZk() throws Exception {
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
       runner.stop();
     }
@@ -75,13 +76,15 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     Thread[] threads = new Thread[cluster.getJettySolrRunners().size()];
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       final JettySolrRunner runner = cluster.getJettySolrRunner(i);
-      threads[i] = new Thread(() -> {
-        try {
-          runner.start();
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-        });
+      threads[i] =
+          new Thread(
+              () -> {
+                try {
+                  runner.start();
+                } catch (Exception e) {
+                  e.printStackTrace();
+                }
+              });
       threads[i].start();
     }
     Thread.sleep(2500);

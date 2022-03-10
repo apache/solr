@@ -21,16 +21,13 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCredentialsProvider.ZkCredentials;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- */
+/** */
 public abstract class ZkClientConnectionStrategy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -40,8 +37,13 @@ public abstract class ZkClientConnectionStrategy {
   private List<DisconnectedListener> disconnectedListeners = new ArrayList<>();
   private List<ConnectedListener> connectedListeners = new ArrayList<>();
 
-  public abstract void connect(String zkServerAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException;
-  public abstract void reconnect(String serverAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException;
+  public abstract void connect(
+      String zkServerAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater)
+      throws IOException, InterruptedException, TimeoutException;
+
+  public abstract void reconnect(
+      String serverAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater)
+      throws IOException, InterruptedException, TimeoutException;
 
   public ZkClientConnectionStrategy() {
     zkCredentialsToAddAutomaticallyUsed = false;
@@ -75,7 +77,6 @@ public abstract class ZkClientConnectionStrategy {
     void connected();
   }
 
-
   public synchronized void addDisconnectedListener(DisconnectedListener listener) {
     disconnectedListeners.add(listener);
   }
@@ -92,9 +93,11 @@ public abstract class ZkClientConnectionStrategy {
     void update(SolrZooKeeper zooKeeper) throws InterruptedException, TimeoutException, IOException;
   }
 
-  public void setZkCredentialsToAddAutomatically(ZkCredentialsProvider zkCredentialsToAddAutomatically) {
+  public void setZkCredentialsToAddAutomatically(
+      ZkCredentialsProvider zkCredentialsToAddAutomatically) {
     if (zkCredentialsToAddAutomaticallyUsed || (zkCredentialsToAddAutomatically == null))
-      throw new RuntimeException("Cannot change zkCredentialsToAddAutomatically after it has been (connect or reconnect was called) used or to null");
+      throw new RuntimeException(
+          "Cannot change zkCredentialsToAddAutomatically after it has been (connect or reconnect was called) used or to null");
     this.zkCredentialsToAddAutomatically = zkCredentialsToAddAutomatically;
   }
 
@@ -102,10 +105,13 @@ public abstract class ZkClientConnectionStrategy {
     return zkCredentialsToAddAutomatically != null;
   }
 
-  public ZkCredentialsProvider getZkCredentialsToAddAutomatically() { return zkCredentialsToAddAutomatically; }
+  public ZkCredentialsProvider getZkCredentialsToAddAutomatically() {
+    return zkCredentialsToAddAutomatically;
+  }
 
-  protected SolrZooKeeper createSolrZooKeeper(final String serverAddress, final int zkClientTimeout,
-      final Watcher watcher) throws IOException {
+  protected SolrZooKeeper createSolrZooKeeper(
+      final String serverAddress, final int zkClientTimeout, final Watcher watcher)
+      throws IOException {
     SolrZooKeeper result = new SolrZooKeeper(serverAddress, zkClientTimeout, watcher);
 
     zkCredentialsToAddAutomaticallyUsed = true;
@@ -115,5 +121,4 @@ public abstract class ZkClientConnectionStrategy {
 
     return result;
   }
-
 }

@@ -17,6 +17,13 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.client.solrj.response.schema.SchemaResponse.*;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -35,14 +42,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.client.solrj.response.schema.SchemaResponse.*;
-
 public class RouteFieldTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -53,9 +52,7 @@ public class RouteFieldTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-managed"))
-        .configure();
+    configureCluster(1).addConfig("conf", configset("cloud-managed")).configure();
   }
 
   // Test for seeing if we actually respect the route field
@@ -66,23 +63,32 @@ public class RouteFieldTest extends SolrCloudTestCase {
   public void routeFieldTest() throws Exception {
     log.info("Starting routeFieldTest");
 
-    assertEquals("Failed to  create collection routeFieldTest",
+    assertEquals(
+        "Failed to  create collection routeFieldTest",
         0,
         CollectionAdminRequest.createCollection(COLL_ROUTE, "conf", 2, 1)
             .setRouterField(ROUTE_FIELD)
-            .process(cluster.getSolrClient()).getStatus());
+            .process(cluster.getSolrClient())
+            .getStatus());
 
     List<SchemaRequest.Update> updateList = new ArrayList<>();
-    updateList.add(new SchemaRequest.AddField(Map.of("name", ROUTE_FIELD, "type", "string", "indexed", "true", "stored", "true")));
-    updateList.add(new SchemaRequest.AddField(Map.of("name", "sorter", "type", "int", "indexed", "true", "stored", "true")));
+    updateList.add(
+        new SchemaRequest.AddField(
+            Map.of("name", ROUTE_FIELD, "type", "string", "indexed", "true", "stored", "true")));
+    updateList.add(
+        new SchemaRequest.AddField(
+            Map.of("name", "sorter", "type", "int", "indexed", "true", "stored", "true")));
     SchemaRequest.MultiUpdate multiUpdateRequest = new SchemaRequest.MultiUpdate(updateList);
-    UpdateResponse multipleUpdatesResponse = multiUpdateRequest.process(cluster.getSolrClient(), COLL_ROUTE);
+    UpdateResponse multipleUpdatesResponse =
+        multiUpdateRequest.process(cluster.getSolrClient(), COLL_ROUTE);
     assertNull("Error adding fields", multipleUpdatesResponse.getResponse().get("errors"));
 
-    assertEquals("Failed to  create collection routeIdTest"
-        , 0
-        , CollectionAdminRequest.createCollection(COLL_ID, "conf", 2, 1)
-            .process(cluster.getSolrClient()).getStatus());
+    assertEquals(
+        "Failed to  create collection routeIdTest",
+        0,
+        CollectionAdminRequest.createCollection(COLL_ID, "conf", 2, 1)
+            .process(cluster.getSolrClient())
+            .getStatus());
 
     // We now have two collections, add the same docs to each with the proper
     // fields so the id field is used in one collection and ROUTE_FIELD in the other..
@@ -138,7 +144,8 @@ public class RouteFieldTest extends SolrCloudTestCase {
     compareShardDocs(urlIdShard2, urlRouteShard2);
   }
 
-  private void compareShardDocs(String urlId, String urlRoute) throws IOException, SolrServerException {
+  private void compareShardDocs(String urlId, String urlRoute)
+      throws IOException, SolrServerException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     QueryRequest request = new QueryRequest(params);
     params.add("distrib", "false");
@@ -154,12 +161,17 @@ public class RouteFieldTest extends SolrCloudTestCase {
     SolrDocumentList docsRoute = (SolrDocumentList) httpSC.request(request).get("response");
     httpSC.close();
 
-    assertEquals("We should have the exact same number of docs on each shard", docsId.getNumFound(), docsRoute.getNumFound());
+    assertEquals(
+        "We should have the exact same number of docs on each shard",
+        docsId.getNumFound(),
+        docsRoute.getNumFound());
     for (int idx = 0; idx < docsId.getNumFound(); ++idx) {
       int idId = Integer.parseInt((String) docsId.get(idx).getFieldValue("id"));
       int idRoute = Integer.parseInt((String) docsRoute.get(idx).getFieldValue("id"));
-      assertEquals("Docs with Ids 1.5M different should be on exactly the same shard and in the same order when sorted",
-          idId, idRoute - 1_500_000);
+      assertEquals(
+          "Docs with Ids 1.5M different should be on exactly the same shard and in the same order when sorted",
+          idId,
+          idRoute - 1_500_000);
     }
   }
 }

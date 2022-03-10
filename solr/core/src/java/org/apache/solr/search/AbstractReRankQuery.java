@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -36,8 +35,8 @@ import org.apache.solr.request.SolrRequestInfo;
 
 public abstract class AbstractReRankQuery extends RankQuery {
   protected Query mainQuery;
-  final protected int reRankDocs;
-  final protected Rescorer reRankQueryRescorer;
+  protected final int reRankDocs;
+  protected final Rescorer reRankQueryRescorer;
   protected Set<BytesRef> boostedPriority;
 
   public AbstractReRankQuery(Query mainQuery, int reRankDocs, Rescorer reRankQueryRescorer) {
@@ -47,10 +46,10 @@ public abstract class AbstractReRankQuery extends RankQuery {
   }
 
   public RankQuery wrap(Query _mainQuery) {
-    if(_mainQuery != null){
+    if (_mainQuery != null) {
       this.mainQuery = _mainQuery;
     }
-    return  this;
+    return this;
   }
 
   public MergeStrategy getMergeStrategy() {
@@ -58,16 +57,18 @@ public abstract class AbstractReRankQuery extends RankQuery {
   }
 
   @SuppressWarnings({"unchecked"})
-  public TopDocsCollector<ScoreDoc> getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
-    if(this.boostedPriority == null) {
+  public TopDocsCollector<ScoreDoc> getTopDocsCollector(
+      int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
+    if (this.boostedPriority == null) {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-      if(info != null) {
-        Map<Object,Object> context = info.getReq().getContext();
-        this.boostedPriority = (Set<BytesRef>)context.get(QueryElevationComponent.BOOSTED);
+      if (info != null) {
+        Map<Object, Object> context = info.getReq().getContext();
+        this.boostedPriority = (Set<BytesRef>) context.get(QueryElevationComponent.BOOSTED);
       }
     }
 
-    return new ReRankCollector(reRankDocs, len, reRankQueryRescorer, cmd, searcher, boostedPriority);
+    return new ReRankCollector(
+        reRankDocs, len, reRankQueryRescorer, cmd, searcher, boostedPriority);
   }
 
   public Query rewrite(IndexReader reader) throws IOException {
@@ -81,7 +82,8 @@ public abstract class AbstractReRankQuery extends RankQuery {
   protected abstract Query rewrite(Query rewrittenMainQuery) throws IOException;
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException{
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     final Weight mainWeight = mainQuery.createWeight(searcher, scoreMode, boost);
     return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, mainWeight);
   }

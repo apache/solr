@@ -23,7 +23,8 @@ import java.util.function.LongSupplier;
 
 public class LongCheckedDataWriter extends ReductionCheckedDataWriter<LongSupplier> {
 
-  public LongCheckedDataWriter(DataOutput output, LongSupplier extractor, BooleanSupplier existsSupplier) {
+  public LongCheckedDataWriter(
+      DataOutput output, LongSupplier extractor, BooleanSupplier existsSupplier) {
     super(output, extractor, existsSupplier);
   }
 

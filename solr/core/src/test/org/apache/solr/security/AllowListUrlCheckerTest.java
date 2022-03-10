@@ -17,9 +17,9 @@
 
 package org.apache.solr.security;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.junit.Test;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 
 import java.net.MalformedURLException;
 import java.util.Arrays;
@@ -27,10 +27,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.junit.Test;
 
 /** Tests {@link AllowListUrlChecker}. */
 public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {

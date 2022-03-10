@@ -18,14 +18,9 @@ package org.apache.solr.analytics.function.mapping;
 
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.function.mapping.DecimalNumericConversionFunction.FloorFunction;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
-import org.apache.solr.analytics.value.IntValue;
-import org.apache.solr.analytics.value.IntValueStream;
-import org.apache.solr.analytics.value.LongValue;
-import org.apache.solr.analytics.value.LongValueStream;
 import org.apache.solr.analytics.value.FillableTestValue.TestDoubleValue;
 import org.apache.solr.analytics.value.FillableTestValue.TestDoubleValueStream;
 import org.apache.solr.analytics.value.FillableTestValue.TestFloatValue;
@@ -34,6 +29,10 @@ import org.apache.solr.analytics.value.FillableTestValue.TestIntValue;
 import org.apache.solr.analytics.value.FillableTestValue.TestIntValueStream;
 import org.apache.solr.analytics.value.FillableTestValue.TestLongValue;
 import org.apache.solr.analytics.value.FillableTestValue.TestLongValueStream;
+import org.apache.solr.analytics.value.IntValue;
+import org.apache.solr.analytics.value.IntValueStream;
+import org.apache.solr.analytics.value.LongValue;
+import org.apache.solr.analytics.value.LongValueStream;
 import org.junit.Test;
 
 public class FloorFunctionTest extends SolrTestCaseJ4 {
@@ -42,7 +41,8 @@ public class FloorFunctionTest extends SolrTestCaseJ4 {
   public void singleValueFloatParameterTest() {
     TestFloatValue val = new TestFloatValue();
 
-    AnalyticsValueStream uncasted = FloorFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        FloorFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof IntValue);
     IntValue func = (IntValue) uncasted;
 
@@ -65,7 +65,8 @@ public class FloorFunctionTest extends SolrTestCaseJ4 {
   public void singleValueDoubleParameterTest() {
     TestDoubleValue val = new TestDoubleValue();
 
-    AnalyticsValueStream uncasted = FloorFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        FloorFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof LongValue);
     LongValue func = (LongValue) uncasted;
 
@@ -88,32 +89,36 @@ public class FloorFunctionTest extends SolrTestCaseJ4 {
   public void multiValueFloatParameterTest() {
     TestFloatValueStream val = new TestFloatValueStream();
 
-    AnalyticsValueStream uncasted = FloorFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        FloorFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof IntValueStream);
     IntValueStream func = (IntValueStream) uncasted;
 
     // No values
     val.setValues();
-    func.streamInts( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     val.setValues(-4F);
     Iterator<Integer> values1 = Arrays.asList(-4).iterator();
-    func.streamInts( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next().intValue(), value);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next().intValue(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Multiple values
     val.setValues(4F, -10.9999F, 50.00001F, 74.99999F);
     Iterator<Integer> values2 = Arrays.asList(4, -11, 50, 74).iterator();
-    func.streamInts( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next().intValue(), value);
-    });
+    func.streamInts(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next().intValue(), value);
+        });
     assertFalse(values2.hasNext());
   }
 
@@ -121,32 +126,36 @@ public class FloorFunctionTest extends SolrTestCaseJ4 {
   public void multiValueDoubleParameterTest() {
     TestDoubleValueStream val = new TestDoubleValueStream();
 
-    AnalyticsValueStream uncasted = FloorFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
+    AnalyticsValueStream uncasted =
+        FloorFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof LongValueStream);
     LongValueStream func = (LongValueStream) uncasted;
 
     // No values
     val.setValues();
-    func.streamLongs( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // One value
     val.setValues(-4);
     Iterator<Long> values1 = Arrays.asList(-4L).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values1.hasNext());
-      assertEquals(values1.next().longValue(), value);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue(values1.hasNext());
+          assertEquals(values1.next().longValue(), value);
+        });
     assertFalse(values1.hasNext());
 
     // Multiple values
     val.setValues(4, -10.9999, 50.000001, 74.99999);
     Iterator<Long> values2 = Arrays.asList(4L, -11L, 50L, 74L).iterator();
-    func.streamLongs( value -> {
-      assertTrue(values2.hasNext());
-      assertEquals(values2.next().longValue(), value);
-    });
+    func.streamLongs(
+        value -> {
+          assertTrue(values2.hasNext());
+          assertEquals(values2.next().longValue(), value);
+        });
     assertFalse(values2.hasNext());
   }
 
@@ -175,6 +184,4 @@ public class FloorFunctionTest extends SolrTestCaseJ4 {
     assertTrue(result instanceof LongValueStream);
     assertEquals(param, result);
   }
-
-
 }

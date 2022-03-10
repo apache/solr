@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -32,22 +31,22 @@ import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.LTRScoringQuery;
 
 /**
- * Implements the rescoring logic. The top documents returned by solr with their
- * original scores, will be processed by a {@link LTRScoringQuery} that will assign a
- * new score to each document. The top documents will be resorted based on the
- * new score.
- * */
+ * Implements the rescoring logic. The top documents returned by solr with their original scores,
+ * will be processed by a {@link LTRScoringQuery} that will assign a new score to each document. The
+ * top documents will be resorted based on the new score.
+ */
 public class LTRInterleavingRescorer extends LTRRescorer {
-  
-  final private LTRInterleavingScoringQuery[] rerankingQueries;
+
+  private final LTRInterleavingScoringQuery[] rerankingQueries;
   private Integer originalRankingIndex = null;
-  final private Interleaving interleavingAlgorithm;
-  
-  public LTRInterleavingRescorer( Interleaving interleavingAlgorithm, LTRInterleavingScoringQuery[] rerankingQueries) {
+  private final Interleaving interleavingAlgorithm;
+
+  public LTRInterleavingRescorer(
+      Interleaving interleavingAlgorithm, LTRInterleavingScoringQuery[] rerankingQueries) {
     this.rerankingQueries = rerankingQueries;
     this.interleavingAlgorithm = interleavingAlgorithm;
-    for(int i=0;i<this.rerankingQueries.length;i++){
-      if(this.rerankingQueries[i] instanceof OriginalRankingLTRScoringQuery){
+    for (int i = 0; i < this.rerankingQueries.length; i++) {
+      if (this.rerankingQueries[i] instanceof OriginalRankingLTRScoringQuery) {
         this.originalRankingIndex = i;
       }
     }
@@ -56,34 +55,34 @@ public class LTRInterleavingRescorer extends LTRRescorer {
   /**
    * rescores the documents:
    *
-   * @param searcher
-   *          current IndexSearcher
-   * @param firstPassTopDocs
-   *          documents to rerank;
-   * @param topN
-   *          documents to return;
+   * @param searcher current IndexSearcher
+   * @param firstPassTopDocs documents to rerank;
+   * @param topN documents to return;
    */
   @Override
-  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs,
-      int topN) throws IOException {
+  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN)
+      throws IOException {
     if ((topN == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
       return firstPassTopDocs;
     }
 
     ScoreDoc[] firstPassResults = null;
-    if(originalRankingIndex != null) {
+    if (originalRankingIndex != null) {
       firstPassResults = new ScoreDoc[firstPassTopDocs.scoreDocs.length];
-      System.arraycopy(firstPassTopDocs.scoreDocs, 0, firstPassResults, 0, firstPassTopDocs.scoreDocs.length);
+      System.arraycopy(
+          firstPassTopDocs.scoreDocs, 0, firstPassResults, 0, firstPassTopDocs.scoreDocs.length);
     }
     topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
 
-    ScoreDoc[][] reRankedPerModel = rerank(searcher,topN,getFirstPassDocsRanked(firstPassTopDocs));
+    ScoreDoc[][] reRankedPerModel =
+        rerank(searcher, topN, getFirstPassDocsRanked(firstPassTopDocs));
     if (originalRankingIndex != null) {
       reRankedPerModel[originalRankingIndex] = firstPassResults;
     }
-    InterleavingResult interleaved = interleavingAlgorithm.interleave(reRankedPerModel[0], reRankedPerModel[1]);
+    InterleavingResult interleaved =
+        interleavingAlgorithm.interleave(reRankedPerModel[0], reRankedPerModel[1]);
     ScoreDoc[] interleavedResults = interleaved.getInterleavedResults();
-    
+
     ArrayList<Set<Integer>> interleavingPicks = interleaved.getInterleavingPicks();
     rerankingQueries[0].setPickedInterleavingDocIds(interleavingPicks.get(0));
     rerankingQueries[1].setPickedInterleavingDocIds(interleavingPicks.get(1));
@@ -91,14 +90,17 @@ public class LTRInterleavingRescorer extends LTRRescorer {
     return new TopDocs(firstPassTopDocs.totalHits, interleavedResults);
   }
 
-  private ScoreDoc[][] rerank(IndexSearcher searcher, int topN, ScoreDoc[] firstPassResults) throws IOException {
+  private ScoreDoc[][] rerank(IndexSearcher searcher, int topN, ScoreDoc[] firstPassResults)
+      throws IOException {
     ScoreDoc[][] reRankedPerModel = new ScoreDoc[rerankingQueries.length][topN];
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
-    LTRScoringQuery.ModelWeight[] modelWeights = new LTRScoringQuery.ModelWeight[rerankingQueries.length];
+    LTRScoringQuery.ModelWeight[] modelWeights =
+        new LTRScoringQuery.ModelWeight[rerankingQueries.length];
     for (int i = 0; i < rerankingQueries.length; i++) {
       if (originalRankingIndex == null || originalRankingIndex != i) {
-        modelWeights[i] = (LTRScoringQuery.ModelWeight) searcher
-            .createWeight(searcher.rewrite(rerankingQueries[i]), ScoreMode.COMPLETE, 1);
+        modelWeights[i] =
+            (LTRScoringQuery.ModelWeight)
+                searcher.createWeight(searcher.rewrite(rerankingQueries[i]), ScoreMode.COMPLETE, 1);
       }
     }
     scoreFeatures(searcher, topN, modelWeights, firstPassResults, leaves, reRankedPerModel);
@@ -112,15 +114,21 @@ public class LTRInterleavingRescorer extends LTRRescorer {
     return reRankedPerModel;
   }
 
-  public void scoreFeatures(IndexSearcher indexSearcher,
-                            int topN, LTRScoringQuery.ModelWeight[] modelWeights, ScoreDoc[] hits, List<LeafReaderContext> leaves,
-                            ScoreDoc[][] rerankedPerModel) throws IOException {
+  public void scoreFeatures(
+      IndexSearcher indexSearcher,
+      int topN,
+      LTRScoringQuery.ModelWeight[] modelWeights,
+      ScoreDoc[] hits,
+      List<LeafReaderContext> leaves,
+      ScoreDoc[][] rerankedPerModel)
+      throws IOException {
 
     int readerUpto = -1;
     int endDoc = 0;
     int docBase = 0;
     int hitUpto = 0;
-    LTRScoringQuery.ModelWeight.ModelScorer[] scorers = new LTRScoringQuery.ModelWeight.ModelScorer[rerankingQueries.length];
+    LTRScoringQuery.ModelWeight.ModelScorer[] scorers =
+        new LTRScoringQuery.ModelWeight.ModelScorer[rerankingQueries.length];
     while (hitUpto < hits.length) {
       final ScoreDoc hit = hits[hitUpto];
       final int docID = hit.doc;
@@ -143,24 +151,23 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       for (int i = 0; i < rerankingQueries.length; i++) {
         if (modelWeights[i] != null) {
           final ScoreDoc hit_i = new ScoreDoc(hit.doc, hit.score, hit.shardIndex);
-          if (scoreSingleHit(topN, docBase, hitUpto, hit_i, docID, scorers[i], rerankedPerModel[i])) {
+          if (scoreSingleHit(
+              topN, docBase, hitUpto, hit_i, docID, scorers[i], rerankedPerModel[i])) {
             logSingleHit(indexSearcher, modelWeights[i], hit_i.doc, rerankingQueries[i]);
           }
         }
       }
       hitUpto++;
     }
-
   }
-  
+
   @Override
-  public Explanation explain(IndexSearcher searcher,
-                             Explanation firstPassExplanation, int docID) throws IOException {
+  public Explanation explain(IndexSearcher searcher, Explanation firstPassExplanation, int docID)
+      throws IOException {
     LTRScoringQuery pickedRerankModel = rerankingQueries[0];
     if (rerankingQueries[1].getPickedInterleavingDocIds().contains(docID)) {
       pickedRerankModel = rerankingQueries[1];
     }
     return getExplanation(searcher, docID, pickedRerankModel);
   }
-
 }

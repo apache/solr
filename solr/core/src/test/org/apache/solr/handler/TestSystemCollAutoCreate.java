@@ -17,11 +17,9 @@
 
 package org.apache.solr.handler;
 
-
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 
 public class TestSystemCollAutoCreate extends AbstractFullDistribZkTestBase {
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testAutoCreate() throws Exception {
     TestBlobHandler.checkBlobPost(cloudJettys.get(0).jetty.getBaseUrl().toExternalForm(), cloudClient);
   }

@@ -18,7 +18,6 @@ package org.apache.solr.cloud.api.collections;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -30,9 +29,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Verifies cluster state remains consistent after collection reload.
- */
+/** Verifies cluster state remains consistent after collection reload. */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class CollectionReloadTest extends SolrCloudTestCase {
 
@@ -40,11 +37,9 @@ public class CollectionReloadTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
   }
-  
+
   @Test
   public void testReloadedLeaderStateAfterZkSessionLoss() throws Exception {
 
@@ -60,26 +55,35 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     long coreStartTime = getCoreStatus(leader).getCoreStartTime().getTime();
     CollectionAdminRequest.reloadCollection(testCollectionName).process(cluster.getSolrClient());
 
-    RetryUtil.retryUntil("Timed out waiting for core to reload", 30, 1000, TimeUnit.MILLISECONDS, () -> {
-      long restartTime = 0;
-      try {
-        restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
-      } catch (Exception e) {
-        log.warn("Exception getting core start time: ", e);
-        return false;
-      }
-      return restartTime > coreStartTime;
-    });
+    RetryUtil.retryUntil(
+        "Timed out waiting for core to reload",
+        30,
+        1000,
+        TimeUnit.MILLISECONDS,
+        () -> {
+          long restartTime = 0;
+          try {
+            restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+          } catch (Exception e) {
+            log.warn("Exception getting core start time: ", e);
+            return false;
+          }
+          return restartTime > coreStartTime;
+        });
 
     final int initialStateVersion = getCollectionState(testCollectionName).getZNodeVersion();
 
     cluster.expireZkSession(cluster.getReplicaJetty(leader));
 
-    waitForState("Timed out waiting for core to re-register as ACTIVE after session expiry", testCollectionName, (n, c) -> {
-      log.info("Collection state: {}", c);
-      Replica expiredReplica = c.getReplica(leader.getName());
-      return expiredReplica.getState() == Replica.State.ACTIVE && c.getZNodeVersion() > initialStateVersion;
-    });
+    waitForState(
+        "Timed out waiting for core to re-register as ACTIVE after session expiry",
+        testCollectionName,
+        (n, c) -> {
+          log.info("Collection state: {}", c);
+          Replica expiredReplica = c.getReplica(leader.getName());
+          return expiredReplica.getState() == Replica.State.ACTIVE
+              && c.getZNodeVersion() > initialStateVersion;
+        });
 
     log.info("testReloadedLeaderStateAfterZkSessionLoss succeeded ... shutting down now!");
   }

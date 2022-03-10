@@ -16,11 +16,7 @@
  */
 package org.apache.solr.handler.extraction;
 
-
-/**
- * Constants used internally by the {@link ExtractingRequestHandler}.
- *
- **/
+/** Constants used internally by the {@link ExtractingRequestHandler}. */
 public interface ExtractingMetadataConstants {
   String STREAM_NAME = "stream_name";
   String STREAM_SOURCE_INFO = "stream_source_info";

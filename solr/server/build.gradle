@@ -30,39 +30,66 @@ configurations {
 }
 
 dependencies {
+  // If any of the below "api" declared dependencies are
+  // used in core/build.gradle, then they must be declared
+  // as "compileOnlyApi" in core/build.gradle.
+
+  permitUnusedDeclared 'io.dropwizard.metrics:metrics-core'
+  api('io.dropwizard.metrics:metrics-core', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
+  permitUnusedDeclared 'io.dropwizard.metrics:metrics-graphite'
+  api('io.dropwizard.metrics:metrics-graphite', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
+  permitUnusedDeclared 'io.dropwizard.metrics:metrics-jetty9'
+  api 'io.dropwizard.metrics:metrics-jetty9'
+  permitUnusedDeclared 'io.dropwizard.metrics:metrics-jvm'
+  api 'io.dropwizard.metrics:metrics-jvm'
+  permitUnusedDeclared 'io.dropwizard.metrics:metrics-jmx'
+  api 'io.dropwizard.metrics:metrics-jmx'
+
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-continuation'
+  api 'org.eclipse.jetty:jetty-continuation'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-deploy'
+  api 'org.eclipse.jetty:jetty-deploy'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-http'
+  api 'org.eclipse.jetty:jetty-http'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-io'
+  api 'org.eclipse.jetty:jetty-io'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-jmx'
+  api 'org.eclipse.jetty:jetty-jmx'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-rewrite'
+  api 'org.eclipse.jetty:jetty-rewrite'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-security'
+  api 'org.eclipse.jetty:jetty-security'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-server'
+  api 'org.eclipse.jetty:jetty-server'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-servlet'
+  api 'org.eclipse.jetty:jetty-servlet'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-servlets'
+  api 'org.eclipse.jetty:jetty-servlets'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-util'
+  api 'org.eclipse.jetty:jetty-util'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-webapp'
+  api 'org.eclipse.jetty:jetty-webapp'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-xml'
+  api 'org.eclipse.jetty:jetty-xml'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-alpn-server'
+  api 'org.eclipse.jetty:jetty-alpn-server'
+  permitUnusedDeclared 'org.eclipse.jetty:jetty-alpn-java-server'
   api('org.eclipse.jetty:jetty-alpn-java-server', {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
 
-  api('io.dropwizard.metrics:metrics-core', {
-    exclude group: "com.rabbitmq", module: "amqp-client"
-  })
-  api('io.dropwizard.metrics:metrics-graphite', {
-    exclude group: "com.rabbitmq", module: "amqp-client"
-  })
-  api 'io.dropwizard.metrics:metrics-jetty9'
-  api 'io.dropwizard.metrics:metrics-jvm'
-  api 'io.dropwizard.metrics:metrics-jmx'
-
-  api 'org.eclipse.jetty:jetty-continuation'
-  api 'org.eclipse.jetty:jetty-deploy'
-  api 'org.eclipse.jetty:jetty-http'
-  api 'org.eclipse.jetty:jetty-io'
-  api 'org.eclipse.jetty:jetty-jmx'
-  api 'org.eclipse.jetty:jetty-rewrite'
-  api 'org.eclipse.jetty:jetty-security'
-  api 'org.eclipse.jetty:jetty-server'
-  api 'org.eclipse.jetty:jetty-servlet'
-  api 'org.eclipse.jetty:jetty-servlets'
-  api 'org.eclipse.jetty:jetty-util'
-  api 'org.eclipse.jetty:jetty-webapp'
-  api 'org.eclipse.jetty:jetty-xml'
-  api 'org.eclipse.jetty:jetty-alpn-server'
-
+  permitUnusedDeclared 'org.eclipse.jetty.http2:http2-server'
   api 'org.eclipse.jetty.http2:http2-server'
+  permitUnusedDeclared 'org.eclipse.jetty.http2:http2-common'
   api 'org.eclipse.jetty.http2:http2-common'
+  permitUnusedDeclared 'org.eclipse.jetty.http2:http2-hpack'
   api 'org.eclipse.jetty.http2:http2-hpack'
 
+  permitUnusedDeclared 'javax.servlet:javax.servlet-api'
   api 'javax.servlet:javax.servlet-api'
 
   libExt 'com.lmax:disruptor'

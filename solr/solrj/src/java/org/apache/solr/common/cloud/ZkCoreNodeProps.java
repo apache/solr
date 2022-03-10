@@ -20,15 +20,15 @@ import java.util.Objects;
 
 public class ZkCoreNodeProps {
   private final ZkNodeProps nodeProps;
-  
+
   public ZkCoreNodeProps(ZkNodeProps nodeProps) {
     this.nodeProps = nodeProps;
   }
-  
+
   public String getCoreUrl() {
     return getCoreUrl(this.nodeProps);
   }
-  
+
   public String getNodeName() {
     return nodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
   }
@@ -40,29 +40,30 @@ public class ZkCoreNodeProps {
   public String getBaseUrl() {
     return getBaseUrl(this.nodeProps);
   }
-  
+
   public String getCoreName() {
     return nodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
   }
 
   private static String getBaseUrl(ZkNodeProps nodeProps) {
-    String baseUrl = null;
-    final String nodeName = nodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
-    if (nodeName != null) {
-      baseUrl = UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName);
-    } else if (nodeProps.containsKey(ZkStateReader.BASE_URL_PROP)) {
-      baseUrl = UrlScheme.INSTANCE.applyUrlScheme(nodeProps.getStr(ZkStateReader.BASE_URL_PROP));
+    // if storing baseUrl in ZK is enabled and it's stored, just use what's stored, i.e. no
+    // self-healing here
+    String baseUrl = nodeProps.getStr(ZkStateReader.BASE_URL_PROP);
+    if (baseUrl == null) {
+      throw new IllegalStateException("base_url not set in: " + nodeProps);
     }
     return baseUrl;
   }
-  
+
   public static String getCoreUrl(ZkNodeProps nodeProps) {
     String baseUrl = getBaseUrl(nodeProps);
-    return baseUrl != null ? getCoreUrl(baseUrl, nodeProps.getStr(ZkStateReader.CORE_NAME_PROP)) : null;
+    return baseUrl != null
+        ? getCoreUrl(baseUrl, nodeProps.getStr(ZkStateReader.CORE_NAME_PROP))
+        : null;
   }
-  
+
   public static String getCoreUrl(String baseUrl, String coreName) {
-    Objects.requireNonNull(baseUrl,"baseUrl must not be null");
+    Objects.requireNonNull(baseUrl, "baseUrl must not be null");
     StringBuilder sb = new StringBuilder();
     sb.append(baseUrl);
     if (!baseUrl.endsWith("/")) sb.append("/");

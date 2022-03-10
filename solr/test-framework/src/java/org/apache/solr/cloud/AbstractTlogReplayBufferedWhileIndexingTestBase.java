@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.SolrInputDocument;
@@ -30,7 +29,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public abstract class AbstractTlogReplayBufferedWhileIndexingTestBase extends AbstractFullDistribZkTestBase {
+public abstract class AbstractTlogReplayBufferedWhileIndexingTestBase
+    extends AbstractFullDistribZkTestBase {
 
   private List<StoppableIndexingThread> threads;
 
@@ -38,7 +38,7 @@ public abstract class AbstractTlogReplayBufferedWhileIndexingTestBase extends Ab
     super();
     sliceCount = 1;
     fixShardCount(2);
-    schemaString = "schema15.xml";      // we need a string id
+    schemaString = "schema15.xml"; // we need a string id
   }
 
   @BeforeClass
@@ -79,7 +79,15 @@ public abstract class AbstractTlogReplayBufferedWhileIndexingTestBase extends Ab
     for (int i = 0; i < numThreads; i++) {
       boolean pauseBetweenUpdates = random().nextBoolean();
       int batchSize = random().nextInt(4) + 1;
-      indexThread = new StoppableIndexingThread(controlClient, cloudClient, Integer.toString(i), true, 900, batchSize, pauseBetweenUpdates);
+      indexThread =
+          new StoppableIndexingThread(
+              controlClient,
+              cloudClient,
+              Integer.toString(i),
+              true,
+              900,
+              batchSize,
+              pauseBetweenUpdates);
       threads.add(indexThread);
       indexThread.start();
     }
@@ -90,7 +98,8 @@ public abstract class AbstractTlogReplayBufferedWhileIndexingTestBase extends Ab
 
     Thread.sleep(45000);
 
-    waitForThingsToLevelOut(); // we can insert random update delays, so this can take a while, especially when beasting this test
+    waitForThingsToLevelOut(); // we can insert random update delays, so this can take a while,
+    // especially when beasting this test
 
     Thread.sleep(2000);
 
@@ -103,15 +112,12 @@ public abstract class AbstractTlogReplayBufferedWhileIndexingTestBase extends Ab
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     checkShardConsistency(false, false);
-
   }
 
   @Override
-  protected void indexDoc(SolrInputDocument doc) throws IOException,
-      SolrServerException {
+  protected void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
     cloudClient.add(doc);
   }
-
 
   @Override
   public void distribTearDown() throws Exception {

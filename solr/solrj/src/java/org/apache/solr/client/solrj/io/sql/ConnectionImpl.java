@@ -36,7 +36,6 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 
@@ -52,7 +51,8 @@ class ConnectionImpl implements Connection {
   private boolean closed;
   private SQLWarning currentWarning;
 
-  ConnectionImpl(String url, String zkHost, String collection, Properties properties) throws SQLException {
+  ConnectionImpl(String url, String zkHost, String collection, Properties properties)
+      throws SQLException {
     this.url = url;
     this.client = this.solrClientCache.getCloudSolrClient(zkHost);
     this.collection = collection;
@@ -102,9 +102,7 @@ class ConnectionImpl implements Connection {
   }
 
   @Override
-  public void setAutoCommit(boolean autoCommit) throws SQLException {
-
-  }
+  public void setAutoCommit(boolean autoCommit) throws SQLException {}
 
   @Override
   public boolean getAutoCommit() throws SQLException {
@@ -112,25 +110,21 @@ class ConnectionImpl implements Connection {
   }
 
   @Override
-  public void commit() throws SQLException {
-
-  }
+  public void commit() throws SQLException {}
 
   @Override
-  public void rollback() throws SQLException {
-
-  }
+  public void rollback() throws SQLException {}
 
   @Override
   public void close() throws SQLException {
-    if(closed) {
+    if (closed) {
       return;
     }
 
     this.closed = true;
 
     try {
-      if(this.connectionStatement != null) {
+      if (this.connectionStatement != null) {
         this.connectionStatement.close();
       }
     } finally {
@@ -151,18 +145,14 @@ class ConnectionImpl implements Connection {
   }
 
   @Override
-  public void setReadOnly(boolean readOnly) throws SQLException {
-
-  }
+  public void setReadOnly(boolean readOnly) throws SQLException {}
 
   /*
    * When using OpenLink ODBC-JDBC bridge on Windows, it runs the method ConnectionImpl.setReadOnly(String ...).
    * The spec says that setReadOnly(boolean ...) is required. This causes the ODBC-JDBC bridge to fail on Windows.
    * OpenLink case: http://support.openlinksw.com/support/techupdate.vsp?c=21881
    */
-  public void setReadOnly(String readOnly) throws SQLException {
-
-  }
+  public void setReadOnly(String readOnly) throws SQLException {}
 
   @Override
   public boolean isReadOnly() throws SQLException {
@@ -170,9 +160,7 @@ class ConnectionImpl implements Connection {
   }
 
   @Override
-  public void setCatalog(String catalog) throws SQLException {
-
-  }
+  public void setCatalog(String catalog) throws SQLException {}
 
   @Override
   public String getCatalog() throws SQLException {
@@ -181,18 +169,16 @@ class ConnectionImpl implements Connection {
 
   @Override
   public void setTransactionIsolation(int level) throws SQLException {
-    if(isClosed()) {
+    if (isClosed()) {
       throw new SQLException("Connection is closed.");
     }
-    if(Connection.TRANSACTION_NONE == level) {
+    if (Connection.TRANSACTION_NONE == level) {
       throw new SQLException("Connection.TRANSACTION_NONE cannot be used.");
     }
-    if(
-        Connection.TRANSACTION_READ_COMMITTED == level ||
-        Connection.TRANSACTION_READ_UNCOMMITTED == level ||
-        Connection.TRANSACTION_REPEATABLE_READ == level ||
-        Connection.TRANSACTION_SERIALIZABLE == level
-    ) {
+    if (Connection.TRANSACTION_READ_COMMITTED == level
+        || Connection.TRANSACTION_READ_UNCOMMITTED == level
+        || Connection.TRANSACTION_REPEATABLE_READ == level
+        || Connection.TRANSACTION_SERIALIZABLE == level) {
       throw new SQLException(new UnsupportedOperationException());
     } else {
       throw new SQLException("Unsupported transaction type specified.");
@@ -201,7 +187,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public int getTransactionIsolation() throws SQLException {
-    if(isClosed()) {
+    if (isClosed()) {
       throw new SQLException("Connection is closed.");
     }
     return Connection.TRANSACTION_NONE;
@@ -209,7 +195,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    if(isClosed()) {
+    if (isClosed()) {
       throw new SQLException("Connection is closed.");
     }
 
@@ -218,7 +204,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public void clearWarnings() throws SQLException {
-    if(isClosed()) {
+    if (isClosed()) {
       throw new SQLException("Connection is closed.");
     }
 
@@ -226,17 +212,20 @@ class ConnectionImpl implements Connection {
   }
 
   @Override
-  public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
+  public Statement createStatement(int resultSetType, int resultSetConcurrency)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+  public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+  public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 
@@ -281,17 +270,22 @@ class ConnectionImpl implements Connection {
   }
 
   @Override
-  public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+  public Statement createStatement(
+      int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+  public PreparedStatement prepareStatement(
+      String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+  public CallableStatement prepareCall(
+      String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 
@@ -334,7 +328,7 @@ class ConnectionImpl implements Connection {
   public boolean isValid(int timeout) throws SQLException {
     // check that the connection isn't closed and able to connect within the timeout
     try {
-      if(!isClosed()) {
+      if (!isClosed()) {
         if (timeout == 0) {
           this.client.connect();
         } else {
@@ -342,7 +336,7 @@ class ConnectionImpl implements Connection {
         }
         return true;
       }
-    } catch (InterruptedException|TimeoutException ignore) {
+    } catch (InterruptedException | TimeoutException ignore) {
       // Ignore error since connection is not valid
     }
     return false;
@@ -379,9 +373,7 @@ class ConnectionImpl implements Connection {
   }
 
   @Override
-  public void setSchema(String schema) throws SQLException {
-
-  }
+  public void setSchema(String schema) throws SQLException {}
 
   @Override
   public String getSchema() throws SQLException {

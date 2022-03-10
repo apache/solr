@@ -17,14 +17,13 @@
 
 package org.apache.solr.metrics;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
@@ -48,10 +47,12 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     String toName = "to-" + TestUtil.randomSimpleString(r, 1, 10);
     // register test metrics
     for (Map.Entry<String, Counter> entry : metrics1.entrySet()) {
-      metricManager.registerMetric(null, fromName, entry.getValue(), false, entry.getKey(), "metrics1");
+      metricManager.registerMetric(
+          null, fromName, entry.getValue(), false, entry.getKey(), "metrics1");
     }
     for (Map.Entry<String, Counter> entry : metrics2.entrySet()) {
-      metricManager.registerMetric(null, toName, entry.getValue(), false, entry.getKey(), "metrics2");
+      metricManager.registerMetric(
+          null, toName, entry.getValue(), false, entry.getKey(), "metrics2");
     }
     assertEquals(metrics1.size(), metricManager.registry(fromName).getMetrics().size());
     assertEquals(metrics2.size(), metricManager.registry(toName).getMetrics().size());
@@ -96,7 +97,11 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     // this should re-register everything, and no errors
     metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.REPLACE);
     // this should produce error
-    expectThrows(IllegalArgumentException.class, () -> metricManager.registerAll(registryName, mr, SolrMetricManager.ResolutionStrategy.ERROR));
+    expectThrows(
+        IllegalArgumentException.class,
+        () ->
+            metricManager.registerAll(
+                registryName, mr, SolrMetricManager.ResolutionStrategy.ERROR));
   }
 
   @Test
@@ -109,13 +114,16 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     String registryName = TestUtil.randomSimpleString(r, 1, 10);
 
     for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-      metricManager.registerMetric(null, registryName, entry.getValue(), false, entry.getKey(), "foo", "bar");
+      metricManager.registerMetric(
+          null, registryName, entry.getValue(), false, entry.getKey(), "foo", "bar");
     }
     for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-      metricManager.registerMetric(null, registryName, entry.getValue(), false, entry.getKey(), "foo", "baz");
+      metricManager.registerMetric(
+          null, registryName, entry.getValue(), false, entry.getKey(), "foo", "baz");
     }
     for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-      metricManager.registerMetric(null, registryName, entry.getValue(), false, entry.getKey(), "foo");
+      metricManager.registerMetric(
+          null, registryName, entry.getValue(), false, entry.getKey(), "foo");
     }
 
     assertEquals(metrics.size() * 3, metricManager.registry(registryName).getMetrics().size());
@@ -170,7 +178,8 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     result = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, result);
     assertEquals("solr.core." + name + ".collection1", result);
     // try it with already prefixed name but with additional segments
-    result = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, result, "shard1", "replica1");
+    result =
+        SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, result, "shard1", "replica1");
     assertEquals("solr.core." + name + ".collection1.shard1.replica1", result);
   }
 
@@ -180,56 +189,64 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     try (SolrResourceLoader loader = new SolrResourceLoader(createTempDir())) {
       SolrMetricManager metricManager = new SolrMetricManager();
 
-      PluginInfo[] plugins = new PluginInfo[] {
-        createPluginInfo("universal_foo", null, null),
-        createPluginInfo("multigroup_foo", "jvm, node, core", null),
-        createPluginInfo("multiregistry_foo", null, "solr.node, solr.core.collection1"),
-        createPluginInfo("specific_foo", null, "solr.core.collection1"),
-        createPluginInfo("node_foo", "node", null),
-        createPluginInfo("core_foo", "core", null)
-      };
+      PluginInfo[] plugins =
+          new PluginInfo[] {
+            createPluginInfo("universal_foo", null, null),
+            createPluginInfo("multigroup_foo", "jvm, node, core", null),
+            createPluginInfo("multiregistry_foo", null, "solr.node, solr.core.collection1"),
+            createPluginInfo("specific_foo", null, "solr.core.collection1"),
+            createPluginInfo("node_foo", "node", null),
+            createPluginInfo("core_foo", "core", null)
+          };
       String tag = "xyz";
       metricManager.loadReporters(plugins, loader, null, null, tag, SolrInfoBean.Group.node);
-      Map<String, SolrMetricReporter> reporters = metricManager.getReporters
-        (SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
-          
+      Map<String, SolrMetricReporter> reporters =
+          metricManager.getReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+
       assertEquals(4, reporters.size());
       assertTrue(reporters.containsKey("universal_foo@" + tag));
       assertTrue(reporters.containsKey("multigroup_foo@" + tag));
       assertTrue(reporters.containsKey("node_foo@" + tag));
       assertTrue(reporters.containsKey("multiregistry_foo@" + tag));
-      
-      metricManager.loadReporters(plugins, loader, null, null, tag, SolrInfoBean.Group.core, "collection1");
-      reporters = metricManager.getReporters
-        (SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, "collection1"));
-          
+
+      metricManager.loadReporters(
+          plugins, loader, null, null, tag, SolrInfoBean.Group.core, "collection1");
+      reporters =
+          metricManager.getReporters(
+              SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, "collection1"));
+
       assertEquals(5, reporters.size());
       assertTrue(reporters.containsKey("universal_foo@" + tag));
       assertTrue(reporters.containsKey("multigroup_foo@" + tag));
       assertTrue(reporters.containsKey("specific_foo@" + tag));
       assertTrue(reporters.containsKey("core_foo@" + tag));
       assertTrue(reporters.containsKey("multiregistry_foo@" + tag));
-      
+
       metricManager.loadReporters(plugins, loader, null, null, tag, SolrInfoBean.Group.jvm);
-      reporters = metricManager.getReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm));
-                                             
+      reporters =
+          metricManager.getReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm));
+
       assertEquals(2, reporters.size());
       assertTrue(reporters.containsKey("universal_foo@" + tag));
       assertTrue(reporters.containsKey("multigroup_foo@" + tag));
-      
+
       metricManager.removeRegistry("solr.jvm");
-      reporters = metricManager.getReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm));
-                                             
+      reporters =
+          metricManager.getReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm));
+
       assertEquals(0, reporters.size());
-      
+
       metricManager.removeRegistry("solr.node");
-      reporters = metricManager.getReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
-                                             
+      reporters =
+          metricManager.getReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+
       assertEquals(0, reporters.size());
-      
+
       metricManager.removeRegistry("solr.core.collection1");
-      reporters = metricManager.getReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, "collection1"));
-                                             
+      reporters =
+          metricManager.getReporters(
+              SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, "collection1"));
+
       assertEquals(0, reporters.size());
     }
   }
@@ -240,7 +257,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   private PluginInfo createPluginInfo(String name, String group, String registry) {
-    Map<String,String> attrs = new HashMap<>();
+    Map<String, String> attrs = new HashMap<>();
     attrs.put("name", name);
     attrs.put("class", MockMetricReporter.class.getName());
     if (group != null) {

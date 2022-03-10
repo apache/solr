@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -30,7 +29,7 @@ import org.junit.Test;
 
 public abstract class AbstractRestartWhileUpdatingTestBase extends AbstractFullDistribZkTestBase {
 
-  //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
+  // private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";
   private List<StoppableIndexingThread> threads;
 
   private volatile boolean stopExpire = false;
@@ -39,12 +38,12 @@ public abstract class AbstractRestartWhileUpdatingTestBase extends AbstractFullD
     super();
     sliceCount = 1;
     fixShardCount(3);
-    schemaString = "schema15.xml";      // we need a string id
+    schemaString = "schema15.xml"; // we need a string id
     useFactory("solr.StandardDirectoryFactory");
   }
 
-  public static String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
-  public static RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
+  public static String[] fieldNames = new String[] {"f_i", "f_f", "f_d", "f_l", "f_dt"};
+  public static RandVal[] randVals = new RandVal[] {rint, rfloat, rdouble, rlong, rdate};
 
   protected String[] getFieldNames() {
     return fieldNames;
@@ -70,7 +69,6 @@ public abstract class AbstractRestartWhileUpdatingTestBase extends AbstractFullD
     System.clearProperty("solr.autoSoftCommit.maxTime");
   }
 
-
   @Test
   public void test() throws Exception {
     handle.clear();
@@ -80,46 +78,48 @@ public abstract class AbstractRestartWhileUpdatingTestBase extends AbstractFullD
 
     int[] maxDocList = new int[] {5000, 10000};
 
-
     int maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
 
     int numThreads = random().nextInt(4) + 1;
 
     threads = new ArrayList<>(numThreads);
 
-    Thread expireThread = new Thread("expireThread") {
-      public void run() {
-        while (!stopExpire) {
-          try {
-            Thread.sleep(random().nextInt(15000));
-          } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+    Thread expireThread =
+        new Thread("expireThread") {
+          public void run() {
+            while (!stopExpire) {
+              try {
+                Thread.sleep(random().nextInt(15000));
+              } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+              }
+
+              //          try {
+              //            chaosMonkey.expireRandomSession();
+              //          } catch (KeeperException e) {
+              //            throw new RuntimeException(e);
+              //          } catch (InterruptedException e) {
+              //            throw new RuntimeException(e);
+              //          }
+            }
           }
+        };
 
-//          try {
-//            chaosMonkey.expireRandomSession();
-//          } catch (KeeperException e) {
-//            throw new RuntimeException(e);
-//          } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//          }
-        }
-      }
-    };
-
-//  Currently unused
-//  expireThread.start();
+    //  Currently unused
+    //  expireThread.start();
 
     StoppableIndexingThread indexThread;
     for (int i = 0; i < numThreads; i++) {
-      indexThread = new StoppableIndexingThread(controlClient, cloudClient, Integer.toString(i), true, maxDoc, 1, true);
+      indexThread =
+          new StoppableIndexingThread(
+              controlClient, cloudClient, Integer.toString(i), true, maxDoc, 1, true);
       threads.add(indexThread);
       indexThread.start();
     }
 
     Thread.sleep(2000);
 
-    int restartTimes = 1;//random().nextInt(4) + 1;;
+    int restartTimes = 1; // random().nextInt(4) + 1;;
     for (int i = 0; i < restartTimes; i++) {
       Thread.sleep(random().nextInt(30000));
       stopAndStartAllReplicas();
@@ -168,11 +168,9 @@ public abstract class AbstractRestartWhileUpdatingTestBase extends AbstractFullD
   }
 
   @Override
-  protected void indexDoc(SolrInputDocument doc) throws IOException,
-      SolrServerException {
+  protected void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
     cloudClient.add(doc);
   }
-
 
   @Override
   public void distribTearDown() throws Exception {

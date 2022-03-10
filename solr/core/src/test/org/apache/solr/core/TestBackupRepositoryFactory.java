@@ -16,13 +16,12 @@
  */
 package org.apache.solr.core;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -39,10 +38,8 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
 public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-  @Rule
-  public ExpectedException expectedException = ExpectedException.none();
+  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+  @Rule public ExpectedException expectedException = ExpectedException.none();
 
   // tmp dir, cleaned up automatically.
   private static File solrHome = null;
@@ -68,7 +65,7 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
       Map<String, Object> attrs = new HashMap<>();
       attrs.put(CoreAdminParams.NAME, "repo1");
       attrs.put(FieldType.CLASS_NAME, "a.b.C");
-      attrs.put("default" , "true");
+      attrs.put("default", "true");
       plugins[0] = new PluginInfo("repository", attrs);
     }
 
@@ -76,7 +73,7 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
       Map<String, Object> attrs = new HashMap<>();
       attrs.put(CoreAdminParams.NAME, "repo2");
       attrs.put(FieldType.CLASS_NAME, "p.q.R");
-      attrs.put("default" , "true");
+      attrs.put("default", "true");
       plugins[1] = new PluginInfo("repository", attrs);
     }
 
@@ -93,7 +90,7 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
       Map<String, Object> attrs = new HashMap<>();
       attrs.put(CoreAdminParams.NAME, "repo1");
       attrs.put(FieldType.CLASS_NAME, "a.b.C");
-      attrs.put("default" , "true");
+      attrs.put("default", "true");
       plugins[0] = new PluginInfo("repository", attrs);
     }
 
@@ -127,7 +124,7 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
       Map<String, Object> attrs = new HashMap<>();
       attrs.put(CoreAdminParams.NAME, "repo1");
       attrs.put(FieldType.CLASS_NAME, LocalFileSystemRepository.class.getName());
-      attrs.put("default" , "true");
+      attrs.put("default", "true");
       attrs.put("location", "/tmp");
       plugins[0] = new PluginInfo("repository", attrs);
     }
@@ -149,7 +146,7 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
       assertTrue(repo instanceof LocalFileSystemRepository);
       assertEquals("/tmp", repo.getConfigProperty("location"));
     }
-    
+
     {
       try {
         BackupRepository repo = f.newInstance(loader, "boom");

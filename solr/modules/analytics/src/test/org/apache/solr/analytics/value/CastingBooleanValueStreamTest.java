@@ -18,7 +18,6 @@ package org.apache.solr.analytics.value;
 
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.FillableTestValue.TestBooleanValueStream;
 import org.junit.Test;
@@ -30,21 +29,23 @@ public class CastingBooleanValueStreamTest extends SolrTestCaseJ4 {
     TestBooleanValueStream val = new TestBooleanValueStream();
 
     assertTrue(val instanceof StringValueStream);
-    StringValueStream casted = (StringValueStream)val;
+    StringValueStream casted = (StringValueStream) val;
 
     // No values
     val.setValues();
-    casted.streamStrings( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    casted.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues(false, true, false);
     Iterator<String> values = Arrays.asList("false", "true", "false").iterator();
-    casted.streamStrings( value -> {
-      assertTrue(values.hasNext());
-      assertEquals(values.next(), value);
-    });
+    casted.streamStrings(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value);
+        });
     assertFalse(values.hasNext());
   }
 
@@ -53,21 +54,24 @@ public class CastingBooleanValueStreamTest extends SolrTestCaseJ4 {
     TestBooleanValueStream val = new TestBooleanValueStream();
 
     assertTrue(val instanceof AnalyticsValueStream);
-    AnalyticsValueStream casted = (AnalyticsValueStream)val;
+    AnalyticsValueStream casted = (AnalyticsValueStream) val;
 
     // No values
     val.setValues();
-    casted.streamObjects( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    casted.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValues(false, true, false);
-    Iterator<Object> values = Arrays.<Object>asList(Boolean.FALSE, Boolean.TRUE, Boolean.FALSE).iterator();
-    casted.streamObjects( value -> {
-      assertTrue(values.hasNext());
-      assertEquals(values.next(), value);
-    });
+    Iterator<Object> values =
+        Arrays.<Object>asList(Boolean.FALSE, Boolean.TRUE, Boolean.FALSE).iterator();
+    casted.streamObjects(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value);
+        });
     assertFalse(values.hasNext());
   }
 

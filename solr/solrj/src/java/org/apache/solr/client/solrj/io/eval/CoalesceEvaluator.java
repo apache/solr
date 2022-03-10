@@ -18,29 +18,33 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class CoalesceEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public CoalesceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public CoalesceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
-    if(containedEvaluators.size() < 1){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting at least one value but found %d",expression,containedEvaluators.size()));
+
+    if (containedEvaluators.size() < 1) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting at least one value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    for(Object value : values){
-      if(null != value){
+    for (Object value : values) {
+      if (null != value) {
         return value;
       }
     }
-    
+
     return null;
   }
 }

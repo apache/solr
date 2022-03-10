@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.commons.math3.ml.distance.CanberraDistance;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -28,11 +27,13 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class CanberraEvaluator extends RecursiveEvaluator {
   protected static final long serialVersionUID = 1L;
 
-  public CanberraEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public CanberraEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
-  public CanberraEvaluator(StreamExpression expression, StreamFactory factory, List<String> ignoredNamedParameters) throws IOException{
+  public CanberraEvaluator(
+      StreamExpression expression, StreamFactory factory, List<String> ignoredNamedParameters)
+      throws IOException {
     super(expression, factory, ignoredNamedParameters);
   }
 

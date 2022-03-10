@@ -19,10 +19,7 @@ package org.apache.solr.util.stats;
 
 import org.apache.http.HttpRequest;
 
-/**
- * Strategy for creating metric names for HttpClient
- * Copied from metrics-httpclient library
- */
+/** Strategy for creating metric names for HttpClient Copied from metrics-httpclient library */
 public interface HttpClientMetricNameStrategy {
   String getNameFor(String scope, HttpRequest request);
 }

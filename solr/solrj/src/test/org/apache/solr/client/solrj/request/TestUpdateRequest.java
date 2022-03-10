@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.request;
 
 import java.util.Arrays;
-
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,8 +25,7 @@ import org.junit.rules.ExpectedException;
 
 public class TestUpdateRequest {
 
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
+  @Rule public ExpectedException exception = ExpectedException.none();
 
   @Before
   public void expectException() {
@@ -64,5 +62,4 @@ public class TestUpdateRequest {
     UpdateRequest req = new UpdateRequest();
     req.add(Arrays.asList(new SolrInputDocument(), new SolrInputDocument(), null));
   }
-
 }

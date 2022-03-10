@@ -17,13 +17,14 @@
 package org.apache.solr.common;
 
 public class StringUtils {
-  
+
   public static boolean isEmpty(String s) {
     return (s == null) || s.isEmpty();
   }
 
   /**
-   * A "null-safe" equals method.  Returns true if the two provided references are both null, or if they are string-equal.
+   * A "null-safe" equals method. Returns true if the two provided references are both null, or if
+   * they are string-equal.
    */
   public static boolean equals(String first, String second) {
     if (first == null) {
@@ -31,5 +32,4 @@ public class StringUtils {
     }
     return first.equals(second);
   }
-
 }

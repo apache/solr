@@ -17,19 +17,21 @@
 
 package org.apache.solr.client.solrj.request.json;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Test;
-
 import static org.hamcrest.core.StringContains.containsString;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Test;
 
 public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidFieldName() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      new HeatmapFacetMap(null);
-    });
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new HeatmapFacetMap(null);
+            });
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
@@ -41,90 +43,100 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDoesntSupportSubfacets() {
-    final Throwable thrown = expectThrows(UnsupportedOperationException.class, () -> {
-      new HeatmapFacetMap("ANY_FIELD_NAME")
-          .withSubFacet("ANY_NAME", new TermsFacetMap("ANY_OTHER_FIELD_NAME"));
-    });
+    final Throwable thrown =
+        expectThrows(
+            UnsupportedOperationException.class,
+            () -> {
+              new HeatmapFacetMap("ANY_FIELD_NAME")
+                  .withSubFacet("ANY_NAME", new TermsFacetMap("ANY_OTHER_FIELD_NAME"));
+            });
     assertThat(thrown.getMessage(), containsString("doesn't currently support subfacets"));
   }
 
   @Test
   public void testRejectsInvalidRegionQueries() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      new HeatmapFacetMap("ANY_FIELD_NAME")
-          .setRegionQuery(null);
-    });
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new HeatmapFacetMap("ANY_FIELD_NAME").setRegionQuery(null);
+            });
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
   public void testStoresRegionQueryWithCorrectKey() {
-    final HeatmapFacetMap heatmapFacet = new HeatmapFacetMap("ANY_FIELD_NAME")
-        .setRegionQuery("[-120,-35 TO 50,60]");
+    final HeatmapFacetMap heatmapFacet =
+        new HeatmapFacetMap("ANY_FIELD_NAME").setRegionQuery("[-120,-35 TO 50,60]");
     assertEquals("[-120,-35 TO 50,60]", heatmapFacet.get("geom"));
   }
 
   @Test
   public void testRejectsInvalidCellSize() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      new HeatmapFacetMap("ANY_FIELD_NAME")
-          .setGridLevel(0);
-    });
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new HeatmapFacetMap("ANY_FIELD_NAME").setGridLevel(0);
+            });
     assertThat(thrown.getMessage(), containsString("must be a positive integer"));
   }
 
   @Test
   public void testStoresCellSizeWithCorrectKey() {
-    final HeatmapFacetMap heatmapFacet = new HeatmapFacetMap("ANY_FIELD_NAME")
-        .setGridLevel(42);
+    final HeatmapFacetMap heatmapFacet = new HeatmapFacetMap("ANY_FIELD_NAME").setGridLevel(42);
     assertEquals(42, heatmapFacet.get("gridLevel"));
   }
 
   @Test
   public void testRejectsInvalidDistanceError() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      new HeatmapFacetMap("ANY_FIELD_NAME")
-          .setDistErr(-1.0);
-    });
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new HeatmapFacetMap("ANY_FIELD_NAME").setDistErr(-1.0);
+            });
     assertThat(thrown.getMessage(), containsString("must be non-negative"));
   }
 
   @Test
   public void testStoresDistanceErrorWithCorrectKey() {
-    final HeatmapFacetMap heatmapFacet = new HeatmapFacetMap("ANY_FIELD_NAME")
-        .setDistErr(4.5);
+    final HeatmapFacetMap heatmapFacet = new HeatmapFacetMap("ANY_FIELD_NAME").setDistErr(4.5);
     assertEquals(4.5, heatmapFacet.get("distErr"));
   }
 
   @Test
   public void testRejectsInvalidDistanceErrorPercentageWithCorrectKey() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      new HeatmapFacetMap("ANY_FIELD_NAME")
-          .setDistErrPct(2.0);
-    });
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new HeatmapFacetMap("ANY_FIELD_NAME").setDistErrPct(2.0);
+            });
     assertThat(thrown.getMessage(), containsString("must be between 0.0 and 1.0"));
   }
 
   @Test
   public void testStoresDistanceErrorPercentageWithCorrectKey() {
-    final HeatmapFacetMap heatmapFacet = new HeatmapFacetMap("ANY_FIELD_NAME")
-        .setDistErrPct(0.45);
+    final HeatmapFacetMap heatmapFacet = new HeatmapFacetMap("ANY_FIELD_NAME").setDistErrPct(0.45);
     assertEquals(0.45, heatmapFacet.get("distErrPct"));
   }
 
   @Test
   public void testRejectsInvalidHeatmapFormat() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      new HeatmapFacetMap("ANY_FIELD_NAME")
-          .setHeatmapFormat(null);
-    });
+    final Throwable thrown =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new HeatmapFacetMap("ANY_FIELD_NAME").setHeatmapFormat(null);
+            });
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
   public void testStoresHeatmapFormatWithCorrectKey() {
-    final HeatmapFacetMap heatmapFacet = new HeatmapFacetMap("ANY_FIELD_NAME")
-        .setHeatmapFormat(HeatmapFacetMap.HeatmapFormat.PNG);
+    final HeatmapFacetMap heatmapFacet =
+        new HeatmapFacetMap("ANY_FIELD_NAME").setHeatmapFormat(HeatmapFacetMap.HeatmapFormat.PNG);
     assertEquals("png", heatmapFacet.get("format"));
   }
 }

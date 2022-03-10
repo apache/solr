@@ -18,7 +18,6 @@ package org.apache.solr.analytics.value;
 
 import java.util.Arrays;
 import java.util.Iterator;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.AnalyticsValueStream.ExpressionType;
 import org.apache.solr.analytics.value.FillableTestValue.TestDoubleValue;
@@ -32,7 +31,7 @@ public class CastingDoubleValueTest extends SolrTestCaseJ4 {
     TestDoubleValue val = new TestDoubleValue();
 
     assertTrue(val instanceof StringValue);
-    StringValue casted = (StringValue)val;
+    StringValue casted = (StringValue) val;
 
     val.setValue(20.0).setExists(true);
     assertEquals("20.0", casted.getString());
@@ -48,7 +47,7 @@ public class CastingDoubleValueTest extends SolrTestCaseJ4 {
     TestDoubleValue val = new TestDoubleValue();
 
     assertTrue(val instanceof AnalyticsValue);
-    AnalyticsValue casted = (AnalyticsValue)val;
+    AnalyticsValue casted = (AnalyticsValue) val;
 
     val.setValue(20.0).setExists(true);
     assertEquals(20.0d, casted.getObject());
@@ -64,21 +63,23 @@ public class CastingDoubleValueTest extends SolrTestCaseJ4 {
     TestDoubleValue val = new TestDoubleValue();
 
     assertTrue(val instanceof DoubleValueStream);
-    DoubleValueStream casted = (DoubleValueStream)val;
+    DoubleValueStream casted = (DoubleValueStream) val;
 
     // No values
     val.setExists(false);
-    casted.streamDoubles( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    casted.streamDoubles(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValue(20.0).setExists(true);
     Iterator<Double> values = Arrays.asList(20.0).iterator();
-    casted.streamDoubles( value -> {
-      assertTrue(values.hasNext());
-      assertEquals(values.next(), value, .00001);
-    });
+    casted.streamDoubles(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value, .00001);
+        });
     assertFalse(values.hasNext());
   }
 
@@ -87,21 +88,23 @@ public class CastingDoubleValueTest extends SolrTestCaseJ4 {
     TestDoubleValue val = new TestDoubleValue();
 
     assertTrue(val instanceof StringValueStream);
-    StringValueStream casted = (StringValueStream)val;
+    StringValueStream casted = (StringValueStream) val;
 
     // No values
     val.setExists(false);
-    casted.streamStrings( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    casted.streamStrings(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValue(20.0).setExists(true);
     Iterator<String> values = Arrays.asList("20.0").iterator();
-    casted.streamStrings( value -> {
-      assertTrue(values.hasNext());
-      assertEquals(values.next(), value);
-    });
+    casted.streamStrings(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value);
+        });
     assertFalse(values.hasNext());
   }
 
@@ -110,21 +113,23 @@ public class CastingDoubleValueTest extends SolrTestCaseJ4 {
     TestDoubleValue val = new TestDoubleValue();
 
     assertTrue(val instanceof AnalyticsValueStream);
-    AnalyticsValueStream casted = (AnalyticsValueStream)val;
+    AnalyticsValueStream casted = (AnalyticsValueStream) val;
 
     // No values
     val.setExists(false);
-    casted.streamObjects( value -> {
-      assertTrue("There should be no values to stream", false);
-    });
+    casted.streamObjects(
+        value -> {
+          assertTrue("There should be no values to stream", false);
+        });
 
     // Multiple Values
     val.setValue(20.0).setExists(true);
     Iterator<Object> values = Arrays.<Object>asList(20.0d).iterator();
-    casted.streamObjects( value -> {
-      assertTrue(values.hasNext());
-      assertEquals(values.next(), value);
-    });
+    casted.streamObjects(
+        value -> {
+          assertTrue(values.hasNext());
+          assertEquals(values.next(), value);
+        });
     assertFalse(values.hasNext());
   }
 
@@ -134,7 +139,7 @@ public class CastingDoubleValueTest extends SolrTestCaseJ4 {
     val.setValue(12354.234).setExists(true);
     AnalyticsValueStream conv = val.convertToConstant();
     assertTrue(conv instanceof ConstantDoubleValue);
-    assertEquals(12354.234, ((ConstantDoubleValue)conv).getDouble(), .0000001);
+    assertEquals(12354.234, ((ConstantDoubleValue) conv).getDouble(), .0000001);
 
     val = new TestDoubleValue(ExpressionType.FIELD);
     val.setValue(12354.234).setExists(true);

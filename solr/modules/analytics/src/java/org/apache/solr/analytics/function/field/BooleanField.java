@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.field;
 
 import java.io.IOException;
 import java.util.function.Consumer;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
@@ -28,9 +27,7 @@ import org.apache.solr.analytics.util.function.BooleanConsumer;
 import org.apache.solr.analytics.value.BooleanValue.CastingBooleanValue;
 import org.apache.solr.schema.BoolField;
 
-/**
- * An analytics wrapper for a single-valued {@link BoolField} with DocValues enabled.
- */
+/** An analytics wrapper for a single-valued {@link BoolField} with DocValues enabled. */
 public class BooleanField extends AnalyticsField implements CastingBooleanValue {
   private SortedDocValues docValues;
   boolean value;
@@ -49,9 +46,9 @@ public class BooleanField extends AnalyticsField implements CastingBooleanValue 
     int numOrds = docValues.getValueCount();
     // if no values in the segment, default trueOrd to something other then -1 (missing)
     int trueOrd = -2;
-    for (int i=0; i<numOrds; i++) {
+    for (int i = 0; i < numOrds; i++) {
       final BytesRef br = docValues.lookupOrd(i);
-      if (br.length==1 && br.bytes[br.offset]=='T') {
+      if (br.length == 1 && br.bytes[br.offset] == 'T') {
         trueOrd = i;
         break;
       }
@@ -64,7 +61,7 @@ public class BooleanField extends AnalyticsField implements CastingBooleanValue 
   public void collect(int doc) throws IOException {
     exists = docValues.advanceExact(doc);
     if (exists) {
-      value = trueOrd ==  docValues.ordValue();
+      value = trueOrd == docValues.ordValue();
     }
   }
 
@@ -72,14 +69,17 @@ public class BooleanField extends AnalyticsField implements CastingBooleanValue 
   public boolean getBoolean() {
     return value;
   }
+
   @Override
   public String getString() {
     return exists ? Boolean.toString(value) : null;
   }
+
   @Override
   public Object getObject() {
     return exists ? value : null;
   }
+
   @Override
   public boolean exists() {
     return exists;
@@ -91,12 +91,14 @@ public class BooleanField extends AnalyticsField implements CastingBooleanValue 
       cons.accept(value);
     }
   }
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     if (exists) {
       cons.accept(Boolean.toString(value));
     }
   }
+
   @Override
   public void streamObjects(Consumer<Object> cons) {
     if (exists) {

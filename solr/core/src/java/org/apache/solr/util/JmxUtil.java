@@ -16,19 +16,16 @@
  */
 package org.apache.solr.util;
 
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.util.List;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.util.List;
-
-/**
- * Utility methods to find a MBeanServer.
- */
+/** Utility methods to find a MBeanServer. */
 public final class JmxUtil {
 
   /**
@@ -38,7 +35,7 @@ public final class JmxUtil {
    */
   public static MBeanServer findFirstMBeanServer() {
     MBeanServer mBeanServer = findMBeanServerForAgentId(null);
-    if (mBeanServer == null)  {
+    if (mBeanServer == null) {
       return ManagementFactory.getPlatformMBeanServer();
     }
     return mBeanServer;
@@ -56,8 +53,9 @@ public final class JmxUtil {
     }
 
     MBeanServer server = MBeanServerFactory.newMBeanServer();
-    JMXConnectorServer connector = JMXConnectorServerFactory
-        .newJMXConnectorServer(new JMXServiceURL(serviceUrl), null, server);
+    JMXConnectorServer connector =
+        JMXConnectorServerFactory.newJMXConnectorServer(
+            new JMXServiceURL(serviceUrl), null, server);
     connector.start();
 
     return server;

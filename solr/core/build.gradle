@@ -15,21 +15,22 @@
  * limitations under the License.
  */
 
-
 apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
 
-configurations.all {
-  exclude group: 'log4j', module: 'log4j'
-  exclude group: 'commons-logging', module: 'commons-logging'
-  exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-  exclude group: 'org.apache.yetus', module: 'audience-annotations'
-  exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
-  // be conservative on what's added here.  Affects *all* configs, including internal ones.
-}
-
 dependencies {
+  // Spotbugs Annotations are only needed for old findbugs
+  // annotation usage like in Zookeeper during compilation time.
+  // It is not included in the release so exclude from checks.
+  compileOnly 'com.github.spotbugs:spotbugs-annotations'
+  testCompileOnly 'com.github.spotbugs:spotbugs-annotations'
+  permitUnusedDeclared 'com.github.spotbugs:spotbugs-annotations'
+  // Exclude these from jar validation and license checks.
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
+
   // Export these dependencies so that they're imported transitively by
   // other modules.
 
@@ -38,15 +39,50 @@ dependencies {
   api "org.apache.lucene:lucene-analysis-common"
   api "org.apache.lucene:lucene-queries"
 
+  // We export logging api with dependencies, which is useful for all modules
+  api 'org.slf4j:slf4j-api'
+
   api project(':solr:solrj')
   api project(':solr:server')
 
+  permitUnusedDeclared project(':solr:server')
+
+  // --- start of server/build.grade declared dependencies ---
+
+  // Note: server/build.gradle declares these dependencies yet
+  // we only want them to show up in server/lib when packaged
+  // and NOT in server/solr-webapp/webapp/WEB-INF/lib. So any
+  // "api" dependency in server/build.gradle that is needed in
+  // core/build.gradle needs to be defined as "compileOnlyApi"
+  // below.
+
+  compileOnlyApi 'io.dropwizard.metrics:metrics-core'
+  compileOnlyApi ('io.dropwizard.metrics:metrics-graphite', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
+  compileOnlyApi 'io.dropwizard.metrics:metrics-jmx'
+  compileOnlyApi 'io.dropwizard.metrics:metrics-jvm'
+
+  compileOnlyApi 'org.eclipse.jetty:jetty-alpn-server'
+  compileOnlyApi 'org.eclipse.jetty:jetty-http'
+  compileOnlyApi 'org.eclipse.jetty:jetty-io'
+  compileOnlyApi 'org.eclipse.jetty:jetty-rewrite'
+  compileOnlyApi 'org.eclipse.jetty:jetty-server'
+  compileOnlyApi 'org.eclipse.jetty:jetty-servlet'
+  compileOnlyApi 'org.eclipse.jetty:jetty-util'
+
+  compileOnlyApi 'org.eclipse.jetty.http2:http2-common'
+  compileOnlyApi 'org.eclipse.jetty.http2:http2-server'
+
+  compileOnlyApi 'javax.servlet:javax.servlet-api'
+  // --- end of server/build.gradle declared dependencies ---
+
   // Non-API below; although there are exceptions
 
-  implementation "org.apache.lucene:lucene-analysis-kuromoji"
-  implementation "org.apache.lucene:lucene-analysis-nori"
-  implementation "org.apache.lucene:lucene-analysis-phonetic"
-  implementation "org.apache.lucene:lucene-backward-codecs"
+  runtimeOnly "org.apache.lucene:lucene-analysis-kuromoji"
+  runtimeOnly "org.apache.lucene:lucene-analysis-nori"
+  runtimeOnly "org.apache.lucene:lucene-analysis-phonetic"
+  runtimeOnly "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-codecs"
   implementation "org.apache.lucene:lucene-classification"
   implementation "org.apache.lucene:lucene-expressions"
@@ -60,7 +96,7 @@ dependencies {
   implementation "org.apache.lucene:lucene-suggest"
 
   // Collections & lang utilities
-  implementation ('com.google.guava:guava') { transitive = false }
+  implementation 'com.google.guava:guava'
   implementation 'org.apache.commons:commons-lang3'
   implementation 'org.apache.commons:commons-math3'
   implementation 'commons-io:commons-io'
@@ -69,24 +105,33 @@ dependencies {
 
   implementation('com.github.ben-manes.caffeine:caffeine') { transitive = false }
 
-  implementation 'org.slf4j:slf4j-api'
-
   implementation 'commons-codec:commons-codec'
 
   implementation 'commons-cli:commons-cli'
 
+  implementation 'org.locationtech.spatial4j:spatial4j'
+
+  implementation 'com.fasterxml.jackson.core:jackson-annotations'
+  implementation 'com.fasterxml.jackson.core:jackson-core'
   implementation 'com.fasterxml.jackson.core:jackson-databind'
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
 
+  implementation 'org.apache.httpcomponents:httpclient'
+  implementation 'org.apache.httpcomponents:httpcore'
+
   implementation 'org.eclipse.jetty:jetty-client'
 
-  // ZooKeeper & Curator
-  implementation 'org.apache.zookeeper:zookeeper'
+  // ZooKeeper
+  implementation('org.apache.zookeeper:zookeeper', {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+    exclude group: "log4j", module: "log4j"
+    exclude group: "org.slf4j", module: "slf4j-log4j12"
+  })
+  implementation ('org.apache.zookeeper:zookeeper-jute') {
+    exclude group: 'org.apache.yetus', module: 'audience-annotations'
+  }
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly ('org.xerial.snappy:snappy-java')
-  implementation ('org.apache.curator:curator-client')
-  implementation ('org.apache.curator:curator-framework')
-  runtimeOnly ('org.apache.curator:curator-recipes')
 
   // For Package Manager
   implementation 'com.github.zafarkhaja:java-semver'
@@ -112,61 +157,27 @@ dependencies {
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 
-  testImplementation 'org.slf4j:jcl-over-slf4j'
-
-  // JWT Auth plugin
-  api 'org.bitbucket.b_c:jose4j'
-
   // For faster XML processing than the JDK
-  implementation (group: 'com.fasterxml.woodstox', name: 'woodstox-core')
+  implementation 'org.codehaus.woodstox:stax2-api'
+  implementation 'com.fasterxml.woodstox:woodstox-core'
 
-  // SQL Parser via Calcite
-  implementation ('org.apache.calcite:calcite-core', {
-    exclude group: 'org.apache.calcite.avatica', module: 'avatica-metrics'
-    exclude group: 'com.google.guava', module: 'guava' // TODO remove this to keep versions in sync
-    exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-yaml'
-    exclude group: 'com.google.uzaygezen', module: 'uzaygezen-core'
-    exclude group: 'com.yahoo.datasketches', module: 'sketches-core'
-    exclude group: 'org.apache.commons', module: 'commons-dbcp2'
-    exclude group: 'net.minidev', module: 'json-smart'
-    exclude group: 'net.hydromatic', module: 'aggdesigner-algorithm'
-  })
-  // sub-deps of calcite-core that we reference directly
-  implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
-  implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
+  testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 
-  // Hadoop auth framework
-  implementation ('org.apache.hadoop:hadoop-annotations')
-  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
-  // transitive of hadoop-common; used by Kerberos auth
-  runtimeOnly 'commons-collections:commons-collections'
-  runtimeOnly 'com.google.re2j:re2j'
-  runtimeOnly 'org.apache.commons:commons-configuration2'
-  runtimeOnly 'org.apache.htrace:htrace-core4' // note: removed in Hadoop 3.3.2
-  runtimeOnly 'org.apache.kerby:kerb-core'
-  runtimeOnly 'org.apache.kerby:kerb-util'
+  testRuntimeOnly "org.apache.lucene:lucene-analysis-icu"
 
-  // Hadoop MiniKdc Dependencies (for Kerberos auth tests)
-  testImplementation ('org.apache.hadoop:hadoop-minikdc', {
-    exclude group:'org.apache.kerby', module:'kerby-xdr'
-    exclude group:'org.apache.kerby', module:'token-provider'
-  })
+  testRuntimeOnly project(':solr:modules:analysis-extras')
 
-  testImplementation "org.apache.lucene:lucene-analysis-icu"
-
-  testImplementation project(':solr:modules:analysis-extras')
-
+  testImplementation project(':solr:core')
   testImplementation project(':solr:test-framework')
+
+  testImplementation 'org.apache.lucene:lucene-test-framework'
+
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  testImplementation 'junit:junit'
+  testImplementation 'org.hamcrest:hamcrest'
 
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
-  })
-
-  testImplementation('no.nav.security:mock-oauth2-server', {
-    exclude group: "ch.qos.logback", module: "logback-core"
-    exclude group: "io.netty", module: "netty-all"
-    exclude group: "ch.qos.logback", module: "logback-classic"
   })
 }
 

@@ -16,13 +16,12 @@
  */
 package org.apache.solr.util;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-
 import org.apache.solr.common.util.TimeSource;
-
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class TimeOut {
 
@@ -52,7 +51,9 @@ public class TimeOut {
   }
 
   /**
-   * Wait until the given {@link Supplier} returns true or the time out expires which ever happens first
+   * Wait until the given {@link Supplier} returns true or the time out expires which ever happens
+   * first
+   *
    * @param messageOnTimeOut the exception message to be used in case a TimeoutException is thrown
    * @param supplier a {@link Supplier} that returns a {@link Boolean} value
    * @throws InterruptedException if any thread has interrupted the current thread
@@ -68,6 +69,12 @@ public class TimeOut {
 
   @Override
   public String toString() {
-    return "TimeOut [timeoutAt=" + timeoutAt + ", startTime=" + startTime + ", timeSource=" + timeSource + "]";
+    return "TimeOut [timeoutAt="
+        + timeoutAt
+        + ", startTime="
+        + startTime
+        + ", timeSource="
+        + timeSource
+        + "]";
   }
 }

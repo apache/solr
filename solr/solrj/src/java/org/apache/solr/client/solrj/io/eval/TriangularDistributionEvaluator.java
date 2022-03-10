@@ -17,16 +17,17 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-
 import org.apache.commons.math3.distribution.TriangularDistribution;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class TriangularDistributionEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
+public class TriangularDistributionEvaluator extends RecursiveNumericEvaluator
+    implements ManyValueWorker {
 
   private static final long serialVersionUID = 1;
 
-  public TriangularDistributionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public TriangularDistributionEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
@@ -34,7 +35,8 @@ public class TriangularDistributionEvaluator extends RecursiveNumericEvaluator i
   public Object doWork(Object... values) throws IOException {
 
     if (values.length != 3) {
-      throw new IOException("Triangular distribution requires three numeric parameters low, mode, high");
+      throw new IOException(
+          "Triangular distribution requires three numeric parameters low, mode, high");
     }
 
     double low = ((Number) values[0]).doubleValue();

@@ -20,12 +20,14 @@ import java.time.format.DateTimeFormatter
 
 plugins {
   id "base"
-  id "com.palantir.consistent-versions" version "2.0.0"
-  id "org.owasp.dependencycheck" version "6.4.1.1"
+  id "com.palantir.consistent-versions" version "2.8.0"
+  id "org.owasp.dependencycheck" version "6.5.3"
+  id 'ca.cutterslade.analyze' version "1.8.3"
   id 'de.thetaphi.forbiddenapis' version '3.2' apply false
   id "de.undercouch.download" version "4.0.2" apply false
   id "net.ltgt.errorprone" version "2.0.2" apply false
-  id 'com.diffplug.spotless' version "5.14.3" apply false
+  id 'com.diffplug.spotless' version "6.3.0" apply false
+  id 'com.github.node-gradle.node' version '3.1.1' apply false
 }
 
 apply from: file('gradle/globals.gradle')
@@ -81,18 +83,6 @@ ext {
 
   minJavaVersion = JavaVersion.VERSION_11
 
-  // Declare script dependency versions outside of palantir's
-  // version unification control. These are not our main dependencies.
-  scriptDepVersions = [
-      "apache-rat": "0.11",
-      "commons-codec": "1.13",
-      "ecj": "3.19.0",
-      "javacc": "7.0.4",
-      "jflex": "1.7.0",
-      "jgit": "5.9.0.202009080501-r",
-      "flexmark": "0.61.24",
-  ]
-
   // Allow definiting external tool locations using system props.
   externalTool = { name ->
     def resolved = propertyOrDefault("${name}.exe", name as String)
@@ -111,6 +101,17 @@ ext {
     return luceneBaseVersion
   }
 }
+
+configurations {
+  groovy
+}
+
+dependencies {
+  // Use a newer groovy that doesn't have illegal reflective accesses.
+  groovy "org.codehaus.groovy:groovy-all:3.0.9"
+}
+
+apply from: file('buildSrc/scriptDepVersions.gradle')
 
 // Include smaller chunks configuring dedicated build areas.
 // Some of these intersect or add additional functionality.
@@ -152,6 +153,7 @@ apply from: file('gradle/validation/versions-props-sorted.gradle')
 apply from: file('gradle/validation/validate-source-patterns.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
+apply from: file('gradle/validation/dependency-analyze.gradle')
 apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')
@@ -182,7 +184,6 @@ apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
 // of potential problems with the build conventions, dependencies, etc.
 apply from: file('gradle/ant-compat/misc.gradle')
 
-apply from: file('gradle/ant-compat/force-versions.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
 
 apply from: file('gradle/documentation/pull-lucene-javadocs.gradle')
@@ -191,8 +192,8 @@ apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
 
+apply from: file('gradle/hacks/global-exclude-dependencies.gradle')
 apply from: file('gradle/hacks/gradle-archives.gradle')
-apply from: file('gradle/hacks/solr.findbugs.gradle')
 
 apply from: file('gradle/hacks/wipe-temp.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
@@ -204,4 +205,5 @@ apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
 apply from: file('gradle/ant-compat/solr.post-jar.gradle')
 
+apply from: file('gradle/node.gradle')
 
