@@ -16,12 +16,23 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.common.params.CommonParams.*;
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.FAILURE;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.params.CommonParams.STATUS;
 
+import com.codahale.metrics.Counter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -41,6 +52,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
@@ -69,10 +82,15 @@ public class SearchHandler extends RequestHandlerBase
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
 
+  protected static final String SHARD_HANDLER_SUFFIX = "[shard]";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** A counter to ensure that no RID is equal, even if they fall in the same millisecond */
   private static final AtomicLong ridCounter = new AtomicLong();
+
+  private HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
+  private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
 
   protected volatile List<SearchComponent> components;
   private ShardHandlerFactory shardHandlerFactory;
@@ -103,6 +121,25 @@ public class SearchHandler extends RequestHandlerBase
         break;
       }
     }
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    metricsShard =
+        new HandlerMetrics( // will register various metrics in the context
+            solrMetricsContext, getCategory().toString(), scope + SHARD_HANDLER_SUFFIX);
+    solrMetricsContext.gauge(
+        new MetricsMap(map -> shardPurposes.forEach((k, v) -> map.putNoEx(k, v.getCount()))),
+        true,
+        "purposes",
+        getCategory().toString(),
+        scope + SHARD_HANDLER_SUFFIX);
+  }
+
+  @Override
+  protected HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
+    return req.getParams().getBool(ShardParams.IS_SHARD, false) ? this.metricsShard : this.metrics;
   }
 
   @Override
@@ -290,6 +327,12 @@ public class SearchHandler extends RequestHandlerBase
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
+      SolrPluginUtils.forEachRequestPurpose(
+          purpose, n -> shardPurposes.computeIfAbsent(n, name -> new Counter()).inc());
+    }
+
     List<SearchComponent> components = getComponents();
     ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {

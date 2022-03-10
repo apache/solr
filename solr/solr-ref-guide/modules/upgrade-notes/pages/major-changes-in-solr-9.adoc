@@ -138,6 +138,12 @@ changes, however the module needs to be installed - see the section xref:query-g
 * SOLR-15097: JWTAuthPlugin has been moved to a module. Users need to add the module to classpath. The plugin has also
   changed package name to `org.apache.solr.security.jwt`, but can still be loaded as shortform `class="solr.JWTAuthPlugin"`.
 
+* SOLR-14401: Metrics: Only SearchHandler and subclasses have "local" metrics now.
+It's now tracked as if it's another handler with a "[shard]" suffix, e.g. "/select[shard]".
+There are no longer ".distrib." named metrics; all metrics are assumed to be such except
+"[shard]". The default Prometheus exporter config splits that component to a new label
+named "internal".  The sample Grafana dashboard now filters to include or exclude this.
+
 == New Features & Enhancements
 
 * Replica placement plugins

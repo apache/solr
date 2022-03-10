@@ -37,6 +37,8 @@ Improvements
 ---------------------
 * SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
 
+* SOLR-15652: Add Slack channel for community support to Admin UI footer, update links.  (Eric Pugh)
+
 Optimizations
 ---------------------
 (No changes)
@@ -58,8 +60,6 @@ Other Changes
 * SOLR-9529: Consistency in how dynamic fields are defined in sample schema.xml files (Eric Pugh, Trey Grainger)
 
 * SOLR-15886: Remove deprecated showItems configuration value from solrconfig.xml files (Andy Lester via Eric Pugh)
-
-* SOLR-16039: Upgrade to Hadoop 3.3.2 (Kevin Risden)
 
 Build
 ---------------------
@@ -312,6 +312,15 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15965: Use better signatures for the PKI Authentication plugin. (Mike Drob)
 
 * SOLR-15982: Add end time value to backup response, standardize backup response key names and date formats (Artem Abeleshev, Christine Poerschke, Houston Putman)
+
+* SOLR-14401: Metrics: Only SearchHandler and subclasses have "local" metrics now.
+  It's now tracked as if it's another handler with a "[shard]" suffix, e.g. "/select[shard]".
+  There are no longer ".distrib." named metrics; all metrics are assumed to be such except
+  "[shard]". The default Prometheus exporter config splits that component to a new label
+  named "internal".  The sample Grafana dashboard now filters to include or exclude this.
+  (David Smiley)
+
+* SOLR-16088: De-couple Http2SolrClient and ContentStreamBase from org.apache.http (janhoy)
 
 Build
 ---------------------
@@ -625,6 +634,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 * SOLR-16043: Fix HDFS tests - "Command processor" thread leak (Mike Drob, Kevin Risden)
 
 * SOLR-16074: Use PathUtils.deleteDirectory(path) to try to avoid commons-io IO-751 (Houston Putman, Mike Drob, Kevin Risden)
+
+* SOLR-16039: Upgrade to Hadoop 3.3.2 (Kevin Risden)
 
 Bug Fixes
 ---------------------
