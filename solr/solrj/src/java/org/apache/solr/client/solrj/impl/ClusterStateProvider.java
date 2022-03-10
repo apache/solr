@@ -69,7 +69,7 @@ public interface ClusterStateProvider extends SolrCloseable {
   }
 
   /** Obtain the current cluster state. */
-  ClusterState getClusterState() throws IOException;
+  ClusterState getClusterState();
 
   default DocCollection getCollection(String name) throws IOException {
     return getClusterState().getCollectionOrNull(name);

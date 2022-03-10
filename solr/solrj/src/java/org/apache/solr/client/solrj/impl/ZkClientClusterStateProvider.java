@@ -110,7 +110,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public ClusterState getClusterState() throws IOException {
+  public ClusterState getClusterState() {
     return getZkStateReader().getClusterState();
   }
 

@@ -231,7 +231,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   public abstract ClusterStateProvider getClusterStateProvider();
 
-  public ClusterState getClusterState() throws IOException {
+  public ClusterState getClusterState() {
     return getClusterStateProvider().getClusterState();
   }
 
