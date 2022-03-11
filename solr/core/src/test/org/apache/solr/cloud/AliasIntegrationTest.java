@@ -106,7 +106,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
         "Expected collection2 to be created with 1 shard and 1 replica",
         "collection2meta",
         clusterShape(1, 1));
-    ZkStateReader zkStateReader = ZkStateReader.from(solrClient);
+    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
     zkStateReader.createClusterStateWatchersAndUpdate();
     List<String> aliases = zkStateReader.getAliases().resolveAliases("meta1");
     assertEquals(1, aliases.size());
@@ -433,7 +433,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
         "Expected collection2 to be created with 1 shard and 1 replica",
         "collection2meta",
         clusterShape(1, 1));
-    ZkStateReader zkStateReader = ZkStateReader.from(solrClient);
+    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
     zkStateReader.createClusterStateWatchersAndUpdate();
     List<String> aliases = zkStateReader.getAliases().resolveAliases(aliasName);
     assertEquals(1, aliases.size());
@@ -511,7 +511,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     QueryResponse res = cluster.getSolrClient().query("collection_old", new SolrQuery("*:*"));
     assertEquals(3, res.getResults().getNumFound());
 
-    ZkStateReader zkStateReader = ZkStateReader.from(solrClient);
+    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
     int lastVersion = zkStateReader.aliasesManager.getAliases().getZNodeVersion();
     // Let's insure we have a "handle" to the old collection
     CollectionAdminRequest.createAlias("collection_old_reserve", "collection_old")
@@ -624,7 +624,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
         .add("id", "11", "a_t", "humpty dumpy sat on a low wall")
         .commit(cluster.getSolrClient(), "collection_two");
 
-    ZkStateReader zkStateReader = ZkStateReader.from(solrClient);
+    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
     int lastVersion = zkStateReader.aliasesManager.getAliases().getZNodeVersion();
 
     // Create an alias pointing to both
