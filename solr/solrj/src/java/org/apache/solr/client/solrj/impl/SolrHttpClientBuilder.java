@@ -26,7 +26,9 @@ import org.apache.http.cookie.CookieSpecProvider;
  * implementation and is subject to change.
  *
  * @lucene.experimental
+ * @deprecated Please look into using Solr's new Http2 clients
  */
+@Deprecated(since = "9.0")
 public class SolrHttpClientBuilder {
   public static SolrHttpClientBuilder create() {
     return new SolrHttpClientBuilder();

@@ -67,7 +67,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>
  *
  * @since solr 1.4
+ * @deprecated Please use {@link LBHttp2SolrClient}
  */
+@Deprecated(since = "9.0")
 public class LBHttpSolrClient extends LBSolrClient {
 
   private final HttpClient httpClient;

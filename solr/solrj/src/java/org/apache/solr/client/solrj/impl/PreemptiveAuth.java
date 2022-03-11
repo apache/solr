@@ -34,7 +34,10 @@ import org.apache.http.protocol.HttpContext;
  * This implementation is required since Solr client is not capable of performing non preemptive
  * authentication. By adding the Http authentication credentials to every request, this interceptor
  * enables "preemptive" authentication.
+ *
+ * @deprecated Please look into using Solr's new Http2 clients
  */
+@Deprecated(since = "9.0")
 public class PreemptiveAuth implements HttpRequestInterceptor {
   private AuthScheme authScheme = null;
 

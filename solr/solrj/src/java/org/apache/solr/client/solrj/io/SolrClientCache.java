@@ -33,7 +33,11 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** The SolrClientCache caches SolrClients so they can be reused by different TupleStreams. */
+/**
+ * The SolrClientCache caches SolrClients so they can be reused by different TupleStreams.
+ *
+ * <p>TODO: Cut this over to using Solr's new Http2 clients
+ */
 public class SolrClientCache implements Serializable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -54,10 +58,12 @@ public class SolrClientCache implements Serializable {
     httpClient = null;
   }
 
+  @Deprecated(since = "9.0")
   public SolrClientCache(HttpClient httpClient) {
     this.httpClient = httpClient;
   }
 
+  @Deprecated(since = "9.0")
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
 
     // Timeouts should never be lower then 60000 but they can be set higher
@@ -92,6 +98,7 @@ public class SolrClientCache implements Serializable {
     return client;
   }
 
+  @Deprecated(since = "9.0")
   public synchronized HttpSolrClient getHttpSolrClient(String host) {
     HttpSolrClient client;
     if (solrClients.containsKey(host)) {

@@ -37,6 +37,8 @@ Improvements
 ---------------------
 * SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
 
+* SOLR-15652: Add Slack channel for community support to Admin UI footer, update links.  (Eric Pugh)
+
 Optimizations
 ---------------------
 (No changes)
@@ -310,6 +312,13 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15965: Use better signatures for the PKI Authentication plugin. (Mike Drob)
 
 * SOLR-15982: Add end time value to backup response, standardize backup response key names and date formats (Artem Abeleshev, Christine Poerschke, Houston Putman)
+
+* SOLR-14401: Metrics: Only SearchHandler and subclasses have "local" metrics now.
+  It's now tracked as if it's another handler with a "[shard]" suffix, e.g. "/select[shard]".
+  There are no longer ".distrib." named metrics; all metrics are assumed to be such except
+  "[shard]". The default Prometheus exporter config splits that component to a new label
+  named "internal".  The sample Grafana dashboard now filters to include or exclude this.
+  (David Smiley)
 
 * SOLR-16088: De-couple Http2SolrClient and ContentStreamBase from org.apache.http (janhoy)
 
@@ -628,6 +637,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-16039: Upgrade to Hadoop 3.3.2 (Kevin Risden)
 
+* SOLR-15223: Deprecate HttpSolrClient and friends, please use the Http2SolrClient equivalents (janhoy, David Smiley)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
@@ -690,6 +701,8 @@ Bug Fixes
 
 * SOLR-15983: Fix ClassCastException in UpdateLog$LogReplayer.doReplay. (Christine Poerschke, David Smiley)
 
+* SOLR-16090: Better error message when JWT auth SIGNATURE_INVALID during token parsing (janhoy)
+
 ==================  8.11.2 ==================
 
 Bug Fixes
@@ -705,6 +718,8 @@ Bug Fixes
 
 * SOLR-16009: Force Calcite's Rel simplify config flag to false to avoid erasing filters that are meaningful to Solr,
   but look like nonsense to Calcite, such as AND'd filters on the same multi-valued field (Timothy Potter, Kiran Chitturi)
+
+* SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
 
 ==================  8.11.1 ==================
 

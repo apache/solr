@@ -25,6 +25,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CollectionAdminParams;
 
+/** Provides cluster state from some source */
 public interface ClusterStateProvider extends SolrCloseable {
 
   /**
