@@ -157,6 +157,7 @@ solrAdminApp.controller('CollectionsController',
             };
             if (coll.shards) params.shards = coll.shards;
             if (coll.routerField) params["router.field"] = coll.routerField;
+            if (coll.createNodeSet) params.createNodeSet = coll.createNodeSet;
             Collections.add(params, function(data) {
               $scope.cancelAddCollection();
               $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
