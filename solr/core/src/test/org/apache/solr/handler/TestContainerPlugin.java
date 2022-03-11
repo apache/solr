@@ -22,6 +22,7 @@ import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
+import static org.hamcrest.Matchers.containsString;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -164,7 +165,15 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     try (ErrorLogMuter errors = ErrorLogMuter.substring("/my-random-prefix/their/plugin")) {
-      expectFail(() -> getPlugin("/my-random-prefix/their/plugin").call());
+      RemoteExecutionException e =
+          assertThrows(
+              RemoteExecutionException.class,
+              () -> getPlugin("/my-random-prefix/their/plugin").call());
+      assertEquals(404, e.code());
+      assertThat(
+          e.getMetaData().findRecursive("error", "msg").toString(),
+          containsString("no core retrieved"));
+      // V2HttpCall will separately log the path and stack trace, probably could be fixed
       assertEquals(2, errors.getCount());
     }
 
@@ -230,18 +239,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       }
     }
     assertTrue("stopCalled", C6.stopCalled);
-  }
-
-  private void expectFail(ThrowingRunnable runnable) throws Exception {
-    for (int i = 0; i < 20; i++) {
-      try {
-        runnable.run();
-      } catch (Throwable throwable) {
-        return;
-      }
-      Thread.sleep(100);
-    }
-    fail("should have failed with an exception");
   }
 
   @Test
@@ -473,7 +470,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   }
 
   private Callable<V2Response> getPlugin(String path) {
-    V2Request req = new V2Request.Builder(path).GET().build();
+    V2Request req = new V2Request.Builder(path).forceV2(true).GET().build();
     return () -> req.process(cluster.getSolrClient());
   }
 
