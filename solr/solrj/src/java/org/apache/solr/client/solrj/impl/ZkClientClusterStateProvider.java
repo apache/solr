@@ -217,7 +217,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
   @Override
   public String getQuorumHosts() {
-    return zkStateReader.getZkClient().getZkServerAddress();
+    return getZkStateReader().getZkClient().getZkServerAddress();
   }
 
   @Override
