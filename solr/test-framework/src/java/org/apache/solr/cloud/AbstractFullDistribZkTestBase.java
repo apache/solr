@@ -680,7 +680,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         "Waiting to see {} active replicas in collection: {}", expectedNumReplicas, collection);
     AtomicInteger nReplicas = new AtomicInteger();
     try {
-      ZkStateReader.from(cloudClient)
+      ZkStateReader.from(client)
           .waitForState(
               collection,
               30,
