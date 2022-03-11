@@ -300,7 +300,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         }
       }
       if (passed) {
-        return rsp;
+        break;
       }
     }
     return rsp;
