@@ -23,6 +23,12 @@ solrAdminApp.controller('CollectionsController',
 
           $scope.rootUrl = Constants.ROOT_URL + "#/~collections/" + $routeParams.collection;
 
+          $scope.availableNodeSet = ['localhost:8983_solr','localhost:7574_solr'];
+
+          $('#select-state').selectize({
+  					maxItems: 3
+  				});
+
           Collections.status(function (data) {
               $scope.collections = [];
               for (var name in data.cluster.collections) {
