@@ -251,7 +251,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     int version = phaser.getPhase();
 
-    String errPath = "/error/details[0]/errorMessages[0]";
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
     uploadKey(derFile, PackageStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
     TestPackages.postFileAndWait(
