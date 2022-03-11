@@ -637,6 +637,8 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-16039: Upgrade to Hadoop 3.3.2 (Kevin Risden)
 
+* SOLR-15223: Deprecate HttpSolrClient and friends, please use the Http2SolrClient equivalents (janhoy, David Smiley)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).

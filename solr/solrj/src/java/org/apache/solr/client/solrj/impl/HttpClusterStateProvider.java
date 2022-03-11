@@ -21,7 +21,12 @@ import java.util.List;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 
-/** Retrieves cluster state via Solr HTTP APIs */
+/**
+ * Retrieves cluster state via Solr HTTP APIs
+ *
+ * @deprecated Please use {@link Http2ClusterStateProvider}
+ */
+@Deprecated(since = "9.0")
 public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
 
   private final HttpClient httpClient;
