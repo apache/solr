@@ -1580,7 +1580,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   private void addPivotDoc(SolrClient client, Object... fields)
       throws IOException, SolrServerException {
 
-    indexDoc(client, params(), sdoc(fields));
+    indexDocs(client, null, List.of(sdoc(fields)));
   }
 
   private int docNumber = 0;

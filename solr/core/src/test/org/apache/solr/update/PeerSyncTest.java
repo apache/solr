@@ -26,6 +26,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -216,23 +217,27 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     add(client0, seenLeader, sdoc("id", Integer.toString((int) v), "_version_", v));
     docsAdded.add(4000);
     int toAdd = numVersions + 10;
-    for (int i = 0; i < toAdd; i++) {
-      add(
-          client0,
-          seenLeader,
-          sdoc("id", Integer.toString((int) v + i + 1), "_version_", v + i + 1));
-      add(
-          client1,
-          seenLeader,
-          sdoc("id", Integer.toString((int) v + i + 1), "_version_", v + i + 1));
-      docsAdded.add((int) v + i + 1);
-    }
+    int offset = (int) v;
+    add(
+        client0,
+        seenLeader,
+        IntStream.range(0, toAdd)
+            .map(i -> i + offset + 1)
+            .mapToObj(i -> sdoc("id", Integer.toString(i), "_version_", i))
+            .toList());
+    add(
+        client1,
+        seenLeader,
+        IntStream.range(0, toAdd)
+            .map(i -> i + offset + 1)
+            .mapToObj(i -> sdoc("id", Integer.toString(i), "_version_", i))
+            .toList());
 
     // client0 now has an additional add beyond our window and the fingerprint should cause this to
     // fail
     assertSync(client1, numVersions, false, shardsArr[0]);
 
-    // if we turn of fingerprinting, it should succeed
+    // if we turn off fingerprinting, it should succeed
     System.setProperty("solr.disableFingerprint", "true");
     try {
       assertSync(client1, numVersions, true, shardsArr[0]);
