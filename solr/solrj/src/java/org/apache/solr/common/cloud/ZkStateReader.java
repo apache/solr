@@ -223,14 +223,11 @@ public class ZkStateReader implements SolrCloseable {
   // only kept to identify if the cleaner has already been started.
   private Future<?> collectionPropsCacheCleaner;
 
-  private static BaseCloudSolrClient client;
-
   public static ZkStateReader from(BaseCloudSolrClient solrClient) {
-    client = solrClient;
     if (solrClient.getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
       ZkClientClusterStateProvider provider =
           (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
-      solrClient.getClusterStateProvider().connect();
+      provider.connect();
       return provider.getZkStateReader();
     }
     throw new IllegalStateException("This has no Zk stateReader");
@@ -1673,7 +1670,6 @@ public class ZkStateReader implements SolrCloseable {
    */
   public void registerCollectionStateWatcher(
       String collection, CollectionStateWatcher stateWatcher) {
-    client.getClusterStateProvider().connect();
     final DocCollectionAndLiveNodesWatcherWrapper wrapper =
         new DocCollectionAndLiveNodesWatcherWrapper(collection, stateWatcher);
 
@@ -1693,7 +1689,6 @@ public class ZkStateReader implements SolrCloseable {
    * <code>true</code>
    */
   public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
-    client.getClusterStateProvider().connect();
     AtomicBoolean watchSet = new AtomicBoolean(false);
     collectionWatches.compute(
         collection,
@@ -1754,7 +1749,6 @@ public class ZkStateReader implements SolrCloseable {
   public void waitForState(
       final String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
       throws InterruptedException, TimeoutException {
-    client.getClusterStateProvider().connect();
 
     if (closed) {
       throw new AlreadyClosedException();
@@ -1806,7 +1800,6 @@ public class ZkStateReader implements SolrCloseable {
   public DocCollection waitForState(
       final String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
       throws InterruptedException, TimeoutException {
-    client.getClusterStateProvider().connect();
     if (log.isDebugEnabled()) {
       log.debug("Waiting up to {}ms for state {}", unit.toMillis(wait), predicate);
     }
