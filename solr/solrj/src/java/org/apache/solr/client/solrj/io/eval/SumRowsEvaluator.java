@@ -17,27 +17,31 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.Locale;
-import java.util.List;
 import java.util.ArrayList;
-
+import java.util.List;
+import java.util.Locale;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class SumRowsEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public SumRowsEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public SumRowsEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    if(1 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 1 value but found %d",expression,containedEvaluators.size()));
+    if (1 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 1 value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
-  public Object doWork(Object value) throws IOException{
-    if(null == value){
+  public Object doWork(Object value) throws IOException {
+    if (null == value) {
       return null;
     } else if (value instanceof Matrix) {
 
@@ -45,11 +49,11 @@ public class SumRowsEvaluator extends RecursiveObjectEvaluator implements OneVal
       double[][] data = matrix.getData();
       List<Number> sums = new ArrayList<>(data.length);
 
-      for(int i=0; i<data.length; i++) {
+      for (int i = 0; i < data.length; i++) {
         double sum = 0;
         double[] row = data[i];
-        for(int j=0; j<row.length; j++){
-          sum+=row[j];
+        for (int j = 0; j < row.length; j++) {
+          sum += row[j];
         }
 
         sums.add(sum);

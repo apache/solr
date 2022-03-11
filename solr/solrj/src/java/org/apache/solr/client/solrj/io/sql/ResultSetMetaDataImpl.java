@@ -21,7 +21,6 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.io.Tuple;
 
 class ResultSetMetaDataImpl implements ResultSetMetaData {
@@ -37,8 +36,8 @@ class ResultSetMetaDataImpl implements ResultSetMetaData {
 
   private Class<?> getColumnClass(int column) throws SQLException {
     Object o = this.firstTuple.get(this.getColumnLabel(column));
-    if(o == null) {
-      return String.class; //Nulls will only be present with Strings.
+    if (o == null) {
+      return String.class; // Nulls will only be present with Strings.
     } else {
       return o.getClass();
     }
@@ -47,7 +46,7 @@ class ResultSetMetaDataImpl implements ResultSetMetaData {
   @Override
   public int getColumnCount() throws SQLException {
     List<String> fields = metadataTuple.getStrings("fields");
-    if(fields == null) {
+    if (fields == null) {
       throw new SQLException("Unable to determine fields for column count");
     }
     return fields.size();
@@ -98,7 +97,7 @@ class ResultSetMetaDataImpl implements ResultSetMetaData {
   @Override
   public String getColumnName(int column) throws SQLException {
     List<String> columns = metadataTuple.getStrings("fields");
-    if(column < 1 || column > columns.size()) {
+    if (column < 1 || column > columns.size()) {
       throw new SQLException("Column index " + column + " is not valid");
     }
     return columns.get(column - 1);

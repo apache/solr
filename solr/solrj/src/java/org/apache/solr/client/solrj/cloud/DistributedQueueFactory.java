@@ -18,9 +18,7 @@ package org.apache.solr.client.solrj.cloud;
 
 import java.io.IOException;
 
-/**
- *
- */
+/** */
 public interface DistributedQueueFactory {
   DistributedQueue makeQueue(String path) throws IOException;
 

@@ -41,9 +41,10 @@ import org.apache.solr.handler.admin.api.SyncShardAPI;
 /**
  * Registers annotation-based V2 APIs with an {@link ApiBag}
  *
- * Historically these APIs were registered directly by code in {@link org.apache.solr.core.CoreContainer}, but as the
- * number of annotation-based v2 APIs grew this became increasingly unwieldy.  So {@link ApiRegistrar} serves as a single
- * place where all APIs under a particular path can be registered together.
+ * <p>Historically these APIs were registered directly by code in {@link
+ * org.apache.solr.core.CoreContainer}, but as the number of annotation-based v2 APIs grew this
+ * became increasingly unwieldy. So {@link ApiRegistrar} serves as a single place where all APIs
+ * under a particular path can be registered together.
  */
 public class ApiRegistrar {
 
@@ -68,7 +69,8 @@ public class ApiRegistrar {
     apiBag.registerObject(new DeleteShardAPI(collectionsHandler));
     apiBag.registerObject(new SyncShardAPI(collectionsHandler));
     apiBag.registerObject(new ForceLeaderAPI(collectionsHandler));
-    // really this is a replica API, but since there's only 1 API on the replica path, it's included here for simplicity.
+    // really this is a replica API, but since there's only 1 API on the replica path, it's included
+    // here for simplicity.
     apiBag.registerObject(new DeleteReplicaAPI(collectionsHandler));
   }
 }

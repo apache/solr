@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -62,7 +61,8 @@ class DoubleValue implements SortValue {
 
   public void setCurrentValue(int docId) throws IOException {
     if (docId < lastDocID) {
-      throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
+      throw new AssertionError(
+          "docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
     }
     lastDocID = docId;
     int curDocID = vals.docID();
@@ -78,9 +78,7 @@ class DoubleValue implements SortValue {
     }
   }
 
-  public void toGlobalValue(SortValue previousValue) {
-
-  }
+  public void toGlobalValue(SortValue previousValue) {}
 
   @Override
   public boolean isPresent() {

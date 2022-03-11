@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bats
+
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -14,12 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-function delete_all_collections() {
-  local collection_list="$(bin/solr zk ls /collections -z localhost:9983)"
-  for collection in $collection_list;
-  do
-    if [[ -n $collection ]]; then
-      bin/solr delete -c $collection
-    fi
-  done
+load bats_helper
+
+setup() {
+  common_setup
+
+  run solr auth disable
 }
+
+@test "auth rejects blockUnknown option with invalid boolean" {
+  run ! solr auth enable -type basicAuth -credentials any:any -blockUnknown ture
+  assert_output --partial "Argument [blockUnknown] must be either true or false, but was [ture]"
+}
+
+@test "auth rejects updateIncludeFileOnly option with invalid boolean" {
+  run ! solr auth enable -type basicAuth -credentials any:any -updateIncludeFileOnly ture
+  assert_output --partial "Argument [updateIncludeFileOnly] must be either true or false, but was [ture]"
+}
+

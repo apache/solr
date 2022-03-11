@@ -315,9 +315,9 @@ public class FileUtil {
   // generate exception
   //
   private static void checkDependencies(FileSystem srcFS,
-                                        Path src,
-                                        FileSystem dstFS,
-                                        Path dst)
+      Path src,
+      FileSystem dstFS,
+      Path dst)
       throws IOException {
     if (srcFS == dstFS) {
       String srcq = srcFS.makeQualified(src).toString() + Path.SEPARATOR;
@@ -335,16 +335,16 @@ public class FileUtil {
 
   /** Copy files between FileSystems. */
   public static boolean copy(FileSystem srcFS, Path src,
-                             FileSystem dstFS, Path dst,
-                             boolean deleteSource,
-                             Configuration conf) throws IOException {
+      FileSystem dstFS, Path dst,
+      boolean deleteSource,
+      Configuration conf) throws IOException {
     return copy(srcFS, src, dstFS, dst, deleteSource, true, conf);
   }
 
   public static boolean copy(FileSystem srcFS, Path[] srcs,
-                             FileSystem dstFS, Path dst,
-                             boolean deleteSource,
-                             boolean overwrite, Configuration conf)
+      FileSystem dstFS, Path dst,
+      boolean deleteSource,
+      boolean overwrite, Configuration conf)
       throws IOException {
     boolean gotException = false;
     boolean returnVal = true;
@@ -371,8 +371,8 @@ public class FileUtil {
           returnVal = false;
       } catch (IOException e) {
         gotException = true;
-        exceptions.append(e.getMessage());
-        exceptions.append("\n");
+        exceptions.append(e.getMessage())
+            .append("\n");
       }
     }
     if (gotException) {
@@ -383,20 +383,20 @@ public class FileUtil {
 
   /** Copy files between FileSystems. */
   public static boolean copy(FileSystem srcFS, Path src,
-                             FileSystem dstFS, Path dst,
-                             boolean deleteSource,
-                             boolean overwrite,
-                             Configuration conf) throws IOException {
+      FileSystem dstFS, Path dst,
+      boolean deleteSource,
+      boolean overwrite,
+      Configuration conf) throws IOException {
     FileStatus fileStatus = srcFS.getFileStatus(src);
     return copy(srcFS, fileStatus, dstFS, dst, deleteSource, overwrite, conf);
   }
 
   /** Copy files between FileSystems. */
   public static boolean copy(FileSystem srcFS, FileStatus srcStatus,
-                             FileSystem dstFS, Path dst,
-                             boolean deleteSource,
-                             boolean overwrite,
-                             Configuration conf) throws IOException {
+      FileSystem dstFS, Path dst,
+      boolean deleteSource,
+      boolean overwrite,
+      Configuration conf) throws IOException {
     Path src = srcStatus.getPath();
     dst = checkDest(src.getName(), dstFS, dst, overwrite);
     if (srcStatus.isDirectory()) {
@@ -433,9 +433,9 @@ public class FileUtil {
 
   /** Copy local files to a FileSystem. */
   public static boolean copy(File src,
-                             FileSystem dstFS, Path dst,
-                             boolean deleteSource,
-                             Configuration conf) throws IOException {
+      FileSystem dstFS, Path dst,
+      boolean deleteSource,
+      Configuration conf) throws IOException {
     dst = checkDest(src.getName(), dstFS, dst, false);
 
     if (src.isDirectory()) {
@@ -476,16 +476,16 @@ public class FileUtil {
 
   /** Copy FileSystem files to local files. */
   public static boolean copy(FileSystem srcFS, Path src,
-                             File dst, boolean deleteSource,
-                             Configuration conf) throws IOException {
+      File dst, boolean deleteSource,
+      Configuration conf) throws IOException {
     FileStatus filestatus = srcFS.getFileStatus(src);
     return copy(srcFS, filestatus, dst, deleteSource, conf);
   }
 
   /** Copy FileSystem files to local files. */
   private static boolean copy(FileSystem srcFS, FileStatus srcStatus,
-                              File dst, boolean deleteSource,
-                              Configuration conf) throws IOException {
+      File dst, boolean deleteSource,
+      Configuration conf) throws IOException {
     Path src = srcStatus.getPath();
     if (srcStatus.isDirectory()) {
       if (!dst.mkdirs()) {
@@ -509,7 +509,7 @@ public class FileUtil {
   }
 
   private static Path checkDest(String srcName, FileSystem dstFS, Path dst,
-                                boolean overwrite) throws IOException {
+      boolean overwrite) throws IOException {
     FileStatus sdst;
     try {
       sdst = dstFS.getFileStatus(dst);
@@ -519,6 +519,9 @@ public class FileUtil {
     if (null != sdst) {
       if (sdst.isDirectory()) {
         if (null == srcName) {
+          if (overwrite) {
+            return dst;
+          }
           throw new PathIsDirectoryException(dst.toString());
         }
         return checkDest(null, dstFS, new Path(dst, srcName), overwrite);
@@ -815,7 +818,7 @@ public class FileUtil {
    * @throws ExecutionException task submit failed
    */
   public static void unTar(InputStream inputStream, File untarDir,
-                           boolean gzipped)
+      boolean gzipped)
       throws IOException, InterruptedException, ExecutionException {
     if (!untarDir.mkdirs()) {
       if (!untarDir.isDirectory()) {
@@ -865,7 +868,7 @@ public class FileUtil {
   }
 
   private static void unTarUsingTar(InputStream inputStream, File untarDir,
-                                    boolean gzipped)
+      boolean gzipped)
       throws IOException, InterruptedException, ExecutionException {
     StringBuilder untarCommand = new StringBuilder();
     if (gzipped) {
@@ -883,7 +886,7 @@ public class FileUtil {
   }
 
   private static void unTarUsingTar(File inFile, File untarDir,
-                                    boolean gzipped) throws IOException {
+      boolean gzipped) throws IOException {
     StringBuffer untarCommand = new StringBuffer();
     if (gzipped) {
       untarCommand.append(" gzip -dc '")
@@ -911,7 +914,7 @@ public class FileUtil {
   }
 
   static void unTarUsingJava(File inFile, File untarDir,
-                             boolean gzipped) throws IOException {
+      boolean gzipped) throws IOException {
     InputStream inputStream = null;
     TarArchiveInputStream tis = null;
     try {
@@ -936,7 +939,7 @@ public class FileUtil {
   }
 
   private static void unTarUsingJava(InputStream inputStream, File untarDir,
-                                     boolean gzipped) throws IOException {
+      boolean gzipped) throws IOException {
     TarArchiveInputStream tis = null;
     try {
       if (gzipped) {
@@ -955,7 +958,7 @@ public class FileUtil {
   }
 
   private static void unpackEntries(TarArchiveInputStream tis,
-                                    TarArchiveEntry entry, File outputDir) throws IOException {
+      TarArchiveEntry entry, File outputDir) throws IOException {
     String targetDirPath = outputDir.getCanonicalPath() + File.separator;
     File outputFile = new File(outputDir, entry.getName());
     if (!outputFile.getCanonicalPath().startsWith(targetDirPath)) {
@@ -1124,7 +1127,7 @@ public class FileUtil {
    * @throws IOException exception on setOwner
    */
   public static void setOwner(File file, String username,
-                              String groupname) throws IOException {
+      String groupname) throws IOException {
     if (username == null && groupname == null) {
       throw new IOException("username == null && groupname == null");
     }
@@ -1309,7 +1312,7 @@ public class FileUtil {
   }
 
   private static void checkReturnValue(boolean rv, File p,
-                                       FsPermission permission
+      FsPermission permission
   ) throws IOException {
     if (!rv) {
       throw new IOException("Failed to set permissions of path: " + p +
@@ -1319,7 +1322,7 @@ public class FileUtil {
   }
 
   private static void execSetPermission(File f,
-                                        FsPermission permission
+      FsPermission permission
   )  throws IOException {
     if (NativeIO.isAvailable()) {
       NativeIO.POSIX.chmod(f.getCanonicalPath(), permission.toShort());
@@ -1348,8 +1351,8 @@ public class FileUtil {
    * @see java.io.File#deleteOnExit()
    */
   public static final File createLocalTempFile(final File basefile,
-                                               final String prefix,
-                                               final boolean isDeleteOnExit)
+      final String prefix,
+      final boolean isDeleteOnExit)
       throws IOException {
     File tmp = File.createTempFile(prefix + basefile.getName(),
         "", basefile.getParentFile());
@@ -1431,7 +1434,7 @@ public class FileUtil {
   }
 
   public static String[] createJarWithClassPath(String inputClassPath, Path pwd,
-                                                Map<String, String> callerEnv) throws IOException {
+      Map<String, String> callerEnv) throws IOException {
     return createJarWithClassPath(inputClassPath, pwd, pwd, callerEnv);
   }
 
@@ -1467,8 +1470,8 @@ public class FileUtil {
    * @throws IOException if there is an I/O error while writing the jar file
    */
   public static String[] createJarWithClassPath(String inputClassPath, Path pwd,
-                                                Path targetDir,
-                                                Map<String, String> callerEnv) throws IOException {
+      Path targetDir,
+      Map<String, String> callerEnv) throws IOException {
     // Replace environment variables, case-insensitive on Windows
     @SuppressWarnings("unchecked")
     Map<String, String> env = Shell.WINDOWS ? new CaseInsensitiveMap<>(callerEnv) :
@@ -1649,7 +1652,7 @@ public class FileUtil {
    * @throws IOException if an I/O error occurs creating or writing to the file
    */
   public static FileSystem write(final FileSystem fs, final Path path,
-                                 final byte[] bytes) throws IOException {
+      final byte[] bytes) throws IOException {
 
     Objects.requireNonNull(path);
     Objects.requireNonNull(bytes);
@@ -1676,7 +1679,7 @@ public class FileUtil {
    * @throws IOException if an I/O error occurs creating or writing to the file
    */
   public static FileContext write(final FileContext fileContext,
-                                  final Path path, final byte[] bytes) throws IOException {
+      final Path path, final byte[] bytes) throws IOException {
 
     Objects.requireNonNull(path);
     Objects.requireNonNull(bytes);
@@ -1708,7 +1711,7 @@ public class FileUtil {
    * @throws IOException if an I/O error occurs creating or writing to the file
    */
   public static FileSystem write(final FileSystem fs, final Path path,
-                                 final Iterable<? extends CharSequence> lines, final Charset cs)
+      final Iterable<? extends CharSequence> lines, final Charset cs)
       throws IOException {
 
     Objects.requireNonNull(path);
@@ -1746,8 +1749,8 @@ public class FileUtil {
    * @throws IOException if an I/O error occurs creating or writing to the file
    */
   public static FileContext write(final FileContext fileContext,
-                                  final Path path, final Iterable<? extends CharSequence> lines,
-                                  final Charset cs) throws IOException {
+      final Path path, final Iterable<? extends CharSequence> lines,
+      final Charset cs) throws IOException {
 
     Objects.requireNonNull(path);
     Objects.requireNonNull(lines);
@@ -1781,7 +1784,7 @@ public class FileUtil {
    * @throws IOException if an I/O error occurs creating or writing to the file
    */
   public static FileSystem write(final FileSystem fs, final Path path,
-                                 final CharSequence charseq, final Charset cs) throws IOException {
+      final CharSequence charseq, final Charset cs) throws IOException {
 
     Objects.requireNonNull(path);
     Objects.requireNonNull(charseq);
@@ -1812,7 +1815,7 @@ public class FileUtil {
    * @throws IOException if an I/O error occurs creating or writing to the file
    */
   public static FileContext write(final FileContext fs, final Path path,
-                                  final CharSequence charseq, final Charset cs) throws IOException {
+      final CharSequence charseq, final Charset cs) throws IOException {
 
     Objects.requireNonNull(path);
     Objects.requireNonNull(charseq);
@@ -1842,7 +1845,7 @@ public class FileUtil {
    * @throws IOException if an I/O error occurs creating or writing to the file
    */
   public static FileSystem write(final FileSystem fs, final Path path,
-                                 final CharSequence charseq) throws IOException {
+      final CharSequence charseq) throws IOException {
     return write(fs, path, charseq, StandardCharsets.UTF_8);
   }
 
@@ -1861,7 +1864,23 @@ public class FileUtil {
    * @throws IOException if an I/O error occurs creating or writing to the file
    */
   public static FileContext write(final FileContext fileContext,
-                                  final Path path, final CharSequence charseq) throws IOException {
+      final Path path, final CharSequence charseq) throws IOException {
     return write(fileContext, path, charseq, StandardCharsets.UTF_8);
+  }
+
+  @InterfaceAudience.LimitedPrivate({"ViewDistributedFileSystem"})
+  @InterfaceStability.Unstable
+  /**
+   * Used in ViewDistributedFileSystem rename API to get access to the protected
+   * API of FileSystem interface. Even though Rename with options API
+   * deprecated, we are still using as part of trash. If any filesystem provided
+   * implementation to this protected FileSystem API, we can't invoke it with
+   * out casting to the specific filesystem. This util method is proposed to get
+   * the access to FileSystem#rename with options.
+   */
+  @SuppressWarnings("deprecation")
+  public static void rename(FileSystem srcFs, Path src, Path dst,
+      final Options.Rename... options) throws IOException {
+    srcFs.rename(src, dst, options);
   }
 }

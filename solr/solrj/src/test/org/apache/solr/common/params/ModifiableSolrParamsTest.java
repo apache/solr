@@ -16,10 +16,9 @@
  */
 package org.apache.solr.common.params;
 
-import org.apache.solr.SolrTestCase;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.solr.SolrTestCase;
 
 /**
  * Unit Test Case for {@link org.apache.solr.common.params.ModifiableSolrParams
@@ -28,22 +27,18 @@ import java.util.Map;
 public class ModifiableSolrParamsTest extends SolrTestCase {
 
   @Override
-  public void setUp() throws Exception
-  {
+  public void setUp() throws Exception {
     super.setUp();
     modifiable = new ModifiableSolrParams();
   }
 
-
   @Override
-  public void tearDown() throws Exception
-  {
+  public void tearDown() throws Exception {
     modifiable.clear();
     super.tearDown();
   }
 
-  public void testOf() throws Exception
-  {
+  public void testOf() throws Exception {
     String key = "key";
     String value = "value";
 
@@ -66,8 +61,7 @@ public class ModifiableSolrParamsTest extends SolrTestCase {
     assertEquals(0, result.size());
   }
 
-  public void testAdd()
-  {
+  public void testAdd() {
 
     String key = "key";
     String[] values = new String[1];
@@ -77,14 +71,12 @@ public class ModifiableSolrParamsTest extends SolrTestCase {
     assertArrayEquals("params", values, result);
   }
 
-
-  public void testAddNormal()
-  {
+  public void testAddNormal() {
 
     String key = "key";
-    String[] helloWorld = new String[] { "Hello", "World" };
-    String[] universe = new String[] { "Universe" };
-    String[] helloWorldUniverse = new String[] { "Hello", "World", "Universe" };
+    String[] helloWorld = new String[] {"Hello", "World"};
+    String[] universe = new String[] {"Universe"};
+    String[] helloWorldUniverse = new String[] {"Hello", "World", "Universe"};
     modifiable.add(key, helloWorld);
     assertArrayEquals("checking Hello World: ", helloWorld, modifiable.getParams(key));
 
@@ -93,14 +85,12 @@ public class ModifiableSolrParamsTest extends SolrTestCase {
     compareArrays("checking Hello World Universe ", helloWorldUniverse, result);
   }
 
-
-  public void testAddNull()
-  {
+  public void testAddNull() {
 
     String key = "key";
-    String[] helloWorld = new String[] { "Hello", "World" };
-    String[] universe = new String[] { null };
-    String[] helloWorldUniverse = new String[] { "Hello", "World", null };
+    String[] helloWorld = new String[] {"Hello", "World"};
+    String[] universe = new String[] {null};
+    String[] helloWorldUniverse = new String[] {"Hello", "World", null};
     modifiable.add(key, helloWorld);
     assertArrayEquals("checking Hello World: ", helloWorld, modifiable.getParams(key));
 
@@ -109,14 +99,12 @@ public class ModifiableSolrParamsTest extends SolrTestCase {
     compareArrays("checking Hello World Universe ", helloWorldUniverse, result);
   }
 
-
-  public void testOldZeroLength()
-  {
+  public void testOldZeroLength() {
 
     String key = "key";
     String[] helloWorld = new String[] {};
-    String[] universe = new String[] { "Universe" };
-    String[] helloWorldUniverse = new String[] { "Universe" };
+    String[] universe = new String[] {"Universe"};
+    String[] helloWorldUniverse = new String[] {"Universe"};
     modifiable.add(key, helloWorld);
     assertArrayEquals("checking Hello World: ", helloWorld, modifiable.getParams(key));
 
@@ -125,14 +113,12 @@ public class ModifiableSolrParamsTest extends SolrTestCase {
     compareArrays("checking Hello World Universe ", helloWorldUniverse, result);
   }
 
-
-  public void testAddPseudoNull()
-  {
+  public void testAddPseudoNull() {
 
     String key = "key";
-    String[] helloWorld = new String[] { "Hello", "World" };
-    String[] universe = new String[] { "Universe", null };
-    String[] helloWorldUniverse = new String[] { "Hello", "World", "Universe", null };
+    String[] helloWorld = new String[] {"Hello", "World"};
+    String[] universe = new String[] {"Universe", null};
+    String[] helloWorldUniverse = new String[] {"Hello", "World", "Universe", null};
     modifiable.add(key, helloWorld);
     assertArrayEquals("checking Hello World: ", helloWorld, modifiable.getParams(key));
 
@@ -141,14 +127,9 @@ public class ModifiableSolrParamsTest extends SolrTestCase {
     compareArrays("checking Hello World Universe ", helloWorldUniverse, result);
   }
 
-
-  private void compareArrays(String prefix,
-                             String[] expected,
-                             String[] actual)
-  {
+  private void compareArrays(String prefix, String[] expected, String[] actual) {
     assertEquals(prefix + "length: ", expected.length, actual.length);
-    for (int i = 0; i < expected.length; ++i)
-    {
+    for (int i = 0; i < expected.length; ++i) {
       assertEquals(prefix + " index  " + i, expected[i], actual[i]);
     }
   }

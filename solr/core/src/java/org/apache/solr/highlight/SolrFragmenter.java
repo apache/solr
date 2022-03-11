@@ -23,12 +23,11 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public interface SolrFragmenter extends SolrInfoBean, NamedListInitializedPlugin {
   /**
-   * Return a {@link org.apache.lucene.search.highlight.Fragmenter} appropriate for this field. 
-   * 
+   * Return a {@link org.apache.lucene.search.highlight.Fragmenter} appropriate for this field.
+   *
    * @param fieldName The name of the field
    * @param params The params controlling Highlighting
    * @return An appropriate {@link org.apache.lucene.search.highlight.Fragmenter}.
    */
   public Fragmenter getFragmenter(String fieldName, SolrParams params);
 }
-

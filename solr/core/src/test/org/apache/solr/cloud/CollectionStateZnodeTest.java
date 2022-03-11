@@ -28,16 +28,14 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
   }
-  
+
   @After
   public void afterTest() throws Exception {
     cluster.deleteAllCollections();
   }
-  
+
   @Test
   public void testZkNodeLocation() throws Exception {
 
@@ -46,9 +44,13 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
-    
-    waitForState("Collection not created", collectionName, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
-    assertTrue("Collection path does not exist",
+
+    waitForState(
+        "Collection not created",
+        collectionName,
+        (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    assertTrue(
+        "Collection path does not exist",
         zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
 
     Stat stat = new Stat();
@@ -56,15 +58,17 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
 
     DocCollection c = getCollectionState(collectionName);
 
-    assertEquals("DocCollection version should equal the znode version", stat.getVersion(), c.getZNodeVersion() );
+    assertEquals(
+        "DocCollection version should equal the znode version",
+        stat.getVersion(),
+        c.getZNodeVersion());
 
     // remove collection
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
     waitForState("Collection not deleted", collectionName, (n, coll) -> coll == null);
 
-    assertFalse("collection state should not exist",
+    assertFalse(
+        "collection state should not exist",
         zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));
-
   }
 }
-

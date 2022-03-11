@@ -16,11 +16,12 @@
  */
 package org.apache.solr.request;
 
+import static org.apache.solr.core.TestSolrConfigHandler.runConfigCommand;
+
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -35,14 +36,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.core.TestSolrConfigHandler.runConfigCommand;
-
 public class TestStreamBody extends RestTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
-  
+
   @Before
   public void before() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
@@ -53,11 +52,17 @@ public class TestStreamBody extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-minimal.xml", "schema-rest.xml",
-        "/solr", true, extraServlets);
+    createJettyAndHarness(
+        tmpSolrHome.getAbsolutePath(),
+        "solrconfig-minimal.xml",
+        "schema-rest.xml",
+        "/solr",
+        true,
+        extraServlets);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
-      restTestHarness.setServerProvider(() -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
+      restTestHarness.setServerProvider(
+          () -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
     }
   }
 
@@ -82,23 +87,26 @@ public class TestStreamBody extends RestTestBase {
   public void testQtUpdateFails() throws Exception {
     enableStreamBody(true);
     SolrQuery query = new SolrQuery();
-    query.setQuery( "*:*" );//for anything
-    query.add("echoHandler","true");
-    //sneaky sneaky
-    query.add("qt","/update");
-    query.add(CommonParams.STREAM_BODY,"<delete><query>*:*</query></delete>");
+    query.setQuery("*:*"); // for anything
+    query.add("echoHandler", "true");
+    // sneaky sneaky
+    query.add("qt", "/update");
+    query.add(CommonParams.STREAM_BODY, "<delete><query>*:*</query></delete>");
 
-    QueryRequest queryRequest = new QueryRequest(query) {
-      @Override
-      public String getPath() { //don't let superclass substitute qt for the path
-        return "/select";
-      }
-    };
+    QueryRequest queryRequest =
+        new QueryRequest(query) {
+          @Override
+          public String getPath() { // don't let superclass substitute qt for the path
+            return "/select";
+          }
+        };
     try {
       queryRequest.process(getSolrClient());
       fail();
     } catch (SolrException se) {
-      assertTrue(se.getMessage(), se.getMessage().contains("Bad contentType for search handler :text/xml"));
+      assertTrue(
+          se.getMessage(),
+          se.getMessage().contains("Bad contentType for search handler :text/xml"));
     }
   }
 
@@ -106,16 +114,18 @@ public class TestStreamBody extends RestTestBase {
   @Test
   public void testStreamBodyDefaultAndConfigApi() throws Exception {
     SolrQuery query = new SolrQuery();
-    query.add(CommonParams.STREAM_BODY,"<delete><query>*:*</query></delete>");
-    query.add("commit","true");
+    query.add(CommonParams.STREAM_BODY, "<delete><query>*:*</query></delete>");
+    query.add("commit", "true");
 
-    QueryRequest queryRequest = new QueryRequest(query) {
-      @Override
-      public String getPath() { //don't let superclass substitute qt for the path
-        return "/update";
-      }
-    };
-    SolrException se = expectThrows(SolrException.class, () -> queryRequest.process(getSolrClient()));
+    QueryRequest queryRequest =
+        new QueryRequest(query) {
+          @Override
+          public String getPath() { // don't let superclass substitute qt for the path
+            return "/update";
+          }
+        };
+    SolrException se =
+        expectThrows(SolrException.class, () -> queryRequest.process(getSolrClient()));
     assertTrue(se.getMessage(), se.getMessage().contains("Stream Body is disabled"));
     enableStreamBody(true);
     queryRequest.process(getSolrClient());
@@ -124,7 +134,10 @@ public class TestStreamBody extends RestTestBase {
   // Enables/disables stream.body through Config API
   private void enableStreamBody(boolean enable) throws Exception {
     RestTestHarness harness = restTestHarness;
-    String payload = "{ 'set-property' : { 'requestDispatcher.requestParsers.enableStreamBody':" + enable + "} }";
+    String payload =
+        "{ 'set-property' : { 'requestDispatcher.requestParsers.enableStreamBody':"
+            + enable
+            + "} }";
     runConfigCommand(harness, "/config?wt=json", payload);
   }
 }

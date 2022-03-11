@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ConnectionManager;
@@ -37,29 +36,29 @@ import org.junit.Test;
 
 @Slow
 public class ConnectionManagerTest extends SolrTestCaseJ4 {
-  
+
   static final int TIMEOUT = 3000;
-  
+
   @Ignore
   public void testConnectionManager() throws Exception {
-    
+
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
     Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-      
+
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
       ConnectionManager cm = zkClient.getConnectionManager();
       try {
         assertFalse(cm.isLikelyExpired());
 
         zkClient.getSolrZooKeeper().closeCnxn();
-        
+
         long sessionId = zkClient.getSolrZooKeeper().getSessionId();
         server.expire(sessionId);
         Thread.sleep(TIMEOUT);
-        
+
         assertTrue(cm.isLikelyExpired());
       } finally {
         cm.close();
@@ -89,7 +88,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
         assertFalse(cm.isLikelyExpired());
 
         // but it should after the timeout
-        Thread.sleep((long)(zkClient.getZkClientTimeout() * 1.5));
+        Thread.sleep((long) (zkClient.getZkClientTimeout() * 1.5));
         assertFalse(cm.isConnectedAndNotClosed());
         assertTrue(cm.isLikelyExpired());
 
@@ -110,25 +109,27 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       server.shutdown();
     }
   }
-  
+
   @Test
   public void testReconnectWhenZkDisappeared() throws Exception {
-    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new SolrNamedThreadFactory("connectionManagerTest"));
-    
+    ScheduledExecutorService executor =
+        Executors.newSingleThreadScheduledExecutor(
+            new SolrNamedThreadFactory("connectionManagerTest"));
+
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
     Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-      
+
       MockZkClientConnectionStrategy strat = new MockZkClientConnectionStrategy();
-      SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT, strat , null);
+      SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT, strat, null);
       ConnectionManager cm = zkClient.getConnectionManager();
-      
+
       try {
         assertFalse(cm.isLikelyExpired());
         assertTrue(cm.isConnectedAndNotClosed());
-               
+
         // reconnect -- should no longer be likely expired
         cm.process(new WatchedEvent(EventType.None, KeeperState.Expired, ""));
         assertFalse(cm.isLikelyExpired());
@@ -143,23 +144,27 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
       server.shutdown();
     }
   }
-  
+
   private static class MockZkClientConnectionStrategy extends DefaultConnectionStrategy {
     int called = 0;
     boolean exceptionThrown = false;
-    
+
     @Override
-    public void reconnect(final String serverAddress, final int zkClientTimeout,
-        final Watcher watcher, final ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
-      
-      if(called++ < 1) {
+    public void reconnect(
+        final String serverAddress,
+        final int zkClientTimeout,
+        final Watcher watcher,
+        final ZkUpdate updater)
+        throws IOException, InterruptedException, TimeoutException {
+
+      if (called++ < 1) {
         exceptionThrown = true;
         throw new IOException("Testing");
       }
-      
+
       super.reconnect(serverAddress, zkClientTimeout, watcher, updater);
     }
-    
+
     public boolean isExceptionThrow() {
       return exceptionThrown;
     }

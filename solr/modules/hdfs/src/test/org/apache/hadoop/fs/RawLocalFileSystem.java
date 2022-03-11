@@ -18,7 +18,7 @@
 
 package org.apache.hadoop.fs;
 
-import com.google.common.annotations.VisibleForTesting;
+import org.apache.hadoop.thirdparty.com.google.common.annotations.VisibleForTesting;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutput;
@@ -309,7 +309,7 @@ public class RawLocalFileSystem extends FileSystem {
         .build();
 
     private LocalFSFileOutputStream(Path f, boolean append,
-                                    FsPermission permission) throws IOException {
+        FsPermission permission) throws IOException {
       File file = pathToFile(f);
       if (!append && permission == null) {
         permission = FsPermission.getFileDefault();
@@ -400,7 +400,7 @@ public class RawLocalFileSystem extends FileSystem {
 
   @Override
   public FSDataOutputStream append(Path f, int bufferSize,
-                                   Progressable progress) throws IOException {
+      Progressable progress) throws IOException {
     FileStatus status = getFileStatus(f);
     if (status.isDirectory()) {
       throw new IOException("Cannot append to a diretory (=" + f + " )");
@@ -412,15 +412,15 @@ public class RawLocalFileSystem extends FileSystem {
 
   @Override
   public FSDataOutputStream create(Path f, boolean overwrite, int bufferSize,
-                                   short replication, long blockSize, Progressable progress)
+      short replication, long blockSize, Progressable progress)
       throws IOException {
     return create(f, overwrite, true, bufferSize, replication, blockSize,
         progress, null);
   }
 
   private FSDataOutputStream create(Path f, boolean overwrite,
-                                    boolean createParent, int bufferSize, short replication, long blockSize,
-                                    Progressable progress, FsPermission permission) throws IOException {
+      boolean createParent, int bufferSize, short replication, long blockSize,
+      Progressable progress, FsPermission permission) throws IOException {
     if (exists(f) && !overwrite) {
       throw new FileAlreadyExistsException("File already exists: " + f);
     }
@@ -439,14 +439,14 @@ public class RawLocalFileSystem extends FileSystem {
   }
 
   protected OutputStream createOutputStreamWithMode(Path f, boolean append,
-                                                    FsPermission permission) throws IOException {
+      FsPermission permission) throws IOException {
     return new LocalFSFileOutputStream(f, append, permission);
   }
 
   @Override
   public FSDataOutputStream createNonRecursive(Path f, FsPermission permission,
-                                               EnumSet<CreateFlag> flags, int bufferSize, short replication, long blockSize,
-                                               Progressable progress) throws IOException {
+      EnumSet<CreateFlag> flags, int bufferSize, short replication, long blockSize,
+      Progressable progress) throws IOException {
     if (exists(f) && !flags.contains(CreateFlag.OVERWRITE)) {
       throw new FileAlreadyExistsException("File already exists: " + f);
     }
@@ -457,8 +457,8 @@ public class RawLocalFileSystem extends FileSystem {
 
   @Override
   public FSDataOutputStream create(Path f, FsPermission permission,
-                                   boolean overwrite, int bufferSize, short replication, long blockSize,
-                                   Progressable progress) throws IOException {
+      boolean overwrite, int bufferSize, short replication, long blockSize,
+      Progressable progress) throws IOException {
 
     FSDataOutputStream out = create(f, overwrite, true, bufferSize, replication,
         blockSize, progress, permission);
@@ -467,9 +467,9 @@ public class RawLocalFileSystem extends FileSystem {
 
   @Override
   public FSDataOutputStream createNonRecursive(Path f, FsPermission permission,
-                                               boolean overwrite,
-                                               int bufferSize, short replication, long blockSize,
-                                               Progressable progress) throws IOException {
+      boolean overwrite,
+      int bufferSize, short replication, long blockSize,
+      Progressable progress) throws IOException {
     FSDataOutputStream out = create(f, overwrite, false, bufferSize, replication,
         blockSize, progress, permission);
     return out;
@@ -511,7 +511,7 @@ public class RawLocalFileSystem extends FileSystem {
 
   @VisibleForTesting
   public final boolean handleEmptyDstDirectoryOnWindows(Path src, File srcFile,
-                                                        Path dst, File dstFile) throws IOException {
+      Path dst, File dstFile) throws IOException {
 
     // Enforce POSIX rename behavior that a source directory replaces an
     // existing destination if the destination is an empty directory. On most
@@ -992,7 +992,7 @@ public class RawLocalFileSystem extends FileSystem {
    *            {@link PathHandle} reference.
    */
   protected PathHandle createPathHandle(FileStatus stat,
-                                        Options.HandleOpt... opts) {
+      Options.HandleOpt... opts) {
     if (stat.isDirectory() || stat.isSymlink()) {
       throw new IllegalArgumentException("PathHandle only available for files");
     }
@@ -1077,7 +1077,7 @@ public class RawLocalFileSystem extends FileSystem {
    * @throws IOException Exception on getFileLinkStatusInternal
    */
   private FileStatus getFileLinkStatusInternal(final Path f,
-                                               boolean dereference) throws IOException {
+      boolean dereference) throws IOException {
     if (!useDeprecatedFileStatus) {
       return getNativeFileLinkStatus(f, dereference);
     } else if (dereference) {
@@ -1144,7 +1144,7 @@ public class RawLocalFileSystem extends FileSystem {
    * @throws IOException Exception on getNativeFileLinkStatus
    */
   private FileStatus getNativeFileLinkStatus(final Path f,
-                                             boolean dereference) throws IOException {
+      boolean dereference) throws IOException {
     checkPath(f);
     Stat stat = new Stat(f, defaultBlockSize, dereference, this);
     FileStatus status = stat.getFileStatus();

@@ -18,23 +18,19 @@
 package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.Test;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +39,8 @@ public class OrderedExecutorTest extends SolrTestCase {
 
   @Test
   public void testExecutionInOrder() {
-    OrderedExecutor orderedExecutor = new OrderedExecutor(10, ExecutorUtil.newMDCAwareCachedThreadPool("executeInOrderTest"));
+    OrderedExecutor orderedExecutor =
+        new OrderedExecutor(10, ExecutorUtil.newMDCAwareCachedThreadPool("executeInOrderTest"));
     IntBox intBox = new IntBox();
     for (int i = 0; i < 100; i++) {
       orderedExecutor.execute(1, () -> intBox.value++);
@@ -54,37 +51,44 @@ public class OrderedExecutorTest extends SolrTestCase {
 
   @Test
   public void testLockWhenQueueIsFull() {
-    final ExecutorService controlExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_control");
-    final OrderedExecutor orderedExecutor = new OrderedExecutor
-      (10, ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_test"));
-    
+    final ExecutorService controlExecutor =
+        ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_control");
+    final OrderedExecutor orderedExecutor =
+        new OrderedExecutor(
+            10, ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_test"));
+
     try {
       // AAA and BBB events will both depend on the use of the same lockId
       final BlockingQueue<String> events = new ArrayBlockingQueue<>(2);
       final Integer lockId = 1;
-      
+
       // AAA enters executor first so it should execute first (even though it's waiting on latch)
       final CountDownLatch latchAAA = new CountDownLatch(1);
-      orderedExecutor.execute(lockId, () -> {
-          try {
-            if (latchAAA.await(120, TimeUnit.SECONDS)) {
-              events.add("AAA");
-            } else {
-              events.add("AAA Timed Out");
+      orderedExecutor.execute(
+          lockId,
+          () -> {
+            try {
+              if (latchAAA.await(120, TimeUnit.SECONDS)) {
+                events.add("AAA");
+              } else {
+                events.add("AAA Timed Out");
+              }
+            } catch (InterruptedException e) {
+              log.error("Interrupt in AAA worker", e);
+              Thread.currentThread().interrupt();
             }
-          } catch (InterruptedException e) {
-            log.error("Interrupt in AAA worker", e);
-            Thread.currentThread().interrupt();
-          }
-        });
+          });
       // BBB doesn't care about the latch, but because it uses the same lockId, it's blocked on AAA
       // so we execute it in a background thread...
-      controlExecutor.execute(() -> {
-          orderedExecutor.execute(lockId, () -> {
-              events.add("BBB");
-            });
-        });
-      
+      controlExecutor.execute(
+          () -> {
+            orderedExecutor.execute(
+                lockId,
+                () -> {
+                  events.add("BBB");
+                });
+          });
+
       // now if we release the latchAAA, AAA should be garunteed to fire first, then BBB
       latchAAA.countDown();
       try {
@@ -104,10 +108,12 @@ public class OrderedExecutorTest extends SolrTestCase {
   @Test
   public void testRunInParallel() {
     final int parallelism = atLeast(3);
-    
-    final ExecutorService controlExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("testRunInParallel_control");
-    final OrderedExecutor orderedExecutor = new OrderedExecutor
-      (parallelism, ExecutorUtil.newMDCAwareCachedThreadPool("testRunInParallel_test"));
+
+    final ExecutorService controlExecutor =
+        ExecutorUtil.newMDCAwareCachedThreadPool("testRunInParallel_control");
+    final OrderedExecutor orderedExecutor =
+        new OrderedExecutor(
+            parallelism, ExecutorUtil.newMDCAwareCachedThreadPool("testRunInParallel_test"));
 
     try {
       // distinct lockIds should be able to be used in parallel, up to the size of the executor,
@@ -116,38 +122,43 @@ public class OrderedExecutorTest extends SolrTestCase {
       final CyclicBarrier barrier = new CyclicBarrier(parallelism + 1);
       final CountDownLatch preBarrierLatch = new CountDownLatch(parallelism);
       final CountDownLatch postBarrierLatch = new CountDownLatch(parallelism);
-      
+
       for (int i = 0; i < parallelism; i++) {
         final int lockId = i;
-        controlExecutor.execute(() -> {
-            orderedExecutor.execute(lockId, () -> {
-                try {
-                  log.info("Worker #{} starting", lockId);
-                  preBarrierLatch.countDown();
-                  barrier.await(120, TimeUnit.SECONDS);
-                  postBarrierLatch.countDown();
-                } catch (TimeoutException t) {
-                  log.error("Timeout in worker# {} awaiting barrier", lockId, t);
-                } catch (BrokenBarrierException b) {
-                  log.error("Broken Barrier in worker#{}", lockId, b);
-                } catch (InterruptedException e) {
-                  log.error("Interrupt in worker#{} awaiting barrier", lockId, e);
-                  Thread.currentThread().interrupt();
-                }
-              });
-          });
+        controlExecutor.execute(
+            () -> {
+              orderedExecutor.execute(
+                  lockId,
+                  () -> {
+                    try {
+                      log.info("Worker #{} starting", lockId);
+                      preBarrierLatch.countDown();
+                      barrier.await(120, TimeUnit.SECONDS);
+                      postBarrierLatch.countDown();
+                    } catch (TimeoutException t) {
+                      log.error("Timeout in worker# {} awaiting barrier", lockId, t);
+                    } catch (BrokenBarrierException b) {
+                      log.error("Broken Barrier in worker#{}", lockId, b);
+                    } catch (InterruptedException e) {
+                      log.error("Interrupt in worker#{} awaiting barrier", lockId, e);
+                      Thread.currentThread().interrupt();
+                    }
+                  });
+            });
       }
 
       if (log.isInfoEnabled()) {
-        log.info("main thread: about to wait on pre-barrier latch, barrier={}, post-barrier latch={}",
-            barrier.getNumberWaiting(), postBarrierLatch.getCount());
+        log.info(
+            "main thread: about to wait on pre-barrier latch, barrier={}, post-barrier latch={}",
+            barrier.getNumberWaiting(),
+            postBarrierLatch.getCount());
       }
-      
+
       try {
         // this latch should have fully counted down by now
         // (or with a small await for thread scheduling but no other external action)
-        assertTrue("Timeout awaiting pre barrier latch",
-                   preBarrierLatch.await(120, TimeUnit.SECONDS));
+        assertTrue(
+            "Timeout awaiting pre barrier latch", preBarrierLatch.await(120, TimeUnit.SECONDS));
       } catch (InterruptedException e) {
         log.error("Interrupt awwaiting pre barrier latch", e);
         Thread.currentThread().interrupt();
@@ -155,10 +166,12 @@ public class OrderedExecutorTest extends SolrTestCase {
       }
 
       if (log.isInfoEnabled()) {
-        log.info("main thread: pre-barrier latch done, barrier={}, post-barrier latch={}",
-            barrier.getNumberWaiting(), postBarrierLatch.getCount());
+        log.info(
+            "main thread: pre-barrier latch done, barrier={}, post-barrier latch={}",
+            barrier.getNumberWaiting(),
+            postBarrierLatch.getCount());
       }
-      
+
       // nothing should have counted down yet on the postBarrierLatch
       assertEquals(parallelism, postBarrierLatch.getCount());
 
@@ -168,14 +181,15 @@ public class OrderedExecutorTest extends SolrTestCase {
         barrier.await(120, TimeUnit.SECONDS);
 
         if (log.isInfoEnabled()) {
-          log.info("main thread: barrier has released, post-barrier latch={}",
+          log.info(
+              "main thread: barrier has released, post-barrier latch={}",
               postBarrierLatch.getCount());
         }
-        
+
         // and now the post-barrier latch should release immediately
         // (or with a small await for thread scheduling but no other external action)
-        assertTrue("Timeout awaiting post barrier latch",
-                   postBarrierLatch.await(120, TimeUnit.SECONDS));
+        assertTrue(
+            "Timeout awaiting post barrier latch", postBarrierLatch.await(120, TimeUnit.SECONDS));
       } catch (TimeoutException t) {
         log.error("Timeout awaiting barrier", t);
         fail("barrier timed out");
@@ -202,7 +216,8 @@ public class OrderedExecutorTest extends SolrTestCase {
       base.put(i, i);
       run.put(i, i);
     }
-    OrderedExecutor orderedExecutor = new OrderedExecutor(10, ExecutorUtil.newMDCAwareCachedThreadPool("testStress"));
+    OrderedExecutor orderedExecutor =
+        new OrderedExecutor(10, ExecutorUtil.newMDCAwareCachedThreadPool("testStress"));
     for (int i = 0; i < 1000; i++) {
       int key = random().nextInt(N);
       base.put(key, base.get(key) + 1);

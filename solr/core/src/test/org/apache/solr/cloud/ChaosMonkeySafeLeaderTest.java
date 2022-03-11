@@ -30,5 +30,4 @@ public class ChaosMonkeySafeLeaderTest extends AbstractChaosMonkeySafeLeaderTest
   protected String getDirectoryFactory() {
     return DIRECTORY_FACTORY;
   }
-
 }

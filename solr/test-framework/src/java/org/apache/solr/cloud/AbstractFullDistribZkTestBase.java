@@ -1158,13 +1158,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     controlClient.deleteByQuery(q);
     cloudClient.deleteByQuery(q);
 
-    /***
-     * for (SolrServer client : clients) {
-     * UpdateRequest ureq = new UpdateRequest();
-     * // ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
-     * ureq.deleteByQuery(q).process(client);
-     * }
-     ***/
+    //     for (SolrServer client : clients) {
+    //       UpdateRequest ureq = new UpdateRequest();
+    //       // ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
+    //       ureq.deleteByQuery(q).process(client);
+    //     }
   } // serial commit...
 
   protected void waitForRecoveriesToFinish(boolean verbose) throws Exception {
@@ -2678,7 +2676,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                         .getIndexCommit()
                         .getUserData()
                         .get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
-                if (Long.parseLong(servingVersion) == replicaIndexVersion) {
+                if (servingVersion != null
+                    && Long.parseLong(servingVersion) == replicaIndexVersion) {
                   break;
                 } else {
                   if (log.isInfoEnabled()) {
@@ -2694,17 +2693,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               }
             }
           } else {
-            if (timeout.hasTimedOut()) {
-              logReplicaTypesReplicationInfo(collectionName, zkStateReader);
-              fail(
-                  String.format(
-                      Locale.ROOT,
-                      "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)",
-                      pullReplica.getName(),
-                      replicaIndexVersion,
-                      leader.getName(),
-                      leaderIndexVersion));
-            }
             if (leaderIndexVersion > replicaIndexVersion) {
               if (log.isInfoEnabled()) {
                 log.info(
@@ -2723,6 +2711,17 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                     replicaIndexVersion);
               }
             }
+          }
+          if (timeout.hasTimedOut()) {
+            logReplicaTypesReplicationInfo(collectionName, zkStateReader);
+            fail(
+                String.format(
+                    Locale.ROOT,
+                    "Timed out waiting for replica %s (%d) to replicate from leader %s (%d)",
+                    pullReplica.getName(),
+                    replicaIndexVersion,
+                    leader.getName(),
+                    leaderIndexVersion));
           }
           Thread.sleep(1000);
         }

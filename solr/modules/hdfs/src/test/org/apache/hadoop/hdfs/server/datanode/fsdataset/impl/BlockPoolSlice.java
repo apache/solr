@@ -71,7 +71,7 @@ import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.util.Timer;
 import org.apache.solr.hdfs.cloud.HdfsTestUtil;
 
-import com.google.common.annotations.VisibleForTesting;
+import org.apache.hadoop.thirdparty.com.google.common.annotations.VisibleForTesting;
 
 /**
  * A block pool slice represents a portion of a block pool stored on a volume.
@@ -131,7 +131,7 @@ public class BlockPoolSlice {
    * @throws IOException Error making directories
    */
   BlockPoolSlice(String bpid, FsVolumeImpl volume, File bpDir,
-                 Configuration conf, Timer timer) throws IOException {
+      Configuration conf, Timer timer) throws IOException {
     this.bpid = bpid;
     this.volume = volume;
     this.fileIoProvider = volume.getFileIoProvider();
@@ -211,7 +211,7 @@ public class BlockPoolSlice {
   }
 
   private synchronized static void initializeAddReplicaPool(Configuration conf,
-                                                            FsDatasetImpl dataset) {
+      FsDatasetImpl dataset) {
     if (addReplicaThreadPool == null) {
       int numberOfBlockPoolSlice = dataset.getVolumeCount()
           * dataset.getBPServiceCount();
@@ -299,7 +299,7 @@ public class BlockPoolSlice {
    * under finalized.
    */
   ReplicaInfo activateSavedReplica(ReplicaInfo replicaInfo,
-                                   RamDiskReplica replicaState) throws IOException {
+      RamDiskReplica replicaState) throws IOException {
     File metaFile = replicaState.getSavedMetaFile();
     File blockFile = replicaState.getSavedBlockFile();
     final long blockId = replicaInfo.getBlockId();
@@ -328,8 +328,10 @@ public class BlockPoolSlice {
     DiskChecker.checkDir(rbwDir);
   }
 
+
+
   void getVolumeMap(ReplicaMap volumeMap,
-                    final RamDiskReplicaTracker lazyWriteReplicaMap)
+      final RamDiskReplicaTracker lazyWriteReplicaMap)
       throws IOException {
     // Recover lazy persist replicas, they will be added to the volumeMap
     // when we scan the finalized directory.
@@ -381,7 +383,7 @@ public class BlockPoolSlice {
    *           throw if any sub task or multiple sub tasks failed.
    */
   private void waitForSubTaskToFinish(Queue<RecursiveAction> subTaskQueue,
-                                      List<IOException> exceptions) throws IOException {
+      List<IOException> exceptions) throws IOException {
     while (!subTaskQueue.isEmpty()) {
       RecursiveAction task = subTaskQueue.poll();
       if (task != null) {
@@ -475,7 +477,7 @@ public class BlockPoolSlice {
   }
 
   private void addReplicaToReplicasMap(Block block, ReplicaMap volumeMap,
-                                       final RamDiskReplicaTracker lazyWriteReplicaMap,boolean isFinalized)
+      final RamDiskReplicaTracker lazyWriteReplicaMap,boolean isFinalized)
       throws IOException {
     ReplicaInfo newReplica = null;
     long blockId = block.getBlockId();
@@ -572,8 +574,8 @@ public class BlockPoolSlice {
    * @param subTaskQueue queue of sub tasks
    */
   void addToReplicasMap(ReplicaMap volumeMap, File dir,
-                        final RamDiskReplicaTracker lazyWriteReplicaMap, boolean isFinalized,
-                        List<IOException> exceptions, Queue<RecursiveAction> subTaskQueue)
+      final RamDiskReplicaTracker lazyWriteReplicaMap, boolean isFinalized,
+      List<IOException> exceptions, Queue<RecursiveAction> subTaskQueue)
       throws IOException {
     File[] files = fileIoProvider.listFiles(volume, dir);
     Arrays.sort(files, FILE_COMPARATOR);
@@ -650,7 +652,7 @@ public class BlockPoolSlice {
 
   @VisibleForTesting
   static ReplicaInfo selectReplicaToDelete(final ReplicaInfo replica1,
-                                           final ReplicaInfo replica2) {
+      final ReplicaInfo replica2) {
     ReplicaInfo replicaToKeep;
     ReplicaInfo replicaToDelete;
 
@@ -783,7 +785,7 @@ public class BlockPoolSlice {
   }
 
   private boolean readReplicasFromCache(ReplicaMap volumeMap,
-                                        final RamDiskReplicaTracker lazyWriteReplicaMap) {
+      final RamDiskReplicaTracker lazyWriteReplicaMap) {
     ReplicaMap tmpReplicaMap = new ReplicaMap(new ReentrantReadWriteLock());
     File replicaFile = new File(replicaCacheDir, REPLICA_CACHE_FILE);
     // Check whether the file exists or not.
@@ -935,8 +937,8 @@ public class BlockPoolSlice {
      *          queue of sub tasks
      */
     AddReplicaProcessor(ReplicaMap volumeMap, File dir,
-                        RamDiskReplicaTracker lazyWriteReplicaMap, boolean isFinalized,
-                        List<IOException> exceptions, Queue<RecursiveAction> subTaskQueue) {
+        RamDiskReplicaTracker lazyWriteReplicaMap, boolean isFinalized,
+        List<IOException> exceptions, Queue<RecursiveAction> subTaskQueue) {
       this.volumeMap = volumeMap;
       this.dir = dir;
       this.lazyWriteReplicaMap = lazyWriteReplicaMap;

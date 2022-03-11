@@ -18,33 +18,30 @@
 package org.apache.solr.client.solrj.request.beans;
 
 import java.util.List;
-
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-/**Just a container class for POJOs used in Package APIs
- *
- */
+/** Just a container class for POJOs used in Package APIs */
 public class Package {
   public static class AddVersion implements ReflectMapWriter {
     @JsonProperty(value = "package", required = true)
     public String pkg;
+
     @JsonProperty(required = true)
     public String version;
+
     @JsonProperty(required = true)
     public List<String> files;
-    @JsonProperty
-    public String manifest;
-    @JsonProperty
-    public String manifestSHA512;
 
+    @JsonProperty public String manifest;
+    @JsonProperty public String manifestSHA512;
   }
 
   public static class DelVersion implements ReflectMapWriter {
     @JsonProperty(value = "package", required = true)
     public String pkg;
+
     @JsonProperty(required = true)
     public String version;
-
   }
 }

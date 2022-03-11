@@ -14,13 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Factories and classes specific to text analysis and the creation of {@link org.apache.lucene.analysis.TokenStream}s
- * <p>
- * See {@link org.apache.lucene.analysis} for additional details.
+
+/**
+ * Factories and classes specific to text analysis and the creation of {@link
+ * org.apache.lucene.analysis.TokenStream}s
+ *
+ * <p>See {@link org.apache.lucene.analysis} for additional details.
  */
 package org.apache.solr.analysis;
-
-
-

@@ -115,7 +115,7 @@ def noJavaPackageClasses(desc, file):
   with zipfile.ZipFile(file) as z2:
     for name2 in z2.namelist():
       if name2.endswith('.class') and (name2.startswith('java/') or name2.startswith('javax/')):
-        raise RuntimeError('%s contains sheisty class "%s"' %  (desc, name2))
+        raise RuntimeError('%s contains java or javax class "%s"' % (desc, name2))
 
 
 def decodeUTF8(bytes):
@@ -200,7 +200,7 @@ def checkAllJARs(topDir, gitRevision, version):
     if normRoot.endswith('/server/lib'):
       # Solr's example intentionally ships servlet JAR:
       continue
-    
+
     for file in files:
       if file.lower().endswith('.jar'):
         if ((normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.activation-'))
@@ -231,6 +231,8 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   artifacts = []
 
   for text, subURL in ents:
+    if text == '.gitrev':
+      continue # Allow this in the distribution build directory
     if text == 'KEYS':
       raise RuntimeError('solr: release dir should not contain a KEYS file - only toplevel /dist/solr/KEYS is used')
     elif text == 'maven/':
@@ -590,7 +592,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin', 'bin-test', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
+    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
@@ -626,6 +628,8 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     java.run_java11('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
     print("    compile jars w/ Java 11")
     java.run_java11('./gradlew --no-daemon jar -Dversion.release=%s' % version, '%s/compile.log' % unpackPath)
+    print("    run interation tests w/ Java 11")
+    java.run_java11('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
     testSolrExample(unpackPath, java.java11_home, True)
 
     if java.run_java17:
@@ -633,6 +637,9 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
       java.run_java17('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
       print("    compile jars w/ Java 17")
       java.run_java17('./gradlew --no-daemon jar -Dversion.release=%s' % version, '%s/compile.log' % unpackPath)
+      print("    run interation tests w/ Java 17")
+      java.run_java17('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
+      testSolrExample(unpackPath, java.java17_home, True)
 
   else:
     checkAllJARs(os.getcwd(), gitRevision, version)
@@ -716,7 +723,7 @@ def testSolrExample(unpackPath, javaPath, isSrc):
       if not cygwin:
         subprocess.call(['bin/solr','stop','-p','8983'])
       else:
-        subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True) 
+        subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
   except:
       print('      Stop failed due to: '+sys.exc_info()[0])
 
@@ -725,8 +732,8 @@ def testSolrExample(unpackPath, javaPath, isSrc):
     if not cygwin:
       runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
     else:
-      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True) 
-      
+      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True)
+
     if runExampleStatus != 0:
       raise RuntimeError('Failed to run the techproducts example, check log for previous errors.')
 
@@ -749,17 +756,17 @@ def testSolrExample(unpackPath, javaPath, isSrc):
       os.chdir(unpackPath+'/solr')
     else:
       os.chdir(unpackPath)
-    
+
     if not cygwin:
       subprocess.call(['bin/solr','stop','-p','8983'])
     else:
-      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True) 
+      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
 
   if isSrc:
     os.chdir(unpackPath+'/solr')
   else:
     os.chdir(unpackPath)
-    
+
 
 def removeTrailingZeros(version):
   return re.sub(r'(\.0)*$', '', version)
@@ -1104,9 +1111,14 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     print('  unshortened: %s' % newBaseURL)
     baseURL = newBaseURL
 
-  for text, subURL in getDirEntries(baseURL):
-    if text.lower().find('solr') != -1:
-      solrPath = subURL
+  if baseURL.endswith('distribution/build/release'):
+    # Used when building release locally in Jenkins
+    solrPath = baseURL
+  else:
+    # An ordinary release has a 'solr' sub folder
+    for text, subURL in getDirEntries(baseURL):
+      if text.lower() == 'solr/':
+        solrPath = subURL
 
   if solrPath is None:
     raise RuntimeError('could not find solr subdir')

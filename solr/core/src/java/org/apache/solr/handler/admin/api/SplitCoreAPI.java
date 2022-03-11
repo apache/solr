@@ -17,6 +17,17 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_KEY;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.params.CoreAdminParams.TARGET_CORE;
+import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
@@ -26,78 +37,62 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_KEY;
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CoreAdminParams.TARGET_CORE;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
-import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
-
 /**
  * V2 API for splitting a single core into multiple pieces
  *
- * The new API (POST /v2/cores/coreName {'split': {...}}) is equivalent to the v1
+ * <p>The new API (POST /v2/cores/coreName {'split': {...}}) is equivalent to the v1
  * /admin/cores?action=split command.
  */
 @EndPoint(
-        path = {"/cores/{core}"},
-        method = POST,
-        permission = CORE_EDIT_PERM)
+    path = {"/cores/{core}"},
+    method = POST,
+    permission = CORE_EDIT_PERM)
 public class SplitCoreAPI {
-    private static final String V2_SPLIT_CORE_CMD = "split";
+  private static final String V2_SPLIT_CORE_CMD = "split";
 
-    private final CoreAdminHandler coreHandler;
+  private final CoreAdminHandler coreHandler;
 
-    public SplitCoreAPI(CoreAdminHandler coreHandler) {
-        this.coreHandler = coreHandler;
+  public SplitCoreAPI(CoreAdminHandler coreHandler) {
+    this.coreHandler = coreHandler;
+  }
+
+  @Command(name = V2_SPLIT_CORE_CMD)
+  public void splitCore(PayloadObj<SplitCorePayload> obj) throws Exception {
+    final SplitCorePayload v2Body = obj.get();
+    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+    v1Params.put(
+        CoreAdminParams.ACTION,
+        CoreAdminParams.CoreAdminAction.SPLIT.name().toLowerCase(Locale.ROOT));
+    v1Params.put(
+        CoreAdminParams.CORE, obj.getRequest().getPathTemplateValues().get(CoreAdminParams.CORE));
+
+    if (!CollectionUtils.isEmpty(v2Body.path)) {
+      v1Params.put(PATH, v2Body.path.toArray(new String[v2Body.path.size()]));
+    }
+    if (!CollectionUtils.isEmpty(v2Body.targetCore)) {
+      v1Params.put(TARGET_CORE, v2Body.targetCore.toArray(new String[v2Body.targetCore.size()]));
     }
 
-    @Command(name = V2_SPLIT_CORE_CMD)
-    public void splitCore(PayloadObj<SplitCorePayload> obj) throws Exception {
-        final SplitCorePayload v2Body = obj.get();
-        final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
-        v1Params.put(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.SPLIT.name().toLowerCase(Locale.ROOT));
-        v1Params.put(CoreAdminParams.CORE, obj.getRequest().getPathTemplateValues().get(CoreAdminParams.CORE));
-
-        if (! CollectionUtils.isEmpty(v2Body.path)) {
-            v1Params.put(PATH, v2Body.path.toArray(new String[v2Body.path.size()]));
-        }
-        if (! CollectionUtils.isEmpty(v2Body.targetCore)) {
-            v1Params.put(TARGET_CORE, v2Body.targetCore.toArray(new String[v2Body.targetCore.size()]));
-        }
-
-        if (v2Body.splitKey != null) {
-            v1Params.put(SPLIT_KEY, v1Params.remove("splitKey"));
-        }
-
-        coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+    if (v2Body.splitKey != null) {
+      v1Params.put(SPLIT_KEY, v1Params.remove("splitKey"));
     }
 
-    public static class SplitCorePayload implements ReflectMapWriter {
-        @JsonProperty
-        public List<String> path;
+    coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
 
-        @JsonProperty
-        public List<String> targetCore;
+  public static class SplitCorePayload implements ReflectMapWriter {
+    @JsonProperty public List<String> path;
 
-        @JsonProperty
-        public String splitKey;
+    @JsonProperty public List<String> targetCore;
 
-        @JsonProperty
-        public String splitMethod;
+    @JsonProperty public String splitKey;
 
-        @JsonProperty
-        public Boolean getRanges;
+    @JsonProperty public String splitMethod;
 
-        @JsonProperty
-        public String ranges;
+    @JsonProperty public Boolean getRanges;
 
-        @JsonProperty
-        public String async;
-    }
+    @JsonProperty public String ranges;
+
+    @JsonProperty public String async;
+  }
 }

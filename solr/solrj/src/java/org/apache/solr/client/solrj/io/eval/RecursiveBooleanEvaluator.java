@@ -20,93 +20,113 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public abstract class RecursiveBooleanEvaluator extends RecursiveEvaluator {
   protected static final long serialVersionUID = 1L;
-  
+
   protected abstract Checker constructChecker(Object value) throws IOException;
-  
-  public RecursiveBooleanEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public RecursiveBooleanEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
-  
+
   public Object normalizeInputType(Object value) throws StreamEvaluatorException {
-    if(null == value){
+    if (null == value) {
       return null;
-    }
-    else{
+    } else {
       return value;
     }
   }
-  
-  public Object doWork(Object ... values) throws IOException {
-    if(values.length < 2){
+
+  public Object doWork(Object... values) throws IOException {
+    if (values.length < 2) {
       String message = null;
-      if(1 == values.length){
-        message = String.format(Locale.ROOT,"%s(...) only works with at least 2 values but 1 was provided", constructingFactory.getFunctionName(getClass())); 
-      }
-      else{
-        message = String.format(Locale.ROOT,"%s(...) only works with at least 2 values but 0 were provided", constructingFactory.getFunctionName(getClass()));
+      if (1 == values.length) {
+        message =
+            String.format(
+                Locale.ROOT,
+                "%s(...) only works with at least 2 values but 1 was provided",
+                constructingFactory.getFunctionName(getClass()));
+      } else {
+        message =
+            String.format(
+                Locale.ROOT,
+                "%s(...) only works with at least 2 values but 0 were provided",
+                constructingFactory.getFunctionName(getClass()));
       }
       throw new IOException(message);
     }
-    
+
     Checker checker = constructChecker(values[0]);
-    if(Arrays.stream(values).anyMatch(result -> null == result)){
-      throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) because a null value was found", constructingFactory.getFunctionName(getClass())));
+    if (Arrays.stream(values).anyMatch(result -> null == result)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Unable to check %s(...) because a null value was found",
+              constructingFactory.getFunctionName(getClass())));
     }
-    if(Arrays.stream(values).anyMatch(result -> !checker.isCorrectType(result))){
-      throw new IOException(String.format(Locale.ROOT,"Unable to check %s(...) of differing types [%s]", constructingFactory.getFunctionName(getClass()), Arrays.stream(values).map(item -> item.getClass().getSimpleName()).collect(Collectors.joining(","))));
+    if (Arrays.stream(values).anyMatch(result -> !checker.isCorrectType(result))) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Unable to check %s(...) of differing types [%s]",
+              constructingFactory.getFunctionName(getClass()),
+              Arrays.stream(values)
+                  .map(item -> item.getClass().getSimpleName())
+                  .collect(Collectors.joining(","))));
     }
 
-    for(int idx = 1; idx < values.length; ++idx){
-      if(!checker.test(values[idx - 1], values[idx])){
+    for (int idx = 1; idx < values.length; ++idx) {
+      if (!checker.test(values[idx - 1], values[idx])) {
         return false;
       }
     }
-    
+
     return true;
   }
-  
+
   public interface Checker {
-    default boolean isNullAllowed(){
+    default boolean isNullAllowed() {
       return false;
     }
+
     boolean isCorrectType(Object value);
+
     boolean test(Object left, Object right);
   }
-  
+
   public interface NullChecker extends Checker {
-    default boolean isNullAllowed(){
+    default boolean isNullAllowed() {
       return true;
     }
-    default boolean isCorrectType(Object value){
+
+    default boolean isCorrectType(Object value) {
       return true;
     }
-    default boolean test(Object left, Object right){
+
+    default boolean test(Object left, Object right) {
       return null == left && null == right;
     }
   }
-  
+
   public interface BooleanChecker extends Checker {
-    default boolean isCorrectType(Object value){
+    default boolean isCorrectType(Object value) {
       return value instanceof Boolean;
     }
   }
-  
+
   public interface NumberChecker extends Checker {
-    default boolean isCorrectType(Object value){
+    default boolean isCorrectType(Object value) {
       return value instanceof Number;
     }
   }
-  
+
   public interface StringChecker extends Checker {
-    default boolean isCorrectType(Object value){
+    default boolean isCorrectType(Object value) {
       return value instanceof String;
     }
   }
-
 }

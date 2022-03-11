@@ -17,13 +17,13 @@
 
 package org.apache.solr.cluster.placement;
 
-import org.apache.solr.cluster.*;
-
 import java.util.*;
 import java.util.stream.Collectors;
+import org.apache.solr.cluster.*;
 
 /**
- * Cluster abstractions independent of any internal SolrCloud abstractions to use in tests (of plugin code).
+ * Cluster abstractions independent of any internal SolrCloud abstractions to use in tests (of
+ * plugin code).
  */
 class ClusterAbstractionsForTest {
 
@@ -62,13 +62,10 @@ class ClusterAbstractionsForTest {
     }
   }
 
-
   static class NodeImpl implements Node {
     public final String nodeName;
 
-    /**
-     * Transforms a collection of node names into a set of {@link Node} instances.
-     */
+    /** Transforms a collection of node names into a set of {@link Node} instances. */
     static Set<Node> getNodes(Collection<String> nodeNames) {
       return nodeNames.stream().map(NodeImpl::new).collect(Collectors.toSet());
     }
@@ -88,9 +85,10 @@ class ClusterAbstractionsForTest {
     }
 
     /**
-     * This class ends up as a key in Maps in {@link org.apache.solr.cluster.placement.AttributeValues}.
-     * It is important to implement this method comparing node names given that new instances of {@link Node} are created
-     * with names equal to existing instances (See {@link Builders.NodeBuilder#build()}).
+     * This class ends up as a key in Maps in {@link
+     * org.apache.solr.cluster.placement.AttributeValues}. It is important to implement this method
+     * comparing node names given that new instances of {@link Node} are created with names equal to
+     * existing instances (See {@link Builders.NodeBuilder#build()}).
      */
     public boolean equals(Object obj) {
       if (obj == null) {
@@ -111,13 +109,11 @@ class ClusterAbstractionsForTest {
     }
   }
 
-
   static class SolrCollectionImpl implements SolrCollection {
     private final String collectionName;
-    /**
-     * Map from {@link Shard#getShardName()} to {@link Shard}
-     */
+    /** Map from {@link Shard#getShardName()} to {@link Shard} */
     private Map<String, Shard> shards;
+
     private final Map<String, String> customProperties;
 
     SolrCollectionImpl(String collectionName, Map<String, String> customProperties) {
@@ -126,7 +122,8 @@ class ClusterAbstractionsForTest {
     }
 
     /**
-     * Setting the shards has to happen (in tests) after creating the collection because shards reference the collection
+     * Setting the shards has to happen (in tests) after creating the collection because shards
+     * reference the collection
      */
     void setShards(Map<String, Shard> shards) {
       this.shards = shards;
@@ -163,7 +160,6 @@ class ClusterAbstractionsForTest {
     }
   }
 
-
   static class ShardImpl implements Shard {
     private final String shardName;
     private final SolrCollection collection;
@@ -178,7 +174,8 @@ class ClusterAbstractionsForTest {
     }
 
     /**
-     * Setting the replicas has to happen (in tests) after creating the shard because replicas reference the shard
+     * Setting the replicas has to happen (in tests) after creating the shard because replicas
+     * reference the shard
      */
     void setReplicas(Map<String, Replica> replicas, Replica leader) {
       this.replicas = replicas;
@@ -243,7 +240,6 @@ class ClusterAbstractionsForTest {
     }
   }
 
-
   static class ReplicaImpl implements Replica {
     private final String replicaName;
     private final String coreName;
@@ -252,7 +248,13 @@ class ClusterAbstractionsForTest {
     private final ReplicaState replicaState;
     private final Node node;
 
-    ReplicaImpl(String replicaName, String coreName, Shard shard, ReplicaType replicaType, ReplicaState replicaState, Node node) {
+    ReplicaImpl(
+        String replicaName,
+        String coreName,
+        Shard shard,
+        ReplicaType replicaType,
+        ReplicaState replicaState,
+        Node node) {
       this.replicaName = replicaName;
       this.coreName = coreName;
       this.shard = shard;
@@ -316,14 +318,23 @@ class ClusterAbstractionsForTest {
 
     @Override
     public String toString() {
-      return "ReplicaImpl{" +
-              "replicaName='" + replicaName + '\'' +
-              ", coreName='" + coreName + '\'' +
-              ", shard='" + shard + '\'' +
-              ", replicaType=" + replicaType +
-              ", replicaState=" + replicaState +
-              ", node=" + node +
-              '}';
+      return "ReplicaImpl{"
+          + "replicaName='"
+          + replicaName
+          + '\''
+          + ", coreName='"
+          + coreName
+          + '\''
+          + ", shard='"
+          + shard
+          + '\''
+          + ", replicaType="
+          + replicaType
+          + ", replicaState="
+          + replicaState
+          + ", node="
+          + node
+          + '}';
     }
   }
 }
