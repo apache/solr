@@ -90,7 +90,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-/** A SolrClient implementation that talks directly to a Solr server via HTTP */
+/**
+ * A SolrClient implementation that talks directly to a Solr server via Apache HTTP client
+ *
+ * @deprecated Please use {@link Http2SolrClient}
+ */
+@Deprecated(since = "9.0")
 public class HttpSolrClient extends BaseHttpSolrClient {
 
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
@@ -852,7 +857,12 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     this.useMultiPartPost = useMultiPartPost;
   }
 
-  /** Constructs {@link HttpSolrClient} instances from provided configuration. */
+  /**
+   * Constructs {@link HttpSolrClient} instances from provided configuration.
+   *
+   * @deprecated Please use {@link Http2SolrClient}
+   */
+  @Deprecated(since = "9.0")
   public static class Builder extends SolrClientBuilder<Builder> {
     protected String baseSolrUrl;
     protected boolean compression;

@@ -22,6 +22,8 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.config.Lookup;
 import org.apache.http.cookie.CookieSpecProvider;
 
+/** @deprecated Please look into using Solr's new Http2 clients */
+@Deprecated(since = "9.0")
 public class SolrHttpClientContextBuilder {
   public static SolrHttpClientContextBuilder create() {
     return new SolrHttpClientContextBuilder();

@@ -46,6 +46,8 @@ import org.apache.solr.common.util.NamedList;
 /**
  * Queries a single Solr instance and maps SolrDocs to a Stream of Tuples.
  *
+ * <p>TODO: Move this to Http2SolrClient
+ *
  * @since 5.1.0
  */
 public class SolrStream extends TupleStream {
