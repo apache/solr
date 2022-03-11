@@ -69,7 +69,10 @@ import org.slf4j.MDC;
  * <p>Although any SolrClient request can be made with this implementation, it is only recommended
  * to use ConcurrentUpdateSolrClient with /update requests. The class {@link HttpSolrClient} is
  * better suited for the query interface.
+ *
+ * @deprecated Please use {@link ConcurrentUpdateHttp2SolrClient}
  */
+@Deprecated(since = "9.0")
 public class ConcurrentUpdateSolrClient extends SolrClient {
   private static final long serialVersionUID = 1L;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

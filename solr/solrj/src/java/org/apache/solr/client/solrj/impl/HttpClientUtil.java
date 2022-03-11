@@ -70,7 +70,9 @@ import org.slf4j.LoggerFactory;
  * <p>This class can touch internal HttpClient details and is subject to change.
  *
  * @lucene.experimental
+ * @deprecated Used to configure the Apache HTTP client. Please use The Http2 client
  */
+@Deprecated(since = "9.0")
 public class HttpClientUtil {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
