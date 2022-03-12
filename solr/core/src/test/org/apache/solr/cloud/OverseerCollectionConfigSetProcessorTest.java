@@ -454,6 +454,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(clusterStateProviderMock.getLiveNodes()).thenReturn(liveNodes);
     when(cloudDataProviderMock.getDistribStateManager()).thenReturn(stateManagerMock);
     when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
+    when(cloudManagerMock.getClusterState()).thenReturn(clusterStateMock);
 
     Mockito.doAnswer(
             new Answer<Void>() {
