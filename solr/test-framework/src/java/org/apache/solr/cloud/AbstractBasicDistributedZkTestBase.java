@@ -714,8 +714,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
 
-    getCommonCloudSolrClient();
-    ClusterState clusterState = cloudClient.getClusterState();
+    ClusterState clusterState = getCommonCloudSolrClient().getClusterState();
     DocCollection dColl = clusterState.getCollection(DEFAULT_COLLECTION);
 
     assertSliceCounts("should have found 2 docs, 300 and 301", before + 2, dColl);
@@ -877,8 +876,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       throws Exception {
     AtomicLong total = new AtomicLong(-1);
     try {
-      getCommonCloudSolrClient();
-      ZkStateReader.from(cloudClient)
+      ZkStateReader.from(getCommonCloudSolrClient())
           .waitForState(
               DEFAULT_COLLECTION,
               waitMillis,
@@ -1184,9 +1182,8 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     return res;
   }
 
-  protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) throws IOException {
-    getCommonCloudSolrClient();
-    ClusterState clusterState = cloudClient.getClusterState();
+  protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
+    ClusterState clusterState = getCommonCloudSolrClient().getClusterState();
     ZkNodeProps leader = clusterState.getCollection(collection).getLeader(slice);
     if (leader == null) {
       throw new RuntimeException("Could not find leader:" + collection + " " + slice);
@@ -1352,11 +1349,10 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     SolrClient client4 = collectionClients.get(3);
 
     // no one should be recovering
-    getCommonCloudSolrClient();
-    waitForRecoveriesToFinish(oneInstanceCollection2, ZkStateReader.from(cloudClient), false, true);
+    waitForRecoveriesToFinish(
+        oneInstanceCollection2, ZkStateReader.from(getCommonCloudSolrClient()), false, true);
 
-    getCommonCloudSolrClient();
-    assertAllActive(oneInstanceCollection2, ZkStateReader.from(cloudClient));
+    assertAllActive(oneInstanceCollection2, ZkStateReader.from(getCommonCloudSolrClient()));
 
     // printLayout();
 
@@ -1391,17 +1387,15 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     assertEquals(3, allDocs);
 
     // we added a role of none on these creates - check for it
-    getCommonCloudSolrClient();
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
+    ZkStateReader zkStateReader = ZkStateReader.from(getCommonCloudSolrClient());
     zkStateReader.forceUpdateCollection(oneInstanceCollection2);
     Map<String, Slice> slices =
         zkStateReader.getClusterState().getCollection(oneInstanceCollection2).getSlicesMap();
     assertNotNull(slices);
 
-    getCommonCloudSolrClient();
     ZkCoreNodeProps props =
         new ZkCoreNodeProps(
-            cloudClient
+            getCommonCloudSolrClient()
                 .getClusterState()
                 .getCollection(oneInstanceCollection2)
                 .getLeader("shard1"));
@@ -1430,8 +1424,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
           });
 
       try {
-        getCommonCloudSolrClient();
-        ZkStateReader.from(cloudClient)
+        ZkStateReader.from(getCommonCloudSolrClient())
             .waitForState(
                 oneInstanceCollection2,
                 20000,
@@ -1509,10 +1502,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     SolrClient client3 = collectionClients.get(2);
     SolrClient client4 = collectionClients.get(3);
 
-    getCommonCloudSolrClient();
-    waitForRecoveriesToFinish(oneInstanceCollection, ZkStateReader.from(cloudClient), false);
-    getCommonCloudSolrClient();
-    assertAllActive(oneInstanceCollection, ZkStateReader.from(cloudClient));
+    waitForRecoveriesToFinish(
+        oneInstanceCollection, ZkStateReader.from(getCommonCloudSolrClient()), false);
+    assertAllActive(oneInstanceCollection, ZkStateReader.from(getCommonCloudSolrClient()));
 
     client2.add(getDoc(id, "1"));
     client3.add(getDoc(id, "2"));
