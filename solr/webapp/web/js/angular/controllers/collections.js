@@ -33,13 +33,9 @@ solrAdminApp.controller('CollectionsController',
             create: false,
             valueField: 'name',
             labelField: 'name',
-            delimiter: ',',
             highlight: true,
             sortField: {field: 'name'},
-            placeholder: 'Pick to limit to specific nodes',
-            onInitialize: function(selectize){
-              // receives the selectize object as an argument
-            }
+            placeholder: 'Pick to limit to specific nodes'
           };
 
           Collections.status(function (data) {
