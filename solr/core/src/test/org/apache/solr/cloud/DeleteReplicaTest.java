@@ -36,7 +36,13 @@ import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollectionWatcher;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZkStateReaderAccessor;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ZkContainer;
@@ -163,8 +169,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .process(cluster.getSolrClient());
 
-    Replica leader =
-        ZkStateReader.from(cluster.getSolrClient()).getLeaderRetry(collectionName, "shard1");
+    Replica leader = cluster.getZkStateReader().getLeaderRetry(collectionName, "shard1");
 
     // Confirm that the instance and data directory exist
     CoreStatus coreStatus = getCoreStatus(leader);
@@ -177,8 +182,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteReplica(collectionName, "shard1", leader.getName())
         .process(cluster.getSolrClient());
 
-    Replica newLeader =
-        ZkStateReader.from(cluster.getSolrClient()).getLeaderRetry(collectionName, "shard1");
+    Replica newLeader = cluster.getZkStateReader().getLeaderRetry(collectionName, "shard1");
 
     assertFalse(leader.equals(newLeader));
 
@@ -492,7 +496,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   private void waitForNodeLeave(String lostNodeName) throws InterruptedException {
-    ZkStateReader reader = ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader reader = cluster.getZkStateReader();
     TimeOut timeOut = new TimeOut(20, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (reader.getClusterState().getLiveNodes().contains(lostNodeName)) {
       Thread.sleep(100);
@@ -538,7 +542,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     }
 
     try {
-      ZkStateReader.from(cluster.getSolrClient())
+      cluster
+          .getZkStateReader()
           .waitForState(
               collectionName,
               20,

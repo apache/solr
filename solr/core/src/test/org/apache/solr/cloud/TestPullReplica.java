@@ -407,7 +407,8 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 0));
     addDocs(500);
     List<Replica.State> statesSeen = new ArrayList<>(3);
-    ZkStateReader.from(cluster.getSolrClient())
+    cluster
+        .getZkStateReader()
         .registerCollectionStateWatcher(
             collectionName,
             (liveNodes, collectionState) -> {
@@ -596,7 +597,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     unIgnoreException("No registered leader was found"); // Should have a leader from now on
 
     // Validate that the new nrt replica is the leader now
-    ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection(collectionName);
+    cluster.getZkStateReader().forceUpdateCollection(collectionName);
     docCollection = getCollectionState(collectionName);
     leader = docCollection.getSlice("shard1").getLeader();
     assertTrue(
@@ -722,7 +723,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         if (t.hasTimedOut()) {
           fail("Timed out waiting for collection " + collection + " to be deleted.");
         }
-        ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection(collection);
+        cluster.getZkStateReader().forceUpdateCollection(collection);
       } catch (SolrException e) {
         return;
       }
@@ -754,7 +755,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       boolean activeOnly)
       throws KeeperException, InterruptedException {
     if (updateCollection) {
-      ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection(coll);
+      cluster.getZkStateReader().forceUpdateCollection(coll);
     }
     DocCollection docCollection = getCollectionState(coll);
     assertNotNull(docCollection);

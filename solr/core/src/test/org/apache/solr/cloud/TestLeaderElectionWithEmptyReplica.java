@@ -28,7 +28,9 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -62,8 +64,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     solrClient.commit();
 
     // find the leader node
-    Replica replica =
-        ZkStateReader.from(cluster.getSolrClient()).getLeaderRetry(COLLECTION_NAME, "shard1");
+    Replica replica = cluster.getZkStateReader().getLeaderRetry(COLLECTION_NAME, "shard1");
     JettySolrRunner replicaJetty = null;
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
     for (JettySolrRunner jettySolrRunner : jettySolrRunners) {
@@ -89,7 +90,8 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     replicaJetty.start();
 
     // wait until everyone is active
-    ZkStateReader.from(cluster.getSolrClient())
+    cluster
+        .getZkStateReader()
         .waitForState(
             COLLECTION_NAME,
             DEFAULT_TIMEOUT,

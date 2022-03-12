@@ -29,7 +29,10 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.RoutingRule;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -56,7 +59,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     boolean ruleRemoved = false;
     long expiryTime = finishTime + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
     while (System.nanoTime() < expiryTime) {
-      ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection(collection);
+      cluster.getZkStateReader().forceUpdateCollection(collection);
       state = getCollectionState(collection);
       slice = state.getSlice(shard);
       Map<String, RoutingRule> routingRules = slice.getRoutingRules();

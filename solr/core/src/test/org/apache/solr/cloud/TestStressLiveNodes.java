@@ -145,7 +145,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
 
       // only here do we forcibly update the cached live nodes so we don't have to wait for it to
       // catch up with all the ephemeral nodes that vanished after the last iteration
-      ZkStateReader.from(cluster.getSolrClient()).updateLiveNodes();
+      cluster.getZkStateReader().updateLiveNodes();
 
       // sanity check that our Cloud Client's local state knows about the 1 (real) live node in our
       // cluster

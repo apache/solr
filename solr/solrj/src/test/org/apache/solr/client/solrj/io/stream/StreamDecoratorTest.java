@@ -16,6 +16,9 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertList;
+import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertMaps;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
@@ -63,16 +65,12 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertList;
-import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertMaps;
 
 @Slow
 @SolrTestCaseJ4.SuppressSSL
@@ -105,8 +103,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     
     cluster.waitForActiveCollection(collection, 2, 2);
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, ZkStateReader.from(cluster.getSolrClient()),
-        false, true, TIMEOUT);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        collection, cluster.getZkStateReader(), false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     }

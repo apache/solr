@@ -22,7 +22,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -73,8 +72,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
         .process(solrClient);
 
     // now delete the leader
-    Replica leader =
-        ZkStateReader.from(cluster.getSolrClient()).getLeaderRetry(collectionName, "shard1");
+    Replica leader = cluster.getZkStateReader().getLeaderRetry(collectionName, "shard1");
     CollectionAdminRequest.deleteReplica(collectionName, "shard1", leader.getName())
         .process(solrClient);
 

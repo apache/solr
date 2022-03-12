@@ -86,7 +86,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("collection1", 2, 2);
 
-    ZkStateReader reader = ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader reader = cluster.getZkStateReader();
     List<String> nodes = new ArrayList<>();
     for (JettySolrRunner solrRunner : notOverseerNodes) {
       nodes.add(solrRunner.getNodeName());
@@ -172,7 +172,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collection, 2, 4);
 
-    ZkStateReader reader = ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader reader = cluster.getZkStateReader();
     List<String> nodes = new ArrayList<>();
     for (JettySolrRunner solrRunner : notOverseerNodes) {
       nodes.add(solrRunner.getNodeName());

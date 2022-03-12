@@ -34,7 +34,10 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterStateUtil;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.util.TestInjection;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
@@ -95,7 +98,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
           return true;
         });
     ClusterStateUtil.waitForAllActiveAndLiveReplicas(
-        ZkStateReader.from(cluster.getSolrClient()), collection, 120000);
+        cluster.getZkStateReader(), collection, 120000);
     Slice shard = getCollectionState(collection).getSlice("shard1");
     assertNotEquals(
         "Old leader should not be leader again",

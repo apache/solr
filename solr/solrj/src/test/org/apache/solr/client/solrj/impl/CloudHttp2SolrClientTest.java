@@ -797,7 +797,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     String theNode = null;
     Set<String> liveNodes = cluster.getSolrClient().getClusterState().getLiveNodes();
     for (String s : liveNodes) {
-      String n = ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(s);
+      String n = cluster.getZkStateReader().getBaseUrlForNodeName(s);
       if (!allNodesOfColl.contains(n)) {
         theNode = n;
         break;
@@ -991,7 +991,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
               .process(cluster.getSolrClient())
               .getStatus());
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-          COL, ZkStateReader.from(cluster.getSolrClient()), true, true, 330);
+          COL, cluster.getZkStateReader(), true, true, 330);
       // ...and delete our original leader.
       assertEquals(
           "Couldn't create collection",
@@ -1002,7 +1002,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
               .process(cluster.getSolrClient())
               .getStatus());
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-          COL, ZkStateReader.from(cluster.getSolrClient()), true, true, 330);
+          COL, cluster.getZkStateReader(), true, true, 330);
 
       // stale_client's collection state cache should now only point at a leader that no longer
       // exists.

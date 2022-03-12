@@ -320,7 +320,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
 
     TimeUnit.MILLISECONDS.sleep(1000);
     // in both cases, the collection should have default to the core name
-    ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection("noconfig");
+    cluster.getZkStateReader().forceUpdateCollection("noconfig");
     assertFalse(
         CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains("noconfig"));
   }
@@ -452,7 +452,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     // TODO: we should not need this...beast test well when trying to fix
     Thread.sleep(1000);
 
-    ZkStateReader.from(cluster.getSolrClient()).forciblyRefreshAllClusterStateSlow();
+    cluster.getZkStateReader().forciblyRefreshAllClusterStateSlow();
 
     new UpdateRequest()
         .add("id", "6")
@@ -501,7 +501,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
                 n, c, req.getNumShards(), req.getReplicationFactor());
           });
 
-      ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
+      ZkStateReader zkStateReader = cluster.getZkStateReader();
       // make sure we have leaders for each shard
       for (int z = 1; z < createRequests[j].getNumShards(); z++) {
         zkStateReader.getLeaderRetry(collectionName, "shard" + z, 10000);
@@ -660,7 +660,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
 
     assertEquals(
         "Replica should be created on the right node",
-        ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(nodeList.get(0)),
+        cluster.getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)),
         newReplica.getBaseUrl());
 
     Path instancePath = createTempDir();

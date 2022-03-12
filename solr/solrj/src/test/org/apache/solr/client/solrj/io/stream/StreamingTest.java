@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertMaps;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -27,7 +29,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -64,8 +65,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertMaps;
 
 /**
 *  All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so
@@ -2340,7 +2339,7 @@ public void testParallelRankStream() throws Exception {
 
     StreamContext streamContext = new StreamContext();
     streamContext.setLocal(true);
-    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
     List<String> strings = zkStateReader.aliasesManager.getAliases().resolveAliases(COLLECTIONORALIAS);
     String collName = strings.size() > 0 ? strings.get(0) : COLLECTIONORALIAS;
       zkStateReader.forceUpdateCollection(collName);
@@ -2587,7 +2586,7 @@ public void testParallelRankStream() throws Exception {
     streamContext.setRequestParams(params(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":nrt"));
 
     try {
-      ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
+      ZkStateReader zkStateReader = cluster.getZkStateReader();
       List<String> strings = zkStateReader.aliasesManager.getAliases().resolveAliases(MULTI_REPLICA_COLLECTIONORALIAS);
       String collName = strings.size() > 0 ? strings.get(0) : MULTI_REPLICA_COLLECTIONORALIAS;
       Map<String, String> replicaTypeMap = mapReplicasToReplicaType(zkStateReader.getClusterState().getCollectionOrNull(collName));
@@ -2709,7 +2708,7 @@ public void testParallelRankStream() throws Exception {
       }
 
       List<String> baseUrls = new LinkedList<>();
-      ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
+      ZkStateReader zkStateReader = cluster.getZkStateReader();
       List<String> resolved = zkStateReader.aliasesManager.getAliases().resolveAliases(MULTI_REPLICA_COLLECTIONORALIAS);
       Set<String> liveNodes = zkStateReader.getClusterState().getLiveNodes();
       int expectedNumStreams = 0;

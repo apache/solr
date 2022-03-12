@@ -22,7 +22,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 
 /**
@@ -76,11 +75,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
             .processAndWait(cluster.getSolrClient(), SolrCloudTestCase.DEFAULT_TIMEOUT);
 
         AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-            collection,
-            ZkStateReader.from(cluster.getSolrClient()),
-            false,
-            true,
-            SolrCloudTestCase.DEFAULT_TIMEOUT);
+            collection, cluster.getZkStateReader(), false, true, SolrCloudTestCase.DEFAULT_TIMEOUT);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

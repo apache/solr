@@ -1013,7 +1013,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         if (t.hasTimedOut()) {
           fail("Timed out waiting for collection " + collection + " to be deleted.");
         }
-        ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection(collection);
+        cluster.getZkStateReader().forceUpdateCollection(collection);
       } catch (SolrException e) {
         return;
       }
@@ -1028,7 +1028,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       boolean activeOnly)
       throws KeeperException, InterruptedException {
     if (updateCollection) {
-      ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection(collectionName);
+      cluster.getZkStateReader().forceUpdateCollection(collectionName);
     }
     DocCollection docCollection = getCollectionState(collectionName);
     assertNotNull(docCollection);

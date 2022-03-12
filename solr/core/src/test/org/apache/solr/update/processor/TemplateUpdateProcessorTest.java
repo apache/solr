@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
@@ -92,8 +91,7 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
                 CollectionAdminRequest.createCollection("c", "conf1", 1, 1)
                     .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE));
     Utils.toJSONString(result.asMap(4));
-    AbstractFullDistribZkTestBase.waitForCollection(
-        ZkStateReader.from(cluster.getSolrClient()), "c", 1);
+    AbstractFullDistribZkTestBase.waitForCollection(cluster.getZkStateReader(), "c", 1);
     cluster.getSolrClient().request(add, "c");
     QueryResponse rsp =
         cluster.getSolrClient().query("c", new ModifiableSolrParams().add("q", "id:1"));

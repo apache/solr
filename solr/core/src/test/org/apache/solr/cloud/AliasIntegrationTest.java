@@ -38,7 +38,10 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.*;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -106,7 +109,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
         "Expected collection2 to be created with 1 shard and 1 replica",
         "collection2meta",
         clusterShape(1, 1));
-    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
     zkStateReader.createClusterStateWatchersAndUpdate();
     List<String> aliases = zkStateReader.getAliases().resolveAliases("meta1");
     assertEquals(1, aliases.size());
@@ -433,7 +436,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
         "Expected collection2 to be created with 1 shard and 1 replica",
         "collection2meta",
         clusterShape(1, 1));
-    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
     zkStateReader.createClusterStateWatchersAndUpdate();
     List<String> aliases = zkStateReader.getAliases().resolveAliases(aliasName);
     assertEquals(1, aliases.size());
@@ -511,7 +514,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     QueryResponse res = cluster.getSolrClient().query("collection_old", new SolrQuery("*:*"));
     assertEquals(3, res.getResults().getNumFound());
 
-    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
     int lastVersion = zkStateReader.aliasesManager.getAliases().getZNodeVersion();
     // Let's insure we have a "handle" to the old collection
     CollectionAdminRequest.createAlias("collection_old_reserve", "collection_old")
@@ -554,7 +557,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     res = cluster.getSolrClient().query("collection_old", new SolrQuery("*:*"));
     assertEquals(1, res.getResults().getNumFound());
 
-    Aliases aliases = ZkStateReader.from(cluster.getSolrClient()).getAliases();
+    Aliases aliases = cluster.getZkStateReader().getAliases();
     assertTrue(
         "collection_old should point to collection_new",
         aliases.resolveAliases("collection_old").contains("collection_new"));
@@ -577,16 +580,14 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     assertNull(
         "collection_old_reserve should be gone",
-        ZkStateReader.from(cluster.getSolrClient())
+        cluster
+            .getZkStateReader()
             .getAliases()
             .getCollectionAliasMap()
             .get("collection_old_reserve"));
     assertNull(
         "collection_old should be gone",
-        ZkStateReader.from(cluster.getSolrClient())
-            .getAliases()
-            .getCollectionAliasMap()
-            .get("collection_old"));
+        cluster.getZkStateReader().getAliases().getCollectionAliasMap().get("collection_old"));
 
     assertFalse(
         "collection_new should be gone",
@@ -627,7 +628,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
         .add("id", "11", "a_t", "humpty dumpy sat on a low wall")
         .commit(cluster.getSolrClient(), "collection_two");
 
-    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
     int lastVersion = zkStateReader.aliasesManager.getAliases().getZNodeVersion();
 
     // Create an alias pointing to both
@@ -760,7 +761,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     ///////////////
     // make sure there's only one level of alias
-    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
     int lastVersion = zkStateReader.aliasesManager.getAliases().getZNodeVersion();
 
     CollectionAdminRequest.deleteAlias("collection1").process(cluster.getSolrClient());

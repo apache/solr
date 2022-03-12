@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
@@ -59,7 +58,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1)
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        COLLECTIONORALIAS, ZkStateReader.from(cluster.getSolrClient()), false, true, TIMEOUT);
+        COLLECTIONORALIAS, cluster.getZkStateReader(), false, true, TIMEOUT);
 
     new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 

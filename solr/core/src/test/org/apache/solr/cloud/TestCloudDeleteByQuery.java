@@ -128,7 +128,7 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
-    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
 
     // really hackish way to get a URL for specific nodes based on shard/replica hosting
     // inspired by TestMiniSolrCloudCluster

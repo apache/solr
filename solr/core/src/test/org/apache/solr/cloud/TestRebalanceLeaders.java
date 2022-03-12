@@ -18,7 +18,15 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase;
@@ -31,7 +39,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -260,7 +267,8 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       throws KeeperException, InterruptedException {
 
     List<String> leaderQueue =
-        ZkStateReader.from(cluster.getSolrClient())
+        cluster
+            .getZkStateReader()
             .getZkClient()
             .getChildren(
                 "/collections/"

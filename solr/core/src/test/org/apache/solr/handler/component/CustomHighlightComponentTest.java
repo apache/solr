@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.highlight.SolrFragmentsBuilder;
@@ -119,7 +118,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, numReplicas)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        COLLECTION, ZkStateReader.from(cluster.getSolrClient()), false, true, DEFAULT_TIMEOUT);
+        COLLECTION, cluster.getZkStateReader(), false, true, DEFAULT_TIMEOUT);
   }
 
   @Test

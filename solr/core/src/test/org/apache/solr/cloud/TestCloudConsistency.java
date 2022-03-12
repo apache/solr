@@ -37,7 +37,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
@@ -185,7 +184,8 @@ public class TestCloudConsistency extends SolrCloudTestCase {
         TimeoutException.class,
         "Did not time out waiting for new leader, out of sync replica became leader",
         () ->
-            ZkStateReader.from(cluster.getSolrClient())
+            cluster
+                .getZkStateReader()
                 .waitForState(
                     collection,
                     10,
@@ -250,7 +250,8 @@ public class TestCloudConsistency extends SolrCloudTestCase {
         () -> {
           // this is is the bad case, our "bad" state was found before timeout
           // still no bad state, wait for timeout
-          ZkStateReader.from(cluster.getSolrClient())
+          cluster
+              .getZkStateReader()
               .waitForState(
                   collection,
                   10,
@@ -309,9 +310,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   private void assertDocsExistInAllReplicas(
       List<Replica> notLeaders, String testCollectionName, int firstDocId, int lastDocId)
       throws Exception {
-    Replica leader =
-        ZkStateReader.from(cluster.getSolrClient())
-            .getLeaderRetry(testCollectionName, "shard1", 10000);
+    Replica leader = cluster.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
     HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
     List<HttpSolrClient> replicas = new ArrayList<>(notLeaders.size());
 

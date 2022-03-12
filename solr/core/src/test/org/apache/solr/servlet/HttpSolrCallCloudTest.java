@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.junit.BeforeClass;
@@ -54,7 +53,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "config", NUM_SHARD, REPLICA_FACTOR)
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        COLLECTION, ZkStateReader.from(cluster.getSolrClient()), false, true, 30);
+        COLLECTION, cluster.getZkStateReader(), false, true, 30);
   }
 
   @Test

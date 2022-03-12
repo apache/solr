@@ -38,7 +38,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
 import org.junit.Before;
@@ -185,7 +184,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
         TimeoutException.class,
         "Did not time out waiting for new leader, out of sync replica became leader",
         () ->
-            ZkStateReader.from(cluster.getSolrClient())
+            cluster
+                .getZkStateReader()
                 .waitForState(
                     COLLECTION,
                     10,

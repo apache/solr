@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
@@ -50,8 +49,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
           .process(cluster.getSolrClient());
 
       log.info("Sanity check that our collection has come online");
-      ZkStateReader.from(cluster.getSolrClient())
-          .waitForState(col_name, 30, TimeUnit.SECONDS, clusterShape(1, 1));
+      cluster.getZkStateReader().waitForState(col_name, 30, TimeUnit.SECONDS, clusterShape(1, 1));
 
       log.info("Shutdown 1 node");
       final JettySolrRunner nodeToStop = cluster.getJettySolrRunner(0);
@@ -63,7 +61,8 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       // call will detect the missing replica -- shouldn't need long wait times (we know it's
       // down)...
       log.info("Now check if waitForState will recognize we already have the exepcted state");
-      ZkStateReader.from(cluster.getSolrClient())
+      cluster
+          .getZkStateReader()
           .waitForState(col_name, 500, TimeUnit.MILLISECONDS, clusterShape(1, 0));
 
     } finally {
@@ -84,7 +83,8 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
           .process(cluster.getSolrClient());
 
       log.info("Sanity check that our collection has come online");
-      ZkStateReader.from(cluster.getSolrClient())
+      cluster
+          .getZkStateReader()
           .waitForState(col_name, 30, TimeUnit.SECONDS, SolrCloudTestCase.clusterShape(1, 1));
 
       // HACK implementation detail...
@@ -101,7 +101,8 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
           executor.submit(
               () -> {
                 try {
-                  ZkStateReader.from(cluster.getSolrClient())
+                  cluster
+                      .getZkStateReader()
                       .waitForState(
                           col_name,
                           180,

@@ -21,7 +21,6 @@ import java.util.Map;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.prometheus.utils.Helpers;
 import org.junit.BeforeClass;
 
@@ -67,7 +66,7 @@ public class PrometheusExporterTestBase extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        COLLECTION, ZkStateReader.from(cluster.getSolrClient()), true, true, TIMEOUT);
+        COLLECTION, cluster.getZkStateReader(), true, true, TIMEOUT);
 
     Helpers.indexAllDocs(cluster.getSolrClient());
   }

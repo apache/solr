@@ -64,7 +64,7 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
 
   @Test
   public void testReadWriteCached() throws InterruptedException, IOException {
-    ZkStateReader zkStateReader = ZkStateReader.from(cluster.getSolrClient());
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
 
     CollectionProperties collectionProps = new CollectionProperties(zkClient());
 
@@ -89,9 +89,7 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
 
   private void checkValue(String propertyName, String expectedValue) {
     final Object value =
-        ZkStateReader.from(cluster.getSolrClient())
-            .getCollectionProperties(collectionName)
-            .get(propertyName);
+        cluster.getZkStateReader().getCollectionProperties(collectionName).get(propertyName);
     assertEquals("Unexpected value for collection property: " + propertyName, expectedValue, value);
   }
 }

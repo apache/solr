@@ -72,8 +72,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     return executor.submit(
         () -> {
           try {
-            ZkStateReader.from(cluster.getSolrClient())
-                .waitForState(collection, timeout, unit, predicate);
+            cluster.getZkStateReader().waitForState(collection, timeout, unit, predicate);
           } catch (InterruptedException | TimeoutException e) {
             return Boolean.FALSE;
           }

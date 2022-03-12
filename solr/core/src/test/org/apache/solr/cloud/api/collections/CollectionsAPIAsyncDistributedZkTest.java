@@ -39,7 +39,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.After;
@@ -144,7 +143,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
             .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateShard did not complete", RequestStatusState.COMPLETED, state);
 
-    ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection(collection);
+    cluster.getZkStateReader().forceUpdateCollection(collection);
 
     // Add a doc to shard2 to make sure shard2 was created properly
     SolrInputDocument doc = new SolrInputDocument();
@@ -167,7 +166,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     assertSame("AddReplica did not complete", RequestStatusState.COMPLETED, state);
 
     // cloudClient watch might take a couple of seconds to reflect it
-    ZkStateReader.from(cluster.getSolrClient())
+    cluster
+        .getZkStateReader()
         .waitForState(
             collection,
             20,
@@ -218,7 +218,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
         break;
       }
     }
-    ZkStateReader.from(cluster.getSolrClient()).forceUpdateCollection(collection);
+    cluster.getZkStateReader().forceUpdateCollection(collection);
 
     shard1 = cluster.getSolrClient().getClusterState().getCollection(collection).getSlice("shard1");
     String replicaName = shard1.getReplicas().iterator().next().getName();

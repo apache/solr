@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -26,7 +28,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -36,7 +37,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
@@ -47,8 +47,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 /**
  * tests various streaming expressions (via the SolrJ {@link SolrStream} API) against a SolrCloud cluster
@@ -131,7 +129,13 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     }
     
     for (String collection : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
-      ZkStateReader.from(cluster.getSolrClient()).waitForState(collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+      cluster
+          .getZkStateReader()
+          .waitForState(
+              collection,
+              DEFAULT_TIMEOUT,
+              TimeUnit.SECONDS,
+              (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
     }
 
     solrUrl = cluster.getRandomJetty(random()).getProxyBaseUrl().toString();

@@ -86,7 +86,7 @@ public class JdbcTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collection, 2, 2);
 
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        collection, ZkStateReader.from(cluster.getSolrClient()), false, true, DEFAULT_TIMEOUT);
+        collection, cluster.getZkStateReader(), false, true, DEFAULT_TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)
           .process(cluster.getSolrClient());

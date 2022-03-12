@@ -27,7 +27,19 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Random;
+import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -50,7 +62,15 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -399,7 +419,7 @@ public class MiniSolrCloudCluster {
     }
     log.info("waitForNode: {}", nodeName);
 
-    ZkStateReader.from(solrClient)
+    getZkStateReader()
         .waitForLiveNodes(
             timeoutSeconds, TimeUnit.SECONDS, (o, n) -> n != null && n.contains(nodeName));
   }
@@ -435,6 +455,11 @@ public class MiniSolrCloudCluster {
    */
   public ZkTestServer getZkServer() {
     return zkServer;
+  }
+
+  /** The {@link ZkStateReader} inside {@link #getSolrClient()}. */
+  public ZkStateReader getZkStateReader() {
+    return ZkStateReader.from(getSolrClient());
   }
 
   /**
@@ -600,7 +625,7 @@ public class MiniSolrCloudCluster {
 
   /** Delete all collections (and aliases) */
   public void deleteAllCollections() throws Exception {
-    try (ZkStateReader reader = new ZkStateReader(ZkStateReader.from(solrClient).getZkClient())) {
+    try (ZkStateReader reader = new ZkStateReader(getZkClient())) {
       final CountDownLatch latch = new CountDownLatch(1);
       reader.registerCloudCollectionsListener(
           (oldCollections, newCollections) -> {
@@ -705,7 +730,7 @@ public class MiniSolrCloudCluster {
   }
 
   public SolrZkClient getZkClient() {
-    return ZkStateReader.from(solrClient).getZkClient();
+    return getZkStateReader().getZkClient();
   }
 
   /**
@@ -834,7 +859,7 @@ public class MiniSolrCloudCluster {
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-      ZkStateReader.from(getSolrClient())
+      getZkStateReader()
           .waitForState(
               collection,
               wait,
@@ -868,7 +893,7 @@ public class MiniSolrCloudCluster {
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-      ZkStateReader.from(getSolrClient())
+      getZkStateReader()
           .waitForState(
               collection,
               wait,
@@ -940,9 +965,8 @@ public class MiniSolrCloudCluster {
 
     log.info("waitForJettyToStop: {}", nodeName);
 
-    ZkStateReader reader = ZkStateReader.from(solrClient);
     try {
-      reader.waitForLiveNodes(15, TimeUnit.SECONDS, (o, n) -> !n.contains(nodeName));
+      getZkStateReader().waitForLiveNodes(15, TimeUnit.SECONDS, (o, n) -> !n.contains(nodeName));
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVER_ERROR, "interrupted", e);
@@ -1217,13 +1241,12 @@ public class MiniSolrCloudCluster {
               securityJson,
               trackJettyMetrics,
               formatZkServer);
-      CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
         cluster.uploadConfigSet(config.path, config.name);
       }
 
       if (clusterProperties.size() > 0) {
-        ClusterProperties props = new ClusterProperties(ZkStateReader.from(client).getZkClient());
+        ClusterProperties props = new ClusterProperties(cluster.getZkClient());
         for (Map.Entry<String, Object> entry : clusterProperties.entrySet()) {
           props.setClusterProperty(entry.getKey(), entry.getValue());
         }

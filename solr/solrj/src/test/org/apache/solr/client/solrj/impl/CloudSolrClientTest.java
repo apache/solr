@@ -44,7 +44,11 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.request.*;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
@@ -56,7 +60,13 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -789,7 +799,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     String theNode = null;
     Set<String> liveNodes = cluster.getSolrClient().getClusterState().getLiveNodes();
     for (String s : liveNodes) {
-      String n = ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(s);
+      String n = cluster.getZkStateReader().getBaseUrlForNodeName(s);
       if (!allNodesOfColl.contains(n)) {
         theNode = n;
         break;
@@ -979,7 +989,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
               .process(cluster.getSolrClient())
               .getStatus());
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-          COL, ZkStateReader.from(cluster.getSolrClient()), true, true, 330);
+          COL, cluster.getZkStateReader(), true, true, 330);
       // ...and delete our original leader.
       assertEquals(
           "Couldn't create collection",
@@ -990,7 +1000,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
               .process(cluster.getSolrClient())
               .getStatus());
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-          COL, ZkStateReader.from(cluster.getSolrClient()), true, true, 330);
+          COL, cluster.getZkStateReader(), true, true, 330);
 
       // stale_client's collection state cache should now only point at a leader that no longer
       // exists.
@@ -1145,7 +1155,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     final SolrClient clientUnderTest = getRandomClient();
     final SolrPingResponse response = clientUnderTest.ping(testCollection);
     assertEquals("This should be OK", 0, response.getStatus());
-    DocCollection c = ZkStateReader.from(cluster.getSolrClient()).getCollection(testCollection);
+    DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
     PerReplicaStates prs =
         PerReplicaStates.fetch(
@@ -1168,7 +1178,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .build()
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(testCollection, 2, 4);
-    c = ZkStateReader.from(cluster.getSolrClient()).getCollection(testCollection);
+    c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
     prs =
         PerReplicaStates.fetch(
