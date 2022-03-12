@@ -21,6 +21,7 @@ created a branch that can be deleted.
 
 === Whats the fastest build lifecycle for frontend work on Solr Admin?
 
-Fire up your cluster, say via `bin/solr start -e cloud` and then as you make changes
-to assets in `/solr/webapp/web`, run `gradle dev`.   Then do a hard refresh in the
-browser to pick up your changes.
+Run `gradle dev`, and then `cd ./packaging/build/dev/`.  Fire up your cluster
+via `bin/solr start -e cloud -noprompt` and then as you make changes to assets in `/solr/webapp/web`,
+run `gradle dev` to redeploy the web assets. Do a  hard refresh in your browser
+to pick up your changes.
