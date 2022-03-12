@@ -223,14 +223,18 @@ public class ZkStateReader implements SolrCloseable {
   // only kept to identify if the cleaner has already been started.
   private Future<?> collectionPropsCacheCleaner;
 
+  /**
+   * Gets the ZkStateReader inside a ZK based SolrClient.
+   *
+   * @throws IllegalStateException if solrClient isn't ZK based.
+   */
   public static ZkStateReader from(BaseCloudSolrClient solrClient) {
-    if (solrClient.getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
-      ZkClientClusterStateProvider provider =
-          (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
-      provider.connect();
+    try {
+      var provider = (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
       return provider.getZkStateReader();
+    } catch (ClassCastException e) {
+      throw new IllegalStateException("client has no Zk stateReader", e);
     }
-    throw new IllegalStateException("This has no Zk stateReader");
   }
 
   private static class CollectionWatch<T> {
