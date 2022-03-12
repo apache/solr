@@ -226,14 +226,14 @@ public class ZkStateReader implements SolrCloseable {
   /**
    * Gets the ZkStateReader inside a ZK based SolrClient.
    *
-   * @throws IllegalStateException if solrClient isn't ZK based.
+   * @throws IllegalArgumentException if solrClient isn't ZK based.
    */
   public static ZkStateReader from(BaseCloudSolrClient solrClient) {
     try {
       var provider = (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
       return provider.getZkStateReader();
     } catch (ClassCastException e) {
-      throw new IllegalStateException("client has no Zk stateReader", e);
+      throw new IllegalArgumentException("client has no Zk stateReader", e);
     }
   }
 
