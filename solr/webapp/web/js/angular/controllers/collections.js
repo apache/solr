@@ -293,13 +293,3 @@ solrAdminApp.controller('CollectionsController',
       $scope.refresh();
     }
 );
-
-var flatten = function(data) {
-    var list = [];
-    for (var name in data) {
-       var entry = data[name];
-        entry.name = name;
-        list.push(entry);
-    }
-    return list;
-}
