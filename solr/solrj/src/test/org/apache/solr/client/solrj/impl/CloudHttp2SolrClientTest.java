@@ -52,7 +52,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
-import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -825,7 +824,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @Test
   public void testShutdown() throws IOException {
     try (CloudSolrClient client = getCloudSolrClient(DEAD_HOST_1)) {
-      CloudSolrClientUtils.setZkConnectTimeout(client, 100);
+      ZkClientClusterStateProvider.from(client).setZkConnectTimeout(100);
       client.connect();
       fail("Expected exception");
     } catch (SolrException e) {
@@ -843,7 +842,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     try (CloudSolrClient client =
         getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
-      CloudSolrClientUtils.setZkClientTimeout(client, 1000 * 60);
+      ZkClientClusterStateProvider.from(client).setZkClientTimeout(1000 * 60);
       client.connect();
       fail("Expected exception");
     }

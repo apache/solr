@@ -54,7 +54,6 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
-import org.apache.solr.cloud.CloudSolrClientUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -827,7 +826,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   @Test
   public void testShutdown() throws IOException {
     try (CloudSolrClient client = getCloudSolrClient(DEAD_HOST_1)) {
-      CloudSolrClientUtils.setZkConnectTimeout(client, 100);
+      ZkClientClusterStateProvider.from(client).setZkConnectTimeout(100);
       SolrException ex = expectThrows(SolrException.class, client::connect);
       assertTrue(ex.getCause() instanceof TimeoutException);
     }
@@ -839,7 +838,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testWrongZkChrootTest() throws IOException {
     try (CloudSolrClient client =
         getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
-      CloudSolrClientUtils.setZkConnectTimeout(client, 1000 * 60);
+      ZkClientClusterStateProvider.from(client).setZkConnectTimeout(1000 * 60);
       SolrException ex = expectThrows(SolrException.class, client::connect);
       MatcherAssert.assertThat(
           "Wrong error message for empty chRoot",
