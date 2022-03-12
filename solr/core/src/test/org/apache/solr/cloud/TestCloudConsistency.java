@@ -248,7 +248,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
         TimeoutException.class,
         "Did not time out waiting for new leader, out of sync replica became leader",
         () -> {
-          // this is is the bad case, our "bad" state was found before timeout
+          // this is the bad case, our "bad" state was found before timeout
           // still no bad state, wait for timeout
           cluster
               .getZkStateReader()
