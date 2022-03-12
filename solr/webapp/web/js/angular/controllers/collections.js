@@ -23,11 +23,24 @@ solrAdminApp.controller('CollectionsController',
 
           $scope.rootUrl = Constants.ROOT_URL + "#/~collections/" + $routeParams.collection;
 
-          $scope.availableNodeSet = ['localhost:8983_solr','localhost:7574_solr'];
-
-          $('#select-state').selectize({
-  					maxItems: 3
-  				});
+          //$scope.availableNodeSet = ['localhost:8983_solr','localhost:7574_solr'];
+          $scope.availableNodeSet = [
+            {name: 'localhost:8983_solr'},
+            {name: 'localhost:7574_solr'}
+          ];
+          $scope.myModel = 1;
+          $scope.createNodeSetConfig = {
+            create: false,
+            valueField: 'name',
+            labelField: 'name',
+            delimiter: ',',
+            highlight: true,
+            sortField: {field: 'name'},
+            placeholder: 'Pick to limit to specific nodes',
+            onInitialize: function(selectize){
+              // receives the selectize object as an argument
+            }
+          };
 
           Collections.status(function (data) {
               $scope.collections = [];
@@ -163,7 +176,7 @@ solrAdminApp.controller('CollectionsController',
             };
             if (coll.shards) params.shards = coll.shards;
             if (coll.routerField) params["router.field"] = coll.routerField;
-            if (coll.createNodeSet) params.createNodeSet = coll.createNodeSet;
+            if (coll.createNodeSet) params.createNodeSet = coll.createNodeSet.join(",");
             Collections.add(params, function(data) {
               $scope.cancelAddCollection();
               $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);

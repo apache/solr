@@ -56,22 +56,8 @@ limitations under the License.
             <input type="text" name="routerField" id="add_routerField" ng-model="newCollection.routerField"></p>
 
           <p class="clearfix"><label for="add_createNodeSet">createNodeSet:</label>
-            <input type="text" name="createNodeSet" id="add_createNodeSet" ng-model="newCollection.createNodeSet"></p>
-            <select id="select-state" name="state[]" multiple class="demo-default" placeholder="Select a state...">
-  						<option value="">Select a state...</option>
-  						<option value="AL">Alabama</option>
-  						<option value="AK">Alaska</option>
-  						<option value="AZ">Arizona</option>
-  						<option value="AR">Arkansas</option>
-  						<option value="CA" selected>California</option>
-  						<option value="VA">Virginia</option>
-  						<option value="WA">Washington</option>
-  						<option value="WV">West Virginia</option>
-  						<option value="WI">Wisconsin</option>
-  						<option value="WY" selected>Wyoming</option>
-  					</select>
-
-
+            <selectize config='createNodeSetConfig' options='availableNodeSet' ng-model="newCollection.createNodeSet"></selectize>
+          </p>
 
         </div>
         <p class="clearfix note error" ng-show="addMessage">
