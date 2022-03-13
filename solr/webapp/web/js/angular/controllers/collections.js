@@ -19,24 +19,30 @@ solrAdminApp.controller('CollectionsController',
     function($scope, $routeParams, $location, $timeout, Collections, Zookeeper, Constants, ConfigSets){
       $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
 
+      $scope.createNodeSetConfig = {
+        create: false,
+        valueField: 'name',
+        labelField: 'name',
+        highlight: true,
+        sortField: {field: 'name'},
+        placeholder: 'Pick to limit to specific nodes'
+      };
+
       $scope.refresh = function() {
 
           $scope.rootUrl = Constants.ROOT_URL + "#/~collections/" + $routeParams.collection;
 
-          //$scope.availableNodeSet = ['localhost:8983_solr','localhost:7574_solr'];
-          $scope.availableNodeSet = [
-            {name: 'localhost:8983_solr'},
-            {name: 'localhost:7574_solr'}
-          ];
-          $scope.myModel = 1;
-          $scope.createNodeSetConfig = {
-            create: false,
-            valueField: 'name',
-            labelField: 'name',
-            highlight: true,
-            sortField: {field: 'name'},
-            placeholder: 'Pick to limit to specific nodes'
-          };
+          Zookeeper.liveNodes({}, function(data) {
+            $scope.nodes = [];
+            var children = data.tree[0].children;
+            for (var child in children) {
+              $scope.nodes.push(children[child].text);
+            }
+            $scope.availableNodeSet = [];
+            for (var i in $scope.nodes) {
+                $scope.availableNodeSet.push({name: $scope.nodes[i]});
+            }
+          });
 
           Collections.status(function (data) {
               $scope.collections = [];
