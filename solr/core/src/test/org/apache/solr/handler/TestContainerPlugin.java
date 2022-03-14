@@ -68,10 +68,13 @@ import org.junit.Test;
 public class TestContainerPlugin extends SolrCloudTestCase {
   private Phaser phaser;
 
+  private boolean forceV2;
+
   @Before
   public void setup() throws Exception {
     System.setProperty("enable.packages", "true");
     phaser = new Phaser();
+    forceV2 = random().nextBoolean();
 
     int nodes = TEST_NIGHTLY ? 4 : 2;
     cluster = configureCluster(nodes).withJettyConfig(jetty -> jetty.enableV2(true)).configure();
@@ -89,12 +92,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     int version = phaser.getPhase();
 
     PluginMeta plugin = new PluginMeta();
-    V2Request addPlugin =
-        new V2Request.Builder("/cluster/plugin")
-            .forceV2(true)
-            .POST()
-            .withPayload(singletonMap("add", plugin))
-            .build();
+    V2Request addPlugin = postPlugin(singletonMap("add", plugin));
 
     // test with an invalid class
     try (ErrorLogMuter errors = ErrorLogMuter.substring("TestContainerPlugin$C2")) {
@@ -120,12 +118,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
         getPlugin("/plugin/my/plugin"), Map.of("/testkey", "testval"));
 
     // now remove the plugin
-    new V2Request.Builder("/cluster/plugin")
-        .POST()
-        .forceV2(true)
-        .withPayload("{remove : testplugin}")
-        .build()
-        .process(cluster.getSolrClient());
+    postPlugin("{remove : testplugin}").process(cluster.getSolrClient());
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
@@ -155,12 +148,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     TestDistribPackageStore.assertResponseValues(
         getPlugin("/my-random-prefix/their/plugin"), Map.of("/method.name", "m2"));
     // now remove the plugin
-    new V2Request.Builder("/cluster/plugin")
-        .POST()
-        .forceV2(true)
-        .withPayload("{remove : my-random-name}")
-        .build()
-        .process(cluster.getSolrClient());
+    postPlugin("{remove : my-random-name}").process(cluster.getSolrClient());
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
@@ -204,12 +192,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     p.klass = CC.class.getName();
     p.config = cfg;
 
-    new V2Request.Builder("/cluster/plugin")
-        .forceV2(true)
-        .POST()
-        .withPayload(singletonMap("add", p))
-        .build()
-        .process(cluster.getSolrClient());
+    postPlugin(singletonMap("add", p)).process(cluster.getSolrClient());
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
@@ -219,12 +202,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             "/config/boolVal", "true", "/config/strVal", "Something", "/config/longVal", "1234"));
 
     cfg.strVal = "Something else";
-    new V2Request.Builder("/cluster/plugin")
-        .forceV2(true)
-        .POST()
-        .withPayload(singletonMap("update", p))
-        .build()
-        .process(cluster.getSolrClient());
+    postPlugin(singletonMap("update", p)).process(cluster.getSolrClient());
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     TestDistribPackageStore.assertResponseValues(
@@ -269,7 +247,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     add.files = singletonList(FILE1);
     V2Request addPkgVersionReq =
         new V2Request.Builder("/cluster/package")
-            .forceV2(true)
+            .forceV2(forceV2)
             .POST()
             .withPayload(singletonMap("add", add))
             .build();
@@ -289,13 +267,8 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     plugin.name = "myplugin";
     plugin.klass = "mypkg:org.apache.solr.handler.MyPlugin";
     plugin.version = add.version;
-    final V2Request req1 =
-        new V2Request.Builder("/cluster/plugin")
-            .forceV2(true)
-            .POST()
-            .withPayload(singletonMap("add", plugin))
-            .build();
-    req1.process(cluster.getSolrClient());
+    final V2Request addPluginReq = postPlugin(singletonMap("add", plugin));
+    addPluginReq.process(cluster.getSolrClient());
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     // verify the plugin creation
@@ -315,12 +288,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     // here the plugin version is updated
     plugin.version = add.version;
-    new V2Request.Builder("/cluster/plugin")
-        .forceV2(true)
-        .POST()
-        .withPayload(singletonMap("update", plugin))
-        .build()
-        .process(cluster.getSolrClient());
+    postPlugin(singletonMap("update", plugin)).process(cluster.getSolrClient());
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     // now verify if it is indeed updated
@@ -333,7 +301,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     plugin.name = "plugin2";
     plugin.klass = "mypkg:" + C5.class.getName();
     plugin.version = "2.0";
-    req1.process(cluster.getSolrClient());
+    addPluginReq.process(cluster.getSolrClient());
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     assertNotNull(C5.classData);
     assertEquals(1452, C5.classData.limit());
@@ -470,8 +438,16 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   }
 
   private Callable<V2Response> getPlugin(String path) {
-    V2Request req = new V2Request.Builder(path).forceV2(true).GET().build();
+    V2Request req = new V2Request.Builder(path).forceV2(forceV2).GET().build();
     return () -> req.process(cluster.getSolrClient());
+  }
+
+  private V2Request postPlugin(Object payload) {
+    return new V2Request.Builder("/cluster/plugin")
+        .forceV2(forceV2)
+        .POST()
+        .withPayload(payload)
+        .build();
   }
 
   public static void waitForAllNodesToSync(
@@ -479,7 +455,8 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
       String url = baseUrl + path + "?wt=javabin";
-      TestDistribPackageStore.assertResponseValues(new Fetcher(url, jettySolrRunner), expected);
+      // We can't rely on our single phaser to sync things here because we are waiting for multiple nodes to update
+      TestDistribPackageStore.assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
     }
   }
 
