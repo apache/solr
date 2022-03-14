@@ -19,7 +19,11 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
@@ -31,10 +35,12 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.FastWriter;
 import org.apache.solr.common.util.TextWriter;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrReturnFields;
 
 /** Base class for text-oriented response writers.
  *
@@ -55,6 +61,15 @@ public abstract class TextResponseWriter implements TextWriter {
 
   protected Calendar cal;  // reusable calendar instance
 
+  /**
+   * A signal object that must be used to differentiate from <code>null</code> in strict object equality
+   * checks against {@link #rawReturnFields}, in order to determine the appropriate context in which to
+   * write raw field values.
+   */
+  private static final ReturnFields NO_RAW_FIELDS = new SolrReturnFields();
+  private final TextResponseWriter rawShim;
+  private final Set<String> rawFields;
+  private final ReturnFields rawReturnFields;
 
   public TextResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     this.writer = writer == null ? null: FastWriter.wrap(writer);
@@ -67,6 +82,17 @@ public abstract class TextResponseWriter implements TextWriter {
     }
     returnFields = rsp.getReturnFields();
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) rsp.removeResponseHeader();
+    DocTransformer rootDocTransformer = returnFields.getTransformer();
+    Collection<String> rawFields;
+    if (rootDocTransformer == null || (rawFields = rootDocTransformer.getRawFields()).isEmpty()) {
+      this.rawFields = null;
+      this.rawShim = null;
+      this.rawReturnFields = NO_RAW_FIELDS;
+    } else {
+      this.rawFields = rawFields.size() == 1 ? Collections.singleton(rawFields.iterator().next()) : new HashSet<>(rawFields);
+      this.rawShim = new RawShimTextResponseWriter(this);
+      this.rawReturnFields = returnFields;
+    }
   }
   //only for test purposes
    TextResponseWriter(Writer writer, boolean indent) {
@@ -76,6 +102,16 @@ public abstract class TextResponseWriter implements TextWriter {
     this.rsp = null;
     returnFields = null;
     this.doIndent = indent;
+    this.rawShim = null;
+    this.rawFields = null;
+    this.rawReturnFields = null;
+  }
+
+  /**
+   * NOTE: strict object equality check against {@link #rawReturnFields}; see javadocs for {@link #NO_RAW_FIELDS}
+   */
+  protected final boolean shouldWriteRaw(String fname, ReturnFields returnFields) {
+    return rawReturnFields == returnFields && rawFields.contains(fname);
   }
 
   /** done with this ResponseWriter... make sure any buffers are flushed to writer */
@@ -106,7 +142,7 @@ public abstract class TextResponseWriter implements TextWriter {
   }
 
 
-  public final void writeVal(String name, Object val) throws IOException {
+  public final void writeVal(String name, Object val, boolean raw) throws IOException {
 
     // if there get to be enough types, perhaps hashing on the type
     // to get a handler might be faster (but types must be exact to do that...)
@@ -122,9 +158,10 @@ public abstract class TextResponseWriter implements TextWriter {
       IndexableField f = (IndexableField)val;
       SchemaField sf = schema.getFieldOrNull( f.name() );
       if( sf != null ) {
-        sf.getType().write(this, name, f);
-      }
-      else {
+        sf.getType().write(raw ? rawShim : this, name, f);
+      } else if (raw) {
+        writeStrRaw(name, f.stringValue());
+      } else {
         writeStr(name, f.stringValue(), true);
       }
     } else if (val instanceof Document) {
@@ -150,7 +187,7 @@ public abstract class TextResponseWriter implements TextWriter {
       BytesRef arr = (BytesRef)val;
       writeByteArr(name, arr.bytes, arr.offset, arr.length);
     } else {
-      TextWriter.super.writeVal(name, val);
+      TextWriter.super.writeVal(name, val, raw);
     }
   }
   // names are passed when writing primitives like writeInt to allow many different

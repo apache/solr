@@ -50,6 +50,9 @@
   <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
   <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
 
+  <!-- Dense Vector Fields -->
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
+  
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
     <analyzer type="index">
@@ -663,7 +666,9 @@
   
   <field name="shingle23" type="shingle23" indexed="true" stored="true"/>
 
-
+  <!-- Dense Vector-->
+  <field name="vector" type="knn_vector" indexed="true" stored="true"/>
+  
   <!--
      DO NOT INCLUDE _version_ in this schema file
      We explicitly want tests using this file to *NOT* have this field

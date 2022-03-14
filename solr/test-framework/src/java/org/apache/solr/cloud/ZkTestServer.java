@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.management.JMException;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -57,6 +56,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,13 +72,13 @@ public class ZkTestServer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static File SOLRHOME;
+  public static Path SOLRHOME;
   static {
     try {
-      SOLRHOME = new File(SolrTestCaseJ4.TEST_HOME());
+      SOLRHOME = SolrTestCaseJ4.TEST_PATH();
     } catch (RuntimeException e) {
-      log.warn("TEST_HOME() does not exist - solrj test?");
-      // solrj tests not working with TEST_HOME()
+      log.warn("TEST_PATH() does not exist - solrj test?");
+      // solrj tests not working with TEST_PATH()
       // must override getSolrHome
     }
   }
@@ -780,24 +780,23 @@ public class ZkTestServer {
     buildZooKeeper(SOLRHOME, config, schema);
   }
 
-  public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String name)
+  public static void putConfig(String confName, SolrZkClient zkClient, Path solrhome, final String name)
       throws Exception {
     putConfig(confName, zkClient, null, solrhome, name, name);
   }
 
 
-  public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String srcName,
+  public static void putConfig(String confName, SolrZkClient zkClient, Path solrhome, final String srcName,
                                  String destName) throws Exception {
       putConfig(confName, zkClient, null, solrhome, srcName, destName);
   }
 
-  public static void putConfig(String confName, SolrZkClient zkClient, String zkChroot, File solrhome,
+  public static void putConfig(String confName, SolrZkClient zkClient, String zkChroot, Path solrhome,
                                final String srcName, String destName) throws Exception {
-    File file = new File(solrhome, "collection1"
-        + File.separator + "conf" + File.separator + srcName);
-    if (!file.exists()) {
+    Path file = solrhome.resolve("collection1").resolve("conf").resolve(srcName);
+    if (!Files.exists(file)) {
       if (log.isInfoEnabled()) {
-        log.info("skipping {} because it doesn't exist", file.getAbsolutePath());
+        log.info("skipping {} because it doesn't exist", file.toAbsolutePath());
       }
       return;
     }
@@ -807,13 +806,13 @@ public class ZkTestServer {
       destPath = zkChroot + destPath;
     }
     if (log.isInfoEnabled()) {
-      log.info("put {} to {}", file.getAbsolutePath(), destPath);
+      log.info("put {} to {}", file.toAbsolutePath(), destPath);
     }
     zkClient.makePath(destPath, file, false, true);
   }
 
   // static to share with distrib test
-  public void buildZooKeeper(File solrhome, String config, String schema) throws Exception {
+  public void buildZooKeeper(Path solrhome, String config, String schema) throws Exception {
 
     Map<String,Object> props = new HashMap<>();
     props.put("configName", "conf1");

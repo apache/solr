@@ -16,13 +16,11 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -109,20 +107,20 @@ public abstract class ConfigSetService {
 
   private void bootstrapDefaultConf() throws IOException {
     if (this.checkConfigExists("_default") == false) {
-      String configDirPath = getDefaultConfigDirPath();
+      Path configDirPath = getDefaultConfigDirPath();
       if (configDirPath == null) {
         log.warn(
             "The _default configset could not be uploaded. Please provide 'solr.default.confdir' parameter that points to a configset {} {}",
             "intended to be the default. Current 'solr.default.confdir' value:",
             System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE));
       } else {
-        this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, Paths.get(configDirPath));
+        this.uploadConfig(ConfigSetsHandler.DEFAULT_CONFIGSET_NAME, configDirPath);
       }
     }
   }
 
   private void bootstrapConfDir(String confDir) throws IOException {
-    Path configPath = Paths.get(confDir);
+    Path configPath = Path.of(confDir);
     if (!Files.isDirectory(configPath)) {
       throw new IllegalArgumentException ("bootstrap_confdir must be a directory of configuration files, configPath: " + configPath);
     }
@@ -139,62 +137,56 @@ public abstract class ConfigSetService {
    * @lucene.internal
    * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
    */
-  public static String getDefaultConfigDirPath() {
-    String configDirPath = null;
-    String serverSubPath =
-        "solr"
-            + File.separator
-            + "configsets"
-            + File.separator
-            + "_default"
-            + File.separator
-            + "conf";
-    String subPath = File.separator + "server" + File.separator + serverSubPath;
-    if (System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE) != null
-        && new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE))
-            .exists()) {
-      configDirPath =
-          new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE))
-              .getAbsolutePath();
-    } else if (System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) != null
-        && new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath)
-            .exists()) {
-      configDirPath =
-          new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath)
-              .getAbsolutePath();
+  public static Path getDefaultConfigDirPath() {
+    String confDir = System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+    if (confDir != null) {
+      Path path = Path.of(confDir);
+      if (Files.exists(path)) {
+        return path;
+      }
     }
-    return configDirPath;
+
+    String installDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+    if (installDir != null) {
+      Path subPath = Path.of("server", "solr", "configsets", "_default", "conf");
+      Path path = Path.of(installDir).resolve(subPath);
+      if (Files.exists(path)) {
+        return path;
+      }
+    }
+
+    return null;
   }
 
   // Order is important here since "confDir" may be
   // 1> a full path to the parent of a solrconfig.xml or parent of /conf/solrconfig.xml
   // 2> one of the canned config sets only, e.g. _default
   // and trying to assemble a path for configsetDir/confDir is A Bad Idea. if confDir is a full path.
-  public static Path getConfigsetPath(String confDir, String configSetDir) throws IOException {
+  public static Path getConfigsetPath(String confDir, String configSetDir) {
 
     // A local path to the source, probably already includes "conf".
-    Path ret = Paths.get(confDir, "solrconfig.xml").normalize();
+    Path ret = Path.of(confDir, "solrconfig.xml").normalize();
     if (Files.exists(ret)) {
-      return Paths.get(confDir).normalize();
+      return Path.of(confDir).normalize();
     }
 
     // a local path to the parent of a "conf" directory
-    ret = Paths.get(confDir, "conf", "solrconfig.xml").normalize();
+    ret = Path.of(confDir, "conf", "solrconfig.xml").normalize();
     if (Files.exists(ret)) {
-      return Paths.get(confDir, "conf").normalize();
+      return Path.of(confDir, "conf").normalize();
     }
 
     // one of the canned configsets.
-    ret = Paths.get(configSetDir, confDir, "conf", "solrconfig.xml").normalize();
+    ret = Path.of(configSetDir, confDir, "conf", "solrconfig.xml").normalize();
     if (Files.exists(ret)) {
-      return Paths.get(configSetDir, confDir, "conf").normalize();
+      return Path.of(configSetDir, confDir, "conf").normalize();
     }
 
     throw new IllegalArgumentException(String.format(Locale.ROOT,
             "Could not find solrconfig.xml at %s, %s or %s",
-            Paths.get(configSetDir, "solrconfig.xml").normalize().toAbsolutePath().toString(),
-            Paths.get(configSetDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString(),
-            Paths.get(configSetDir, confDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString()
+            Path.of(configSetDir, "solrconfig.xml").normalize().toAbsolutePath().toString(),
+            Path.of(configSetDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString(),
+            Path.of(configSetDir, confDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString()
     ));
   }
 
@@ -244,7 +236,13 @@ public abstract class ConfigSetService {
               ) ? false: true;
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
-      return new ConfigSet(configSetName(dcore), solrConfig, force -> createIndexSchema(dcore, solrConfig, force), properties, trusted);
+      return new ConfigSet(configSetName(dcore), solrConfig, force -> {
+        try {
+          return createIndexSchema(dcore, solrConfig, force);
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+        }
+      }, properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load conf for core " + dcore.getName() +
@@ -288,7 +286,7 @@ public abstract class ConfigSetService {
    * @param solrConfig the core's SolrConfig
    * @return an IndexSchema
    */
-  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig, boolean forceFetch) {
+  protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig, boolean forceFetch) throws IOException {
     // This is the schema name from the core descriptor.  Sometimes users specify a custom schema file.
     //   Important:  indexSchemaFactory.create wants this!
     String cdSchemaName = cd.getSchemaName();
@@ -320,7 +318,7 @@ public abstract class ConfigSetService {
    * Returns a modification version for the schema file.
    * Null may be returned if not known, and if so it defeats schema caching.
    */
-  protected abstract Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFile);
+  protected abstract Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFile) throws IOException;
 
   /**
    * Return the ConfigSet properties or null if none.
@@ -329,7 +327,7 @@ public abstract class ConfigSetService {
    * @param loader the core's resource loader
    * @return the ConfigSet properties
    */
-  protected NamedList<Object> loadConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) {
+  protected NamedList<Object> loadConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) throws IOException {
     return ConfigSetProperties.readFromResourceLoader(loader, cd.getConfigSetPropertiesName());
   }
 
@@ -337,7 +335,7 @@ public abstract class ConfigSetService {
    * Return the ConfigSet flags or null if none.
    */
   // TODO should fold into configSetProps -- SOLR-14059
-  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
+  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) throws IOException {
     return null;
   }
 

@@ -17,14 +17,13 @@
 package org.apache.solr.spelling.suggest;
 
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
@@ -38,7 +37,6 @@ import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
 import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
@@ -74,7 +72,7 @@ public class Suggester extends SolrSpellChecker {
   public static final String STORE_DIR = "storeDir";
   
   protected String sourceLocation;
-  protected File storeDir;
+  protected Path storeDir;
   protected float threshold;
   protected Dictionary dictionary;
   protected IndexReader reader;
@@ -108,7 +106,7 @@ public class Suggester extends SolrSpellChecker {
     core.addCloseHook(new CloseHook() {
       @Override
       public void preClose(SolrCore core) {
-        if (lookup != null && lookup instanceof Closeable) {
+        if (lookup instanceof Closeable) {
           try {
             ((Closeable) lookup).close();
           } catch (IOException e) {
@@ -116,23 +114,23 @@ public class Suggester extends SolrSpellChecker {
           }
         }
       }
-      
-      @Override
-      public void postClose(SolrCore core) {}
     });
-    
+
+    // TODO: Duplicated with SolrSuggester
     String store = (String)config.get(STORE_DIR);
     if (store != null) {
-      storeDir = new File(store);
-      if (!storeDir.isAbsolute()) {
-        storeDir = new File(core.getDataDir() + File.separator + storeDir);
+      storeDir = Path.of(store);
+      storeDir = Path.of(core.getDataDir()).resolve(storeDir); // if store dir is absolute this won't change it
+      try {
+        Files.createDirectories(storeDir);
+      } catch (IOException e) {
+        log.warn("Could not create directory {}", storeDir);
       }
-      if (!storeDir.exists()) {
-        storeDir.mkdirs();
-      } else {
+      Path storeFile = storeDir.resolve(factory.storeFileName());
+      if (Files.exists(storeFile)) {
         // attempt reload of the stored lookup
         try {
-          lookup.load(new FileInputStream(new File(storeDir, factory.storeFileName())));
+          lookup.load(Files.newInputStream(storeFile));
         } catch (IOException e) {
           log.warn("Loading stored lookup data failed", e);
         }
@@ -160,8 +158,8 @@ public class Suggester extends SolrSpellChecker {
 
     lookup.build(dictionary);
     if (storeDir != null) {
-      File target = new File(storeDir, factory.storeFileName());
-      if(!lookup.store(new FileOutputStream(target))) {
+      Path target = storeDir.resolve(factory.storeFileName());
+      if(!lookup.store(Files.newOutputStream(target))) {
         if (sourceLocation == null) {
           assert reader != null && field != null;
           log.error("Store Lookup build from index on field: {} failed reader has: {} docs", field, reader.maxDoc());
@@ -170,7 +168,7 @@ public class Suggester extends SolrSpellChecker {
         }
       } else {
         if (log.isInfoEnabled()) {
-          log.info("Stored suggest data to: {}", target.getAbsolutePath());
+          log.info("Stored suggest data to: {}", target.toAbsolutePath());
         }
       }
     }
@@ -181,13 +179,8 @@ public class Suggester extends SolrSpellChecker {
     log.info("reload()");
     if (dictionary == null && storeDir != null) {
       // this may be a firstSearcher event, try loading it
-      FileInputStream is = new FileInputStream(new File(storeDir, factory.storeFileName()));
-      try {
-        if (lookup.load(is)) {
-          return;  // loaded ok
-        }
-      } finally {
-        IOUtils.closeWhileHandlingException(is);
+      if (lookup.load(Files.newInputStream(storeDir.resolve(factory.storeFileName())))) {
+        return;  // loaded ok
       }
       log.debug("load failed, need to build Lookup again");
     }

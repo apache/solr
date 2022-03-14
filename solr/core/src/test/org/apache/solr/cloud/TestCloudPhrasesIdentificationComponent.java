@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -68,8 +67,8 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     final int numNodes = (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
-    
+    final Path configDir = TEST_COLL1_CONF();
+
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     
     Map<String, String> collectionProperties = new LinkedHashMap<>();

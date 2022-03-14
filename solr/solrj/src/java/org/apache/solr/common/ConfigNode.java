@@ -140,7 +140,8 @@ public interface ConfigNode {
   default boolean exists() { return true; }
   default boolean isNull() { return false; }
 
-  /** abortable iterate through children
+  /**
+   * abortable iterate through children
    *
    * @param fun consume the node and return true to continue or false to abort
    */
@@ -178,6 +179,7 @@ public interface ConfigNode {
       return EMPTY;
     }
 
+    @Override
     public boolean exists() { return false; }
 
     @Override
@@ -194,11 +196,12 @@ public interface ConfigNode {
     static int _int(Object v, int def) { return v==null? def: Integer.parseInt(v.toString()); }
     static double _double(Object v, double def) { return v == null ? def: Double.parseDouble(v.toString()); }
     public static Predicate<ConfigNode> at(int i) {
-      return new Predicate<ConfigNode>() {
-        int index =0;
+      return new Predicate<>() {
+        int index = 0;
+
         @Override
         public boolean test(ConfigNode node) {
-          if(index == i) return true;
+          if (index == i) return true;
           index++;
           return false;
         }

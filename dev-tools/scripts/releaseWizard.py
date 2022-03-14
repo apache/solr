@@ -30,7 +30,7 @@
 #   -h, --help   show this help message and exit
 #   --dry-run    Do not execute any commands, but echo them instead. Display
 #   extra debug info
-#   --root PATH  Specify different root folder than ~/.lucene-releases
+#   --root PATH  Specify different root folder than ~/.solr-releases
 
 import argparse
 import copy
@@ -67,8 +67,11 @@ from consolemenu.screen import Screen
 from scriptutil import BranchType, Version, download, run
 
 # Solr-to-Java version mapping
-java_versions = {6: 8, 7: 8, 8: 8, 9: 11}
+java_versions = {6: 8, 7: 8, 8: 8, 9: 11, 10: 11}
 editor = None
+state = None
+templates = None
+solr_news_file = None
 
 # Edit this to add other global jinja2 variables or filters
 def expand_jinja(text, vars=None):
@@ -85,7 +88,7 @@ def expand_jinja(text, vars=None):
         'git_checkout_folder': state.get_git_checkout_folder(),
         'ref_guide_svn_folder': state.get_ref_guide_svn_folder(),
         'git_website_folder': state.get_website_git_folder(),
-        'dist_url_base': 'https://dist.apache.org/repos/dist/dev/lucene',
+        'dist_url_base': 'https://dist.apache.org/repos/dist/dev/solr',
         'm2_repository_url': 'https://repository.apache.org/service/local/staging/deploy/maven2',
         'dist_file_path': state.get_dist_folder(),
         'rc_folder': state.get_rc_folder(),
@@ -111,7 +114,6 @@ def expand_jinja(text, vars=None):
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
         'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date()),
         'vote_close_72h_holidays': vote_close_72h_holidays(),
-        'lucene_news_file': lucene_news_file,
         'solr_news_file': solr_news_file,
         'load_lines': load_lines,
         'set_java_home': set_java_home,
@@ -192,7 +194,7 @@ def check_prerequisites(todo=None):
     except:
         sys.exit("You will need git installed")
     try:
-        svn_ver = run("svn --version").splitlines()[0]
+        run("svn --version").splitlines()[0]
     except:
         sys.exit("You will need svn installed")
     if not 'EDITOR' in os.environ:
@@ -239,11 +241,11 @@ def maybe_remove_rc_from_svn():
         Commands(state.get_git_checkout_folder(),
                  """Looks like you uploaded artifacts for {{ build_rc.git_rev | default("<git_rev>", True) }} to svn which needs to be removed.""",
                  [Command(
-                 """svn -m "Remove cancelled Lucene/Solr {{ release_version }} RC{{ rc_number }}" rm {{ dist_url }}""",
+                 """svn -m "Remove cancelled Solr {{ release_version }} RC{{ rc_number }}" rm {{ dist_url }}""",
                  logfile="svn_rm.log",
                  tee=True,
                  vars={
-                     'dist_folder': """lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}""",
+                     'dist_folder': """solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}""",
                      'dist_url': "{{ dist_url_base }}/{{ dist_folder }}"
                  }
              )],
@@ -309,7 +311,7 @@ class ReleaseState:
             self.release_type = 'bugfix'
 
     def is_released(self):
-        return self.get_todo_by_id('announce_lucene').is_done()
+        return self.get_todo_by_id('announce_solr').is_done()
 
     def get_gpg_key(self):
         gpg_task = self.get_todo_by_id('gpg')
@@ -345,9 +347,13 @@ class ReleaseState:
 
     def get_mirrored_versions(self):
         if state.mirrored_versions is None:
+            # Add the solr release versions from lucene and solr projects
             releases_str = load("https://projects.apache.org/json/foundation/releases.json", "utf-8")
-            releases = json.loads(releases_str)['lucene']
-            state.mirrored_versions = [ r for r in list(map(lambda y: y[7:], filter(lambda x: x.startswith('lucene-'), list(releases.keys())))) ]
+            releases_lucene_solr = json.loads(releases_str)['lucene']
+            releases_solr = json.loads(releases_str)['solr']
+            versions_l_s = [ r for r in list(map(lambda y: y[5:], filter(lambda x: x.startswith('solr-'), list(releases_lucene_solr.keys())))) ]
+            versions_s = [ r for r in list(map(lambda y: y[5:], filter(lambda x: re.match(r'^solr-(9|1\d)\.', x), list(releases_solr.keys())))) ]
+            state.mirrored_versions = versions_l_s + versions_s
         return state.mirrored_versions
 
     def get_mirrored_versions_to_delete(self):
@@ -417,7 +423,6 @@ class ReleaseState:
     def clear_rc(self):
         if ask_yes_no("Are you sure? This will clear and restart RC%s" % self.rc_number):
             maybe_remove_rc_from_svn()
-            dict = {}
             for g in list(filter(lambda x: x.in_rc_loop(), self.todo_groups)):
                 for t in g.get_todos():
                     t.clear()
@@ -425,7 +430,7 @@ class ReleaseState:
             try:
                 shutil.rmtree(self.get_rc_folder())
                 print("Cleared folder %s" % self.get_rc_folder())
-            except Exception as e:
+            except Exception:
                 print("WARN: Failed to clear %s, please do it manually with higher privileges" % self.get_rc_folder())
             self.save()
 
@@ -557,7 +562,7 @@ class ReleaseState:
         return folder
 
     def get_git_checkout_folder(self):
-        folder = os.path.join(self.get_release_folder(), "lucene-solr")
+        folder = os.path.join(self.get_release_folder(), "solr")
         return folder
 
     def get_ref_guide_svn_folder(self):
@@ -565,7 +570,7 @@ class ReleaseState:
         return folder
 
     def get_website_git_folder(self):
-        folder = os.path.join(self.get_release_folder(), "lucene-site")
+        folder = os.path.join(self.get_release_folder(), "solr-site")
         return folder
 
     def get_minor_branch_name(self):
@@ -590,6 +595,7 @@ class ReleaseState:
             return "%s.%s.0" % (self.release_version_major, self.release_version_minor + 1)
         if self.release_type == 'bugfix':
             return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix + 1)
+        return None
 
     def get_refguide_release(self):
         return "%s_%s" % (self.release_version_major, self.release_version_minor)
@@ -777,7 +783,6 @@ class Todo(SecretYamlObject):
     def display_and_confirm(self):
         try:
             if self.depends:
-                ret_str = ""
                 for dep in ensure_list(self.depends):
                     g = state.get_group_by_id(dep)
                     if not g:
@@ -896,7 +901,7 @@ def get_todo_menuitem_title():
 
 
 def get_releasing_text():
-    return "Releasing Lucene/Solr %s RC%d" % (state.release_version, state.rc_number)
+    return "Releasing Solr %s RC%d" % (state.release_version, state.rc_number)
 
 
 def get_start_new_rc_menu_title():
@@ -952,14 +957,14 @@ def unix_to_datetime(unix_stamp):
 
 def generate_asciidoc():
     base_filename = os.path.join(state.get_release_folder(),
-                                 "lucene_solr_release_%s"
+                                 "solr_release_%s"
                                  % (state.release_version.replace("\.", "_")))
 
     filename_adoc = "%s.adoc" % base_filename
     filename_html = "%s.html" % base_filename
     fh = open(filename_adoc, "w")
 
-    fh.write("= Lucene/Solr Release %s\n\n" % state.release_version)
+    fh.write("= Solr Release %s\n\n" % state.release_version)
     fh.write("(_Generated by releaseWizard.py v%s at %s_)\n\n"
              % (getScriptVersion(), datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")))
     fh.write(":numbered:\n\n")
@@ -1038,21 +1043,21 @@ def generate_asciidoc():
 
 
 def load_rc():
-    lucenerc = os.path.expanduser("~/.lucenerc")
+    solrrc = os.path.expanduser("~/.solrrc")
     try:
-        with open(lucenerc, 'r') as fp:
+        with open(solrrc, 'r') as fp:
             return json.load(fp)
     except:
         return None
 
 
 def store_rc(release_root, release_version=None):
-    lucenerc = os.path.expanduser("~/.lucenerc")
+    solrrc = os.path.expanduser("~/.solrrc")
     dict = {}
     dict['root'] = release_root
     if release_version:
         dict['release_version'] = release_version
-    with open(lucenerc, "w") as fp:
+    with open(solrrc, "w") as fp:
         json.dump(dict, fp, indent=2)
 
 
@@ -1068,7 +1073,7 @@ def file_to_string(filename):
         return f.read().strip()
 
 def download_keys():
-    download('KEYS', "https://archive.apache.org/dist/lucene/KEYS", state.config_path)
+    download('KEYS', "https://archive.apache.org/dist/solr/KEYS", state.config_path)
 
 def keys_downloaded():
     return os.path.exists(os.path.join(state.config_path, "KEYS"))
@@ -1210,13 +1215,29 @@ def configure_pgp(gpg_todo):
     else:
         print(textwrap.dedent("""\
             Could not find your key ID in official KEYS file.
-            Please make sure it is added to https://dist.apache.org/repos/dist/release/lucene/KEYS
+            Please make sure it is added to https://dist.apache.org/repos/dist/release/solr/KEYS
             and committed to svn. Then re-try this initialization"""))
         if not ask_yes_no("Do you want to continue without fixing KEYS file? (not recommended) "):
             return False
 
     gpg_state['apache_id'] = id
     gpg_state['gpg_key'] = gpg_id
+
+    print(textwrap.dedent("""\
+            You can choose between signing the release with the gpg program or with
+            the gradle signing plugin. Read about the difference by running
+            ./gradlew helpPublishing"""))
+
+    gpg_state['use_gradle'] = ask_yes_no("Do you want to sign the release with gradle plugin? No means gpg")
+
+    print(textwrap.dedent("""\
+            You need the passphrase to sign the release.
+            This script can prompt you securely for your passphrase (will not be stored) and pass it on to
+            buildAndPushRelease in a secure way. However, you can also configure your passphrase in advance 
+            and avoid having to type it in the terminal. This can be done with either a gpg-agent (for gpg tool)
+            or in gradle.properties or an ENV.var (for gradle), See ./gradlew helpPublishing for details."""))
+    gpg_state['prompt_pass'] = ask_yes_no("Do you want this wizard to prompt you for your gpg password? ")
+
     return True
 
 
@@ -1261,9 +1282,8 @@ class UpdatableSubmenuItem(SubmenuItem):
         """
         :ivar ConsoleMenu self.submenu: The submenu to be opened when this item is selected
         """
-        super(SubmenuItem, self).__init__(text=text, menu=menu, should_exit=should_exit)
+        super(UpdatableSubmenuItem, self).__init__(text=text, menu=menu, should_exit=should_exit, submenu=submenu)
 
-        self.submenu = submenu
         if menu:
             self.get_submenu().parent = menu
 
@@ -1327,7 +1347,7 @@ class MyScreen(Screen):
 
 class CustomExitItem(ExitItem):
     def show(self, index):
-        return super(ExitItem, self).show(index)
+        return super(CustomExitItem, self).show(index)
 
     def get_return(self):
         return ""
@@ -1338,18 +1358,17 @@ def main():
     global dry_run
     global templates
 
-    print("Lucene/Solr releaseWizard v%s" % getScriptVersion())
+    print("Solr releaseWizard v%s" % getScriptVersion())
     c = parse_config()
 
     if c.dry:
         print("Entering dry-run mode where all commands will be echoed instead of executed")
         dry_run = True
 
-    release_root = os.path.expanduser("~/.lucene-releases")
+    release_root = os.path.expanduser("~/.solr-releases")
     if not load_rc() or c.init:
         print("Initializing")
-        dir_ok = False
-        root = str(input("Choose root folder: [~/.lucene-releases] "))
+        root = str(input("Choose root folder: [~/.solr-releases] "))
         if os.path.exists(root) and (not os.path.isdir(root) or not os.access(root, os.W_OK)):
             sys.exit("Root %s exists but is not a directory or is not writable" % root)
         if not root == '':
@@ -1391,19 +1410,15 @@ def main():
     os.environ['JAVA_HOME'] = state.get_java_home()
     os.environ['JAVACMD'] = state.get_java_cmd()
 
-    global lucene_news_file
     global solr_news_file
-    lucene_news_file = os.path.join(state.get_website_git_folder(), 'content', 'core', 'core_news',
-      "%s-%s-available.md" % (state.get_release_date_iso(), state.release_version.replace(".", "-")))
     solr_news_file = os.path.join(state.get_website_git_folder(), 'content', 'solr', 'solr_news',
       "%s-%s-available.md" % (state.get_release_date_iso(), state.release_version.replace(".", "-")))
-    website_folder = state.get_website_git_folder()
 
-    main_menu = UpdatableConsoleMenu(title="Lucene/Solr ReleaseWizard",
+    main_menu = UpdatableConsoleMenu(title="Solr ReleaseWizard",
                             subtitle=get_releasing_text,
                             prologue_text="Welcome to the release wizard. From here you can manage the process including creating new RCs. "
                                           "All changes are persisted, so you can exit any time and continue later. Make sure to read the Help section.",
-                            epilogue_text="® 2020 The Lucene/Solr project. Licensed under the Apache License 2.0\nScript version v%s)" % getScriptVersion(),
+                            epilogue_text="® 2022 The Solr project. Licensed under the Apache License 2.0\nScript version v%s)" % getScriptVersion(),
                             screen=MyScreen())
 
     todo_menu = UpdatableConsoleMenu(title=get_releasing_text,
@@ -1550,7 +1565,7 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
                         lines_written += 1
                         print_line_cr(line, lines_written, stdout=(fh == sys.stdout), tee=tee)
 
-            except Exception as ioe:
+            except Exception:
                 pass
         if not endstderr:
             try:
@@ -1571,7 +1586,7 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
                         errlines.append("%s\n" % line.rstrip())
                         lines_written += 1
                         print_line_cr(line, lines_written, stdout=(fh == sys.stdout), tee=tee)
-            except Exception as e:
+            except Exception:
                 pass
 
         if not lines_written > lines_before:
@@ -1621,7 +1636,7 @@ class Commands(SecretYamlObject):
         fields = loader.construct_mapping(node, deep = True)
         return Commands(**fields)
 
-    def run(self):
+    def run(self): # pylint: disable=inconsistent-return-statements # TODO
         root = self.get_root_folder()
 
         if self.commands_text:
@@ -1640,15 +1655,15 @@ class Commands(SecretYamlObject):
             for line in cmd.display_cmd():
                 print("  %s" % line)
         print()
+        confirm_each = (not self.confirm_each_command is False) and len(commands) > 1
         if not self.enable_execute is False:
             if self.run_text:
                 print("\n%s\n" % self.get_run_text())
-            if len(commands) > 1:
-                if not self.confirm_each_command is False:
-                    print("You will get prompted before running each individual command.")
-                else:
-                    print(
-                        "You will not be prompted for each command but will see the ouput of each. If one command fails the execution will stop.")
+            if confirm_each:
+                print("You will get prompted before running each individual command.")
+            else:
+                print(
+                    "You will not be prompted for each command but will see the output of each. If one command fails the execution will stop.")
             success = True
             if ask_yes_no("Do you want me to run these commands now?"):
                 if self.remove_files:
@@ -1677,8 +1692,10 @@ class Commands(SecretYamlObject):
                     folder_prefix = ''
                     if cmd.cwd:
                         folder_prefix = cmd.cwd + "_"
-                    if self.confirm_each_command is False or len(commands) == 1 or ask_yes_no("Shall I run '%s' in folder '%s'" % (cmd, cwd)):
-                        if self.confirm_each_command is False:
+                    if confirm_each and cmd.comment:
+                        print("# %s\n" % cmd.get_comment())
+                    if not confirm_each or ask_yes_no("Shall I run '%s' in folder '%s'" % (cmd, cwd)):
+                        if not confirm_each:
                             print("------------\nRunning '%s' in folder '%s'" % (cmd, cwd))
                         logfilename = cmd.logfile
                         logfile = None
@@ -1784,6 +1801,8 @@ def abbreviate_homedir(line):
             return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1%HOME%", line)
         elif 'USERPROFILE' in os.environ:
             return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1%USERPROFILE%", line)
+        else:
+            return None
     else:
         return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1~", line)
 
@@ -1864,7 +1883,6 @@ class Command(SecretYamlObject):
 
     def display_cmd(self):
         lines = []
-        pre = post = ''
         if self.comment:
             if is_windows():
                 lines.append("REM %s" % self.get_comment())
@@ -1910,11 +1928,11 @@ class UserInput(SecretYamlObject):
             return result
 
 
-def create_ical(todo):
+def create_ical(todo): # pylint: disable=unused-argument
     if ask_yes_no("Do you want to add a Calendar reminder for the close vote time?"):
         c = Calendar()
         e = Event()
-        e.name = "Lucene/Solr %s vote ends" % state.release_version
+        e.name = "Solr %s vote ends" % state.release_version
         e.begin = vote_close_72h_date()
         e.description = "Remember to sum up votes and continue release :)"
         c.events.add(e)
@@ -1957,17 +1975,7 @@ def vote_close_72h_holidays():
     return holidays if len(holidays) > 0 else None
 
 
-def prepare_announce_lucene(todo):
-    if not os.path.exists(lucene_news_file):
-        lucene_text = expand_jinja("(( template=announce_lucene ))")
-        with open(lucene_news_file, 'w') as fp:
-            fp.write(lucene_text)
-        # print("Wrote Lucene announce draft to %s" % lucene_news_file)
-    else:
-        print("Draft already exist, not re-generating")
-    return True
-
-def prepare_announce_solr(todo):
+def prepare_announce_solr(todo): # pylint: disable=unused-argument
     if not os.path.exists(solr_news_file):
         solr_text = expand_jinja("(( template=announce_solr ))")
         with open(solr_news_file, 'w') as fp:
@@ -1978,7 +1986,7 @@ def prepare_announce_solr(todo):
     return True
 
 
-def check_artifacts_available(todo):
+def check_artifacts_available(todo): # pylint: disable=unused-argument
   try:
     cdnUrl = expand_jinja("https://dlcdn.apache.org/solr/{{ release_version }}/solr-{{ release_version }}-src.tgz.asc")
     load(cdnUrl)

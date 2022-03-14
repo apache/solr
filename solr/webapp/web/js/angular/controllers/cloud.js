@@ -560,17 +560,23 @@ var treeSubController = function($scope, Zookeeper) {
 
     $scope.showTreeLink = function(link) {
         var path = decodeURIComponent(link.replace(/.*[\\?&]path=([^&#]*).*/, "$1"));
-        Zookeeper.detail({path: path}, function(data) {
-            $scope.znode = data.znode;
-            if (data.znode.path.endsWith("/managed-schema") || data.znode.path.endsWith(".xml.bak")) {
-              $scope.lang = "xml";
-            } else {
-              var lastPathElement = data.znode.path.split( '/' ).pop();
-              var lastDotAt = lastPathElement ? lastPathElement.lastIndexOf('.') : -1;
-              $scope.lang = lastDotAt != -1 ? lastPathElement.substring(lastDotAt+1) : "txt";
-            }
-            $scope.showData = true;
-        });
+        if (path === '/security.json' && !$scope.isPermitted(permissions.SECURITY_READ_PERM)) {
+          // TODO: Set proper data here to display a warning in right panel "You lack the required role to see this file"
+          $scope.znode = {};
+          $scope.showData = false;
+        } else {
+          Zookeeper.detail({path: path}, function(data) {
+              $scope.znode = data.znode;
+              if (data.znode.path.endsWith("/managed-schema") || data.znode.path.endsWith(".xml.bak")) {
+                $scope.lang = "xml";
+              } else {
+                var lastPathElement = data.znode.path.split( '/' ).pop();
+                var lastDotAt = lastPathElement ? lastPathElement.lastIndexOf('.') : -1;
+                $scope.lang = lastDotAt != -1 ? lastPathElement.substring(lastDotAt+1) : "txt";
+              }
+              $scope.showData = true;
+          });
+        }
     };
 
     $scope.hideData = function() {

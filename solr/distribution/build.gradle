@@ -1,0 +1,160 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.apache.lucene.gradle.Checksum
+
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+
+plugins {
+  id 'signing'
+}
+
+// This project puts together the Solr "distribution", assembling bits and pieces
+// from across the project structure into release artifacts.
+
+ext {
+  releaseDir = file("${buildDir}/release")
+  withSignedArtifacts = { ->
+    def propValue = propertyOrDefault("sign", null)
+    // Allow -Psign to work as a shorthand for -Psign=true
+    return propValue != null && (propValue.isBlank() || Boolean.parseBoolean(propValue))
+  }.call()
+  useGpgForSigning = { ->
+    def propValue = propertyOrDefault("useGpg", null)
+    // Allow -PuseGpg to work as a shorthand for -PuseGpg=true
+    return propValue != null && (propValue.isBlank() || Boolean.parseBoolean(propValue))
+  }.call()
+}
+
+if (project.ext.useGpgForSigning) {
+  signing {
+    useGpgCmd()
+  }
+}
+
+// Prepare the "source" distribution artifact.
+apply from: buildscript.sourceFile.toPath().resolveSibling("source-release.gradle")
+
+
+// Set up the HTML-rendered "changes" distribution artifact by linking to documentation's output.
+configurations {
+  changesHtml
+  docker
+}
+
+dependencies {
+  changesHtml project(path: ":solr:documentation", configuration: "changesHtml")
+  docker project(path: ':solr:docker', configuration: project.ext.withSignedArtifacts ? 'packagingOfficial' : 'packaging')
+}
+
+def distTarTask = rootProject.getTasksByName("distTar", true)[0]
+def distZipTask = rootProject.getTasksByName("distZip", true)[0]
+
+// Compute checksums for release archives.
+task computeChecksums(type: Checksum) {
+  algorithm = Checksum.Algorithm.SHA512
+
+  files = objects.fileCollection()
+  [
+      tasks.assembleSourceTgz,
+      distTarTask,
+      distZipTask,
+  ].each { dep ->
+    dependsOn dep
+    files += dep.outputs.files
+  }
+
+  outputDir = file("${buildDir}/checksums")
+}
+
+task signBinaryTgz(type: Sign) {
+  sign distTarTask
+}
+task signBinaryZip(type: Sign) {
+  sign distZipTask
+}
+task signSourceTgz(type: Sign) {
+  // The source tgz is not an archive task so be explicit about the outputs to sign.
+  dependsOn tasks.assembleSourceTgz
+  sign tasks.assembleSourceTgz.destination
+}
+
+task signReleaseArchives(type: Sync) {
+  from tasks.signBinaryTgz
+  from tasks.signBinaryZip
+  from tasks.signSourceTgz
+
+  into "${buildDir}/signatures"
+}
+
+task prepareGitRev() {
+  dependsOn ":gitStatus"
+
+  ext.outputFile = file("${buildDir}/.gitrev")
+
+  outputs.file(ext.outputFile)
+  inputs.property("gitrev", provider { -> rootProject.ext.gitRev })
+
+  doFirst {
+    Files.writeString(ext.outputFile.toPath(), rootProject.ext.gitRev, StandardCharsets.UTF_8)
+  }
+}
+
+
+// Assemble everything needed in the release folder structure.
+task assembleRelease(type: Sync) {
+  description "Assemble all Solr artifacts for a release."
+  dependsOn ":mavenToLocalFolder"
+
+  from(configurations.changesHtml, {
+    into "changes"
+  })
+
+  from(configurations.docker, {
+    include 'Dockerfile.*'
+    into "docker"
+  })
+
+  from(rootProject.mavenLocalDir, {
+    into "maven"
+  })
+
+  from tasks.prepareGitRev
+  from tasks.assembleSourceTgz
+  from distTarTask
+  from distZipTask
+
+  from tasks.computeChecksums
+
+  // Conditionally, attach signatures of all the release archives.
+  if (project.ext.withSignedArtifacts) {
+    from tasks.signReleaseArchives
+  }
+
+  into releaseDir
+}
+
+
+// Add the description and task group to some of the tasks that make
+// sense at the user-level help.
+tasks.matching {it.name in [
+    "assembleSourceTgz",
+    "assembleRelease",
+]}.all {
+  group "distribution"
+}

@@ -19,7 +19,6 @@ package org.apache.solr.cluster.placement;
 
 import org.apache.solr.cluster.*;
 
-import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -43,12 +42,16 @@ class ClusterAbstractionsForTest {
     }
 
     @Override
+    public Set<Node> getLiveDataNodes() {
+      return liveNodes;
+    }
+
+    @Override
     public SolrCollection getCollection(String collectionName) {
       return collections.get(collectionName);
     }
 
     @Override
-    @Nonnull
     public Iterator<SolrCollection> iterator() {
       return collections.values().iterator();
     }
@@ -140,7 +143,6 @@ class ClusterAbstractionsForTest {
     }
 
     @Override
-    @Nonnull
     public Iterator<Shard> iterator() {
       return shards.values().iterator();
     }
@@ -199,7 +201,6 @@ class ClusterAbstractionsForTest {
     }
 
     @Override
-    @Nonnull
     public Iterator<Replica> iterator() {
       return replicas.values().iterator();
     }

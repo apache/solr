@@ -327,7 +327,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
       if (ri >= 0 && ri <= 3) {
         counts[i] = ri; // 0 thru 3 will be made common
       } else if (ri > 3) {
-        counts[i] = Math.abs(random().nextInt());//lots of other possible values up to max
+        counts[i] = random().nextInt(Integer.MAX_VALUE); //lots of other possible values up to max
       }
     }
     // Round-trip

@@ -1,0 +1,71 @@
+= SolrCloud Clusters
+:page-children: solrcloud-shards-indexing, \
+    solrcloud-recoveries-and-write-tolerance, \
+    solrcloud-distributed-requests, \
+    aliases, \
+    node-roles, \
+    cluster-node-management, \
+    shard-management, \
+    replica-management, \
+    collection-management, \
+    alias-management, \
+    zookeeper-ensemble, \
+    zookeeper-file-management, \
+    zookeeper-utilities, \
+    solrcloud-with-legacy-configuration-files, \
+    collections-core-admin, \
+    cloud-screens
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[.lead]
+SolrCloud is Solr's solution for fault tolerant and high availability clusters.
+It provides central coordination of cluster activities and configurations and automatic load balancing and failover.
+
+ZooKeeper is a critical component of SolrCloud, used to manage shard and replica locations, as well as document and query routing.
+
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::solrcloud-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+2+^h| Functionality Overview
+| <<solrcloud-shards-indexing.adoc#,SolrCloud Shards and Indexing>>: Leaders and replica types, and routing documents during indexing.
+| <<solrcloud-recoveries-and-write-tolerance.adoc#,SolrCloud Recoveries and Write Tolerance>>: Recovery in a SolrCloud cluster.
+| <<solrcloud-distributed-requests.adoc#,SolrCloud Distributed Requests>>: Query routing in a SolrCloud cluster.
+| <<aliases.adoc#,Aliases>>: Alternative names for collections.
+2+^h| Cluster Management
+| <<node-roles.adoc#,Node Roles>>: Functional roles for nodes for multi-tiered clusters.
+|
+2+^h| Collections API
+|<<cluster-node-management.adoc#,Cluster and Node Management>>: Cluster management commands of the Collections API.
+| <<shard-management.adoc#,Shard Management>>: Shard management commands of the Collections API.
+| <<replica-management.adoc#,Replica Management>>: Replica management commands of the Collections API.
+|<<collection-management.adoc#,Collection Management>>: Collection management commands of the Collections API.
+|<<alias-management.adoc#,Alias Management>>: Alias management commands of the Collections API.
+|
+2+^h| ZooKeeper Configuration
+|<<zookeeper-ensemble.adoc#,ZooKeeper Ensemble>>: External ZooKeeper configuration.
+| <<zookeeper-file-management.adoc#,ZooKeeper File Management>>: Uploading files to ZooKeeper.
+| <<zookeeper-utilities.adoc#,ZooKeeper Utilities>>: ZooKeeper CLI.
+| <<solrcloud-with-legacy-configuration-files.adoc#,SolrCloud with Legacy Configuration Files>>: Migration from user-managed clusters to SolrCloud.
+2+^h| Admin UI
+| <<collections-core-admin.adoc#,Collections / Core Admin>>: Admin UI for collections and cores.
+| <<cloud-screens.adoc#,Cloud Screens>>: Admin UI for SolrCloud status and ZooKeeper files.
+|===
+// end::solrcloud-sections[]
+****

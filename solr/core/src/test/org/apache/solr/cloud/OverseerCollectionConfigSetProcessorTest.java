@@ -318,7 +318,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       return null;
     }).when(zkStateReaderMock).waitForState(anyString(), anyLong(), any(), any(Predicate.class));
 
-    when(clusterStateMock.getCollection(anyString())).thenAnswer(invocation -> {
+    when(clusterStateMock.getCollection(anyString())).thenCallRealMethod();
+    when(clusterStateMock.getCollectionOrNull(anyString())).thenAnswer(invocation -> {
       String key = invocation.getArgument(0);
       if (!collectionsSet.containsKey(key)) return null;
       DocCollection docCollection = collectionsSet.get(key).get();
@@ -633,6 +634,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           .substring(7);
       nodeUrlWithoutProtocolPartForLiveNodes.add(nodeUrlWithoutProtocolPart);
     }
+    final Map<String,Set<String>> shard_TO_coreNames_map = new HashMap<>();
     final Map<String,String> coreName_TO_nodeUrlWithoutProtocolPartForLiveNodes_map = new HashMap<>();
 
     ArgumentCaptor<ShardRequest> shardRequestCaptor = ArgumentCaptor.forClass(ShardRequest.class);
@@ -649,9 +651,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           shardRequest.params.get(CoreAdminParams.ACTION));
       // assertEquals(shardRequest.params, submitCapture.params);
       String coreName = shardRequest.params.get(CoreAdminParams.NAME);
-      assertFalse("Core with name " + coreName + " created twice",
-          coreNames.contains(coreName));
-      coreNames.add(coreName);
+      assertTrue("Core with name " + coreName + " created twice", coreNames.add(coreName));
+      shard_TO_coreNames_map.computeIfAbsent(shardRequest.params.get(CoreAdminParams.SHARD), shard -> new HashSet<>()).add(coreName);
       assertEquals(CONFIG_NAME,
           shardRequest.params.get("collection.configName"));
       assertEquals(COLLECTION_NAME,
@@ -674,7 +675,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       if (!sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap
           .containsKey(sliceName)) {
         sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap.put(
-            sliceName, new HashMap<String,Integer>());
+            sliceName, new HashMap<>());
       }
       Map<String,Integer> nodeUrlsWithoutProtocolPartToNumberOfShardsRunningMap = sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap
           .get(sliceName);
@@ -688,11 +689,11 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     }
     
     assertEquals(numberOfSlices * numberOfReplica, coreNames.size());
-    for (int i = 1; i <= numberOfSlices; i++) {
+    assertEquals("Wrong number of shards", numberOfSlices.intValue(), shard_TO_coreNames_map.size());
+    for (Map.Entry<String, Set<String>> entry : shard_TO_coreNames_map.entrySet()) {
+      assertEquals("Wrong number of cores for shard " + entry.getKey(), numberOfReplica.intValue(), entry.getValue().size());
       Set<String> foundNodeNames = new HashSet<>(numberOfReplica);
-      for (int j = 1; j <= numberOfReplica; j++) {
-        String coreName = coreNames.get((i-1) * numberOfReplica + (j-1));
-
+      for (String coreName : entry.getValue()) {
         String foundNode = coreName_TO_nodeUrlWithoutProtocolPartForLiveNodes_map.get(coreName);
         assertTrue("Multiple replicas scheduled for node: "+foundNode, foundNodeNames.add(foundNode));
         assertTrue("Assigned node name not in list of given nodes: "+foundNode, nodeUrlWithoutProtocolPartForLiveNodes.contains(foundNode));

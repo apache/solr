@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>9.0.0</luceneMatchVersion>
+  <luceneMatchVersion>9.0</luceneMatchVersion>
 
   <!-- <lib/> directives can be used to instruct Solr to load any Jars
        identified and use them to resolve any "plugins" specified in
@@ -69,21 +69,18 @@
        If a 'dir' option (with or without a regex) is used and nothing
        is found that matches, a warning will be logged.
 
-       The examples below can be used to load some solr-contribs along
+       The examples below can be used to load some solr modules along
        with their external dependencies.
     -->
-  <lib dir="${solr.install.dir:../../../..}/contrib/extraction/lib" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-extraction-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/extraction/lib" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/contrib/clustering/lib/" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-clustering-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/clustering/lib/" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/contrib/langid/lib/" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-langid-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/langid/lib/" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/ltr/lib/" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-scripting-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/scripting/lib/" regex=".*\.jar" />
 
   <!-- an exact 'path' can be used instead of a 'dir' to specify a
        specific jar file.  This will cause a serious error to be logged
@@ -451,12 +448,12 @@
     <!--
        <fieldValueCache size="512"
                         autowarmCount="128"
-                        showItems="32" />
+                        />
       -->
 
     <!-- Feature Values Cache
 
-         Cache used by the Learning To Rank (LTR) contrib module.
+         Cache used by the Learning To Rank (LTR) module.
 
          You will need to set the solr.ltr.enabled system property
          when running solr to run with ltr enabled:
@@ -1113,6 +1110,8 @@
        https://solr.apache.org/guide/highlighting.html
     -->
   <searchComponent class="solr.HighlightComponent" name="highlight">
+    <!-- note: the hl.method=unified highlighter is not configured here; it's completely configured
+via parameters.  The below configuration supports hl.method=original and fastVector. -->
     <highlighting>
       <!-- Configure the standard fragmenter -->
       <!-- This could most likely be commented out in the "default" case -->
@@ -1245,7 +1244,7 @@
   <!-- Language identification
 
        This example update request process chain identifies the language of the incoming
-       documents using the langid contrib. The detected language is
+       documents using the langid module. The detected language is
        written to field language_s. No field name mapping is done.
        The fields used for detection are text, title, subject and description,
        making this example suitable for detecting languages form full-text
@@ -1313,7 +1312,7 @@
 
   <!-- XSLT response writer transforms the XML output by any xslt file found
        in Solr's conf/xslt directory.  Changes to xslt files are checked
-       every xsltCacheLifetimeSeconds.  This is part of the Scripting contrib module.
+       every xsltCacheLifetimeSeconds.  This is part of the Scripting module.
 
        See more about this response writer at https://solr.apache.org/guide/response-writers.html#xslt-response-writer
   -->

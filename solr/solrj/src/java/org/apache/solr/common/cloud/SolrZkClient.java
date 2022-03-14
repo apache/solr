@@ -17,7 +17,6 @@
 package org.apache.solr.common.cloud;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
@@ -425,15 +424,15 @@ public class SolrZkClient implements Closeable {
     makePath(path, null, CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
-  public void makePath(String path, File file, boolean failOnExists, boolean retryOnConnLoss)
+  public void makePath(String path, Path data, boolean failOnExists, boolean retryOnConnLoss)
       throws IOException, KeeperException, InterruptedException {
-    makePath(path, Files.readAllBytes(file.toPath()),
+    makePath(path, Files.readAllBytes(data),
         CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
-  public void makePath(String path, File file, boolean retryOnConnLoss) throws IOException,
+  public void makePath(String path, Path data, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
-    makePath(path, Files.readAllBytes(file.toPath()), retryOnConnLoss);
+    makePath(path, Files.readAllBytes(data), retryOnConnLoss);
   }
 
   public void makePath(String path, CreateMode createMode, boolean retryOnConnLoss) throws KeeperException,
@@ -500,6 +499,8 @@ public class SolrZkClient implements Closeable {
    *
    * Note: retryOnConnLoss is only respected for the final node - nodes
    * before that are always retried on connection loss.
+   *
+   * Note: if failOnExists == false then we will always overwrite the existing data with the given data
    */
   public void makePath(String path, byte[] data, CreateMode createMode,
       Watcher watcher, boolean failOnExists, boolean retryOnConnLoss, int skipPathParts) throws KeeperException, InterruptedException {
@@ -544,6 +545,9 @@ public class SolrZkClient implements Closeable {
           throw e;
         }
       } catch (NodeExistsException e) {
+        if (log.isDebugEnabled()) {
+          log.debug("Node exists: {}", e.getPath());
+        }
 
         if (!failOnExists && i == paths.length - 1) {
           // TODO: version ? for now, don't worry about race
@@ -579,15 +583,14 @@ public class SolrZkClient implements Closeable {
    * Write file to ZooKeeper - default system encoding used.
    *
    * @param path path to upload file to e.g. /solr/conf/solrconfig.xml
-   * @param file path to file to be uploaded
+   * @param data a filepath to read data from
    */
-  public Stat setData(String path, File file, boolean retryOnConnLoss) throws IOException,
+  public Stat setData(String path, Path data, boolean retryOnConnLoss) throws IOException,
       KeeperException, InterruptedException {
     if (log.isDebugEnabled()) {
-      log.debug("Write to ZooKeeper: {} to {}", file.getAbsolutePath(), path);
+      log.debug("Write to ZooKeeper: {} to {}", data.toAbsolutePath(), path);
     }
-    byte[] data = Files.readAllBytes(file.toPath());
-    return setData(path, data, retryOnConnLoss);
+    return setData(path, Files.readAllBytes(data), retryOnConnLoss);
   }
 
   public List<OpResult> multi(final Iterable<Op> ops, boolean retryOnConnLoss) throws InterruptedException, KeeperException  {

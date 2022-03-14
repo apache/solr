@@ -166,6 +166,15 @@ limitations under the License.
 {
 }
 
+#content #query #form label a.help
+{
+    background-image: url( ../../img/ico/question-white.png );
+    background-position: 0 50%;
+    color: #4D4D4D;
+    padding-left: 21px;
+    margin-left: 5px;
+}
+
 .ui-select-multiple.ui-select-bootstrap .ui-select-match .close {
   font-size: 1em !important;
   line-height: 0.75 !important;

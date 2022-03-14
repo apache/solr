@@ -17,9 +17,9 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,16 +34,21 @@ import java.util.TreeSet;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -53,8 +58,13 @@ import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.util.RandomizeSSL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 
 /** @see TestCloudPseudoReturnFields */
 @RandomizeSSL(clientAuth=0.0,reason="client auth uses too much RAM")
@@ -92,18 +102,28 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       new ValueAugmenterValidator(1976, "val_alias"),
       //
       new RenameFieldValueValidator("id", "my_id_alias"),
+      // NOTE: we add a SimpleFieldValueValidator below to check that we can enforce the presence of this field,
+      // even when it may have been "renamed" by the transformer above? (this and other such instances are
+      // marked with `//REQ`); also add a RenameFieldValueValidator to "fork" values, marked with `//FORK`.
+      new SimpleFieldValueValidator("id"), //REQ
       new SimpleFieldValueValidator("aaa_i"),
       new RenameFieldValueValidator("bbb_i", "my_int_field_alias"),
+      new RenameFieldValueValidator("bbb_i", "my_int_field_alias2"), //FORK
+      new SimpleFieldValueValidator("bbb_i"), //REQ
       new SimpleFieldValueValidator("ccc_s"),
       new RenameFieldValueValidator("ddd_s", "my_str_field_alias"),
-      //
-      // SOLR-9376: RawValueTransformerFactory doesn't work in cloud mode 
-      //
-      // new RawFieldValueValidator("json", "eee_s", "my_json_field_alias"),
-      // new RawFieldValueValidator("json", "fff_s"),
-      // new RawFieldValueValidator("xml", "ggg_s", "my_xml_field_alias"),
-      // new RawFieldValueValidator("xml", "hhh_s"),
-      //
+      new RenameFieldValueValidator("ddd_s", "my_str_field_alias2"), // FORK
+      new SimpleFieldValueValidator("ddd_s"), //REQ
+
+      new RawFieldValueValidator("json", "eee_s", "my_json_field_alias"),
+      new RenameFieldValueValidator("eee_s", "my_escaped_json_field_alias"), // FORK
+      new SimpleFieldValueValidator("eee_s"), //REQ
+      new RawFieldValueValidator("json", "fff_s"),
+      new RawFieldValueValidator("xml", "ggg_s", "my_xml_field_alias"),
+      new RenameFieldValueValidator("ggg_s", "my_escaped_xml_field_alias"), // FORK
+      new SimpleFieldValueValidator("ggg_s"), //REQ
+      new RawFieldValueValidator("xml", "hhh_s"),
+
       new NotIncludedValidator("bogus_unused_field_ss"),
       new NotIncludedValidator("bogus_alias","bogus_alias:other_bogus_field_i"),
       new NotIncludedValidator("bogus_raw_alias","bogus_raw_alias:[xml f=bogus_raw_field_ss]"),
@@ -112,6 +132,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       new FunctionValidator("aaa_i", "func_aaa_alias"),
       new GeoTransformerValidator("geo_1_srpt"),
       new GeoTransformerValidator("geo_2_srpt","my_geo_alias"),
+      new RenameFieldValueValidator("geo_2_srpt", "my_geo_alias2"), // FORK
+      new SimpleFieldValueValidator("geo_2_srpt"), //REQ
       new ExplainValidator(),
       new ExplainValidator("explain_alias"),
       new SubQueryValidator(),
@@ -133,7 +155,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     final int numNodes = 1 + (singleCoreMode ? 0 : (numShards * repFactor));
     
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_COLL1_CONF();
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
 
@@ -145,7 +167,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         .withProperty("schema", "schema-pseudo-fields.xml")
         .process(CLOUD_CLIENT);
 
-    cluster.waitForActiveCollection(COLLECTION_NAME, numShards, repFactor * numShards); 
+    cluster.waitForActiveCollection(COLLECTION_NAME, numShards, repFactor * numShards);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
@@ -188,7 +210,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     // items should only be added to this list if it's known that they do not work with RTG
     // and a specific Jira for fixing this is listed as a comment
     final List<String> knownBugs = Arrays.asList
-      ( "xml","json", // SOLR-9376
+      (
         "child" // way to complicatd to vet with this test, see SOLR-9379 instead
       );
 
@@ -319,10 +341,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
                                        //
                                        "ccc_s", TestUtil.randomSimpleString(random()),
                                        "ddd_s", TestUtil.randomSimpleString(random()),
-                                       "eee_s", TestUtil.randomSimpleString(random()),
-                                       "fff_s", TestUtil.randomSimpleString(random()),
-                                       "ggg_s", TestUtil.randomSimpleString(random()),
-                                       "hhh_s", TestUtil.randomSimpleString(random()),
+                                       "eee_s", makeJson(TestUtil.randomSimpleString(random())),
+                                       "fff_s", makeJson(TestUtil.randomSimpleString(random())),
+                                       "ggg_s", makeXml(TestUtil.randomSimpleString(random())),
+                                       "hhh_s", makeXml(TestUtil.randomSimpleString(random())),
                                        //
                                        "geo_1_srpt", GeoTransformerValidator.getValueForIndexing(random()),
                                        "geo_2_srpt", GeoTransformerValidator.getValueForIndexing(random()),
@@ -339,7 +361,60 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     return doc;
   }
 
-  
+  private String makeJson(String s) {
+    switch (random().nextInt(3)) {
+      case 0:
+        // simple string
+        return '"' + s + '"';
+      case 1:
+        // array
+        return "[\"" + s + "\", \"" + s + "\"]";
+      case 2:
+        // map
+        return "{\"" + s + "\":\"" + s + "\"}";
+      default:
+        throw new IllegalStateException();
+    }
+  }
+
+  private String makeXml(String s) {
+    switch (random().nextInt(3)) {
+      case 0:
+        // simple string
+        return s;
+      case 1:
+        // simple element
+        return "<root>" + s + "</root>";
+      case 2:
+        // slightly more complex
+        return "<root><inner1>" + s + "</inner1><inner2>" + s + "</inner2></root>";
+      default:
+        throw new IllegalStateException();
+    }
+  }
+
+  private static final ResponseParser RAW_XML_RESPONSE_PARSER = new NoOpResponseParser();
+  private static final ResponseParser RAW_JSON_RESPONSE_PARSER = new NoOpResponseParser() {
+    @Override
+    public String getWriterType() {
+      return "json";
+    }
+  };
+
+  private static ResponseParser modifyParser(HttpSolrClient client, final String wt) {
+    final ResponseParser ret = client.getParser();
+    switch (wt) {
+      case "xml":
+        client.setParser(RAW_XML_RESPONSE_PARSER);
+        return ret;
+      case "json":
+        client.setParser(RAW_JSON_RESPONSE_PARSER);
+        return ret;
+      default:
+        return null;
+    }
+  }
+
   /**
    * Does one or more RTG request for the specified docIds with a randomized fl &amp; fq params, asserting
    * that the returned document (if any) makes sense given the expected SolrInputDocuments
@@ -398,11 +473,44 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       assert 1 == idsToRequest.size();
       params.add("id",idsToRequest.get(0));
     }
-    
-    final QueryResponse rsp = client.query(params);
-    assertNotNull(params.toString(), rsp);
 
-    final SolrDocumentList docs = getDocsFromRTGResponse(askForList, rsp);
+    String wt = params.get(CommonParams.WT, "javabin");
+    final ResponseParser restoreResponseParser;
+    if (client instanceof HttpSolrClient) {
+      restoreResponseParser = modifyParser((HttpSolrClient) client, wt);
+    } else {
+      // unless HttpSolrClient, `wt` doesn't matter -- it'll always be binary.
+      wt = "javabin";
+      restoreResponseParser = null;
+    }
+
+    final Object rsp;
+    final SolrDocumentList docs;
+    if ("javabin".equals(wt)) {
+      // the most common case
+      final QueryResponse qRsp = client.query(params);
+      assertNotNull(params.toString(), qRsp);
+      rsp = qRsp;
+      docs = getDocsFromRTGResponse(askForList, qRsp);
+    } else {
+      final NamedList<Object> nlRsp = client.request(new QueryRequest(params));
+      assertNotNull(restoreResponseParser);
+      ((HttpSolrClient) client).setParser(restoreResponseParser);
+      assertNotNull(params.toString(), nlRsp);
+      rsp = nlRsp;
+      final String textResult = (String) nlRsp.get("response");
+      switch (wt) {
+        case "json":
+          docs = getDocsFromJsonResponse(askForList, textResult);
+          break;
+        case "xml":
+          docs = getDocsFromXmlResponse(askForList, textResult);
+          break;
+        default:
+          throw new IllegalStateException();
+      }
+    }
+
     assertNotNull(params + " => " + rsp, docs);
     
     assertEquals("num docs mismatch: " + params + " => " + docsToExpect + " vs " + docs,
@@ -417,7 +525,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         
         Set<String> expectedFieldNames = new TreeSet<>();
         for (FlValidator v : validators) {
-          expectedFieldNames.addAll(v.assertRTGResults(validators, expected, actual));
+          expectedFieldNames.addAll(v.assertRTGResults(validators, expected, actual, wt));
         }
         // ensure only expected field names are in the actual document
         Set<String> actualFieldNames = new TreeSet<>(actual.getFieldNames());
@@ -451,8 +559,36 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
     return result;
   }
-    
-  /** 
+
+  @SuppressWarnings("unchecked")
+  private static SolrDocumentList getSolrDocumentList(Map<String, Object> response) {
+    SolrDocumentList ret = new SolrDocumentList();
+    for (Map<String, Object> doc : (List<Map<String, Object>>) response.get("docs")) {
+      ret.add(new SolrDocument(doc));
+    }
+    return ret;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static SolrDocumentList getDocsFromJsonResponse(final boolean expectList, final String rsp) throws IOException {
+    Map<String, Object> nl = (Map<String, Object>) ObjectBuilder.fromJSON(rsp);
+    if (expectList) {
+      return getSolrDocumentList((Map<String, Object>) nl.get("response"));
+    } else {
+      SolrDocumentList ret = new SolrDocumentList();
+      Map<String, Object> doc = (Map<String, Object>) nl.get("doc");
+      if (doc != null) {
+        ret.add(new SolrDocument(doc));
+      }
+      return ret;
+    }
+  }
+
+  private static SolrDocumentList getDocsFromXmlResponse(final boolean expectList, final String rsp) {
+    return getDocsFromRTGResponse(expectList, new QueryResponse(new RawCapableXMLResponseParser().processResponse(new StringReader(rsp)), null));
+  }
+
+  /**
    * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed 
    * at a node in our cluster 
    */
@@ -532,11 +668,13 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
      * @param validators all validators in use for this request, including the current one
      * @param expected a document containing the expected fields &amp; values that should be in the index
      * @param actual A document that was returned by an RTG request
+     * @param wt the `wt` serialization of the response
      * @return A set of "field names" in the actual document that this validator expected.
      */
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
-                                               final SolrDocument actual);
+                                               final SolrDocument actual,
+                                               final String wt);
   }
   
   /** 
@@ -555,15 +693,35 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       this.actualFieldName = actualFieldName;
     }
     public abstract String getFlParam();
+
+    @Override
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
-                                               final SolrDocument actual) {
+                                               final SolrDocument actual,
+                                               final String wt) {
       assertEquals(expectedFieldName + " vs " + actualFieldName,
-                   expected.getFieldValue(expectedFieldName), actual.getFirstValue(actualFieldName));
+              expected.getFieldValue(expectedFieldName), normalize(wt, actual.getFirstValue(actualFieldName)));
       return Collections.<String>singleton(actualFieldName);
     }
   }
-  
+
+  /**
+   * Json parsing results in all Long and Double number values; `expected` values are all (conveniently!)
+   * expressed as Integer and Float, so we do a little normalization here so that the values are compatible
+   */
+  private static Object normalize(String wt, Object val) {
+    if ("json".equals(wt) && val instanceof Number) {
+      if (val instanceof Long) {
+        return ((Long) val).intValue();
+      } else if (val instanceof Double) {
+        return ((Double) val).floatValue();
+      } else {
+        throw new IllegalStateException("numbers with `wt=json` only expect Long or Double");
+      }
+    }
+    return val;
+  }
+
   private static class SimpleFieldValueValidator extends FieldValueValidator {
     public SimpleFieldValueValidator(final String fieldName) {
       super(fieldName, fieldName);
@@ -589,15 +747,16 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * What we're primarily concerned with is that the transformer does it's job and puts the string 
    * in the response, regardless of cloud/RTG/uncommited state of the document.
    */
-  @SuppressWarnings("UnusedNestedClass") // SOLR-9376
   private static class RawFieldValueValidator extends RenameFieldValueValidator {
     final String type;
     final String alias;
+    final SolrParams extraParams;
     public RawFieldValueValidator(final String type, final String fieldName, final String alias) {
       // transformer is weird, default result key doesn't care what params are used...
       super(fieldName, null == alias ? "["+type+"]" : alias);
       this.type = type;
       this.alias = alias;
+      this.extraParams = new ModifiableSolrParams().set(CommonParams.WT, type);
     }
     public RawFieldValueValidator(final String type, final String fieldName) {
       this(type, fieldName, null);
@@ -605,11 +764,96 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public String getFlParam() {
       return (null == alias ? "" : (alias + ":")) + "[" + type + " f=" + expectedFieldName + "]";
     }
+    @Override
+    public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
+                                               SolrInputDocument expected,
+                                               final SolrDocument actual,
+                                               final String wt) {
+      if ("json".equals(wt) && "json".equals(type)) {
+        Object v = actual.get(actualFieldName);
+        if (v instanceof Collection) {
+          // the json "array" type is indistinguishable from a multivalued field, so when `super` validates
+          // based on `actual.getFirstValue(...)`, it causes issues. Here we know that our raw values are only
+          // on single-valued fields, so we wrap it to work around `getFirstValue` in parent class.
+          // The same logic applies to `expected` (below)
+          actual.setField(actualFieldName, Collections.singleton(v));
+        }
+        try {
+          Object parsedExpected = ObjectBuilder.fromJSON((String) expected.getFieldValue(expectedFieldName));
+          if (parsedExpected instanceof Collection) {
+            // see note above
+            parsedExpected = Collections.singleton(parsedExpected);
+          }
+          expected = expected.deepCopy(); // need to copy before modifying expected!
+          expected.setField(expectedFieldName, parsedExpected);
+        } catch (IOException ex) {
+          // swallow the exception and use the un-parsed String?
+        }
+      } else if ("xml".equals(wt) && "xml".equals(type)) {
+        try {
+          Object parsedExpected = RawCapableXMLResponseParser.convertRawContent((String) expected.getFieldValue(expectedFieldName));
+          expected = expected.deepCopy(); // need to copy before modifying expected!
+          expected.setField(expectedFieldName, parsedExpected);
+        } catch (XMLStreamException ex) {
+          // swallow the exception and use the un-parsed String?
+        }
+      }
+      return super.assertRTGResults(validators, expected, actual, wt);
+    }
+    @Override
+    public SolrParams getExtraRequestParams() {
+      return extraParams;
+    }
     public String getDefaultTransformerFactoryName() {
       return type;
     }
   }
- 
+
+  /**
+   * Local extension of XMLResponseParser that is capable of handling "raw" xml field values, for the
+   * purpose of validation and consistency between expected vs. actual.
+   */
+  private static class RawCapableXMLResponseParser extends XMLResponseParser {
+
+    private static String convertRawContent(String raw) throws XMLStreamException {
+      return XMLResponseParser.convertRawContent(raw, (parser) -> {
+        try {
+          return consumeRawContent0(parser);
+        } catch (XMLStreamException ex) {
+          // only called in the context of this test, so the extra exception wrapping is totally fine
+          throw new RuntimeException(ex);
+        }
+      });
+    }
+
+    protected String consumeRawContent(XMLStreamReader parser) throws XMLStreamException {
+      return consumeRawContent0(parser);
+    }
+
+    private static String consumeRawContent0(XMLStreamReader parser) throws XMLStreamException {
+      int depth = 0;
+      StringBuilder sb = new StringBuilder();
+      for (;;) {
+        int elementType = parser.next();
+        switch (elementType) {
+          case XMLStreamConstants.START_ELEMENT:
+            depth++;
+            sb.append("START:").append(parser.getLocalName()).append(';');
+            break;
+          case XMLStreamConstants.END_ELEMENT:
+            if (--depth < 0) {
+              // exiting raw element
+              return sb.toString();
+            }
+            sb.append("END:").append(parser.getLocalName()).append(';');
+            break;
+          case XMLStreamConstants.CHARACTERS:
+            sb.append(parser.getText());
+            break;
+        }
+      }
+    }
+  }
 
   /** 
    * enforces that a valid <code>[docid]</code> is present in the response, possibly using a 
@@ -632,8 +876,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public String getFlParam() { return USAGE.equals(resultKey) ? resultKey : resultKey+":"+USAGE; }
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
-                                               final SolrDocument actual) {
-      final Object value =  actual.getFirstValue(resultKey);
+                                               final SolrDocument actual,
+                                               final String wt) {
+      Object value =  normalize(wt, actual.getFirstValue(resultKey));
       assertNotNull(getFlParam() + " => no value in actual doc", value);
       assertTrue(USAGE + " must be an Integer: " + value, value instanceof Integer);
 
@@ -665,7 +910,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public String getFlParam() { return USAGE.equals(resultKey) ? resultKey : resultKey+":"+USAGE; }
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
-                                               final SolrDocument actual) {
+                                               final SolrDocument actual,
+                                               final String wt) {
       final Object value =  actual.getFirstValue(resultKey);
       assertNotNull(getFlParam() + " => no value in actual doc", value);
       assertTrue(USAGE + " must be an String: " + value, value instanceof String);
@@ -700,8 +946,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public String getFlParam() { return fl; }
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
-                                               final SolrDocument actual) {
-      final Object actualVal =  actual.getFirstValue(resultKey);
+                                               final SolrDocument actual,
+                                               final String wt) {
+      Object actualVal =  normalize(wt, actual.getFirstValue(resultKey));
       assertNotNull(getFlParam() + " => no value in actual doc", actualVal);
       assertEquals(getFlParam(), expectedVal, actualVal);
       return Collections.<String>singleton(resultKey);
@@ -733,11 +980,12 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public String getFlParam() { return fl; }
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
-                                               final SolrDocument actual) {
+                                               final SolrDocument actual,
+                                               final String wt) {
       final Object origVal = expected.getFieldValue(fieldName);
       assertTrue("this validator only works on numeric fields: " + origVal, origVal instanceof Number);
       
-      assertEquals(fl, 1.3F, actual.getFirstValue(resultKey));
+      assertEquals(fl, 1.3F, normalize(wt, actual.getFirstValue(resultKey)));
       return Collections.<String>singleton(resultKey);
     }
   }
@@ -765,12 +1013,17 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public final static String SUBQ_KEY = "subq";
     public final static String SUBQ_FIELD = "next_2_ids_i";
     public String getFlParam() { return SUBQ_KEY+":["+NAME+"]"; }
+    @SuppressWarnings("unchecked")
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
-                                               final SolrDocument actual) {
+                                               final SolrDocument actual,
+                                               final String wt) {
       final int compVal = assertParseInt("expected id", expected.getFieldValue("id"));
       
-      final Object actualVal = actual.getFieldValue(SUBQ_KEY);
+      Object actualVal = actual.getFieldValue(SUBQ_KEY);
+      if ("json".equals(wt)) {
+        actualVal = getSolrDocumentList((Map<String, Object>) actualVal);
+      }
       assertTrue("Expected a doclist: " + actualVal,
                  actualVal instanceof SolrDocumentList);
       assertTrue("should be at most 2 docs in doc list: " + actualVal,
@@ -843,11 +1096,20 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public String getFlParam() { return fl; }
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
-                                               final SolrDocument actual) {
+                                               final SolrDocument actual,
+                                               final String wt) {
       final Object origVal = expected.getFieldValue(fieldName);
       assertTrue(fl + ": orig field value is not supported: " + origVal, VALUES.containsKey(origVal));
-      
-      assertEquals(fl, VALUES.get(origVal), actual.getFirstValue(resultKey));
+
+      Object orig = VALUES.get(origVal);
+      if ("json".equals(wt)) {
+        try {
+          orig = ObjectBuilder.fromJSON((String) orig);
+        } catch (IOException ex) {
+          // swallow exception and use raw `orig` String?
+        }
+      }
+      assertEquals(fl, orig, actual.getFirstValue(resultKey));
       return Collections.<String>singleton(resultKey);
     }
     public Set<String> getSuppressedFields() { return Collections.singleton(fieldName); }
@@ -882,7 +1144,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
                                 
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
-                                               final SolrDocument actual) {
+                                               final SolrDocument actual,
+                                               final String wt) {
 
       final Set<String> renamed = new LinkedHashSet<>(validators.size());
       for (FlValidator v : validators) {
@@ -896,7 +1159,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       for (String f : expected.getFieldNames()) {
         if ( matchesGlob(f) && (! renamed.contains(f) ) ) {
           result.add(f);
-          assertEquals(glob + " => " + f, expected.getFieldValue(f), actual.getFirstValue(f));
+          assertEquals(glob + " => " + f, expected.getFieldValue(f), normalize(wt, actual.getFirstValue(f)));
         }
       }
       return result;
@@ -920,7 +1183,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public String getFlParam() { return fl; }
     public Collection<String> assertRTGResults(final Collection<FlValidator> validators,
                                                final SolrInputDocument expected,
-                                               final SolrDocument actual) {
+                                               final SolrDocument actual,
+                                               final String wt) {
       assertEquals(fl, null, actual.getFirstValue(fieldName));
       return Collections.emptySet();
     }

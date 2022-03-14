@@ -19,6 +19,7 @@ package org.apache.solr.servlet;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,13 +63,13 @@ public class RateLimitManager implements ClusterPropertiesListener {
   public boolean onChange(Map<String, Object> properties) {
 
     // Hack: We only support query rate limiting for now
-    QueryRateLimiter queryRateLimiter = (QueryRateLimiter) requestRateLimiterMap.get(SolrRequest.SolrRequestType.QUERY);
+    QueryRateLimiter queryRateLimiter = (QueryRateLimiter) getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
     if (queryRateLimiter != null) {
       try {
         queryRateLimiter.processConfigChange(properties);
       } catch (IOException e) {
-        throw new RuntimeException("Encountered IOException: " + e.getMessage());
+        throw new UncheckedIOException(e);
       }
     }
 

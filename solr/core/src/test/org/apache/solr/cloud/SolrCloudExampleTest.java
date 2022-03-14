@@ -17,17 +17,21 @@
 package org.apache.solr.cloud;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.http.HttpEntity;
@@ -115,35 +119,33 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // now index docs like bin/post would do but we can't use SimplePostTool because it uses System.exit when
     // it encounters an error, which JUnit doesn't like ...
     log.info("Created collection, now posting example docs!");
-    File exampleDocsDir = new File(ExternalPaths.SOURCE_HOME, "example/exampledocs");
-    assertTrue(exampleDocsDir.getAbsolutePath()+" not found!", exampleDocsDir.isDirectory());
+    Path exampleDocsDir = Path.of(ExternalPaths.SOURCE_HOME, "example", "exampledocs");
+    assertTrue(exampleDocsDir.toAbsolutePath() + " not found!", Files.isDirectory(exampleDocsDir));
 
-    List<File> xmlFiles = Arrays.asList(exampleDocsDir.listFiles(new FilenameFilter() {
-      @Override
-      public boolean accept(File dir, String name) {
-        return name.endsWith(".xml");
-      }
-    }));
+    List<Path> xmlFiles;
+    try (Stream<Path> stream = Files.walk(exampleDocsDir, 1)) {
+        xmlFiles = stream.filter(path -> path.getFileName().toString().endsWith(".xml"))
+            // don't rely on File.compareTo, it's behavior varies by OS
+            .sorted(Comparator.comparing(path -> path.getFileName().toString()))
+            // be explicit about the collection type because we will shuffle it later
+            .collect(Collectors.toCollection(ArrayList::new));
+    }
 
     // force a deterministic random ordering of the files so seeds reproduce regardless of platform/filesystem
-    Collections.sort(xmlFiles, (o1, o2) -> {
-      // don't rely on File.compareTo, it's behavior varies by OS
-      return o1.getName().compareTo(o2.getName());
-    });
     Collections.shuffle(xmlFiles, new Random(random().nextLong()));
 
     // if you add/remove example XML docs, you'll have to fix these expected values
     int expectedXmlFileCount = 14;
     int expectedXmlDocCount = 32;
 
-    assertEquals("Unexpected # of example XML files in "+exampleDocsDir.getAbsolutePath(),
-                 expectedXmlFileCount, xmlFiles.size());
+    assertEquals("Unexpected # of example XML files in " + exampleDocsDir.toAbsolutePath(),
+        expectedXmlFileCount, xmlFiles.size());
     
-    for (File xml : xmlFiles) {
+    for (Path xml : xmlFiles) {
       if (log.isInfoEnabled()) {
-        log.info("POSTing {}", xml.getAbsolutePath());
+        log.info("POSTing {}", xml.toAbsolutePath());
       }
-      cloudClient.request(new StreamingUpdateRequest("/update",xml,"application/xml"));
+      cloudClient.request(new StreamingUpdateRequest("/update", xml, "application/xml"));
     }
     cloudClient.commit();
 

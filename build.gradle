@@ -22,6 +22,7 @@ plugins {
   id "base"
   id "com.palantir.consistent-versions" version "2.0.0"
   id "org.owasp.dependencycheck" version "6.4.1.1"
+  id 'ca.cutterslade.analyze' version "1.8.3"
   id 'de.thetaphi.forbiddenapis' version '3.2' apply false
   id "de.undercouch.download" version "4.0.2" apply false
   id "net.ltgt.errorprone" version "2.0.2" apply false
@@ -46,7 +47,7 @@ version = {
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
   return propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
 }()
-description = 'Grandparent project for Apache Lucene Core and Apache Solr'
+description = 'Grandparent project for Apache Solr'
 
 // Propagate version and derived properties across projects.
 allprojects {
@@ -81,8 +82,6 @@ ext {
 
   minJavaVersion = JavaVersion.VERSION_11
 
-  luceneBaseVersion = '9.0.0' // TODO: Use org.apache.lucene.util.Version.LATEST.toString()
-
   // Declare script dependency versions outside of palantir's
   // version unification control. These are not our main dependencies.
   scriptDepVersions = [
@@ -100,6 +99,17 @@ ext {
     def resolved = propertyOrDefault("${name}.exe", name as String)
     logger.info("External tool '${name}' resolved to: ${resolved}")
     return resolved
+  }
+  
+  luceneBaseVersionProvider = project.provider { 
+    def luceneVersion = getVersion('org.apache.lucene:lucene-core')
+    def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
+    if (!m) {
+      throw GradleException("Can't strip base version from " + luceneVersion)
+    }
+    def luceneBaseVersion = m[0]
+    logger.debug('Lucene base version (without suffix): {}', luceneBaseVersion)
+    return luceneBaseVersion
   }
 }
 
@@ -127,7 +137,6 @@ apply from: file('gradle/java/jar-manifest.gradle')
 
 // Publishing and releasing
 apply from: file('gradle/maven/defaults-maven.gradle')
-apply from: file('gradle/releasing.gradle')
 
 // IDE support, settings and specials.
 apply from: file('gradle/ide/intellij-idea.gradle')
@@ -144,6 +153,7 @@ apply from: file('gradle/validation/versions-props-sorted.gradle')
 apply from: file('gradle/validation/validate-source-patterns.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
+apply from: file('gradle/validation/dependency-analyze.gradle')
 apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')
@@ -174,7 +184,6 @@ apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
 // of potential problems with the build conventions, dependencies, etc.
 apply from: file('gradle/ant-compat/misc.gradle')
 
-apply from: file('gradle/ant-compat/force-versions.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
 
 apply from: file('gradle/documentation/pull-lucene-javadocs.gradle')
@@ -183,8 +192,8 @@ apply from: file('gradle/documentation/changes-to-html.gradle')
 apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
 
+apply from: file('gradle/hacks/global-exclude-dependencies.gradle')
 apply from: file('gradle/hacks/gradle-archives.gradle')
-apply from: file('gradle/hacks/solr.findbugs.gradle')
 
 apply from: file('gradle/hacks/wipe-temp.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')

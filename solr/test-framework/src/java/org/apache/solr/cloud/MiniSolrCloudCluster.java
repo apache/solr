@@ -385,9 +385,7 @@ public class MiniSolrCloudCluster {
 
   private Path createInstancePath(String name) throws IOException {
     Path instancePath = baseDir.resolve(name);
-    if (!Files.exists(instancePath)) {
-      Files.createDirectory(instancePath);
-    }
+    Files.createDirectory(instancePath);
     return instancePath;
   }
 
@@ -646,7 +644,18 @@ public class MiniSolrCloudCluster {
   public SolrZkClient getZkClient() {
     return solrClient.getZkStateReader().getZkClient();
   }
-  
+
+  /**
+   * Set data in zk without exposing caller to the ZK API, i.e. tests won't need to include Zookeeper dependencies
+   */
+  public void zkSetData(String path, byte[] data, boolean retryOnConnLoss) throws InterruptedException {
+    try {
+      getZkClient().setData(path, data, -1, retryOnConnLoss);
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.UNKNOWN, "Failed writing to Zookeeper", e);
+    }
+  }
+
   protected CloudSolrClient buildSolrClient() {
     return new CloudSolrClient.Builder(Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
         .withSocketTimeout(90000).withConnectionTimeout(15000).build(); // we choose 90 because we run in some harsh envs

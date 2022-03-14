@@ -82,7 +82,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
                           "requires a shared file system mounted at the same path on all nodes!");
         }
         snapShooter.validateCreateSnapshot();
-        snapShooter.createSnapshot();
+        it.rsp.addResponse(snapShooter.createSnapshot());
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

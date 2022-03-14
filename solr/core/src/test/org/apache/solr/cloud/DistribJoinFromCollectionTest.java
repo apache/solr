@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -65,7 +64,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
   
   @BeforeClass
   public static void setupCluster() throws Exception {
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_COLL1_CONF();
 
     String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;
@@ -209,12 +208,10 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
     final String joinQ = "{!join " + (anyScoreMode(isScoresTest))
         + "from=join_s fromIndex=" + wrongName + " to=join_s}match_s:c";
     final QueryRequest qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-    try {
-      cluster.getSolrClient().request(qr);
-    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-      assertTrue(ex.getMessage().contains(wrongName));
-    }
+    BaseHttpSolrClient.RemoteSolrException ex = assertThrows(BaseHttpSolrClient.RemoteSolrException.class, () ->
+      cluster.getSolrClient().request(qr));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertTrue(ex.getMessage().contains(wrongName));
   }
 
   protected static String indexDoc(String collection, int id, String joinField, String matchField, String getField) throws Exception {

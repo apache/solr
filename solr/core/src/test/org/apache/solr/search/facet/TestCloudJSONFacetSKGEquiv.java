@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -124,7 +123,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     final int numNodes = (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_COLL1_CONF();
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     
@@ -1104,25 +1103,12 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     
     /**
      * picks a random value for the "overrequest" param, biased in favor of interesting test cases.
-     * <p>
-     * <b>NOTE:</b> due to variations in overrequest behavior betewen <code>metod:enum<code> and other 
-     * processors (see <a href="https://issues.apache.org/jira/browse/SOLR-14595">SOLR-14595</a>) this 
-     * method takes in the "sort" param and returns a constant value of <code>0</code> if the sort is 
-     * <code>index asc</code> to ensure that the set of candidate buckets considered during merging 
-     * (and refinement) is consistent regardless of what processor is used (and/or what sort is used 
-     * on the parent facet)
-     * </p>
      *
      * @return a number to specify in the request, or null to specify nothing (trigger default behavior)
      * @see #UNIQUE_FIELD_VALS
-     * @see <a href="https://issues.apache.org/jira/browse/SOLR-14595">SOLR-14595</a>
      */
     public static Integer randomOverrequestParam(final Random r, final String sort) {
 
-      if ("index asc".equals(sort)) {
-        return 0; // test work around for SOLR-14595
-      }
-      
       switch(r.nextInt(10)) {
         case 0:
         case 1:

@@ -248,6 +248,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             ZkStateReader.CORE_NAME_PROP, coreName,
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
             ZkStateReader.NODE_NAME_PROP, nodeName,
+            ZkStateReader.BASE_URL_PROP, baseUrl,
             ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         if (isPRS) {
@@ -404,7 +405,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     // but (for now) require that each core goes on a distinct node.
 
     List<ReplicaPosition> replicaPositions;
-    List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, CollectionHandlingUtils.RANDOM);
+    List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(clusterState.getLiveNodes(), message, CollectionHandlingUtils.RANDOM, cloudManager.getDistribStateManager());
     if (nodeList.isEmpty()) {
       log.warn("It is unusual to create a collection ({}) without cores.", collectionName);
 

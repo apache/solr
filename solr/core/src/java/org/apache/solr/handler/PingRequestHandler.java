@@ -34,11 +34,15 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.ENABLE;
+import static org.apache.solr.common.params.CommonParams.DISABLE;
+import static org.apache.solr.common.params.CommonParams.ACTION;
 
 /**
  * Ping Request Handler for reporting SolrCore health to a Load Balancer.
@@ -133,6 +137,20 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String HEALTHCHECK_FILE_PARAM = "healthcheckFile";
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    String action = request.getParams().get(ACTION, "").strip().toLowerCase(Locale.ROOT);
+    // Modifying the health check file requires more permission than just doing a ping
+    switch (action) {
+      case ENABLE:
+      case DISABLE:
+        return Name.CONFIG_EDIT_PERM;
+      default:
+        return Name.HEALTH_PERM;
+    }
+  }
+
   protected enum ACTIONS {STATUS, ENABLE, DISABLE, PING};
   
   private String healthFileName = null;

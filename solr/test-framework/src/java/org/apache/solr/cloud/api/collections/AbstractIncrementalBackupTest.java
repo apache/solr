@@ -510,11 +510,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             Arrays.sort(files1);
             Arrays.sort(files2);
 
-            try {
-                assertArrayEquals(files1, files2);
-            } catch (AssertionError e) {
-                e.printStackTrace();
-            }
+            assertArrayEquals(files1, files2);
 
             for (int i = 0; i < files1.length; i++) {
                 URI file1Uri = repository.resolve(uri1, files1[i]);

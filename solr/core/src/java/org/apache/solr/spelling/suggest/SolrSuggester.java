@@ -17,11 +17,10 @@
 package org.apache.solr.spelling.suggest;
 
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +37,6 @@ import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
@@ -84,7 +82,7 @@ public class SolrSuggester implements Accountable {
   static SuggesterResult EMPTY_RESULT = new SuggesterResult();
   
   private String sourceLocation;
-  private File storeDir;
+  private Path storeDir;
   private Dictionary dictionary;
   private Lookup lookup;
   private String lookupImpl;
@@ -121,7 +119,7 @@ public class SolrSuggester implements Accountable {
     factory = core.getResourceLoader().newInstance(lookupImpl, LookupFactory.class);
     lookup = factory.create(config, core);
     
-    if (lookup != null && lookup instanceof Closeable) {
+    if (lookup instanceof Closeable) {
       core.addCloseHook(new CloseHook() {
         @Override
         public void preClose(SolrCore core) {
@@ -131,27 +129,23 @@ public class SolrSuggester implements Accountable {
             log.warn("Could not close the suggester lookup.", e);
           }
         }
-
-        @Override
-        public void postClose(SolrCore core) {
-        }
       });
     }
 
     // if store directory is provided make it or load up the lookup with its content
     if (store != null && !store.isEmpty()) {
-      storeDir = new File(store);
-      if (!storeDir.isAbsolute()) {
-        storeDir = new File(core.getDataDir() + File.separator + storeDir);
+      storeDir = Path.of(store);
+      storeDir = Path.of(core.getDataDir()).resolve(storeDir); // if store dir is absolute this won't change it
+      try {
+        Files.createDirectories(storeDir);
+      } catch (IOException e) {
+        log.warn("Could not create directory {}", storeDir);
       }
-      if (!storeDir.exists()) {
-        storeDir.mkdirs();
-      } else if (getStoreFile().exists()) {
-        if (log.isDebugEnabled()) {
-          log.debug("attempt reload of the stored lookup from file {}", getStoreFile());
-        }
+      Path storeFile = getStoreFile();
+      if (Files.exists(storeFile)) {
+        log.debug("attempt reload of the stored lookup from file {}", storeFile);
         try {
-          lookup.load(new FileInputStream(getStoreFile()));
+          lookup.load(Files.newInputStream(storeFile));
         } catch (IOException e) {
           log.warn("Loading stored lookup data failed, possibly not cached yet");
         }
@@ -186,32 +180,25 @@ public class SolrSuggester implements Accountable {
       throw e2;
     }
     if (storeDir != null) {
-      File target = getStoreFile();
-      if(!lookup.store(new FileOutputStream(target))) {
+      Path target = getStoreFile();
+      if(!lookup.store(Files.newOutputStream(target))) {
         log.error("Store Lookup build failed");
       } else {
         if (log.isInfoEnabled()) {
-          log.info("Stored suggest data to: {}", target.getAbsolutePath());
+          log.info("Stored suggest data to: {}", target.toAbsolutePath());
         }
       }
     }
   }
 
   /** Reloads the underlying Lucene Suggester */
-  public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
+  public void reload() throws IOException {
     log.info("SolrSuggester.reload({})", name);
     if (dictionary == null && storeDir != null) {
-      File lookupFile = getStoreFile();
-      if (lookupFile.exists()) {
+      Path lookupFile = getStoreFile();
+      if (Files.exists(lookupFile)) {
         // this may be a firstSearcher event, try loading it
-        FileInputStream is = new FileInputStream(lookupFile);
-        try {
-          if (lookup.load(is)) {
-            return;  // loaded ok
-          }
-        } finally {
-          IOUtils.closeWhileHandlingException(is);
-        }
+        lookup.load(Files.newInputStream(lookupFile));
       } else {
         log.info("lookup file doesn't exist");
       }
@@ -219,15 +206,14 @@ public class SolrSuggester implements Accountable {
   }
 
   /**
-   * 
    * @return the file where this suggester is stored.
    *         null if no storeDir was configured
    */
-  public File getStoreFile() {
+  public Path getStoreFile() {
     if (storeDir == null) {
       return null;
     }
-    return new File(storeDir, factory.storeFileName());
+    return storeDir.resolve(factory.storeFileName());
   }
 
   /** Returns suggestions based on the {@link SuggesterOptions} passed */
@@ -297,7 +283,7 @@ public class SolrSuggester implements Accountable {
   public String toString() {
     return "SolrSuggester [ name=" + name + ", "
         + "sourceLocation=" + sourceLocation + ", "
-        + "storeDir=" + ((storeDir == null) ? "" : storeDir.getAbsoluteFile()) + ", "
+        + "storeDir=" + ((storeDir == null) ? "" : storeDir.toAbsolutePath()) + ", "
         + "lookupImpl=" + lookupImpl + ", "
         + "dictionaryImpl=" + dictionaryImpl + ", "
         + "sizeInBytes=" + ((lookup!=null) ? String.valueOf(ramBytesUsed()) : "0") + " ]";

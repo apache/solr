@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,7 +24,9 @@ import java.util.stream.StreamSupport;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -33,10 +36,14 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.core.Is.is;
 
 /**
  * 
@@ -297,6 +304,85 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
     assertEquals(testValue, out.get("title"));
     assertEquals(truncatedValue, out.get("max_chars"));
+  }
+
+  @Test
+  public void denseVector_shouldReturnOneIndexableFieldAndOneStoredFieldPerVectorElement() {
+    SolrCore core = h.getCore();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "0");
+    doc.addField("vector", Arrays.asList(1.1f, 2.1f, 3.1f, 4.1f));
+    
+    Document out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
+    
+    //from /solr/core/src/test-files/solr/collection1/conf/schema.xml
+    KnnVectorField expectedIndexableField = new KnnVectorField("vector", new float[]{1.1f, 2.1f, 3.1f, 4.1f}, VectorSimilarityFunction.COSINE);
+    
+    MatcherAssert.assertThat(((KnnVectorField)out.getField("vector")).vectorValue(), is(expectedIndexableField.vectorValue()));
+
+    List<IndexableField> storedFields = StreamSupport.stream(out.spliterator(), false)
+            .filter(f -> (f.fieldType().stored() && f.name().equals("vector"))).collect(Collectors.toList());
+    MatcherAssert.assertThat(storedFields.size(), is(4));
+
+    MatcherAssert.assertThat(storedFields.get(0).numericValue(), is(1.1f));
+    MatcherAssert.assertThat(storedFields.get(1).numericValue(), is(2.1f));
+    MatcherAssert.assertThat(storedFields.get(2).numericValue(), is(3.1f));
+    MatcherAssert.assertThat(storedFields.get(3).numericValue(), is(4.1f));
+  }
+
+  @Test
+  public void denseVector_shouldWorkWithCopyFields() {
+    SolrCore core = h.getCore();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "0");
+    doc.addField("vector", Arrays.asList(1.1f, 2.1f, 3.1f, 4.1f));
+
+    Document out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
+
+    //from /solr/core/src/test-files/solr/collection1/conf/schema.xml
+    KnnVectorField exectedDestination = new KnnVectorField("vector2", new float[]{1.1f, 2.1f, 3.1f, 4.1f}, VectorSimilarityFunction.DOT_PRODUCT);
+
+    MatcherAssert.assertThat(((KnnVectorField)out.getField("vector2")).vectorValue(), is(exectedDestination.vectorValue()));
+
+    List<IndexableField> storedFields = StreamSupport.stream(out.spliterator(), false)
+            .filter(f -> (f.fieldType().stored() && f.name().equals("vector2"))).collect(Collectors.toList());
+    MatcherAssert.assertThat(storedFields.size(), is(4));
+
+    MatcherAssert.assertThat(storedFields.get(0).numericValue(), is(1.1f));
+    MatcherAssert.assertThat(storedFields.get(1).numericValue(), is(2.1f));
+    MatcherAssert.assertThat(storedFields.get(2).numericValue(), is(3.1f));
+    MatcherAssert.assertThat(storedFields.get(3).numericValue(), is(4.1f));
+  }
+
+  @Test
+  public void denseVector_incorrectCopyFieldDestinationType_shouldThrowException() {
+    SolrCore core = h.getCore();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "0");
+    doc.addField("vector3", Arrays.asList(1.1f, 2.1f, 3.1f, 4.1f));
+    
+    RuntimeException thrown = Assert.assertThrows("Incorrect destination field type should raise exception", SolrException.class, () -> {
+      DocumentBuilder.toDocument(doc, core.getLatestSchema());
+    });
+    MatcherAssert.assertThat(thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector3'='[1.1, 2.1, 3.1, 4.1]' msg=The copy field destination must be a DenseVectorField: vector_f_p"));
+  }
+
+  @Test
+  public void denseVector_incorrectCopyFieldDestinationDimension_shouldThrowException() {
+    SolrCore core = h.getCore();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "0");
+    doc.addField("vector4", Arrays.asList(1.1f, 2.1f, 3.1f, 4.1f));
+
+    RuntimeException thrown = Assert.assertThrows("Incorrect destination dimension should raise exception", SolrException.class, () -> {
+      DocumentBuilder.toDocument(doc, core.getLatestSchema());
+    });
+    MatcherAssert.assertThat(thrown.getMessage(), is("ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]"));
+    MatcherAssert.assertThat(thrown.getCause().getCause().getMessage(), is("incorrect vector dimension. The vector value has size 4 while it is expected a vector with size 5"));
   }
 
 }

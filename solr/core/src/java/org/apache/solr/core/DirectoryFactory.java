@@ -36,6 +36,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,6 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public final static String LOCK_TYPE_NATIVE = "native";
   public final static String LOCK_TYPE_SINGLE = "single";
   public final static String LOCK_TYPE_NONE   = "none";
-  public final static String LOCK_TYPE_HDFS   = "hdfs";
 
   protected volatile CoreContainer coreContainer;
   
@@ -429,5 +429,13 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
       dirFactory.initCoreContainer(cc);
     }
     return dirFactory;
+  }
+
+  /**
+   * Returns a default Update Log instance. UpdateHandler will invoke this method if the
+   * solrconfig / plugin info does not specify any ulog class.
+   */
+  public UpdateLog newDefaultUpdateLog() {
+    return new UpdateLog();
   }
 }

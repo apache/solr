@@ -64,6 +64,10 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
     SolrZkClient zkClient = zkStateReader.getZkClient();
     Map<String, List<String>> roles = null;
     String node = message.getStr("node");
+    if ("false".equals(message.getStr("persist"))) { // no need to persist to roles.json
+      runPrioritizer();
+      return;
+    }
 
     String roleName = message.getStr("role");
     boolean nodeExists = false;
@@ -89,6 +93,11 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
     } else {
       zkClient.create(ZkStateReader.ROLES, Utils.toJSON(roles), CreateMode.PERSISTENT, true);
     }
+    runPrioritizer();
+
+  }
+
+  private void runPrioritizer() {
     //if there are too many nodes this command may time out. And most likely dedicated
     // overseers are created when there are too many nodes  . So , do this operation in a separate thread
     new Thread(() -> {

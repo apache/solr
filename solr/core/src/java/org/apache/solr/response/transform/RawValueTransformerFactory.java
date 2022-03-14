@@ -16,27 +16,23 @@
  */
 package org.apache.solr.response.transform;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 import com.google.common.base.Strings;
-import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.common.util.JavaBinCodec.ObjectResolver;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TextWriter;
-import org.apache.solr.common.util.WriteableValue;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 
 /**
  * @since solr 5.2
  */
-public class RawValueTransformerFactory extends TransformerFactory
+public class RawValueTransformerFactory extends TransformerFactory implements TransformerFactory.FieldRenamer
 {
   String applyToWT = null;
   
@@ -58,9 +54,27 @@ public class RawValueTransformerFactory extends TransformerFactory
   
   @Override
   public DocTransformer create(String display, SolrParams params, SolrQueryRequest req) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean mayModifyValue() {
+    // The only thing we may modify is the _serialization_; field values per se are guaranteed to be unmodified.
+    return false;
+  }
+
+  @Override
+  public DocTransformer create(String display, SolrParams params, SolrQueryRequest req,
+                               Map<String, String> renamedFields, Set<String> reqFieldNames) {
     String field = params.get("f");
     if(Strings.isNullOrEmpty(field)) {
       field = display;
+    }
+    field = renamedFields.getOrDefault(field, field);
+    final boolean rename = !field.equals(display);
+    final boolean copy = rename && reqFieldNames != null && reqFieldNames.contains(field);
+    if (!copy) {
+      renamedFields.put(field, display);
     }
     // When a 'wt' is specified in the transformer, only apply it to the same wt
     boolean apply = true;
@@ -79,25 +93,27 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
 
     if(apply) {
-      return new RawTransformer( field, display );
+      return new RawTransformer( field, display, copy );
     }
     
-    if (field.equals(display)) {
+    if (!rename) {
       // we have to ensure the field is returned
       return new DocTransformer.NoopFieldTransformer(field);
     }
-    return new RenameFieldTransformer( field, display, false );
+    return new RenameFieldTransformer( field, display, copy );
   }
-  
+
   static class RawTransformer extends DocTransformer
   {
     final String field;
     final String display;
+    final boolean copy;
 
-    public RawTransformer( String field, String display )
+    public RawTransformer( String field, String display, boolean copy )
     {
       this.field = field;
       this.display = display;
+      this.copy = copy;
     }
 
     @Override
@@ -107,57 +123,21 @@ public class RawValueTransformerFactory extends TransformerFactory
     }
 
     @Override
+    public Collection<String> getRawFields() {
+      return Collections.singleton(display);
+    }
+
+    @Override
     public void transform(SolrDocument doc, int docid) {
-      Object val = doc.remove(field);
-      if(val==null) {
-        return;
-      }
-      if(val instanceof Collection) {
-        Collection<?> current = (Collection<?>)val;
-        ArrayList<WriteableStringValue> vals = new ArrayList<RawValueTransformerFactory.WriteableStringValue>();
-        for(Object v : current) {
-          vals.add(new WriteableStringValue(v));
-        }
-        doc.setField(display, vals);
-      }
-      else {
-        doc.setField(display, new WriteableStringValue(val));
+      Object val = copy ? doc.get(field) : doc.remove(field);
+      if(val != null) {
+        doc.setField(display, val);
       }
     }
 
     @Override
     public String[] getExtraRequestFields() {
       return new String[] {this.field};
-    }
-  }
-  
-  public static class WriteableStringValue extends WriteableValue {
-    public final Object val;
-    
-    public WriteableStringValue(Object val) {
-      this.val = val;
-    }
-    
-    @Override
-    public void write(String name, TextWriter writer) throws IOException {
-      String str = null;
-      if(val instanceof IndexableField) { // delays holding it in memory
-        str = ((IndexableField)val).stringValue();
-      }
-      else {
-        str = val.toString();
-      }
-      writer.getWriter().write(str);
-    }
-
-    @Override
-    public Object resolve(Object o, JavaBinCodec codec) throws IOException {
-      ObjectResolver orig = codec.getResolver();
-      if(orig != null) {
-        codec.writeVal(orig.resolve(val, codec));
-        return null;
-      }
-      return val.toString();
     }
   }
 }

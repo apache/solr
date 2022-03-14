@@ -19,9 +19,11 @@ package org.apache.solr.handler.loader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -31,6 +33,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class JavabinLoaderTest extends SolrTestCaseJ4 {
   @BeforeClass
@@ -87,5 +90,23 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
 
     // last doc should have the flag set
     assertTrue(mockUpdateProcessor.addCommands.get(batch.size()-1).isLastDocInBatch);
+  }
+
+  @Test
+  public void javabinLoader_denseVector_shouldIndexCorrectly() throws Exception {
+    SolrInputDocument doc1 = new SolrInputDocument();
+    doc1.addField("id", "555");
+    doc1.addField("vector", Arrays.asList(1.4f, 2.4f, 3.4f, 4.4f));
+
+    EmbeddedSolrServer solrJClient = new EmbeddedSolrServer(h.getCoreContainer(), "collection1", EmbeddedSolrServer.RequestWriterSupplier.JavaBin);
+    solrJClient.add(doc1);
+    solrJClient.commit();
+
+    assertQ(req("q", "id:555", "fl", "vector"), "*[count(//doc)=1]",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[1][.='" + 1.4 + "']",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[2][.='" + 2.4 + "']",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[3][.='" + 3.4 + "']",
+            "//result/doc[1]/arr[@name=\"vector\"]/float[4][.='" + 4.4 + "']"
+    );
   }
 }

@@ -23,14 +23,13 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.*;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
-
-import javax.annotation.Nonnull;
 
 /**
  * <p>The implementation of the cluster abstractions from {@link org.apache.solr.cluster} as static inner classes of this
@@ -53,10 +52,16 @@ class SimpleClusterAbstractionsImpl {
 
   static class ClusterImpl implements Cluster {
     private final Set<Node> liveNodes;
+    private final Set<Node> liveNodesWithData;
     private final ClusterState clusterState;
 
     ClusterImpl(SolrCloudManager solrCloudManager) throws IOException {
-      liveNodes = NodeImpl.getNodes(solrCloudManager.getClusterStateProvider().getLiveNodes());
+      Set<String> liveNodes = solrCloudManager.getClusterStateProvider().getLiveNodes();
+      Collection<String> liveNodesWithData = Assign.filterNonDataNodes( solrCloudManager.getDistribStateManager(), liveNodes);
+      this.liveNodes = NodeImpl.getNodes(liveNodes);
+      this.liveNodesWithData = liveNodesWithData.size() == liveNodes.size() ?
+              this.liveNodes :
+              NodeImpl.getNodes(liveNodesWithData);
       clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
     }
 
@@ -65,13 +70,16 @@ class SimpleClusterAbstractionsImpl {
       return liveNodes;
     }
 
+    public Set<Node> getLiveDataNodes() {
+      return liveNodesWithData;
+    }
+
     @Override
     public SolrCollection getCollection(String collectionName) {
       return SolrCollectionImpl.createCollectionFacade(clusterState, collectionName);
     }
 
     @Override
-    @Nonnull
     public Iterator<SolrCollection> iterator() {
       return clusterState.getCollectionsMap().values().stream().map(SolrCollectionImpl::fromDocCollection).collect(Collectors.toSet()).iterator();
     }
@@ -165,7 +173,6 @@ class SimpleClusterAbstractionsImpl {
     }
 
     @Override
-    @Nonnull
     public Iterator<Shard> iterator() {
       return shards.values().iterator();
     }
@@ -261,7 +268,6 @@ class SimpleClusterAbstractionsImpl {
     }
 
     @Override
-    @Nonnull
     public Iterator<Replica> iterator() {
       return replicas.values().iterator();
     }

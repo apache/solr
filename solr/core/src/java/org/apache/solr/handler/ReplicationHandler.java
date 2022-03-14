@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,8 +25,9 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -96,6 +96,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -132,6 +133,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   SolrCore core;
   
   private volatile boolean closed = false;
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.READ_PERM;
+  }
 
   private static final class CommitVersionInfo {
     public final long version;
@@ -418,20 +424,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return l;
   }
 
-  static Long getCheckSum(Checksum checksum, File f) {
-    FileInputStream fis = null;
+  static Long getCheckSum(Checksum checksum, Path f) {
     checksum.reset();
     byte[] buffer = new byte[1024 * 1024];
-    int bytesRead;
-    try {
-      fis = new FileInputStream(f);
-      while ((bytesRead = fis.read(buffer)) >= 0)
+    try (InputStream in = Files.newInputStream(f)) {
+      int bytesRead;
+      while ((bytesRead = in.read(buffer)) >= 0)
         checksum.update(buffer, 0, bytesRead);
       return checksum.getValue();
     } catch (Exception e) {
       log.warn("Exception in finding checksum of {}", f, e);
-    } finally {
-      IOUtils.closeQuietly(fis);
     }
     return null;
   }
@@ -778,12 +780,20 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       Checksum checksum = null;
       for (int i = 0; i < nameAndAlias.size(); i++) {
         String cf = nameAndAlias.getName(i);
-        File f = new File(core.getResourceLoader().getConfigDir(), cf);
-        if (!f.exists() || f.isDirectory()) continue; //must not happen
+        Path f = core.getResourceLoader().getConfigPath().resolve(cf);
+        if (!Files.exists(f) || Files.isDirectory(f)) continue; //must not happen
         FileInfo info = confFileInfoCache.get(cf);
-        if (info == null || info.lastmodified != f.lastModified() || info.size != f.length()) {
+        long lastModified = 0;
+        long size = 0;
+        try {
+          lastModified = Files.getLastModifiedTime(f).toMillis();
+          size = Files.size(f);
+        } catch (IOException e) {
+          // proceed with zeroes for now, will probably error on checksum anyway
+        }
+        if (info == null || info.lastmodified != lastModified || info.size != size) {
           if (checksum == null) checksum = new Adler32();
-          info = new FileInfo(f.lastModified(), cf, f.length(), getCheckSum(checksum, f));
+          info = new FileInfo(lastModified, cf, size, getCheckSum(checksum, f));
           confFileInfoCache.put(cf, info);
         }
         Map<String, Object> m = info.getAsMap();
@@ -1397,10 +1407,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         restoreFuture.cancel(false);
       }
     }
-
-    @Override
-    public void postClose(SolrCore core) {
-    }
   };
 
   /**
@@ -1649,14 +1655,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    */
   private abstract class LocalFsFileStream extends DirectoryFileStream {
 
-    private File file;
+    private Path file;
 
     public LocalFsFileStream(SolrParams solrParams) {
       super(solrParams);
       this.file = this.initFile();
     }
 
-    protected abstract File initFile();
+    protected abstract Path initFile();
 
     @Override
     public void write(OutputStream out) throws IOException {
@@ -1665,30 +1671,30 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       try {
         initWrite();
 
-        if (file.exists() && file.canRead()) {
-          inputStream = new FileInputStream(file);
-          FileChannel channel = inputStream.getChannel();
-          //if offset is mentioned move the pointer to that point
-          if (offset != -1)
-            channel.position(offset);
-          ByteBuffer bb = ByteBuffer.wrap(buf);
+        if (Files.isReadable(file)) {
+          try (SeekableByteChannel channel = Files.newByteChannel(file)) {
+            //if offset is mentioned move the pointer to that point
+            if (offset != -1)
+              channel.position(offset);
+            ByteBuffer bb = ByteBuffer.wrap(buf);
 
-          while (true) {
-            bb.clear();
-            long bytesRead = channel.read(bb);
-            if (bytesRead <= 0) {
-              writeNothingAndFlush();
-              fos.close(); // we close because DeflaterOutputStream requires a close call, but but the request outputstream is protected
-              break;
+            while (true) {
+              bb.clear();
+              long bytesRead = channel.read(bb);
+              if (bytesRead <= 0) {
+                writeNothingAndFlush();
+                fos.close(); // we close because DeflaterOutputStream requires a close call, but the request outputstream is protected
+                break;
+              }
+              fos.writeInt((int) bytesRead);
+              if (useChecksum) {
+                checksum.reset();
+                checksum.update(buf, 0, (int) bytesRead);
+                fos.writeLong(checksum.getValue());
+              }
+              fos.write(buf, 0, (int) bytesRead);
+              fos.flush();
             }
-            fos.writeInt((int) bytesRead);
-            if (useChecksum) {
-              checksum.reset();
-              checksum.update(buf, 0, (int) bytesRead);
-              fos.writeLong(checksum.getValue());
-            }
-            fos.write(buf, 0, (int) bytesRead);
-            fos.flush();
           }
         } else {
           writeNothingAndFlush();
@@ -1708,9 +1714,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       super(solrParams);
     }
 
-    protected File initFile() {
+    protected Path initFile() {
       //if it is a tlog file read from tlog directory
-      return new File(core.getUpdateHandler().getUpdateLog().getLogDir(), tlogFileName);
+      return Path.of(core.getUpdateHandler().getUpdateLog().getLogDir(), tlogFileName);
     }
 
   }
@@ -1721,9 +1727,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       super(solrParams);
     }
 
-    protected File initFile() {
+    protected Path initFile() {
       //if it is a conf file read from config directory
-      return core.getResourceLoader().getConfigPath().resolve(cfileName).toFile();
+      return core.getResourceLoader().getConfigPath().resolve(cfileName);
     }
 
   }

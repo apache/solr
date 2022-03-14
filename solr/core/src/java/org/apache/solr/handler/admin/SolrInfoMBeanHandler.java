@@ -28,6 +28,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 
 import java.io.StringReader;
 import java.text.NumberFormat;
@@ -131,7 +132,7 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
       addMBean(req, cats, requestedKeys, entry.getKey(),entry.getValue());
     }
 
-    for (SolrInfoBean infoMBean : req.getCore().getCoreContainer().getResourceLoader().getInfoMBeans()) {
+    for (SolrInfoBean infoMBean : req.getCoreContainer().getResourceLoader().getInfoMBeans()) {
       addMBean(req,cats,requestedKeys,infoMBean.getName(),infoMBean);
     }
     return cats;
@@ -294,5 +295,10 @@ public class SolrInfoMBeanHandler extends RequestHandlerBase {
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.METRICS_READ_PERM;
   }
 }

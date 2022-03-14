@@ -17,7 +17,7 @@ gradlew dockerBuild
 The docker build task accepts the following inputs, all accepted via both Environment Variables and Gradle Properties.
 
 Base Docker Image: (The docker image used for the "FROM" in the Solr Dockerfile)
-   Default: "openjdk:11-jre-slim"
+   Default: "eclipse-temurin:17-jre"
    EnvVar: SOLR_DOCKER_BASE_IMAGE
    Gradle Property: -Psolr.docker.baseImage
 
@@ -93,7 +93,7 @@ All users should build custom images using the instructions above.
 NOTE: All gradle commands for the Official Dockerfile below require the Solr artifacts to be signed with a GPG Key.
 For necessary inputs and properties, please refer to:
 
-gradlew helpGpgSigning
+gradlew helpPublishing
 
 You can use the following command to build an official Solr Dockerfile.
 The Dockerfile will be created at: solr/docker/build/Dockerfile.official

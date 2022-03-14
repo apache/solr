@@ -60,7 +60,7 @@ public class SolrZooKeeper extends ZooKeeper {
         try {
           AccessController.doPrivileged((PrivilegedAction<Void>) this::closeZookeeperChannel);
         } finally {
-          spawnedThreads.remove(this);
+          spawnedThreads.remove(Thread.currentThread());
         }
       }
       

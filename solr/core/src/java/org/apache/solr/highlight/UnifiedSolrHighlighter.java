@@ -18,6 +18,7 @@ package org.apache.solr.highlight;
 
 import java.io.IOException;
 import java.text.BreakIterator;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -118,7 +119,6 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized {
 
   protected static final String SNIPPET_SEPARATOR = "\u0000";
-  private static final String[] ZERO_LEN_STR_ARRAY = new String[0];
 
   @Override
   public void init(PluginInfo info) {
@@ -146,7 +146,10 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     }
 
     UnifiedHighlighter highlighter = getHighlighter(req);
-    Map<String, String[]> snippets = highlighter.highlightFields(fieldNames, query, docIDs, maxPassages);
+    Map<String, String[]> snippets =
+        fieldNames.length == 0
+            ? Collections.emptyMap()
+            : highlighter.highlightFields(fieldNames, query, docIDs, maxPassages);
     return encodeSnippets(keys, fieldNames, snippets);
   }
 
@@ -174,7 +177,6 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
         String snippet = snippets.get(field)[i];
         if (snippet == null) {
           //TODO reuse logic of DefaultSolrHighlighter.alternateField
-          summary.add(field, ZERO_LEN_STR_ARRAY);
         } else {
           // we used a special snippet separator char and we can now split on it.
           summary.add(field, snippet.split(SNIPPET_SEPARATOR));
@@ -249,6 +251,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
         timerTree = new RTimerTree(); // since null checks are annoying
       }
       loadFieldValuesTimer = timerTree.sub("loadFieldValues"); // we assume a new timer, state of STARTED
+      loadFieldValuesTimer.resume(); // ensure state is STARTED (some obscure test / use-case)
       loadFieldValuesTimer.pause(); // state of PAUSED now with about zero time. Will fail if state isn't STARTED.
     }
 
@@ -326,7 +329,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
         return baseBI;
       }
 
-      float fragalign = params.getFieldFloat(field, HighlightParams.FRAGALIGNRATIO, 0.5f);
+      float fragalign = params.getFieldFloat(field, HighlightParams.FRAGALIGNRATIO, 0.33f);
       if (params.getFieldBool(field, HighlightParams.FRAGSIZEISMINIMUM, true)) {
         return LengthGoalBreakIterator.createMinLength(baseBI, fragsize, fragalign);
       }

@@ -44,15 +44,16 @@ configure(project(":solr").subprojects) { prj ->
 
         // Exclude certain files (generated ones, mostly).
         switch (project.path) {
-          case ":solr:contrib:analytics":
-          case ":solr:contrib:analysis-extras":
-          case ":solr:contrib:clustering":
-          case ":solr:contrib:extraction":
-          case ":solr:contrib:gcs-repository":
-          case ":solr:contrib:langid":
-          case ":solr:contrib:ltr":
-          case ":solr:contrib:prometheus-exporter":
-          case ":solr:contrib:scripting":
+          case ":solr:modules:analytics":
+          case ":solr:modules:analysis-extras":
+          case ":solr:modules:clustering":
+          case ":solr:modules:extraction":
+          case ":solr:modules:gcs-repository":
+          case ":solr:modules:hdfs":
+          case ":solr:modules:langid":
+          case ":solr:modules:ltr":
+          case ":solr:modules:scripting":
+          case ":solr:prometheus-exporter":
           case ":solr:core":
           case ":solr:solrj":
           case ":solr:solr-ref-guide":

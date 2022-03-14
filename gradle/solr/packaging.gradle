@@ -19,7 +19,6 @@
 // For Solr, a 'resolve' task is much more complex. There are three folders:
 // lib/
 // test-lib/
-// lucene-libs/
 //
 // There doesn't seem to be one ideal set of rules on how these should be created, but
 // I tried to imitate the current (master) logic present in ivy and ant files in this way:
@@ -27,10 +26,7 @@
 // The "solr platform" set of dependencies is a union of all deps for (core, solrj, server).
 //
 // Then:
-// lib - these are module's "own" dependencies, excluding Lucene's that are not present in the
-//       solr platform.
-// lucene-libs - these are lucene modules declared as module's dependencies and not
-//       present in solr platform.
+// lib - these are module's "own" dependencies.
 // test-lib/ - libs not present in solr platform.
 //
 // None of these are really needed with gradle... they should be collected just in the distribution
@@ -40,11 +36,15 @@
 // I don't know how to untie these two cleanly.
 //
 
-configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib") }) {
+configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules") || project.path.startsWith(":solr:prometheus-exporter") }) {
   plugins.withType(JavaPlugin) {
     ext {
       packagingDir = file("${buildDir}/packaging")
-      deps = file("${packagingDir}/${project.name}")
+      if (project.path.startsWith(":solr:prometheus-exporter")) {
+        deps = packagingDir
+      } else {
+        deps = file("${packagingDir}/${project.name}")
+      }
     }
 
     configurations {
@@ -61,9 +61,13 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
       solrPlatformLibs project(":solr:server")
     }
 
-    // An aggregate that configures lib, lucene-libs and test-lib in a temporary location.
+    // An aggregate that configures lib and test-lib in a temporary location.
     task assemblePackaging(type: Sync) {
       from "README.md"
+
+      from (tasks.jar, {
+        into "lib"
+      })
 
       from ({
         def externalLibs = configurations.runtimeLibs.copyRecursive { dep ->
@@ -76,18 +80,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
         // libExt has logging libs, which we don't want.  Lets users decide what they want.
         return externalLibs - configurations.solrPlatformLibs - project(':solr:server').configurations.getByName('libExt')
       }, {
-        exclude "lucene-*"
         into "lib"
-      })
-
-      from ({
-        def projectLibs = configurations.runtimeLibs.copyRecursive { dep ->
-          (dep instanceof org.gradle.api.artifacts.ProjectDependency)
-        }
-        return projectLibs - configurations.solrPlatformLibs
-      }, {
-        include "lucene-*"
-        into "lucene-libs"
       })
 
       into deps
@@ -122,7 +115,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
       dependsOn syncLib, syncTestLib
     }
 
-    // Contrib packaging currently depends on internal resolve.
+    // Module packaging currently depends on internal resolve.
     artifacts {
       packaging packagingDir, {
         builtBy assemblePackaging

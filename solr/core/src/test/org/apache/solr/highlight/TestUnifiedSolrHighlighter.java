@@ -246,24 +246,26 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertU(adoc("text", "This document contains # special characters, while the other document contains the same # special character.", "id", "103"));
     assertU(adoc("text", "While the other document contains the same # special character.", "id", "104"));
     assertU(commit());
+    // Set hl.fragAlignRatio because this test was written when it had a middle default
+    String[] defParams = {"q", "text:document", "sort", "id asc", "hl", "true", "hl.method", "unified", "hl.bs.type", "SEPARATOR","hl.bs.separator","#", "hl.fragAlignRatio", "0.5"};
     assertQ("CUSTOM breakiterator",
-        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "-1"),
+        req(defParams,"hl.fragsize", "-1"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
     assertQ("different breakiterator",
-        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "-1"),
+        req(defParams,"hl.fragsize", "-1"),
         "//lst[@name='highlighting']/lst[@name='104']/arr[@name='text']/str='While the other <em>document</em> contains the same #'");
 
     assertQ("CUSTOM breakiterator with fragsize 70 minimum",
-        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "70", "hl.fragsizeIsMinimum", "true"),
+        req(defParams,"hl.fragsize", "70", "hl.fragsizeIsMinimum", "true"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains # special characters, while the other <em>document</em> contains the same #'");
     assertQ("CUSTOM breakiterator with fragsize 70 avg",
-        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "70", "hl.fragsizeIsMinimum", "false"),
+        req(defParams,"hl.fragsize", "70", "hl.fragsizeIsMinimum", "false"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
     assertQ("CUSTOM breakiterator with fragsize 90 avg",
-        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "90", "hl.fragsizeIsMinimum", "false"),
+        req(defParams,"hl.fragsize", "90", "hl.fragsizeIsMinimum", "false"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
     assertQ("CUSTOM breakiterator with fragsize 100 avg",
-        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "100", "hl.fragsizeIsMinimum", "false"),
+        req(defParams,"hl.fragsize", "100", "hl.fragsizeIsMinimum", "false"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains # special characters, while the other <em>document</em> contains the same #'");
   }
 
@@ -272,17 +274,19 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     clearIndex();
     assertU(adoc("id", "10", "text", "This is a sentence just under seventy chars in length blah blah. Next sentence is here."));
     assertU(commit());
+    // Set hl.fragAlignRatio because this test was written when it had a middle default
+    String[] defParams = {"q", "text:seventy", "hl", "true", "hl.method", "unified", "hl.fragAlignRatio", "0.5"};
     assertQ("default fragsize",
-        req("q", "text:seventy", "hl", "true", "hl.fragsizeIsMinimum", "true"),
+        req(defParams, "hl.fragsizeIsMinimum", "true"),
         "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. Next sentence is here.'");
     assertQ("default fragsize",
-        req("q", "text:seventy", "hl", "true", "hl.fragsizeIsMinimum", "true", "hl.fragsize", "60"),
+        req(defParams, "hl.fragsizeIsMinimum", "true", "hl.fragsize", "60"),
         "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. '");
     assertQ("smaller fragsize",
-        req("q", "text:seventy", "hl", "true", "hl.fragsizeIsMinimum", "false"),
+        req(defParams, "hl.fragsizeIsMinimum", "false"),
         "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. '");
     assertQ("default fragsize",
-        req("q", "text:seventy", "hl", "true", "hl.fragsize", "90", "hl.fragsizeIsMinimum", "false"),
+        req(defParams, "hl.fragsize", "90", "hl.fragsizeIsMinimum", "false"),
         "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. Next sentence is here.'");
   }
   
@@ -329,6 +333,25 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
   public void testComplexPhraseQParser() {
     assertQ(req("q", "{!complexphrase df=text}(\"sec* doc*\")", "hl", "true", "hl.fl", "text"),
         "count(//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/*)=1");
+  }
+
+  // SOLR-10321
+  public void testDontReturnEmptyHighlights() throws Exception {
+    clearIndex();
+    // this doc has no value for field text2
+    assertU(adoc("text", "third document", "id", "103"));
+    assertU(commit());
+    // query on text & text2.  Assert we only highlight text; text2 shouldn't be present at all
+    assertJQ(
+        req(
+            "q", "text:document OR text2:document",
+            "hl", "true",
+            "hl.fl", "text, text2",
+            "sort", "id asc",
+            "hl", "true"),
+        "highlighting=={\n"
+            + "    '103':{\n"
+            + "      'text':['third <em>document</em>']}}}");
   }
 
 }

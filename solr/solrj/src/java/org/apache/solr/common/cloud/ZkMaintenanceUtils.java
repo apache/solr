@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.StringUtils;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -283,6 +284,7 @@ public class ZkMaintenanceUtils {
     if (!Files.exists(rootPath))
       throw new IOException("Path " + rootPath + " does not exist");
 
+    int partsOffset = Path.of(zkPath).getNameCount() - rootPath.getNameCount() - 1; // will be negative
     Files.walkFileTree(rootPath, new SimpleFileVisitor<Path>() {
       @Override
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -295,12 +297,17 @@ public class ZkMaintenanceUtils {
         try {
           // if the path exists (and presumably we're uploading data to it) just set its data
           if (file.toFile().getName().equals(ZKNODE_DATA_FILE) && zkClient.exists(zkNode, true)) {
-            zkClient.setData(zkNode, file.toFile(), true);
+            zkClient.setData(zkNode, file, true);
+          } else if (file == rootPath) {
+            // We are only uploading a single file, preVisitDirectory was never called
+            zkClient.makePath(zkNode, file, false, true);
           } else {
-            zkClient.makePath(zkNode, file.toFile(), false, true);
+            // Skip path parts here because they should have been created during preVisitDirectory
+            int pathParts = file.getNameCount() + partsOffset;
+            zkClient.makePath(zkNode, Files.readAllBytes(file), CreateMode.PERSISTENT, null, false, true, pathParts);
           }
         } catch (KeeperException | InterruptedException e) {
-          throw new IOException("Error uploading file " + file.toString() + " to zookeeper path " + zkNode,
+          throw new IOException("Error uploading file " + file + " to zookeeper path " + zkNode,
               SolrZkClient.checkInterrupted(e));
         }
         return FileVisitResult.CONTINUE;
@@ -309,6 +316,25 @@ public class ZkMaintenanceUtils {
       @Override
       public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
         if (dir.getFileName().toString().startsWith(".")) return FileVisitResult.SKIP_SUBTREE;
+
+        String zkNode = createZkNodeName(zkPath, rootPath, dir);
+        try {
+          if (dir.equals(rootPath)) {
+            // Make sure the root path exists, including potential parents
+            zkClient.makePath(zkNode, true);
+          } else {
+            // Skip path parts here because they should have been created during previous visits
+            int pathParts = dir.getNameCount() + partsOffset;
+            zkClient.makePath(zkNode, null, CreateMode.PERSISTENT, null, true, true, pathParts);
+          }
+        } catch (KeeperException.NodeExistsException ignored) {
+          // Using fail-on-exists == false has side effect of makePath attempting to setData on the leaf of the path
+          // We prefer that if the parent directory already exists, we do not modify it
+          // Particularly relevant for marking config sets as trusted
+        } catch (KeeperException | InterruptedException e) {
+          throw new IOException("Error creating intermediate directory " + dir,
+              SolrZkClient.checkInterrupted(e));
+        }
 
         return FileVisitResult.CONTINUE;
       }
@@ -320,11 +346,11 @@ public class ZkMaintenanceUtils {
     return znodeStat.getEphemeralOwner() != 0;
   }
 
-  private static int copyDataDown(SolrZkClient zkClient, String zkPath, File file) throws IOException, KeeperException, InterruptedException {
+  private static int copyDataDown(SolrZkClient zkClient, String zkPath, Path file) throws IOException, KeeperException, InterruptedException {
     byte[] data = zkClient.getData(zkPath, null, null, true);
     if (data != null && data.length > 0) { // There are apparently basically empty ZNodes.
       log.info("Writing file {}", file);
-      Files.write(file.toPath(), data);
+      Files.write(file, data);
       return data.length;
     }
     return 0;
@@ -338,14 +364,14 @@ public class ZkMaintenanceUtils {
       if (children.size() == 0) {
         // If we didn't copy data down, then we also didn't create the file. But we still need a marker on the local
         // disk so create an empty file.
-        if (copyDataDown(zkClient, zkPath, file.toFile()) == 0) {
+        if (copyDataDown(zkClient, zkPath, file) == 0) {
           Files.createFile(file);
         }
       } else {
         Files.createDirectories(file); // Make parent dir.
         // ZK nodes, whether leaf or not can have data. If it's a non-leaf node and
         // has associated data write it into the special file.
-        copyDataDown(zkClient, zkPath, new File(file.toFile(), ZKNODE_DATA_FILE));
+        copyDataDown(zkClient, zkPath, file.resolve(ZKNODE_DATA_FILE));
 
         for (String child : children) {
           String zkChild = zkPath;

@@ -32,6 +32,11 @@ public interface Cluster {
   Set<Node> getLiveNodes();
 
   /**
+   * @return current set of live nodes that are supposed to host data.
+   */
+  Set<Node> getLiveDataNodes();
+
+  /**
    * Returns info about the given collection if one exists.
    *
    * @return {@code null} if no collection of the given name exists in the cluster.

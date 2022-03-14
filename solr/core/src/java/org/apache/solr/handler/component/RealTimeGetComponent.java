@@ -79,6 +79,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -171,7 +172,7 @@ public class RealTimeGetComponent extends SearchComponent
           try {
             if (log.isDebugEnabled()) {
               log.debug("{} min count to sync to (from most recent searcher view) {}"
-                  , req.getCore().getCoreContainer().getZkController().getNodeName()
+                  , req.getCoreContainer().getZkController().getNodeName()
                   , searcher.count(new MatchAllDocsQuery()));
             }
           } finally {
@@ -208,7 +209,7 @@ public class RealTimeGetComponent extends SearchComponent
         for (String fq : fqs) {
           if (fq != null && fq.trim().length()!=0) {
             QParser fqp = QParser.getParser(fq, req);
-            filters.add(fqp.getQuery());
+            filters.add(QueryUtils.makeQueryable(fqp.getQuery()));
           }
         }
         if (!filters.isEmpty()) {
@@ -975,7 +976,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: handle collection=...?
 
-    ZkController zkController = rb.req.getCore().getCoreContainer().getZkController();
+    ZkController zkController = rb.req.getCoreContainer().getZkController();
 
     // if shards=... then use that
     if (zkController != null && params.get(ShardParams.SHARDS) == null) {

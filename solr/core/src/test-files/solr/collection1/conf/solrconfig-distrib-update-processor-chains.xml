@@ -18,10 +18,8 @@
 -->
 
 <config>
-  <jmx />
-
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  
+
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}">
     <!-- used to keep RAM reqs down for HdfsDirectoryFactory -->
     <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool>
@@ -30,7 +28,7 @@
     <str name="solr.hdfs.confdir">${solr.hdfs.confdir:}</str>
     <str name="solr.hdfs.blockcache.global">${solr.hdfs.blockcache.global:false}</str>
   </directoryFactory>
-  
+
   <dataDir>${solr.data.dir:}</dataDir>
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -50,8 +48,8 @@
       <str name="omitHeader">true</str>
     </lst>
   </requestHandler>
-  
-  <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" /> 
+
+  <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" />
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 
@@ -60,7 +58,7 @@
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
   </updateHandler>
-  
+
   <updateRequestProcessorChain name="tolerant-chain-max-errors-10">
     <processor class="solr.TolerantUpdateProcessorFactory">
       <!-- explicitly testing that parsing still works if a valid int is specified as a string -->
@@ -75,7 +73,7 @@
     <processor class="solr.DistributedUpdateProcessorFactory" />
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
-  
+
   <updateRequestProcessorChain name="not-tolerant">
   <processor class="solr.DistributedUpdateProcessorFactory" />
     <processor class="solr.RunUpdateProcessorFactory" />

@@ -27,10 +27,21 @@ local maven repository for inspection:
 gradlew mavenLocal
 ls -R build/maven-local/
 
-Put together Solr distribution:
+Put together a local Solr binary "distribution" folder:
 gradlew -p solr/packaging assemble
-ls solr/packaging/build/distributions/solr-* # release archives
 ls solr/packaging/build/solr-*               # expanded directory
+
+For quick local development
+gradlew -p solr/packaging dev
+ls solr/packaging/build/dev                  # expanded directory
+
+Generate the release tar archive (see publishing.txt for details)
+gradlew -p solr/distribution assembleRelease
+ls solr/distribution/build/release           # release archives
+
+Build a docker image from the local repository (see docker/gradle-help.txt for more)
+gradlew dockerBuild dockerTag
+docker run --rm -p 8983:8983 apache/solr:9.0.0-SNAPSHOT
 
 
 Other validation and checks

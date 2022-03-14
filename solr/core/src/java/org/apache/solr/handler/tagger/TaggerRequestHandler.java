@@ -57,7 +57,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -70,6 +70,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.security.AuthorizationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,7 +161,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
 
     final SolrIndexSearcher searcher = req.getSearcher();
     final FixedBitSet matchDocIdsBS = new FixedBitSet(searcher.maxDoc());
-    final List<NamedList<?>> tags = new ArrayList<>(2000);
+    final List<SimpleOrderedMap<?>> tags = new ArrayList<>(2000);
 
     try {
       Analyzer analyzer = req.getSchema().getField(indexedField).getType().getQueryAnalyzer();
@@ -184,7 +185,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
                 endOffset = offsetPair[1];
               }
 
-              NamedList<Object> tag = new NamedList<>();
+              SimpleOrderedMap<Object> tag = new SimpleOrderedMap<>();
               tag.add("startOffset", startOffset);
               tag.add("endOffset", endOffset);
               if (addMatchText)
@@ -237,6 +238,11 @@ public class TaggerRequestHandler extends RequestHandlerBase {
 
     //Solr's standard name for matching docs in response
     rsp.add("response", getDocList(rows, matchDocIdsBS));
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.READ_PERM;
   }
 
   private static class InputStringLazy implements Callable<String> {
