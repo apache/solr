@@ -103,7 +103,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         "{"
             + "'add-listener' : {'name':'newSearcherListener','event':'newSearcher', 'class':'"
             + SleepingSolrEventListener.class.getName()
-            + "'}"
+            + "'},"
             + "'add-listener' : {'name':'firstSearcherListener','event':'firstSearcher', 'class':'"
             + SleepingSolrEventListener.class.getName()
             + "'}"
@@ -169,7 +169,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         "{"
             + "'add-listener' : {'name':'newSearcherListener','event':'newSearcher', 'class':'"
             + SleepingSolrEventListener.class.getName()
-            + "'}"
+            + "'},"
             + "'add-listener' : {'name':'firstSearcherListener','event':'firstSearcher', 'class':'"
             + SleepingSolrEventListener.class.getName()
             + "'}"
