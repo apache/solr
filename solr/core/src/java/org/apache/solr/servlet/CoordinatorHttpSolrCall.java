@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,9 +70,8 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     return getCore(factory,this, collectionName, isPreferLeader);
   }
 
-  @SuppressWarnings("unchecked")
   public static  SolrCore getCore( Factory factory, HttpSolrCall solrCall, String collectionName, boolean isPreferLeader) {
-    String sytheticCoreName = factory.coreNameMapping.get(collectionName);
+    String sytheticCoreName = factory.collectionVsCoreNameMapping.get(collectionName);
     if (sytheticCoreName != null) {
       return solrCall.cores.getCore(sytheticCoreName);
     } else {
@@ -92,7 +90,8 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
         }
         SolrCore core = solrCall.getCoreByCollection(syntheticCollectionName, isPreferLeader);
         if (core != null) {
-          factory.coreNameMapping.put(collectionName, core.getName());
+          factory.collectionVsCoreNameMapping.put(collectionName, core.getName());
+          solrCall.cores.getZkController().getZkStateReader().registerCore(collectionName);
           log.info("coordinator NODE , returns synthetic core " + core.getName());
         } else {
           //this node does not have a replica. add one
@@ -259,7 +258,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
   }
 
   public static class Factory implements SolrDispatchFilter.HttpSolrCallFactory {
-    private final Map<String, String> coreNameMapping = new ConcurrentHashMap<>();
+    private final Map<String, String> collectionVsCoreNameMapping = new ConcurrentHashMap<>();
 
     @Override
     public HttpSolrCall createInstance(SolrDispatchFilter filter,
