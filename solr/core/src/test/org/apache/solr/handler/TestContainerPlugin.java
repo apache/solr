@@ -455,7 +455,8 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
       String url = baseUrl + path + "?wt=javabin";
-      // We can't rely on our single phaser to sync things here because we are waiting for multiple nodes to update
+      // Allow multiple retries here because we need multiple nodes to update
+      // and our single phaser only ensures that one of them has reached expected state
       TestDistribPackageStore.assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
     }
   }
