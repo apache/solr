@@ -165,3 +165,14 @@ limitations under the License.
 #content #query #result #response
 {
 }
+
+.ui-select-multiple.ui-select-bootstrap .ui-select-match .close {
+  font-size: 1em !important;
+  line-height: 0.75 !important;
+}
+.ui-select-multiple.ui-select-bootstrap input {
+  border: 1px solid #c0c0c0 !important;
+  padding: 2px !important;
+  width: 100% !important;
+  height: initial !important;
+}

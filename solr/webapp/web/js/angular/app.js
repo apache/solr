@@ -53,7 +53,8 @@ var solrAdminApp = angular.module("solrAdminApp", [
   "solrAdminServices",
   "localytics.directives",
   "ab-base64",
-  "ui.grid"
+  "ui.grid",
+  "ui.select"
 ]);
 
 solrAdminApp.config([
@@ -155,7 +156,8 @@ solrAdminApp.config([
       }).
       when('/:core/query', {
         templateUrl: 'partials/query.html',
-        controller: 'QueryController'
+        controller: 'QueryController',
+        controllerAs: 'vm',
       }).
       when('/:core/stream', {
         templateUrl: 'partials/stream.html',

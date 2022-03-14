@@ -17,6 +17,8 @@
 
 solrAdminApp.controller('QueryController',
   function($scope, $route, $routeParams, $location, Query, Constants, ParamSet){
+    var vm = this;
+
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     $scope.paramsetList = [];
@@ -29,7 +31,7 @@ solrAdminApp.controller('QueryController',
     $scope.val['q.op'] = "OR";
     $scope.val['defType'] = "";
     $scope.val['indent'] = true;
-    $scope.paramsetList = [{useParams:""}];
+    vm.useParams = [];
 
     getParamsets();
 
@@ -57,10 +59,10 @@ solrAdminApp.controller('QueryController',
     }
 
     // get list of ng-models that have a form element
-    function setModels(argTagName){
+    function setModels(argTagName, isData){
         var fields = document.getElementsByTagName(argTagName);
         for( var i = 0, iLen = fields.length; i<iLen; i++ ){
-            var model = fields[i].getAttribute("ng-model");
+          var model = fields[i].getAttribute(isData ? "data-model" : "ng-model");
             if( model ){
                 $scope._models.push({modelName: model, element: fields[i]});
             }
@@ -97,8 +99,8 @@ solrAdminApp.controller('QueryController',
       } else if( $scope._models.map(function(field){return field.modelName}).indexOf(argKey) > -1 ) {
         var index = $scope._models.map(function(field){return field.modelName}).indexOf(argKey);
         var field = $scope._models[index].element;
-        if(field.hasAttribute("multiple") && argValue) {
-          $scope[argKey] = argValue.split(",");
+        if(field.tagName == "UI-SELECT" && argValue) {
+          vm[argKey] = argValue.split(",");
         }
         else {
           // parameters that will only be used to generate the admin link
@@ -179,8 +181,8 @@ solrAdminApp.controller('QueryController',
       purgeParams(params, getDependentFields("facet"), $scope.val.facet !== true);
       purgeParams(params, getDependentFields("spatial"), $scope.val.spatial !== true);
       purgeParams(params, getDependentFields("spellcheck"), $scope.val.spellcheck !== true);
-      if ($scope.useParams && $scope.useParams.length > 0) {
-        set("useParams", $scope.useParams.join(","));
+      if (vm.useParams && vm.useParams.length > 0) {
+        set("useParams", vm.useParams.join(","));
       }
 
       var qt = $scope.qt ? $scope.qt : "/select";
@@ -255,6 +257,7 @@ solrAdminApp.controller('QueryController',
     setModels("input");
     setModels("textarea");
     setModels("select");
+    setModels("ui-select", true);
     setUrlParams();
 
     if ($location.search().q) {
