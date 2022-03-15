@@ -26,6 +26,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -224,14 +225,14 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
         IntStream.range(0, toAdd)
             .map(i -> i + offset + 1)
             .mapToObj(i -> sdoc("id", Integer.toString(i), "_version_", i))
-            .toList());
+            .collect(Collectors.toList()));
     add(
         client1,
         seenLeader,
         IntStream.range(0, toAdd)
             .map(i -> i + offset + 1)
             .mapToObj(i -> sdoc("id", Integer.toString(i), "_version_", i))
-            .toList());
+            .collect(Collectors.toList()));
 
     // client0 now has an additional add beyond our window and the fingerprint should cause this to
     // fail
