@@ -51,6 +51,8 @@ Bug Fixes
 
 * SOLR-15116: Support a HEAD request for managed resources. (Eric Pugh)
 
+* SOLR-16089: Fix empty columns in Cloud Node UI Screen when replica is in down state. (hossman)
+
 Other Changes
 ---------------------
 * SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
