@@ -398,7 +398,12 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     coreService.getService().setRateLimitManager(rateLimitManager);
   }
 
+  /**
+   * internal API
+   */
   public interface HttpSolrCallFactory {
-     public HttpSolrCall createInstance (SolrDispatchFilter filter, String path,  CoreContainer cores, HttpServletRequest request, HttpServletResponse response, boolean retry);
+     public HttpSolrCall createInstance (SolrDispatchFilter filter, String path,
+                                         CoreContainer cores, HttpServletRequest request,
+                                         HttpServletResponse response, boolean retry);
   }
 }
