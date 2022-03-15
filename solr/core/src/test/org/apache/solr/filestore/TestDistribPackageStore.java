@@ -23,6 +23,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -56,10 +57,13 @@ import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @LogLevel(
     "org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
 public class TestDistribPackageStore extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Before
   public void setup() {
@@ -225,6 +229,11 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     }
   }
 
+  public static <T extends NavigableObject> T assertResponseValues(
+      Callable<T> callable, Map<String, Object> vals) throws Exception {
+    return assertResponseValues(1, callable, vals);
+  }
+
   public static NavigableObject assertResponseValues(
       int repeats, SolrClient client, SolrRequest<?> req, Map<String, Object> vals)
       throws Exception {
@@ -245,9 +254,9 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
    * @throws Exception if the callable throws an Exception, or on interrupt between retries
    */
   @SuppressWarnings({"unchecked"})
-  public static NavigableObject assertResponseValues(
-      int repeats, Callable<NavigableObject> callable, Map<String, Object> vals) throws Exception {
-    NavigableObject rsp = null;
+  public static <T extends NavigableObject> T assertResponseValues(
+      int repeats, Callable<T> callable, Map<String, Object> vals) throws Exception {
+    T rsp = null;
 
     for (int i = 0; i < repeats; i++) {
       if (i > 0) {
@@ -290,6 +299,9 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
               Utils.toJSONString(actual));
         }
       }
+      if (passed) {
+        break;
+      }
     }
     return rsp;
   }
@@ -300,19 +312,9 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
       PackageUtils.uploadKey(
           bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()), client);
-      Object resp =
-          Utils.executeGET(
-              client.getHttpClient(),
-              jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true",
-              null);
-      System.out.println(
-          "sync resp: "
-              + jetty.getBaseURLV2().toString()
-              + "/node/files"
-              + path
-              + "?sync=true"
-              + " ,is: "
-              + resp);
+      String url = jetty.getBaseURLV2() + "/node/files" + path + "?sync=true";
+      Object resp = Utils.executeGET(client.getHttpClient(), url, null);
+      log.info("sync resp: {} was {}", url, resp);
     }
     checkAllNodesForFile(
         cluster,
