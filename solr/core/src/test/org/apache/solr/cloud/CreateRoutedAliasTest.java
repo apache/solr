@@ -172,7 +172,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
             .allMatch(createNode::equals));
 
     // Test Alias metadata:
-    Aliases aliases = cluster.getSolrClient().getZkStateReader().getAliases();
+    Aliases aliases = cluster.getZkStateReader().getAliases();
     Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap();
     assertEquals(initialCollectionName, collectionAliasMap.get(aliasName));
     Map<String, String> meta = aliases.getCollectionAliasProperties(aliasName);
@@ -222,7 +222,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     assertEquals(2, coll.getReplicationFactor().intValue()); // num replicas
 
     // Test Alias metadata
-    Aliases aliases = cluster.getSolrClient().getZkStateReader().getAliases();
+    Aliases aliases = cluster.getZkStateReader().getAliases();
     Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap();
     String alias = collectionAliasMap.get(aliasName);
     assertNotNull(alias);
@@ -269,7 +269,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "Expected collection2 to be created with 1 shard and 1 replica",
         "collection2meta",
         clusterShape(1, 1));
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
     zkStateReader.createClusterStateWatchersAndUpdate();
 
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();

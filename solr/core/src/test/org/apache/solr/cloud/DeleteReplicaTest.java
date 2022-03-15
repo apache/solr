@@ -169,8 +169,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .process(cluster.getSolrClient());
 
-    Replica leader =
-        cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "shard1");
+    Replica leader = cluster.getZkStateReader().getLeaderRetry(collectionName, "shard1");
 
     // Confirm that the instance and data directory exist
     CoreStatus coreStatus = getCoreStatus(leader);
@@ -183,8 +182,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteReplica(collectionName, "shard1", leader.getName())
         .process(cluster.getSolrClient());
 
-    Replica newLeader =
-        cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "shard1");
+    Replica newLeader = cluster.getZkStateReader().getLeaderRetry(collectionName, "shard1");
 
     assertFalse(leader.equals(newLeader));
 
@@ -498,7 +496,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   private void waitForNodeLeave(String lostNodeName) throws InterruptedException {
-    ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
+    ZkStateReader reader = cluster.getZkStateReader();
     TimeOut timeOut = new TimeOut(20, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (reader.getClusterState().getLiveNodes().contains(lostNodeName)) {
       Thread.sleep(100);
@@ -545,7 +543,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     try {
       cluster
-          .getSolrClient()
+          .getZkStateReader()
           .waitForState(
               collectionName,
               20,

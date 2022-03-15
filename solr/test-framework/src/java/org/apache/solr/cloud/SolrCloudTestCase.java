@@ -82,9 +82,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static volatile MiniSolrCloudCluster cluster;
 
   protected static SolrZkClient zkClient() {
-    ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
+    ZkStateReader reader = cluster.getZkStateReader();
     if (reader == null) cluster.getSolrClient().connect();
-    return cluster.getSolrClient().getZkStateReader().getZkClient();
+    return cluster.getZkStateReader().getZkClient();
   }
 
   /**
@@ -126,11 +126,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /** Get the collection state for a particular collection */
   protected static DocCollection getCollectionState(String collectionName) {
-    return cluster
-        .getSolrClient()
-        .getZkStateReader()
-        .getClusterState()
-        .getCollection(collectionName);
+    return cluster.getSolrClient().getClusterState().getCollection(collectionName);
   }
 
   protected static void waitForState(
@@ -158,7 +154,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
       cluster
-          .getSolrClient()
+          .getZkStateReader()
           .waitForState(
               collection,
               timeout,

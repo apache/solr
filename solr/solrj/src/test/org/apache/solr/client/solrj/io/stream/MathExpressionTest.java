@@ -17,13 +17,14 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertList;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -39,8 +40,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertList;
 
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
@@ -71,8 +70,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        collection, cluster.getZkStateReader(), false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     }
@@ -4043,7 +4042,7 @@ public void testCache() throws Exception {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     // find a node with a replica
-    ClusterState clusterState = cluster.getSolrClient().getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cluster.getSolrClient().getClusterState();
     String collection = useAlias ? COLLECTIONORALIAS + "_collection" : COLLECTIONORALIAS;
     DocCollection coll = clusterState.getCollection(collection);
     String node = coll.getReplicas().iterator().next().getNodeName();

@@ -143,7 +143,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
             .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateShard did not complete", RequestStatusState.COMPLETED, state);
 
-    client.getZkStateReader().forceUpdateCollection(collection);
+    cluster.getZkStateReader().forceUpdateCollection(collection);
 
     // Add a doc to shard2 to make sure shard2 was created properly
     SolrInputDocument doc = new SolrInputDocument();
@@ -166,7 +166,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     assertSame("AddReplica did not complete", RequestStatusState.COMPLETED, state);
 
     // cloudClient watch might take a couple of seconds to reflect it
-    client
+    cluster
         .getZkStateReader()
         .waitForState(
             collection,
@@ -207,9 +207,9 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     }
 
     Slice shard1 =
-        client.getZkStateReader().getClusterState().getCollection(collection).getSlice("shard1");
+        cluster.getSolrClient().getClusterState().getCollection(collection).getSlice("shard1");
     Replica replica = shard1.getReplicas().iterator().next();
-    for (String liveNode : client.getZkStateReader().getClusterState().getLiveNodes()) {
+    for (String liveNode : cluster.getSolrClient().getClusterState().getLiveNodes()) {
       if (!replica.getNodeName().equals(liveNode)) {
         state =
             new CollectionAdminRequest.MoveReplica(collection, replica.getName(), liveNode)
@@ -218,10 +218,9 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
         break;
       }
     }
-    client.getZkStateReader().forceUpdateCollection(collection);
+    cluster.getZkStateReader().forceUpdateCollection(collection);
 
-    shard1 =
-        client.getZkStateReader().getClusterState().getCollection(collection).getSlice("shard1");
+    shard1 = cluster.getSolrClient().getClusterState().getCollection(collection).getSlice("shard1");
     String replicaName = shard1.getReplicas().iterator().next().getName();
     state =
         CollectionAdminRequest.deleteReplica(collection, "shard1", replicaName)

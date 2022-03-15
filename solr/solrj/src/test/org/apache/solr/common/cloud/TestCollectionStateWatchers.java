@@ -72,7 +72,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     return executor.submit(
         () -> {
           try {
-            cluster.getSolrClient().waitForState(collection, timeout, unit, predicate);
+            cluster.getZkStateReader().waitForState(collection, timeout, unit, predicate);
           } catch (InterruptedException | TimeoutException e) {
             return Boolean.FALSE;
           }
@@ -126,11 +126,13 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
 
-    client.waitForState(
-        "testcollection",
-        MAX_WAIT_TIMEOUT,
-        TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, CLUSTER_SIZE, 1));
+    ZkStateReader.from(client)
+        .waitForState(
+            "testcollection",
+            (long) MAX_WAIT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (CollectionStatePredicate)
+                (n, c) -> DocCollection.isFullyActive(n, c, CLUSTER_SIZE, 1));
 
     final JettySolrRunner extraJetty = cluster.startJettySolrRunner();
     final JettySolrRunner jettyToShutdown =
@@ -141,23 +143,24 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     // shutdown a node and check that we get notified about the change
     final CountDownLatch latch = new CountDownLatch(1);
-    client.registerCollectionStateWatcher(
-        "testcollection",
-        (liveNodes, collectionState) -> {
-          int nodesWithActiveReplicas = 0;
-          log.info("State changed: {}", collectionState);
-          for (Slice slice : collectionState) {
-            for (Replica replica : slice) {
-              if (replica.isActive(liveNodes)) nodesWithActiveReplicas++;
-            }
-          }
-          if (liveNodes.size() == CLUSTER_SIZE
-              && expectedNodesWithActiveReplicas == nodesWithActiveReplicas) {
-            latch.countDown();
-            return true;
-          }
-          return false;
-        });
+    ZkStateReader.from(client)
+        .registerCollectionStateWatcher(
+            "testcollection",
+            (liveNodes, collectionState) -> {
+              int nodesWithActiveReplicas = 0;
+              log.info("State changed: {}", collectionState);
+              for (Slice slice : collectionState) {
+                for (Replica replica : slice) {
+                  if (replica.isActive(liveNodes)) nodesWithActiveReplicas++;
+                }
+              }
+              if (liveNodes.size() == CLUSTER_SIZE
+                  && expectedNodesWithActiveReplicas == nodesWithActiveReplicas) {
+                latch.countDown();
+                return true;
+              }
+              return false;
+            });
 
     cluster.stopJettySolrRunner(jettyToShutdown);
     cluster.waitForJettyToStop(jettyToShutdown);
@@ -170,7 +173,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         "CollectionStateWatcher wasn't cleared after completion",
         MAX_WAIT_TIMEOUT,
         TimeUnit.SECONDS,
-        () -> client.getZkStateReader().getStateWatchers("testcollection").isEmpty());
+        () -> ZkStateReader.from(client).getStateWatchers("testcollection").isEmpty());
   }
 
   @Test
@@ -182,12 +185,13 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         .processAndWait(client, MAX_WAIT_TIMEOUT);
 
     final CountDownLatch latch = new CountDownLatch(1);
-    client.registerCollectionStateWatcher(
-        "currentstate",
-        (n, c) -> {
-          latch.countDown();
-          return false;
-        });
+    ZkStateReader.from(client)
+        .registerCollectionStateWatcher(
+            "currentstate",
+            (n, c) -> {
+              latch.countDown();
+              return false;
+            });
 
     assertTrue(
         "CollectionStateWatcher isn't called on new registration",
@@ -195,15 +199,16 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     assertEquals(
         "CollectionStateWatcher should be retained",
         1,
-        client.getZkStateReader().getStateWatchers("currentstate").size());
+        ZkStateReader.from(client).getStateWatchers("currentstate").size());
 
     final CountDownLatch latch2 = new CountDownLatch(1);
-    client.registerCollectionStateWatcher(
-        "currentstate",
-        (n, c) -> {
-          latch2.countDown();
-          return true;
-        });
+    ZkStateReader.from(client)
+        .registerCollectionStateWatcher(
+            "currentstate",
+            (n, c) -> {
+              latch2.countDown();
+              return true;
+            });
 
     assertTrue(
         "CollectionStateWatcher isn't called when registering for already-watched collection",
@@ -212,7 +217,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         "CollectionStateWatcher should be removed",
         MAX_WAIT_TIMEOUT,
         TimeUnit.SECONDS,
-        () -> client.getZkStateReader().getStateWatchers("currentstate").size() == 1);
+        () -> ZkStateReader.from(client).getStateWatchers("currentstate").size() == 1);
   }
 
   @Test
@@ -223,17 +228,22 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
 
-    client.waitForState(
-        "waitforstate",
-        MAX_WAIT_TIMEOUT,
-        TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+    ZkStateReader.from(client)
+        .waitForState(
+            "waitforstate",
+            (long) MAX_WAIT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (CollectionStatePredicate) (n1, c1) -> DocCollection.isFullyActive(n1, c1, 1, 1));
 
     // several goes, to check that we're not getting delayed state changes
     for (int i = 0; i < 10; i++) {
       try {
-        client.waitForState(
-            "waitforstate", 1, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+        ZkStateReader.from(client)
+            .waitForState(
+                "waitforstate",
+                (long) 1,
+                TimeUnit.SECONDS,
+                (CollectionStatePredicate) (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
       } catch (TimeoutException e) {
         fail("waitForState should return immediately if the predicate is already satisfied");
       }
@@ -263,14 +273,18 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     expectThrows(
         TimeoutException.class,
         () -> {
-          client.waitForState(
-              "nosuchcollection", 1, TimeUnit.SECONDS, ((liveNodes, collectionState) -> false));
+          ZkStateReader.from(client)
+              .waitForState(
+                  "nosuchcollection",
+                  (long) 1,
+                  TimeUnit.SECONDS,
+                  ((liveNodes, collectionState) -> false));
         });
     waitFor(
         "Watchers for collection should be removed after timeout",
         MAX_WAIT_TIMEOUT,
         TimeUnit.SECONDS,
-        () -> client.getZkStateReader().getStateWatchers("nosuchcollection").isEmpty());
+        () -> ZkStateReader.from(client).getStateWatchers("nosuchcollection").isEmpty());
   }
 
   @Test
@@ -281,11 +295,12 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
 
-    client.waitForState(
-        "falsepredicate",
-        MAX_WAIT_TIMEOUT,
-        TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    ZkStateReader.from(client)
+        .waitForState(
+            "falsepredicate",
+            (long) MAX_WAIT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (CollectionStatePredicate) (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
 
     final CountDownLatch firstCall = new CountDownLatch(1);
 
@@ -324,23 +339,24 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     CloudSolrClient client = cluster.getSolrClient();
     assertTrue(
         "There should be no watchers for a non-existent collection!",
-        client.getZkStateReader().getStateWatchers("no-such-collection").isEmpty());
+        ZkStateReader.from(client).getStateWatchers("no-such-collection").isEmpty());
 
     expectThrows(
         TimeoutException.class,
         () -> {
-          client.waitForState(
-              "no-such-collection",
-              10,
-              TimeUnit.MILLISECONDS,
-              (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+          ZkStateReader.from(client)
+              .waitForState(
+                  "no-such-collection",
+                  (long) 10,
+                  TimeUnit.MILLISECONDS,
+                  (CollectionStatePredicate) (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
         });
 
     waitFor(
         "Watchers for collection should be removed after timeout",
         MAX_WAIT_TIMEOUT,
         TimeUnit.SECONDS,
-        () -> client.getZkStateReader().getStateWatchers("no-such-collection").isEmpty());
+        () -> ZkStateReader.from(client).getStateWatchers("no-such-collection").isEmpty());
   }
 
   @Test
@@ -379,7 +395,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         "CollectionStateWatcher should be removed",
         MAX_WAIT_TIMEOUT,
         TimeUnit.SECONDS,
-        () -> client.getZkStateReader().getStateWatchers("test_collection").size() == 0);
+        () -> ZkStateReader.from(client).getStateWatchers("test_collection").size() == 0);
 
     future =
         waitInBackground(
@@ -396,6 +412,6 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         "CollectionStateWatcher should be removed",
         MAX_WAIT_TIMEOUT,
         TimeUnit.SECONDS,
-        () -> client.getZkStateReader().getStateWatchers("test_collection").size() == 0);
+        () -> ZkStateReader.from(client).getStateWatchers("test_collection").size() == 0);
   }
 }

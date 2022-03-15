@@ -79,7 +79,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public ClusterState getClusterState() throws IOException {
+  public ClusterState getClusterState() {
     if (delegate != null) {
       return delegate.getClusterState();
     } else {
@@ -123,5 +123,13 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     if (delegate != null) {
       delegate.close();
     }
+  }
+
+  @Override
+  public String getQuorumHosts() {
+    if (delegate != null) {
+      return delegate.getQuorumHosts();
+    }
+    return null;
   }
 }

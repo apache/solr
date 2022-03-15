@@ -44,7 +44,11 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.request.*;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
@@ -55,7 +59,13 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -333,7 +343,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // Test that queries with _route_ params are routed by the client
 
     // Track request counts on each node before query calls
-    ClusterState clusterState = cluster.getSolrClient().getZkStateReader().getClusterState();
+    ClusterState clusterState = cluster.getSolrClient().getClusterState();
     DocCollection col = clusterState.getCollection("routing_collection");
     Map<String, Long> requestCountsMap = Maps.newHashMap();
     for (Slice slice : col.getSlices()) {
@@ -744,8 +754,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
-    DocCollection coll =
-        cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION);
+    DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(COLLECTION);
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
 
     SolrQuery q = new SolrQuery().setQuery("*:*");
@@ -787,10 +796,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       }
     }
     String theNode = null;
-    Set<String> liveNodes =
-        cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = cluster.getSolrClient().getClusterState().getLiveNodes();
     for (String s : liveNodes) {
-      String n = cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(s);
+      String n = cluster.getZkStateReader().getBaseUrlForNodeName(s);
       if (!allNodesOfColl.contains(n)) {
         theNode = n;
         break;
@@ -818,7 +826,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   @Test
   public void testShutdown() throws IOException {
     try (CloudSolrClient client = getCloudSolrClient(DEAD_HOST_1)) {
-      client.setZkConnectTimeout(100);
+      ZkClientClusterStateProvider.from(client).setZkConnectTimeout(100);
       SolrException ex = expectThrows(SolrException.class, client::connect);
       assertTrue(ex.getCause() instanceof TimeoutException);
     }
@@ -830,7 +838,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testWrongZkChrootTest() throws IOException {
     try (CloudSolrClient client =
         getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
-      client.setZkClientTimeout(1000 * 60);
+      ZkClientClusterStateProvider.from(client).setZkConnectTimeout(1000 * 60);
       SolrException ex = expectThrows(SolrException.class, client::connect);
       MatcherAssert.assertThat(
           "Wrong error message for empty chRoot",
@@ -949,7 +957,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // determine the coreNodeName of only current replica
     Collection<Slice> slices =
-        cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COL).getSlices();
+        cluster.getSolrClient().getClusterState().getCollection(COL).getSlices();
     assertEquals(1, slices.size()); // sanity check
     Slice slice = slices.iterator().next();
     assertEquals(1, slice.getReplicas().size()); // sanity check
@@ -980,8 +988,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
               .process(cluster.getSolrClient())
               .getStatus());
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-          COL, cluster.getSolrClient().getZkStateReader(), true, true, 330);
-
+          COL, cluster.getZkStateReader(), true, true, 330);
       // ...and delete our original leader.
       assertEquals(
           "Couldn't create collection",
@@ -992,7 +999,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
               .process(cluster.getSolrClient())
               .getStatus());
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-          COL, cluster.getSolrClient().getZkStateReader(), true, true, 330);
+          COL, cluster.getZkStateReader(), true, true, 330);
 
       // stale_client's collection state cache should now only point at a leader that no longer
       // exists.
@@ -1147,7 +1154,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     final SolrClient clientUnderTest = getRandomClient();
     final SolrPingResponse response = clientUnderTest.ping(testCollection);
     assertEquals("This should be OK", 0, response.getStatus());
-    DocCollection c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
+    DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
     PerReplicaStates prs =
         PerReplicaStates.fetch(
@@ -1170,7 +1177,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .build()
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(testCollection, 2, 4);
-    c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
+    c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
     prs =
         PerReplicaStates.fetch(

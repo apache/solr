@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.junit.Test;
 
@@ -97,20 +98,20 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
 
     TrackingShardHandlerFactory.ShardRequestAndParams getTopIdsRequest =
         trackingQueue.getShardRequestByPurpose(
-            client.getZkStateReader(), collectionName, "shard1", ShardRequest.PURPOSE_GET_TOP_IDS);
+            ZkStateReader.from(client), collectionName, "shard1", ShardRequest.PURPOSE_GET_TOP_IDS);
     assertNotNull(getTopIdsRequest);
     getTopIdsRequest =
         trackingQueue.getShardRequestByPurpose(
-            client.getZkStateReader(), collectionName, "shard2", ShardRequest.PURPOSE_GET_TOP_IDS);
+            ZkStateReader.from(client), collectionName, "shard2", ShardRequest.PURPOSE_GET_TOP_IDS);
     assertNotNull(getTopIdsRequest);
 
     TrackingShardHandlerFactory.ShardRequestAndParams getFieldsRequest =
         trackingQueue.getShardRequestByPurpose(
-            client.getZkStateReader(), collectionName, "shard1", ShardRequest.PURPOSE_GET_FIELDS);
+            ZkStateReader.from(client), collectionName, "shard1", ShardRequest.PURPOSE_GET_FIELDS);
     assertNotNull(getFieldsRequest);
     getFieldsRequest =
         trackingQueue.getShardRequestByPurpose(
-            client.getZkStateReader(), collectionName, "shard2", ShardRequest.PURPOSE_GET_FIELDS);
+            ZkStateReader.from(client), collectionName, "shard2", ShardRequest.PURPOSE_GET_FIELDS);
     assertNotNull(getFieldsRequest);
 
     int numRequests = 0;

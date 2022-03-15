@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -120,6 +121,6 @@ public class TestRuleBasedAuthorizationWithKerberos extends SolrCloudTestCase {
         CollectionAdminRequest.deleteCollection(collectionName);
     deleteReq.process(solrClient);
     AbstractDistribZkTestBase.waitForCollectionToDisappear(
-        collectionName, solrClient.getZkStateReader(), true, 330);
+        collectionName, ZkStateReader.from(solrClient), true, 330);
   }
 }

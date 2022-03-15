@@ -73,16 +73,14 @@ public class AddReplicaTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collection, 1, 4);
 
-    DocCollection docCollection =
-        cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
+    DocCollection docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     assertEquals(4, docCollection.getReplicas().size());
     assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
     assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
     assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
 
-    docCollection =
-        cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
+    docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before
     assertEquals(4, docCollection.getReplicas().size());
@@ -107,8 +105,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     status = addReplica.processAndWait(collection + "_xyz1", cloudClient, 120);
     assertEquals(COMPLETED, status);
     waitForState("Timedout wait for collection to be created", collection, clusterShape(1, 9));
-    docCollection =
-        cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
+    docCollection = cloudClient.getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before
     assertEquals(9, docCollection.getReplicas().size());
@@ -130,7 +127,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collection, 2, 2);
 
-    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    ClusterState clusterState = cloudClient.getClusterState();
     DocCollection coll = clusterState.getCollection(collection);
     String sliceName = coll.getSlices().iterator().next().getName();
     Collection<Replica> replicas = coll.getSlice(sliceName).getReplicas();
@@ -156,12 +153,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     assertTrue(success);
 
     Collection<Replica> replicas2 =
-        cloudClient
-            .getZkStateReader()
-            .getClusterState()
-            .getCollection(collection)
-            .getSlice(sliceName)
-            .getReplicas();
+        cloudClient.getClusterState().getCollection(collection).getSlice(sliceName).getReplicas();
     replicas2.removeAll(replicas);
     assertEquals(1, replicas2.size());
 
@@ -185,7 +177,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
     assertTrue(success);
     // let the client watch fire
     Thread.sleep(1000);
-    clusterState = cloudClient.getZkStateReader().getClusterState();
+    clusterState = cloudClient.getClusterState();
     coll = clusterState.getCollection(collection);
     Collection<Replica> replicas3 = coll.getSlice(sliceName).getReplicas();
     replicas3.removeAll(replicas);
@@ -195,8 +187,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
       if (replica.getName().equals(replica2)) {
         continue; // may be still recovering
       }
-      assertSame(
-          coll.toString() + "\n" + replica.toString(), replica.getState(), Replica.State.ACTIVE);
+      assertSame(coll + "\n" + replica, replica.getState(), Replica.State.ACTIVE);
     }
   }
 }

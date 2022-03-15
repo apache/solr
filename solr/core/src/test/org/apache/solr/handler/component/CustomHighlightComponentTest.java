@@ -118,7 +118,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, numReplicas)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
+        COLLECTION, cluster.getZkStateReader(), false, true, DEFAULT_TIMEOUT);
   }
 
   @Test
