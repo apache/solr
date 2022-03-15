@@ -18,10 +18,40 @@
 
 solrAdminApp.controller('ParamSetsController',
   function($scope, $routeParams, ParamSet, Constants) {
-    $scope.resetMenu("paramsets", Constants.IS_COLLECTION_PAGE);
 
+    $scope.paramsetList = [];
+
+    $scope.resetMenu("paramsets", Constants.IS_COLLECTION_PAGE);
+    $scope.getParamsets = function (isSelected) {
+      $scope.refresh();
+
+      var params = {};
+      params.core = $routeParams.core;
+      params.wt = "json";
+      params.name = isSelected ? $scope.name : null;
+
+      ParamSet.get(params, callback, failure);
+
+      ///////
+
+      function callback(success) {
+        $scope.responseStatus = "success";
+        delete success.$promise;
+        delete success.$resolved;
+        $scope.response = JSON.stringify(success, null, '  ');
+        if (isSelected) {
+          $scope.selectedParamsetList = success.response.params ? Object.keys(success.response.params) : [];
+        } else {
+          $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
+        }
+      }
+
+      function failure (failure) {
+        $scope.responseStatus = failure;
+      }
+    }
+    $scope.getParamsets();
     $scope.refresh = function () {
-      $scope.commitWithin = 1000;
       $scope.overwrite = true;
       $scope.paramsetContent = "";
       $scope.placeholder = "{\n" +
@@ -39,7 +69,6 @@ solrAdminApp.controller('ParamSetsController',
     $scope.submit = function () {
       var params = {};
 
-      params.commitWithin = $scope.commitWithin;
       params.overwrite = $scope.overwrite;
       params.core = $routeParams.core;
       params.wt = "json";
@@ -52,31 +81,8 @@ solrAdminApp.controller('ParamSetsController',
         delete success.$promise;
         delete success.$resolved;
         $scope.response = JSON.stringify(success, null, '  ');
+        $scope.getParamsets();
       }
-      function failure (failure) {
-        $scope.responseStatus = failure;
-      }
-    }
-
-    $scope.getParamsets = function () {
-      $scope.refresh();
-
-      var params = {};
-      params.core = $routeParams.core;
-      params.wt = "json";
-      params.name = $scope.name;
-
-      ParamSet.get(params, callback, failure);
-
-      ///////
-
-      function callback(success) {
-        $scope.responseStatus = "success";
-        delete success.$promise;
-        delete success.$resolved;
-        $scope.response = JSON.stringify(success, null, '  ');
-      }
-
       function failure (failure) {
         $scope.responseStatus = failure;
       }

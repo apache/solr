@@ -24,36 +24,54 @@
                 <label for="paramsetName">
                     <a rel="help">Paramset Name</a>
                 </label>
-                <input ng-model="name" name="paramsetName" id="paramsetName" title="ParamSetName" placeholder="Name">
+                <select ng-model="name"
+                        ng-options="item for item in paramsetList"
+                        name="paramsetName"
+                        chosen
+                        style="width:100%"
+                        id="paramsetName"
+                        title="ParamSetName"
+                        data-placeholder="Please select paramset"></select>
             </div>
 
-            <button type="submit" ng-click="getParamsets()" id="get-paramset">Get Paramset</button>
+            <button type="submit" ng-click="getParamsets(true)" id="get-paramset">Get Paramset</button>
 
-            <fieldset class="Update Paramset">
-                <legend>Update Paramset</legend>
-                <div class="fieldset" id="paramsetContent-container">
-                    <label for="paramset">
-                        <a rel="help">Paramset(s)</a>
+            <div>
+                <form>
+                    <label>
+                        <input type="radio"
+                               value="sample"
+                               ng-model="switch.Data">
+                        Show sample json!
                     </label>
-                    <textarea ng-model="paramsetContent" name="paramsets" id="paramset" title="The Paramset" rows="10"
-                              cols="65" placeholder="{{placeholder}}"></textarea>
-                </div>
-
-                <div id="advanced">
-                    <div id="attribs">
-                        <div id="general-attribs">
-                            <label for="commitWithin">
-                                <a rel="help">Commit Within</a>
-                            </label>
-                            <input type="text" ng-model="commitWithin" id="commitWithin" value="1000" title="Commit Within (ms)">
-                            <label for="overwrite">
-                                <a rel="help">Overwrite</a>
-                            </label>
-                            <input ng-model="overwrite" type="text" id="overwrite" value="true" title="Overwrite">
-                        </div>
+                </form>
+                <div ng-switch="switch.Data">
+                    <div ng-switch-when="sample" id="just-line-break">
+                        {{placeholder}}
                     </div>
                 </div>
-            </fieldset>
+                <fieldset class="Update Paramset">
+                    <legend>Update Paramset</legend>
+                    <div class="fieldset" id="paramsetContent-container">
+                        <label for="paramset">
+                            <a rel="help">Paramset(s)</a>
+                        </label>
+                        <textarea ng-model="paramsetContent" name="paramsets" id="paramset" title="The Paramset" rows="10"
+                                  cols="65"></textarea>
+                    </div>
+
+                    <div id="advanced">
+                        <div id="attribs">
+                            <div id="general-attribs">
+                                <label for="overwrite">
+                                    <a rel="help">Overwrite</a>
+                                </label>
+                                <input ng-model="overwrite" type="text" id="overwrite" value="true" title="Overwrite">
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
 
             <button type="submit" ng-click="submit()" id="submit">Submit Paramset</button>
         </form>

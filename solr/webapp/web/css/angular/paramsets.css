@@ -17,6 +17,10 @@ limitations under the License.
 
 */
 
+#just-line-break {
+    white-space: pre-line;
+}
+
 #content #paramsets
 {
     background-image: url( ../../img/div.gif );
