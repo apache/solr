@@ -68,7 +68,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
   public void test() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
 
-    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    ClusterState clusterState = cloudClient.getClusterState();
     final DocRouter router =
         clusterState.getCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION).getRouter();
     Slice shard1 =
@@ -219,7 +219,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
   private void waitTillRecovered() throws Exception {
     for (int i = 0; i < 30; i++) {
       Thread.sleep(3000);
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
       zkStateReader.forceUpdateCollection("collection1");
       ClusterState clusterState = zkStateReader.getClusterState();
       DocCollection collection1 = clusterState.getCollection("collection1");

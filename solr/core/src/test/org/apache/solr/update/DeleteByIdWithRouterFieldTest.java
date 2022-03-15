@@ -33,10 +33,7 @@ import org.apache.solr.cloud.CloudInspectUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.After;
@@ -77,7 +74,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
 
     cluster.getSolrClient().setDefaultCollection(COLL);
 
-    ClusterState clusterState = cluster.getSolrClient().getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cluster.getSolrClient().getClusterState();
     for (Replica replica : clusterState.getCollection(COLL).getReplicas()) {
       clients.add(getHttpSolrClient(replica.getCoreUrl()));
     }
@@ -104,8 +101,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
 
   private void checkShardsConsistentNumFound() throws Exception {
     final SolrParams params = params("q", "*:*", "distrib", "false");
-    final DocCollection collection =
-        cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLL);
+    final DocCollection collection = cluster.getSolrClient().getClusterState().getCollection(COLL);
     for (Map.Entry<String, Slice> entry : collection.getActiveSlicesMap().entrySet()) {
       final String shardName = entry.getKey();
       final Slice slice = entry.getValue();
@@ -291,8 +287,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
    */
   public void testGlassBoxUpdateRequestRoutesToShards() throws Exception {
 
-    final DocCollection docCol =
-        cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLL);
+    final DocCollection docCol = cluster.getSolrClient().getClusterState().getCollection(COLL);
     // we don't need "real" urls for all replicas, just something we can use as lookup keys for
     // verification so we'll use the shard names as "leader urls"
     final Map<String, List<String>> urlMap =

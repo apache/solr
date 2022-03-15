@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.ltr.feature.FieldValueFeature;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.SolrFeature;
@@ -353,9 +352,8 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     response = create.process(solrCluster.getSolrClient());
 
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
-      fail("Could not create collection. Response" + response.toString());
+      fail("Could not create collection. Response" + response);
     }
-    ZkStateReader zkStateReader = solrCluster.getSolrClient().getZkStateReader();
     solrCluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
   }
 

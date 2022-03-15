@@ -241,6 +241,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   public abstract ClusterStateProvider getClusterStateProvider();
 
+  public ClusterState getClusterState() {
+    return getClusterStateProvider().getClusterState();
+  }
+
   protected abstract boolean wasCommError(Throwable t);
 
   @Override
@@ -273,23 +277,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     getLbClient().setRequestWriter(requestWriter);
   }
 
-  /**
-   * @return the zkHost value used to connect to zookeeper.
-   */
-  public String getZkHost() {
-    return assertZKStateProvider().zkHost;
-  }
-
-  public ZkStateReader getZkStateReader() {
-    if (getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
-      ZkClientClusterStateProvider provider =
-          (ZkClientClusterStateProvider) getClusterStateProvider();
-      getClusterStateProvider().connect();
-      return provider.zkStateReader;
-    }
-    throw new IllegalStateException("This has no Zk stateReader");
-  }
-
   /** Sets the default collection for request */
   public void setDefaultCollection(String collection) {
     this.defaultCollection = collection;
@@ -298,16 +285,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   /** Gets the default collection for request */
   public String getDefaultCollection() {
     return defaultCollection;
-  }
-
-  /** Set the connect timeout to the zookeeper ensemble in ms */
-  public void setZkConnectTimeout(int zkConnectTimeout) {
-    assertZKStateProvider().zkConnectTimeout = zkConnectTimeout;
-  }
-
-  /** Set the timeout to the zookeeper ensemble in ms */
-  public void setZkClientTimeout(int zkClientTimeout) {
-    assertZKStateProvider().zkClientTimeout = zkClientTimeout;
   }
 
   /** Gets whether direct updates are sent in parallel */

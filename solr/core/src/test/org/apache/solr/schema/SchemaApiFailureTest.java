@@ -40,7 +40,7 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, 2, 1) // _default configset
         .process(cluster.getSolrClient());
     cluster
-        .getSolrClient()
+        .getZkStateReader()
         .waitForState(
             COLLECTION,
             DEFAULT_TIMEOUT,

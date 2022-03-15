@@ -376,7 +376,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       while (!waitUntil.hasTimedOut()) {
         waitUntil.sleep(100);
         // this also refreshes our local var clusterState
-        clusterState = ccc.getSolrCloudManager().getClusterStateProvider().getClusterState();
+        clusterState = ccc.getSolrCloudManager().getClusterState();
         created =
             clusterState.hasCollection(targetCollection)
                 && clusterState.hasCollection(chkCollection);
@@ -661,10 +661,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
   private boolean maybeAbort(String collection) throws Exception {
     DocCollection coll =
-        ccc.getSolrCloudManager()
-            .getClusterStateProvider()
-            .getClusterState()
-            .getCollectionOrNull(collection);
+        ccc.getSolrCloudManager().getClusterState().getCollectionOrNull(collection);
     if (coll == null) {
       // collection no longer present - abort
       log.info("## Aborting - collection {} no longer present.", collection);
@@ -915,8 +912,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     if (daemonUrl != null) {
       killDaemon(daemonName, daemonUrl);
     }
-    ClusterState clusterState =
-        ccc.getSolrCloudManager().getClusterStateProvider().getClusterState();
+    ClusterState clusterState = ccc.getSolrCloudManager().getClusterState();
     NamedList<Object> cmdResults = new NamedList<>();
     if (createdTarget
         && !collection.equals(targetCollection)

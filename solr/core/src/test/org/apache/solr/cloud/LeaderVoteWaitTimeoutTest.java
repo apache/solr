@@ -140,7 +140,6 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     cluster.waitForJettyToStop(j);
 
     cluster
-        .getSolrClient()
         .getZkStateReader()
         .waitForState(
             collectionName,
@@ -301,13 +300,9 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   private void assertDocsExistInAllReplicas(
       List<Replica> notLeaders, String testCollectionName, int firstDocId, int lastDocId)
       throws Exception {
-    Replica leader =
-        cluster
-            .getSolrClient()
-            .getZkStateReader()
-            .getLeaderRetry(testCollectionName, "shard1", 10000);
+    Replica leader = cluster.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
     HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
-    List<HttpSolrClient> replicas = new ArrayList<HttpSolrClient>(notLeaders.size());
+    List<HttpSolrClient> replicas = new ArrayList<>(notLeaders.size());
 
     for (Replica r : notLeaders) {
       replicas.add(getHttpSolrClient(r, testCollectionName));

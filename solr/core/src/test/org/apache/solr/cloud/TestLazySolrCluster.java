@@ -48,7 +48,7 @@ public class TestLazySolrCluster extends SolrCloudTestCase {
     cloudClient.request(CollectionAdminRequest.createCollection(collection, "conf1", 2, 2));
     cluster.waitForActiveCollection(collection, 2, 4);
 
-    LazySolrCluster solrCluster = new LazySolrCluster(cluster.getSolrClient().getZkStateReader());
+    LazySolrCluster solrCluster = new LazySolrCluster(ZkStateReader.from(cloudClient));
     SimpleMap<SolrCollection> colls = solrCluster.collections();
 
     SolrCollection c = colls.get("testLazyCluster1");
@@ -70,7 +70,7 @@ public class TestLazySolrCluster extends SolrCloudTestCase {
     assertEquals(4, count[0]);
 
     assertEquals(5, solrCluster.nodes().size());
-    SolrZkClient zkClient = cloudClient.getZkStateReader().getZkClient();
+    SolrZkClient zkClient = ZkStateReader.from(cloudClient).getZkClient();
     zkClient.create(ZkStateReader.CONFIGS_ZKNODE + "/conf1/a", null, CreateMode.PERSISTENT, true);
     zkClient.create(
         ZkStateReader.CONFIGS_ZKNODE + "/conf1/a/aa1", new byte[1024], CreateMode.PERSISTENT, true);

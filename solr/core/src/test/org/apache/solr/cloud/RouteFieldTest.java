@@ -34,6 +34,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
@@ -121,15 +122,16 @@ public class RouteFieldTest extends SolrCloudTestCase {
   private void checkShardsHaveSameDocs() throws IOException, SolrServerException {
 
     CloudSolrClient client = cluster.getSolrClient();
+    ZkStateReader zkStateReader = ZkStateReader.from(client);
 
-    DocCollection docColl = client.getZkStateReader().getClusterState().getCollection(COLL_ROUTE);
+    DocCollection docColl = zkStateReader.getClusterState().getCollection(COLL_ROUTE);
     List<Replica> reps = new ArrayList<>(docColl.getSlice("shard1").getReplicas());
     String urlRouteShard1 = reps.get(0).get("base_url") + "/" + reps.get(0).get("core");
 
     reps = new ArrayList<>(docColl.getSlice("shard2").getReplicas());
     String urlRouteShard2 = reps.get(0).get("base_url") + "/" + reps.get(0).get("core");
 
-    docColl = client.getZkStateReader().getClusterState().getCollection(COLL_ID);
+    docColl = zkStateReader.getClusterState().getCollection(COLL_ID);
     reps = new ArrayList<>(docColl.getSlice("shard1").getReplicas());
     String urlIdShard1 = reps.get(0).get("base_url") + "/" + reps.get(0).get("core");
 
