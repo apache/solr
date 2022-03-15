@@ -142,13 +142,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       boolean isCoordinator = NodeRoles.MODE_ON.equals(coreService.getService().getCoreContainer().nodeRoles.getRoleMode(NodeRoles.Role.COORDINATOR));
       solrCallFactory = isCoordinator ?
               new CoordinatorHttpSolrCall.Factory()
-              : (filter, path, cores, request, response, retry) -> {
-        if (isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
-          return new V2HttpCall(this, cores, request, response, false);
-        } else {
-          return new HttpSolrCall(this, cores, request, response, retry);
-        }
-      };
+              : new HttpSolrCallFactory() {};
       if (log.isTraceEnabled()) {
         log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
       }
@@ -402,8 +396,14 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
    * internal API
    */
   public interface HttpSolrCallFactory {
-     public HttpSolrCall createInstance (SolrDispatchFilter filter, String path,
+    default HttpSolrCall createInstance (SolrDispatchFilter filter, String path,
                                          CoreContainer cores, HttpServletRequest request,
-                                         HttpServletResponse response, boolean retry);
+                                         HttpServletResponse response, boolean retry){
+      if (filter.isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
+        return new V2HttpCall(filter, cores, request, response, false);
+      } else {
+        return new HttpSolrCall(filter, cores, request, response, retry);
+      }
+    }
   }
 }
