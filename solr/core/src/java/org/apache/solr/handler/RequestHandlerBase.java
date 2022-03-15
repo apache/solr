@@ -195,6 +195,7 @@ public abstract class RequestHandlerBase
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
+
     Timer.Context timer = metrics.requestTimes.time();
     try {
       TestInjection.injectLeaderTragedy(req.getCore());
