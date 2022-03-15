@@ -25,9 +25,9 @@ public class FiltersQParserPlugin extends QParserPlugin {
   public static final String NAME = "filters";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     QParser parser = new FiltersQParser(qstr, localParams, params, req);
     return parser;
   }
 }
-

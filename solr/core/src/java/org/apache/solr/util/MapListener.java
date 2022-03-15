@@ -17,13 +17,13 @@
 package org.apache.solr.util;
 
 import com.google.common.collect.ForwardingMap;
-
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * Wraps another map, keeping track of each key that was seen via {@link #get(Object)} or {@link #remove(Object)}.
+ * Wraps another map, keeping track of each key that was seen via {@link #get(Object)} or {@link
+ * #remove(Object)}.
  */
 @SuppressWarnings("unchecked")
 public class MapListener<K, V> extends ForwardingMap<K, V> {

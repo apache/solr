@@ -39,12 +39,11 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
-
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.PushBackStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.common.util.SuppressForbidden;
 
 class ResultSetImpl implements ResultSet {
   private final StatementImpl statement;
@@ -65,7 +64,8 @@ class ResultSetImpl implements ResultSet {
       this.solrStream = new PushBackStream(solrStream);
 
       StreamContext context = new StreamContext();
-      context.setSolrClientCache(((ConnectionImpl)this.statement.getConnection()).getSolrClientCache());
+      context.setSolrClientCache(
+          ((ConnectionImpl) this.statement.getConnection()).getSolrClientCache());
       this.solrStream.setStreamContext(context);
 
       this.solrStream.open();
@@ -73,7 +73,7 @@ class ResultSetImpl implements ResultSet {
       this.metadataTuple = this.solrStream.read();
 
       Object isMetadata = this.metadataTuple.get("isMetadata");
-      if(isMetadata == null || !isMetadata.equals(true)) {
+      if (isMetadata == null || !isMetadata.equals(true)) {
         throw new RuntimeException("First tuple is not a metadata tuple");
       }
 
@@ -95,7 +95,7 @@ class ResultSetImpl implements ResultSet {
   }
 
   private void checkClosed() throws SQLException {
-    if(isClosed()) {
+    if (isClosed()) {
       throw new SQLException("ResultSet is closed.");
     }
   }
@@ -105,12 +105,12 @@ class ResultSetImpl implements ResultSet {
     checkClosed();
 
     try {
-      if(done) {
+      if (done) {
         return false;
       }
 
       tuple = this.solrStream.read();
-      if(tuple.EOF) {
+      if (tuple.EOF) {
         done = true;
         return false;
       } else {
@@ -224,7 +224,7 @@ class ResultSetImpl implements ResultSet {
     checkClosed();
 
     String value = tuple.getString(columnLabel);
-    if(value.equals(String.valueOf((Object)null))) {
+    if (value.equals(String.valueOf((Object) null))) {
       this.wasLastValueNull = true;
       return null;
     }
@@ -237,11 +237,11 @@ class ResultSetImpl implements ResultSet {
     checkClosed();
 
     Object value = getObject(columnLabel);
-    if(value == null) {
+    if (value == null) {
       this.wasLastValueNull = true;
       return false;
     }
-    return (boolean)value;
+    return (boolean) value;
   }
 
   @Override
@@ -249,8 +249,8 @@ class ResultSetImpl implements ResultSet {
     this.wasLastValueNull = false;
     checkClosed();
 
-    Number number = (Number)getObject(columnLabel);
-    if(number == null) {
+    Number number = (Number) getObject(columnLabel);
+    if (number == null) {
       this.wasLastValueNull = true;
       return 0;
     } else {
@@ -263,8 +263,8 @@ class ResultSetImpl implements ResultSet {
     this.wasLastValueNull = false;
     checkClosed();
 
-    Number number = (Number)getObject(columnLabel);
-    if(number == null) {
+    Number number = (Number) getObject(columnLabel);
+    if (number == null) {
       this.wasLastValueNull = true;
       return 0;
     } else {
@@ -277,8 +277,8 @@ class ResultSetImpl implements ResultSet {
     this.wasLastValueNull = false;
     checkClosed();
 
-    Number number = (Number)getObject(columnLabel);
-    if(number == null) {
+    Number number = (Number) getObject(columnLabel);
+    if (number == null) {
       this.wasLastValueNull = true;
       return 0;
     } else {
@@ -291,8 +291,8 @@ class ResultSetImpl implements ResultSet {
     this.wasLastValueNull = false;
     checkClosed();
 
-    Number number = (Number)getObject(columnLabel);
-    if(number == null) {
+    Number number = (Number) getObject(columnLabel);
+    if (number == null) {
       this.wasLastValueNull = true;
       return 0L;
     } else {
@@ -305,8 +305,8 @@ class ResultSetImpl implements ResultSet {
     this.wasLastValueNull = false;
     checkClosed();
 
-    Number number = (Number)getObject(columnLabel);
-    if(number == null) {
+    Number number = (Number) getObject(columnLabel);
+    if (number == null) {
       this.wasLastValueNull = true;
       return 0.0F;
     } else {
@@ -319,8 +319,8 @@ class ResultSetImpl implements ResultSet {
     this.wasLastValueNull = false;
     checkClosed();
 
-    Number number = (Number)getObject(columnLabel);
-    if(number == null) {
+    Number number = (Number) getObject(columnLabel);
+    if (number == null) {
       this.wasLastValueNull = true;
       return 0.0D;
     } else {
@@ -339,11 +339,11 @@ class ResultSetImpl implements ResultSet {
     checkClosed();
 
     Object value = getObject(columnLabel);
-    if(value == null) {
+    if (value == null) {
       this.wasLastValueNull = true;
       return null;
     }
-    return (byte[])value;
+    return (byte[]) value;
   }
 
   @Override
@@ -352,11 +352,11 @@ class ResultSetImpl implements ResultSet {
     checkClosed();
 
     Object value = getObject(columnLabel);
-    if(value == null) {
+    if (value == null) {
       this.wasLastValueNull = true;
       return null;
     }
-    return (Date)value;
+    return (Date) value;
   }
 
   @Override
@@ -365,11 +365,11 @@ class ResultSetImpl implements ResultSet {
     checkClosed();
 
     Object value = getObject(columnLabel);
-    if(value == null) {
+    if (value == null) {
       this.wasLastValueNull = true;
       return null;
     }
-    return (Time)value;
+    return (Time) value;
   }
 
   @Override
@@ -378,11 +378,11 @@ class ResultSetImpl implements ResultSet {
     checkClosed();
 
     Object value = getObject(columnLabel);
-    if(value == null) {
+    if (value == null) {
       this.wasLastValueNull = true;
       return null;
     }
-    return (Timestamp)value;
+    return (Timestamp) value;
   }
 
   @Override
@@ -402,7 +402,7 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    if(isClosed()) {
+    if (isClosed()) {
       throw new SQLException("Statement is closed.");
     }
 
@@ -411,7 +411,7 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public void clearWarnings() throws SQLException {
-    if(isClosed()) {
+    if (isClosed()) {
       throw new SQLException("Statement is closed.");
     }
 
@@ -441,7 +441,7 @@ class ResultSetImpl implements ResultSet {
     checkClosed();
 
     Object value = this.tuple.get(columnLabel);
-    if(value == null) {
+    if (value == null) {
       this.wasLastValueNull = true;
       return null;
     }
@@ -474,11 +474,11 @@ class ResultSetImpl implements ResultSet {
     checkClosed();
 
     Object value = this.getObject(columnLabel);
-    if(value == null) {
+    if (value == null) {
       this.wasLastValueNull = true;
       return null;
     }
-    return (BigDecimal)value;
+    return (BigDecimal) value;
   }
 
   @Override
@@ -569,9 +569,9 @@ class ResultSetImpl implements ResultSet {
   public void setFetchDirection(int direction) throws SQLException {
     checkClosed();
 
-    if(direction != ResultSet.FETCH_FORWARD) {
-      throw new SQLException("Direction must be FETCH_FORWARD since ResultSet " +
-          "type is TYPE_FORWARD_ONLY");
+    if (direction != ResultSet.FETCH_FORWARD) {
+      throw new SQLException(
+          "Direction must be FETCH_FORWARD since ResultSet " + "type is TYPE_FORWARD_ONLY");
     }
   }
 
@@ -586,7 +586,7 @@ class ResultSetImpl implements ResultSet {
   public void setFetchSize(int rows) throws SQLException {
     checkClosed();
 
-    if(rows < 0) {
+    if (rows < 0) {
       throw new SQLException("Rows must be >= 0");
     }
   }
@@ -798,12 +798,14 @@ class ResultSetImpl implements ResultSet {
   }
 
   @Override
-  public void updateBinaryStream(String columnLabel, InputStream x, int length) throws SQLException {
+  public void updateBinaryStream(String columnLabel, InputStream x, int length)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void updateCharacterStream(String columnLabel, Reader reader, int length) throws SQLException {
+  public void updateCharacterStream(String columnLabel, Reader reader, int length)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 
@@ -885,7 +887,6 @@ class ResultSetImpl implements ResultSet {
   @Override
   public Object getObject(String columnLabel, Map<String, Class<?>> map) throws SQLException {
     throw new UnsupportedOperationException();
-
   }
 
   @Override
@@ -1094,7 +1095,8 @@ class ResultSetImpl implements ResultSet {
   }
 
   @Override
-  public void updateNCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
+  public void updateNCharacterStream(String columnLabel, Reader reader, long length)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 
@@ -1114,27 +1116,32 @@ class ResultSetImpl implements ResultSet {
   }
 
   @Override
-  public void updateAsciiStream(String columnLabel, InputStream x, long length) throws SQLException {
+  public void updateAsciiStream(String columnLabel, InputStream x, long length)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void updateBinaryStream(String columnLabel, InputStream x, long length) throws SQLException {
+  public void updateBinaryStream(String columnLabel, InputStream x, long length)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void updateCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
+  public void updateCharacterStream(String columnLabel, Reader reader, long length)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void updateBlob(int columnIndex, InputStream inputStream, long length) throws SQLException {
+  public void updateBlob(int columnIndex, InputStream inputStream, long length)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void updateBlob(String columnLabel, InputStream inputStream, long length) throws SQLException {
+  public void updateBlob(String columnLabel, InputStream inputStream, long length)
+      throws SQLException {
     throw new UnsupportedOperationException();
   }
 

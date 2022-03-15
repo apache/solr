@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -58,7 +57,6 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   SolrZkClient defaultClient;
   private CloudSolrClient solrClient;
 
-
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -83,34 +81,37 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     defaultClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     defaultClient.makePath(PATH, true);
 
-    aclClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
-      @Override
-      protected ZkACLProvider createZkACLProvider() {
-        return new DefaultZkACLProvider() {
+    aclClient =
+        new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
           @Override
-          protected List<ACL> createGlobalACLsToAdd() {
-            try {
-              Id id = new Id(SCHEME, DigestAuthenticationProvider.generateDigest(AUTH));
-              return Collections.singletonList(new ACL(ZooDefs.Perms.ALL, id));
-            } catch (NoSuchAlgorithmException e) {
-              throw new RuntimeException(e);
-            }
+          protected ZkACLProvider createZkACLProvider() {
+            return new DefaultZkACLProvider() {
+              @Override
+              protected List<ACL> createGlobalACLsToAdd() {
+                try {
+                  Id id = new Id(SCHEME, DigestAuthenticationProvider.generateDigest(AUTH));
+                  return Collections.singletonList(new ACL(ZooDefs.Perms.ALL, id));
+                } catch (NoSuchAlgorithmException e) {
+                  throw new RuntimeException(e);
+                }
+              }
+            };
           }
         };
-      }
-    };
 
-    credentialsClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
-      @Override
-      protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
-        return new DefaultZkCredentialsProvider() {
+    credentialsClient =
+        new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
           @Override
-          protected Collection<ZkCredentials> createCredentials() {
-            return Collections.singleton(new ZkCredentials(SCHEME, AUTH.getBytes(StandardCharsets.UTF_8)));
+          protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
+            return new DefaultZkCredentialsProvider() {
+              @Override
+              protected Collection<ZkCredentials> createCredentials() {
+                return Collections.singleton(
+                    new ZkCredentials(SCHEME, AUTH.getBytes(StandardCharsets.UTF_8)));
+              }
+            };
           }
         };
-      }
-    };
   }
 
   @Override
@@ -124,23 +125,34 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     super.tearDown();
   }
 
-
   @Test
   public void testSimpleUpdateACLs() throws KeeperException, InterruptedException {
-    assertTrue("Initial create was in secure mode; please check the test", canRead(defaultClient, PATH));
-    assertTrue("Credentialed client should always be able to read", canRead(credentialsClient, PATH));
+    assertTrue(
+        "Initial create was in secure mode; please check the test", canRead(defaultClient, PATH));
+    assertTrue(
+        "Credentialed client should always be able to read", canRead(credentialsClient, PATH));
 
     // convert to secure
     aclClient.updateACLs(ROOT);
-    assertFalse("Default client should not be able to read root in secure mode", canRead(defaultClient, ROOT));
-    assertFalse("Default client should not be able to read children in secure mode", canRead(defaultClient, PATH));
-    assertTrue("Credentialed client should always be able to read root in secure mode", canRead(credentialsClient, ROOT));
-    assertTrue("Credentialed client should always be able to read in secure mode", canRead(credentialsClient, PATH));
+    assertFalse(
+        "Default client should not be able to read root in secure mode",
+        canRead(defaultClient, ROOT));
+    assertFalse(
+        "Default client should not be able to read children in secure mode",
+        canRead(defaultClient, PATH));
+    assertTrue(
+        "Credentialed client should always be able to read root in secure mode",
+        canRead(credentialsClient, ROOT));
+    assertTrue(
+        "Credentialed client should always be able to read in secure mode",
+        canRead(credentialsClient, PATH));
 
     // convert to non-secure
     credentialsClient.updateACLs(ROOT);
-    assertTrue("Default client should work again after clearing ACLs", canRead(defaultClient, PATH));
-    assertTrue("Credentialed client should always be able to read", canRead(credentialsClient, PATH));
+    assertTrue(
+        "Default client should work again after clearing ACLs", canRead(defaultClient, PATH));
+    assertTrue(
+        "Credentialed client should always be able to read", canRead(credentialsClient, PATH));
 
     // convert a subtree to secure
     aclClient.updateACLs("/collections");
@@ -154,20 +166,22 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     AtomicInteger calls = new AtomicInteger(0);
     Semaphore semA = new Semaphore(0);
     Semaphore semB = new Semaphore(0);
-    Watcher watcherA = new Watcher() {
-      @Override
-      public void process(WatchedEvent event) {
-        calls.getAndIncrement();
-        semA.release();
-      }
-    };
-    Watcher watcherB = new Watcher() {
-      @Override
-      public void process(WatchedEvent event) {
-        calls.getAndDecrement();
-        semB.release();
-      }
-    };
+    Watcher watcherA =
+        new Watcher() {
+          @Override
+          public void process(WatchedEvent event) {
+            calls.getAndIncrement();
+            semA.release();
+          }
+        };
+    Watcher watcherB =
+        new Watcher() {
+          @Override
+          public void process(WatchedEvent event) {
+            calls.getAndDecrement();
+            semB.release();
+          }
+        };
     Watcher wrapped1A = defaultClient.wrapWatcher(watcherA);
     Watcher wrapped2A = defaultClient.wrapWatcher(watcherA);
     Watcher wrappedB = defaultClient.wrapWatcher(watcherB);
@@ -179,15 +193,21 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(getSaferTestName(), "_default", 1, 1)
         .process(solrClient);
 
-    CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"foo", "bar")
+    CollectionAdminRequest.setCollectionProperty(getSaferTestName(), "foo", "bar")
         .process(solrClient);
 
-    //Thread.sleep(600000);
+    // Thread.sleep(600000);
 
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null,true);
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped2A, null,true);
+    ZkStateReader.from(solrClient)
+        .getZkClient()
+        .getData(
+            "/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null, true);
+    ZkStateReader.from(solrClient)
+        .getZkClient()
+        .getData(
+            "/collections/" + getSaferTestName() + "/collectionprops.json", wrapped2A, null, true);
 
-    CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bam")
+    CollectionAdminRequest.setCollectionProperty(getSaferTestName(), "baz", "bam")
         .process(solrClient);
 
     assertTrue("Watch A didn't trigger", semA.tryAcquire(5, TimeUnit.SECONDS));
@@ -197,10 +217,16 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     }
     assertEquals(1, calls.get()); // same wrapped watch set twice, only invoked once
 
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null,true);
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrappedB, null,true);
+    ZkStateReader.from(solrClient)
+        .getZkClient()
+        .getData(
+            "/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null, true);
+    ZkStateReader.from(solrClient)
+        .getZkClient()
+        .getData(
+            "/collections/" + getSaferTestName() + "/collectionprops.json", wrappedB, null, true);
 
-    CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bang")
+    CollectionAdminRequest.setCollectionProperty(getSaferTestName(), "baz", "bang")
         .process(solrClient);
 
     assertTrue("Watch A didn't trigger", semA.tryAcquire(5, TimeUnit.SECONDS));
@@ -212,7 +238,8 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     assertEquals(1, calls.get()); // offsetting watches, no change
   }
 
-  private static boolean canRead(SolrZkClient zkClient, String path) throws KeeperException, InterruptedException {
+  private static boolean canRead(SolrZkClient zkClient, String path)
+      throws KeeperException, InterruptedException {
     try {
       zkClient.getData(path, null, null, true);
       return true;
@@ -223,7 +250,8 @@ public class SolrZkClientTest extends SolrCloudTestCase {
 
   @Test
   public void getConfig() {
-    // As the embedded ZK is hardcoded to standalone, there is no way to test actual config data here
+    // As the embedded ZK is hardcoded to standalone, there is no way to test actual config data
+    // here
     assertEquals("", defaultClient.getConfig());
   }
 
@@ -235,5 +263,4 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     SolrZkClient.checkInterrupted(new InterruptedException());
     assertTrue(Thread.currentThread().isInterrupted());
   }
-
 }

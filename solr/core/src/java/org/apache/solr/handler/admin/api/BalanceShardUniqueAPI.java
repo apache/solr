@@ -16,6 +16,14 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
@@ -23,27 +31,19 @@ import org.apache.solr.client.solrj.request.beans.BalanceShardUniquePayload;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
-
 /**
- * V2 API for insuring that a particular property is distributed evenly amongst the physical nodes comprising a collection.
+ * V2 API for insuring that a particular property is distributed evenly amongst the physical nodes
+ * comprising a collection.
  *
- * The new API (POST /v2/collections/collectionName {'balance-shard-unique': {...}}) is analogous to the v1
- * /admin/collections?action=BALANCESHARDUNIQUE command.
+ * <p>The new API (POST /v2/collections/collectionName {'balance-shard-unique': {...}}) is analogous
+ * to the v1 /admin/collections?action=BALANCESHARDUNIQUE command.
  *
  * @see BalanceShardUniquePayload
  */
 @EndPoint(
-        path = {"/c/{collection}", "/collections/{collection}"},
-        method = POST,
-        permission = COLL_EDIT_PERM)
+    path = {"/c/{collection}", "/collections/{collection}"},
+    method = POST,
+    permission = COLL_EDIT_PERM)
 public class BalanceShardUniqueAPI {
   private static final String V2_BALANCE_SHARD_UNIQUE_CMD = "balance-shard-unique";
 

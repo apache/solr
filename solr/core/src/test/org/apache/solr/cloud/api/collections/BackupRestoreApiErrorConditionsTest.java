@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import java.io.File;
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -26,12 +28,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.lang.invoke.MethodHandles;
-
-
 /**
- * Integration test verifying particular errors are reported correctly by the Collection-level backup/restore APIs
+ * Integration test verifying particular errors are reported correctly by the Collection-level
+ * backup/restore APIs
  */
 public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
   // TODO could these be unit tests somehow and still validate the response users see with certainty
@@ -58,22 +57,25 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
 
     String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML;
     String local =
-            "<backup>" +
-                    "<repository  name=\"local\" class=\"org.apache.solr.core.backup.repository.LocalFileSystemRepository\">" +
-                    "</repository>" +
-                    "</backup>";
+        "<backup>"
+            + "<repository  name=\"local\" class=\"org.apache.solr.core.backup.repository.LocalFileSystemRepository\">"
+            + "</repository>"
+            + "</backup>";
     solrXml = solrXml.replace("</solr>", local + "</solr>");
 
-    configureCluster(NUM_SHARDS)// nodes
-            .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-            .withSolrXml(solrXml)
-            .configure();
+    configureCluster(NUM_SHARDS) // nodes
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withSolrXml(solrXml)
+        .configure();
 
-    final RequestStatusState createState = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", NUM_SHARDS, NUM_REPLICAS)
+    final RequestStatusState createState =
+        CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", NUM_SHARDS, NUM_REPLICAS)
             .processAndWait(cluster.getSolrClient(), ASYNC_COMMAND_WAIT_PERIOD_MILLIS);
     assertEquals(RequestStatusState.COMPLETED, createState);
 
-    final RequestStatusState backupState = CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
+    final RequestStatusState backupState =
+        CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
             .setRepositoryName(VALID_REPOSITORY_NAME)
             .setLocation(validBackupLocation)
             .processAndWait(cluster.getSolrClient(), ASYNC_COMMAND_WAIT_PERIOD_MILLIS);
@@ -86,83 +88,117 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testBackupOperationsReportErrorWhenUnknownBackupRepositoryRequested() throws Exception {
+  public void testBackupOperationsReportErrorWhenUnknownBackupRepositoryRequested()
+      throws Exception {
     // Check message for create-backup
-    Exception e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
-              .setRepositoryName("some-nonexistent-repo-name")
-              .setLocation(validBackupLocation)
-              .process(cluster.getSolrClient());
-    });
-    assertTrue(e.getMessage().contains("Could not find a backup repository with name some-nonexistent-repo-name"));
+    Exception e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
+                  .setRepositoryName("some-nonexistent-repo-name")
+                  .setLocation(validBackupLocation)
+                  .process(cluster.getSolrClient());
+            });
+    assertTrue(
+        e.getMessage()
+            .contains("Could not find a backup repository with name some-nonexistent-repo-name"));
 
     // Check message for list-backup
-    e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.listBackup(BACKUP_NAME)
-              .setBackupLocation(validBackupLocation)
-              .setBackupRepository("some-nonexistent-repo-name")
-              .process(cluster.getSolrClient());
-    });
-    assertTrue(e.getMessage().contains("Could not find a backup repository with name some-nonexistent-repo-name"));
+    e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.listBackup(BACKUP_NAME)
+                  .setBackupLocation(validBackupLocation)
+                  .setBackupRepository("some-nonexistent-repo-name")
+                  .process(cluster.getSolrClient());
+            });
+    assertTrue(
+        e.getMessage()
+            .contains("Could not find a backup repository with name some-nonexistent-repo-name"));
 
     // Check message for delete-backup
-    e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
-              .setLocation(validBackupLocation)
-              .setRepositoryName("some-nonexistent-repo-name")
-              .process(cluster.getSolrClient());
-    });
-    assertTrue(e.getMessage().contains("Could not find a backup repository with name some-nonexistent-repo-name"));
+    e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
+                  .setLocation(validBackupLocation)
+                  .setRepositoryName("some-nonexistent-repo-name")
+                  .process(cluster.getSolrClient());
+            });
+    assertTrue(
+        e.getMessage()
+            .contains("Could not find a backup repository with name some-nonexistent-repo-name"));
 
     // Check message for restore-backup
-    e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.restoreCollection(COLLECTION_NAME + "_restored", BACKUP_NAME)
-              .setLocation(validBackupLocation)
-              .setRepositoryName("some-nonexistent-repo-name")
-              .process(cluster.getSolrClient());
-    });
-    assertTrue(e.getMessage().contains("Could not find a backup repository with name some-nonexistent-repo-name"));
+    e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.restoreCollection(COLLECTION_NAME + "_restored", BACKUP_NAME)
+                  .setLocation(validBackupLocation)
+                  .setRepositoryName("some-nonexistent-repo-name")
+                  .process(cluster.getSolrClient());
+            });
+    assertTrue(
+        e.getMessage()
+            .contains("Could not find a backup repository with name some-nonexistent-repo-name"));
   }
 
   @Test
   public void testBackupOperationsReportErrorWhenNonexistentLocationProvided() {
     // Check message for create-backup
-    Exception e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
-            .setRepositoryName(VALID_REPOSITORY_NAME)
-            .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
-            .process(cluster.getSolrClient());
-    });
+    Exception e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
+                  .setRepositoryName(VALID_REPOSITORY_NAME)
+                  .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("specified location"));
     assertTrue(e.getMessage().contains("does not exist"));
 
     // Check message for list-backup
-    e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.listBackup(BACKUP_NAME)
-              .setBackupLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
-              .setBackupRepository(VALID_REPOSITORY_NAME)
-              .process(cluster.getSolrClient());
-    });
+    e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.listBackup(BACKUP_NAME)
+                  .setBackupLocation(
+                      validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+                  .setBackupRepository(VALID_REPOSITORY_NAME)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("specified location"));
     assertTrue(e.getMessage().contains("does not exist"));
 
     // Check message for delete-backup
-    e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
-              .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
-              .setRepositoryName(VALID_REPOSITORY_NAME)
-              .process(cluster.getSolrClient());
-    });
+    e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
+                  .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+                  .setRepositoryName(VALID_REPOSITORY_NAME)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("specified location"));
     assertTrue(e.getMessage().contains("does not exist"));
 
     // Check message for restore-backup
-    e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.restoreCollection(COLLECTION_NAME + "_restored", BACKUP_NAME)
-              .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
-              .setRepositoryName(VALID_REPOSITORY_NAME)
-              .process(cluster.getSolrClient());
-    });
+    e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.restoreCollection(COLLECTION_NAME + "_restored", BACKUP_NAME)
+                  .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+                  .setRepositoryName(VALID_REPOSITORY_NAME)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("specified location"));
     assertTrue(e.getMessage().contains("does not exist"));
   }
@@ -170,7 +206,8 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
   @Test
   public void testListAndDeleteFailOnOldBackupLocations() throws Exception {
     final String nonIncrementalBackupLocation = createTempDir().toAbsolutePath().toString();
-    final RequestStatusState backupState = CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
+    final RequestStatusState backupState =
+        CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
             .setRepositoryName(VALID_REPOSITORY_NAME)
             .setLocation(nonIncrementalBackupLocation)
             .setIncremental(false)
@@ -178,34 +215,49 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     assertEquals(RequestStatusState.COMPLETED, backupState);
 
     // Check message for list-backup
-    Exception e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.listBackup(BACKUP_NAME)
-              .setBackupLocation(nonIncrementalBackupLocation)
-              .setBackupRepository(VALID_REPOSITORY_NAME)
-              .process(cluster.getSolrClient());
-    });
+    Exception e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.listBackup(BACKUP_NAME)
+                  .setBackupLocation(nonIncrementalBackupLocation)
+                  .setBackupRepository(VALID_REPOSITORY_NAME)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("The backup name [backup_name] at location"));
-    assertTrue(e.getMessage().contains("holds a non-incremental (legacy) backup, but backup-listing is only supported on incremental backups"));
+    assertTrue(
+        e.getMessage()
+            .contains(
+                "holds a non-incremental (legacy) backup, but backup-listing is only supported on incremental backups"));
 
     // Check message for delete-backup
-    e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
-              .setLocation(nonIncrementalBackupLocation)
-              .setRepositoryName(VALID_REPOSITORY_NAME)
-              .process(cluster.getSolrClient());
-    });
+    e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
+                  .setLocation(nonIncrementalBackupLocation)
+                  .setRepositoryName(VALID_REPOSITORY_NAME)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("The backup name [backup_name] at location"));
-    assertTrue(e.getMessage().contains("holds a non-incremental (legacy) backup, but backup-deletion is only supported on incremental backups"));
+    assertTrue(
+        e.getMessage()
+            .contains(
+                "holds a non-incremental (legacy) backup, but backup-deletion is only supported on incremental backups"));
   }
 
   @Test
   public void testDeleteFailsOnNonexistentBackupId() {
-    Exception e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 123)
-              .setLocation(validBackupLocation)
-              .setRepositoryName(VALID_REPOSITORY_NAME)
-              .process(cluster.getSolrClient());
-    });
+    Exception e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 123)
+                  .setLocation(validBackupLocation)
+                  .setRepositoryName(VALID_REPOSITORY_NAME)
+                  .process(cluster.getSolrClient());
+            });
     assertTrue(e.getMessage().contains("Backup ID [123] not found; cannot be deleted"));
   }
 }

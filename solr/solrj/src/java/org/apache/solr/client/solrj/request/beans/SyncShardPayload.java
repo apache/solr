@@ -19,7 +19,5 @@ package org.apache.solr.client.solrj.request.beans;
 
 import org.apache.solr.common.util.ReflectMapWriter;
 
-/**
- * Empty payload for the /v2/collections/collName/shards/shardName {"sync-shard": {}} API.
- */
-public class SyncShardPayload implements ReflectMapWriter { }
+/** Empty payload for the /v2/collections/collName/shards/shardName {"sync-shard": {}} API. */
+public class SyncShardPayload implements ReflectMapWriter {}

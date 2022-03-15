@@ -26,55 +26,42 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.filestore.PackageStoreAPI.MetaData;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
-/**
- * The interface to be implemented by any package store provider
- * * @lucene.experimental
- */
+/** The interface to be implemented by any package store provider * @lucene.experimental */
 public interface PackageStore {
 
   /**
-   * Store a file into the filestore. This should ensure that it is replicated
-   * across all nodes in the cluster
+   * Store a file into the filestore. This should ensure that it is replicated across all nodes in
+   * the cluster
    */
   void put(FileEntry fileEntry) throws IOException;
 
-  /**
-   * read file content from a given path
-   */
+  /** read file content from a given path */
   void get(String path, Consumer<FileEntry> filecontent, boolean getMissing) throws IOException;
 
-  /**
-   * Fetch a resource from another node
-   * internal API
-   */
+  /** Fetch a resource from another node internal API */
   boolean fetch(String path, String from);
 
   List<FileDetails> list(String path, Predicate<String> predicate);
 
-  /** Sync a local file to all nodes. All the nodes are asked to pull the file from this node
-   */
+  /** Sync a local file to all nodes. All the nodes are asked to pull the file from this node */
   void syncToAllNodes(String path) throws IOException;
 
-  /**
-   * get the real path on filesystem
-   */
+  /** get the real path on filesystem */
   Path getRealpath(String path);
 
-  /**
-   * The type of the resource
-   */
+  /** The type of the resource */
   FileType getType(String path, boolean fetchMissing);
 
-  /**Get all the keys in the package store. The data is a .DER file content
-   */
-  Map<String,byte[]> getKeys() throws IOException;
+  /** Get all the keys in the package store. The data is a .DER file content */
+  Map<String, byte[]> getKeys() throws IOException;
 
-  /**Refresh the files in a path. May be this node does not have all files
+  /**
+   * Refresh the files in a path. May be this node does not have all files
+   *
    * @param path the path to be refreshed.
    */
   void refresh(String path);
@@ -83,7 +70,6 @@ public interface PackageStore {
   void delete(String path);
 
   /** Delete file from local file system */
-
   void deleteLocal(String path);
 
   public class FileEntry {
@@ -101,31 +87,26 @@ public interface PackageStore {
       return path;
     }
 
-
     public InputStream getInputStream() {
       if (buf != null) return new ByteBufferInputStream(buf);
       return null;
-
     }
 
-    /**
-     * For very large files , only a stream would be available
-     * This method would return null;
-     */
+    /** For very large files , only a stream would be available This method would return null; */
     public ByteBuffer getBuffer() {
       return buf;
-
     }
 
     public MetaData getMetaData() {
       return meta;
     }
-
-
   }
 
   enum FileType {
-    FILE, DIRECTORY, NOFILE, METADATA
+    FILE,
+    DIRECTORY,
+    NOFILE,
+    METADATA
   }
 
   interface FileDetails extends MapWriter {
@@ -137,9 +118,5 @@ public interface PackageStore {
     long size();
 
     boolean isDir();
-
-
   }
-
-
 }

@@ -17,16 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import org.apache.solr.api.Command;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.RequestCoreRecoveryPayload;
-import org.apache.solr.handler.admin.CoreAdminHandler;
-
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.CORE;
@@ -34,33 +24,43 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQU
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.PayloadObj;
+import org.apache.solr.client.solrj.request.beans.RequestCoreRecoveryPayload;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+
 /**
  * Internal V2 API triggering recovery on a core.
  *
- * Only valid in SolrCloud mode.  This API (POST /v2/cores/coreName {'request-recovery': {}}) is analogous to the v1
- * /admin/cores?action=REQUESTRECOVERY command.
+ * <p>Only valid in SolrCloud mode. This API (POST /v2/cores/coreName {'request-recovery': {}}) is
+ * analogous to the v1 /admin/cores?action=REQUESTRECOVERY command.
  *
  * @see RequestCoreRecoveryPayload
  */
-@EndPoint(path = {"/cores/{core}"},
-        method = POST,
-        permission = CORE_EDIT_PERM)
+@EndPoint(
+    path = {"/cores/{core}"},
+    method = POST,
+    permission = CORE_EDIT_PERM)
 public class RequestCoreRecoveryAPI {
-    public static final String V2_REQUEST_RECOVERY_CMD = "request-recovery";
+  public static final String V2_REQUEST_RECOVERY_CMD = "request-recovery";
 
-    private final CoreAdminHandler coreAdminHandler;
+  private final CoreAdminHandler coreAdminHandler;
 
-    public RequestCoreRecoveryAPI(CoreAdminHandler coreAdminHandler) {
-        this.coreAdminHandler = coreAdminHandler;
-    }
+  public RequestCoreRecoveryAPI(CoreAdminHandler coreAdminHandler) {
+    this.coreAdminHandler = coreAdminHandler;
+  }
 
-    @Command(name = V2_REQUEST_RECOVERY_CMD)
-    public void requestCoreRecovery(PayloadObj<RequestCoreRecoveryPayload> obj) throws Exception {
-        final RequestCoreRecoveryPayload v2Body = obj.get();
-        final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
-        v1Params.put(ACTION, REQUESTRECOVERY.name().toLowerCase(Locale.ROOT));
-        v1Params.put(CORE, obj.getRequest().getPathTemplateValues().get("core"));
+  @Command(name = V2_REQUEST_RECOVERY_CMD)
+  public void requestCoreRecovery(PayloadObj<RequestCoreRecoveryPayload> obj) throws Exception {
+    final RequestCoreRecoveryPayload v2Body = obj.get();
+    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+    v1Params.put(ACTION, REQUESTRECOVERY.name().toLowerCase(Locale.ROOT));
+    v1Params.put(CORE, obj.getRequest().getPathTemplateValues().get("core"));
 
-        coreAdminHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-    }
+    coreAdminHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  }
 }

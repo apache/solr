@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -28,23 +27,28 @@ public class MatchesEvaluator extends RecursiveBooleanEvaluator implements ManyV
   protected static final long serialVersionUID = 1L;
   private Pattern pattern;
 
-  public MatchesEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public MatchesEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
-    if(containedEvaluators.size() != 2){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two parameters but found %d",expression,containedEvaluators.size()));
+    if (containedEvaluators.size() != 2) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting two parameters but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   public Object doWork(Object... values) throws IOException {
-    if(values[1] instanceof String) {
+    if (values[1] instanceof String) {
       String s = values[0].toString();
-      if(pattern == null) {
+      if (pattern == null) {
         String p = (String) values[1];
         pattern = Pattern.compile(p.replace("\"", ""));
       }
 
-      if(s.startsWith("\"")) {
+      if (s.startsWith("\"")) {
         s = s.replace("\"", "");
       }
 

@@ -19,13 +19,10 @@ package org.apache.solr.client.solrj.cloud;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.Replica;
 
-/**
- * This interface models the access to node and replica information.
- */
+/** This interface models the access to node and replica information. */
 public interface NodeStateProvider extends SolrCloseable {
   /**
    * Get the value of each tag for a given node
@@ -37,9 +34,11 @@ public interface NodeStateProvider extends SolrCloseable {
   Map<String, Object> getNodeValues(String node, Collection<String> tags);
 
   /**
-   * Get the details of each replica in a node. It attempts to fetch as much details about
-   * the replica as mentioned in the keys list. It is not necessary to give all details
-   * <p>The format is {collection:shard :[{replicadetails}]}.</p>
+   * Get the details of each replica in a node. It attempts to fetch as much details about the
+   * replica as mentioned in the keys list. It is not necessary to give all details
+   *
+   * <p>The format is {collection:shard :[{replicadetails}]}.
+   *
    * @return map of replica infos per collection/shard
    */
   Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys);

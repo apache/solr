@@ -23,23 +23,23 @@ import org.apache.solr.response.SolrQueryResponse;
 
 /**
  * Creates URLClassifyProcessor
+ *
  * @since 3.6.0
  */
 public class URLClassifyProcessorFactory extends UpdateRequestProcessorFactory {
-  
+
   private SolrParams params;
-  
+
   @Override
   public void init(final NamedList<?> args) {
     if (args != null) {
       this.params = args.toSolrParams();
     }
   }
-  
+
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest request,
-      SolrQueryResponse response,
-      UpdateRequestProcessor nextProcessor) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest request, SolrQueryResponse response, UpdateRequestProcessor nextProcessor) {
     return new URLClassifyProcessor(params, request, response, nextProcessor);
   }
 }

@@ -17,18 +17,23 @@
 
 package org.apache.solr.client.solrj.io.stream.expr;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import org.junit.Test;
+
 public class InjectionDefenseTest {
 
-  private static final String EXPLOITABLE = "let(a=search(foo,q=\"time_dt:[?$? TO ?$?]\",fl=\"id,time_dt\",sort=\"time_dt asc\"))";
-  private static final String NUMBER = "let(a=search(foo,q=\"gallons_f:[?#? TO ?#?]\",fl=\"id,gallons_f,time_dt\",sort=\"time_dt asc\"))";
-  private static final String NUMBER_OK = "let(a=search(foo,q=\"gallons_f:[2 TO 3.5]\",fl=\"id,gallons_f,time_dt\",sort=\"time_dt asc\"))";
-  private static final String ALLOWED = "let(a=search(foo,q=\"time_dt:[?$? TO ?$?]\",fl=\"id,time_dt\",sort=\"time_dt asc\"), x=?(2)?)";
-  private static final String INJECTED = "let(a=search(foo,q=\"time_dt:[2000-01-01T00:00:00Z TO 2020-01-01T00:00:00Z]\",fl=\"id,time_dt\",sort=\"time_dt asc\"), x=jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from users\",sort=\"id asc\"),z=jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from race_cars\",sort=\"id asc\"))";
+  private static final String EXPLOITABLE =
+      "let(a=search(foo,q=\"time_dt:[?$? TO ?$?]\",fl=\"id,time_dt\",sort=\"time_dt asc\"))";
+  private static final String NUMBER =
+      "let(a=search(foo,q=\"gallons_f:[?#? TO ?#?]\",fl=\"id,gallons_f,time_dt\",sort=\"time_dt asc\"))";
+  private static final String NUMBER_OK =
+      "let(a=search(foo,q=\"gallons_f:[2 TO 3.5]\",fl=\"id,gallons_f,time_dt\",sort=\"time_dt asc\"))";
+  private static final String ALLOWED =
+      "let(a=search(foo,q=\"time_dt:[?$? TO ?$?]\",fl=\"id,time_dt\",sort=\"time_dt asc\"), x=?(2)?)";
+  private static final String INJECTED =
+      "let(a=search(foo,q=\"time_dt:[2000-01-01T00:00:00Z TO 2020-01-01T00:00:00Z]\",fl=\"id,time_dt\",sort=\"time_dt asc\"), x=jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from users\",sort=\"id asc\"),z=jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from race_cars\",sort=\"id asc\"))";
 
   @Test(expected = InjectedExpressionException.class)
   public void testSafeExpression() {
@@ -36,7 +41,8 @@ public class InjectionDefenseTest {
     InjectionDefense defender = new InjectionDefense(EXPLOITABLE);
 
     defender.addParameter("2000-01-01T00:00:00Z");
-    defender.addParameter("2020-01-01T00:00:00Z]\",fl=\"id\",sort=\"id asc\"), b=jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from users\",sort=\"id asc\"),c=search(foo,q=\"time_dt:[* TO 2020-01-01T00:00:00Z");
+    defender.addParameter(
+        "2020-01-01T00:00:00Z]\",fl=\"id\",sort=\"id asc\"), b=jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from users\",sort=\"id asc\"),c=search(foo,q=\"time_dt:[* TO 2020-01-01T00:00:00Z");
 
     defender.safeExpression();
   }
@@ -47,7 +53,8 @@ public class InjectionDefenseTest {
     InjectionDefense defender = new InjectionDefense(EXPLOITABLE);
 
     defender.addParameter("2000-01-01T00:00:00Z");
-    defender.addParameter("2020-01-01T00:00:00Z]\",fl=\"id\",sort=\"id asc\"), b=jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from users\",sort=\"id asc\"),c=search(foo,q=\"time_dt:[* TO 2020-01-01T00:00:00Z");
+    defender.addParameter(
+        "2020-01-01T00:00:00Z]\",fl=\"id\",sort=\"id asc\"), b=jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from users\",sort=\"id asc\"),c=search(foo,q=\"time_dt:[* TO 2020-01-01T00:00:00Z");
 
     defender.safeExpressionString();
   }
@@ -58,12 +65,12 @@ public class InjectionDefenseTest {
 
     defender.addParameter("2000-01-01T00:00:00Z");
     defender.addParameter("2020-01-01T00:00:00Z");
-    defender.addParameter("jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from users\",sort=\"id asc\"),z=jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from race_cars\",sort=\"id asc\")");
+    defender.addParameter(
+        "jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from users\",sort=\"id asc\"),z=jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from race_cars\",sort=\"id asc\")");
 
     // no exceptions
     assertNotNull(defender.safeExpression());
     assertEquals(INJECTED, defender.safeExpressionString());
-
   }
 
   @Test(expected = InjectedExpressionException.class)
@@ -72,12 +79,12 @@ public class InjectionDefenseTest {
 
     defender.addParameter("2000-01-01T00:00:00Z");
     defender.addParameter("2020-01-01T00:00:00Z");
-    defender.addParameter("jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from users\",sort=\"id asc\")");
+    defender.addParameter(
+        "jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from users\",sort=\"id asc\")");
 
     // no exceptions
     defender.safeExpression();
     assertEquals(INJECTED, defender.safeExpressionString());
-
   }
 
   @Test
@@ -86,7 +93,8 @@ public class InjectionDefenseTest {
 
     defender.addParameter("2000-01-01T00:00:00Z");
     defender.addParameter("2020-01-01T00:00:00Z");
-    defender.addParameter("jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from users\",sort=\"id asc\"),z=jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from race_cars\",sort=\"id asc\")");
+    defender.addParameter(
+        "jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from users\",sort=\"id asc\"),z=jdbc( connection=\"jdbc:postgresql://localhost:5432/ouchdb\",sql=\"select * from race_cars\",sort=\"id asc\")");
 
     assertEquals(INJECTED, defender.buildExpression());
   }
@@ -109,7 +117,5 @@ public class InjectionDefenseTest {
     defender.addParameter("3.5");
 
     defender.buildExpression();
-
   }
 }
-

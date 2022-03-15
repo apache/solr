@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
+
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
@@ -22,17 +23,19 @@ public class TestFieldTypeCollectionResource extends SolrRestletTestBase {
 
   @Test
   public void testGetAllFieldTypes() throws Exception {
-    assertQ("/schema/fieldtypes?indent=on&wt=xml",
-            "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
-            "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[2] = 'HTMLwhitetok'",
-            "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[3] = 'boolean'");
+    assertQ(
+        "/schema/fieldtypes?indent=on&wt=xml",
+        "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
+        "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[2] = 'HTMLwhitetok'",
+        "(/response/arr[@name='fieldTypes']/lst/str[@name='name'])[3] = 'boolean'");
   }
 
   @Test
   public void testJsonGetAllFieldTypes() throws Exception {
-    assertJQ("/schema/fieldtypes?indent=on",
-             "/fieldTypes/[0]/name=='HTMLstandardtok'",
-             "/fieldTypes/[1]/name=='HTMLwhitetok'",
-             "/fieldTypes/[2]/name=='boolean'");
+    assertJQ(
+        "/schema/fieldtypes?indent=on",
+        "/fieldTypes/[0]/name=='HTMLstandardtok'",
+        "/fieldTypes/[1]/name=='HTMLwhitetok'",
+        "/fieldTypes/[2]/name=='boolean'");
   }
 }

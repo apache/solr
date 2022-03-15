@@ -33,7 +33,9 @@ import org.apache.solr.hdfs.store.HdfsDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ */
 public class BlockDirectory extends FilterDirectory implements ShutdownAwareDirectory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

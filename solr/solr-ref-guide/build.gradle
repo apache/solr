@@ -17,10 +17,6 @@
 
 import org.apache.tools.ant.util.TeeOutputStream
 
-plugins {
-    id "com.github.node-gradle.node" version "3.1.1"
-}
-
 description = 'Solr Reference Guide'
 
 def officialSiteIncludePrerelease = propertyOrEnvOrDefault("refguide.official.includePrereleaseVersions", "SOLR_REF_GUIDE_OFFICIAL_INCLUDE_PRERELEASE", "false").toBoolean()
@@ -56,8 +52,6 @@ dependencies {
 
 ext {
     antoraVersion = "3.0.1"
-    rootNodeDir = "${project.rootDir}/.gradle/node"
-    nodeProjectDir = file("${project.ext.rootNodeDir}/ref-guide-project")
 
     siteDir = "${buildDir}/site"
     antoraConfigBuildDir = "${buildDir}/antora-config"
@@ -192,26 +186,6 @@ dependencies {
 /*
     Downloading Build Tools
  */
-
-// We use Node to install and run Antora
-node {
-    download = true
-    version = "16.13.2" // LTS
-
-    // The directory where Node.js is unpacked (when download is true)
-    workDir = file("${project.ext.rootNodeDir}/nodejs")
-
-    // The directory where npm is installed (when a specific version is defined)
-    npmWorkDir = file("${project.ext.rootNodeDir}/npm")
-
-    // The directory where yarn is installed (when a Yarn task is used)
-    yarnWorkDir = file("${project.ext.rootNodeDir}/yarn")
-
-    // The Node.js project directory location
-    // This is where the package.json file and node_modules directory are located
-    // By default it is at the root of the current project
-    nodeProjectDir = project.ext.nodeProjectDir
-}
 
 task downloadAntoraCli(type: NpmTask) {
     group = 'Build Dependency Download'

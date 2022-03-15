@@ -18,9 +18,9 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * Exception thrown by a {@link PlacementPlugin} when it is unable to compute placement for whatever reason (except an
- * {@link InterruptedException} that {@link PlacementPlugin#computePlacement}
- * is also allowed to throw).
+ * Exception thrown by a {@link PlacementPlugin} when it is unable to compute placement for whatever
+ * reason (except an {@link InterruptedException} that {@link PlacementPlugin#computePlacement} is
+ * also allowed to throw).
  */
 public class PlacementException extends Exception {
 
@@ -40,9 +40,8 @@ public class PlacementException extends Exception {
     super(cause);
   }
 
-  protected PlacementException(String message, Throwable cause,
-                               boolean enableSuppression,
-                               boolean writableStackTrace) {
+  protected PlacementException(
+      String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
     super(message, cause, enableSuppression, writableStackTrace);
   }
 }

@@ -233,7 +233,9 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     }
   }
 
-  /** @param pathPrefix optional */
+  /**
+   * @param pathPrefix optional
+   */
   public Map<String, List<String>> getIndexFilesPathForSnapshot(
       String collectionName, String snapshotName, String pathPrefix)
       throws SolrServerException, IOException {
@@ -252,8 +254,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
           "The snapshot named " + snapshotName + " is not found for collection " + collectionName);
     }
 
-    DocCollection collectionState =
-        solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    DocCollection collectionState = solrClient.getClusterState().getCollection(collectionName);
     for (Slice s : collectionState.getSlices()) {
       List<CoreSnapshotMetaData> replicaSnaps = meta.getReplicaSnapshotsForShard(s.getName());
       // Prepare a list of *existing* replicas (since one or more replicas could have been deleted
@@ -301,7 +302,9 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     return result;
   }
 
-  /** @param pathPrefix optional */
+  /**
+   * @param pathPrefix optional
+   */
   public void buildCopyListings(
       String collectionName, String snapshotName, String localFsPath, String pathPrefix)
       throws SolrServerException, IOException {
@@ -326,7 +329,9 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
         resp.getStatus() == 0, "The request failed. The status code is " + resp.getStatus());
   }
 
-  /** @param pathPrefix optional */
+  /**
+   * @param pathPrefix optional
+   */
   public void prepareForExport(
       String collectionName,
       String snapshotName,

@@ -17,8 +17,11 @@
 
 package org.apache.solr.util.configuration.providers;
 
-import java.util.Map;
+import static org.apache.solr.util.configuration.providers.AbstractSSLCredentialProvider.DEFAULT_CREDENTIAL_KEY_MAP;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 
+import java.util.Map;
 import org.apache.lucene.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.util.configuration.SSLConfigurations;
 import org.apache.solr.util.configuration.SSLCredentialProvider;
@@ -26,33 +29,28 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.apache.solr.util.configuration.providers.AbstractSSLCredentialProvider.DEFAULT_CREDENTIAL_KEY_MAP;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-
-/**
- */
+/** */
 public class SysPropSSLCredentialProviderTest {
 
   @Rule
-  public TestRule syspropRestore = new TestRuleRestoreSystemProperties(
-      SSLConfigurations.SysProps.SSL_KEY_STORE_PASSWORD,
-      SSLConfigurations.SysProps.SSL_TRUST_STORE_PASSWORD,
-      SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD,
-      SSLConfigurations.SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD
-  );
+  public TestRule syspropRestore =
+      new TestRuleRestoreSystemProperties(
+          SSLConfigurations.SysProps.SSL_KEY_STORE_PASSWORD,
+          SSLConfigurations.SysProps.SSL_TRUST_STORE_PASSWORD,
+          SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD,
+          SSLConfigurations.SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD);
 
   @Test
   public void testGetCredentials() throws Exception {
     int cnt = 0;
     SysPropSSLCredentialProvider sut = new SysPropSSLCredentialProvider();
-    for (Map.Entry<SSLCredentialProvider.CredentialType, String> set : DEFAULT_CREDENTIAL_KEY_MAP.entrySet()) {
+    for (Map.Entry<SSLCredentialProvider.CredentialType, String> set :
+        DEFAULT_CREDENTIAL_KEY_MAP.entrySet()) {
       String pw = "pw" + ++cnt;
       System.setProperty(set.getValue(), pw);
       assertThat(sut.getCredential(set.getKey()), is(pw));
     }
   }
-
 
   @Test
   public void testGetCredentialsWithoutSetup() throws Exception {

@@ -70,7 +70,6 @@ dependencies {
   runtimeOnly 'commons-collections:commons-collections'
   runtimeOnly 'com.google.re2j:re2j'
   runtimeOnly 'org.apache.commons:commons-configuration2'
-  runtimeOnly 'org.apache.htrace:htrace-core4' // note: removed in Hadoop 3.3.2
   runtimeOnly 'org.apache.kerby:kerb-core'
   runtimeOnly 'org.apache.kerby:kerb-util'
 
@@ -87,6 +86,8 @@ dependencies {
   testImplementation 'commons-io:commons-io'
 
   testImplementation 'org.apache.lucene:lucene-core'
+
+  testImplementation project(':solr:solrj')
 
   // classes like solr.ICUCollationField, used by TestSolrCloudWithSecureImpersonation for example.
   testRuntimeOnly project(':solr:modules:analysis-extras')

@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -31,18 +30,17 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings({"try"})
   public void testPathConstructor() throws IOException {
-    try (EmbeddedSolrServer server = new EmbeddedSolrServer(TEST_PATH(), "collection1")) {
-
-    }
+    try (EmbeddedSolrServer server = new EmbeddedSolrServer(TEST_PATH(), "collection1")) {}
   }
 
   @Test
   public void testNodeConfigConstructor() throws Exception {
     Path path = createTempDir();
 
-    NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", path)
-        .setConfigSetBaseDirectory(TEST_PATH().resolve("configsets").toString())
-        .build();
+    NodeConfig config =
+        new NodeConfig.NodeConfigBuilder("testnode", path)
+            .setConfigSetBaseDirectory(TEST_PATH().resolve("configsets").toString())
+            .build();
 
     try (EmbeddedSolrServer server = new EmbeddedSolrServer(config, "newcore")) {
 
@@ -58,8 +56,6 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
 
       assertEquals(1, server.query(new SolrQuery("*:*")).getResults().getNumFound());
       assertEquals(1, server.query("newcore", new SolrQuery("*:*")).getResults().getNumFound());
-
     }
   }
-
 }

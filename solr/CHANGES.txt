@@ -35,7 +35,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-15986: CommitUpdateCommand and SplitIndexCommand can write user commit metadata. (Bruno Roustant)
+
+* SOLR-15652: Add Slack channel for community support to Admin UI footer, update links.  (Eric Pugh)
 
 Optimizations
 ---------------------
@@ -58,6 +60,12 @@ Other Changes
 * SOLR-9529: Consistency in how dynamic fields are defined in sample schema.xml files (Eric Pugh, Trey Grainger)
 
 * SOLR-15886: Remove deprecated showItems configuration value from solrconfig.xml files (Andy Lester via Eric Pugh)
+
+Build
+---------------------
+* SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
+
+* SOLR-16050: Upgrade to errorprone 2.11.0 (Kevin Risden)
 
 ==================  9.0.0 ==================
 
@@ -305,6 +313,15 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 * SOLR-15982: Add end time value to backup response, standardize backup response key names and date formats (Artem Abeleshev, Christine Poerschke, Houston Putman)
 
+* SOLR-14401: Metrics: Only SearchHandler and subclasses have "local" metrics now.
+  It's now tracked as if it's another handler with a "[shard]" suffix, e.g. "/select[shard]".
+  There are no longer ".distrib." named metrics; all metrics are assumed to be such except
+  "[shard]". The default Prometheus exporter config splits that component to a new label
+  named "internal".  The sample Grafana dashboard now filters to include or exclude this.
+  (David Smiley)
+
+* SOLR-16088: De-couple Http2SolrClient and ContentStreamBase from org.apache.http (janhoy)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
@@ -335,6 +352,8 @@ Build
 * SOLR-15987: Upgrade slf4j to 1.7.35 and remove ant-compat/force-versions.gradle (Kevin Risden)
 
 * SOLR-15992: Globally forbid and exclude known bad dependencies (Kevin Risden)
+
+* SOLR-12228: Move bin-test scripts to packaging project and create gradle task for running them. (Mike Drob)
 
 Other Changes
 ----------------------
@@ -612,6 +631,16 @@ and each individual module's jar will be included in its directory's lib/ folder
 
 * SOLR-16042: Fix TestSolrCloudWithKerberosAlt.testBasics failure due to minikdc locale (Kevin Risden)
 
+* SOLR-16043: Fix HDFS tests - "Command processor" thread leak (Mike Drob, Kevin Risden)
+
+* SOLR-16074: Use PathUtils.deleteDirectory(path) to try to avoid commons-io IO-751 (Houston Putman, Mike Drob, Kevin Risden)
+
+* SOLR-16039: Upgrade to Hadoop 3.3.2 (Kevin Risden)
+
+* SOLR-15223: Deprecate HttpSolrClient and friends, please use the Http2SolrClient equivalents (janhoy, David Smiley)
+
+* SOLR-16061: CloudSolrClient refactoring: Removed ZK specific methods (Haythem Khiri, David Smiley, janhoy)
+
 Bug Fixes
 ---------------------
 * SOLR-15849: Fix the connection reset problem caused by the incorrect use of 4LW with \n when monitoring zooKeeper status (Fa Ming).
@@ -664,6 +693,8 @@ Bug Fixes
 
 * SOLR-15968: Hide annoying WARN log from bin/solr zk command (janhoy, Mike Drob)
 
+* SOLR-16075: ShowFileHandler path parameter is now validated to be relative to instance conf dir in standalone mode (janhoy)
+
 * SOLR-15558: Don't wait for zombie processes to exit when stopping. (Colvin Cowie)
 
 * SOLR-15333: Reduced spurious warn logging by AbstractSpatialPrefixTreeFieldType field properties (Steffen Moldenhauer, David Smiley, Mike Drob)
@@ -671,6 +702,8 @@ Bug Fixes
 * SOLR-16019: UTF-8 parsing errors for parameters should cause a HTTP 400 status code, not 500 (janhoy, Matthias Pigulla)
 
 * SOLR-15983: Fix ClassCastException in UpdateLog$LogReplayer.doReplay. (Christine Poerschke, David Smiley)
+
+* SOLR-16090: Better error message when JWT auth SIGNATURE_INVALID during token parsing (janhoy)
 
 ==================  8.11.2 ==================
 
@@ -684,6 +717,11 @@ Bug Fixes
   in secured Solr. (Isabelle Giguere, Jason Gerlowski, Anshum Gupta, Mark Mark Miller)
 
 * SOLR-15974: Remove Calcite's ENUMERABLE_AGGREGATE_RULE as Solr only supports push-down for LogicalAggregate (Timothy Potter, Kiran Chitturi)
+
+* SOLR-16009: Force Calcite's Rel simplify config flag to false to avoid erasing filters that are meaningful to Solr,
+  but look like nonsense to Calcite, such as AND'd filters on the same multi-valued field (Timothy Potter, Kiran Chitturi)
+
+* SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
 
 ==================  8.11.1 ==================
 

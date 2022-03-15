@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -34,7 +33,7 @@ import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL
 public class SliceStateTest extends SolrTestCaseJ4 {
-  
+
   @Test
   public void testDefaultSliceState() {
     Map<String, DocCollection> collectionStates = new HashMap<>();
@@ -55,12 +54,16 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     Slice slice = new Slice("shard1", sliceToProps, null, "collection1");
     assertSame("Default state not set to active", Slice.State.ACTIVE, slice.getState());
     slices.put("shard1", slice);
-    collectionStates.put("collection1", new DocCollection("collection1", slices, props, DocRouter.DEFAULT));
+    collectionStates.put(
+        "collection1", new DocCollection("collection1", slices, props, DocRouter.DEFAULT));
 
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     byte[] bytes = Utils.toJSON(clusterState);
     ClusterState loadedClusterState = ClusterState.createFromJson(-1, bytes, liveNodes);
 
-    assertSame("Default state not set to active", Slice.State.ACTIVE, loadedClusterState.getCollection("collection1").getSlice("shard1").getState());
+    assertSame(
+        "Default state not set to active",
+        Slice.State.ACTIVE,
+        loadedClusterState.getCollection("collection1").getSlice("shard1").getState());
   }
 }

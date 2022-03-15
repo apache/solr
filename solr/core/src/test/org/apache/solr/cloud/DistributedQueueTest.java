@@ -23,7 +23,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -41,7 +40,8 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
 
   protected ZkTestServer zkServer;
   protected SolrZkClient zkClient;
-  protected ExecutorService executor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("dqtest-"));
+  protected ExecutorService executor =
+      ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("dqtest-"));
 
   @Before
   @Override
@@ -145,16 +145,18 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
 
     // After draining the queue, a watcher should be set.
     assertNull(dq.peek(100));
-    
+
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    timeout.waitFor("Timeout waiting to see dirty=false", () -> {
-      try {
-        return !dq.isDirty();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-    });
-    
+    timeout.waitFor(
+        "Timeout waiting to see dirty=false",
+        () -> {
+          try {
+            return !dq.isDirty();
+          } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+          }
+        });
+
     assertFalse(dq.isDirty());
     assertEquals(1, dq.watcherCount());
 
@@ -231,7 +233,6 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     }
   }
 
-
   @Test
   public void testPeekElements() throws Exception {
     String dqZNode = "/distqueue/test";
@@ -261,21 +262,29 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     assertTrue(System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(500));
 
     // If someone adds a new matching element while we're waiting, we should return immediately.
-    executor.submit(() -> {
-      try {
-        Thread.sleep(500);
-        dq.offer(data);
-      } catch (Exception e) {
-        // ignore
-      }
-    });
+    executor.submit(
+        () -> {
+          try {
+            Thread.sleep(500);
+            dq.offer(data);
+          } catch (Exception e) {
+            // ignore
+          }
+        });
     start = System.nanoTime();
-    assertEquals(1, dq.peekElements(4, 2000, child -> {
-      // The 4th element in the queue will end with a "3".
-      return child.endsWith("3");
-    }).size());
+    assertEquals(
+        1,
+        dq.peekElements(
+                4,
+                2000,
+                child -> {
+                  // The 4th element in the queue will end with a "3".
+                  return child.endsWith("3");
+                })
+            .size());
     long timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-    assertTrue("Time was " + timeTaken + "ms, expected 250-1500ms", timeTaken > 250 && timeTaken < 1500);
+    assertTrue(
+        "Time was " + timeTaken + "ms, expected 250-1500ms", timeTaken > 250 && timeTaken < 1500);
   }
 
   private void forceSessionExpire() throws InterruptedException, TimeoutException {
@@ -320,10 +329,8 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   }
 
   protected String setupNewDistributedQueueZNode(String znodePath) throws Exception {
-    if (!zkClient.exists("/", true))
-      zkClient.makePath("/", false, true);
-    if (zkClient.exists(znodePath, true))
-      zkClient.clean(znodePath);
+    if (!zkClient.exists("/", true)) zkClient.makePath("/", false, true);
+    if (zkClient.exists(znodePath, true)) zkClient.clean(znodePath);
     zkClient.makePath(znodePath, false, true);
     return znodePath;
   }

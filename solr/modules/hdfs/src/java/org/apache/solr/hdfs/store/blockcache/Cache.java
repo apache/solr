@@ -16,7 +16,9 @@
  */
 package org.apache.solr.hdfs.store.blockcache;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ */
 public interface Cache {
 
   /**

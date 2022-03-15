@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.Node;
@@ -30,16 +29,14 @@ import org.apache.solr.cluster.placement.DeleteCollectionRequest;
 import org.apache.solr.cluster.placement.DeleteReplicasRequest;
 import org.apache.solr.cluster.placement.PlacementContext;
 import org.apache.solr.cluster.placement.PlacementException;
-import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 
-/**
- * This assign strategy delegates placement computation to "plugin" code.
- */
+/** This assign strategy delegates placement computation to "plugin" code. */
 public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
   private final PlacementPlugin plugin;
@@ -48,7 +45,8 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
     this.plugin = plugin;
   }
 
-  public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, List<Assign.AssignRequest> assignRequests)
+  public List<ReplicaPosition> assign(
+      SolrCloudManager solrCloudManager, List<Assign.AssignRequest> assignRequests)
       throws Assign.AssignmentException, IOException, InterruptedException {
 
     PlacementContext placementContext = new SimplePlacementContextImpl(solrCloudManager);
@@ -62,15 +60,23 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
 
     List<PlacementRequest> placementRequests = new ArrayList<>(assignRequests.size());
     for (Assign.AssignRequest assignRequest : assignRequests) {
-      placementRequests.add(PlacementRequestImpl.toPlacementRequest(placementContext.getCluster(), placementContext.getCluster().getCollection(assignRequest.collectionName), assignRequest));
+      placementRequests.add(
+          PlacementRequestImpl.toPlacementRequest(
+              placementContext.getCluster(),
+              placementContext.getCluster().getCollection(assignRequest.collectionName),
+              assignRequest));
     }
 
     final List<ReplicaPosition> replicaPositions = new ArrayList<>();
     try {
-      List<PlacementPlan> placementPlans = plugin.computePlacements(placementRequests, placementContext);
+      List<PlacementPlan> placementPlans =
+          plugin.computePlacements(placementRequests, placementContext);
       if (placementPlans != null) {
         for (PlacementPlan placementPlan : placementPlans) {
-          replicaPositions.addAll(ReplicaPlacementImpl.toReplicaPositions(placementPlan.getRequest().getCollection().getName(), placementPlan.getReplicaPlacements()));
+          replicaPositions.addAll(
+              ReplicaPlacementImpl.toReplicaPositions(
+                  placementPlan.getRequest().getCollection().getName(),
+                  placementPlan.getReplicaPlacements()));
         }
       }
     } catch (PlacementException pe) {
@@ -81,9 +87,11 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
   }
 
   @Override
-  public void verifyDeleteCollection(SolrCloudManager solrCloudManager, DocCollection collection) throws Assign.AssignmentException, IOException, InterruptedException {
+  public void verifyDeleteCollection(SolrCloudManager solrCloudManager, DocCollection collection)
+      throws Assign.AssignmentException, IOException, InterruptedException {
     PlacementContext placementContext = new SimplePlacementContextImpl(solrCloudManager);
-    DeleteCollectionRequest modificationRequest = ModificationRequestImpl.createDeleteCollectionRequest(collection);
+    DeleteCollectionRequest modificationRequest =
+        ModificationRequestImpl.createDeleteCollectionRequest(collection);
     try {
       plugin.verifyAllowedModification(modificationRequest, placementContext);
     } catch (PlacementException pe) {
@@ -92,9 +100,15 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
   }
 
   @Override
-  public void verifyDeleteReplicas(SolrCloudManager solrCloudManager, DocCollection collection, String shardId, Set<Replica> replicas) throws Assign.AssignmentException, IOException, InterruptedException {
+  public void verifyDeleteReplicas(
+      SolrCloudManager solrCloudManager,
+      DocCollection collection,
+      String shardId,
+      Set<Replica> replicas)
+      throws Assign.AssignmentException, IOException, InterruptedException {
     PlacementContext placementContext = new SimplePlacementContextImpl(solrCloudManager);
-    DeleteReplicasRequest modificationRequest = ModificationRequestImpl.createDeleteReplicasRequest(collection, shardId, replicas);
+    DeleteReplicasRequest modificationRequest =
+        ModificationRequestImpl.createDeleteReplicasRequest(collection, shardId, replicas);
     try {
       plugin.verifyAllowedModification(modificationRequest, placementContext);
     } catch (PlacementException pe) {

@@ -16,7 +16,9 @@
  */
 package org.apache.solr.hdfs.store.blockcache;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ */
 public class BlockCacheKey implements Cloneable {
 
   private long block;

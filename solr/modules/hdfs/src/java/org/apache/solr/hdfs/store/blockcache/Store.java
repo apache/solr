@@ -16,7 +16,9 @@
  */
 package org.apache.solr.hdfs.store.blockcache;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ */
 public interface Store {
 
   byte[] takeBuffer(int bufferSize);

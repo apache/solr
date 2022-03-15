@@ -889,7 +889,7 @@ groups:
         tee: true
   - !Todo
     id: rm_staged_mvn
-    title: Delete mvn artifacts from staging repo
+    title: Delete mvn and docker artifacts from staging repo
     vars:
       dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
@@ -897,10 +897,10 @@ groups:
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       confirm_each_command: false
-      commands_text: This will remove maven artifacts so they do not end up in the Distribution Directory
+      commands_text: This will remove maven and docker artifacts so they do not end up in the Distribution Directory
       commands:
       - !Command
-        cmd: svn rm -m "Delete the solr maven artifacts"  {{ dist_stage_url }}/solr/maven
+        cmd: svn rm -m "Delete the solr maven and docker artifacts"  {{ dist_stage_url }}/solr/maven  {{ dist_stage_url }}/solr/docker
         logfile: svn_rm_mvn_solr.log
         tee: true
   - !Todo
