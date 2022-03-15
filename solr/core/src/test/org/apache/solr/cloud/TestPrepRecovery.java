@@ -72,7 +72,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
         .process(solrClient);
 
     // now delete the leader
-    Replica leader = solrClient.getZkStateReader().getLeaderRetry(collectionName, "shard1");
+    Replica leader = cluster.getZkStateReader().getLeaderRetry(collectionName, "shard1");
     CollectionAdminRequest.deleteReplica(collectionName, "shard1", leader.getName())
         .process(solrClient);
 

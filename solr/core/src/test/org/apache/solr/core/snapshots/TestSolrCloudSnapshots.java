@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
@@ -122,8 +123,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       Thread.sleep(5000);
 
       // Figure out if at-least one replica is "down".
-      DocCollection collState =
-          solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+      DocCollection collState = solrClient.getClusterState().getCollection(collectionName);
       for (Slice s : collState.getSlices()) {
         for (Replica replica : s.getReplicas()) {
           if (replica.getState() == State.DOWN) {
@@ -151,8 +151,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         meta.getReplicaSnapshots().stream()
             .collect(Collectors.toMap(CoreSnapshotMetaData::getCoreName, Function.identity()));
 
-    DocCollection collectionState =
-        solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    DocCollection collectionState = solrClient.getClusterState().getCollection(collectionName);
     assertEquals(2, collectionState.getActiveSlices().size());
     for (Slice shard : collectionState.getActiveSlices()) {
       assertEquals(2, shard.getReplicas().size());
@@ -219,17 +218,13 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(solrClient, 30)); // async
       }
       AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-          restoreCollectionName,
-          cluster.getSolrClient().getZkStateReader(),
-          log.isDebugEnabled(),
-          true,
-          30);
+          restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), true, 30);
       BackupRestoreUtils.verifyDocs(nDocs, solrClient, restoreCollectionName);
     }
 
     // Check collection property
     Map<String, String> collectionProperties =
-        solrClient.getZkStateReader().getCollectionProperties(restoreCollectionName);
+        ZkStateReader.from(solrClient).getCollectionProperties(restoreCollectionName);
     if (collectionPropertySet) {
       assertEquals(
           "Snapshot restore hasn't restored collection properties",
@@ -254,8 +249,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       }
 
       if (replicaToDelete != null) {
-        collectionState =
-            solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+        collectionState = solrClient.getClusterState().getCollection(collectionName);
         for (Slice s : collectionState.getSlices()) {
           for (Replica r : s.getReplicas()) {
             if (r.getCoreName().equals(replicaToDelete.getCoreName())) {
@@ -280,7 +274,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
 
     // Wait for a while so that the cluster state updates are propagated to the client side.
     Thread.sleep(2000);
-    collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    collectionState = solrClient.getClusterState().getCollection(collectionName);
 
     for (Slice shard : collectionState.getActiveSlices()) {
       for (Replica replica : shard.getReplicas()) {
@@ -325,7 +319,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       assertEquals(0, deleteCol.process(solrClient).getStatus());
       assertTrue(
           SolrSnapshotManager.listSnapshots(
-                  solrClient.getZkStateReader().getZkClient(), collectionName)
+                  ZkStateReader.from(solrClient).getZkClient(), collectionName)
               .isEmpty());
     }
   }

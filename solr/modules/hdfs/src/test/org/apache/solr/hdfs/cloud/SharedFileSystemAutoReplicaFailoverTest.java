@@ -231,19 +231,20 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
 
     assertEquals(
         4,
-        ClusterStateUtil.getLiveAndActiveReplicaCount(cloudClient.getZkStateReader(), collection1));
+        ClusterStateUtil.getLiveAndActiveReplicaCount(
+            ZkStateReader.from(cloudClient), collection1));
     assertTrue(
-        ClusterStateUtil.getLiveAndActiveReplicaCount(cloudClient.getZkStateReader(), collection2)
+        ClusterStateUtil.getLiveAndActiveReplicaCount(ZkStateReader.from(cloudClient), collection2)
             < 4);
 
     // collection3 has maxShardsPerNode=1, there are 4 standard jetties and one control jetty and 2
     // nodes stopped
     ClusterStateUtil.waitForLiveAndActiveReplicaCount(
-        cloudClient.getZkStateReader(), collection3, 3, 30000);
+        ZkStateReader.from(cloudClient), collection3, 3, 30000);
 
     // collection4 has maxShardsPerNode=5 and setMaxShardsPerNode=5
     ClusterStateUtil.waitForLiveAndActiveReplicaCount(
-        cloudClient.getZkStateReader(), collection4, 5, 30000);
+        ZkStateReader.from(cloudClient), collection4, 5, 30000);
 
     // all docs should be queried after failover
     cloudClient.commit(); // to query all docs
@@ -253,10 +254,11 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
     // collection1 should still be at 4
     assertEquals(
         4,
-        ClusterStateUtil.getLiveAndActiveReplicaCount(cloudClient.getZkStateReader(), collection1));
+        ClusterStateUtil.getLiveAndActiveReplicaCount(
+            ZkStateReader.from(cloudClient), collection1));
     // and collection2 less than 4
     assertTrue(
-        ClusterStateUtil.getLiveAndActiveReplicaCount(cloudClient.getZkStateReader(), collection2)
+        ClusterStateUtil.getLiveAndActiveReplicaCount(ZkStateReader.from(cloudClient), collection2)
             < 4);
 
     assertUlogDir(collections);
@@ -273,7 +275,7 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
 
     assertTrue(
         "Timeout waiting for all not live",
-        waitingForReplicasNotLive(cloudClient.getZkStateReader(), 45000, stoppedJetties));
+        waitingForReplicasNotLive(ZkStateReader.from(cloudClient), 45000, stoppedJetties));
 
     ChaosMonkey.start(stoppedJetties);
     controlJetty.start();
@@ -341,10 +343,10 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
   }
 
   /** After failover, ulogDir should not be changed. */
-  private void assertUlogDir(String... collections) {
+  private void assertUlogDir(String... collections) throws IOException {
     for (String collection : collections) {
       Collection<Slice> slices =
-          cloudClient.getZkStateReader().getClusterState().getCollection(collection).getSlices();
+          cloudClient.getClusterState().getCollection(collection).getSlices();
       for (Slice slice : slices) {
         for (Replica replica : slice.getReplicas()) {
           Map<String, Object> properties = replica.getProperties();
@@ -424,10 +426,10 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
 
   private void assertSliceAndReplicaCount(
       String collection, int numSlices, int numReplicas, int timeOutInMs)
-      throws InterruptedException {
+      throws InterruptedException, IOException {
     TimeOut timeOut = new TimeOut(timeOutInMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
-      ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+      ClusterState clusterState = cloudClient.getClusterState();
       Collection<Slice> slices = clusterState.getCollection(collection).getActiveSlices();
       if (slices.size() == numSlices) {
         boolean isMatch = true;
@@ -453,8 +455,8 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
             + " numReplicas="
             + numReplicas
             + " but found "
-            + cloudClient.getZkStateReader().getClusterState().getCollection(collection)
+            + cloudClient.getClusterState().getCollection(collection)
             + " with /live_nodes: "
-            + cloudClient.getZkStateReader().getClusterState().getLiveNodes());
+            + cloudClient.getClusterState().getLiveNodes());
   }
 }

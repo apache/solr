@@ -43,7 +43,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
         new CloudHttp2SolrClient.Builder(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .build()) {
-      final String clientZkHost = createdClient.getZkHost();
+      final String clientZkHost = ZkClientClusterStateProvider.from(createdClient).getZkHost();
 
       assertTrue(clientZkHost.contains(ANY_ZK_HOST));
     }
@@ -56,7 +56,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
     zkHostList.add(ANY_OTHER_ZK_HOST);
     try (CloudHttp2SolrClient createdClient =
         new CloudHttp2SolrClient.Builder(zkHostList, Optional.of(ANY_CHROOT)).build()) {
-      final String clientZkHost = createdClient.getZkHost();
+      final String clientZkHost = ZkClientClusterStateProvider.from(createdClient).getZkHost();
 
       assertTrue(clientZkHost.contains(ANY_ZK_HOST));
       assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));
@@ -70,7 +70,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
     zkHosts.add(ANY_OTHER_ZK_HOST);
     try (CloudHttp2SolrClient createdClient =
         new CloudHttp2SolrClient.Builder(zkHosts, Optional.of(ANY_CHROOT)).build()) {
-      final String clientZkHost = createdClient.getZkHost();
+      final String clientZkHost = ZkClientClusterStateProvider.from(createdClient).getZkHost();
 
       assertTrue(clientZkHost.contains(ANY_ZK_HOST));
       assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));

@@ -28,10 +28,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.CompositeIdRouter;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -202,8 +199,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     // We can use the router to find the shards for the middle prefixes and they should be
     // different.
 
-    DocCollection collection =
-        client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
+    DocCollection collection = client.getClusterState().getCollection(COLLECTION_NAME);
     Collection<Slice> slices1 =
         collection
             .getRouter()
@@ -242,7 +238,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
         COLLECTION_NAME,
         activeClusterShape(4, 7));
 
-    collection = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
+    collection = client.getClusterState().getCollection(COLLECTION_NAME);
     slices1 =
         collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
     slices2 =
@@ -270,7 +266,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
         COLLECTION_NAME,
         activeClusterShape(5, 9));
 
-    collection = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
+    collection = client.getClusterState().getCollection(COLLECTION_NAME);
     slices1 =
         collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
     slice1 = slices1.iterator().next();
@@ -293,7 +289,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
         COLLECTION_NAME,
         activeClusterShape(6, 11));
 
-    collection = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
+    collection = client.getClusterState().getCollection(COLLECTION_NAME);
     slices1 =
         collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
 

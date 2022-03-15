@@ -418,7 +418,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   private void getCheckpoints() throws IOException {
     this.checkpoints = new HashMap<>();
-    ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
 
     Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
@@ -499,7 +499,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   }
 
   private void getPersistedCheckpoints() throws IOException {
-    ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
     Slice[] slices = CloudSolrStream.getSlices(checkpointCollection, zkStateReader, false);
 
     ClusterState clusterState = zkStateReader.getClusterState();
@@ -534,7 +534,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   protected void constructStreams() throws IOException {
     try {
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
       Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);

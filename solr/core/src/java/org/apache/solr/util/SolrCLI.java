@@ -1212,7 +1212,7 @@ public class SolrCLI implements CLIO {
 
       log.debug("Running healthcheck for {}", collection);
 
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
 
       ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
@@ -1410,13 +1410,13 @@ public class SolrCLI implements CLIO {
           new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
               .build()) {
         cloudSolrClient.connect();
-        Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
+        Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
         if (liveNodes.isEmpty())
           throw new IllegalStateException(
               "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
 
         String firstLiveNode = liveNodes.iterator().next();
-        solrUrl = cloudSolrClient.getZkStateReader().getBaseUrlForNodeName(firstLiveNode);
+        solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
       }
     }
     return solrUrl;
@@ -1546,7 +1546,7 @@ public class SolrCLI implements CLIO {
 
     protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
 
-      Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
+      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
       if (liveNodes.isEmpty())
         throw new IllegalStateException(
             "No live nodes found! Cannot create a collection until "
@@ -1555,7 +1555,7 @@ public class SolrCLI implements CLIO {
       String baseUrl = cli.getOptionValue("solrUrl");
       if (baseUrl == null) {
         String firstLiveNode = liveNodes.iterator().next();
-        baseUrl = cloudSolrClient.getZkStateReader().getBaseUrlForNodeName(firstLiveNode);
+        baseUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
       }
 
       String collectionName = cli.getOptionValue(NAME);
@@ -1571,8 +1571,7 @@ public class SolrCLI implements CLIO {
       boolean configExistsInZk =
           confname != null
               && !"".equals(confname.trim())
-              && cloudSolrClient
-                  .getZkStateReader()
+              && ZkStateReader.from(cloudSolrClient)
                   .getZkClient()
                   .exists("/configs/" + confname, true);
 
@@ -1588,14 +1587,14 @@ public class SolrCLI implements CLIO {
 
         echoIfVerbose(
             "Uploading "
-                + confPath.toAbsolutePath().toString()
+                + confPath.toAbsolutePath()
                 + " for config "
                 + confname
                 + " to ZooKeeper at "
-                + cloudSolrClient.getZkHost(),
+                + cloudSolrClient.getClusterStateProvider().getQuorumHosts(),
             cli);
         ZkMaintenanceUtils.uploadToZK(
-            cloudSolrClient.getZkStateReader().getZkClient(),
+            ZkStateReader.from(cloudSolrClient).getZkClient(),
             confPath,
             ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confname,
             ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
@@ -2507,14 +2506,14 @@ public class SolrCLI implements CLIO {
 
     protected void deleteCollection(CloudSolrClient cloudSolrClient, CommandLine cli)
         throws Exception {
-      Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
+      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
       if (liveNodes.isEmpty())
         throw new IllegalStateException(
             "No live nodes found! Cannot delete a collection until "
                 + "there is at least 1 live node in the cluster.");
 
       String firstLiveNode = liveNodes.iterator().next();
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
       String baseUrl = zkStateReader.getBaseUrlForNodeName(firstLiveNode);
       String collectionName = cli.getOptionValue(NAME);
       if (!zkStateReader.getClusterState().hasCollection(collectionName)) {
@@ -3250,7 +3249,7 @@ public class SolrCLI implements CLIO {
             new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
                 .build();
         cloudClient.connect();
-        Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+        Set<String> liveNodes = cloudClient.getClusterState().getLiveNodes();
         int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
         long timeout =
             System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWaitSecs, TimeUnit.SECONDS);
@@ -3266,7 +3265,7 @@ public class SolrCLI implements CLIO {
           } catch (InterruptedException ie) {
             Thread.interrupted();
           }
-          liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+          liveNodes = cloudClient.getClusterState().getLiveNodes();
           numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
         }
         if (numLiveNodes < numNodes) {

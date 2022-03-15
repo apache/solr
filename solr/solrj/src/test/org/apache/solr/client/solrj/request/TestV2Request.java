@@ -178,7 +178,7 @@ public class TestV2Request extends SolrCloudTestCase {
                     + "}")
             .build());
 
-    ClusterState cs = cluster.getSolrClient().getClusterStateProvider().getClusterState();
+    ClusterState cs = cluster.getSolrClient().getClusterState();
     System.out.println("livenodes: " + cs.getLiveNodes());
 
     String[] node = new String[1];
@@ -192,8 +192,7 @@ public class TestV2Request extends SolrCloudTestCase {
               if (!s.equals(node[0])) testNode[0] = s;
             });
 
-    String testServer =
-        cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(testNode[0]);
+    String testServer = cluster.getZkStateReader().getBaseUrlForNodeName(testNode[0]);
     V2Request v2r =
         new V2Request.Builder("/c/v2forward/_introspect")
             .withMethod(SolrRequest.METHOD.GET)

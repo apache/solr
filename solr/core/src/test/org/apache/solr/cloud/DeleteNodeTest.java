@@ -55,7 +55,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
   public void test() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     String coll = "deletenodetest_coll";
-    ClusterState state = cloudClient.getZkStateReader().getClusterState();
+    ClusterState state = cloudClient.getClusterState();
     Set<String> liveNodes = state.getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
@@ -69,7 +69,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
             CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 0));
     create.setCreateNodeSet(StrUtils.join(l, ','));
     cloudClient.request(create);
-    state = cloudClient.getZkStateReader().getClusterState();
+    state = cloudClient.getClusterState();
     String node2bdecommissioned = l.get(0);
     // check what replicas are on the node, and whether the call should fail
     boolean shouldFail = false;
@@ -110,8 +110,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     }
     if (log.isInfoEnabled()) {
       log.info(
-          "####### DocCollection after: {}",
-          cloudClient.getZkStateReader().getClusterState().getCollection(coll));
+          "####### DocCollection after: {}", cloudClient.getClusterState().getCollection(coll));
     }
     if (shouldFail) {
       assertTrue(String.valueOf(rsp), rsp.getRequestStatus() == RequestStatusState.FAILED);

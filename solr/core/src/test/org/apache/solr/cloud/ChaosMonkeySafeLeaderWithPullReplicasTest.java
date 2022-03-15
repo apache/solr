@@ -30,6 +30,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -115,8 +116,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
 
   @Test
   public void test() throws Exception {
-    DocCollection docCollection =
-        cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION);
+    DocCollection docCollection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     assertEquals(this.sliceCount, docCollection.getSlices().size());
     Slice s = docCollection.getSlice("shard1");
     assertNotNull(s);
@@ -191,7 +191,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
         runLength = runTimes[random().nextInt(runTimes.length - 1)];
       }
 
-      ChaosMonkey.wait(runLength, DEFAULT_COLLECTION, cloudClient.getZkStateReader());
+      ChaosMonkey.wait(runLength, DEFAULT_COLLECTION, ZkStateReader.from(cloudClient));
     } finally {
       chaosMonkey.stopTheMonkey();
     }
@@ -233,7 +233,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
 
     waitForReplicationFromReplicas(
         DEFAULT_COLLECTION,
-        cloudClient.getZkStateReader(),
+        ZkStateReader.from(cloudClient),
         new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME));
     //    waitForAllWarmingSearchers();
 

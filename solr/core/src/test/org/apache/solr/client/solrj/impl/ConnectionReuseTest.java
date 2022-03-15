@@ -65,7 +65,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     cluster
-        .getSolrClient()
+        .getZkStateReader()
         .waitForState(
             COLLECTION,
             DEFAULT_TIMEOUT,

@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 class DatabaseMetaDataImpl implements DatabaseMetaData {
@@ -113,11 +114,11 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
     sysQuery.setRequestHandler("/admin/info/system");
 
     CloudSolrClient cloudSolrClient = this.connection.getClient();
-    Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
     SolrClient solrClient = null;
     for (String node : liveNodes) {
       try {
-        String nodeURL = cloudSolrClient.getZkStateReader().getBaseUrlForNodeName(node);
+        String nodeURL = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(node);
         solrClient = new Builder(nodeURL).build();
 
         QueryResponse rsp = solrClient.query(sysQuery);

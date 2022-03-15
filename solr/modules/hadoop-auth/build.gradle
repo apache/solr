@@ -87,6 +87,8 @@ dependencies {
 
   testImplementation 'org.apache.lucene:lucene-core'
 
+  testImplementation project(':solr:solrj')
+
   // classes like solr.ICUCollationField, used by TestSolrCloudWithSecureImpersonation for example.
   testRuntimeOnly project(':solr:modules:analysis-extras')
 
