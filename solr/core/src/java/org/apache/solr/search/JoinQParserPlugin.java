@@ -16,11 +16,13 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -208,6 +210,49 @@ public class JoinQParserPlugin extends QParserPlugin {
 
       @Override
       public Query parse() throws SyntaxError {
+        final Query query = parseImpl();
+        // make cross core joins time-agnostic
+        // it should be ruled by param probably
+        boolean crossCoreCache = false;
+        if(localParams.getBool("cacheEventually", false)) {
+          if (query instanceof  JoinQuery) {
+            if (((JoinQuery) query).fromCoreOpenTime != 0L) {
+              ((JoinQuery) query).fromCoreOpenTime = Long.MIN_VALUE;
+              crossCoreCache = true;
+            }
+          } else {
+            if (query instanceof ScoreJoinQParserPlugin.OtherCoreJoinQuery){
+              if (((ScoreJoinQParserPlugin.OtherCoreJoinQuery) query).fromCoreOpenTime!=0) {
+                ((ScoreJoinQParserPlugin.OtherCoreJoinQuery) query).fromCoreOpenTime = Long.MIN_VALUE;
+                crossCoreCache = true;
+              }
+            }
+          }
+        }
+        if (crossCoreCache) {
+          String fromIndex = localParams.get("fromIndex");// TODO in might be a single sharded collection
+
+          DocSet docset;
+          try {
+            WrappedQuery wrap = new WrappedQuery(query);
+            wrap.setCache(false); //bypassing searcher cache
+            @SuppressWarnings("unchecked")
+            final SolrCache<Query,DocSet> rightSideCache = (SolrCache<Query,DocSet>) req.getSearcher().getCache(fromIndex);
+            docset = rightSideCache.computeIfAbsent(wrap, k -> req.getSearcher().getDocSet(k));
+          } catch (IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                    "Exception on caching " + query, e);
+          }
+          final Filter topFilter = docset.getTopFilter();
+
+          WrappedQuery wrappedCache = new WrappedQuery(topFilter);
+          wrappedCache.setCache(false);
+          return wrappedCache;
+        }
+        return query;
+      }
+
+      private Query parseImpl() throws SyntaxError {
         if (localParams != null && localParams.get(METHOD) != null) {
           // TODO Make sure 'method' is valid value here and give users a nice error
           final Method explicitMethod = Method.valueOf(localParams.get(METHOD));

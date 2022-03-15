@@ -81,9 +81,9 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
   public static final String SCORE = "score";
 
-  static class OtherCoreJoinQuery extends SameCoreJoinQuery {
+  public static class OtherCoreJoinQuery extends SameCoreJoinQuery {
     private final String fromIndex;
-    private final long fromCoreOpenTime;
+    public long fromCoreOpenTime;
 
     public OtherCoreJoinQuery(
         Query fromQuery,
