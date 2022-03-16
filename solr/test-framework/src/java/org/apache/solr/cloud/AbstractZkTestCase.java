@@ -39,7 +39,6 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   protected volatile static Path zkDir;
 
-
   @BeforeClass
   public static void azt_beforeClass() throws Exception {
     zkDir = createTempDir("zkData");
@@ -50,9 +49,6 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     System.setProperty("zkHost", zkServer.getZkAddress());
     System.setProperty("jetty.port", "0000");
     System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
-    
-    zkServer.buildZooKeeper(SolrTestCaseJ4.TEST_PATH(),
-        "solrconfig.xml", "schema.xml");
   }
   
   @AfterClass
