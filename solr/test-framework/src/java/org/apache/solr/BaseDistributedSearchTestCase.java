@@ -602,7 +602,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         batch.clear();
       }
     }
-    if (batch.size() > 0) {
+    if (!batch.isEmpty()) {
       indexDocs(clientFor(batch.get(0)), null, batch);
     }
   }

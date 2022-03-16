@@ -222,15 +222,13 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     add(
         client0,
         seenLeader,
-        IntStream.range(0, toAdd)
-            .map(i -> i + offset + 1)
+        IntStream.rangeClosed(1 + offset, toAdd + offset)
             .mapToObj(i -> sdoc("id", Integer.toString(i), "_version_", i))
             .collect(Collectors.toList()));
     add(
         client1,
         seenLeader,
-        IntStream.range(0, toAdd)
-            .map(i -> i + offset + 1)
+        IntStream.rangeClosed(1 + offset, toAdd + offset)
             .mapToObj(i -> sdoc("id", Integer.toString(i), "_version_", i))
             .collect(Collectors.toList()));
 

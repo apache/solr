@@ -84,7 +84,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     final AtomicLong longValue = new AtomicLong(MAX_LONG);
 
     Iterator<SolrInputDocument> docs =
-        IntStream.range(1, NUM_DOCS + 1)
+        IntStream.rangeClosed(1, NUM_DOCS)
             .mapToObj(
                 i -> {
                   long currentLong = longValue.getAndAccumulate(BIG_PRIME, (x, y) -> x - y);
