@@ -95,8 +95,8 @@ public class V2HttpCall extends HttpSolrCall {
       }
 
       boolean isCompositeApi = false;
+      api = getApiInfo(cores.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
       if (knownPrefixes.contains(prefix)) {
-        api = getApiInfo(cores.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
         if (api != null) {
           isCompositeApi = api instanceof CompositeApi;
           if (!isCompositeApi) {
@@ -104,6 +104,14 @@ public class V2HttpCall extends HttpSolrCall {
             return;
           }
         }
+      } else { // custom plugin
+        if (api != null) {
+          initAdminRequest(path);
+          return;
+        }
+        assert core == null;
+        throw new SolrException(
+            SolrException.ErrorCode.NOT_FOUND, "Could not load plugin at " + path);
       }
 
       if ("c".equals(prefix) || "collections".equals(prefix)) {
@@ -134,13 +142,6 @@ public class V2HttpCall extends HttpSolrCall {
       } else if ("cores".equals(prefix)) {
         origCorename = pathSegments.get(1);
         core = cores.getCore(origCorename);
-      } else {
-        api = getApiInfo(cores.getRequestHandlers(), path, req.getMethod(), fullPath, parts);
-        if (api != null) {
-          // custom plugin
-          initAdminRequest(path);
-          return;
-        }
       }
       if (core == null) {
         log.error(">> path: '{}'", path);
@@ -150,7 +151,7 @@ public class V2HttpCall extends HttpSolrCall {
         } else {
           throw new SolrException(
               SolrException.ErrorCode.NOT_FOUND,
-              "no core retrieved for core name:  " + origCorename + ". Path : " + path);
+              "no core retrieved for core name: " + origCorename + ". Path: " + path);
         }
       }
 
