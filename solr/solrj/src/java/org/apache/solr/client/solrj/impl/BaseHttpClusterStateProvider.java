@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -54,6 +53,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   long aliasesTimestamp = 0;
 
   private int cacheTimeout = 5; // the liveNodes and aliases cache will be invalidated after 5 secs
+
+  public static final String URL_SCHEME = "urlScheme";
 
   public void init(List<String> solrUrls) throws Exception {
     for (String solrUrl : solrUrls) {
@@ -339,7 +340,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   @Override
   public Object getClusterProperty(String propertyName) {
-    if (propertyName.equals(ZkStateReader.URL_SCHEME)) {
+    if (propertyName.equals(URL_SCHEME)) {
       return this.urlScheme;
     }
     return getClusterProperties().get(propertyName);
