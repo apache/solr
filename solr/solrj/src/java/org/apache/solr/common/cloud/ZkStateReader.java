@@ -67,6 +67,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.data.Stat;
+import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -235,6 +236,51 @@ public class ZkStateReader implements SolrCloseable {
     } catch (ClassCastException e) {
       throw new IllegalArgumentException("client has no Zk stateReader", e);
     }
+  }
+
+  /**
+   * Create a ClusterState from Json. This method supports legacy configName location
+   *
+   * @param bytes a byte array of a Json representation of a mapping from collection name to the
+   *     Json representation of a {@link DocCollection} as written by {@link
+   *     ClusterState#write(JSONWriter)}. It can represent one or more collections.
+   * @param liveNodes list of live nodes
+   * @param coll collection name
+   * @param zkClient ZK client
+   * @return the ClusterState
+   * @deprecated Will be removed in 10.0
+   */
+  @SuppressWarnings({"unchecked"})
+  @Deprecated(since = "9.0")
+  public static ClusterState createFromJsonSupportingLegacyConfigName(
+      int version, byte[] bytes, Set<String> liveNodes, String coll, SolrZkClient zkClient) {
+    if (bytes == null || bytes.length == 0) {
+      return new ClusterState(liveNodes, emptyMap());
+    }
+    Map<String, Object> stateMap = (Map<String, Object>) fromJSON(bytes);
+    Map<String, Object> props = (Map<String, Object>) stateMap.get(coll);
+    if (props != null) {
+      if (!props.containsKey(CONFIGNAME_PROP)) {
+        try {
+          // read configName from collections/collection node
+          String path = COLLECTIONS_ZKNODE + "/" + coll;
+          byte[] data = zkClient.getData(path, null, null, true);
+          if (data != null && data.length > 0) {
+            ZkNodeProps configProp = ZkNodeProps.load(data);
+            String configName = configProp.getStr(CONFIGNAME_PROP);
+            if (configName != null) {
+              props.put(CONFIGNAME_PROP, configName);
+              stateMap.put(coll, props);
+            } else {
+              log.warn("configName is null, not found on {}", path);
+            }
+          }
+        } catch (KeeperException | InterruptedException e) {
+          // do nothing
+        }
+      }
+    }
+    return ClusterState.createFromCollectionMap(version, stateMap, liveNodes);
   }
 
   private static class CollectionWatch<T> {
@@ -1564,7 +1610,7 @@ public class ZkStateReader implements SolrCloseable {
         // old ZK location.
         // TODO in Solr 10 remove that factory method
         ClusterState state =
-            ClusterState.createFromJsonSupportingLegacyConfigName(
+            createFromJsonSupportingLegacyConfigName(
                 stat.getVersion(), data, Collections.emptySet(), coll, zkClient);
 
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);

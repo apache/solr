@@ -609,7 +609,7 @@ public class DistributedClusterStateUpdater {
       // old ZK location.
       // TODO in Solr 10 remove that factory method
       ClusterState clusterState =
-          ClusterState.createFromJsonSupportingLegacyConfigName(
+          ZkStateReader.createFromJsonSupportingLegacyConfigName(
               stat.getVersion(),
               data,
               Collections.emptySet(),
