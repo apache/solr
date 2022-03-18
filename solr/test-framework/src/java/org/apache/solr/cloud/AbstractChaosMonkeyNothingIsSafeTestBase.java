@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -179,7 +180,7 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
       if (runFullThrottle) {
         ftIndexThread =
             new FullThrottleStoppableIndexingThread(
-                cloudClient.getHttpClient(),
+                ((CloudHttp1SolrClient) cloudClient).getHttpClient(),
                 controlClient,
                 cloudClient,
                 clients,

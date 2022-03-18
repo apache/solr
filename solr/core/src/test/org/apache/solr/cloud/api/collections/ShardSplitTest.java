@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -46,9 +47,20 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.cloud.*;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.BasicDistributedZkTest;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CompositeIdRouter;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.HashBasedRouter;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -136,7 +148,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     try (CloudSolrClient client =
         getCloudSolrClient(
-            zkServer.getZkAddress(), true, cloudClient.getLbClient().getHttpClient())) {
+            zkServer.getZkAddress(), true, ((CloudHttp1SolrClient) cloudClient).getHttpClient())) {
       client.setDefaultCollection(collectionName);
       StoppableIndexingThread thread =
           new StoppableIndexingThread(controlClient, client, "i1", true);
@@ -218,9 +230,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                   .getReplicas()
                   .get(0)
                   .getBaseUrl();
-          try (HttpSolrClient control =
+          try (var control =
               new HttpSolrClient.Builder(control_collection)
-                  .withHttpClient(client.getLbClient().getHttpClient())
+                  .withHttpClient(((CloudHttp1SolrClient) client).getHttpClient())
                   .build()) {
             state = addReplica.processAndWait(control, 30);
           }
@@ -283,9 +295,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     long numFound = Long.MIN_VALUE;
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
-      HttpSolrClient client =
+      var client =
           new HttpSolrClient.Builder(replica.getCoreUrl())
-              .withHttpClient(cloudClient.getLbClient().getHttpClient())
+              .withHttpClient(((CloudHttp1SolrClient) cloudClient).getHttpClient())
               .build();
       QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
       if (log.isInfoEnabled()) {

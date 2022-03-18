@@ -854,7 +854,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     try (CloudSolrClient solrClient =
         getCloudSolrClient(cluster.getZkServer().getZkAddress(), client)) {
 
-      assertTrue(solrClient.getLbClient().getHttpClient() == client);
+      assertSame(((CloudHttp1SolrClient) solrClient).getLbClient().getHttpClient(), client);
 
     } finally {
       HttpClientUtil.close(client);

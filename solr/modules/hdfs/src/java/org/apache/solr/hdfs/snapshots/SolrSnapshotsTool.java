@@ -46,6 +46,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.fs.Path;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -102,7 +103,8 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
 
   public SolrSnapshotsTool(String solrZkEnsemble) {
     solrClient =
-        new CloudSolrClient.Builder(Collections.singletonList(solrZkEnsemble), Optional.empty())
+        new CloudHttp1SolrClient.Builder(
+                Collections.singletonList(solrZkEnsemble), Optional.empty())
             .build();
   }
 

@@ -94,6 +94,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
@@ -2618,7 +2619,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * A variant of {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will
    * randomize some internal settings.
    */
-  public static class CloudSolrClientBuilder extends CloudSolrClient.Builder {
+  public static class CloudSolrClientBuilder extends CloudHttp1SolrClient.Builder {
 
     public CloudSolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
       super(zkHosts, zkChroot);

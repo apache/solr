@@ -35,6 +35,7 @@ import java.util.function.BiConsumer;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -828,7 +829,7 @@ public class Overseer implements SolrCloseable {
       return;
     }
     try (CloudSolrClient client =
-        new CloudSolrClient.Builder(
+        new CloudHttp1SolrClient.Builder(
                 Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
             .withSocketTimeout(30000)
             .withConnectionTimeout(15000)

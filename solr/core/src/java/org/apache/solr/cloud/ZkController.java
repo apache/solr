@@ -60,7 +60,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
@@ -181,7 +181,7 @@ public class ZkController implements Closeable {
   private final SolrZkClient zkClient;
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
-  private CloudSolrClient cloudSolrClient;
+  private CloudHttp1SolrClient cloudSolrClient;
 
   private final String zkServerAddress; // example: 127.0.0.1:54062/solr
 
@@ -830,7 +830,7 @@ public class ZkController implements Closeable {
         return cloudManager;
       }
       cloudSolrClient =
-          new CloudSolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
+          new CloudHttp1SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
               .withSocketTimeout(30000)
               .withConnectionTimeout(15000)
               .withHttpClient(cc.getUpdateShardHandler().getDefaultHttpClient())

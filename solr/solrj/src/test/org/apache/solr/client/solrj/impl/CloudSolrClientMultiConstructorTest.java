@@ -98,7 +98,7 @@ public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
 
     final Optional<String> chrootOption =
         withChroot == false ? Optional.empty() : Optional.of(chroot);
-    try (CloudSolrClient client = new CloudSolrClient.Builder(hosts, chrootOption).build()) {
+    try (var client = new CloudHttp1SolrClient.Builder(hosts, chrootOption).build()) {
       assertEquals(sb.toString(), ZkClientClusterStateProvider.from(client).getZkHost());
     }
   }

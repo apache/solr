@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -326,7 +326,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     } else {
       final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);
-      this.cloudSolrClient = new Builder(hosts, Optional.empty()).build();
+      this.cloudSolrClient = new CloudHttp1SolrClient.Builder(hosts, Optional.empty()).build();
       this.cloudSolrClient.connect();
     }
   }

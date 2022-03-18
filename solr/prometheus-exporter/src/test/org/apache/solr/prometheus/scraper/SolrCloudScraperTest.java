@@ -28,9 +28,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -52,8 +55,8 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
   private ExecutorService executor;
 
   private SolrCloudScraper createSolrCloudScraper() {
-    CloudSolrClient solrClient =
-        new CloudSolrClient.Builder(
+    var solrClient =
+        new CloudHttp1SolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build();
 

@@ -37,6 +37,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -320,7 +321,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       // ensure it has the necessary protocols/credentials for each jetty server
       //
       // NOTE: we're not responsible for closing the cloud client
-      final HttpClient cloudClient = cluster.getSolrClient().getLbClient().getHttpClient();
+      final HttpClient cloudClient =
+          ((CloudHttp1SolrClient) cluster.getSolrClient()).getHttpClient();
       try (HttpSolrClient client = getRandomizedHttpSolrClient(baseURL)) {
         assertEquals(0, CoreAdminRequest.getStatus(/* all */ null, client).getStatus());
       }

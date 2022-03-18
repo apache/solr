@@ -57,6 +57,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
@@ -747,7 +748,7 @@ public class MiniSolrCloudCluster {
   }
 
   protected CloudSolrClient buildSolrClient() {
-    return new CloudSolrClient.Builder(
+    return new CloudHttp1SolrClient.Builder(
             Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
         .withSocketTimeout(90000)
         .withConnectionTimeout(15000)

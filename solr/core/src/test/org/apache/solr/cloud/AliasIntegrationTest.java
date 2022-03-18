@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -78,7 +79,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     solrClient = getCloudSolrClient(cluster);
-    httpClient = (CloseableHttpClient) solrClient.getHttpClient();
+    httpClient = (CloseableHttpClient) ((CloudHttp1SolrClient) solrClient).getHttpClient();
   }
 
   @After

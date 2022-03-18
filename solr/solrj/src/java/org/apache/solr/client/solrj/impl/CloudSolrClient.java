@@ -137,9 +137,9 @@ public abstract class CloudSolrClient extends SolrClient {
   public static class Builder extends CloudHttp2SolrClient.Builder {
 
     /**
-     * Provide a series of Solr URLs to be used when configuring {@link CloudSolrClient}
-     * instances. The solr client will use these urls to understand the cluster topology, which solr
-     * nodes are active etc.
+     * Provide a series of Solr URLs to be used when configuring {@link CloudSolrClient} instances.
+     * The solr client will use these urls to understand the cluster topology, which solr nodes are
+     * active etc.
      *
      * <p>Provided Solr URLs are expected to point to the root Solr path
      * ("http://hostname:8983/solr"); they should not include any collections, cores, or other path

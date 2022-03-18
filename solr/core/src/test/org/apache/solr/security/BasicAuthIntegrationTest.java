@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -151,12 +152,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       }
 
       // avoid bad connection races due to shutdown
-      cluster.getSolrClient().getHttpClient().getConnectionManager().closeExpiredConnections();
-      cluster
-          .getSolrClient()
-          .getHttpClient()
-          .getConnectionManager()
-          .closeIdleConnections(1, TimeUnit.MILLISECONDS);
+      final var httpClient = ((CloudHttp1SolrClient) cluster.getSolrClient()).getHttpClient();
+      httpClient.getConnectionManager().closeExpiredConnections();
+      httpClient.getConnectionManager().closeIdleConnections(1, TimeUnit.MILLISECONDS);
 
       BaseHttpSolrClient.RemoteSolrException exp =
           expectThrows(

@@ -38,7 +38,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -320,7 +320,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     } else {
       final List<String> hosts = new ArrayList<String>();
       hosts.add(zkHost);
-      cloudSolrClient = new Builder(hosts, Optional.empty()).build();
+      cloudSolrClient = new CloudHttp1SolrClient.Builder(hosts, Optional.empty()).build();
       this.cloudSolrClient.connect();
     }
 

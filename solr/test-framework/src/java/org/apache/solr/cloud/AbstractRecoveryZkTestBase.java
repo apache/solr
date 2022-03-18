@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -134,9 +135,9 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
     long[] numCounts = new long[replicas.size()];
     int i = 0;
     for (Replica replica : replicas) {
-      try (HttpSolrClient client =
+      try (var client =
           new HttpSolrClient.Builder(replica.getCoreUrl())
-              .withHttpClient(cluster.getSolrClient().getHttpClient())
+              .withHttpClient(((CloudHttp1SolrClient) cluster.getSolrClient()).getHttpClient())
               .build()) {
         numCounts[i] =
             client.query(new SolrQuery("*:*").add("distrib", "false")).getResults().getNumFound();
