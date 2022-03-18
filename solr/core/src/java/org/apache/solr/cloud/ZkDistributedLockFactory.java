@@ -59,8 +59,8 @@ abstract class ZkDistributedLockFactory {
 
   private void makeLockPath(String lockNodePath) throws KeeperException, InterruptedException {
     try {
-      if (!zkClient.exists(lockNodePath, true)) {
-        zkClient.makePath(lockNodePath, new byte[0], CreateMode.PERSISTENT, true);
+      if (!zkClient.exists(lockNodePath)) {
+        zkClient.makePath(lockNodePath, new byte[0], CreateMode.PERSISTENT);
       }
     } catch (KeeperException.NodeExistsException nee) {
       // Some other thread (on this or another JVM) beat us to create the node, that's ok.

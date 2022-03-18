@@ -36,6 +36,8 @@ dependencies {
 
   implementation 'org.apache.commons:commons-math3'
 
+  api 'org.apache.curator:curator-framework'
+
   api 'org.eclipse.jetty.http2:http2-client'
   implementation 'org.eclipse.jetty.http2:http2-http-client-transport'
   implementation 'org.eclipse.jetty:jetty-http'

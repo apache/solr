@@ -151,8 +151,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             .getZkClient()
             .exists(
                 ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(),
-                null,
-                true);
+                null
+            );
     if (leaderZnodeStat == null) {
       // we just got to know the leader but its live node is gone already!
       throw new SolrException(
@@ -622,8 +622,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
               .getZkClient()
               .exists(
                   ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(),
-                  null,
-                  true);
+                  null
+              );
       if (leaderZnodeStat == null || ephemeralOwner != leaderZnodeStat.getEphemeralOwner()) {
         // put sub-shards in recovery_failed state
 

@@ -54,8 +54,8 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
               ZkStateReader.SOLR_SECURITY_CONF_PATH,
               "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}"
                   .getBytes(StandardCharsets.UTF_8),
-              CreateMode.PERSISTENT,
-              true);
+              CreateMode.PERSISTENT
+          );
     }
   }
 

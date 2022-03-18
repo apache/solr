@@ -257,8 +257,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
             .makePath(
                 ZkStateReader.getCollectionPathRoot(collectionName),
                 new byte[0],
-                CreateMode.PERSISTENT,
-                true);
+                CreateMode.PERSISTENT
+            );
 
         ZkNodeProps m =
             new ZkNodeProps(

@@ -69,7 +69,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
     byte[] stateJsonBytes =
         cluster
             .getZkClient()
-            .getData(ZkStateReader.getCollectionPath(collectionId), null, null, true);
+            .getData(ZkStateReader.getCollectionPath(collectionId), null, null);
     assertNotNull(stateJsonBytes);
     Map<String, Object> replicasMap =
         (Map<String, Object>)

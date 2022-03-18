@@ -55,7 +55,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
 
         zkClient.getSolrZooKeeper().closeCnxn();
 
-        long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+        long sessionId = zkClient.getZkSessionId();
         server.expire(sessionId);
         Thread.sleep(TIMEOUT);
 
@@ -132,6 +132,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
 
         // reconnect -- should no longer be likely expired
         cm.process(new WatchedEvent(EventType.None, KeeperState.Expired, ""));
+        Thread.sleep(5000);
         assertFalse(cm.isLikelyExpired());
         assertTrue(cm.isConnectedAndNotClosed());
         assertTrue(strat.isExceptionThrow());

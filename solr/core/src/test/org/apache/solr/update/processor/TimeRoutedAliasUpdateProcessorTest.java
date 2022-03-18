@@ -224,8 +224,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
                     + "/"
                     + COLLECTION_PROPS_ZKNODE,
                 null,
-                null,
-                true);
+                null
+            );
     assertNotNull(data);
     assertTrue(data.length > 0);
     @SuppressWarnings("unchecked")
@@ -1060,8 +1060,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
                 aliasUpdate.countDown();
               }
             },
-            stat,
-            true);
+            stat
+        );
   }
 
   /**
@@ -1284,7 +1284,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     }
 
     // now grab the zk data so we can hack in our legacy collections..
-    byte[] data = zkStateReader.getZkClient().getData("/aliases.json", null, null, true);
+    byte[] data = zkStateReader.getZkClient().getData("/aliases.json", null, null);
 
     // some tidbits for handling zk data here are swiped from Aliases.json
     Map<String, Map> aliasMap;
@@ -1305,7 +1305,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     colAliases.put(alias, String.join(",", legacy24, legacy23));
 
     data = Utils.toJSON(aliasMap);
-    zkStateReader.getZkClient().setData("/aliases.json", data, true);
+    zkStateReader.getZkClient().setData("/aliases.json", data);
 
     zkStateReader.aliasesManager.update(); // make sure we've updated with the data we just sent
 

@@ -16,6 +16,23 @@
  */
 package org.apache.solr.common.cloud;
 
-public interface BeforeReconnect {
-  public void command();
+import java.util.List;
+
+import org.apache.curator.framework.api.ACLProvider;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
+
+public class DefaultACLProvider implements ACLProvider {
+
+  private final List<ACL> globalACLsToAdd = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+
+  @Override
+  public List<ACL> getAclForPath(String zNodePath) {
+    return globalACLsToAdd;
+  }
+
+  @Override
+  public List<ACL> getDefaultAcl() {
+    return globalACLsToAdd;
+  }
 }

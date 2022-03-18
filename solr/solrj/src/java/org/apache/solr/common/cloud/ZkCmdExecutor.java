@@ -142,7 +142,7 @@ public class ZkCmdExecutor {
       int skipPathParts)
       throws KeeperException, InterruptedException {
 
-    if (zkClient.exists(path, true)) {
+    if (zkClient.exists(path)) {
       return;
     }
     try {

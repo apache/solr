@@ -48,7 +48,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
     configureCluster(1).addConfig("_default", configset("cloud-minimal")).configure();
     // replace schema.xml with schema-test.xml
     Path schemaPath = TEST_COLL1_CONF().resolve("schema-nest.xml");
-    cluster.getZkClient().setData("/configs/_default/schema.xml", schemaPath, true);
+    cluster.getZkClient().setData("/configs/_default/schema.xml", schemaPath);
 
     cloudClient = cluster.getSolrClient();
     cloudClient.setDefaultCollection(DEFAULT_COLLECTION);

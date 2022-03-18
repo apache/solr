@@ -334,17 +334,17 @@ public class MiniSolrCloudCluster {
 
     try (SolrZkClient zkClient =
         new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
-      if (!zkClient.exists("/solr/solr.xml", true)) {
-        zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()), true);
+      if (!zkClient.exists("/solr/solr.xml")) {
+        zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()));
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
           zkClient.makePath(
               "/solr" + ZkStateReader.CLUSTER_PROPS,
-              "{'urlScheme':'https'}".getBytes(StandardCharsets.UTF_8),
-              true);
+              "{'urlScheme':'https'}".getBytes(StandardCharsets.UTF_8)
+          );
         }
         if (securityJson.isPresent()) { // configure Solr security
           zkClient.makePath(
-              "/solr/security.json", securityJson.get().getBytes(Charset.defaultCharset()), true);
+              "/solr/security.json", securityJson.get().getBytes(Charset.defaultCharset()));
         }
       }
     }
@@ -687,8 +687,8 @@ public class MiniSolrCloudCluster {
         getZkClient()
             .delete(
                 ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME,
-                -1,
-                true);
+                -1
+            );
       } catch (KeeperException.NoNodeException nne) {
       }
       new ConfigSetAdminRequest.Delete().setConfigSetName(configSet).process(solrClient);
@@ -740,7 +740,7 @@ public class MiniSolrCloudCluster {
   public void zkSetData(String path, byte[] data, boolean retryOnConnLoss)
       throws InterruptedException {
     try {
-      getZkClient().setData(path, data, -1, retryOnConnLoss);
+      getZkClient().setData(path, data, -1);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.UNKNOWN, "Failed writing to Zookeeper", e);
     }
@@ -795,7 +795,7 @@ public class MiniSolrCloudCluster {
     if (cores != null) {
       SolrZkClient zkClient = cores.getZkController().getZkClient();
       zkClient.getSolrZooKeeper().closeCnxn();
-      long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+      long sessionId = zkClient.getZkSessionId();
       zkServer.expire(sessionId);
       if (log.isInfoEnabled()) {
         log.info("Expired zookeeper session {} from node {}", sessionId, jetty.getBaseUrl());

@@ -49,7 +49,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
@@ -486,7 +485,7 @@ public class ZkTestServer {
    */
   public void ensurePathExists(String path) throws IOException {
     try (SolrZkClient client = new SolrZkClient(getZkHost(), 10000)) {
-      client.makePath(path, null, CreateMode.PERSISTENT, null, false, true, 0);
+      client.makePath(path, null, CreateMode.PERSISTENT, null, false);
     } catch (InterruptedException | KeeperException e) {
       e.printStackTrace();
       throw new IOException("Error checking path " + path, SolrZkClient.checkInterrupted(e));
@@ -839,7 +838,7 @@ public class ZkTestServer {
     if (log.isInfoEnabled()) {
       log.info("put {} to {}", file.toAbsolutePath(), destPath);
     }
-    zkClient.makePath(destPath, file, false, true);
+    zkClient.makePath(destPath, file, false);
   }
 
   // static to share with distrib test
@@ -849,42 +848,15 @@ public class ZkTestServer {
     props.put("configName", "conf1");
     final ZkNodeProps zkProps = new ZkNodeProps(props);
 
-    List<Op> ops = new ArrayList<>(2);
-    String path = "/collections";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    path = "/collections/collection1";
-    ops.add(
-        Op.create(
-            path,
-            Utils.toJSON(zkProps),
-            chRootClient.getZkACLProvider().getACLsToAdd(path),
-            CreateMode.PERSISTENT));
-    path = "/collections/collection1/shards";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    path = "/collections/control_collection";
-    ops.add(
-        Op.create(
-            path,
-            Utils.toJSON(zkProps),
-            chRootClient.getZkACLProvider().getACLsToAdd(path),
-            CreateMode.PERSISTENT));
-    path = "/collections/control_collection/shards";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    path = "/configs";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    path = "/configs/conf1";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    chRootClient.multi(ops, true);
+    chRootClient.multi(
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/collections", null),
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/collections/collection1", Utils.toJSON(zkProps)),
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/collections/collection1/shards", null),
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/collections/control_collection", Utils.toJSON(zkProps)),
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/collections/control_collection/shards", null),
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/configs", null),
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/configs/conf1", null)
+    );
 
     // for now, always upload the config and schema to the canonical names
     putConfig("conf1", chRootClient, solrhome, config, "solrconfig.xml");
@@ -902,7 +874,7 @@ public class ZkTestServer {
   }
 
   public void makeSolrZkNode() throws Exception {
-    rootClient.makePath("/solr", false, true);
+    rootClient.makePath("/solr", false);
   }
 
   public void tryCleanSolrZkNode() throws Exception {
@@ -910,7 +882,7 @@ public class ZkTestServer {
   }
 
   void tryCleanPath(String path) throws Exception {
-    if (rootClient.exists(path, true)) {
+    if (rootClient.exists(path)) {
       rootClient.clean(path);
     }
   }

@@ -83,20 +83,20 @@ public class AbstractVMParamsZkACLAndCredentialsProvidersTestBase extends SolrTe
             null,
             null,
             null);
-    zkClient.makePath("/solr", false, true);
+    zkClient.makePath("/solr", false);
     zkClient.close();
 
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     zkClient.create(
-        "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+        "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
     zkClient.makePath(
-        "/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+        "/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
 
     zkClient.create(
         SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
         "content".getBytes(DATA_ENCODING),
-        CreateMode.PERSISTENT,
-        false);
+        CreateMode.PERSISTENT
+    );
     zkClient.close();
 
     clearSecuritySystemProperties();
@@ -112,12 +112,12 @@ public class AbstractVMParamsZkACLAndCredentialsProvidersTestBase extends SolrTe
             "digest",
             ("connectAndAllACLUsername:connectAndAllACLPassword").getBytes(StandardCharsets.UTF_8));
     zkClient.create(
-        "/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+        "/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
     zkClient.makePath(
         "/unprotectedMakePathNode",
         "content".getBytes(DATA_ENCODING),
-        CreateMode.PERSISTENT,
-        false);
+        CreateMode.PERSISTENT
+    );
     zkClient.close();
 
     if (log.isInfoEnabled()) {
@@ -211,15 +211,15 @@ public class AbstractVMParamsZkACLAndCredentialsProvidersTestBase extends SolrTe
                   .getBytes(StandardCharsets.UTF_8));
 
       zkClient.create(
-          "/security.json", "{}".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, false);
-      assertEquals(OPEN_ACL_UNSAFE, zkClient.getACL("/security.json", null, false));
+          "/security.json", "{}".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
+      assertEquals(OPEN_ACL_UNSAFE, zkClient.getACL("/security.json", null));
     }
 
     setSecuritySystemProperties();
     try (SolrZkClient zkClient =
         new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
       ZkController.createClusterZkNodes(zkClient);
-      assertNotEquals(OPEN_ACL_UNSAFE, zkClient.getACL("/security.json", null, false));
+      assertNotEquals(OPEN_ACL_UNSAFE, zkClient.getACL("/security.json", null));
     }
 
     useReadonlyCredentials();
@@ -227,7 +227,7 @@ public class AbstractVMParamsZkACLAndCredentialsProvidersTestBase extends SolrTe
         new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
       NoAuthException e =
           assertThrows(
-              NoAuthException.class, () -> zkClient.getData("/security.json", null, null, false));
+              NoAuthException.class, () -> zkClient.getData("/security.json", null, null));
       assertEquals("/security.json", e.getPath());
     }
   }
@@ -268,27 +268,27 @@ public class AbstractVMParamsZkACLAndCredentialsProvidersTestBase extends SolrTe
       boolean setData,
       boolean delete)
       throws Exception {
-    doTest(getData, () -> zkClient.getData(path, null, null, false));
-    doTest(list, () -> zkClient.getChildren(path, null, false));
+    doTest(getData, () -> zkClient.getData(path, null, null));
+    doTest(list, () -> zkClient.getChildren(path, null));
 
     doTest(
         create,
         () -> {
-          zkClient.create(path + "/subnode", null, CreateMode.PERSISTENT, false);
-          zkClient.delete(path + "/subnode", -1, false);
+          zkClient.create(path + "/subnode", null, CreateMode.PERSISTENT);
+          zkClient.delete(path + "/subnode", -1);
         });
     doTest(
         create,
         () -> {
-          zkClient.makePath(path + "/subnode/subsubnode", false);
-          zkClient.delete(path + "/subnode/subsubnode", -1, false);
-          zkClient.delete(path + "/subnode", -1, false);
+          zkClient.makePath(path + "/subnode/subsubnode");
+          zkClient.delete(path + "/subnode/subsubnode", -1);
+          zkClient.delete(path + "/subnode", -1);
         });
 
-    doTest(setData, () -> zkClient.setData(path, (byte[]) null, false));
+    doTest(setData, () -> zkClient.setData(path, (byte[]) null));
 
     // Actually about the ACLs on /solr, but that is protected
-    doTest(delete, () -> zkClient.delete(path, -1, false));
+    doTest(delete, () -> zkClient.delete(path, -1));
   }
 
   interface ExceptingRunnable {

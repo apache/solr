@@ -35,7 +35,7 @@ public class RefreshCollectionMessage implements Overseer.Message {
         overseer
             .getZkStateReader()
             .getZkClient()
-            .exists(ZkStateReader.getCollectionPath(collection), null, true);
+            .exists(ZkStateReader.getCollectionPath(collection), null);
     if (stat == null) {
       // collection does not exist
       return clusterState.copyWith(collection, null);

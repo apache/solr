@@ -57,7 +57,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
 
-      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1");
 
       // create new collection
       ZkWriteCommand c1 =
@@ -102,7 +102,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
 
-      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1");
 
       ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
       DocCollection state =
@@ -115,7 +115,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
       writer.writePendingUpdates();
-      assertTrue(zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
+      assertTrue(zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
       reader.waitForState(
           "c1", 1, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState != null);
 
@@ -164,7 +164,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       // Initially there should be no c1 collection.
       assertNull(reader.getClusterState().getCollectionRef("c1"));
 
-      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1");
       reader.forceUpdateCollection("c1");
 
       // Still no c1 collection, despite a collection path.
@@ -184,7 +184,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
       writer.writePendingUpdates();
 
-      assertTrue(zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
+      assertTrue(zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
 
       // reader.forceUpdateCollection("c1");
       reader.waitForState("c1", TIMEOUT, TimeUnit.SECONDS, (n, c) -> c != null);

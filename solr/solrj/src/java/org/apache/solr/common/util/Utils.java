@@ -698,7 +698,7 @@ public class Utils {
       SolrZkClient zkClient, String path, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
     try {
-      byte[] bytes = zkClient.getData(path, null, null, retryOnConnLoss);
+      byte[] bytes = zkClient.getData(path, null, null);
       if (bytes != null && bytes.length > 0) {
         return (Map<String, Object>) Utils.fromJSON(bytes);
       }

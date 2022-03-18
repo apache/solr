@@ -709,7 +709,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     int currentVersion = -1;
     final String path = getManagedSchemaZkPath(configSet);
     try {
-      Stat stat = cc.getZkController().getZkClient().exists(path, null, true);
+      Stat stat = cc.getZkController().getZkClient().exists(path, null);
       if (stat != null) {
         currentVersion = stat.getVersion();
       }
@@ -925,7 +925,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
     for (String path : toRemoveFiles) {
       try {
-        zkClient.delete(path, -1, false);
+        zkClient.delete(path, -1);
       } catch (KeeperException.NoNodeException nne) {
         // no-op
       } catch (KeeperException | InterruptedException e) {
@@ -991,9 +991,9 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       for (String path : langFilesToRestore) {
         String copyToPath = path.replace(origPathDir, replacePathDir);
         try {
-          if (!zkClient.exists(copyToPath, true)) {
-            zkClient.makePath(copyToPath, false, true);
-            zkClient.setData(copyToPath, zkClient.getData(path, null, null, true), true);
+          if (!zkClient.exists(copyToPath)) {
+            zkClient.makePath(copyToPath, false);
+            zkClient.setData(copyToPath, zkClient.getData(path, null, null));
           }
         } catch (KeeperException | InterruptedException e) {
           throw new IOException(

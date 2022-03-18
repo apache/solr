@@ -16,6 +16,9 @@
  */
 package org.apache.solr.common.cloud;
 
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
 
 /**
@@ -25,6 +28,13 @@ import org.apache.zookeeper.KeeperException.SessionExpiredException;
  * org.apache.solr.cloud.ZkController#removeOnReconnectListener(OnReconnect) when it no longer needs
  * to be notified of ZK reconnection events.
  */
-public interface OnReconnect {
-  void command() throws SessionExpiredException;
+public interface OnReconnect extends ConnectionStateListener {
+  void command();
+
+  @Override
+  default void stateChanged(CuratorFramework client, ConnectionState newState) {
+    if (ConnectionState.RECONNECTED.equals(newState)) {
+      command();
+    }
+  }
 }

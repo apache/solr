@@ -276,8 +276,8 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
                     + "/leader_elect/"
                     + slice.getName()
                     + "/election",
-                null,
-                true);
+                null
+            );
 
     if (leaderQueue.size() != liveReplicas.size()) {
 

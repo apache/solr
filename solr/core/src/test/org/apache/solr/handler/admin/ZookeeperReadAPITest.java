@@ -82,7 +82,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
       }
       cluster
           .getZkClient()
-          .create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT, true);
+          .create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT);
       Utils.executeGET(
           client.getHttpClient(),
           basezk + "/configs/_default/testdata",

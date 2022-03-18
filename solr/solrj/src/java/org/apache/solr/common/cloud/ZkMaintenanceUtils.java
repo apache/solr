@@ -83,7 +83,7 @@ public class ZkMaintenanceUtils {
     StringBuilder sb = new StringBuilder();
 
     if (recurse == false) {
-      for (String node : zkClient.getChildren(root, null, true)) {
+      for (String node : zkClient.getChildren(root, null)) {
         if (node.equals("zookeeper") == false) {
           sb.append(node).append(System.lineSeparator());
         }
@@ -137,7 +137,7 @@ public class ZkMaintenanceUtils {
     // Make sure -recurse is specified if the source has children.
     if (recurse == false) {
       if (srcIsZk) {
-        if (zkClient.getChildren(src, null, true).size() != 0) {
+        if (zkClient.getChildren(src, null).size() != 0) {
           throw new SolrServerException(
               "Zookeeper node " + src + " has children and recurse is false");
         }
@@ -169,7 +169,7 @@ public class ZkMaintenanceUtils {
     // Copying individual files from ZK requires special handling since downloadFromZK assumes the
     // node has children. This is kind of a weak test for the notion of "directory" on Zookeeper. ZK
     // -> local copy where ZK is a parent node
-    if (zkClient.getChildren(src, null, true).size() > 0) {
+    if (zkClient.getChildren(src, null).size() > 0) {
       downloadFromZK(zkClient, src, Paths.get(dst));
       return;
     }
@@ -179,7 +179,7 @@ public class ZkMaintenanceUtils {
       if (dst.endsWith(File.separator) == false) dst += File.separator;
       dst = normalizeDest(src, dst, srcIsZk, dstIsZk);
     }
-    byte[] data = zkClient.getData(src, null, null, true);
+    byte[] data = zkClient.getData(src, null, null);
     Path filename = Paths.get(dst);
     Files.createDirectories(filename.getParent());
     log.info("Writing file {}", filename);
@@ -217,9 +217,9 @@ public class ZkMaintenanceUtils {
     String destName = normalizeDest(src, dst, true, true);
 
     // Special handling if the source has no children, i.e. copying just a single file.
-    if (zkClient.getChildren(src, null, true).size() == 0) {
-      zkClient.makePath(destName, false, true);
-      zkClient.setData(destName, zkClient.getData(src, null, null, true), true);
+    if (zkClient.getChildren(src, null).size() == 0) {
+      zkClient.makePath(destName, false);
+      zkClient.setData(destName, zkClient.getData(src, null, null));
     } else {
       traverseZkTree(zkClient, src, VISIT_ORDER.VISIT_PRE, new ZkCopier(zkClient, src, destName));
     }
@@ -236,8 +236,8 @@ public class ZkMaintenanceUtils {
   private static void checkAllZnodesThere(SolrZkClient zkClient, String src, String dst)
       throws KeeperException, InterruptedException, SolrServerException {
 
-    for (String node : zkClient.getChildren(src, null, true)) {
-      if (zkClient.exists(dst + "/" + node, true) == false) {
+    for (String node : zkClient.getChildren(src, null)) {
+      if (zkClient.exists(dst + "/" + node) == false) {
         throw new SolrServerException(
             "mv command did not move node " + dst + "/" + node + " source left intact");
       }
@@ -256,7 +256,7 @@ public class ZkMaintenanceUtils {
           try {
             if (!znode.equals("/")) {
               try {
-                zkClient.delete(znode, -1, true);
+                zkClient.delete(znode, -1);
               } catch (KeeperException.NotEmptyException e) {
                 clean(zkClient, znode);
               }
@@ -295,7 +295,7 @@ public class ZkMaintenanceUtils {
     for (String subpath : paths) {
       if (!subpath.equals("/")) {
         try {
-          zkClient.delete(subpath, -1, true);
+          zkClient.delete(subpath, -1);
         } catch (KeeperException.NotEmptyException | KeeperException.NoNodeException e) {
           // expected
         }
@@ -339,11 +339,11 @@ public class ZkMaintenanceUtils {
             try {
               // if the path exists (and presumably we're uploading data to it) just set its data
               if (file.toFile().getName().equals(ZKNODE_DATA_FILE)
-                  && zkClient.exists(zkNode, true)) {
-                zkClient.setData(zkNode, file, true);
+                  && zkClient.exists(zkNode)) {
+                zkClient.setData(zkNode, file);
               } else if (file == rootPath) {
                 // We are only uploading a single file, preVisitDirectory was never called
-                zkClient.makePath(zkNode, file, false, true);
+                zkClient.makePath(zkNode, file, false);
               } else {
                 // Skip path parts here because they should have been created during
                 // preVisitDirectory
@@ -374,7 +374,7 @@ public class ZkMaintenanceUtils {
             try {
               if (dir.equals(rootPath)) {
                 // Make sure the root path exists, including potential parents
-                zkClient.makePath(zkNode, true);
+                zkClient.makePath(zkNode);
               } else {
                 // Skip path parts here because they should have been created during previous visits
                 int pathParts = dir.getNameCount() + partsOffset;
@@ -397,13 +397,13 @@ public class ZkMaintenanceUtils {
 
   private static boolean isEphemeral(SolrZkClient zkClient, String zkPath)
       throws KeeperException, InterruptedException {
-    Stat znodeStat = zkClient.exists(zkPath, null, true);
+    Stat znodeStat = zkClient.exists(zkPath, null);
     return znodeStat.getEphemeralOwner() != 0;
   }
 
   private static int copyDataDown(SolrZkClient zkClient, String zkPath, Path file)
       throws IOException, KeeperException, InterruptedException {
-    byte[] data = zkClient.getData(zkPath, null, null, true);
+    byte[] data = zkClient.getData(zkPath, null, null);
     if (data != null && data.length > 0) { // There are apparently basically empty ZNodes.
       log.info("Writing file {}", file);
       Files.write(file, data);
@@ -415,7 +415,7 @@ public class ZkMaintenanceUtils {
   public static void downloadFromZK(SolrZkClient zkClient, String zkPath, Path file)
       throws IOException {
     try {
-      List<String> children = zkClient.getChildren(zkPath, null, true);
+      List<String> children = zkClient.getChildren(zkPath, null);
       // If it has no children, it's a leaf node, write the associated data from the ZNode.
       // Otherwise, continue recursing, but write the associated data to a special file if any
       if (children.size() == 0) {
@@ -482,7 +482,7 @@ public class ZkMaintenanceUtils {
     }
     List<String> children;
     try {
-      children = zkClient.getChildren(path, null, true);
+      children = zkClient.getChildren(path, null);
     } catch (KeeperException.NoNodeException r) {
       return;
     }
@@ -569,7 +569,7 @@ class ZkCopier implements ZkMaintenanceUtils.ZkVisitor {
   public void visit(String path) throws InterruptedException, KeeperException {
     String finalDestination = dest;
     if (path.equals(source) == false) finalDestination += "/" + path.substring(source.length() + 1);
-    zkClient.makePath(finalDestination, false, true);
-    zkClient.setData(finalDestination, zkClient.getData(path, null, null, true), true);
+    zkClient.makePath(finalDestination, false);
+    zkClient.setData(finalDestination, zkClient.getData(path, null, null));
   }
 }

@@ -60,14 +60,14 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
     if (request.get("success") != null) {
       assertTrue(
-          getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
+          getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
 
       CollectionAdminRequest.Delete delete =
           CollectionAdminRequest.deleteCollection(collectionName);
       cloudClient.request(delete);
 
       assertFalse(
-          getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
+          getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
 
       // currently, removing a collection does not wait for cores to be unloaded
       TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
@@ -119,14 +119,14 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
       assertTrue(
           ZkStateReader.from(cloudClient)
               .getZkClient()
-              .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
+              .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
 
       String configName =
           cloudClient.getClusterStateProvider().getCollection(collectionName).getConfigName();
 
       // config for this collection is '.AUTOCREATED', and exists globally
       assertTrue(configName.endsWith(".AUTOCREATED"));
-      assertTrue(getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName, true));
+      assertTrue(getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName));
 
       CollectionAdminRequest.Delete delete =
           CollectionAdminRequest.deleteCollection(collectionName);
@@ -134,11 +134,11 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
       // collection has been deleted
       assertFalse(
-          getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
+          getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
       // ... and so has its autocreated config set
       assertFalse(
           "The auto-created config set should have been deleted with its collection",
-          getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName, true));
+          getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName));
     }
   }
 
@@ -155,7 +155,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
       // collection exists now
       assertTrue(
           getZkClient()
-              .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameInitial, false));
+              .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameInitial));
 
       String configName =
           cloudClient
@@ -165,7 +165,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
       // config for this collection is '.AUTOCREATED', and exists globally
       assertTrue(configName.endsWith(".AUTOCREATED"));
-      assertTrue(getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName, true));
+      assertTrue(getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName));
 
       // create a second collection, sharing the same configSet
       String collectionNameWithSharedConfig =
@@ -182,7 +182,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
           "The new collection should exist after a successful creation",
           getZkClient()
               .exists(
-                  ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameWithSharedConfig, false));
+                  ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameWithSharedConfig));
 
       String configNameOfSecondCollection =
           cloudClient
@@ -204,11 +204,11 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
       // initial collection has been deleted
       assertFalse(
           getZkClient()
-              .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameInitial, false));
+              .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameInitial));
       // ... but not its autocreated config set, since it is shared with another collection
       assertTrue(
           "The auto-created config set should NOT have been deleted. Another collection is using it.",
-          getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName, true));
+          getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName));
 
       // delete the second collection - the config set should now be deleted, since it is no longer
       // shared any other collection
@@ -220,12 +220,12 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
       assertFalse(
           getZkClient()
               .exists(
-                  ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameWithSharedConfig, false));
+                  ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameWithSharedConfig));
       // ... and the config set is now also deleted - once it doesn't get referenced by any
       // collection
       assertFalse(
           "The auto-created config set should have been deleted now. No collection is referencing it.",
-          getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName, true));
+          getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + configName));
     }
   }
 

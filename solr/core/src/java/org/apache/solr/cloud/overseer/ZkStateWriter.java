@@ -247,18 +247,18 @@ public class ZkStateWriter {
             reader.getZkClient().clean(path);
           } else {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
-            if (reader.getZkClient().exists(path, true)) {
+            if (reader.getZkClient().exists(path)) {
               if (log.isDebugEnabled()) {
                 log.debug("going to update_collection {} version: {}", path, c.getZNodeVersion());
               }
-              Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
+              Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion());
               DocCollection newCollection =
                   new DocCollection(
                       name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion());
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
               log.debug("going to create_collection {}", path);
-              reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
+              reader.getZkClient().create(path, data, CreateMode.PERSISTENT);
               DocCollection newCollection =
                   new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0);
               clusterState = clusterState.copyWith(name, newCollection);

@@ -1577,7 +1577,7 @@ public class SolrCLI implements CLIO {
               && !"".equals(confname.trim())
               && ZkStateReader.from(cloudSolrClient)
                   .getZkClient()
-                  .exists("/configs/" + confname, true);
+                  .exists("/configs/" + confname);
 
       if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
         // do nothing
@@ -2102,7 +2102,7 @@ public class SolrCLI implements CLIO {
       }
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
       try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
-        if (recurse == false && zkClient.getChildren(znode, null, true).size() != 0) {
+        if (recurse == false && zkClient.getChildren(znode, null).size() != 0) {
           throw new SolrServerException(
               "ZooKeeper node " + znode + " has children and recurse has NOT been specified.");
         }
@@ -2245,7 +2245,7 @@ public class SolrCLI implements CLIO {
 
         String znode = cli.getOptionValue("path");
         echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
-        zkClient.makePath(znode, true);
+        zkClient.makePath(znode);
       } catch (Exception e) {
         log.error("Could not complete mkroot operation for reason: ", e);
         throw (e);
@@ -4254,8 +4254,8 @@ public class SolrCLI implements CLIO {
             // check if security is already enabled or not
             if (!zkInaccessible) {
               try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
-                if (zkClient.exists("/security.json", true)) {
-                  byte oldSecurityBytes[] = zkClient.getData("/security.json", null, null, true);
+                if (zkClient.exists("/security.json")) {
+                  byte oldSecurityBytes[] = zkClient.getData("/security.json", null, null);
                   if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
                     CLIO.out(
                         "Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
@@ -4280,7 +4280,7 @@ public class SolrCLI implements CLIO {
               echoIfVerbose("Uploading following security.json: " + securityJson, cli);
               try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
                 zkClient.setData(
-                    "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
+                    "/security.json", securityJson.getBytes(StandardCharsets.UTF_8));
               } catch (Exception ex) {
                 if (zkInaccessible == false) {
                   CLIO.out(
@@ -4327,7 +4327,7 @@ public class SolrCLI implements CLIO {
             echoIfVerbose("Uploading following security.json: {}", cli);
 
             try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
-              zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
+              zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8));
             }
           }
 
@@ -4405,8 +4405,8 @@ public class SolrCLI implements CLIO {
 
             // check if security is already enabled or not
             try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
-              if (zkClient.exists("/security.json", true)) {
-                byte oldSecurityBytes[] = zkClient.getData("/security.json", null, null, true);
+              if (zkClient.exists("/security.json")) {
+                byte oldSecurityBytes[] = zkClient.getData("/security.json", null, null);
                 if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
                   CLIO.out(
                       "Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
@@ -4473,7 +4473,7 @@ public class SolrCLI implements CLIO {
             echoIfVerbose("Uploading following security.json: " + securityJson, cli);
             try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
               zkClient.setData(
-                  "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
+                  "/security.json", securityJson.getBytes(StandardCharsets.UTF_8));
             }
           }
 
@@ -4521,7 +4521,7 @@ public class SolrCLI implements CLIO {
             echoIfVerbose("Uploading following security.json: {}", cli);
 
             try (SolrZkClient zkClient = new SolrZkClient(zkHost, 10000)) {
-              zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
+              zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8));
             }
           }
 

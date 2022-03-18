@@ -16,28 +16,11 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.util.Collection;
+import org.apache.curator.framework.AuthInfo;
+
+import java.util.List;
 
 public interface ZkCredentialsProvider {
 
-  public class ZkCredentials {
-    String scheme;
-    byte[] auth;
-
-    public ZkCredentials(String scheme, byte[] auth) {
-      super();
-      this.scheme = scheme;
-      this.auth = auth;
-    }
-
-    public String getScheme() {
-      return scheme;
-    }
-
-    public byte[] getAuth() {
-      return auth;
-    }
-  }
-
-  Collection<ZkCredentials> getCredentials();
+  List<AuthInfo> getCredentials();
 }

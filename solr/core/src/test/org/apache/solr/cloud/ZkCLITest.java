@@ -92,7 +92,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
-    zkClient.makePath("/solr", false, true);
+    zkClient.makePath("/solr", false);
     zkClient.close();
 
     this.zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
@@ -113,7 +113,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Test
   public void testBootstrapWithChroot() throws Exception {
     String chroot = "/foo/bar";
-    assertFalse(zkClient.exists(chroot, true));
+    assertFalse(zkClient.exists(chroot));
 
     String[] args =
         new String[] {
@@ -127,7 +127,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     ZkCLI.main(args);
 
-    assertTrue(zkClient.exists(chroot + ZkConfigSetService.CONFIGS_ZKNODE + "/collection1", true));
+    assertTrue(zkClient.exists(chroot + ZkConfigSetService.CONFIGS_ZKNODE + "/collection1"));
   }
 
   @Test
@@ -137,7 +137,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "makepath", "/path/mynewpath"};
     ZkCLI.main(args);
 
-    assertTrue(zkClient.exists("/path/mynewpath", true));
+    assertTrue(zkClient.exists("/path/mynewpath"));
   }
 
   @Test
@@ -148,17 +148,17 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/data.txt", data};
     ZkCLI.main(args);
 
-    zkClient.getData("/data.txt", null, null, true);
+    zkClient.getData("/data.txt", null, null);
 
     assertArrayEquals(
-        zkClient.getData("/data.txt", null, null, true), data.getBytes(StandardCharsets.UTF_8));
+        zkClient.getData("/data.txt", null, null), data.getBytes(StandardCharsets.UTF_8));
 
     // test re-put to existing
     data = "my data deux";
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/data.txt", data};
     ZkCLI.main(args);
     assertArrayEquals(
-        zkClient.getData("/data.txt", null, null, true), data.getBytes(StandardCharsets.UTF_8));
+        zkClient.getData("/data.txt", null, null), data.getBytes(StandardCharsets.UTF_8));
   }
 
   @Test
@@ -176,7 +176,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     ZkCLI.main(args);
 
     String fromZk =
-        new String(zkClient.getData("/solr.xml", null, null, true), StandardCharsets.UTF_8);
+        new String(zkClient.getData("/solr.xml", null, null), StandardCharsets.UTF_8);
     File locFile = new File(SOLR_HOME + File.separator + "solr-stress-new.xml");
     InputStream is = new FileInputStream(locFile);
     String fromLoc;
@@ -208,7 +208,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testList() throws Exception {
-    zkClient.makePath("/test", true);
+    zkClient.makePath("/test");
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "list"};
 
     ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
@@ -224,7 +224,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testLs() throws Exception {
-    zkClient.makePath("/test/path", true);
+    zkClient.makePath("/test/path");
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "ls", "/test"};
 
     ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
@@ -277,7 +277,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     }
     ZkCLI.main(upconfigArgs);
 
-    assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, true));
+    assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname));
 
     // print help
     // ZkCLI.main(new String[0]);
@@ -298,7 +298,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     ZkNodeProps collectionProps =
         ZkNodeProps.load(
-            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", null, null, true));
+            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", null, null));
     assertTrue(collectionProps.containsKey("configName"));
     assertEquals(confsetname, collectionProps.getStr("configName"));
 
@@ -323,7 +323,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     File[] files = confDir.listFiles();
     List<String> zkFiles =
-        zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
+        zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null);
     assertEquals(files.length, zkFiles.size());
 
     File sourceConfDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);
@@ -363,14 +363,14 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "clear", "/"};
     ZkCLI.main(args);
 
-    assertEquals(0, zkClient.getChildren("/", null, true).size());
+    assertEquals(0, zkClient.getChildren("/", null).size());
   }
 
   @Test
   public void testGet() throws Exception {
     String getNode = "/getNode";
     byte[] data = "getNode-data".getBytes(StandardCharsets.UTF_8);
-    this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
+    this.zkClient.create(getNode, data, CreateMode.PERSISTENT);
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "get", getNode};
     ZkCLI.main(args);
   }
@@ -381,7 +381,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     String getNode = "/getFileNode";
     byte[] data = "getFileNode-data".getBytes(StandardCharsets.UTF_8);
-    this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
+    this.zkClient.create(getNode, data, CreateMode.PERSISTENT);
 
     File file =
         new File(tmpDir, "solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
@@ -473,7 +473,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     try (SolrZkClient zkClient =
         new SolrZkClient(
             zkServer.getZkAddress(), AbstractDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT)) {
-      zkClient.getData("/", null, null, true);
+      zkClient.getData("/", null, null);
     } catch (KeeperException.NoAuthException e) {
       excepted = true;
     }

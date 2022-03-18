@@ -34,6 +34,10 @@ public class SaslZkACLProvider extends SecurityAwareZkACLProvider {
   private static final String superUser =
       System.getProperty("solr.authorization.superuser", "solr");
 
+  public SaslZkACLProvider(String chroot) {
+    super(chroot);
+  }
+
   @Override
   protected List<ACL> createNonSecurityACLsToAdd() {
     return Arrays.asList(

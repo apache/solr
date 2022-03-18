@@ -175,7 +175,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
         ccc.getZkStateReader()
             .getZkClient()
-            .create(collectionPath, data, CreateMode.PERSISTENT, true);
+            .create(collectionPath, data, CreateMode.PERSISTENT);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
         // When cluster state updates are handled by Overseer, ask it to load that collection it
@@ -323,7 +323,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
               new SliceMutator(ccc.getSolrCloudManager()).addReplica(clusterState, props);
           byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
           //        log.info("collection updated : {}", new String(data, StandardCharsets.UTF_8));
-          ccc.getZkStateReader().getZkClient().setData(collectionPath, data, true);
+          ccc.getZkStateReader().getZkClient().setData(collectionPath, data);
           clusterState = clusterState.copyWith(collectionName, command.collection);
           newColl = command.collection;
         } else {

@@ -150,7 +150,7 @@ public class RequestParams implements MapSerializable {
                 .getZkController()
                 .getZkClient()
                 .exists(
-                    resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null, true);
+                    resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null);
         if (log.isDebugEnabled()) {
           log.debug(
               "latest version of {}/{} in ZK  is : {}",

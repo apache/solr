@@ -29,6 +29,17 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
   private List<ACL> nonSecurityACLsToAdd;
   private List<ACL> securityACLsToAdd;
 
+  private final String chroot;
+
+  public SecurityAwareZkACLProvider(String chroot) {
+    if (chroot == null){
+      chroot = "";
+    } else if (chroot.endsWith("/")) {
+      chroot = chroot.substring(0, chroot.length() - 1);
+    }
+    this.chroot = chroot;
+  }
+
   @Override
   public final List<ACL> getACLsToAdd(String zNodePath) {
     if (isSecurityZNodePath(zNodePath)) {
@@ -38,11 +49,16 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
     }
   }
 
+  @Override
+  public final List<ACL> getDefaultAcl() {
+    return getNonSecurityACLsToAdd();
+  }
+
   protected boolean isSecurityZNodePath(String zNodePath) {
     return zNodePath != null
-        && (zNodePath.equals(ZkStateReader.SOLR_SECURITY_CONF_PATH)
-            || zNodePath.equals(SECURITY_ZNODE_PATH)
-            || zNodePath.startsWith(SECURITY_ZNODE_PATH + "/"));
+        && (zNodePath.equals(chroot + ZkStateReader.SOLR_SECURITY_CONF_PATH)
+            || zNodePath.equals(chroot + SECURITY_ZNODE_PATH)
+            || zNodePath.startsWith(chroot + SECURITY_ZNODE_PATH + "/"));
   }
 
   /**

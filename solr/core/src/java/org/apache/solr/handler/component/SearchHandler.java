@@ -302,7 +302,7 @@ public class SearchHandler extends RequestHandlerBase
       ZkController zkController = cc.getZkController();
       boolean zkConnected =
           zkController != null
-              && !zkController.getZkClient().getConnectionManager().isLikelyExpired();
+              && !zkController.getZkClient().isConnected();
       if (requireZkConnected && false == zkConnected) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ZooKeeper is not connected");
       } else {

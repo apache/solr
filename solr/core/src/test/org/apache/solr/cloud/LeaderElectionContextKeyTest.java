@@ -129,7 +129,7 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
       throws KeeperException, InterruptedException {
     return client.getChildren(
         "/collections/" + collection + "/leader_elect/" + shard + LeaderElector.ELECTION_NODE,
-        null,
-        true);
+        null
+    );
   }
 }

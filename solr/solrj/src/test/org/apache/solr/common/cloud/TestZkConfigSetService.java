@@ -146,7 +146,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     final String writeablePassword = "writeable";
 
     ZkACLProvider aclProvider =
-        new DefaultZkACLProvider() {
+        new DefaultACLProvider() {
           @Override
           protected List<ACL> createGlobalACLsToAdd() {
             try {
@@ -240,7 +240,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     System.setProperty("zkHost", zkServer.getZkAddress());
 
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
-    zkClient.makePath("/solr", false, true);
+    zkClient.makePath("/solr", false);
     cc.setCoreConfigService(new ZkConfigSetService(zkClient));
     assertFalse(cc.getConfigSetService().checkConfigExists("collection1"));
     ConfigSetService.bootstrapConf(cc);
@@ -260,7 +260,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       }
 
       @Override
-      protected ZkACLProvider createZkACLProvider() {
+      protected ZkACLProvider createACLProvider() {
         return aclProvider;
       }
     };

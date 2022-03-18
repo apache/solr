@@ -486,9 +486,9 @@ public class ZkStateReader implements SolrCloseable {
                 byte[] data = "{}".getBytes(StandardCharsets.UTF_8);
                 if (EventType.NodeDeleted.equals(event.getType())) {
                   // Node deleted, just recreate watch without attempting a read - SOLR-9679
-                  getZkClient().exists(SOLR_SECURITY_CONF_PATH, this, true);
+                  getZkClient().exists(SOLR_SECURITY_CONF_PATH, this);
                 } else {
-                  data = getZkClient().getData(SOLR_SECURITY_CONF_PATH, this, stat, true);
+                  data = getZkClient().getData(SOLR_SECURITY_CONF_PATH, this, stat);
                 }
                 try {
                   callback.call(new Pair<>(data, stat));
@@ -508,8 +508,8 @@ public class ZkStateReader implements SolrCloseable {
               log.warn("Interrupted", e);
             }
           }
-        },
-        true);
+        }
+    );
   }
 
   /**
@@ -577,7 +577,7 @@ public class ZkStateReader implements SolrCloseable {
     synchronized (refreshCollectionListLock) {
       List<String> children = null;
       try {
-        children = zkClient.getChildren(COLLECTIONS_ZKNODE, watcher, true);
+        children = zkClient.getChildren(COLLECTIONS_ZKNODE, watcher);
       } catch (KeeperException.NoNodeException e) {
         log.warn("Error fetching collection names: ", e);
         // fall through
@@ -671,7 +671,7 @@ public class ZkStateReader implements SolrCloseable {
         if (cachedDocCollection != null) {
           Stat freshStats = null;
           try {
-            freshStats = zkClient.exists(getCollectionPath(collName), null, true);
+            freshStats = zkClient.exists(getCollectionPath(collName), null);
           } catch (Exception e) {
           }
           if (freshStats != null
@@ -709,7 +709,7 @@ public class ZkStateReader implements SolrCloseable {
     synchronized (refreshLiveNodesLock) {
       SortedSet<String> newLiveNodes;
       try {
-        List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
+        List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher);
         newLiveNodes = new TreeSet<>(nodeList);
       } catch (KeeperException.NoNodeException e) {
         newLiveNodes = emptySortedSet();
@@ -1063,7 +1063,7 @@ public class ZkStateReader implements SolrCloseable {
         try {
           byte[] data =
               zkClient.getData(
-                  ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
+                  ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat());
           @SuppressWarnings("unchecked")
           Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(data);
           this.clusterProperties =
@@ -1079,7 +1079,7 @@ public class ZkStateReader implements SolrCloseable {
           log.debug("Loaded empty cluster properties");
           // set an exists watch, and if the node has been created since the last call,
           // read the data again
-          if (zkClient.exists(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, true) == null)
+          if (zkClient.exists(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher) == null)
             return;
         }
       }
@@ -1192,7 +1192,7 @@ public class ZkStateReader implements SolrCloseable {
     while (true) {
       try {
         Stat stat = new Stat();
-        byte[] data = zkClient.getData(znodePath, watcher, stat, true);
+        byte[] data = zkClient.getData(znodePath, watcher, stat);
         @SuppressWarnings("unchecked")
         Map<String, String> props = (Map<String, String>) Utils.fromJSON(data);
         return new VersionedCollectionProps(stat.getVersion(), props);
@@ -1204,7 +1204,7 @@ public class ZkStateReader implements SolrCloseable {
       } catch (KeeperException.NoNodeException e) {
         if (watcher != null) {
           // Leave an exists watch in place in case a collectionprops.json is created later.
-          Stat exists = zkClient.exists(znodePath, watcher, true);
+          Stat exists = zkClient.exists(znodePath, watcher);
           if (exists != null) {
             // Rare race condition, we tried to fetch the data and couldn't find it, then we found
             // it exists. Loop and try again.
@@ -1228,9 +1228,9 @@ public class ZkStateReader implements SolrCloseable {
     }
     try {
       Stat stat = new Stat();
-      if (getZkClient().exists(SOLR_SECURITY_CONF_PATH, true)) {
+      if (getZkClient().exists(SOLR_SECURITY_CONF_PATH)) {
         final byte[] data =
-            getZkClient().getData(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, stat, true);
+            getZkClient().getData(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, stat);
         return data != null && data.length > 0
             ? new ConfigData((Map<String, Object>) Utils.fromJSON(data), stat.getVersion())
             : null;
@@ -1330,7 +1330,7 @@ public class ZkStateReader implements SolrCloseable {
       Stat stat = new Stat();
       List<String> replicaStates = null;
       try {
-        replicaStates = zkClient.getChildren(collectionPath, this, stat, true);
+        replicaStates = zkClient.getChildren(collectionPath, this, stat);
         PerReplicaStates newStates =
             new PerReplicaStates(collectionPath, stat.getCversion(), replicaStates);
         DocCollection oldState = watchedCollectionStates.get(coll);
@@ -1558,7 +1558,7 @@ public class ZkStateReader implements SolrCloseable {
           });
       try {
         Stat stat = new Stat();
-        byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
+        byte[] data = zkClient.getData(collectionPath, watcher, stat);
 
         // This factory method can detect a missing configName and supply it by reading it from the
         // old ZK location.
@@ -1572,7 +1572,7 @@ public class ZkStateReader implements SolrCloseable {
       } catch (KeeperException.NoNodeException e) {
         if (watcher != null) {
           // Leave an exists watch in place in case a state.json is created later.
-          Stat exists = zkClient.exists(collectionPath, watcher, true);
+          Stat exists = zkClient.exists(collectionPath, watcher);
           if (exists != null) {
             // Rare race condition, we tried to fetch the data and couldn't find it, then we found
             // it exists. Loop and try again.
@@ -2122,7 +2122,7 @@ public class ZkStateReader implements SolrCloseable {
   private void refreshAliases(AliasesManager watcher) throws KeeperException, InterruptedException {
     synchronized (getUpdateLock()) {
       constructState(Collections.emptySet());
-      zkClient.exists(ALIASES, watcher, true);
+      zkClient.exists(ALIASES, watcher);
     }
     aliasesManager.update();
   }
@@ -2181,7 +2181,7 @@ public class ZkStateReader implements SolrCloseable {
         try {
           try {
             final Stat stat =
-                getZkClient().setData(ALIASES, modAliasesJson, curAliases.getZNodeVersion(), true);
+                getZkClient().setData(ALIASES, modAliasesJson, curAliases.getZNodeVersion());
             setIfNewer(Aliases.fromJSON(modAliasesJson, stat.getVersion()));
             return;
           } catch (KeeperException.BadVersionException e) {
@@ -2223,7 +2223,7 @@ public class ZkStateReader implements SolrCloseable {
       // Call sync() first to ensure the subsequent read (getData) is up to date.
       zkClient.getSolrZooKeeper().sync(ALIASES, null, null);
       Stat stat = new Stat();
-      final byte[] data = zkClient.getData(ALIASES, null, stat, true);
+      final byte[] data = zkClient.getData(ALIASES, null, stat);
       return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));
     }
 
@@ -2239,7 +2239,7 @@ public class ZkStateReader implements SolrCloseable {
 
         // re-register the watch
         Stat stat = new Stat();
-        final byte[] data = zkClient.getData(ALIASES, this, stat, true);
+        final byte[] data = zkClient.getData(ALIASES, this, stat);
         // note: it'd be nice to avoid possibly needlessly parsing if we don't update aliases but
         // not a big deal
         setIfNewer(Aliases.fromJSON(data, stat.getVersion()));

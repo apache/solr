@@ -42,21 +42,24 @@ public class VMParamsAllAndReadonlyDigestZkACLProvider extends SecurityAwareZkAC
   final String zkDigestReadonlyPasswordVMParamName;
   final Properties credentialsProps;
 
-  public VMParamsAllAndReadonlyDigestZkACLProvider() {
+  public VMParamsAllAndReadonlyDigestZkACLProvider(String chroot) {
     this(
         VMParamsSingleSetCredentialsDigestZkCredentialsProvider
             .DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME,
         VMParamsSingleSetCredentialsDigestZkCredentialsProvider
             .DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME,
         DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
-        DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
+        DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
+        chroot);
   }
 
   public VMParamsAllAndReadonlyDigestZkACLProvider(
       String zkDigestAllUsernameVMParamName,
       String zkDigestAllPasswordVMParamName,
       String zkDigestReadonlyUsernameVMParamName,
-      String zkDigestReadonlyPasswordVMParamName) {
+      String zkDigestReadonlyPasswordVMParamName,
+      String chroot) {
+    super(chroot);
     this.zkDigestAllUsernameVMParamName = zkDigestAllUsernameVMParamName;
     this.zkDigestAllPasswordVMParamName = zkDigestAllPasswordVMParamName;
     this.zkDigestReadonlyUsernameVMParamName = zkDigestReadonlyUsernameVMParamName;

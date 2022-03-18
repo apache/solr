@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkCredentialsProvider.ZkCredentials;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

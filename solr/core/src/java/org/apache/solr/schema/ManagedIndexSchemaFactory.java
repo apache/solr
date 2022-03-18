@@ -122,7 +122,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
             + ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME;
     try {
       // check if we are using the legacy managed-schema file name.
-      if (zkClient.exists(legacyManagedSchemaPath, true)) {
+      if (zkClient.exists(legacyManagedSchemaPath)) {
         log.debug(
             "Legacy managed schema resource {} found - loading legacy managed schema instead of {} file.",
             ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME,
@@ -214,7 +214,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       Stat stat = new Stat();
       try {
         // Attempt to load the managed schema
-        byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
+        byte[] data = zkClient.getData(managedSchemaPath, null, stat);
         schemaZkVersion = stat.getVersion();
         schemaInputStream =
             new ZkSolrResourceLoader.ZkByteArrayInputStream(data, managedSchemaPath, stat);
@@ -243,7 +243,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         } catch (IOException e) {
           try {
             // Retry to load the managed schema, in case it was created since the first attempt
-            byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
+            byte[] data = zkClient.getData(managedSchemaPath, null, stat);
             schemaZkVersion = stat.getVersion();
             schemaInputStream = new ByteArrayInputStream(data);
             loadedResource = managedSchemaPath;
@@ -459,7 +459,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     boolean locked = false;
     try {
       try {
-        zkClient.makePath(lockPath, null, CreateMode.EPHEMERAL, null, true, true);
+        zkClient.makePath(lockPath, null, CreateMode.EPHEMERAL, null, true);
         locked = true;
       } catch (Exception e) {
         // some other node already started the upgrade, or an error occurred - bail out
@@ -477,14 +477,14 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(zkController.getClientTimeout());
         if (zkController.pathExists(nonManagedSchemaPath)) {
           // First, copy the non-managed schema znode content to the upgraded schema znode
-          byte[] bytes = zkController.getZkClient().getData(nonManagedSchemaPath, null, null, true);
+          byte[] bytes = zkController.getZkClient().getData(nonManagedSchemaPath, null, null);
           final String upgradedSchemaPath = nonManagedSchemaPath + UPGRADED_SCHEMA_EXTENSION;
           zkCmdExecutor.ensureExists(upgradedSchemaPath, zkController.getZkClient());
-          zkController.getZkClient().setData(upgradedSchemaPath, bytes, true);
+          zkController.getZkClient().setData(upgradedSchemaPath, bytes);
           // Then delete the non-managed schema znode
-          if (zkController.getZkClient().exists(nonManagedSchemaPath, true)) {
+          if (zkController.getZkClient().exists(nonManagedSchemaPath)) {
             try {
-              zkController.getZkClient().delete(nonManagedSchemaPath, -1, true);
+              zkController.getZkClient().delete(nonManagedSchemaPath, -1);
             } catch (KeeperException.NoNodeException ex) {
               // ignore - someone beat us to it
             }
@@ -514,7 +514,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       if (locked) {
         // unlock
         try {
-          zkClient.delete(lockPath, -1, true);
+          zkClient.delete(lockPath, -1);
         } catch (KeeperException.NoNodeException nne) {
           // ignore - someone else deleted it
         } catch (Exception e) {

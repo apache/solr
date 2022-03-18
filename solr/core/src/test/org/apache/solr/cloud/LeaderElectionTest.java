@@ -78,8 +78,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
     zkStateReader = new ZkStateReader(zkClient);
     seqToThread = Collections.synchronizedMap(new HashMap<Integer, Thread>());
-    zkClient.makePath("/collections/collection1", true);
-    zkClient.makePath("/collections/collection2", true);
+    zkClient.makePath("/collections/collection1");
+    zkClient.makePath("/collections/collection2");
   }
 
   class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
@@ -293,7 +293,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       try {
         byte[] data =
             zkClient.getData(
-                ZkStateReader.getShardLeadersPath(collection, slice), null, null, true);
+                ZkStateReader.getShardLeadersPath(collection, slice), null, null);
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
         return leaderProps.getCoreUrl();
       } catch (NoNodeException | SessionExpiredException e) {
@@ -543,7 +543,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
                 try {
                   threads.get(j).es.zkClient.getSolrZooKeeper().closeCnxn();
                   if (random().nextBoolean()) {
-                    long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+                    long sessionId = zkClient.getZkSessionId();
                     server.expire(sessionId);
                   }
                 } catch (Exception e) {

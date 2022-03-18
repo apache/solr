@@ -72,7 +72,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
       try {
         if (zkController.pathExists(file)) {
           Stat stat = new Stat();
-          byte[] bytes = zkController.getZkClient().getData(file, null, stat, true);
+          byte[] bytes = zkController.getZkClient().getData(file, null, stat);
           return new ZkByteArrayInputStream(bytes, file, stat);
         } else {
           // Path does not exists. We only retry for session expired exceptions.

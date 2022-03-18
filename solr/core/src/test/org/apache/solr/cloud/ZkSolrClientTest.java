@@ -20,9 +20,7 @@ import static org.apache.solr.cloud.SolrCloudTestCase.configureCluster;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +30,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
@@ -93,7 +90,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       final SolrZkClient zkClient =
           new SolrZkClient(conn.getServer().getZkHost(), AbstractZkTestCase.TIMEOUT);
       try {
-        assertTrue(zkClient.exists("/solr", true));
+        assertTrue(zkClient.exists("/solr"));
       } finally {
         zkClient.close();
       }
@@ -105,14 +102,14 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     try (ZkConnection conn = new ZkConnection()) {
       final SolrZkClient zkClient = conn.getClient();
 
-      zkClient.makePath("/test/path/here", true);
+      zkClient.makePath("/test/path/here");
 
-      zkClient.makePath("/zz/path/here", true);
+      zkClient.makePath("/zz/path/here");
 
       zkClient.clean("/");
 
-      assertFalse(zkClient.exists("/test", true));
-      assertFalse(zkClient.exists("/zz", true));
+      assertFalse(zkClient.exists("/test"));
+      assertFalse(zkClient.exists("/zz"));
     }
   }
 
@@ -125,7 +122,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
         new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT); ) {
 
       String shardsPath = "/collections/collection1/shards";
-      zkClient.makePath(shardsPath, false, true);
+      zkClient.makePath(shardsPath, false);
 
       int zkServerPort = server.getPort();
       // this tests disconnect state
@@ -137,7 +134,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
           new Thread() {
             public void run() {
               try {
-                zkClient.makePath("collections/collection2", false);
+                zkClient.makePath("collections/collection2");
                 // Assert.fail("Server should be down here");
               } catch (KeeperException | InterruptedException e) {
 
@@ -160,7 +157,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
             public void run() {
               try {
 
-                zkClient.makePath("collections/collection3", true);
+                zkClient.makePath("collections/collection3");
 
               } catch (KeeperException e) {
                 throw new RuntimeException(e);
@@ -176,13 +173,13 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       thread2.join();
 
-      assertNotNull(zkClient.exists("/collections/collection3", null, true));
-      assertNotNull(zkClient.exists("/collections/collection1", null, true));
+      assertNotNull(zkClient.exists("/collections/collection3", null));
+      assertNotNull(zkClient.exists("/collections/collection1", null));
 
       // simulate session expiration
 
       // one option
-      long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+      long sessionId = zkClient.getZkSessionId();
       server.expire(sessionId);
 
       // another option
@@ -194,7 +191,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       for (int i = 0; i < 8; i++) {
         try {
-          zkClient.makePath("collections/collection4", true);
+          zkClient.makePath("collections/collection4");
           break;
         } catch (KeeperException.SessionExpiredException
             | KeeperException.ConnectionLossException e) {
@@ -205,7 +202,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       assertNotNull(
           "Node does not exist, but it should",
-          zkClient.exists("/collections/collection4", null, true));
+          zkClient.exists("/collections/collection4", null));
 
     } finally {
 
@@ -251,7 +248,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
   public void testMultipleWatchesAsync() throws Exception {
     try (ZkConnection conn = new ZkConnection()) {
       final SolrZkClient zkClient = conn.getClient();
-      zkClient.makePath("/collections", true);
+      zkClient.makePath("/collections");
 
       final int numColls = random().nextInt(100);
       final CountDownLatch latch = new CountDownLatch(numColls);
@@ -261,7 +258,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       for (int i = 1; i <= numColls; i++) {
         String collPath = "/collections/collection" + i;
-        zkClient.makePath(collPath, true);
+        zkClient.makePath(collPath);
         zkClient.getChildren(
             collPath,
             new Watcher() {
@@ -283,13 +280,13 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
                 }
                 watchesDone.countDown();
               }
-            },
-            true);
+            }
+        );
       }
 
       for (int i = 1; i <= numColls; i++) {
         String shardsPath = "/collections/collection" + i + "/shards";
-        zkClient.makePath(shardsPath, true);
+        zkClient.makePath(shardsPath);
       }
 
       assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
@@ -313,7 +310,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       final AtomicInteger cnt = new AtomicInteger();
       final CountDownLatch latch = new CountDownLatch(1);
 
-      zkClient.makePath("/collections", true);
+      zkClient.makePath("/collections");
 
       zkClient.getChildren(
           "/collections",
@@ -324,23 +321,23 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
               cnt.incrementAndGet();
               // remake watch
               try {
-                zkClient.getChildren("/collections", this, true);
+                zkClient.getChildren("/collections", this);
                 latch.countDown();
               } catch (KeeperException | InterruptedException e) {
                 throw new RuntimeException(e);
               }
             }
-          },
-          true);
+          }
+      );
 
-      zkClient.makePath("/collections/collection99/shards", true);
+      zkClient.makePath("/collections/collection99/shards");
       latch.await(); // wait until watch has been re-created
 
-      zkClient.makePath("collections/collection99/config=collection1", true);
+      zkClient.makePath("collections/collection99/config=collection1");
 
-      zkClient.makePath("collections/collection99/config=collection3", true);
+      zkClient.makePath("collections/collection99/config=collection3");
 
-      zkClient.makePath("/collections/collection97/shards", true);
+      zkClient.makePath("/collections/collection97/shards");
 
       // pause for the watches to fire
       Thread.sleep(700);
@@ -362,11 +359,11 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     try (ZkConnection conn = new ZkConnection()) {
       final SolrZkClient zkClient = conn.getClient();
 
-      zkClient.makePath("/test", true);
+      zkClient.makePath("/test");
 
       // should work
       zkClient.makePath(
-          "/test/path/here", (byte[]) null, CreateMode.PERSISTENT, (Watcher) null, true, true, 1);
+          "/test/path/here", (byte[]) null, CreateMode.PERSISTENT, (Watcher) null, true);
 
       zkClient.clean("/");
 
@@ -381,9 +378,8 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
                       (byte[]) null,
                       CreateMode.PERSISTENT,
                       (Watcher) null,
-                      true,
-                      true,
-                      1));
+                      true
+                  ));
 
       zkClient.clean("/");
 
@@ -399,7 +395,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
                   zkClient,
                   2));
 
-      zkClient.makePath("/collection", true);
+      zkClient.makePath("/collection");
 
       expectThrows(
           KeeperException.NoNodeException.class,
@@ -411,17 +407,17 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
                   CreateMode.PERSISTENT,
                   zkClient,
                   2));
-      zkClient.makePath("/collection/collection", true);
+      zkClient.makePath("/collection/collection");
 
       byte[] bytes = new byte[10];
       zkCmdExecutor.ensureExists(
           "/collection/collection", bytes, CreateMode.PERSISTENT, zkClient, 2);
 
-      byte[] returnedBytes = zkClient.getData("/collection/collection", null, null, true);
+      byte[] returnedBytes = zkClient.getData("/collection/collection", null, null);
 
       assertNull("We skipped 2 path parts, so data won't be written", returnedBytes);
 
-      zkClient.makePath("/collection/collection/leader", true);
+      zkClient.makePath("/collection/collection/leader");
 
       zkCmdExecutor.ensureExists(
           "/collection/collection/leader", (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
@@ -433,20 +429,15 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
         configureCluster(4).withJettyConfig(jetty -> jetty.enableV2(true)).configure();
     try {
       SolrZkClient zkClient = cluster.getZkClient();
-      zkClient.create("/test-node", null, CreateMode.PERSISTENT, true);
+      zkClient.create("/test-node", null, CreateMode.PERSISTENT);
 
-      Stat stat = zkClient.exists("/test-node", null, true);
+      Stat stat = zkClient.exists("/test-node", null);
       int cversion = stat.getCversion();
-      List<Op> ops =
-          Arrays.asList(
-              Op.create(
-                  "/test-node/abc",
-                  null,
-                  zkClient.getZkACLProvider().getACLsToAdd("/test-node/abc"),
-                  CreateMode.PERSISTENT),
-              Op.delete("/test-node/abc", -1));
-      zkClient.multi(ops, true);
-      stat = zkClient.exists("/test-node", null, true);
+      zkClient.multi(
+          op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/test-node/abc", null),
+          op -> op.delete().withVersion(-1).forPath("/test-node/abc")
+      );
+      stat = zkClient.exists("/test-node", null);
       assertTrue(stat.getCversion() >= cversion + 2);
     } finally {
       cluster.shutdown();

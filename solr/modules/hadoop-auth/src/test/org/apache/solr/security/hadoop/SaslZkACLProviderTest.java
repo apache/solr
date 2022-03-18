@@ -23,6 +23,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -30,7 +32,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractVMParamsZkACLAndCredentialsProvidersTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkTestServer;
-import org.apache.solr.common.cloud.DefaultZkACLProvider;
+import org.apache.solr.common.cloud.DefaultACLProvider;
 import org.apache.solr.common.cloud.SaslZkACLProvider;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -94,7 +96,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
       ZooKeeperSaslClient saslClient =
           zkClient.getSolrZooKeeper().getConnection().zooKeeperSaslClient;
       assumeFalse("Could not set up ZK with SASL", saslClient.isFailed());
-      zkClient.makePath("/solr", false, true);
+      zkClient.makePath("/solr", false);
     } catch (KeeperException e) {
       // This fails on Linux but passes on Windows and MacOS. Why?
       assumeNoException("Could not set up ZK chroot, see SOLR-15366.", e);
@@ -111,17 +113,17 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
         new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
       zkClient.create(
-          "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+          "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
       zkClient.makePath(
           "/protectedMakePathNode",
           "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT,
-          false);
+          CreateMode.PERSISTENT
+      );
       zkClient.create(
           SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
           "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT,
-          false);
+          CreateMode.PERSISTENT
+      );
     } finally {
       zkClient.close();
     }
@@ -131,13 +133,13 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
       zkClient.create(
           "/unprotectedCreateNode",
           "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT,
-          false);
+          CreateMode.PERSISTENT
+      );
       zkClient.makePath(
           "/unprotectedMakePathNode",
           "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT,
-          false);
+          CreateMode.PERSISTENT
+      );
     } finally {
       zkClient.close();
     }
@@ -183,8 +185,8 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public ZkACLProvider createZkACLProvider() {
-      return new SaslZkACLProvider();
+    public ZkACLProvider createACLProvider() {
+      return new SaslZkACLProvider(getChroot());
     }
   }
 
@@ -196,8 +198,8 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public ZkACLProvider createZkACLProvider() {
-      return new DefaultZkACLProvider();
+    public ACLProvider createACLProvider() {
+      return new DefaultACLProvider();
     }
   }
 

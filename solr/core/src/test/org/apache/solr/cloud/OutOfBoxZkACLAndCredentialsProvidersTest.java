@@ -70,26 +70,26 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     System.setProperty("zkHost", zkServer.getZkAddress());
 
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
-    zkClient.makePath("/solr", false, true);
+    zkClient.makePath("/solr", false);
     zkClient.close();
 
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     zkClient.create(
-        "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+        "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
     zkClient.makePath(
-        "/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+        "/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
     zkClient.create(
-        "/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+        "/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
     zkClient.makePath(
         "/unprotectedMakePathNode",
         "content".getBytes(DATA_ENCODING),
-        CreateMode.PERSISTENT,
-        false);
+        CreateMode.PERSISTENT
+    );
     zkClient.create(
         SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
         "content".getBytes(DATA_ENCODING),
-        CreateMode.PERSISTENT,
-        false);
+        CreateMode.PERSISTENT
+    );
     zkClient.close();
 
     if (log.isInfoEnabled()) {
@@ -134,7 +134,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   protected void assertOpenACLUnsafeAllover(
       SolrZkClient zkClient, String path, List<String> verifiedList) throws Exception {
-    List<ACL> acls = zkClient.getSolrZooKeeper().getACL(path, new Stat());
+    List<ACL> acls = zkClient.getACL(path, new Stat());
     if (log.isInfoEnabled()) {
       log.info("Verifying {}", path);
     }
@@ -151,7 +151,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
           "Path " + path + " does not have OPEN_ACL_UNSAFE", ZooDefs.Ids.OPEN_ACL_UNSAFE, acls);
     }
     verifiedList.add(path);
-    List<String> children = zkClient.getChildren(path, null, false);
+    List<String> children = zkClient.getChildren(path, null);
     for (String child : children) {
       assertOpenACLUnsafeAllover(
           zkClient, path + ((path.endsWith("/")) ? "" : "/") + child, verifiedList);

@@ -934,7 +934,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       CoreContainer cc = h.getCoreContainer();
       if (!cc.getCores().isEmpty() && cc.isZooKeeperAware()) {
         try {
-          cc.getZkController().getZkClient().exists("/", false);
+          cc.getZkController().getZkClient().exists("/");
         } catch (KeeperException e) {
           log.error("Testing connectivity to ZK by checking for root path failed", e);
           fail("Trying to tear down a ZK aware core container with ZK not reachable");

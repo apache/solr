@@ -113,8 +113,8 @@ public class PackageAPI {
               refreshPackages(thisWatch);
             }
           }
-        },
-        true);
+        }
+    );
   }
 
   public void refreshPackages(Watcher watcher) {
@@ -124,7 +124,7 @@ public class PackageAPI {
           coreContainer
               .getZkController()
               .getZkClient()
-              .getData(SOLR_PKGS_PATH, watcher, stat, true);
+              .getData(SOLR_PKGS_PATH, watcher, stat);
       pkgs = readPkgsFromZk(data, stat);
       packageLoader.refreshPackageConf();
     } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
@@ -145,7 +145,7 @@ public class PackageAPI {
     if (data == null || stat == null) {
       stat = new Stat();
       data =
-          coreContainer.getZkController().getZkClient().getData(SOLR_PKGS_PATH, null, stat, true);
+          coreContainer.getZkController().getZkClient().getData(SOLR_PKGS_PATH, null, stat);
     }
     Packages packages = null;
     if (data == null || data.length == 0) {

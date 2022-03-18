@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
@@ -30,6 +31,17 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.ACLProvider;
+import org.apache.curator.framework.api.transaction.CuratorOp;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.api.transaction.TransactionOp;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -39,17 +51,12 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NoAuthException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.apache.zookeeper.Op;
-import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,22 +72,17 @@ public class SolrZkClient implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private ConnectionManager connManager;
-
-  private volatile SolrZooKeeper keeper;
-
-  private ZkCmdExecutor zkCmdExecutor;
+  CuratorFramework client;
 
   private final ExecutorService zkCallbackExecutor =
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkCallback"));
-  private final ExecutorService zkConnManagerCallbackExecutor =
+  private final ExecutorService zkConnectionListenerCallbackExecutor =
       ExecutorUtil.newMDCAwareSingleThreadExecutor(
-          new SolrNamedThreadFactory("zkConnectionManagerCallback"));
+          new SolrNamedThreadFactory("zkConnectionListenerCallback"));
 
   private volatile boolean isClosed = false;
-  private ZkClientConnectionStrategy zkClientConnectionStrategy;
   private int zkClientTimeout;
-  private ZkACLProvider zkACLProvider;
+  private ACLProvider aclProvider;
   private String zkServerAddress;
 
   private IsClosed higherLevelIsClosed;
@@ -93,7 +95,7 @@ public class SolrZkClient implements Closeable {
   public SolrZkClient() {}
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout) {
-    this(zkServerAddress, zkClientTimeout, new DefaultConnectionStrategy(), null);
+    this(zkServerAddress, zkClientTimeout, null, null);
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
@@ -101,7 +103,7 @@ public class SolrZkClient implements Closeable {
         zkServerAddress,
         zkClientTimeout,
         zkClientConnectTimeout,
-        new DefaultConnectionStrategy(),
+        null,
         null);
   }
 
@@ -114,31 +116,31 @@ public class SolrZkClient implements Closeable {
         zkServerAddress,
         zkClientTimeout,
         zkClientConnectTimeout,
-        new DefaultConnectionStrategy(),
+        null,
         onReonnect);
   }
 
   public SolrZkClient(
       String zkServerAddress,
       int zkClientTimeout,
-      ZkClientConnectionStrategy strat,
+      ZkCredentialsProvider zkCredentialsProvider,
       final OnReconnect onReconnect) {
-    this(zkServerAddress, zkClientTimeout, DEFAULT_CLIENT_CONNECT_TIMEOUT, strat, onReconnect);
+    this(zkServerAddress, zkClientTimeout, DEFAULT_CLIENT_CONNECT_TIMEOUT, zkCredentialsProvider, onReconnect);
   }
 
   public SolrZkClient(
       String zkServerAddress,
       int zkClientTimeout,
       int clientConnectTimeout,
-      ZkClientConnectionStrategy strat,
+      ZkCredentialsProvider zkCredentialsProvider,
       final OnReconnect onReconnect) {
     this(
         zkServerAddress,
         zkClientTimeout,
         clientConnectTimeout,
-        strat,
-        onReconnect,
+        zkCredentialsProvider,
         null,
+        onReconnect,
         null,
         null);
   }
@@ -147,17 +149,17 @@ public class SolrZkClient implements Closeable {
       String zkServerAddress,
       int zkClientTimeout,
       int clientConnectTimeout,
-      ZkClientConnectionStrategy strat,
+      ZkCredentialsProvider zkCredentialsProvider,
       final OnReconnect onReconnect,
-      BeforeReconnect beforeReconnect) {
+      OnDisconnect onDisconnect) {
     this(
         zkServerAddress,
         zkClientTimeout,
         clientConnectTimeout,
-        strat,
-        onReconnect,
-        beforeReconnect,
+        zkCredentialsProvider,
         null,
+        onReconnect,
+        onDisconnect,
         null);
   }
 
@@ -165,107 +167,70 @@ public class SolrZkClient implements Closeable {
       String zkServerAddress,
       int zkClientTimeout,
       int clientConnectTimeout,
-      ZkClientConnectionStrategy strat,
+      ZkCredentialsProvider zkCredentialsProvider,
+      ACLProvider aclProvider,
       final OnReconnect onReconnect,
-      BeforeReconnect beforeReconnect,
-      ZkACLProvider zkACLProvider,
+      OnDisconnect onDisconnect,
       IsClosed higherLevelIsClosed) {
     this.zkServerAddress = zkServerAddress;
-    this.higherLevelIsClosed = higherLevelIsClosed;
-    if (strat == null) {
-      strat = new DefaultConnectionStrategy();
+    String chroot, zkHost;
+    int chrootIndex = zkServerAddress.indexOf('/');
+    if (chrootIndex == -1) {
+      zkHost = zkServerAddress;
+      chroot = null;
+    } else if (chrootIndex == zkServerAddress.length() - 1) {
+      zkHost = zkServerAddress.substring(0, zkServerAddress.length() - 1);
+      chroot = null;
+    } else {
+      zkHost = zkServerAddress.substring(0, chrootIndex);
+      chroot = zkServerAddress.substring(chrootIndex);
     }
-    this.zkClientConnectionStrategy = strat;
+    this.higherLevelIsClosed = higherLevelIsClosed;
 
-    if (!strat.hasZkCredentialsToAddAutomatically()) {
-      ZkCredentialsProvider zkCredentialsToAddAutomatically =
-          createZkCredentialsToAddAutomatically();
-      strat.setZkCredentialsToAddAutomatically(zkCredentialsToAddAutomatically);
+    if (zkCredentialsProvider == null) {
+      zkCredentialsProvider = createZkCredentialsToAddAutomatically();
+    }
+    if (aclProvider == null) {
+      this.aclProvider = createACLProvider();
+    } else {
+      this.aclProvider = aclProvider;
     }
 
     this.zkClientTimeout = zkClientTimeout;
-    // we must retry at least as long as the session timeout
-    zkCmdExecutor =
-        new ZkCmdExecutor(
-            zkClientTimeout,
-            new IsClosed() {
 
-              @Override
-              public boolean isClosed() {
-                return SolrZkClient.this.isClosed();
-              }
-            });
-    connManager =
-        new ConnectionManager(
-            "ZooKeeperConnection Watcher:" + zkServerAddress,
-            this,
-            zkServerAddress,
-            strat,
-            onReconnect,
-            beforeReconnect,
-            new IsClosed() {
+    RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+    var clientBuilder = CuratorFrameworkFactory.builder()
+        .ensembleProvider(new FixedEnsembleProvider(zkHost))
+        .namespace(chroot)
+        .connectionTimeoutMs(clientConnectTimeout)
+        .aclProvider(this.aclProvider)
+        .authorization(zkCredentialsProvider.getCredentials())
+        .retryPolicy(retryPolicy);
 
-              @Override
-              public boolean isClosed() {
-                return SolrZkClient.this.isClosed();
-              }
-            });
-
+    client = clientBuilder.build();
+    if (onReconnect != null) {
+      client.getConnectionStateListenable().addListener(onReconnect, zkConnectionListenerCallbackExecutor);
+    }
+    if (onDisconnect != null) {
+      client.getConnectionStateListenable().addListener(onDisconnect, zkConnectionListenerCallbackExecutor);
+    }
+    client.start();
     try {
-      strat.connect(
-          zkServerAddress,
-          zkClientTimeout,
-          wrapWatcher(connManager),
-          zooKeeper -> {
-            SolrZooKeeper oldKeeper = keeper;
-            keeper = zooKeeper;
-            try {
-              closeKeeper(oldKeeper);
-            } finally {
-              if (isClosed) {
-                // we may have been closed
-                closeKeeper(SolrZkClient.this.keeper);
-              }
-            }
-          });
-    } catch (Exception e) {
-      connManager.close();
-      if (keeper != null) {
-        try {
-          keeper.close();
-        } catch (InterruptedException e1) {
-          Thread.currentThread().interrupt();
-        }
-      }
+      client.blockUntilConnected();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
-    try {
-      connManager.waitForConnected(clientConnectTimeout);
-    } catch (Exception e) {
-      connManager.close();
-      try {
-        keeper.close();
-      } catch (InterruptedException e1) {
-        Thread.currentThread().interrupt();
-      }
-      zkConnManagerCallbackExecutor.shutdown();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
     assert ObjectReleaseTracker.track(this);
-    if (zkACLProvider == null) {
-      this.zkACLProvider = createZkACLProvider();
-    } else {
-      this.zkACLProvider = zkACLProvider;
-    }
+  }
+
+  public CuratorFramework getCuratorFramework() {
+    return client;
   }
 
   public ConnectionManager getConnectionManager() {
     return connManager;
-  }
-
-  public ZkClientConnectionStrategy getZkClientConnectionStrategy() {
-    return zkClientConnectionStrategy;
   }
 
   public static final String ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME = "zkCredentialsProvider";
@@ -291,47 +256,39 @@ public class SolrZkClient implements Closeable {
 
   public static final String ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME = "zkACLProvider";
 
-  protected ZkACLProvider createZkACLProvider() {
-    String zkACLProviderClassName = System.getProperty(ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
-    if (!StringUtils.isEmpty(zkACLProviderClassName)) {
+  protected ACLProvider createACLProvider() {
+    String aclProviderClassName = System.getProperty(ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
+    if (!StringUtils.isEmpty(aclProviderClassName)) {
       try {
-        log.info("Using ZkACLProvider: {}", zkACLProviderClassName);
-        return (ZkACLProvider) Class.forName(zkACLProviderClassName).getConstructor().newInstance();
+        log.info("Using ACLProvider: {}", aclProviderClassName);
+        return (ACLProvider) Class.forName(aclProviderClassName).getConstructor().newInstance();
       } catch (Throwable t) {
         // just ignore - go default
         log.warn(
-            "VM param zkACLProvider does not point to a class implementing ZkACLProvider and with a non-arg constructor",
+            "VM param zkACLProvider does not point to a class implementingACLProvider and with a non-arg constructor",
             t);
       }
     }
-    log.debug("Using default ZkACLProvider");
-    return new DefaultZkACLProvider();
+    log.debug("Using default ACLProvider");
+    return new DefaultACLProvider();
   }
 
   /** Returns true if client is connected */
   public boolean isConnected() {
-    return keeper != null && keeper.getState() == ZooKeeper.States.CONNECTED;
+    return client.getZookeeperClient().isConnected();
   }
 
-  public void delete(final String path, final int version, boolean retryOnConnLoss)
+  public void delete(final String path, final int version)
       throws InterruptedException, KeeperException {
-    if (retryOnConnLoss) {
-      zkCmdExecutor.retryOperation(
-          () -> {
-            keeper.delete(path, version);
-            return null;
-          });
-    } else {
-      keeper.delete(path, version);
-    }
+    runWithCorrectThrows(
+        "deleting znode",
+        () -> client.delete().withVersion(version).forPath(path));
   }
 
   /**
    * Wraps the watcher so that it doesn't fire off ZK's event queue. In order to guarantee that a
    * watch object will only be triggered once for a given notification, users need to wrap their
-   * watcher using this method before calling {@link #exists(String, org.apache.zookeeper.Watcher,
-   * boolean)} or {@link #getData(String, org.apache.zookeeper.Watcher,
-   * org.apache.zookeeper.data.Stat, boolean)}.
+   * watcher using this method before calling {@link #exists(String, Watcher)} or {@link #getData(String, Watcher, Stat)}.
    */
   public Watcher wrapWatcher(final Watcher watcher) {
     if (watcher == null || watcher instanceof ProcessWatchWithExecutor) return watcher;
@@ -352,67 +309,45 @@ public class SolrZkClient implements Closeable {
    * @throws InterruptedException If the server transaction is interrupted.
    * @throws IllegalArgumentException if an invalid path is specified
    */
-  public Stat exists(final String path, final Watcher watcher, boolean retryOnConnLoss)
+  public Stat exists(final String path, final Watcher watcher)
       throws KeeperException, InterruptedException {
-    if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.exists(path, wrapWatcher(watcher)));
-    } else {
-      return keeper.exists(path, wrapWatcher(watcher));
-    }
+    return runWithCorrectThrows(
+        "checking exists",
+        () -> client.checkExists().usingWatcher(wrapWatcher(watcher)).forPath(path));
   }
 
   /** Returns true if path exists */
-  public Boolean exists(final String path, boolean retryOnConnLoss)
+  public Boolean exists(final String path)
       throws KeeperException, InterruptedException {
-    if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.exists(path, null) != null);
-    } else {
-      return keeper.exists(path, null) != null;
-    }
+    return runWithCorrectThrows(
+        "checking exists",
+        () -> client.checkExists().forPath(path) != null);
   }
 
   /** Returns children of the node at the path */
-  public List<String> getChildren(final String path, final Watcher watcher, boolean retryOnConnLoss)
+  public List<String> getChildren(final String path, final Watcher watcher)
       throws KeeperException, InterruptedException {
-    if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher)));
-    } else {
-      return keeper.getChildren(path, wrapWatcher(watcher));
-    }
+    return runWithCorrectThrows(
+        "getting children",
+        () -> client.getChildren().usingWatcher(wrapWatcher(watcher)).forPath(path));
   }
 
   /** Returns children of the node at the path */
   public List<String> getChildren(
-      final String path, final Watcher watcher, Stat stat, boolean retryOnConnLoss)
+      final String path, final Watcher watcher, Stat stat)
       throws KeeperException, InterruptedException {
-    if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(
-          () -> keeper.getChildren(path, wrapWatcher(watcher), stat));
-    } else {
-      return keeper.getChildren(path, wrapWatcher(watcher), stat);
-    }
+    return runWithCorrectThrows(
+        "getting children",
+        () -> client.getChildren().storingStatIn(stat).usingWatcher(wrapWatcher(watcher)).forPath(path));
   }
 
   /** Returns node's data */
   public byte[] getData(
-      final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
+      final String path, final Watcher watcher, final Stat stat)
       throws KeeperException, InterruptedException {
-    if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.getData(path, wrapWatcher(watcher), stat));
-    } else {
-      return keeper.getData(path, wrapWatcher(watcher), stat);
-    }
-  }
-
-  /** Returns node's state */
-  public Stat setData(
-      final String path, final byte data[], final int version, boolean retryOnConnLoss)
-      throws KeeperException, InterruptedException {
-    if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.setData(path, data, version));
-    } else {
-      return keeper.setData(path, data, version);
-    }
+    return runWithCorrectThrows(
+        "getting data",
+        () -> client.getData().storingStatIn(stat).usingWatcher(wrapWatcher(watcher)).forPath(path));
   }
 
   public void atomicUpdate(String path, Function<byte[], byte[]> editor)
@@ -427,14 +362,14 @@ public class SolrZkClient implements Closeable {
       byte[] zkData = null;
       Stat s = new Stat();
       try {
-        if (exists(path, true)) {
-          zkData = getData(path, null, s, true);
+        if (exists(path)) {
+          zkData = getData(path, null, s);
           modified = editor.apply(s, zkData);
           if (modified == null) {
             // no change , no need to persist
             return;
           }
-          setData(path, modified, s.getVersion(), true);
+          setData(path, modified, s.getVersion());
           break;
         } else {
           modified = editor.apply(s, null);
@@ -442,7 +377,7 @@ public class SolrZkClient implements Closeable {
             // no change , no need to persist
             return;
           }
-          create(path, modified, CreateMode.PERSISTENT, true);
+          create(path, modified, CreateMode.PERSISTENT);
           break;
         }
       } catch (KeeperException.BadVersionException | KeeperException.NodeExistsException e) {
@@ -453,15 +388,11 @@ public class SolrZkClient implements Closeable {
 
   /** Returns path of created node */
   public String create(
-      final String path, final byte[] data, final CreateMode createMode, boolean retryOnConnLoss)
+      final String path, final byte[] data, final CreateMode createMode)
       throws KeeperException, InterruptedException {
-    if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(
-          () -> keeper.create(path, data, zkACLProvider.getACLsToAdd(path), createMode));
-    } else {
-      List<ACL> acls = zkACLProvider.getACLsToAdd(path);
-      return keeper.create(path, data, acls, createMode);
-    }
+    return runWithCorrectThrows(
+        "creating znode",
+        () -> client.create().withMode(createMode).forPath(path, data));
   }
 
   /**
@@ -470,36 +401,35 @@ public class SolrZkClient implements Closeable {
    * <p>e.g. If <code>path=/solr/group/node</code> and none of the nodes, solr, group, node exist,
    * each will be created.
    */
-  public void makePath(String path, boolean retryOnConnLoss)
+  public void makePath(String path)
       throws KeeperException, InterruptedException {
-    makePath(path, null, CreateMode.PERSISTENT, retryOnConnLoss);
+    makePath(path, null, CreateMode.PERSISTENT);
   }
 
-  public void makePath(String path, boolean failOnExists, boolean retryOnConnLoss)
+  public void makePath(String path, boolean failOnExists)
       throws KeeperException, InterruptedException {
-    makePath(path, null, CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
+    makePath(path, null, CreateMode.PERSISTENT, null, failOnExists);
   }
 
-  public void makePath(String path, Path data, boolean failOnExists, boolean retryOnConnLoss)
+  public void makePath(String path, Path data, boolean failOnExists)
       throws IOException, KeeperException, InterruptedException {
     makePath(
         path,
         Files.readAllBytes(data),
         CreateMode.PERSISTENT,
         null,
-        failOnExists,
-        retryOnConnLoss,
-        0);
+        failOnExists
+    );
   }
 
-  public void makePath(String path, Path data, boolean retryOnConnLoss)
+  public void makePath(String path, Path data)
       throws IOException, KeeperException, InterruptedException {
-    makePath(path, Files.readAllBytes(data), retryOnConnLoss);
+    makePath(path, Files.readAllBytes(data));
   }
 
-  public void makePath(String path, CreateMode createMode, boolean retryOnConnLoss)
+  public void makePath(String path, CreateMode createMode)
       throws KeeperException, InterruptedException {
-    makePath(path, null, createMode, retryOnConnLoss);
+    makePath(path, null, createMode);
   }
 
   /**
@@ -507,9 +437,9 @@ public class SolrZkClient implements Closeable {
    *
    * @param data to set on the last zkNode
    */
-  public void makePath(String path, byte[] data, boolean retryOnConnLoss)
+  public void makePath(String path, byte[] data)
       throws KeeperException, InterruptedException {
-    makePath(path, data, CreateMode.PERSISTENT, retryOnConnLoss);
+    makePath(path, data, CreateMode.PERSISTENT);
   }
 
   /**
@@ -520,9 +450,15 @@ public class SolrZkClient implements Closeable {
    *
    * @param data to set on the last zkNode
    */
-  public void makePath(String path, byte[] data, CreateMode createMode, boolean retryOnConnLoss)
+  public void makePath(String path, byte[] data, CreateMode createMode)
       throws KeeperException, InterruptedException {
-    makePath(path, data, createMode, null, retryOnConnLoss);
+    makePath(path, data, createMode, null);
+  }
+
+  public void makePath(
+      String zkPath, CreateMode createMode, Watcher watcher)
+      throws KeeperException, InterruptedException {
+    makePath(zkPath, null, createMode, watcher);
   }
 
   /**
@@ -534,9 +470,9 @@ public class SolrZkClient implements Closeable {
    * @param data to set on the last zkNode
    */
   public void makePath(
-      String path, byte[] data, CreateMode createMode, Watcher watcher, boolean retryOnConnLoss)
+      String path, byte[] data, CreateMode createMode, Watcher watcher)
       throws KeeperException, InterruptedException {
-    makePath(path, data, createMode, watcher, true, retryOnConnLoss, 0);
+    makePath(path, data, createMode, watcher, true);
   }
 
   /**
@@ -544,30 +480,6 @@ public class SolrZkClient implements Closeable {
    *
    * <p>e.g. If <code>path=/solr/group/node</code> and none of the nodes, solr, group, node exist,
    * each will be created.
-   *
-   * @param data to set on the last zkNode
-   */
-  public void makePath(
-      String path,
-      byte[] data,
-      CreateMode createMode,
-      Watcher watcher,
-      boolean failOnExists,
-      boolean retryOnConnLoss)
-      throws KeeperException, InterruptedException {
-    makePath(path, data, createMode, watcher, failOnExists, retryOnConnLoss, 0);
-  }
-
-  /**
-   * Creates the path in ZooKeeper, creating each node as necessary.
-   *
-   * <p>e.g. If <code>path=/solr/group/node</code> and none of the nodes, solr, group, node exist,
-   * each will be created.
-   *
-   * <p>skipPathParts will force the call to fail if the first skipPathParts do not exist already.
-   *
-   * <p>Note: retryOnConnLoss is only respected for the final node - nodes before that are always
-   * retried on connection loss.
    *
    * <p>Note: if failOnExists == false then we will always overwrite the existing data with the
    * given data
@@ -577,117 +489,83 @@ public class SolrZkClient implements Closeable {
       byte[] data,
       CreateMode createMode,
       Watcher watcher,
-      boolean failOnExists,
-      boolean retryOnConnLoss,
-      int skipPathParts)
+      boolean failOnExists)
       throws KeeperException, InterruptedException {
     log.debug("makePath: {}", path);
-    boolean retry = true;
-
-    if (path.startsWith("/")) {
-      path = path.substring(1, path.length());
+    var createBuilder = client.create();
+    if (!failOnExists) {
+      createBuilder.orSetData();
     }
-    String[] paths = path.split("/");
-    StringBuilder sbPath = new StringBuilder();
-    for (int i = 0; i < paths.length; i++) {
-      String pathPiece = paths[i];
-      sbPath.append("/").append(pathPiece);
-      if (i < skipPathParts) {
-        continue;
-      }
-      byte[] bytes = null;
-      final String currentPath = sbPath.toString();
-
-      CreateMode mode = CreateMode.PERSISTENT;
-      if (i == paths.length - 1) {
-        mode = createMode;
-        bytes = data;
-        if (!retryOnConnLoss) retry = false;
-      }
-      try {
-        if (retry) {
-          final CreateMode finalMode = mode;
-          final byte[] finalBytes = bytes;
-          zkCmdExecutor.retryOperation(
-              () -> {
-                keeper.create(
-                    currentPath, finalBytes, zkACLProvider.getACLsToAdd(currentPath), finalMode);
-                return null;
-              });
-        } else {
-          keeper.create(currentPath, bytes, zkACLProvider.getACLsToAdd(currentPath), mode);
-        }
-      } catch (NoAuthException e) {
-        // in auth cases, we may not have permission for an earlier part of a path, which is fine
-        if (i == paths.length - 1 || !exists(currentPath, retryOnConnLoss)) {
-
-          throw e;
-        }
-      } catch (NodeExistsException e) {
-        if (log.isDebugEnabled()) {
-          log.debug("Node exists: {}", e.getPath());
-        }
-
-        if (!failOnExists && i == paths.length - 1) {
-          // TODO: version ? for now, don't worry about race
-          setData(currentPath, data, -1, retryOnConnLoss);
-          // set new watch
-          exists(currentPath, watcher, retryOnConnLoss);
-          return;
-        }
-
-        // ignore unless it's the last node in the path
-        if (i == paths.length - 1) {
-          throw e;
-        }
-      }
-    }
-  }
-
-  public void makePath(
-      String zkPath, CreateMode createMode, Watcher watcher, boolean retryOnConnLoss)
-      throws KeeperException, InterruptedException {
-    makePath(zkPath, null, createMode, watcher, retryOnConnLoss);
+    runWithCorrectThrows(
+        "making path",
+        () -> {
+          createBuilder.creatingParentsIfNeeded().withMode(createMode).forPath(path, data);
+          return client.checkExists().usingWatcher(wrapWatcher(watcher)).forPath(path);
+        });
   }
 
   /** Write data to ZooKeeper. */
-  public Stat setData(String path, byte[] data, boolean retryOnConnLoss)
+  public Stat setData(String path, byte[] data)
       throws KeeperException, InterruptedException {
-    return setData(path, data, -1, retryOnConnLoss);
+    return setData(path, data, -1);
   }
 
   /**
    * Write file to ZooKeeper - default system encoding used.
-   *
-   * @param path path to upload file to e.g. /solr/conf/solrconfig.xml
+   *  @param path path to upload file to e.g. /solr/conf/solrconfig.xml
    * @param data a filepath to read data from
    */
-  public Stat setData(String path, Path data, boolean retryOnConnLoss)
+  public Stat setData(String path, Path data)
       throws IOException, KeeperException, InterruptedException {
     if (log.isDebugEnabled()) {
       log.debug("Write to ZooKeeper: {} to {}", data.toAbsolutePath(), path);
     }
-    return setData(path, Files.readAllBytes(data), retryOnConnLoss);
+    return setData(path, Files.readAllBytes(data));
   }
 
-  public List<OpResult> multi(final Iterable<Op> ops, boolean retryOnConnLoss)
-      throws InterruptedException, KeeperException {
-    if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.multi(ops));
-    } else {
-      return keeper.multi(ops);
+  /** Returns node's state */
+  public Stat setData(
+      final String path, final byte[] data, final int version)
+      throws KeeperException, InterruptedException {
+    return runWithCorrectThrows(
+        "setting data",
+        () -> client.setData().withVersion(version).forPath(path, data));
+  }
+
+  @FunctionalInterface
+  public interface CuratorOpBuilder {
+    CuratorOp build(TransactionOp startingOp) throws Exception;
+
+    default CuratorOp buildWithoutThrows(TransactionOp startingOp) {
+      try {
+        return build(startingOp);
+      } catch (RuntimeException e) {
+        throw e;
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
+  }
+
+  public List<CuratorTransactionResult> multi(CuratorOpBuilder... ops)
+      throws InterruptedException, KeeperException {
+    return multi(Arrays.asList(ops));
+  }
+
+  public List<CuratorTransactionResult> multi(final List<CuratorOpBuilder> ops)
+      throws InterruptedException, KeeperException {
+    return runWithCorrectThrows(
+        "executing multi-transaction",
+        () -> client.transaction().forOperations(ops.stream().map(op -> op.buildWithoutThrows(client.transactionOp())).collect(Collectors.toList())));
   }
 
   /** Fills string with printout of current ZooKeeper layout. */
   public void printLayout(String path, int indent, StringBuilder string)
       throws KeeperException, InterruptedException {
-    byte[] data = getData(path, null, null, true);
-    List<String> children = getChildren(path, null, true);
+    byte[] data = getData(path, null, null);
+    List<String> children = getChildren(path, null);
     StringBuilder dent = new StringBuilder();
-    for (int i = 0; i < indent; i++) {
-      dent.append(" ");
-    }
+    dent.append(" ".repeat(Math.max(0, indent)));
     string.append(dent).append(path).append(" (").append(children.size()).append(")").append(NEWL);
     if (data != null) {
       String dataString = new String(data, StandardCharsets.UTF_8);
@@ -727,8 +605,7 @@ public class SolrZkClient implements Closeable {
     try {
       closeCallbackExecutor();
     } finally {
-      connManager.close();
-      closeKeeper(keeper);
+      client.close();
     }
     assert ObjectReleaseTracker.release(this);
   }
@@ -737,32 +614,26 @@ public class SolrZkClient implements Closeable {
     return isClosed || (higherLevelIsClosed != null && higherLevelIsClosed.isClosed());
   }
 
-  /** Allows package private classes to update volatile ZooKeeper. */
-  void updateKeeper(SolrZooKeeper keeper) throws InterruptedException {
-    SolrZooKeeper oldKeeper = this.keeper;
-    this.keeper = keeper;
-    if (oldKeeper != null) {
-      oldKeeper.close();
-    }
-    // we might have been closed already
-    if (isClosed) this.keeper.close();
-  }
-
   public SolrZooKeeper getSolrZooKeeper() {
-    return keeper;
+    return null;
   }
 
-  private void closeKeeper(SolrZooKeeper keeper) {
-    if (keeper != null) {
+  public long getZkSessionId() {
+    if (isConnected()) {
       try {
-        keeper.close();
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-      }
+        return client.getZookeeperClient().getZooKeeper().getSessionId();
+      } catch (Exception ignored) { }
     }
+    return -1;
+  }
+
+  public int getZkSessionTimeout() {
+    if (isConnected()) {
+      try {
+        return client.getZookeeperClient().getZooKeeper().getSessionTimeout();
+      } catch (Exception ignored) { }
+    }
+    return 0;
   }
 
   private void closeCallbackExecutor() {
@@ -773,7 +644,7 @@ public class SolrZkClient implements Closeable {
     }
 
     try {
-      ExecutorUtil.shutdownAndAwaitTermination(zkConnManagerCallbackExecutor);
+      ExecutorUtil.shutdownAndAwaitTermination(zkConnectionListenerCallbackExecutor);
     } catch (Exception e) {
       SolrException.log(log, e);
     }
@@ -807,6 +678,13 @@ public class SolrZkClient implements Closeable {
   }
 
   /**
+   * @return the address of the zookeeper cluster
+   */
+  public String getChroot() {
+    return client.getNamespace();
+  }
+
+  /**
    * Gets the raw config node /zookeeper/config as returned by server. Response may look like
    *
    * <pre>
@@ -820,37 +698,27 @@ public class SolrZkClient implements Closeable {
    *     string
    */
   public String getConfig() {
-    try {
-      Stat stat = new Stat();
-      keeper.sync(ZooDefs.CONFIG_NODE, null, null);
-      byte[] data = keeper.getConfig(false, stat);
-      if (data == null || data.length == 0) {
-        return "";
-      }
-      return new String(data, StandardCharsets.UTF_8);
-    } catch (NoNodeException nne) {
+    QuorumVerifier currentConfig = client.getCurrentConfig();
+    if (currentConfig == null) {
       log.debug("Zookeeper does not have the /zookeeper/config znode, assuming old ZK version");
       return "";
-    } catch (KeeperException | InterruptedException ex) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Failed to get config from zookeeper", ex);
+    } else {
+      return currentConfig.toString();
     }
   }
 
-  public ZkACLProvider getZkACLProvider() {
-    return zkACLProvider;
+  public ACLProvider getZkACLProvider() {
+    return aclProvider;
   }
 
   /**
    * @return the ACLs on a single node in ZooKeeper.
    */
-  public List<ACL> getACL(String path, Stat stat, boolean retryOnConnLoss)
+  public List<ACL> getACL(String path, Stat stat)
       throws KeeperException, InterruptedException {
-    if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.getACL(path, stat));
-    } else {
-      return keeper.getACL(path, stat);
-    }
+    return runWithCorrectThrows(
+        "getting acls",
+        () -> client.getACL().storingStatIn(stat).forPath(path));
   }
 
   /**
@@ -858,16 +726,13 @@ public class SolrZkClient implements Closeable {
    *
    * @param path path to set ACL on e.g. /solr/conf/solrconfig.xml
    * @param acls a list of {@link ACL}s to be applied
-   * @param retryOnConnLoss true if the command should be retried on connection loss
    * @return the stat of the node
    */
-  public Stat setACL(String path, List<ACL> acls, boolean retryOnConnLoss)
+  public Stat setACL(String path, List<ACL> acls)
       throws InterruptedException, KeeperException {
-    if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.setACL(path, acls, -1));
-    } else {
-      return keeper.setACL(path, acls, -1);
-    }
+    return runWithCorrectThrows(
+        "setting acls",
+        () -> client.setACL().withVersion(-1).withACL(acls).forPath(path));
   }
 
   /**
@@ -882,12 +747,31 @@ public class SolrZkClient implements Closeable {
         ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST,
         path -> {
           try {
-            setACL(path, getZkACLProvider().getACLsToAdd(path), true);
-            log.debug("Updated ACL on {}", path);
+            runWithCorrectThrows(
+                "updating acls",
+                () -> client.setACL().withACL(null).forPath(path));
           } catch (NoNodeException ignored) {
             // If a node was deleted, don't bother trying to set ACLs on it.
           }
         });
+  }
+
+  @FunctionalInterface
+  private static interface SupplierWithException<T> {
+    T get() throws Exception;
+  }
+
+  private <T> T runWithCorrectThrows(String action, SupplierWithException<T> func) throws KeeperException, InterruptedException {
+    try {
+      return func.get();
+    } catch (KeeperException | RuntimeException e) {
+      throw e;
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw e;
+    } catch (Exception e) {
+      throw new RuntimeException("Exception occurred while " + action, e);
+    }
   }
 
   // Some pass-throughs to allow less code disruption to other classes that use SolrZkClient.
@@ -956,11 +840,7 @@ public class SolrZkClient implements Closeable {
     public void process(final WatchedEvent event) {
       log.debug("Submitting job to respond to event {}", event);
       try {
-        if (watcher instanceof ConnectionManager) {
-          zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
-        } else {
-          zkCallbackExecutor.submit(() -> watcher.process(event));
-        }
+        zkCallbackExecutor.submit(() -> watcher.process(event));
       } catch (RejectedExecutionException e) {
         // If not a graceful shutdown
         if (!isClosed()) {

@@ -103,8 +103,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     JettySolrRunner jetty = getRunner(leader);
     ZkController zkController = jetty.getCoreContainer().getZkController();
 
-    zkController.getZkClient().getSolrZooKeeper().closeCnxn();
-    cluster.getZkServer().expire(zkController.getZkClient().getSolrZooKeeper().getSessionId());
+    cluster.getZkServer().expire(zkController.getZkClient().getZkSessionId());
 
     for (int i = 0; i < 60; i++) { // wait till leader is changed
       if (jetty != getRunner(getLeader(collection))) {

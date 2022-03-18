@@ -58,9 +58,9 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
     try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
-      assertFalse(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo", true));
+      assertFalse(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo"));
       map.put("foo", new byte[0]);
-      assertTrue(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo", true));
+      assertTrue(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo"));
     }
   }
 
@@ -73,8 +73,8 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
           data,
           CreateMode.PERSISTENT,
           null,
-          false,
-          true);
+          false
+      );
       DistributedMap map = createMap(zkClient, path);
       assertArrayEquals(data, map.get("foo"));
     }
@@ -90,8 +90,8 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
           new byte[0],
           CreateMode.PERSISTENT,
           null,
-          false,
-          true);
+          false
+      );
       assertTrue(map.contains("foo"));
     }
   }
@@ -106,11 +106,11 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
           new byte[0],
           CreateMode.PERSISTENT,
           null,
-          false,
-          true);
+          false
+      );
       assertTrue(map.remove("foo"));
       assertFalse(map.contains("foo"));
-      assertFalse(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo", true));
+      assertFalse(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo"));
     }
   }
 
@@ -192,7 +192,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
   protected String getAndMakeInitialPath(SolrZkClient zkClient)
       throws KeeperException, InterruptedException {
     String path = String.format(Locale.ROOT, "/%s/%s", getClass().getName(), getSaferTestName());
-    zkClient.makePath(path, false, true);
+    zkClient.makePath(path, false);
     return path;
   }
 }

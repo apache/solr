@@ -75,7 +75,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
 
     if (toZk) {
-      zkClient.makePath("solr.xml", XML_FOR_ZK.getBytes(StandardCharsets.UTF_8), true);
+      zkClient.makePath("solr.xml", XML_FOR_ZK.getBytes(StandardCharsets.UTF_8));
     }
 
     zkClient.close();

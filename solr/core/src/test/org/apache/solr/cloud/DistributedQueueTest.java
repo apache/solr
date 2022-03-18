@@ -288,18 +288,15 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   }
 
   private void forceSessionExpire() throws InterruptedException, TimeoutException {
-    long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+    long sessionId = zkClient.getZkSessionId();
     zkServer.expire(sessionId);
     zkClient.getConnectionManager().waitForDisconnected(10000);
     zkClient.getConnectionManager().waitForConnected(10000);
-    for (int i = 0; i < 100; ++i) {
-      if (zkClient.isConnected()) {
-        break;
-      }
+    for (int i = 0; i < 100 && !zkClient.isConnected(); ++i) {
       Thread.sleep(50);
     }
     assertTrue(zkClient.isConnected());
-    assertFalse(sessionId == zkClient.getSolrZooKeeper().getSessionId());
+    assertNotEquals(sessionId, zkClient.getZkSessionId());
   }
 
   protected ZkDistributedQueue makeDistributedQueue(String dqZNode) throws Exception {
@@ -329,9 +326,9 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   }
 
   protected String setupNewDistributedQueueZNode(String znodePath) throws Exception {
-    if (!zkClient.exists("/", true)) zkClient.makePath("/", false, true);
-    if (zkClient.exists(znodePath, true)) zkClient.clean(znodePath);
-    zkClient.makePath(znodePath, false, true);
+    if (!zkClient.exists("/")) zkClient.makePath("/", false);
+    if (zkClient.exists(znodePath)) zkClient.clean(znodePath);
+    zkClient.makePath(znodePath, false);
     return znodePath;
   }
 
