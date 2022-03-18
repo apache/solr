@@ -47,7 +47,6 @@ import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -78,7 +77,9 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     int nodes = TEST_NIGHTLY ? 4 : 2;
     cluster = configureCluster(nodes).withJettyConfig(jetty -> jetty.enableV2(true)).configure();
-    cluster.getOpenOverseer().getCoreContainer().getContainerPluginsRegistry().setPhaser(phaser);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      jetty.getCoreContainer().getContainerPluginsRegistry().setPhaser(phaser);
+    }
   }
 
   @After
@@ -160,9 +161,8 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       assertEquals(404, e.code());
       assertThat(
           e.getMetaData().findRecursive("error", "msg").toString(),
-          containsString("no core retrieved"));
-      // V2HttpCall will separately log the path and stack trace, probably could be fixed
-      assertEquals(2, errors.getCount());
+          containsString("Could not load plugin at"));
+      assertEquals(1, errors.getCount());
     }
 
     // test ClusterSingleton plugin
@@ -254,7 +254,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     addPkgVersionReq.process(cluster.getSolrClient());
 
     waitForAllNodesToSync(
-        cluster,
         "/cluster/package",
         Map.of(
             ":result:packages:mypkg[0]:version",
@@ -450,14 +449,11 @@ public class TestContainerPlugin extends SolrCloudTestCase {
         .build();
   }
 
-  public static void waitForAllNodesToSync(
-      MiniSolrCloudCluster cluster, String path, Map<String, Object> expected) throws Exception {
+  public void waitForAllNodesToSync(String path, Map<String, Object> expected) throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
       String url = baseUrl + path + "?wt=javabin";
-      // Allow multiple retries here because we need multiple nodes to update
-      // and our single phaser only ensures that one of them has reached expected state
-      TestDistribPackageStore.assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
+      TestDistribPackageStore.assertResponseValues(1, new Fetcher(url, jettySolrRunner), expected);
     }
   }
 
