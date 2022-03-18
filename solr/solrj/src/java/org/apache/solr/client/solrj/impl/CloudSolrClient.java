@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -131,6 +132,59 @@ public abstract class CloudSolrClient extends SolrClient {
   }
 
   private volatile List<Object> locks = objectList(3);
+
+  /** Constructs {@link CloudSolrClient} instances from provided configuration. */
+  public static class Builder extends CloudHttp2SolrClient.Builder {
+
+    /**
+     * Provide a series of Solr URLs to be used when configuring {@link CloudSolrClient}
+     * instances. The solr client will use these urls to understand the cluster topology, which solr
+     * nodes are active etc.
+     *
+     * <p>Provided Solr URLs are expected to point to the root Solr path
+     * ("http://hostname:8983/solr"); they should not include any collections, cores, or other path
+     * components.
+     *
+     * <p>Usage example:
+     *
+     * <pre>
+     *   final List&lt;String&gt; solrBaseUrls = new ArrayList&lt;String&gt;();
+     *   solrBaseUrls.add("http://solr1:8983/solr"); solrBaseUrls.add("http://solr2:8983/solr"); solrBaseUrls.add("http://solr3:8983/solr");
+     *   final SolrClient client = new CloudHttp2SolrClient.Builder(solrBaseUrls).build();
+     * </pre>
+     */
+    public Builder(List<String> solrUrls) {
+      super(solrUrls);
+    }
+
+    /**
+     * Provide a series of ZK hosts which will be used when configuring {@link CloudSolrClient}
+     * instances.
+     *
+     * <p>Usage example when Solr stores data at the ZooKeeper root ('/'):
+     *
+     * <pre>
+     *   final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
+     *   zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
+     *   final SolrClient client = new CloudHttp2SolrClient.Builder(zkServers, Optional.empty()).build();
+     * </pre>
+     *
+     * Usage example when Solr data is stored in a ZooKeeper chroot:
+     *
+     * <pre>
+     *    final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
+     *    zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
+     *    final SolrClient client = new CloudHttp2SolrClient.Builder(zkServers, Optional.of("/solr")).build();
+     *  </pre>
+     *
+     * @param zkHosts a List of at least one ZooKeeper host and port (e.g. "zookeeper1:2181")
+     * @param zkChroot the path to the root ZooKeeper node containing Solr data. Provide {@code
+     *     java.util.Optional.empty()} if no ZK chroot is used.
+     */
+    public Builder(List<String> zkHosts, Optional<String> zkChroot) {
+      super(zkHosts, zkChroot);
+    }
+  }
 
   static class StateCache extends ConcurrentHashMap<String, ExpiringCachedDocCollection> {
     final AtomicLong puts = new AtomicLong();
