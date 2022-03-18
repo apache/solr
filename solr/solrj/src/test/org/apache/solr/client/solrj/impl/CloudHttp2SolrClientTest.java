@@ -16,7 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.impl.BaseCloudSolrClient.RouteResponse;
+import static org.apache.solr.client.solrj.impl.CloudSolrClient.RouteResponse;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
