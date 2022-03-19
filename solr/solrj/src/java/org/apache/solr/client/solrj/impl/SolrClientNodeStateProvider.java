@@ -61,7 +61,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   public static final String METRICS_PREFIX = "metrics:";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CloudHttp1SolrClient solrClient;
+  private final CloudLegacySolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<Replica>>>>
       nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
   private Map<String, Object> snitchSession = new HashMap<>();
@@ -69,7 +69,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
-  public SolrClientNodeStateProvider(CloudHttp1SolrClient solrClient) {
+  public SolrClientNodeStateProvider(CloudLegacySolrClient solrClient) {
     this.solrClient = solrClient;
     try {
       readReplicaDetails();
@@ -324,7 +324,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     ZkClientClusterStateProvider zkClientClusterStateProvider;
-    CloudHttp1SolrClient solrClient;
+    CloudLegacySolrClient solrClient;
 
     public boolean isNodeAlive(String node) {
       if (zkClientClusterStateProvider != null) {
@@ -337,7 +337,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         SnitchInfo perSnitch,
         String node,
         Map<String, Object> session,
-        CloudHttp1SolrClient solrClient) {
+        CloudLegacySolrClient solrClient) {
       super(perSnitch, node, session);
       this.solrClient = solrClient;
       this.zkClientClusterStateProvider =

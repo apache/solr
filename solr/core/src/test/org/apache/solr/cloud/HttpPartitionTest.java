@@ -39,7 +39,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -102,7 +102,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   @Override
   protected CloudSolrClient createCloudClient(String defaultCollection) {
     var client =
-        new CloudHttp1SolrClient.Builder(
+        new CloudLegacySolrClient.Builder(
                 Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
             .sendDirectUpdatesToAnyShardReplica()
             .withConnectionTimeout(5000)

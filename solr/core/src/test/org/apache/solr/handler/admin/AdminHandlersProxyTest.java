@@ -25,7 +25,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -54,7 +54,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
     super.setUp();
     solrClient = getCloudSolrClient(cluster);
     solrClient.connect(1000, TimeUnit.MILLISECONDS);
-    httpClient = (CloseableHttpClient) ((CloudHttp1SolrClient) solrClient).getHttpClient();
+    httpClient = (CloseableHttpClient) ((CloudLegacySolrClient) solrClient).getHttpClient();
   }
 
   @After

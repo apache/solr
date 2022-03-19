@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -219,7 +219,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       if (runFullThrottle) {
         ftIndexThread =
             new FullThrottleStoppableIndexingThread(
-                ((CloudHttp1SolrClient) cloudClient).getHttpClient(),
+                ((CloudLegacySolrClient) cloudClient).getHttpClient(),
                 controlClient,
                 cloudClient,
                 clients,

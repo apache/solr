@@ -69,7 +69,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
@@ -147,7 +147,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     httpPost.setHeader("Content-Type", "text/plain");
     httpPost.setEntity(new ByteArrayEntity(fieldText.getBytes(StandardCharsets.UTF_8)));
     try {
-      HttpResponse resp = ((CloudHttp1SolrClient) cloudClient()).getHttpClient().execute(httpPost);
+      HttpResponse resp = ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpPost);
       int statusCode = resp.getStatusLine().getStatusCode();
       if (statusCode != HttpStatus.SC_OK) {
         throw new SolrException(
@@ -540,7 +540,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
     HttpGet httpGet = new HttpGet(uri);
     try {
-      HttpResponse entity = ((CloudHttp1SolrClient) cloudClient()).getHttpClient().execute(httpGet);
+      HttpResponse entity = ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpGet);
       int statusCode = entity.getStatusLine().getStatusCode();
       if (statusCode == HttpStatus.SC_OK) {
         byte[] bytes = DefaultSampleDocumentsLoader.streamAsBytes(entity.getEntity().getContent());
@@ -582,7 +582,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     try {
       httpPost.setHeader("Content-Type", "application/octet-stream");
       httpPost.setEntity(new ByteArrayEntity(bytes));
-      HttpResponse resp = ((CloudHttp1SolrClient) cloudClient).getHttpClient().execute(httpPost);
+      HttpResponse resp = ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpPost);
       int statusCode = resp.getStatusLine().getStatusCode();
       if (statusCode != HttpStatus.SC_OK) {
         throw new SolrException(

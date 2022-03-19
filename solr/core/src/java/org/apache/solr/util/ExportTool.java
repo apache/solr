@@ -60,7 +60,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -146,7 +146,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     abstract void exportDocs() throws Exception;
 
     void fetchUniqueKey() throws SolrServerException, IOException {
-      solrClient = new CloudHttp1SolrClient.Builder(Collections.singletonList(baseurl)).build();
+      solrClient = new CloudLegacySolrClient.Builder(Collections.singletonList(baseurl)).build();
       NamedList<Object> response =
           solrClient.request(
               new GenericSolrRequest(

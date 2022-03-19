@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -84,7 +84,7 @@ public class SolrClientCache implements Serializable {
       final List<String> hosts = new ArrayList<String>();
       hosts.add(zkHost);
       var builder =
-          new CloudHttp1SolrClient.Builder(hosts, Optional.empty())
+          new CloudLegacySolrClient.Builder(hosts, Optional.empty())
               .withSocketTimeout(socketTimeout)
               .withConnectionTimeout(conTimeout);
       if (httpClient != null) {

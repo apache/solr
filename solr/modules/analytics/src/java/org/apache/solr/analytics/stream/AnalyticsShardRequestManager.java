@@ -32,7 +32,7 @@ import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.AnalyticsRequestParser;
 import org.apache.solr.analytics.TimeExceededStubException;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -84,7 +84,7 @@ public class AnalyticsShardRequestManager {
   public void sendRequests(String collection, String zkHost) throws IOException {
     this.replicaUrls = new ArrayList<>();
     this.cloudSolrClient =
-        new CloudHttp1SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+        new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
             .build();
     try {
       this.cloudSolrClient.connect();

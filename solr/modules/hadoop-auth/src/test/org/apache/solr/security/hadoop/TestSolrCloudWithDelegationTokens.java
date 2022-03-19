@@ -31,7 +31,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
@@ -201,7 +201,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
               .build();
     else
       delegationTokenClient =
-          new CloudHttp1SolrClient.Builder(
+          new CloudLegacySolrClient.Builder(
                   Collections.singletonList(miniCluster.getZkServer().getZkAddress()),
                   Optional.empty())
               .withLBHttpSolrClientBuilder(

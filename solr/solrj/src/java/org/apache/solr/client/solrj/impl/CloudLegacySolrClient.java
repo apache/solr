@@ -37,10 +37,10 @@ import org.apache.solr.common.util.NamedList;
  * Zookeeper to discover Solr endpoints for SolrCloud collections, and then use the {@link
  * LBHttpSolrClient} to issue requests.
  *
- * @deprecated Please use {@link CloudHttp2SolrClient}
+ * @deprecated Please use {@link CloudSolrClient}
  */
 @Deprecated(since = "9.0")
-public class CloudHttp1SolrClient extends CloudSolrClient {
+public class CloudLegacySolrClient extends CloudSolrClient {
 
   private final ClusterStateProvider stateProvider;
   private final LBHttpSolrClient lbClient;
@@ -58,7 +58,7 @@ public class CloudHttp1SolrClient extends CloudSolrClient {
    *
    * @param builder a {@link Builder} with the options used to create the client.
    */
-  protected CloudHttp1SolrClient(Builder builder) {
+  protected CloudLegacySolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
     if (builder.stateProvider == null) {
       if (builder.zkHosts != null && builder.solrUrls != null) {
@@ -180,7 +180,7 @@ public class CloudHttp1SolrClient extends CloudSolrClient {
     return lbClient;
   }
 
-  /** Constructs {@link CloudHttp1SolrClient} instances from provided configuration. */
+  /** Constructs {@link CloudLegacySolrClient} instances from provided configuration. */
   public static class Builder extends SolrClientBuilder<Builder> {
     protected Collection<String> zkHosts = new ArrayList<>();
     protected List<String> solrUrls = new ArrayList<>();
@@ -196,7 +196,7 @@ public class CloudHttp1SolrClient extends CloudSolrClient {
     protected Builder() {}
 
     /**
-     * Provide a series of Solr URLs to be used when configuring {@link CloudHttp1SolrClient}
+     * Provide a series of Solr URLs to be used when configuring {@link CloudLegacySolrClient}
      * instances. The solr client will use these urls to understand the cluster topology, which solr
      * nodes are active etc.
      *
@@ -222,7 +222,7 @@ public class CloudHttp1SolrClient extends CloudSolrClient {
     }
 
     /**
-     * Provide a series of ZK hosts which will be used when configuring {@link CloudHttp1SolrClient}
+     * Provide a series of ZK hosts which will be used when configuring {@link CloudLegacySolrClient}
      * instances.
      *
      * <p>Usage example when Solr stores data at the ZooKeeper root ('/'):
@@ -309,7 +309,7 @@ public class CloudHttp1SolrClient extends CloudSolrClient {
      * Tells {@link Builder} whether created clients should send shard updates serially or in
      * parallel
      *
-     * <p>When an {@link UpdateRequest} affects multiple shards, {@link CloudHttp1SolrClient} splits
+     * <p>When an {@link UpdateRequest} affects multiple shards, {@link CloudLegacySolrClient} splits
      * it up and sends a request to each affected shard. This setting chooses whether those
      * sub-requests are sent serially or in parallel.
      *
@@ -320,8 +320,8 @@ public class CloudHttp1SolrClient extends CloudSolrClient {
       return this;
     }
 
-    /** Create a {@link CloudHttp1SolrClient} based on the provided configuration. */
-    public CloudHttp1SolrClient build() {
+    /** Create a {@link CloudLegacySolrClient} based on the provided configuration. */
+    public CloudLegacySolrClient build() {
       if (stateProvider == null) {
         if (!zkHosts.isEmpty()) {
           stateProvider = new ZkClientClusterStateProvider(zkHosts, zkChroot);
@@ -340,7 +340,7 @@ public class CloudHttp1SolrClient extends CloudSolrClient {
           throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
         }
       }
-      return new CloudHttp1SolrClient(this);
+      return new CloudLegacySolrClient(this);
     }
 
     @Override

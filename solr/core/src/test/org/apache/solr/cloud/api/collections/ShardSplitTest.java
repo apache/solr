@@ -39,7 +39,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -148,7 +148,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     try (CloudSolrClient client =
         getCloudSolrClient(
-            zkServer.getZkAddress(), true, ((CloudHttp1SolrClient) cloudClient).getHttpClient())) {
+            zkServer.getZkAddress(), true, ((CloudLegacySolrClient) cloudClient).getHttpClient())) {
       client.setDefaultCollection(collectionName);
       StoppableIndexingThread thread =
           new StoppableIndexingThread(controlClient, client, "i1", true);
@@ -232,7 +232,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                   .getBaseUrl();
           try (var control =
               new HttpSolrClient.Builder(control_collection)
-                  .withHttpClient(((CloudHttp1SolrClient) client).getHttpClient())
+                  .withHttpClient(((CloudLegacySolrClient) client).getHttpClient())
                   .build()) {
             state = addReplica.processAndWait(control, 30);
           }
@@ -297,7 +297,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     for (Replica replica : shard.getReplicas()) {
       var client =
           new HttpSolrClient.Builder(replica.getCoreUrl())
-              .withHttpClient(((CloudHttp1SolrClient) cloudClient).getHttpClient())
+              .withHttpClient(((CloudLegacySolrClient) cloudClient).getHttpClient())
               .build();
       QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
       if (log.isInfoEnabled()) {

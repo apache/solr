@@ -26,7 +26,7 @@ import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Optional;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -197,7 +197,7 @@ public class SearchStream extends TupleStream implements Expressible {
     } else {
       final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);
-      cloudSolrClient = new CloudHttp1SolrClient.Builder(hosts, Optional.empty()).build();
+      cloudSolrClient = new CloudLegacySolrClient.Builder(hosts, Optional.empty()).build();
     }
 
     QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);

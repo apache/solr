@@ -53,7 +53,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.cloud.overseer.NodeMutator;
@@ -1947,7 +1947,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private SolrCloudManager getCloudDataProvider(
       String zkAddress, SolrZkClient zkClient, ZkStateReader reader) {
     var client =
-        new CloudHttp1SolrClient.Builder(Collections.singletonList(zkAddress), Optional.empty())
+        new CloudLegacySolrClient.Builder(Collections.singletonList(zkAddress), Optional.empty())
             .withSocketTimeout(30000)
             .withConnectionTimeout(15000)
             .build();

@@ -28,7 +28,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -663,7 +663,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       final List<String> hosts = new ArrayList<>();
       hosts.add(zkHost);
       cloudSolrClient =
-          new CloudHttp1SolrClient.Builder(hosts, Optional.empty())
+          new CloudLegacySolrClient.Builder(hosts, Optional.empty())
               .withSocketTimeout(30000)
               .withConnectionTimeout(15000)
               .build();

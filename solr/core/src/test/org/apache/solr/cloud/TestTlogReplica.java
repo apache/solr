@@ -43,7 +43,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -249,7 +249,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   private HttpClient getHttpClient() {
-    return ((CloudHttp1SolrClient) cluster.getSolrClient()).getHttpClient();
+    return ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
   }
 
   @SuppressWarnings("unchecked")

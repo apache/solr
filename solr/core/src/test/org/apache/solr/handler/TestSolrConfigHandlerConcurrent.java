@@ -31,7 +31,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.CloudHttp1SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -197,7 +197,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
     HttpGet get = new HttpGet(uri);
     HttpEntity entity = null;
     try {
-      entity = ((CloudHttp1SolrClient) cloudClient).getHttpClient().execute(get).getEntity();
+      entity = ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(get).getEntity();
       String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
       try {
         return (LinkedHashMapWriter)

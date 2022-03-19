@@ -84,7 +84,7 @@ public class CloudSolrClientBuilderTest extends SolrTestCase {
   @SuppressWarnings({"try"})
   public void test0Timeouts() throws IOException {
     try (var createdClient =
-        new CloudHttp1SolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.empty())
+        new CloudLegacySolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.empty())
             .withSocketTimeout(0)
             .withConnectionTimeout(0)
             .build()) {}

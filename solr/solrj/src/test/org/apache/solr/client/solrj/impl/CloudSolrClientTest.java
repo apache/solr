@@ -121,7 +121,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
-    httpBasedCloudSolrClient = new CloudHttp1SolrClient.Builder(solrUrls).build();
+    httpBasedCloudSolrClient = new CloudLegacySolrClient.Builder(solrUrls).build();
   }
 
   @After
@@ -857,7 +857,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     try (CloudSolrClient solrClient =
         getCloudSolrClient(cluster.getZkServer().getZkAddress(), client)) {
 
-      assertSame(((CloudHttp1SolrClient) solrClient).getLbClient().getHttpClient(), client);
+      assertSame(((CloudLegacySolrClient) solrClient).getLbClient().getHttpClient(), client);
 
     } finally {
       HttpClientUtil.close(client);
