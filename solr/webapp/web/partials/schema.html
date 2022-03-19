@@ -23,6 +23,7 @@ limitations under the License.
       <button id="addField" class="action" ng-click="toggleAddField()"><span>Add Field</span></button>
       <button id="addDynamicField" class="action" ng-click="toggleAddDynamicField()"><span>Add Dynamic Field</span></button>
       <button id="addCopyField" class="action" ng-click="toggleAddCopyField()"><span>Add Copy Field</span></button>
+      <button id="addFieldType" class="action" ng-click="toggleAddFieldType()"><span>Add Field Type</span></button>
 
       <div class="action add" data-rel="add" ng-show="showAddField" escape-pressed="hideAll()">
 
@@ -202,7 +203,20 @@ limitations under the License.
           </p>
 
         </form>
+      </div>
+      <div class="action add field-type" data-rel="add" ng-show="showAddFieldType" escape-pressed="hideAll()">
+        <form>
+            <p class="clearfix"><label for="add_source">Add Field Type</label>
+                <textarea rows="15" cols="50" type="text" id="add_field_type" ng-model="newFieldType" focus-when="showAddFieldType" placeholder="specify your field type pattern"></textarea>
+            </p>
+            <div ng-repeat="error in addFieldTypeErrors" ng-show="addFieldTypeErrors" class="clearfix note error">
+                <span>{{error}}</span></div>
+            <p class="clearfix buttons">
+                <button type="submit" class="submit" ng-class="{success: added}" ng-click="addFieldType()"><span>Add FieldType</span></button>
+                <button type="reset" class="reset" ng-click="hideAll()"><span>Cancel</span></button>
+            </p>
 
+        </form>
       </div>
     </div>
 

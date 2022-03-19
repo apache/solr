@@ -138,6 +138,7 @@ solrAdminApp.controller('SchemaController',
             $scope.showAddField = false;
             $scope.showAddDynamicField = false;
             $scope.showAddCopyField = false;
+            $scope.showAddFieldType = false;
         }
 
         $scope.toggleAddField = function() {
@@ -287,6 +288,39 @@ solrAdminApp.controller('SchemaController',
                    field.deleted = true;
                    $timeout($scope.refresh, 1500);
                }
+            });
+        }
+        $scope.toggleAddFieldType = function() {
+            if ($scope.showAddFieldType) {
+                $scope.hideAll();
+            } else {
+                $scope.hideAll();
+                $scope.showAddFieldType = true;
+
+                $scope.adding = "fieldType";
+
+                $scope.newFieldType = ""
+                delete $scope.addErrors;
+            }
+        }
+
+        $scope.addFieldType = function() {
+            delete $scope.addErrors;
+            var data = {"add-field-type": JSON.parse($scope.newFieldType)};
+            Schema.post({core: $routeParams.core}, data, function(data) {
+                if (data.errors) {
+                    $scope.addErrors = data.errors[0].errorMessages;
+                    if (typeof $scope.addErrors === "string") {
+                        $scope.addErrors = [$scope.addErrors];
+                    }
+                } else {
+                    $scope.added = true;
+                    $timeout(function() {
+                        $scope.showAddFieldType = false;
+                        $scope.added = false;
+                        $scope.refresh();
+                    }, 1500);
+                }
             });
         }
     }
