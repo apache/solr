@@ -574,7 +574,7 @@ limitations under the License.
 #content #schema .actions #addField span { background-image: url( ../../img/ico/document-list.png ); }
 #content #schema .actions #addDynamicField span { background-image: url( ../../img/ico/documents-stack.png ); }
 #content #schema .actions #addCopyField span { background-image: url( ../../img/ico/document-import.png ); }
-#content #schema .actions #addFieldType span { background-image: url( ../../img/ico/property.png ); }
+#content #schema .actions #manipulateFieldType span { background-image: url( ../../img/ico/property.png ); }
 
 #content #schema .actions div.action
 {
@@ -607,7 +607,7 @@ limitations under the License.
   padding-top: 3px;
   padding-bottom: 3px;
   text-align: right;
-  width: 25%;
+  width: 30%;
 }
 
 #content #schema .actions input,

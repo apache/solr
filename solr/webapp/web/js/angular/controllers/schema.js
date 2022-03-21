@@ -138,7 +138,7 @@ solrAdminApp.controller('SchemaController',
             $scope.showAddField = false;
             $scope.showAddDynamicField = false;
             $scope.showAddCopyField = false;
-            $scope.showAddFieldType = false;
+            $scope.showManipulateFieldType = false;
         }
 
         $scope.toggleAddField = function() {
@@ -290,33 +290,33 @@ solrAdminApp.controller('SchemaController',
                }
             });
         }
-        $scope.toggleAddFieldType = function() {
-            if ($scope.showAddFieldType) {
+        $scope.toggleManipulateFieldType = function() {
+            if ($scope.showManipulateFieldType) {
                 $scope.hideAll();
             } else {
                 $scope.hideAll();
-                $scope.showAddFieldType = true;
+                $scope.showManipulateFieldType = true;
 
                 $scope.adding = "fieldType";
 
-                $scope.newFieldType = ""
+                $scope.fieldTypeObj = ""
                 delete $scope.addErrors;
             }
         }
 
-        $scope.addFieldType = function() {
-            delete $scope.addErrors;
-            var data = {"add-field-type": JSON.parse($scope.newFieldType)};
+        $scope.manipulateFieldType = function() {
+            delete $scope.manipulateFieldTypeErrors;
+            var data = JSON.parse($scope.fieldTypeObj);
             Schema.post({core: $routeParams.core}, data, function(data) {
                 if (data.errors) {
-                    $scope.addErrors = data.errors[0].errorMessages;
-                    if (typeof $scope.addErrors === "string") {
-                        $scope.addErrors = [$scope.addErrors];
+                    $scope.manipulateFieldTypeErrors = data.errors[0].errorMessages;
+                    if (typeof $scope.manipulateFieldTypeErrors === "string") {
+                        $scope.manipulateFieldTypeErrors = [$scope.manipulateFieldTypeErrors];
                     }
                 } else {
                     $scope.added = true;
                     $timeout(function() {
-                        $scope.showAddFieldType = false;
+                        $scope.showManipulateFieldType = false;
                         $scope.added = false;
                         $scope.refresh();
                     }, 1500);
