@@ -607,9 +607,12 @@ limitations under the License.
   padding-top: 3px;
   padding-bottom: 3px;
   text-align: right;
+  width: 25%;
+}
+#content #schema .actions .field-type label
+{
   width: 30%;
 }
-
 #content #schema .actions input,
 #content #schema .actions select,
 #content #schema .actions .buttons,
