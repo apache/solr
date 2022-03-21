@@ -19,14 +19,15 @@ package org.apache.solr.common.cloud;
 import org.apache.curator.framework.AuthInfo;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
 
-  private final List<AuthInfo> zkCredentials;
+  private volatile List<AuthInfo> zkCredentials;
 
   public DefaultZkCredentialsProvider() {
-    this(new ArrayList<>());
+    this(null);
   }
 
   public DefaultZkCredentialsProvider(List<AuthInfo> zkCredentials) {
@@ -35,6 +36,15 @@ public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
 
   @Override
   public List<AuthInfo> getCredentials() {
+    if (zkCredentials == null) {
+      synchronized (this) {
+        if (zkCredentials == null) zkCredentials = createCredentials();
+      }
+    }
     return zkCredentials;
+  }
+
+  protected List<AuthInfo> createCredentials() {
+    return new ArrayList<>();
   }
 }

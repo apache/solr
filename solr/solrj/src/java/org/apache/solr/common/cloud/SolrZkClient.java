@@ -45,7 +45,6 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -227,10 +226,6 @@ public class SolrZkClient implements Closeable {
 
   public CuratorFramework getCuratorFramework() {
     return client;
-  }
-
-  public ConnectionManager getConnectionManager() {
-    return connManager;
   }
 
   public static final String ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME = "zkCredentialsProvider";
@@ -504,6 +499,81 @@ public class SolrZkClient implements Closeable {
         });
   }
 
+  /**
+   * Create a node if it does not exist
+   *
+   * @param path the path at which to create the znode
+   */
+  public void ensureExists(final String path)
+      throws KeeperException, InterruptedException {
+    ensureExists(path, null);
+  }
+
+  /**
+   * Create a node if it does not exist
+   *
+   * @param path the path at which to create the znode
+   * @param data the optional data to set on the znode
+   */
+  public void ensureExists(
+      final String path,
+      final byte[] data)
+      throws KeeperException, InterruptedException {
+    ensureExists(path, data, CreateMode.PERSISTENT);
+  }
+
+  /**
+   * Create a node if it does not exist
+   *
+   * @param path the path at which to create the znode
+   * @param data the optional data to set on the znode
+   * @param createMode the mode with which to create the znode
+   */
+  public void ensureExists(
+      final String path,
+      final byte[] data,
+      CreateMode createMode)
+      throws KeeperException, InterruptedException {
+    ensureExists(path, data, createMode, 0);
+  }
+
+  /**
+   * Create a node if it does not exist
+   *
+   * @param path the path at which to create the znode
+   * @param data the optional data to set on the znode
+   * @param createMode the mode with which to create the znode
+   * @param skipPathParts how many path elements to skip
+   */
+  public void ensureExists(
+      final String path,
+      final byte[] data,
+      CreateMode createMode,
+      int skipPathParts)
+      throws KeeperException, InterruptedException {
+    if (exists(path)) {
+      return;
+    }
+    try {
+      if (skipPathParts > 0) {
+        int endingIndex = 0;
+        for (int i = 0; i < skipPathParts && endingIndex >= 0; i++) {
+          endingIndex = path.indexOf('/', endingIndex + 1);
+        }
+        if (endingIndex == -1 || endingIndex == path.length() - 1) {
+          throw new KeeperException.NoNodeException(path);
+        }
+        String startingPath = path.substring(endingIndex + 1);
+        if (!exists(startingPath)) {
+          throw new KeeperException.NoNodeException(startingPath);
+        }
+      }
+      makePath(path, data, createMode, null, true);
+    } catch (KeeperException.NodeExistsException ignored) {
+      // it's okay if another beats us creating the node
+    }
+  }
+
   /** Write data to ZooKeeper. */
   public Stat setData(String path, byte[] data)
       throws KeeperException, InterruptedException {
@@ -757,7 +827,7 @@ public class SolrZkClient implements Closeable {
   }
 
   @FunctionalInterface
-  private static interface SupplierWithException<T> {
+  private interface SupplierWithException<T> {
     T get() throws Exception;
   }
 
@@ -819,6 +889,11 @@ public class SolrZkClient implements Closeable {
 
   public void downloadFromZK(String zkPath, Path dir) throws IOException {
     ZkMaintenanceUtils.downloadFromZK(this, zkPath, dir);
+  }
+
+  @FunctionalInterface
+  public interface IsClosed {
+    boolean isClosed();
   }
 
   /**

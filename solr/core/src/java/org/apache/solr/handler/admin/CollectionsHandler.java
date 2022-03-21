@@ -89,7 +89,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -423,10 +422,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   private static void createSysConfigSet(CoreContainer coreContainer)
       throws KeeperException, InterruptedException {
     SolrZkClient zk = coreContainer.getZkController().getZkStateReader().getZkClient();
-    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zk.getZkClientTimeout());
-    cmdExecutor.ensureExists(ZkStateReader.CONFIGS_ZKNODE, zk);
-    cmdExecutor.ensureExists(
-        ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL, zk);
+    zk.ensureExists(ZkStateReader.CONFIGS_ZKNODE);
+    zk.ensureExists(
+        ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL);
 
     try {
       String path =
@@ -435,7 +433,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           IOUtils.toByteArray(
               CollectionsHandler.class.getResourceAsStream("/SystemCollectionSchema.xml"));
       assert data != null && data.length > 0;
-      cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
+      zk.ensureExists(path, data, CreateMode.PERSISTENT);
       path =
           ZkStateReader.CONFIGS_ZKNODE
               + "/"
@@ -445,7 +443,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           IOUtils.toByteArray(
               CollectionsHandler.class.getResourceAsStream("/SystemCollectionSolrConfig.xml"));
       assert data != null && data.length > 0;
-      cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
+      zk.ensureExists(path, data, CreateMode.PERSISTENT);
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }

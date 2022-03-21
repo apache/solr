@@ -27,6 +27,9 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.curator.framework.AuthInfo;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -84,18 +87,12 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     aclClient =
         new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
           @Override
-          protected ZkACLProvider createACLProvider() {
-            return new DefaultACLProvider() {
-              @Override
-              protected List<ACL> createGlobalACLsToAdd() {
-                try {
-                  Id id = new Id(SCHEME, DigestAuthenticationProvider.generateDigest(AUTH));
-                  return Collections.singletonList(new ACL(ZooDefs.Perms.ALL, id));
-                } catch (NoSuchAlgorithmException e) {
-                  throw new RuntimeException(e);
-                }
-              }
-            };
+          protected ACLProvider createACLProvider() {
+            try {
+              return new DefaultACLProvider(Collections.singletonList(new ACL(ZooDefs.Perms.ALL, new Id(SCHEME, DigestAuthenticationProvider.generateDigest(AUTH)))));
+            } catch (NoSuchAlgorithmException e) {
+              throw new RuntimeException(e);
+            }
           }
         };
 
@@ -103,13 +100,9 @@ public class SolrZkClientTest extends SolrCloudTestCase {
         new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT) {
           @Override
           protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
-            return new DefaultZkCredentialsProvider() {
-              @Override
-              protected Collection<ZkCredentials> createCredentials() {
-                return Collections.singleton(
-                    new ZkCredentials(SCHEME, AUTH.getBytes(StandardCharsets.UTF_8)));
-              }
-            };
+            return new DefaultZkCredentialsProvider(
+                Collections.singletonList(
+                    new AuthInfo(SCHEME, AUTH.getBytes(StandardCharsets.UTF_8))));
           }
         };
   }

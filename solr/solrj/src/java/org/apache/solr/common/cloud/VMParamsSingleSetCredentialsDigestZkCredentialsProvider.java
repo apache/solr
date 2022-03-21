@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+
+import org.apache.curator.framework.AuthInfo;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 
@@ -60,8 +62,8 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider
   }
 
   @Override
-  protected Collection<ZkCredentials> createCredentials() {
-    List<ZkCredentials> result = new ArrayList<>();
+  protected List<AuthInfo> createCredentials() {
+    List<AuthInfo> result = new ArrayList<>();
 
     String pathToFile = System.getProperty(DEFAULT_DIGEST_FILE_VM_PARAM_NAME);
     Properties props =
@@ -71,7 +73,7 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider
     String digestPassword = props.getProperty(zkDigestPasswordVMParamName);
     if (!StringUtils.isEmpty(digestUsername) && !StringUtils.isEmpty(digestPassword)) {
       result.add(
-          new ZkCredentials(
+          new AuthInfo(
               "digest", (digestUsername + ":" + digestPassword).getBytes(StandardCharsets.UTF_8)));
     }
     return result;

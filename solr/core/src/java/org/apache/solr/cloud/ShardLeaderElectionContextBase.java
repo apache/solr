@@ -77,11 +77,10 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     this.collection = collection;
 
     String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
-    ZkCmdExecutor zcmd = new ZkCmdExecutor(30000);
     // only if /collections/{collection} exists already do we succeed in creating this path
     log.info("make sure parent is created {}", parent);
     try {
-      zcmd.ensureExists(parent, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
+      zkClient.ensureExists(parent, null, CreateMode.PERSISTENT);
     } catch (KeeperException e) {
       throw new RuntimeException(e);
     } catch (InterruptedException e) {

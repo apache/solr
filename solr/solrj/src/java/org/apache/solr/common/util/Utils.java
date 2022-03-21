@@ -688,14 +688,12 @@ public class Utils {
    *
    * @param zkClient the zookeeper client
    * @param path the path to the znode being read
-   * @param retryOnConnLoss whether to retry the operation automatically on connection loss, see
-   *     {@link org.apache.solr.common.cloud.ZkCmdExecutor#retryOperation(ZkOperation)}
    * @return a Map if the node exists and contains valid JSON or an empty map if znode does not
    *     exist or has a null data
    */
   @SuppressWarnings({"unchecked"})
   public static Map<String, Object> getJson(
-      SolrZkClient zkClient, String path, boolean retryOnConnLoss)
+      SolrZkClient zkClient, String path)
       throws KeeperException, InterruptedException {
     try {
       byte[] bytes = zkClient.getData(path, null, null);

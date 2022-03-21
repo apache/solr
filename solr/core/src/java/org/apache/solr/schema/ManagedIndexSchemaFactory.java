@@ -30,7 +30,6 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
@@ -474,13 +473,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       // Rename the non-managed schema znode in ZooKeeper
       final String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
       try {
-        ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(zkController.getClientTimeout());
         if (zkController.pathExists(nonManagedSchemaPath)) {
           // First, copy the non-managed schema znode content to the upgraded schema znode
           byte[] bytes = zkController.getZkClient().getData(nonManagedSchemaPath, null, null);
           final String upgradedSchemaPath = nonManagedSchemaPath + UPGRADED_SCHEMA_EXTENSION;
-          zkCmdExecutor.ensureExists(upgradedSchemaPath, zkController.getZkClient());
-          zkController.getZkClient().setData(upgradedSchemaPath, bytes);
+          zkController.getZkClient().makePath(upgradedSchemaPath, bytes, CreateMode.PERSISTENT, null, false);
           // Then delete the non-managed schema znode
           if (zkController.getZkClient().exists(nonManagedSchemaPath)) {
             try {

@@ -319,11 +319,9 @@ public class ZkMaintenanceUtils {
 
     if (!Files.exists(rootPath)) throw new IOException("Path " + rootPath + " does not exist");
 
-    int partsOffset =
-        Path.of(zkPath).getNameCount() - rootPath.getNameCount() - 1; // will be negative
     Files.walkFileTree(
         rootPath,
-        new SimpleFileVisitor<Path>() {
+        new SimpleFileVisitor<>() {
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
@@ -344,18 +342,6 @@ public class ZkMaintenanceUtils {
               } else if (file == rootPath) {
                 // We are only uploading a single file, preVisitDirectory was never called
                 zkClient.makePath(zkNode, file, false);
-              } else {
-                // Skip path parts here because they should have been created during
-                // preVisitDirectory
-                int pathParts = file.getNameCount() + partsOffset;
-                zkClient.makePath(
-                    zkNode,
-                    Files.readAllBytes(file),
-                    CreateMode.PERSISTENT,
-                    null,
-                    false,
-                    true,
-                    pathParts);
               }
             } catch (KeeperException | InterruptedException e) {
               throw new IOException(
@@ -376,9 +362,7 @@ public class ZkMaintenanceUtils {
                 // Make sure the root path exists, including potential parents
                 zkClient.makePath(zkNode);
               } else {
-                // Skip path parts here because they should have been created during previous visits
-                int pathParts = dir.getNameCount() + partsOffset;
-                zkClient.makePath(zkNode, null, CreateMode.PERSISTENT, null, true, true, pathParts);
+                zkClient.makePath(zkNode, null, true);
               }
             } catch (KeeperException.NodeExistsException ignored) {
               // Using fail-on-exists == false has side effect of makePath attempting to setData on

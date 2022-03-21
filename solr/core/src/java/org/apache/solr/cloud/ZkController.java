@@ -318,7 +318,6 @@ public class ZkController implements Closeable {
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
     this.clientTimeout = cloudConfig.getZkClientTimeout();
-    DefaultConnectionStrategy strat = new DefaultConnectionStrategy();
     String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
     ZkACLProvider zkACLProvider = null;
     if (zkACLProviderClass != null && zkACLProviderClass.trim().length() > 0) {
@@ -908,20 +907,19 @@ public class ZkController implements Closeable {
    */
   public static void createClusterZkNodes(SolrZkClient zkClient)
       throws KeeperException, InterruptedException, IOException {
-    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
-    cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
-    cmdExecutor.ensureExists(ZkStateReader.NODE_ROLES, zkClient);
+    zkClient.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE);
+    zkClient.ensureExists(ZkStateReader.NODE_ROLES);
     for (NodeRoles.Role role : NodeRoles.Role.values()) {
-      cmdExecutor.ensureExists(NodeRoles.getZNodeForRole(role), zkClient);
+      zkClient.ensureExists(NodeRoles.getZNodeForRole(role));
       for (String mode : role.supportedModes()) {
-        cmdExecutor.ensureExists(NodeRoles.getZNodeForRoleMode(role, mode), zkClient);
+        zkClient.ensureExists(NodeRoles.getZNodeForRoleMode(role, mode));
       }
     }
 
-    cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
-    cmdExecutor.ensureExists(ZkStateReader.ALIASES, zkClient);
+    zkClient.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE);
+    zkClient.ensureExists(ZkStateReader.ALIASES);
     byte[] emptyJson = "{}".getBytes(StandardCharsets.UTF_8);
-    cmdExecutor.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH, emptyJson, zkClient);
+    zkClient.ensureExists(ZkStateReader.SOLR_SECURITY_CONF_PATH, emptyJson);
     repairSecurityJson(zkClient);
   }
 

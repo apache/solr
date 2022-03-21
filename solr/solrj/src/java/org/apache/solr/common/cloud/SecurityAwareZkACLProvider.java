@@ -26,8 +26,8 @@ import org.apache.zookeeper.data.ACL;
 public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
   public static final String SECURITY_ZNODE_PATH = "/security";
 
-  private List<ACL> nonSecurityACLsToAdd;
-  private List<ACL> securityACLsToAdd;
+  private volatile List<ACL> nonSecurityACLsToAdd;
+  private volatile List<ACL> securityACLsToAdd;
 
   private final String chroot;
 

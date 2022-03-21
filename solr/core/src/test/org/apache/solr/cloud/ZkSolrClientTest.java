@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -212,37 +211,6 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testZkCmdExectutor() throws Exception {
-    Path zkDir = createTempDir("zkData");
-    ZkTestServer server = null;
-
-    try {
-      server = new ZkTestServer(zkDir);
-      server.run();
-
-      final int timeout = random().nextInt(10000) + 5000;
-
-      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(timeout);
-      final long start = System.nanoTime();
-      expectThrows(
-          KeeperException.SessionExpiredException.class,
-          () -> {
-            zkCmdExecutor.retryOperation(
-                () -> {
-                  if (System.nanoTime() - start
-                      > TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
-                    throw new KeeperException.SessionExpiredException();
-                  }
-                  throw new KeeperException.ConnectionLossException();
-                });
-          });
-    } finally {
-      if (server != null) {
-        server.shutdown();
-      }
-    }
-  }
-
   @Test
   @SuppressWarnings({"try"})
   public void testMultipleWatchesAsync() throws Exception {
@@ -383,17 +351,14 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       zkClient.clean("/");
 
-      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(30000);
       expectThrows(
           KeeperException.NoNodeException.class,
           "We should not be able to create this path",
           () ->
-              zkCmdExecutor.ensureExists(
+              zkClient.ensureExists(
                   "/collection/collection/leader",
-                  (byte[]) null,
-                  CreateMode.PERSISTENT,
-                  zkClient,
-                  2));
+                  null,
+                  CreateMode.PERSISTENT));
 
       zkClient.makePath("/collection");
 
@@ -401,17 +366,16 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
           KeeperException.NoNodeException.class,
           "We should not be able to create this path",
           () ->
-              zkCmdExecutor.ensureExists(
+              zkClient.ensureExists(
                   "/collections/collection/leader",
                   (byte[]) null,
                   CreateMode.PERSISTENT,
-                  zkClient,
                   2));
       zkClient.makePath("/collection/collection");
 
       byte[] bytes = new byte[10];
-      zkCmdExecutor.ensureExists(
-          "/collection/collection", bytes, CreateMode.PERSISTENT, zkClient, 2);
+      zkClient.ensureExists(
+          "/collection/collection", bytes, CreateMode.PERSISTENT, 2);
 
       byte[] returnedBytes = zkClient.getData("/collection/collection", null, null);
 
@@ -419,8 +383,8 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       zkClient.makePath("/collection/collection/leader");
 
-      zkCmdExecutor.ensureExists(
-          "/collection/collection/leader", (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
+      zkClient.ensureExists(
+          "/collection/collection/leader", (byte[]) null, CreateMode.PERSISTENT, 2);
     }
   }
 
