@@ -2619,6 +2619,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * A variant of {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will
    * randomize some internal settings.
    */
+  @Deprecated
   public static class CloudSolrClientBuilder extends CloudLegacySolrClient.Builder {
 
     public CloudSolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
