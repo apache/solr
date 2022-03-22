@@ -582,7 +582,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     // cleanup any threads still running
     for (ClientThread thread : threads) {
-      thread.es.zkClient.getSolrZooKeeper().close();
+      thread.es.zkClient.close();
       thread.close();
     }
 

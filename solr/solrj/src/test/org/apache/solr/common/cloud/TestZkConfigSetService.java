@@ -23,9 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
@@ -149,7 +147,8 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     final String writeableUsername = "writeable";
     final String writeablePassword = "writeable";
 
-    List<ACL> acls = List.of(
+    // Must be Arrays.asList(), Zookeeper does not allow for immutable list types for ACLs
+    List<ACL> acls = Arrays.asList(
         new ACL(
             ZooDefs.Perms.ALL,
             new Id(
@@ -162,7 +161,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
                 "digest",
                 DigestAuthenticationProvider.generateDigest(
                     readOnlyUsername + ":" + readOnlyPassword))));
-    ACLProvider aclProvider = new DefaultACLProvider(acls);
+    ACLProvider aclProvider = new DefaultZkACLProvider(acls);
 
     List<AuthInfo> credentials = List.of(
         new AuthInfo(

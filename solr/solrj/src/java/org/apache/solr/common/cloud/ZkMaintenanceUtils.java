@@ -339,7 +339,7 @@ public class ZkMaintenanceUtils {
               if (file.toFile().getName().equals(ZKNODE_DATA_FILE)
                   && zkClient.exists(zkNode)) {
                 zkClient.setData(zkNode, file);
-              } else if (file == rootPath) {
+              } else {
                 // We are only uploading a single file, preVisitDirectory was never called
                 zkClient.makePath(zkNode, file, false);
               }
@@ -362,7 +362,7 @@ public class ZkMaintenanceUtils {
                 // Make sure the root path exists, including potential parents
                 zkClient.makePath(zkNode);
               } else {
-                zkClient.makePath(zkNode, null, true);
+                zkClient.makePath(zkNode, true);
               }
             } catch (KeeperException.NodeExistsException ignored) {
               // Using fail-on-exists == false has side effect of makePath attempting to setData on

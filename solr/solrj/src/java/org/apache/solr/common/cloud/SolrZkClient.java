@@ -25,8 +25,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -41,6 +44,8 @@ import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.api.transaction.TransactionOp;
+import org.apache.curator.framework.state.SessionConnectionStateErrorPolicy;
+import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
@@ -182,7 +187,7 @@ public class SolrZkClient implements Closeable {
       chroot = null;
     } else {
       zkHost = zkServerAddress.substring(0, chrootIndex);
-      chroot = zkServerAddress.substring(chrootIndex);
+      chroot = zkServerAddress.substring(chrootIndex + 1);
     }
     this.higherLevelIsClosed = higherLevelIsClosed;
 
@@ -215,9 +220,14 @@ public class SolrZkClient implements Closeable {
     }
     client.start();
     try {
-      client.blockUntilConnected();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      if (!client.blockUntilConnected(clientConnectTimeout, TimeUnit.MILLISECONDS)) {
+        throw new TimeoutException(String.format(Locale.ROOT, "Timeout while waiting for Zookeeper Client to connect: %d ms", clientConnectTimeout));
+      };
+    } catch (Exception e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      client.close();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
@@ -265,7 +275,7 @@ public class SolrZkClient implements Closeable {
       }
     }
     log.debug("Using default ACLProvider");
-    return new DefaultACLProvider();
+    return new DefaultZkACLProvider();
   }
 
   /** Returns true if client is connected */
@@ -563,7 +573,7 @@ public class SolrZkClient implements Closeable {
         if (endingIndex == -1 || endingIndex == path.length() - 1) {
           throw new KeeperException.NoNodeException(path);
         }
-        String startingPath = path.substring(endingIndex + 1);
+        String startingPath = path.substring(0, endingIndex);
         if (!exists(startingPath)) {
           throw new KeeperException.NoNodeException(startingPath);
         }
@@ -827,11 +837,11 @@ public class SolrZkClient implements Closeable {
   }
 
   @FunctionalInterface
-  private interface SupplierWithException<T> {
+  protected interface SupplierWithException<T> {
     T get() throws Exception;
   }
 
-  private <T> T runWithCorrectThrows(String action, SupplierWithException<T> func) throws KeeperException, InterruptedException {
+  protected <T> T runWithCorrectThrows(String action, SupplierWithException<T> func) throws KeeperException, InterruptedException {
     try {
       return func.get();
     } catch (KeeperException | RuntimeException e) {

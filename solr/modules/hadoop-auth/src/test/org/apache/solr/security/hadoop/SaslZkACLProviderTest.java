@@ -32,7 +32,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractVMParamsZkACLAndCredentialsProvidersTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkTestServer;
-import org.apache.solr.common.cloud.DefaultACLProvider;
+import org.apache.solr.common.cloud.DefaultZkACLProvider;
 import org.apache.solr.common.cloud.SaslZkACLProvider;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -199,7 +199,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
     @Override
     public ACLProvider createACLProvider() {
-      return new DefaultACLProvider();
+      return new DefaultZkACLProvider();
     }
   }
 

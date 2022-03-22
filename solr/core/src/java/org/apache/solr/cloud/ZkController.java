@@ -319,9 +319,9 @@ public class ZkController implements Closeable {
 
     this.clientTimeout = cloudConfig.getZkClientTimeout();
     String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
-    ZkACLProvider zkACLProvider = null;
+    ACLProvider zkACLProvider = null;
     if (zkACLProviderClass != null && zkACLProviderClass.trim().length() > 0) {
-      zkACLProvider = cc.getResourceLoader().newInstance(zkACLProviderClass, ZkACLProvider.class);
+      zkACLProvider = cc.getResourceLoader().newInstance(zkACLProviderClass, ACLProvider.class);
     }
 
     String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();

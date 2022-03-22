@@ -22,15 +22,15 @@ import org.apache.curator.framework.api.ACLProvider;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 
-public class DefaultACLProvider implements ACLProvider {
+public class DefaultZkACLProvider implements ACLProvider {
 
   private volatile List<ACL> globalACLsToAdd;
 
-  public DefaultACLProvider() {
+  public DefaultZkACLProvider() {
     this(null);
   }
 
-  public DefaultACLProvider(List<ACL> globalACLsToAdd) {
+  public DefaultZkACLProvider(List<ACL> globalACLsToAdd) {
     this.globalACLsToAdd = globalACLsToAdd;
   }
 

@@ -21,9 +21,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -89,7 +88,8 @@ public class SolrZkClientTest extends SolrCloudTestCase {
           @Override
           protected ACLProvider createACLProvider() {
             try {
-              return new DefaultACLProvider(Collections.singletonList(new ACL(ZooDefs.Perms.ALL, new Id(SCHEME, DigestAuthenticationProvider.generateDigest(AUTH)))));
+              // Must be Arrays.asList(), Zookeeper does not allow for immutable list types for ACLs
+              return new DefaultZkACLProvider(Arrays.asList(new ACL(ZooDefs.Perms.ALL, new Id(SCHEME, DigestAuthenticationProvider.generateDigest(AUTH)))));
             } catch (NoSuchAlgorithmException e) {
               throw new RuntimeException(e);
             }
@@ -245,7 +245,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   public void getConfig() {
     // As the embedded ZK is hardcoded to standalone, there is no way to test actual config data
     // here
-    assertEquals("", defaultClient.getConfig());
+    assertEquals("version=0", defaultClient.getConfig());
   }
 
   @Test
