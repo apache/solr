@@ -186,7 +186,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
     @Override
     public ZkACLProvider createACLProvider() {
-      return new SaslZkACLProvider(getChroot());
+      return new SaslZkACLProvider();
     }
   }
 

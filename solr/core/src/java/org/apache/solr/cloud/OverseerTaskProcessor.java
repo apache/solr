@@ -602,7 +602,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               response.getResponse());
         }
         success = true;
-      } catch (AlreadyClosedException e) {
+      } catch (IllegalStateException ignored) {
 
       } catch (KeeperException e) {
         SolrException.log(log, "", e);
@@ -617,7 +617,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           // Reset task from tracking data structures so that it can be retried.
           try {
             resetTaskWithException(messageHandler, head.getId(), asyncId, taskKey, message);
-          } catch (AlreadyClosedException e) {
+          } catch (IllegalStateException ignored) {
 
           }
         }

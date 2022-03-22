@@ -409,12 +409,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   }
 
   public void testInvalidZKAddress() throws SolrException {
-    SolrException ex =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              new SolrZkClient("----------:33332", 100);
-            });
+    expectThrows(
+          SolrException.class,
+          () -> new SolrZkClient("----------:33332", 100, 100));
     zkClient.close();
   }
 

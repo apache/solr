@@ -29,7 +29,13 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
   private volatile List<ACL> nonSecurityACLsToAdd;
   private volatile List<ACL> securityACLsToAdd;
 
-  private final String chroot;
+  private final String securityConfPath;
+  private final String securityZNodePath;
+  private final String securityZNodePathDir;
+
+  public SecurityAwareZkACLProvider() {
+    this(null);
+  }
 
   public SecurityAwareZkACLProvider(String chroot) {
     if (chroot == null){
@@ -37,7 +43,26 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
     } else if (chroot.endsWith("/")) {
       chroot = chroot.substring(0, chroot.length() - 1);
     }
-    this.chroot = chroot;
+    if (chroot.length() > 0 && !chroot.startsWith("/")) {
+      chroot = "/" + chroot;
+    }
+    this.securityConfPath = chroot + ZkStateReader.SOLR_SECURITY_CONF_PATH;
+    this.securityZNodePath = chroot + SECURITY_ZNODE_PATH;
+    this.securityZNodePathDir = chroot + SECURITY_ZNODE_PATH + "/";
+  }
+
+  public SecurityAwareZkACLProvider withChroot(String chroot) {
+    return new SecurityAwareZkACLProvider(chroot) {
+      @Override
+      protected List<ACL> createNonSecurityACLsToAdd() {
+        return SecurityAwareZkACLProvider.this.createNonSecurityACLsToAdd();
+      }
+
+      @Override
+      protected List<ACL> createSecurityACLsToAdd() {
+        return SecurityAwareZkACLProvider.this.createSecurityACLsToAdd();
+      }
+    };
   }
 
   @Override
@@ -56,9 +81,9 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
 
   protected boolean isSecurityZNodePath(String zNodePath) {
     return zNodePath != null
-        && (zNodePath.equals(chroot + ZkStateReader.SOLR_SECURITY_CONF_PATH)
-            || zNodePath.equals(chroot + SECURITY_ZNODE_PATH)
-            || zNodePath.startsWith(chroot + SECURITY_ZNODE_PATH + "/"));
+        && (zNodePath.equals(securityConfPath)
+            || zNodePath.equals(securityZNodePath)
+            || zNodePath.startsWith(securityZNodePathDir));
   }
 
   /**

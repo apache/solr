@@ -24,8 +24,12 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Properties;
+
+import org.apache.curator.framework.AuthInfo;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
@@ -75,50 +79,42 @@ public class AbstractVMParamsZkACLAndCredentialsProvidersTestBase extends SolrTe
 
     setSecuritySystemProperties();
 
-    SolrZkClient zkClient =
+    try (SolrZkClient zkClient =
         new SolrZkClient(
             zkServer.getZkHost(),
             AbstractZkTestCase.TIMEOUT,
             AbstractZkTestCase.TIMEOUT,
             null,
             null,
-            null);
-    zkClient.makePath("/solr", false);
-    zkClient.close();
+            null)) {
+      zkClient.makePath("/solr", false);
+    }
 
-    zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    zkClient.create(
-        "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
-    zkClient.makePath(
-        "/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      zkClient.create(
+          "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
+      zkClient.makePath(
+          "/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
 
-    zkClient.create(
-        SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
-        "content".getBytes(DATA_ENCODING),
-        CreateMode.PERSISTENT
-    );
-    zkClient.close();
+      zkClient.create(
+          SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
+          "content".getBytes(DATA_ENCODING),
+          CreateMode.PERSISTENT
+      );
+    }
 
     clearSecuritySystemProperties();
 
-    zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-    // Currently no credentials on ZK connection, because those same VM-params are used for adding
-    // ACLs, and here we want
-    // no (or completely open) ACLs added. Therefore hack your way into being authorized for
-    // creating anyway
-    zkClient
-        .getSolrZooKeeper()
-        .addAuthInfo(
-            "digest",
-            ("connectAndAllACLUsername:connectAndAllACLPassword").getBytes(StandardCharsets.UTF_8));
-    zkClient.create(
-        "/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
-    zkClient.makePath(
-        "/unprotectedMakePathNode",
-        "content".getBytes(DATA_ENCODING),
-        CreateMode.PERSISTENT
-    );
-    zkClient.close();
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT, new DefaultZkCredentialsProvider(Arrays.asList(new AuthInfo("digest",
+        ("connectAndAllACLUsername:connectAndAllACLPassword").getBytes(StandardCharsets.UTF_8)))), null)) {
+      zkClient.create(
+          "/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
+      zkClient.makePath(
+          "/unprotectedMakePathNode",
+          "content".getBytes(DATA_ENCODING),
+          CreateMode.PERSISTENT
+      );
+    }
 
     if (log.isInfoEnabled()) {
       log.info("####SETUP_END {}", getTestName());
@@ -198,17 +194,9 @@ public class AbstractVMParamsZkACLAndCredentialsProvidersTestBase extends SolrTe
   public void testRepairACL() throws Exception {
     clearSecuritySystemProperties();
     try (SolrZkClient zkClient =
-        new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      // Currently no credentials on ZK connection, because those same VM-params are used for adding
-      // ACLs, and here we want
-      // no (or completely open) ACLs added. Therefore hack your way into being authorized for
-      // creating anyway
-      zkClient
-          .getSolrZooKeeper()
-          .addAuthInfo(
-              "digest",
-              ("connectAndAllACLUsername:connectAndAllACLPassword")
-                  .getBytes(StandardCharsets.UTF_8));
+        new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT, new DefaultZkCredentialsProvider(Arrays.asList(new AuthInfo("digest",
+            ("connectAndAllACLUsername:connectAndAllACLPassword")
+                .getBytes(StandardCharsets.UTF_8)))), null)) {
 
       zkClient.create(
           "/security.json", "{}".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
@@ -228,7 +216,7 @@ public class AbstractVMParamsZkACLAndCredentialsProvidersTestBase extends SolrTe
       NoAuthException e =
           assertThrows(
               NoAuthException.class, () -> zkClient.getData("/security.json", null, null));
-      assertEquals("/security.json", e.getPath());
+      assertEquals("/solr/security.json", e.getPath());
     }
   }
 

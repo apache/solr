@@ -195,7 +195,10 @@ public class SolrZkClient implements Closeable {
       zkCredentialsProvider = createZkCredentialsToAddAutomatically();
     }
     if (aclProvider == null) {
-      this.aclProvider = createACLProvider();
+      aclProvider = createACLProvider();
+    }
+    if (chroot != null && aclProvider instanceof SecurityAwareZkACLProvider) {
+      this.aclProvider = ((SecurityAwareZkACLProvider)aclProvider).withChroot(chroot);
     } else {
       this.aclProvider = aclProvider;
     }
@@ -270,7 +273,7 @@ public class SolrZkClient implements Closeable {
       } catch (Throwable t) {
         // just ignore - go default
         log.warn(
-            "VM param zkACLProvider does not point to a class implementingACLProvider and with a non-arg constructor",
+            "VM param zkACLProvider does not point to a class implementingACLProvider and with a single-arg constructor (passing through the chroot)",
             t);
       }
     }
@@ -501,11 +504,17 @@ public class SolrZkClient implements Closeable {
     if (!failOnExists) {
       createBuilder.orSetData();
     }
+    final String finalPath;
+    if (!path.startsWith("/")) {
+      finalPath = "/" + path;
+    } else {
+      finalPath = path;
+    }
     runWithCorrectThrows(
         "making path",
         () -> {
-          createBuilder.creatingParentsIfNeeded().withMode(createMode).forPath(path, data);
-          return client.checkExists().usingWatcher(wrapWatcher(watcher)).forPath(path);
+          createBuilder.creatingParentsIfNeeded().withMode(createMode).forPath(finalPath, data);
+          return client.checkExists().usingWatcher(wrapWatcher(watcher)).forPath(finalPath);
         });
   }
 
@@ -647,7 +656,7 @@ public class SolrZkClient implements Closeable {
     StringBuilder dent = new StringBuilder();
     dent.append(" ".repeat(Math.max(0, indent)));
     string.append(dent).append(path).append(" (").append(children.size()).append(")").append(NEWL);
-    if (data != null) {
+    if (data != null && data.length > 0) {
       String dataString = new String(data, StandardCharsets.UTF_8);
       if (!path.endsWith(".txt") && !path.endsWith(".xml")) {
         string
