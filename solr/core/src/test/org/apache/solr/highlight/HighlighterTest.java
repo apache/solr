@@ -845,6 +845,21 @@ public class HighlighterTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testPhraseHighlighterComplexPhrase() {
+    assertU(adoc("t_text", "abc hello xyz", "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+
+    assertQ(
+        req("q", "{!complexphrase}t_text:\"hello*\"",
+            "hl", "true",
+            "hl.fl", "t_text",
+            "hl.usePhraseHighlighter", "false"),
+        "//lst[@name='highlighting']/lst[@name='1']",
+        "//lst[@name='1']/arr[@name='t_text']/str[.='abc <em>hello</em> xyz']");
+  }
+
+  @Test
   public void testGetHighlightFields() {
     HashMap<String, String> args = new HashMap<>();
     args.put("fl", "id score");
