@@ -851,7 +851,8 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     assertU(optimize());
 
     assertQ(
-        req("q", "{!complexphrase}t_text:\"hello*\"",
+        req(
+            "q", "{!complexphrase}t_text:\"hello*\"",
             "hl", "true",
             "hl.fl", "t_text",
             "hl.usePhraseHighlighter", "false"),
