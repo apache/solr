@@ -25,7 +25,7 @@ public interface OnDisconnect extends ConnectionStateListener {
 
   @Override
   default void stateChanged(CuratorFramework client, ConnectionState newState) {
-    if (!newState.isConnected()) {
+    if (newState == ConnectionState.LOST) {
       command();
     }
   }

@@ -1235,7 +1235,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             ZkDistributedQueue q = getOpenOverseer().getStateUpdateQueue();
             q.offer(Utils.toJSON(m));
             break;
-          } catch (SolrException | KeeperException | AlreadyClosedException e) {
+          } catch (SolrException | KeeperException | IllegalStateException e) {
             e.printStackTrace();
           }
         }
@@ -1253,7 +1253,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 true,
                 getOpenOverseer());
             break;
-          } catch (SolrException | KeeperException | AlreadyClosedException e) {
+          } catch (SolrException | KeeperException | IllegalStateException e) {
             e.printStackTrace();
           }
         }
@@ -1278,7 +1278,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 true,
                 getOpenOverseer());
             break;
-          } catch (SolrException | AlreadyClosedException e) {
+          } catch (SolrException | IllegalStateException e) {
             e.printStackTrace();
           }
         }
@@ -1298,7 +1298,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 true,
                 getOpenOverseer());
             break;
-          } catch (SolrException | AlreadyClosedException e) {
+          } catch (SolrException | IllegalStateException e) {
             e.printStackTrace();
           }
         }
@@ -1318,7 +1318,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 true,
                 getOpenOverseer());
             break;
-          } catch (SolrException | AlreadyClosedException e) {
+          } catch (SolrException | IllegalStateException e) {
             e.printStackTrace();
           }
         }

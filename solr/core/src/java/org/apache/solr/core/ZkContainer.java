@@ -200,7 +200,7 @@ public class ZkContainer {
               SolrException.log(log, "", e);
             } catch (KeeperException e) {
               SolrException.log(log, "", e);
-            } catch (AlreadyClosedException e) {
+            } catch (IllegalStateException e) {
 
             } catch (Exception e) {
               try {

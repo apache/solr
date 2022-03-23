@@ -28,6 +28,8 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
+
+import org.apache.curator.test.KillSession;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
@@ -148,9 +150,9 @@ public class ChaosMonkey {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
       monkeyLog("expire session for " + jetty.getLocalPort() + " !");
-      causeConnectionLoss(jetty);
       long sessionId = cores.getZkController().getZkClient().getZkSessionId();
       zkServer.expire(sessionId);
+      causeConnectionLoss(jetty);
     }
   }
 
@@ -180,7 +182,11 @@ public class ChaosMonkey {
     if (cores != null) {
       monkeyLog("Will cause connection loss on " + jetty.getLocalPort());
       SolrZkClient zkClient = cores.getZkController().getZkClient();
-      zkClient.getSolrZooKeeper().closeCnxn();
+      try {
+        KillSession.kill(zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
   }
 

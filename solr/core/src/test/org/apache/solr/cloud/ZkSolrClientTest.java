@@ -341,12 +341,11 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
               KeeperException.NoNodeException.class,
               "We should not be able to create this path",
               () ->
-                  zkClient.makePath(
+                  zkClient.ensureExists(
                       "/test/path/here",
                       (byte[]) null,
                       CreateMode.PERSISTENT,
-                      (Watcher) null,
-                      true
+                      1
                   ));
 
       zkClient.clean("/");
@@ -358,7 +357,8 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
               zkClient.ensureExists(
                   "/collection/collection/leader",
                   null,
-                  CreateMode.PERSISTENT));
+                  CreateMode.PERSISTENT,
+                  2));
 
       zkClient.makePath("/collection");
 

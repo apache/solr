@@ -52,6 +52,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.servlet.Filter;
+
+import org.apache.curator.test.KillSession;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -794,9 +796,13 @@ public class MiniSolrCloudCluster {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
       SolrZkClient zkClient = cores.getZkController().getZkClient();
-      zkClient.getSolrZooKeeper().closeCnxn();
       long sessionId = zkClient.getZkSessionId();
       zkServer.expire(sessionId);
+      try {
+        KillSession.kill(zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       if (log.isInfoEnabled()) {
         log.info("Expired zookeeper session {} from node {}", sessionId, jetty.getBaseUrl());
       }

@@ -190,7 +190,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       // We don't need to handle this. This is just a fail-safe which comes in handy in skipping
       // already processed async calls.
       SolrException.log(log, "", e);
-    } catch (AlreadyClosedException e) {
+    } catch (IllegalStateException e) {
       return;
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
@@ -204,7 +204,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     try {
       prioritizer.prioritizeOverseerNodes(myId);
-    } catch (AlreadyClosedException e) {
+    } catch (IllegalStateException e) {
       return;
     } catch (Exception e) {
       if (!zkStateReader.getZkClient().isClosed()) {
@@ -397,7 +397,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           return;
-        } catch (AlreadyClosedException e) {
+        } catch (IllegalStateException e) {
 
         } catch (Exception e) {
           SolrException.log(log, "", e);

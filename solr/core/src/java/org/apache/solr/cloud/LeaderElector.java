@@ -348,7 +348,7 @@ public class LeaderElector {
       try {
         // am I the next leader?
         checkIfIamLeader(context, true);
-      } catch (AlreadyClosedException e) {
+      } catch (IllegalStateException e) {
 
       } catch (Exception e) {
         if (!zkClient.isClosed()) {

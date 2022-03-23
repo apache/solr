@@ -21,6 +21,8 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Implementations are expected to implement a correct hashCode and equals method needed to uniquely
  * identify the listener as listeners are managed in a Set. In addition, your listener
@@ -31,10 +33,16 @@ import org.apache.zookeeper.KeeperException.SessionExpiredException;
 public interface OnReconnect extends ConnectionStateListener {
   void command();
 
+  AtomicBoolean sessionEnded = new AtomicBoolean(false);
+
   @Override
   default void stateChanged(CuratorFramework client, ConnectionState newState) {
     if (ConnectionState.RECONNECTED.equals(newState)) {
-      command();
+      if (sessionEnded.getAndSet(false)) {
+        command();
+      }
+    } else if (ConnectionState.LOST == newState) {
+      sessionEnded.set(true);
     }
   }
 }

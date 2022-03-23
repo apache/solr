@@ -663,7 +663,7 @@ public class ZkController implements Closeable {
 
     try {
       this.removeEphemeralLiveNode();
-    } catch (AlreadyClosedException
+    } catch (IllegalStateException
         | SessionExpiredException
         | KeeperException.ConnectionLossException e) {
 
@@ -1488,7 +1488,7 @@ public class ZkController implements Closeable {
         leaderUrl = getLeaderProps(collection, cloudDesc.getShardId(), timeoutms).getCoreUrl();
       }
 
-    } catch (AlreadyClosedException e) {
+    } catch (IllegalStateException e) {
       throw e;
     } catch (Exception e) {
       log.error("Error getting leader from zk", e);
@@ -2886,7 +2886,7 @@ public class ZkController implements Closeable {
               nodeName);
       try {
         overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
-      } catch (AlreadyClosedException e) {
+      } catch (IllegalStateException e) {
         log.info(
             "Not publishing node as DOWN because a resource required to do so is already closed.");
       } catch (InterruptedException e) {

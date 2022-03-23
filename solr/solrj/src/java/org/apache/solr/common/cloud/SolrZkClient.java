@@ -703,10 +703,6 @@ public class SolrZkClient implements Closeable {
     return isClosed || (higherLevelIsClosed != null && higherLevelIsClosed.isClosed());
   }
 
-  public SolrZooKeeper getSolrZooKeeper() {
-    return null;
-  }
-
   public long getZkSessionId() {
     if (isConnected()) {
       try {

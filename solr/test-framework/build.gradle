@@ -46,6 +46,11 @@ dependencies {
   implementation ('org.apache.zookeeper:zookeeper-jute') {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
+  api('org.apache.curator:curator-test') {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+    exclude group: 'com.google.guava', module: 'guava'
+    exclude group: 'io.dropwizard.metrics', module: 'metrics-core'
+  }
 
   implementation 'commons-io:commons-io'
   implementation 'org.slf4j:slf4j-api'
