@@ -18,6 +18,7 @@ package org.apache.solr.highlight;
 
 import java.io.IOException;
 import java.text.BreakIterator;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -235,7 +236,9 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
   /** From {@link #getHighlighter(org.apache.solr.request.SolrQueryRequest)}. */
   protected static class SolrExtendedUnifiedHighlighter extends UnifiedHighlighter {
+    protected static final Predicate<String> NO_FIELD_MATCH_PREDICATE = s -> false;
     protected static final Predicate<String> NOT_REQUIRED_FIELD_MATCH_PREDICATE = s -> true;
+    private final SolrIndexSearcher solrIndexSearcher;
     protected final SolrParams params;
 
     protected final IndexSchema schema;
@@ -243,6 +246,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
     public SolrExtendedUnifiedHighlighter(SolrQueryRequest req) {
       super(req.getSearcher(), req.getSchema().getIndexAnalyzer());
+      this.solrIndexSearcher = req.getSearcher();
       this.params = req.getParams();
       this.schema = req.getSchema();
       this.setMaxLength(params.getInt(HighlightParams.MAX_CHARS, DEFAULT_MAX_CHARS));
@@ -431,14 +435,35 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
     @Override
     protected Predicate<String> getFieldMatcher(String field) {
-      // TODO define hl.queryFieldPattern as a more advanced alternative to hl.requireFieldMatch.
 
       // note that the UH at Lucene level default to effectively "true"
       if (params.getFieldBool(field, HighlightParams.FIELD_MATCH, false)) {
         return field::equals; // requireFieldMatch
-      } else {
-        return NOT_REQUIRED_FIELD_MATCH_PREDICATE;
       }
+
+      String[] queryFieldPattern =
+          params.getFieldParams(field, HighlightParams.QUERY_FIELD_PATTERN);
+      if (queryFieldPattern != null && queryFieldPattern.length != 0) {
+
+        Collection<String> storedHighlightFieldNames =
+            solrIndexSearcher.getDocFetcher().getStoredHighlightFieldNames();
+
+        Predicate<String> predicate = null;
+        for (String f :
+            expandWildcardsInHighlightFields(storedHighlightFieldNames, queryFieldPattern)) {
+          if (predicate == null) {
+            predicate = f::equals;
+          } else {
+            predicate = predicate.or(f::equals);
+          }
+        }
+        if (predicate == null) {
+          return NO_FIELD_MATCH_PREDICATE;
+        }
+        return predicate;
+      }
+
+      return NOT_REQUIRED_FIELD_MATCH_PREDICATE;
     }
   }
 }

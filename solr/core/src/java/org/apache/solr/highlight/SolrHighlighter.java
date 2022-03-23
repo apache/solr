@@ -69,14 +69,9 @@ public abstract class SolrHighlighter {
         fields = defaultFields;
       }
     } else {
-      Set<String> expandedFields = new LinkedHashSet<String>();
-      Collection<String> storedHighlightFieldNames =
-          request.getSearcher().getDocFetcher().getStoredHighlightFieldNames();
-      for (String field : fields) {
-        expandWildcardsInHighlightFields(
-            expandedFields, storedHighlightFieldNames, SolrPluginUtils.split(field));
-      }
-      fields = expandedFields.toArray(new String[] {});
+      fields =
+          expandWildcardsInHighlightFields(
+              request.getSearcher().getDocFetcher().getStoredHighlightFieldNames(), fields);
     }
 
     // Trim them now in case they haven't been yet.  Not needed for all code-paths above but do it
@@ -89,6 +84,16 @@ public abstract class SolrHighlighter {
 
   protected boolean emptyArray(String[] arr) {
     return (arr == null || arr.length == 0 || arr[0] == null || arr[0].trim().length() == 0);
+  }
+
+  protected static String[] expandWildcardsInHighlightFields(
+      Collection<String> storedHighlightFieldNames, String... fields) {
+    Set<String> expandedFields = new LinkedHashSet<String>();
+    for (String field : fields) {
+      expandWildcardsInHighlightFields(
+          expandedFields, storedHighlightFieldNames, SolrPluginUtils.split(field));
+    }
+    return expandedFields.toArray(new String[] {});
   }
 
   private static void expandWildcardsInHighlightFields(
