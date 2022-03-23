@@ -222,8 +222,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     }
 
     /**
-     * Provide a series of ZK hosts which will be used when configuring {@link CloudLegacySolrClient}
-     * instances.
+     * Provide a series of ZK hosts which will be used when configuring {@link
+     * CloudLegacySolrClient} instances.
      *
      * <p>Usage example when Solr stores data at the ZooKeeper root ('/'):
      *
@@ -309,8 +309,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
      * Tells {@link Builder} whether created clients should send shard updates serially or in
      * parallel
      *
-     * <p>When an {@link UpdateRequest} affects multiple shards, {@link CloudLegacySolrClient} splits
-     * it up and sends a request to each affected shard. This setting chooses whether those
+     * <p>When an {@link UpdateRequest} affects multiple shards, {@link CloudLegacySolrClient}
+     * splits it up and sends a request to each affected shard. This setting chooses whether those
      * sub-requests are sent serially or in parallel.
      *
      * <p>If not set, this defaults to 'true' and sends sub-requests in parallel.

@@ -540,7 +540,8 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
     HttpGet httpGet = new HttpGet(uri);
     try {
-      HttpResponse entity = ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpGet);
+      HttpResponse entity =
+          ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpGet);
       int statusCode = entity.getStatusLine().getStatusCode();
       if (statusCode == HttpStatus.SC_OK) {
         byte[] bytes = DefaultSampleDocumentsLoader.streamAsBytes(entity.getEntity().getContent());

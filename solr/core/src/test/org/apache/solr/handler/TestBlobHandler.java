@@ -104,7 +104,9 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     compareInputAndOutput(
         baseUrl + "/.system/blob/test?wt=filestream", bytarr2, (CloudLegacySolrClient) cloudClient);
     compareInputAndOutput(
-        baseUrl + "/.system/blob/test/1?wt=filestream", bytarr, (CloudLegacySolrClient) cloudClient);
+        baseUrl + "/.system/blob/test/1?wt=filestream",
+        bytarr,
+        (CloudLegacySolrClient) cloudClient);
   }
 
   static void checkBlobPostMd5(String baseUrl, CloudSolrClient cloudClient) throws Exception {
