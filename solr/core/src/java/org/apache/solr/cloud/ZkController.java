@@ -471,13 +471,7 @@ public class ZkController implements Closeable {
               }
             },
             zkACLProvider,
-            new ConnectionManager.IsClosed() {
-
-              @Override
-              public boolean isClosed() {
-                return cc.isShutDown();
-              }
-            });
+            cc::isShutDown);
 
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
@@ -1057,8 +1051,7 @@ public class ZkController implements Closeable {
     }
 
     boolean deleted =
-        deletedLatch.await(
-            zkClient.getSolrZooKeeper().getSessionTimeout() * 2, TimeUnit.MILLISECONDS);
+        deletedLatch.await(zkClient.getZooKeeper().getSessionTimeout() * 2, TimeUnit.MILLISECONDS);
     if (!deleted) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,

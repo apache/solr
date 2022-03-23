@@ -41,6 +41,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
+import org.apache.zookeeper.TestableZooKeeper;
+import org.apache.zookeeper.ZooKeeper;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -531,32 +533,29 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         };
 
     Thread connLossThread =
-        new Thread() {
-          @Override
-          public void run() {
-
-            while (!stopStress) {
-              try {
-                Thread.sleep(50);
-                int j;
-                j = random().nextInt(threads.size());
+        new Thread(
+            () -> {
+              while (!stopStress) {
                 try {
-                  threads.get(j).es.zkClient.getSolrZooKeeper().closeCnxn();
-                  if (random().nextBoolean()) {
-                    long sessionId = zkClient.getSolrZooKeeper().getSessionId();
-                    server.expire(sessionId);
+                  Thread.sleep(50);
+                  int j;
+                  j = random().nextInt(threads.size());
+                  try {
+                    ZooKeeper zk = threads.get(j).es.zkClient.getZooKeeper();
+                    ((TestableZooKeeper) zk).testableConnloss();
+                    if (random().nextBoolean()) {
+                      zk.getTestable().injectSessionExpiration();
+                    }
+                  } catch (Exception e) {
+                    e.printStackTrace();
                   }
+                  Thread.sleep(500);
+
                 } catch (Exception e) {
-                  e.printStackTrace();
+
                 }
-                Thread.sleep(500);
-
-              } catch (Exception e) {
-
               }
-            }
-          }
-        };
+            });
 
     scheduleThread.start();
     connLossThread.start();
@@ -582,7 +581,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     // cleanup any threads still running
     for (ClientThread thread : threads) {
-      thread.es.zkClient.getSolrZooKeeper().close();
+      thread.es.zkClient.getZooKeeper().close();
       thread.close();
     }
 

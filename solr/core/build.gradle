@@ -130,6 +130,7 @@ dependencies {
   implementation ('org.apache.zookeeper:zookeeper-jute') {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
+  testImplementation 'org.apache.zookeeper:zookeeper:3.7.0:tests' // TODO externalize version
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly ('org.xerial.snappy:snappy-java')
 
