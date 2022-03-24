@@ -445,12 +445,10 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
           params.getFieldParams(field, HighlightParams.QUERY_FIELD_PATTERN);
       if (queryFieldPattern != null && queryFieldPattern.length != 0) {
 
-        Collection<String> storedHighlightFieldNames =
-            solrIndexSearcher.getDocFetcher().getStoredHighlightFieldNames();
+        Collection<String> indexedFields = solrIndexSearcher.getDocFetcher().getIndexedFieldNames();
 
         Predicate<String> predicate = null;
-        for (String f :
-            expandWildcardsInHighlightFields(storedHighlightFieldNames, queryFieldPattern)) {
+        for (String f : expandWildcardsInHighlightFields(indexedFields, queryFieldPattern)) {
           if (predicate == null) {
             predicate = f::equals;
           } else {

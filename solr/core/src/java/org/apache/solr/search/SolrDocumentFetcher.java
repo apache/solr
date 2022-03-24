@@ -113,6 +113,8 @@ public class SolrDocumentFetcher {
 
   private Collection<String> storedHighlightFieldNames; // lazy populated; use getter
 
+  private Collection<String> indexedFieldNames; // lazy populated; use getter
+
   @SuppressWarnings({"unchecked"})
   SolrDocumentFetcher(SolrIndexSearcher searcher, SolrConfig solrConfig, boolean cachingEnabled) {
     this.searcher = searcher;
@@ -216,6 +218,28 @@ public class SolrDocumentFetcher {
         }
       }
       return storedHighlightFieldNames;
+    }
+  }
+
+  /** Returns a collection of the names of all indexed fields which the index reader knows about. */
+  public Collection<String> getIndexedFieldNames() {
+    synchronized (this) {
+      if (indexedFieldNames == null) {
+        indexedFieldNames = new LinkedList<>();
+        for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
+          final String fieldName = fieldInfo.name;
+          try {
+            SchemaField field = searcher.getSchema().getField(fieldName);
+            if (field.indexed()) {
+              indexedFieldNames.add(fieldName);
+            }
+          } catch (RuntimeException e) {
+            // getField() throws a SolrException, but it arrives as a RuntimeException
+            log.warn("Field [{}] found in index, but not defined in schema.", fieldName);
+          }
+        }
+      }
+      return indexedFieldNames;
     }
   }
 
