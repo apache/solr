@@ -150,7 +150,7 @@ public abstract class CloudSolrClient extends SolrClient {
      * <pre>
      *   final List&lt;String&gt; solrBaseUrls = new ArrayList&lt;String&gt;();
      *   solrBaseUrls.add("http://solr1:8983/solr"); solrBaseUrls.add("http://solr2:8983/solr"); solrBaseUrls.add("http://solr3:8983/solr");
-     *   final SolrClient client = new CloudHttp2SolrClient.Builder(solrBaseUrls).build();
+     *   final SolrClient client = new CloudSolrClient.Builder(solrBaseUrls).build();
      * </pre>
      */
     public Builder(List<String> solrUrls) {
