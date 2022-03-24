@@ -174,7 +174,7 @@ public abstract class CloudSolrClient extends SolrClient {
      * <pre>
      *    final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
      *    zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
-     *    final SolrClient client = new CloudHttp2SolrClient.Builder(zkServers, Optional.of("/solr")).build();
+     *    final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.of("/solr")).build();
      *  </pre>
      *
      * @param zkHosts a List of at least one ZooKeeper host and port (e.g. "zookeeper1:2181")
