@@ -166,7 +166,7 @@ public abstract class CloudSolrClient extends SolrClient {
      * <pre>
      *   final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
      *   zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
-     *   final SolrClient client = new CloudHttp2SolrClient.Builder(zkServers, Optional.empty()).build();
+     *   final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.empty()).build();
      * </pre>
      *
      * Usage example when Solr data is stored in a ZooKeeper chroot:
