@@ -140,31 +140,15 @@ public class SolrZkClient implements Closeable {
       int clientConnectTimeout,
       ZkClientConnectionStrategy strat,
       final OnReconnect onReconnect,
-      BeforeReconnect beforeReconnect) {
-    this(
-        zkServerAddress,
-        zkClientTimeout,
-        clientConnectTimeout,
-        strat,
-        onReconnect,
-        beforeReconnect,
-        null,
-        null);
-  }
-
-  public SolrZkClient(
-      String zkServerAddress,
-      int zkClientTimeout,
-      int clientConnectTimeout,
-      ZkClientConnectionStrategy strat,
-      final OnReconnect onReconnect,
       BeforeReconnect beforeReconnect,
       ZkACLProvider zkACLProvider,
       IsClosed higherLevelIsClosed) {
     this.zkServerAddress = zkServerAddress;
     this.higherLevelIsClosed = higherLevelIsClosed;
     if (strat == null) {
-      strat = new DefaultConnectionStrategy();
+      String connectionStrategy = System.getProperty("solr.zookeeper.connectionStrategy");
+      strat =
+          ZkClientConnectionStrategy.forName(connectionStrategy, new DefaultConnectionStrategy());
     }
     this.zkClientConnectionStrategy = strat;
 

@@ -129,4 +129,28 @@ public abstract class ZkClientConnectionStrategy {
       throws IOException {
     return new ZooKeeper(serverAddress, zkClientTimeout, watcher);
   }
+
+  /**
+   * Instantiate a new connection strategy for the given class name
+   *
+   * @param name the name of the strategy to use
+   * @return the strategy instance, or null if it could not be loaded
+   */
+  public static ZkClientConnectionStrategy forName(String name, ZkClientConnectionStrategy def) {
+    log.debug("Attempting to load zk connection strategy '{}'", name);
+    if (name == null) {
+      return def;
+    }
+
+    try {
+      // TODO should this use SolrResourceLoader?
+      return Class.forName(name)
+          .asSubclass(ZkClientConnectionStrategy.class)
+          .getConstructor()
+          .newInstance();
+    } catch (Exception e) {
+      log.warn("Exception when loading '{}' ZK connection strategy.", name, e);
+      return def;
+    }
+  }
 }

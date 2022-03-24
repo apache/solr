@@ -317,7 +317,11 @@ public class ZkController implements Closeable {
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
     this.clientTimeout = cloudConfig.getZkClientTimeout();
-    DefaultConnectionStrategy strat = new DefaultConnectionStrategy();
+
+    String connectionStrategy = System.getProperty("solr.zookeeper.connectionStrategy");
+    ZkClientConnectionStrategy strat =
+        ZkClientConnectionStrategy.forName(connectionStrategy, new DefaultConnectionStrategy());
+
     String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
     ZkACLProvider zkACLProvider = null;
     if (zkACLProviderClass != null && zkACLProviderClass.trim().length() > 0) {
@@ -1152,7 +1156,7 @@ public class ZkController implements Closeable {
     String chrootPath = zkHost.substring(zkHost.indexOf("/"), zkHost.length());
 
     SolrZkClient tmpClient =
-        new SolrZkClient(zkHost.substring(0, zkHost.indexOf("/")), 60000, 30000, null, null, null);
+        new SolrZkClient(zkHost.substring(0, zkHost.indexOf("/")), 60000, 30000);
     boolean exists = tmpClient.exists(chrootPath, true);
     if (!exists && create) {
       log.info("creating chroot {}", chrootPath);
