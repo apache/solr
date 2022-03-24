@@ -80,7 +80,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     // only if /collections/{collection} exists already do we succeed in creating this path
     log.info("make sure parent is created {}", parent);
     try {
-      zkClient.ensureExists(parent, null, CreateMode.PERSISTENT);
+      zkClient.ensureExists(parent, null, CreateMode.PERSISTENT, 2);
     } catch (KeeperException e) {
       throw new RuntimeException(e);
     } catch (InterruptedException e) {
