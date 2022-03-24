@@ -571,6 +571,56 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/*)=0");
   }
 
+  public void testQueryFieldPatternIndexedNotStored() {
+
+    // highlighting on text3 uses all query terms
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text2_indexed_not_stored:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='<em>crappy</em> <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> <em>document</em>'");
+
+    // hl.queryFieldPattern==text,text2 uses only some of the query terms
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text2_indexed_not_stored:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "hl.queryFieldPattern", "text,text2",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='<em>crappy</em> <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier <em>document</em>'");
+
+    // hl.queryFieldPattern==text,text2_indexed_not_stored uses only some of the query terms
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text2_indexed_not_stored:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "hl.queryFieldPattern", "text,text2_indexed_not_stored",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='crappy <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> <em>document</em>'");
+
+    // hl.queryFieldPattern==text2* uses only some of the query terms
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text2_indexed_not_stored:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "hl.queryFieldPattern", "text2*",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='<em>crappy</em> document'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> document'");
+  }
+
   public void testQueryFieldPatternMinimal() {
 
     // highlighting on text3 uses all query terms
