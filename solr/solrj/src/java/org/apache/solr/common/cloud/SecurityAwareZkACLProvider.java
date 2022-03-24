@@ -17,6 +17,8 @@
 package org.apache.solr.common.cloud;
 
 import java.util.List;
+
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.data.ACL;
 
 /**
@@ -38,17 +40,9 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
   }
 
   public SecurityAwareZkACLProvider(String chroot) {
-    if (chroot == null){
-      chroot = "";
-    } else if (chroot.endsWith("/")) {
-      chroot = chroot.substring(0, chroot.length() - 1);
-    }
-    if (chroot.length() > 0 && !chroot.startsWith("/")) {
-      chroot = "/" + chroot;
-    }
-    this.securityConfPath = chroot + ZkStateReader.SOLR_SECURITY_CONF_PATH;
-    this.securityZNodePath = chroot + SECURITY_ZNODE_PATH;
-    this.securityZNodePathDir = chroot + SECURITY_ZNODE_PATH + "/";
+    this.securityConfPath = ZKPaths.makePath(chroot, ZkStateReader.SOLR_SECURITY_CONF_PATH);
+    this.securityZNodePath = ZKPaths.makePath(chroot, SECURITY_ZNODE_PATH);
+    this.securityZNodePathDir = securityZNodePath + "/";
   }
 
   public SecurityAwareZkACLProvider withChroot(String chroot) {

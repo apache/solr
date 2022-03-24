@@ -25,6 +25,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
@@ -143,6 +144,6 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
       // ignore?
     }
 
-    return zkClient.getCuratorFramework().usingNamespace(zkClient.getChroot() + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH);
+    return zkClient.getCuratorFramework().usingNamespace(zkClient.getAbsolutePath(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH));
   }
 }

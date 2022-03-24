@@ -47,6 +47,7 @@ import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.state.SessionConnectionStateErrorPolicy;
 import org.apache.curator.framework.state.StandardConnectionStateErrorPolicy;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -767,6 +768,13 @@ public class SolrZkClient implements Closeable {
    */
   public String getChroot() {
     return client.getNamespace();
+  }
+
+  /**
+   * @return the address of the zookeeper cluster
+   */
+  public String getAbsolutePath(String path) {
+    return ZKPaths.fixForNamespace(getChroot(), path);
   }
 
   /**
