@@ -38,6 +38,7 @@ public class CoordinatorV2HttpSolrCall extends V2HttpCall {
     this.collectionName = collectionName;
     SolrCore core = super.getCoreByCollection(collectionName, isPreferLeader);
     if (core != null) return core;
+    if (!path.endsWith("/select")) return null;
     return CoordinatorHttpSolrCall.getCore(factory, this, collectionName, isPreferLeader);
   }
 
