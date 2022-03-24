@@ -789,13 +789,12 @@ public class MiniSolrCloudCluster {
         "Cannot find Jetty for a replica with core url " + replica.getCoreUrl());
   }
 
-  /** Make the zookeeper session on a particular jetty expire */
+  /** Make the zookeeper session on a particular jetty lose connection and expire */
   public void expireZkSession(JettySolrRunner jetty) {
-    ChaosMonkey.causeConnectionLoss(jetty);
-
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
-      cores.getZkController().getZkClient().getZooKeeper().getTestable().injectSessionExpiration();
+      ChaosMonkey.causeConnectionLoss(jetty);
+      zkServer.expire(cores.getZkController().getZkClient().getZooKeeper().getSessionId());
       if (log.isInfoEnabled()) {
         log.info("Expired zookeeper session from node {}", jetty.getBaseUrl());
       }

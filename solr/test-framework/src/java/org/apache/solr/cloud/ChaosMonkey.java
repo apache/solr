@@ -152,7 +152,7 @@ public class ChaosMonkey {
     if (cores != null) {
       monkeyLog("expire session for " + jetty.getLocalPort() + " !");
       causeConnectionLoss(jetty);
-      cores.getZkController().getZkClient().getZooKeeper().getTestable().injectSessionExpiration();
+      zkServer.expire(cores.getZkController().getZkClient().getZooKeeper().getSessionId());
     }
   }
 
@@ -187,6 +187,8 @@ public class ChaosMonkey {
   }
 
   public static void causeConnectionLoss(ZooKeeper zooKeeper) {
+    assert zooKeeper instanceof TestableZooKeeper
+        : "Can only cause connection loss for TestableZookeeper";
     if (zooKeeper instanceof TestableZooKeeper) {
       try {
         ((TestableZooKeeper) zooKeeper).testableConnloss();

@@ -41,7 +41,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
-import org.apache.zookeeper.TestableZooKeeper;
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -542,10 +541,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
                   j = random().nextInt(threads.size());
                   try {
                     ZooKeeper zk = threads.get(j).es.zkClient.getZooKeeper();
-                    ((TestableZooKeeper) zk).testableConnloss();
-                    if (random().nextBoolean()) {
-                      zk.getTestable().injectSessionExpiration();
-                    }
+                    server.expire(zk.getSessionId());
                   } catch (Exception e) {
                     e.printStackTrace();
                   }

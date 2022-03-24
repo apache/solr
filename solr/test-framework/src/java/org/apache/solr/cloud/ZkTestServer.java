@@ -49,9 +49,11 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.jmx.ManagedUtil;
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
+import org.apache.zookeeper.server.Request;
 import org.apache.zookeeper.server.ServerCnxn;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ServerConfig;
@@ -110,7 +112,7 @@ public class ZkTestServer {
   class ZKServerMain {
 
     private volatile ServerCnxnFactory cnxnFactory;
-    private volatile ZooKeeperServer zooKeeperServer;
+    public volatile ZooKeeperServer zooKeeperServer;
     private volatile LimitViolationAction violationReportAction = LimitViolationAction.REPORT;
     private volatile WatchLimiter limiter = new WatchLimiter(1, LimitViolationAction.IGNORE);
 
@@ -492,6 +494,12 @@ public class ZkTestServer {
 
   public int getPort() {
     return zkServer.getLocalPort();
+  }
+
+  public void expire(final long sessionId) {
+    log.debug("Closing zookeeper connection for session {}", sessionId);
+    Request si = new Request(null, sessionId, 0, ZooDefs.OpCode.closeSession, null, null);
+    zkServer.zooKeeperServer.submitRequest(si);
   }
 
   public ZKDatabase getZKDatabase() {

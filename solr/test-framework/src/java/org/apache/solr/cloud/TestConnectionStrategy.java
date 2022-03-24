@@ -22,6 +22,10 @@ import org.apache.zookeeper.TestableZooKeeper;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
+/**
+ * Connection strategy that creates instances of {@link TestableZooKeeper} instead of plain {@link
+ * ZooKeeper} objects. Useful for adding pause and disconnect events.
+ */
 public class TestConnectionStrategy extends DefaultConnectionStrategy {
   @Override
   protected ZooKeeper newZooKeeperInstance(

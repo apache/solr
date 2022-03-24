@@ -57,7 +57,7 @@ public class ConnectionManagerTest extends SolrTestCaseJ4 {
         ZooKeeper zk = zkClient.getZooKeeper();
         assertTrue(zk instanceof TestableZooKeeper);
         ((TestableZooKeeper) zk).testableConnloss();
-        zk.getTestable().injectSessionExpiration();
+        server.expire(zkClient.getZooKeeper().getSessionId());
 
         Thread.sleep(TIMEOUT);
 
