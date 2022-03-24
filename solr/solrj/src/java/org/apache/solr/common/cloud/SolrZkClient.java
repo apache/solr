@@ -210,6 +210,7 @@ public class SolrZkClient implements Closeable {
     var clientBuilder = CuratorFrameworkFactory.builder()
         .ensembleProvider(new FixedEnsembleProvider(zkHost))
         .namespace(chroot)
+        .sessionTimeoutMs(zkClientTimeout)
         .connectionTimeoutMs(clientConnectTimeout)
         .aclProvider(this.aclProvider)
         .authorization(zkCredentialsProvider.getCredentials())

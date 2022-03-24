@@ -543,12 +543,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
                 int j;
                 j = random().nextInt(threads.size());
                 try {
-                  long sessionId = threads.get(j).es.zkClient.getZkSessionId();
-                  if (sessionId >= 0) {
-                    KillSession.kill(threads.get(j).es.zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
-                  }
                   if (random().nextBoolean()) {
-                    server.expire(sessionId);
+                    long sessionId = threads.get(j).es.zkClient.getZkSessionId();
+                    if (sessionId >= 0) {
+                      KillSession.kill(threads.get(j).es.zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
+                      server.expire(sessionId);
+                    }
                   }
                 } catch (Exception e) {
                   e.printStackTrace();
