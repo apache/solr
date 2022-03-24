@@ -47,7 +47,7 @@ dependencies {
 
   implementation('org.apache.zookeeper:zookeeper', zkExcludes)
   implementation('org.apache.zookeeper:zookeeper-jute', zkExcludes)
-  implementation('org.apache.zookeeper:zookeeper:3.7.0:tests', zkExcludes) // todo externalize version
+  implementation('org.apache.zookeeper:zookeeper::tests', zkExcludes)
 
   implementation 'commons-io:commons-io'
   implementation 'org.slf4j:slf4j-api'
