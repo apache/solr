@@ -46,7 +46,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   private volatile boolean isClosed = false;
 
   /** Extracts this from the client, or throws an exception if of the wrong type. */
-  public static ZkClientClusterStateProvider from(BaseCloudSolrClient client) {
+  public static ZkClientClusterStateProvider from(CloudSolrClient client) {
     if (client.getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
       return (ZkClientClusterStateProvider) client.getClusterStateProvider();
     }

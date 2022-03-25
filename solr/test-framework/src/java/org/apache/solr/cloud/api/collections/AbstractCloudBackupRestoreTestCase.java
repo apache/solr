@@ -31,6 +31,7 @@ import java.util.TreeMap;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -483,9 +484,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     Map<String, Integer> shardToDocCount = new TreeMap<>();
     for (Slice slice : docCollection.getActiveSlices()) {
       String shardName = slice.getName();
-      try (HttpSolrClient leaderClient =
+      try (var leaderClient =
           new HttpSolrClient.Builder(slice.getLeader().getCoreUrl())
-              .withHttpClient(client.getHttpClient())
+              .withHttpClient(((CloudLegacySolrClient) client).getHttpClient())
               .build()) {
         long docsInShard =
             leaderClient
