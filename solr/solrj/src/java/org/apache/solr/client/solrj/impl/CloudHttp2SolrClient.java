@@ -34,7 +34,7 @@ import org.apache.solr.common.SolrException;
  * @since solr 8.0
  */
 @SuppressWarnings("serial")
-public class CloudHttp2SolrClient extends BaseCloudSolrClient {
+public class CloudHttp2SolrClient extends CloudSolrClient {
 
   private final ClusterStateProvider stateProvider;
   private final LBHttp2SolrClient lbClient;

@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
@@ -228,7 +228,7 @@ public class ZkStateReader implements SolrCloseable {
    *
    * @throws IllegalArgumentException if solrClient isn't ZK based.
    */
-  public static ZkStateReader from(BaseCloudSolrClient solrClient) {
+  public static ZkStateReader from(CloudSolrClient solrClient) {
     try {
       var provider = (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
       return provider.getZkStateReader();
