@@ -644,7 +644,11 @@ Other Changes
 
 * SOLR-16039: Upgrade to Hadoop 3.3.2 (Kevin Risden)
 
-* SOLR-15223: Deprecate HttpSolrClient and friends, please use the Http2SolrClient equivalents (janhoy, David Smiley)
+* SOLR-15223: SolrJ: The project is migrating away from the Apache HttpClient dependency in favor of
+ Jetty's client (supporting HTTP/2), to occur over the 9x releases.  We deprecated HttpSolrClient
+ and friends in favor of Http2SolrClient and equivalents.  For SolrCloud, the former CloudSolrClient
+ was renamed CloudLegacySolrClient (deprecated), and instead BaseCloudSolrClient was renamed to
+ CloudSolrClient and given a Builder for the Jetty based HTTP/2 client. (janhoy, David Smiley)
 
 * SOLR-16061: CloudSolrClient refactoring: Removed ZK specific methods (Haythem Khiri, David Smiley, janhoy)
 

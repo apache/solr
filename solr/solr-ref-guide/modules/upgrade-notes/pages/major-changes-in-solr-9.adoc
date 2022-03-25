@@ -347,3 +347,4 @@ where they really belong: /admin/threads, /admin/properties, /admin/logging
 
 * Atomic/partial updates to nested documents now _require_ the `\_root_` field to clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.
 
+* SolrJ: The project is migrating away from the Apache HttpClient dependency in favor of Jetty's client (supporting HTTP/2), to occur over the 9x releases.  We deprecated HttpSolrClient and friends in favor of Http2SolrClient and equivalents.  For SolrCloud, the former CloudSolrClient was renamed CloudLegacySolrClient (deprecated), and instead BaseCloudSolrClient was renamed to CloudSolrClient and given a Builder for the Jetty based HTTP/2 client.
