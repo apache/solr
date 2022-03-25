@@ -286,6 +286,8 @@ Improvements
 * SOLR-15286: A brand new follower in the legacy mode should wait to replicate index before reporting
   healthy (Pushkar Raste, Anshum Gupta)
 
+* SOLR-15590: Start CoreContainer via ServletContextListener (Gus Heck)
+
 Build
 ---------------------
 * LUCENE-9077 LUCENE-9433: Support Gradle build, remove Ant support from trunk (Dawid Weiss, Erick Erickson, Uwe Schindler et.al.)
