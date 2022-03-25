@@ -1126,6 +1126,17 @@ public abstract class BaseCloudSolrClient extends SolrClient {
             "No collection param specified on request and no default collection has been set: "
                 + inputCollections);
       }
+      String joinedInputCollections = StrUtils.join(inputCollections, ',');
+
+      List<String> preferredNodes = request.getPreferredNodes();
+      if(preferredNodes != null && !preferredNodes.isEmpty()) {
+        List<String> urlList = new ArrayList<>(preferredNodes.size());
+        for (String nodeName : preferredNodes) {
+          //todo avoid hardcoding
+         urlList.add(Utils.getBaseUrlForNodeName(nodeName, "http")+ "/"+ joinedInputCollections);
+        }
+        if(!urlList.isEmpty()) return runReq(request, urlList);
+      }
 
       // TODO: not a big deal because of the caching, but we could avoid looking
       //   at every shard when getting leaders if we tweaked some things
@@ -1172,7 +1183,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       sortedReplicas.addAll(replicas);
 
-      String joinedInputCollections = StrUtils.join(inputCollections, ',');
       Set<String> seenNodes = new HashSet<>();
       sortedReplicas.forEach(
           replica -> {
@@ -1190,6 +1200,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     }
 
+    return runReq(request, theUrlList);
+  }
+
+  private NamedList<Object> runReq(SolrRequest<?> request, List<String> theUrlList) throws SolrServerException, IOException {
     LBSolrClient.Req req = new LBSolrClient.Req(request, theUrlList);
     LBSolrClient.Rsp rsp = getLbClient().request(req);
     return rsp.getResponse();

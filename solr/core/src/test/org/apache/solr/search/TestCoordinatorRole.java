@@ -26,12 +26,14 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.servlet.CoordinatorHttpSolrCall;
@@ -72,10 +74,11 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     } finally {
       System.clearProperty(NodeRoles.NODE_ROLES_PROP);
     }
-    NavigableObject result = (NavigableObject) Utils.executeGET(cluster.getSolrClient().getHttpClient(),
-            coordinatorJetty.getBaseUrl().toString()+"/"+COLLECTION_NAME +"/select?q=*:*&wt=javabin", Utils.JAVABINCONSUMER);
+    QueryResponse rslt = new QueryRequest(new SolrQuery("*:*"))
+            .setPreferredNodes(Collections.singletonList(coordinatorJetty.getNodeName()))
+            .process(client, COLLECTION_NAME);
 
-    assertEquals(10, ((Collection)result._get("response", Collections.emptyList())).size());
+    assertEquals(10, rslt.getResults().size());
 
     DocCollection collection = cluster.getSolrClient().getClusterStateProvider().getCollection(SYNTHETIC_COLLECTION);
     assertNotNull(collection);
