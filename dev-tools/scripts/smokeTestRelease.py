@@ -622,12 +622,12 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
 
     validateCmd = './gradlew --no-daemon check -p solr/documentation'
     print('    run "%s"' % validateCmd)
-    #java.run_java11(validateCmd, '%s/validate.log' % unpackPath)
+    java.run_java11(validateCmd, '%s/validate.log' % unpackPath)
 
     print("    run tests w/ Java 11 and testArgs='%s'..." % testArgs)
-    #java.run_java11('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
+    java.run_java11('./gradlew --no-daemon test %s' % testArgs, '%s/test.log' % unpackPath)
     print("    run integration tests w/ Java 11")
-    #java.run_java11('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
+    java.run_java11('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
     print("    build binary release w/ Java 11")
     java.run_java11('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/compile.log' % unpackPath)
     testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java11_home, True)
