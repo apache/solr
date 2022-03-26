@@ -1083,11 +1083,10 @@ def main():
 def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys, testArgs, downloadOnly=False):
   startTime = datetime.datetime.now()
 
-  # Tests annotated @Nightly are more resource-intensive but often cover
-  # important code paths. They're disabled by default to preserve a good
-  # developer experience, but we enable them for smoke tests where we want good
-  # coverage. Still we disable @BadApple tests
-  testArgs = '-Dtests.nightly=true -Dtests.badapples=false %s' % testArgs
+  # Avoid @Nightly and @Badapple tests as they are slow and buggy
+  # Instead verify that the recent Jenkins tests pass
+  print('NOTE: Not running @Nightly or @BadApple tests. Please verify that recent Jenkins runs have passed.')
+  testArgs = '-Dtests.nightly=false -Dtests.badapples=false %s' % testArgs
 
   if FORCE_CLEAN:
     if os.path.exists(tmpDir):
