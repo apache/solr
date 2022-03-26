@@ -34,6 +34,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -82,9 +83,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static volatile MiniSolrCloudCluster cluster;
 
   protected static SolrZkClient zkClient() {
-    ZkStateReader reader = cluster.getSolrClient().getZkStateReader();
+    ZkStateReader reader = cluster.getZkStateReader();
     if (reader == null) cluster.getSolrClient().connect();
-    return cluster.getSolrClient().getZkStateReader().getZkClient();
+    return cluster.getZkStateReader().getZkClient();
   }
 
   /**
@@ -126,11 +127,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /** Get the collection state for a particular collection */
   protected static DocCollection getCollectionState(String collectionName) {
-    return cluster
-        .getSolrClient()
-        .getZkStateReader()
-        .getClusterState()
-        .getCollection(collectionName);
+    return cluster.getSolrClient().getClusterState().getCollection(collectionName);
   }
 
   protected static void waitForState(
@@ -158,7 +155,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
       cluster
-          .getSolrClient()
+          .getZkStateReader()
           .waitForState(
               collection,
               timeout,
@@ -295,7 +292,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       throws IOException, SolrServerException {
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
     try (HttpSolrClient client =
-        getHttpSolrClient(jetty.getBaseUrl().toString(), cluster.getSolrClient().getHttpClient())) {
+        getHttpSolrClient(
+            jetty.getBaseUrl().toString(),
+            ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())) {
       return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
     }
   }

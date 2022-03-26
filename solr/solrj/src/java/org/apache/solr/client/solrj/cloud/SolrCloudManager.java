@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.SolrCloseable;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
 
@@ -36,6 +37,10 @@ import org.apache.solr.common.util.TimeSource;
 public interface SolrCloudManager extends SolrCloseable {
 
   ClusterStateProvider getClusterStateProvider();
+
+  default ClusterState getClusterState() throws IOException {
+    return getClusterStateProvider().getClusterState();
+  }
 
   NodeStateProvider getNodeStateProvider();
 

@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.search.TestPseudoReturnFields;
@@ -992,6 +993,6 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assert null != client.getDefaultCollection();
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        client.getDefaultCollection(), client.getZkStateReader(), true, true, 330);
+        client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
 }

@@ -383,7 +383,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   protected List<String> getShardUrls() throws IOException {
     try {
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
 
       Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 

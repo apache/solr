@@ -81,11 +81,9 @@ public abstract class AbstractUnloadDistributedZkTestBase
     final TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     Boolean isPresent = null; // null meaning "don't know"
     while (null == isPresent || shouldBePresent != isPresent) {
+      getCommonCloudSolrClient();
       final DocCollection docCollection =
-          getCommonCloudSolrClient()
-              .getZkStateReader()
-              .getClusterState()
-              .getCollectionOrNull(collectionName);
+          cloudClient.getClusterState().getCollectionOrNull(collectionName);
       final Collection<Slice> slices =
           (docCollection != null) ? docCollection.getSlices() : Collections.emptyList();
       if (timeout.hasTimedOut()) {
@@ -181,9 +179,10 @@ public abstract class AbstractUnloadDistributedZkTestBase
     // printLayout();
     // the collection should still be present (as of SOLR-5209 replica removal does not cascade to
     // remove the slice and collection)
+    getCommonCloudSolrClient();
     assertTrue(
         "No longer found collection " + collection,
-        getCommonCloudSolrClient().getZkStateReader().getClusterState().hasCollection(collection));
+        cloudClient.getClusterState().hasCollection(collection));
   }
 
   protected SolrCore getFirstCore(String collection, JettySolrRunner jetty) {
@@ -208,7 +207,8 @@ public abstract class AbstractUnloadDistributedZkTestBase
             .setCreateNodeSet(jetty1.getNodeName())
             .process(cloudClient)
             .getStatus());
-    ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
+    getCommonCloudSolrClient();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
 
     zkStateReader.forceUpdateCollection("unloadcollection");
 

@@ -98,7 +98,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
           return true;
         });
     ClusterStateUtil.waitForAllActiveAndLiveReplicas(
-        cluster.getSolrClient().getZkStateReader(), collection, 120000);
+        cluster.getZkStateReader(), collection, 120000);
     Slice shard = getCollectionState(collection).getSlice("shard1");
     assertNotEquals(
         "Old leader should not be leader again",

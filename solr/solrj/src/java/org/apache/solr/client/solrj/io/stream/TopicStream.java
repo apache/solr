@@ -38,7 +38,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -320,7 +320,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     } else {
       final List<String> hosts = new ArrayList<String>();
       hosts.add(zkHost);
-      cloudSolrClient = new Builder(hosts, Optional.empty()).build();
+      cloudSolrClient = new CloudLegacySolrClient.Builder(hosts, Optional.empty()).build();
       this.cloudSolrClient.connect();
     }
 
@@ -420,7 +420,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   private void getCheckpoints() throws IOException {
     this.checkpoints = new HashMap<>();
-    ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
 
     Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
@@ -501,7 +501,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   }
 
   private void getPersistedCheckpoints() throws IOException {
-    ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
     Slice[] slices = CloudSolrStream.getSlices(checkpointCollection, zkStateReader, false);
 
     ClusterState clusterState = zkStateReader.getClusterState();
@@ -536,7 +536,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   protected void constructStreams() throws IOException {
     try {
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
       Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);

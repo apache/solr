@@ -19,6 +19,7 @@ package org.apache.solr.prometheus.exporter;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
@@ -56,8 +57,8 @@ public class SolrClientFactory {
 
     ConnectStringParser parser = new ConnectStringParser(zookeeperConnectionString);
 
-    CloudSolrClient.Builder cloudBuilder =
-        new CloudSolrClient.Builder(
+    var cloudBuilder =
+        new CloudLegacySolrClient.Builder(
             parser.getServerAddresses().stream()
                 .map(address -> address.getHostString() + ":" + address.getPort())
                 .collect(Collectors.toList()),

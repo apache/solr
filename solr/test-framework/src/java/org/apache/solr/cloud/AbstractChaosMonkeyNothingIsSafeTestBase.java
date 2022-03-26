@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -144,7 +145,7 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
     try (CloudSolrClient ourCloudClient = createCloudClient(DEFAULT_COLLECTION)) {
       handle.clear();
       handle.put("timestamp", SKIPVAL);
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
       // make sure we have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
         zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
@@ -179,7 +180,7 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
       if (runFullThrottle) {
         ftIndexThread =
             new FullThrottleStoppableIndexingThread(
-                cloudClient.getHttpClient(),
+                ((CloudLegacySolrClient) cloudClient).getHttpClient(),
                 controlClient,
                 cloudClient,
                 clients,

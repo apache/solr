@@ -82,7 +82,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     waitForRecoveriesToFinish("a1x2", true);
     waitForRecoveriesToFinish("b1x1", true);
 
-    cloudClient.getZkStateReader().forceUpdateCollection("b1x1");
+    ZkStateReader.from(cloudClient).forceUpdateCollection("b1x1");
 
     // get direct access to the metrics counters for each core/replica we're interested to monitor
     // them
@@ -103,7 +103,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     assertEquals("Sanity Check: we know there should be 2 replicas", 2, counters.size());
 
     // send queries to the node that doesn't host any core/replica and see where it routes them
-    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    ClusterState clusterState = cloudClient.getClusterState();
     DocCollection b1x1 = clusterState.getCollection("b1x1");
     Collection<Replica> replicas = b1x1.getSlice("shard1").getReplicas();
     assertEquals(1, replicas.size());
@@ -153,18 +153,13 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
     waitForRecoveriesToFinish("football", true);
 
-    cloudClient.getZkStateReader().forceUpdateCollection("football");
+    ZkStateReader.from(cloudClient).forceUpdateCollection("football");
 
     Replica leader = null;
     Replica notLeader = null;
 
     Collection<Replica> replicas =
-        cloudClient
-            .getZkStateReader()
-            .getClusterState()
-            .getCollection("football")
-            .getSlice("shard1")
-            .getReplicas();
+        cloudClient.getClusterState().getCollection("football").getSlice("shard1").getReplicas();
     for (Replica replica : replicas) {
       if (replica.getStr(ZkStateReader.LEADER_PROP) != null) {
         leader = replica;
@@ -213,7 +208,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     }
 
     verifyReplicaStatus(
-        cloudClient.getZkStateReader(),
+        ZkStateReader.from(cloudClient),
         "football",
         "shard1",
         notLeader.getName(),

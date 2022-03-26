@@ -36,6 +36,7 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
@@ -172,7 +173,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
             .allMatch(createNode::equals));
 
     // Test Alias metadata:
-    Aliases aliases = cluster.getSolrClient().getZkStateReader().getAliases();
+    Aliases aliases = cluster.getZkStateReader().getAliases();
     Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap();
     assertEquals(initialCollectionName, collectionAliasMap.get(aliasName));
     Map<String, String> meta = aliases.getCollectionAliasProperties(aliasName);
@@ -222,7 +223,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     assertEquals(2, coll.getReplicationFactor().intValue()); // num replicas
 
     // Test Alias metadata
-    Aliases aliases = cluster.getSolrClient().getZkStateReader().getAliases();
+    Aliases aliases = cluster.getZkStateReader().getAliases();
     Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap();
     String alias = collectionAliasMap.get(aliasName);
     assertNotNull(alias);
@@ -269,7 +270,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "Expected collection2 to be created with 1 shard and 1 replica",
         "collection2meta",
         clusterShape(1, 1));
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
     zkStateReader.createClusterStateWatchersAndUpdate();
 
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
@@ -418,7 +419,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void assertSuccess(HttpUriRequest msg) throws IOException {
-    CloseableHttpClient httpClient = (CloseableHttpClient) solrClient.getHttpClient();
+    CloseableHttpClient httpClient =
+        (CloseableHttpClient) ((CloudLegacySolrClient) solrClient).getHttpClient();
     try (CloseableHttpResponse response = httpClient.execute(msg)) {
       if (200 != response.getStatusLine().getStatusCode()) {
         System.err.println(EntityUtils.toString(response.getEntity()));
@@ -428,7 +430,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void assertFailure(HttpUriRequest msg, String expectedErrorSubstring) throws IOException {
-    CloseableHttpClient httpClient = (CloseableHttpClient) solrClient.getHttpClient();
+    CloseableHttpClient httpClient =
+        (CloseableHttpClient) ((CloudLegacySolrClient) solrClient).getHttpClient();
     try (CloseableHttpResponse response = httpClient.execute(msg)) {
       assertEquals(400, response.getStatusLine().getStatusCode());
       String entity = EntityUtils.toString(response.getEntity());

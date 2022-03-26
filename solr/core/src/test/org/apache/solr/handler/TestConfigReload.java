@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -62,11 +63,9 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
   }
 
   private void reloadTest() throws Exception {
-    SolrZkClient client = cloudClient.getZkStateReader().getZkClient();
+    SolrZkClient client = ZkStateReader.from(cloudClient).getZkClient();
     if (log.isInfoEnabled()) {
-      log.info(
-          "live_nodes_count :  {}",
-          cloudClient.getZkStateReader().getClusterState().getLiveNodes());
+      log.info("live_nodes_count :  {}", cloudClient.getClusterState().getLiveNodes());
     }
     String confPath = ZkConfigSetService.CONFIGS_ZKNODE + "/conf1/";
     //    checkConfReload(client, confPath + ConfigOverlay.RESOURCE_NAME, "overlay");
@@ -93,8 +92,7 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     }
     Integer newVersion = newStat.getVersion();
     long maxTimeoutSeconds = 60;
-    DocCollection coll =
-        cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
+    DocCollection coll = cloudClient.getClusterState().getCollection("collection1");
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
@@ -126,7 +124,12 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     HttpGet get = new HttpGet(uri);
     HttpEntity entity = null;
     try {
-      entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
+      entity =
+          ((CloudLegacySolrClient) cloudClient)
+              .getLbClient()
+              .getHttpClient()
+              .execute(get)
+              .getEntity();
       String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
       return (LinkedHashMapWriter)
           Utils.MAPWRITEROBJBUILDER.apply(Utils.getJSONParser(new StringReader(response))).getVal();

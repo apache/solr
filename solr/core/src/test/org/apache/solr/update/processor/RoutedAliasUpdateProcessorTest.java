@@ -81,25 +81,17 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         Thread.sleep(500);
       }
     }
-    try {
-      DocCollection confirmCollection =
-          cluster
-              .getSolrClient()
-              .getClusterStateProvider()
-              .getClusterState()
-              .getCollectionOrNull(collection);
-      assertNotNull(
-          "Unable to find collection we were waiting for after done waiting", confirmCollection);
-    } catch (IOException e) {
-      fail("exception getting collection we were waiting for and have supposedly created already");
-    }
+    var confirmCollection =
+        cluster.getSolrClient().getClusterState().getCollectionOrNull(collection);
+    assertNotNull(
+        "Unable to find collection we were waiting for after done waiting", confirmCollection);
   }
 
   private boolean haveCollection(String alias, String collection) {
     // separated into separate lines to make it easier to track down an NPE that occurred once
     // 3000 runs if it shows up again...
     CloudSolrClient solrClient = cluster.getSolrClient();
-    ZkStateReader zkStateReader = solrClient.getZkStateReader();
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
     Aliases aliases = zkStateReader.getAliases();
     Map<String, List<String>> collectionAliasListMap = aliases.getCollectionAliasListMap();
     List<String> strings = collectionAliasListMap.get(alias);

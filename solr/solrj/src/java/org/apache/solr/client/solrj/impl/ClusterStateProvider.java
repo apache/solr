@@ -25,6 +25,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CollectionAdminParams;
 
+/** Provides cluster state from some source */
 public interface ClusterStateProvider extends SolrCloseable {
 
   /**
@@ -69,7 +70,7 @@ public interface ClusterStateProvider extends SolrCloseable {
   }
 
   /** Obtain the current cluster state. */
-  ClusterState getClusterState() throws IOException;
+  ClusterState getClusterState();
 
   default DocCollection getCollection(String name) throws IOException {
     return getClusterState().getCollectionOrNull(name);
@@ -99,4 +100,6 @@ public interface ClusterStateProvider extends SolrCloseable {
   String getPolicyNameByCollection(String coll);
 
   void connect();
+
+  String getQuorumHosts();
 }

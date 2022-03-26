@@ -37,6 +37,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -115,12 +116,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         jetty.start();
       }
     }
-    if (cluster
-            .getSolrClient()
-            .getZkStateReader()
-            .getClusterState()
-            .getCollectionOrNull(collectionName)
-        != null) {
+    if (cluster.getSolrClient().getClusterState().getCollectionOrNull(collectionName) != null) {
       log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
       log.info("Collection deleted");
@@ -153,7 +149,7 @@ public class TestPullReplica extends SolrCloudTestCase {
           // These options should all mean the same
           url = url + pickRandom("", "&nrtReplicas=1", "&replicationFactor=1");
           HttpGet createCollectionGet = new HttpGet(url);
-          cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
+          getHttpClient().execute(createCollectionGet);
           break;
         case 2:
           // Sometimes use V2 API
@@ -173,8 +169,7 @@ public class TestPullReplica extends SolrCloudTestCase {
           HttpPost createCollectionPost = new HttpPost(url);
           createCollectionPost.setHeader("Content-type", "application/json");
           createCollectionPost.setEntity(new StringEntity(requestBody));
-          HttpResponse httpResponse =
-              cluster.getSolrClient().getHttpClient().execute(createCollectionPost);
+          HttpResponse httpResponse = getHttpClient().execute(createCollectionPost);
           assertEquals(200, httpResponse.getStatusLine().getStatusCode());
           break;
       }
@@ -413,7 +408,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     addDocs(500);
     List<Replica.State> statesSeen = new ArrayList<>(3);
     cluster
-        .getSolrClient()
+        .getZkStateReader()
         .registerCollectionStateWatcher(
             collectionName,
             (liveNodes, collectionState) -> {
@@ -464,7 +459,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         collectionName,
         activeReplicaCount(numReplicas, 0, numReplicas));
     DocCollection docCollection = assertNumberOfReplicas(numReplicas, 0, numReplicas, false, true);
-    HttpClient httpClient = cluster.getSolrClient().getHttpClient();
+    HttpClient httpClient = getHttpClient();
     int id = 0;
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
@@ -545,15 +540,12 @@ public class TestPullReplica extends SolrCloudTestCase {
     Replica leader = docCollection.getSlice("shard1").getLeader();
     assertTrue(
         leader == null
-            || !leader.isActive(
-                cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+            || !leader.isActive(cluster.getSolrClient().getClusterState().getLiveNodes()));
 
     // Pull replica on the other hand should be active
     Replica pullReplica =
         docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0);
-    assertTrue(
-        pullReplica.isActive(
-            cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+    assertTrue(pullReplica.isActive(cluster.getSolrClient().getClusterState().getLiveNodes()));
 
     long highestTerm = 0L;
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
@@ -605,13 +597,12 @@ public class TestPullReplica extends SolrCloudTestCase {
     unIgnoreException("No registered leader was found"); // Should have a leader from now on
 
     // Validate that the new nrt replica is the leader now
-    cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collectionName);
+    cluster.getZkStateReader().forceUpdateCollection(collectionName);
     docCollection = getCollectionState(collectionName);
     leader = docCollection.getSlice("shard1").getLeader();
     assertTrue(
         leader != null
-            && leader.isActive(
-                cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+            && leader.isActive(cluster.getSolrClient().getClusterState().getLiveNodes()));
 
     // If jetty is restarted, the replication is not forced, and replica doesn't replicate from
     // leader until new docs are added. Is this the correct behavior? Why should these two cases be
@@ -725,14 +716,14 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   static void waitForDeletion(String collection) throws InterruptedException, KeeperException {
     TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
+    while (cluster.getSolrClient().getClusterState().hasCollection(collection)) {
       log.info("Collection not yet deleted");
       try {
         Thread.sleep(100);
         if (t.hasTimedOut()) {
           fail("Timed out waiting for collection " + collection + " to be deleted.");
         }
-        cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collection);
+        cluster.getZkStateReader().forceUpdateCollection(collection);
       } catch (SolrException e) {
         return;
       }
@@ -764,7 +755,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       boolean activeOnly)
       throws KeeperException, InterruptedException {
     if (updateCollection) {
-      cluster.getSolrClient().getZkStateReader().forceUpdateCollection(coll);
+      cluster.getZkStateReader().forceUpdateCollection(coll);
     }
     DocCollection docCollection = getCollectionState(coll);
     assertNotNull(docCollection);
@@ -867,7 +858,7 @@ public class TestPullReplica extends SolrCloudTestCase {
                 shardName,
                 type);
         HttpGet addReplicaGet = new HttpGet(url);
-        HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaGet);
+        HttpResponse httpResponse = getHttpClient().execute(addReplicaGet);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         break;
       case 2: // Add replica with V2 API
@@ -882,9 +873,13 @@ public class TestPullReplica extends SolrCloudTestCase {
         HttpPost addReplicaPost = new HttpPost(url);
         addReplicaPost.setHeader("Content-type", "application/json");
         addReplicaPost.setEntity(new StringEntity(requestBody));
-        httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaPost);
+        httpResponse = getHttpClient().execute(addReplicaPost);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         break;
     }
+  }
+
+  private HttpClient getHttpClient() {
+    return ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
   }
 }

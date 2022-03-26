@@ -69,7 +69,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       final SolrClient clientUnderTest = cluster.getSolrClient();
       final SolrPingResponse response = clientUnderTest.ping(testCollection);
       assertEquals("This should be OK", 0, response.getStatus());
-      DocCollection c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
+      DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
       PerReplicaStates prs =
           PerReplicaStates.fetch(
@@ -92,7 +92,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
           .build()
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(testCollection, 2, 4);
-      c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
+      c = cluster.getZkStateReader().getCollection(testCollection);
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
       prs =
           PerReplicaStates.fetch(
@@ -123,7 +123,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(testCollection, 1, 1);
 
-      DocCollection c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
+      DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
       String collectionPath = ZkStateReader.getCollectionPath(testCollection);
       PerReplicaStates prs =
@@ -139,7 +139,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       cluster.waitForActiveCollection(testCollection, 1, 2);
       prs = PerReplicaStates.fetch(collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
       assertEquals(2, prs.states.size());
-      c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
+      c = cluster.getZkStateReader().getCollection(testCollection);
       prs.states.forEachEntry((s, state) -> assertEquals(Replica.State.ACTIVE, state.state));
 
       String replicaName = null;
@@ -158,7 +158,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
               replicaName);
         }
         jsr.stop();
-        c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
+        c = cluster.getZkStateReader().getCollection(testCollection);
         if (log.isInfoEnabled()) {
           log.info("after down node, state.json v: {}", c.getZNodeVersion());
         }
@@ -207,7 +207,6 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
               COLL, Collections.singletonMap(PER_REPLICA_STATE, "false"))
           .process(cluster.getSolrClient());
       cluster
-          .getSolrClient()
           .getZkStateReader()
           .waitForState(
               COLL,
@@ -219,7 +218,6 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
               COLL, Collections.singletonMap(PER_REPLICA_STATE, "true"))
           .process(cluster.getSolrClient());
       cluster
-          .getSolrClient()
           .getZkStateReader()
           .waitForState(
               COLL,

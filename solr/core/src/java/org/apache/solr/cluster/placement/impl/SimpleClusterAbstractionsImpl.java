@@ -65,7 +65,7 @@ class SimpleClusterAbstractionsImpl {
           liveNodesWithData.size() == liveNodes.size()
               ? this.liveNodes
               : NodeImpl.getNodes(liveNodesWithData);
-      clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
+      clusterState = solrCloudManager.getClusterState();
     }
 
     @Override

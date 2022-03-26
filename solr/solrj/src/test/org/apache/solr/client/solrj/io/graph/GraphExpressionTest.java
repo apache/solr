@@ -36,7 +36,14 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
-import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
+import org.apache.solr.client.solrj.io.stream.FacetStream;
+import org.apache.solr.client.solrj.io.stream.HashJoinStream;
+import org.apache.solr.client.solrj.io.stream.RandomStream;
+import org.apache.solr.client.solrj.io.stream.ScoreNodesStream;
+import org.apache.solr.client.solrj.io.stream.SortStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
@@ -85,7 +92,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, TIMEOUT);
+        COLLECTION, cluster.getZkStateReader(), false, true, TIMEOUT);
   }
 
   @Before

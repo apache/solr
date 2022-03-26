@@ -82,7 +82,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
   private void testReqParams() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(COLL_NAME);
+    DocCollection coll = cloudClient.getClusterState().getCollection(COLL_NAME);
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
@@ -106,7 +106,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config", payload);
 
     AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
-        COLL_NAME, cloudClient.getZkStateReader(), false, true, 90);
+        COLL_NAME, ZkStateReader.from(cloudClient), false, true, 90);
 
     payload =
         " {\n"

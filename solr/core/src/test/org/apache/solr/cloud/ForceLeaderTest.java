@@ -33,6 +33,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
@@ -87,7 +88,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
           2,
           notLeaders.size());
 
-      Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, SHARD1);
+      Replica leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, SHARD1);
       JettySolrRunner notLeader0 = getJettyOnPort(getReplicaPort(notLeaders.get(0)));
       ZkController zkController = notLeader0.getCoreContainer().getZkController();
 
@@ -101,8 +102,8 @@ public class ForceLeaderTest extends HttpPartitionTest {
         waitForState(testCollectionName, replica.getName(), State.DOWN, 60000);
       }
       waitForState(testCollectionName, leader.getName(), State.DOWN, 60000);
-      cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName);
-      ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+      ZkStateReader.from(cloudClient).forceUpdateCollection(testCollectionName);
+      ClusterState clusterState = cloudClient.getClusterState();
       int numActiveReplicas = getNumberOfActiveReplicas(clusterState, testCollectionName, SHARD1);
       assertEquals(
           "Expected only 0 active replica but found "
@@ -135,10 +136,10 @@ public class ForceLeaderTest extends HttpPartitionTest {
       doForceLeader(testCollectionName, SHARD1);
 
       // By now we have an active leader. Wait for recoveries to begin
-      waitForRecoveriesToFinish(testCollectionName, cloudClient.getZkStateReader(), true);
+      waitForRecoveriesToFinish(testCollectionName, ZkStateReader.from(cloudClient), true);
 
-      cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName);
-      clusterState = cloudClient.getZkStateReader().getClusterState();
+      ZkStateReader.from(cloudClient).forceUpdateCollection(testCollectionName);
+      clusterState = cloudClient.getClusterState();
       if (log.isInfoEnabled()) {
         log.info(
             "After forcing leader: {}",
@@ -253,7 +254,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     for (SocketProxy proxy : nonLeaderProxies) proxy.reopen();
 
     try (ZkShardTerms zkShardTerms =
-        new ZkShardTerms(collectionName, shard, cloudClient.getZkStateReader().getZkClient())) {
+        new ZkShardTerms(collectionName, shard, ZkStateReader.from(cloudClient).getZkClient())) {
       for (Replica notLeader : notLeaders) {
         assertTrue(
             zkShardTerms.getTerm(leader.getName()) > zkShardTerms.getTerm(notLeader.getName()));
@@ -276,9 +277,9 @@ public class ForceLeaderTest extends HttpPartitionTest {
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
     getProxyForReplica(leader).reopen();
     leaderJetty.start();
-    waitForRecoveriesToFinish(collection, cloudClient.getZkStateReader(), true);
-    cloudClient.getZkStateReader().forceUpdateCollection(collection);
-    ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    waitForRecoveriesToFinish(collection, ZkStateReader.from(cloudClient), true);
+    ZkStateReader.from(cloudClient).forceUpdateCollection(collection);
+    ClusterState clusterState = cloudClient.getClusterState();
     if (log.isInfoEnabled()) {
       log.info(
           "After bringing back leader: {}",

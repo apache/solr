@@ -86,7 +86,7 @@ public class JdbcTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collection, 2, 2);
 
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        collection, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
+        collection, cluster.getZkStateReader(), false, true, DEFAULT_TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)
           .process(cluster.getSolrClient());
@@ -652,7 +652,7 @@ public class JdbcTest extends SolrCloudTestCase {
 
       CloudSolrClient solrClient = cluster.getSolrClient();
       solrClient.connect();
-      ZkStateReader zkStateReader = solrClient.getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(solrClient);
 
       Set<String> collectionsSet = zkStateReader.getClusterState().getCollectionsMap().keySet();
       SortedSet<String> tables = new TreeSet<>(collectionsSet);

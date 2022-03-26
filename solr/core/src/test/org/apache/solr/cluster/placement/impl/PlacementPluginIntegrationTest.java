@@ -112,7 +112,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     assertTrue(rsp.isSuccess());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
     // use Solr-specific API to verify the expected placements
-    ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cloudManager.getClusterState();
     DocCollection collection = clusterState.getCollectionOrNull(COLLECTION);
     assertNotNull(collection);
     Map<String, AtomicInteger> coresByNode = new HashMap<>();
@@ -275,11 +275,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient());
     assertTrue(rsp.isSuccess());
     cluster.waitForActiveCollection(SECONDARY_COLLECTION, 1, 3);
-    DocCollection secondary =
-        cloudManager
-            .getClusterStateProvider()
-            .getClusterState()
-            .getCollection(SECONDARY_COLLECTION);
+    DocCollection secondary = cloudManager.getClusterState().getCollection(SECONDARY_COLLECTION);
     Set<String> secondaryNodes = new HashSet<>();
     secondary.forEachReplica((shard, replica) -> secondaryNodes.add(replica.getNodeName()));
 
@@ -290,8 +286,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     assertTrue(rsp.isSuccess());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
     // make sure the primary replicas were placed on the nodeset
-    DocCollection primary =
-        cloudManager.getClusterStateProvider().getClusterState().getCollection(COLLECTION);
+    DocCollection primary = cloudManager.getClusterState().getCollection(COLLECTION);
     primary.forEachReplica(
         (shard, replica) ->
             assertTrue(

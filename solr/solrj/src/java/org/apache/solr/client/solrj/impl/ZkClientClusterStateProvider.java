@@ -39,15 +39,24 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
 
   volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = true;
-  String zkHost;
-  int zkConnectTimeout = 15000;
-  int zkClientTimeout = 45000;
+  private final String zkHost;
+  private int zkConnectTimeout = 15000;
+  private int zkClientTimeout = 45000;
 
   private volatile boolean isClosed = false;
+
+  /** Extracts this from the client, or throws an exception if of the wrong type. */
+  public static ZkClientClusterStateProvider from(CloudSolrClient client) {
+    if (client.getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
+      return (ZkClientClusterStateProvider) client.getClusterStateProvider();
+    }
+    throw new IllegalArgumentException("This client does not use ZK");
+  }
 
   public ZkClientClusterStateProvider(ZkStateReader zkStateReader) {
     this.zkStateReader = zkStateReader;
     this.closeZkStateReader = false;
+    this.zkHost = null;
   }
 
   public ZkClientClusterStateProvider(Collection<String> zkHosts, String chroot) {
@@ -110,7 +119,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public ClusterState getClusterState() throws IOException {
+  public ClusterState getClusterState() {
     return getZkStateReader().getClusterState();
   }
 
@@ -216,6 +225,11 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
+  public String getQuorumHosts() {
+    return getZkStateReader().getZkClient().getZkServerAddress();
+  }
+
+  @Override
   public String toString() {
     return zkHost;
   }
@@ -223,5 +237,30 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   @Override
   public boolean isClosed() {
     return isClosed;
+  }
+
+  /**
+   * @return the zkHost value used to connect to zookeeper.
+   */
+  public String getZkHost() {
+    return zkHost;
+  }
+
+  public int getZkConnectTimeout() {
+    return zkConnectTimeout;
+  }
+
+  /** Set the connect timeout to the zookeeper ensemble in ms */
+  public void setZkConnectTimeout(int zkConnectTimeout) {
+    this.zkConnectTimeout = zkConnectTimeout;
+  }
+
+  public int getZkClientTimeout() {
+    return zkClientTimeout;
+  }
+
+  /** Set the timeout to the zookeeper ensemble in ms */
+  public void setZkClientTimeout(int zkClientTimeout) {
+    this.zkClientTimeout = zkClientTimeout;
   }
 }

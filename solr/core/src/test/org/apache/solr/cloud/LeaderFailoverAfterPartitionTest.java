@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,7 +107,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 4);
 
-    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+    Replica leader = ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1");
     String leaderNode = leader.getNodeName();
     assertNotNull(
         "Could not find leader for shard1 of "
@@ -153,7 +154,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     Thread.sleep(10000); // give chance for new leader to be elected.
 
     Replica newLeader =
-        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 60000);
+        ZkStateReader.from(cloudClient).getLeaderRetry(testCollectionName, "shard1", 60000);
 
     assertNotNull(
         "No new leader was elected after 60 seconds; clusterState: "

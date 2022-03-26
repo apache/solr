@@ -47,7 +47,7 @@ public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, CONFIG, NUM_SHARDS, 1)
         .process(cluster.getSolrClient());
     cluster
-        .getSolrClient()
+        .getZkStateReader()
         .waitForState(
             COLLECTION,
             DEFAULT_TIMEOUT,
