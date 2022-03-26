@@ -700,9 +700,9 @@ def readSolrOutput(p, startupEvent, failureEvent, logFile):
     f.close()
 
 def is_port_in_use(port):
-  import socket
-  with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    return s.connect_ex(('localhost', port)) == 0
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
 
 def testSolrExample(unpackPath, javaPath, isSrc):
   # test solr using some examples it comes with
@@ -717,12 +717,12 @@ def testSolrExample(unpackPath, javaPath, isSrc):
 
   # Stop Solr running on port 8983 (in case a previous run didn't shutdown cleanly)
   try:
-    if not cygwin:
-      subprocess.call(['bin/solr','stop','-p','8983'])
-    else:
-      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
+      if not cygwin:
+        subprocess.call(['bin/solr','stop','-p','8983'])
+      else:
+        subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
   except:
-    print('      Stop failed due to: '+sys.exc_info()[0])
+     print('      Stop failed due to: '+sys.exc_info()[0])
 
   print('      Running techproducts example on port 8983 from %s' % unpackPath)
   try:
