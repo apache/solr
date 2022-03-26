@@ -129,7 +129,9 @@ public class DataConfigNode implements ConfigNode {
     kids.forEachEntry(
         (s, configNodes) -> {
           if (configNodes != null) {
-            configNodes.forEach(fun::apply);
+            for (ConfigNode node : configNodes) {
+              if(!fun.apply(node)) break;
+            }
           }
         });
   }
