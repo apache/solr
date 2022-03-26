@@ -58,7 +58,6 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
     dependencies {
       solrPlatformLibs project(":solr:core")
       solrPlatformLibs project(":solr:solrj")
-//      solrPlatformLibs project(":solr:server")
     }
 
     // An aggregate that configures lib and test-lib in a temporary location.
