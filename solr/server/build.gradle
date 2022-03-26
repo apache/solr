@@ -24,10 +24,6 @@ jar.enabled(false)
 javadoc.enabled(false)
 compileJava.enabled(false)
 
-//publishJarsPublicationToMavenLocal.enabled(false)
-//publishJarsPublicationToApacheSnapshotsRepository.enabled(false)
-//tasks.findByName("publishJarsPublicationToMavenLocal").enabled(false)
-
 configurations {
   api {
     exclude group: "org.slf4j"
