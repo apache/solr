@@ -69,6 +69,8 @@ Build
 
 * SOLR-16050: Upgrade to errorprone 2.11.0 (Kevin Risden)
 
+* Upgrade forbiddenapis to 3.3 (Uwe Schindler)
+
 ==================  9.0.0 ==================
 
 New Features
