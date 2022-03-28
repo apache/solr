@@ -112,7 +112,7 @@ public class LeaderElector {
 
     // If any double-registrations exist for me, remove all but this latest one!
     // TODO: can we even get into this state?
-    String prefix = zkClient.getSolrZooKeeper().getSessionId() + "-" + context.id + "-";
+    String prefix = zkClient.getZooKeeper().getSessionId() + "-" + context.id + "-";
     Iterator<String> it = seqs.iterator();
     while (it.hasNext()) {
       String elec = it.next();
@@ -232,7 +232,7 @@ public class LeaderElector {
 
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
 
-    long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+    long sessionId = zkClient.getZooKeeper().getSessionId();
     String id = sessionId + "-" + context.id;
     String leaderSeqPath = null;
     boolean cont = true;

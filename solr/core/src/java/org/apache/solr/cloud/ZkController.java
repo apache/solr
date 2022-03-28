@@ -317,7 +317,11 @@ public class ZkController implements Closeable {
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
     this.clientTimeout = cloudConfig.getZkClientTimeout();
-    DefaultConnectionStrategy strat = new DefaultConnectionStrategy();
+
+    String connectionStrategy = System.getProperty("solr.zookeeper.connectionStrategy");
+    ZkClientConnectionStrategy strat =
+        ZkClientConnectionStrategy.forName(connectionStrategy, new DefaultConnectionStrategy());
+
     String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
     ZkACLProvider zkACLProvider = null;
     if (zkACLProviderClass != null && zkACLProviderClass.trim().length() > 0) {
@@ -471,13 +475,7 @@ public class ZkController implements Closeable {
               }
             },
             zkACLProvider,
-            new ConnectionManager.IsClosed() {
-
-              @Override
-              public boolean isClosed() {
-                return cc.isShutDown();
-              }
-            });
+            cc::isShutDown);
 
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
@@ -1057,8 +1055,7 @@ public class ZkController implements Closeable {
     }
 
     boolean deleted =
-        deletedLatch.await(
-            zkClient.getSolrZooKeeper().getSessionTimeout() * 2, TimeUnit.MILLISECONDS);
+        deletedLatch.await(zkClient.getZooKeeper().getSessionTimeout() * 2, TimeUnit.MILLISECONDS);
     if (!deleted) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
@@ -1159,7 +1156,7 @@ public class ZkController implements Closeable {
     String chrootPath = zkHost.substring(zkHost.indexOf("/"), zkHost.length());
 
     SolrZkClient tmpClient =
-        new SolrZkClient(zkHost.substring(0, zkHost.indexOf("/")), 60000, 30000, null, null, null);
+        new SolrZkClient(zkHost.substring(0, zkHost.indexOf("/")), 60000, 30000);
     boolean exists = tmpClient.exists(chrootPath, true);
     if (!exists && create) {
       log.info("creating chroot {}", chrootPath);
