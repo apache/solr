@@ -70,17 +70,7 @@ In Solr 8, it's possible to add docValues to a schema without re-indexing via `U
 Due to changes in Lucene 9, that isn't possible any more; the component was removed.
 If re-indexing is too onerous, use this mechanism in Solr 8.
 
-=== Solr Binary Release `dist/` Directory
-
-The `dist/` directory in the Solr binary release has been removed as of Solr 9.0.
-
-* The `solr-core` and `solr-solrj` jars can be found under `server/solr-webapp/webapp/WEB-INF/lib/`.
-* The Solr module jars can be found in `modules/<module-name>/lib`, packaged individually for each module.
-* The `solrj-deps` (SolrJ Dependencies) are no longer separated out from the other Server jars.
-Please refer to the SolrJ Maven artifact to see the exact dependencies you need to include from `server/solr-webapp/webapp/WEB-INF/lib/` and `server/lib/ext/` if you are loading in SolrJ manually.
-If you plan on using SolrJ as a JDBC driver, please refer to the xref:query-guide:sql-query.adoc#generic-clients[JDBC documentation]
-
-== Solr 9.0 Raw Notes
+== Solr 9.0 Raw Notes (NOT YET EDITED)
 
 _(raw; not yet edited)_
 
@@ -146,6 +136,30 @@ named "internal".  The sample Grafana dashboard now filters to include or exclud
 
 == New Features & Enhancements
 
+// Fill these sub headings
+
+=== Docker
+
+=== Security
+
+=== Scalability
+
+=== Modules
+
+* HDFS
+* Hadoop-auth
+* GCS-repository
+* JWT-auth
+* Scripting
+* SQL
+
+
+=== Gradle build
+
+=== Other
+
+// TBD
+
 * Replica placement plugins
 
 * Rate limiting and task management
@@ -155,6 +169,22 @@ named "internal".  The sample Grafana dashboard now filters to include or exclud
 * SQL Query interface in UI
 
 == Configuration and Default Parameter Changes
+
+// TODO: Move into sub headings
+
+=== Schema Changes in 9.0
+
+=== Indexing Changes in 9.0
+
+=== Query Changes in 9.0
+
+=== Authentication & Security Changes in 9.0
+
+=== UI Changes in 9.0
+
+=== Dependency Updates in 9.0
+
+// RAW notes below
 
 * SOLR-7530: TermsComponent's JSON response format was changed so that "terms" property carries per field arrays by default regardless of distrib, terms.list, terms.ttf parameters.
 This affects JSON based response format but not others
@@ -348,6 +378,16 @@ where they really belong: /admin/threads, /admin/properties, /admin/logging
 * Atomic/partial updates to nested documents now _require_ the `\_root_` field to clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.
 
 * SolrJ: The project is migrating away from the Apache HttpClient dependency in favor of Jetty's client (supporting HTTP/2), to occur over the 9x releases.  We deprecated HttpSolrClient and friends in favor of Http2SolrClient and equivalents.  For SolrCloud, the former CloudSolrClient was renamed CloudLegacySolrClient (deprecated), and instead BaseCloudSolrClient was renamed to CloudSolrClient and given a Builder for the Jetty based HTTP/2 client.
+
+=== Solr Binary Release `dist/` Directory
+
+The `dist/` directory in the Solr binary release has been removed as of Solr 9.0.
+
+* The `solr-core` and `solr-solrj` jars can be found under `server/solr-webapp/webapp/WEB-INF/lib/`.
+* The Solr module jars can be found in `modules/<module-name>/lib`, packaged individually for each module.
+* The `solrj-deps` (SolrJ Dependencies) are no longer separated out from the other Server jars.
+Please refer to the SolrJ Maven artifact to see the exact dependencies you need to include from `server/solr-webapp/webapp/WEB-INF/lib/` and `server/lib/ext/` if you are loading in SolrJ manually.
+If you plan on using SolrJ as a JDBC driver, please refer to the xref:query-guide:sql-query.adoc#generic-clients[JDBC documentation]
 
 == Major Changes in Earlier 8.x Versions
 
