@@ -91,8 +91,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
     try (SolrZkClient zkClient =
         new SolrZkClientWithACLs(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
-      ZooKeeperSaslClient saslClient =
-          zkClient.getSolrZooKeeper().getConnection().zooKeeperSaslClient;
+      ZooKeeperSaslClient saslClient = zkClient.getZooKeeper().getSaslClient();
       assumeFalse("Could not set up ZK with SASL", saslClient.isFailed());
       zkClient.makePath("/solr", false, true);
     } catch (KeeperException e) {

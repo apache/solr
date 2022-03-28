@@ -42,6 +42,8 @@ Other Changes
 
 * SOLR-15886: Remove deprecated showItems configuration value from solrconfig.xml files (Andy Lester via Eric Pugh)
 
+* SOLR-16114: SolrZooKeeper has been removed in favor of using ZooKeeper directly. (Mike Drob)
+
 Build
 ---------------------
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
