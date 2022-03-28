@@ -828,7 +828,8 @@ def checkIdenticalMavenArtifacts(distFiles, artifacts, version):
     if reJarWar.search(artifact):
       artifactFilename = os.path.basename(artifact)
       if artifactFilename in ['solr-test-framework-%s.jar' % version]:
-        print('      Skipping artifact %s as it should not be in the binary distribution' % artifactFilename)
+        if artifactFilename in distFilenames:
+          raise RuntimeError('      solr-test-framework should not be present in solr binary distribution' % artifact)
         continue
       if artifactFilename not in distFilenames:
         raise RuntimeError('      Maven artifact %s is not present in solr binary distribution' % artifact)
