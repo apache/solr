@@ -629,7 +629,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     print("    run integration tests w/ Java 11")
     java.run_java11('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
     print("    build binary release w/ Java 11")
-    java.run_java11('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/compile.log' % unpackPath)
+    java.run_java11('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble.log' % unpackPath)
     testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java11_home, True)
 
     if java.run_java17:
@@ -638,7 +638,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
       print("    run integration tests w/ Java 17")
       java.run_java17('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest-java17.log' % unpackPath)
       print("    build binary release w/ Java 17")
-      java.run_java17('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/compile-java17.log' % unpackPath)
+      java.run_java17('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble-java17.log' % unpackPath)
       testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java17_home, True)
 
   else:
