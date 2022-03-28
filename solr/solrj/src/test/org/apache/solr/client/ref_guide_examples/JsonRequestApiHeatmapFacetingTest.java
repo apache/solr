@@ -21,7 +21,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.json.HeatmapFacetMap;
 import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
@@ -37,11 +36,13 @@ import org.junit.Test;
 /**
  * Example SolrJ usage Heatmap facets in the JSON Request API.
  *
- * Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference Guide.
- * <p>
- * This class is mostly copied from {@link org.apache.solr.client.solrj.request.json.JsonQueryRequestHeatmapFacetingTest}.
- * The test was duplicated here as the community has previously decided that it's best to keep all buildable ref-guide
- * snippets together in the same package.
+ * <p>Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference
+ * Guide.
+ *
+ * <p>This class is mostly copied from {@link
+ * org.apache.solr.client.solrj.request.json.JsonQueryRequestHeatmapFacetingTest}. The test was
+ * duplicated here as the community has previously decided that it's best to keep all buildable
+ * ref-guide snippets together in the same package.
  */
 public class JsonRequestApiHeatmapFacetingTest extends SolrCloudTestCase {
   private static final String COLLECTION_NAME = "spatialdata";
@@ -51,7 +52,12 @@ public class JsonRequestApiHeatmapFacetingTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
-        .addConfig(CONFIG_NAME, new File(ExternalPaths.SOURCE_HOME, "solrj/src/test-files/solrj/solr/configsets/spatial/conf").toPath())
+        .addConfig(
+            CONFIG_NAME,
+            new File(
+                    ExternalPaths.SOURCE_HOME,
+                    "solrj/src/test-files/solrj/solr/configsets/spatial/conf")
+                .toPath())
         .configure();
 
     final List<String> solrUrls = new ArrayList<>();
@@ -65,8 +71,10 @@ public class JsonRequestApiHeatmapFacetingTest extends SolrCloudTestCase {
   }
 
   private static void indexSpatialData() throws Exception {
-    final SolrInputDocument doc1 = new SolrInputDocument("id", "0", FIELD, "ENVELOPE(100, 120, 80, 40)");
-    final SolrInputDocument doc2 = new SolrInputDocument("id", "1", FIELD, "ENVELOPE(-120, -110, 80, 20)");
+    final SolrInputDocument doc1 =
+        new SolrInputDocument("id", "0", FIELD, "ENVELOPE(100, 120, 80, 40)");
+    final SolrInputDocument doc2 =
+        new SolrInputDocument("id", "1", FIELD, "ENVELOPE(-120, -110, 80, 20)");
     final SolrInputDocument doc3 = new SolrInputDocument("id", "3", FIELD, "POINT(70 60)");
     final SolrInputDocument doc4 = new SolrInputDocument("id", "4", FIELD, "POINT(91 89)");
     final List<SolrInputDocument> docs = new ArrayList<>();
@@ -81,25 +89,27 @@ public class JsonRequestApiHeatmapFacetingTest extends SolrCloudTestCase {
 
   @Test
   public void testHeatmapFacet() throws Exception {
-    final List<List<Integer>> expectedHeatmapGrid = Arrays.asList(
-        Arrays.asList(0, 0, 2, 1, 0, 0),
-        Arrays.asList(0, 0, 1, 1, 0, 0),
-        Arrays.asList(0, 1, 1, 1, 0, 0),
-        Arrays.asList(0, 0, 1, 1, 0, 0),
-        Arrays.asList(0, 0, 1, 1, 0, 0),
-        null,
-        null
-    );
-    //tag::solrj-json-heatmap-facet-1[]
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .setLimit(0)
-        .withFacet("locations", new HeatmapFacetMap("location_srpt")
-            .setHeatmapFormat(HeatmapFacetMap.HeatmapFormat.INTS2D)
-            .setRegionQuery("[\"50 20\" TO \"180 90\"]")
-            .setGridLevel(4)
-        );
-    //end::solrj-json-heatmap-facet-1[]
+    final List<List<Integer>> expectedHeatmapGrid =
+        Arrays.asList(
+            Arrays.asList(0, 0, 2, 1, 0, 0),
+            Arrays.asList(0, 0, 1, 1, 0, 0),
+            Arrays.asList(0, 1, 1, 1, 0, 0),
+            Arrays.asList(0, 0, 1, 1, 0, 0),
+            Arrays.asList(0, 0, 1, 1, 0, 0),
+            null,
+            null);
+    // tag::solrj-json-heatmap-facet-1[]
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .setLimit(0)
+            .withFacet(
+                "locations",
+                new HeatmapFacetMap("location_srpt")
+                    .setHeatmapFormat(HeatmapFacetMap.HeatmapFormat.INTS2D)
+                    .setRegionQuery("[\"50 20\" TO \"180 90\"]")
+                    .setGridLevel(4));
+    // end::solrj-json-heatmap-facet-1[]
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
     final NestableJsonFacet topLevelFacet = response.getJsonFacetingResponse();

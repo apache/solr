@@ -17,8 +17,6 @@
 
 package org.apache.solr.cluster.events;
 
-import org.junit.Assert;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,10 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.Assert;
 
-/**
- *
- */
+/** */
 public class AllEventsListener implements ClusterEventListener {
   CountDownLatch eventLatch = new CountDownLatch(1);
   ClusterEvent.EventType expectedType;
@@ -55,7 +52,5 @@ public class AllEventsListener implements ClusterEventListener {
     }
   }
 
-  public void close() throws IOException {
-
-  }
+  public void close() throws IOException {}
 }

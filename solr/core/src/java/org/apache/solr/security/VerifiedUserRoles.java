@@ -19,15 +19,12 @@ package org.apache.solr.security;
 import java.util.Set;
 
 /**
- * Interface used to pass verified user roles in a Principal object.
- * An Authorization plugin may check for the presence of verified user
- * roles on the Principal and choose to use those roles instead of
- * explicitly configuring roles in config. Such roles may e.g. origin
- * from a signed and validated JWT token.
+ * Interface used to pass verified user roles in a Principal object. An Authorization plugin may
+ * check for the presence of verified user roles on the Principal and choose to use those roles
+ * instead of explicitly configuring roles in config. Such roles may e.g. origin from a signed and
+ * validated JWT token.
  */
 public interface VerifiedUserRoles {
-  /**
-   * Gets a set of roles that have been verified to belong to a user
-   */
+  /** Gets a set of roles that have been verified to belong to a user */
   Set<String> getVerifiedRoles();
 }

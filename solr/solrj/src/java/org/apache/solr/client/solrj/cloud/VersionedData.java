@@ -20,14 +20,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Objects;
-
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 
-/**
- * Immutable representation of binary data with version.
- */
+/** Immutable representation of binary data with version. */
 public class VersionedData implements MapWriter {
   private final int version;
   private final byte[] data;
@@ -36,6 +33,7 @@ public class VersionedData implements MapWriter {
 
   /**
    * Constructor.
+   *
    * @param version version of the data, or -1 if unknown
    * @param data binary data, or null.
    * @param mode create mode
@@ -86,10 +84,10 @@ public class VersionedData implements MapWriter {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     VersionedData that = (VersionedData) o;
-    return version == that.version &&
-        Arrays.equals(data, that.data) &&
-        Objects.equals(owner, that.owner) &&
-        mode == that.mode;
+    return version == that.version
+        && Arrays.equals(data, that.data)
+        && Objects.equals(owner, that.owner)
+        && mode == that.mode;
   }
 
   @Override

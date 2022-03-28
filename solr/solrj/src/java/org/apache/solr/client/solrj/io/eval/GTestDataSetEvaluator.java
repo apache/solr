@@ -19,18 +19,17 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.commons.math3.stat.inference.GTest;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.StreamParams;
 
-
 public class GTestDataSetEvaluator extends RecursiveNumericListEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public GTestDataSetEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public GTestDataSetEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
@@ -45,11 +44,11 @@ public class GTestDataSetEvaluator extends RecursiveNumericListEvaluator impleme
     long[] sampleA = new long[listA.size()];
     long[] sampleB = new long[listB.size()];
 
-    for(int i=0; i<sampleA.length; i++) {
+    for (int i = 0; i < sampleA.length; i++) {
       sampleA[i] = listA.get(i).longValue();
     }
 
-    for(int i=0; i<sampleB.length; i++) {
+    for (int i = 0; i < sampleB.length; i++) {
       sampleB[i] = listB.get(i).longValue();
     }
 
@@ -57,7 +56,7 @@ public class GTestDataSetEvaluator extends RecursiveNumericListEvaluator impleme
     double g = gTest.gDataSetsComparison(sampleA, sampleB);
     double p = gTest.gTestDataSetsComparison(sampleA, sampleB);
 
-   Tuple tuple = new Tuple();
+    Tuple tuple = new Tuple();
     tuple.put("G-statistic", g);
     tuple.put(StreamParams.P_VALUE, p);
     return tuple;

@@ -17,7 +17,6 @@
 package org.apache.solr.search.similarities;
 
 import java.io.IOException;
-
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
@@ -34,21 +33,20 @@ public abstract class BaseSimilarityTestCase extends SolrTestCaseJ4 {
       throw new RuntimeException(e);
     }
     while (sim instanceof PerFieldSimilarityWrapper) {
-      sim = ((PerFieldSimilarityWrapper)sim).get(field);
+      sim = ((PerFieldSimilarityWrapper) sim).get(field);
     }
     return sim;
   }
 
-  /** 
-   * Returns the similarity in use for the field, 
-   * after asserting that it implements the specified class 
+  /**
+   * Returns the similarity in use for the field, after asserting that it implements the specified
+   * class
    */
-  protected <T extends Similarity> T getSimilarity(String field, 
-                                                   Class<T> clazz) {
+  protected <T extends Similarity> T getSimilarity(String field, Class<T> clazz) {
     Similarity sim = getSimilarity(field);
-    assertTrue("Similarity for Field " + field + 
-               " does not match expected class: " + clazz.getName(), 
-               clazz.isInstance(sim));
+    assertTrue(
+        "Similarity for Field " + field + " does not match expected class: " + clazz.getName(),
+        clazz.isInstance(sim));
     return clazz.cast(sim);
   }
 }

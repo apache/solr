@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CloudConfig;
@@ -51,27 +50,31 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984, "solr")
-          .setLeaderConflictResolveWait(180000)
-          .setLeaderVoteWait(180000)
-          .build();
-      final ZkController zkController = new ZkController(cc, server.getZkAddress(), 15000, cloudConfig, () -> Collections.emptyList());
+      CloudConfig cloudConfig =
+          new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984, "solr")
+              .setLeaderConflictResolveWait(180000)
+              .setLeaderVoteWait(180000)
+              .build();
+      final ZkController zkController =
+          new ZkController(
+              cc, server.getZkAddress(), 15000, cloudConfig, () -> Collections.emptyList());
       try {
-        Thread killer = new Thread() {
-          @Override
-          public void run() {
-            long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
-            while (System.nanoTime() < timeout) {
-              long sessionId = zkController.getZkClient().getSolrZooKeeper().getSessionId();
-              server.expire(sessionId);
-              try {
-                Thread.sleep(10);
-              } catch (InterruptedException e)  {
-                return;
+        Thread killer =
+            new Thread() {
+              @Override
+              public void run() {
+                long timeout =
+                    System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
+                while (System.nanoTime() < timeout) {
+                  server.expire(zkController.getZkClient().getZooKeeper().getSessionId());
+                  try {
+                    Thread.sleep(10);
+                  } catch (InterruptedException e) {
+                    return;
+                  }
+                }
               }
-            }
-          }
-        };
+            };
         killer.start();
         killer.join();
         long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);

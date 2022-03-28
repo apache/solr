@@ -20,47 +20,68 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class PercentileEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public PercentileEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public PercentileEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
-  public Object doWork(Object first, Object second) throws IOException{
-    if(null == first){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
+  public Object doWork(Object first, Object second) throws IOException {
+    if (null == first) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - null found for the first value",
+              toExpression(constructingFactory)));
     }
-    if(null == second){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
+    if (null == second) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - null found for the second value",
+              toExpression(constructingFactory)));
     }
-    if(!(first instanceof List<?>)) {
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the first value, expecting a List",toExpression(constructingFactory), first.getClass().getSimpleName()));
+    if (!(first instanceof List<?>)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for the first value, expecting a List",
+              toExpression(constructingFactory),
+              first.getClass().getSimpleName()));
     }
-    if((second instanceof Number)) {
+    if ((second instanceof Number)) {
       Percentile percentile = new Percentile();
-      percentile.setData(((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
+      percentile.setData(
+          ((List<?>) first)
+              .stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
       return percentile.evaluate(((Number) second).doubleValue());
-    } else if(second instanceof List){
+    } else if (second instanceof List) {
       Percentile percentile = new Percentile();
-      percentile.setData(((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
+      percentile.setData(
+          ((List<?>) first)
+              .stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray());
       @SuppressWarnings({"unchecked"})
       List<Number> values = (List<Number>) second;
       List<Number> percentiles = new ArrayList<>();
-      for(Number value : values) {
+      for (Number value : values) {
         percentiles.add(percentile.evaluate(value.doubleValue()));
       }
 
       return percentiles;
     } else {
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a number or a numeric array",toExpression(constructingFactory), first.getClass().getSimpleName()));
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for the second value, expecting a number or a numeric array",
+              toExpression(constructingFactory),
+              first.getClass().getSimpleName()));
     }
   }
-  
 }

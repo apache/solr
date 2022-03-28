@@ -17,7 +17,6 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
-
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
@@ -28,11 +27,9 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- *
  * @since solr 4.0
  */
-public class ExplainAugmenterFactory extends TransformerFactory
-{
+public class ExplainAugmenterFactory extends TransformerFactory {
   public enum Style {
     nl,
     text,
@@ -44,18 +41,16 @@ public class ExplainAugmenterFactory extends TransformerFactory
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
-    if( defaultUserArgs != null ) {
-      defaultStyle = getStyle( defaultUserArgs );
+    if (defaultUserArgs != null) {
+      defaultStyle = getStyle(defaultUserArgs);
     }
   }
 
-  public static Style getStyle( String str ) {
+  public static Style getStyle(String str) {
     try {
-      return Style.valueOf( str );
-    }
-    catch( Exception ex ) {
-      throw new SolrException( ErrorCode.BAD_REQUEST,
-          "Unknown Explain Style: "+str );
+      return Style.valueOf(str);
+    } catch (Exception ex) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown Explain Style: " + str);
     }
   }
 
@@ -63,7 +58,7 @@ public class ExplainAugmenterFactory extends TransformerFactory
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
     String s = params.get("style");
     Style style = (s == null) ? defaultStyle : getStyle(s);
-    return new ExplainAugmenter( field, style );
+    return new ExplainAugmenter(field, style);
   }
 
   /** Render an explanation as HTML. */
@@ -76,7 +71,7 @@ public class ExplainAugmenterFactory extends TransformerFactory
     buffer.append("<br />\n");
 
     Explanation[] details = explanation.getDetails();
-    for (int i = 0 ; i < details.length; i++) {
+    for (int i = 0; i < details.length; i++) {
       buffer.append(toHtml(details[i]));
     }
 
@@ -90,30 +85,26 @@ public class ExplainAugmenterFactory extends TransformerFactory
     final String name;
     final Style style;
 
-    public ExplainAugmenter( String display, Style style )
-    {
+    public ExplainAugmenter(String display, Style style) {
       this.name = display;
       this.style = style;
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
       return name;
     }
 
     @Override
     public void transform(SolrDocument doc, int docid) throws IOException {
-      if( context != null && context.getQuery() != null ) {
+      if (context != null && context.getQuery() != null) {
         Explanation exp = context.getSearcher().explain(context.getQuery(), docid);
-        if( style == Style.nl ) {
-          doc.setField( name, SolrPluginUtils.explanationToNamedList(exp) );
-        }
-        else if( style == Style.html ) {
-          doc.setField( name, toHtml(exp));
-        }
-        else {
-          doc.setField( name, exp.toString() );
+        if (style == Style.nl) {
+          doc.setField(name, SolrPluginUtils.explanationToNamedList(exp));
+        } else if (style == Style.html) {
+          doc.setField(name, toHtml(exp));
+        } else {
+          doc.setField(name, exp.toString());
         }
       }
     }

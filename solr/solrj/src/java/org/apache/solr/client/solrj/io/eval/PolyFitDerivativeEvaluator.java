@@ -17,28 +17,28 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
-
+import java.util.List;
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
-
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class PolyFitDerivativeEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
+public class PolyFitDerivativeEvaluator extends RecursiveNumericEvaluator
+    implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public PolyFitDerivativeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public PolyFitDerivativeEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
-  public Object doWork(Object... objects) throws IOException{
+  public Object doWork(Object... objects) throws IOException {
 
-    if(objects.length > 3) {
+    if (objects.length > 3) {
       throw new IOException("polyfitDerivative function takes a maximum of 3 arguments.");
     }
 
@@ -48,43 +48,51 @@ public class PolyFitDerivativeEvaluator extends RecursiveNumericEvaluator implem
     double[] y = null;
     int degree = 3;
 
-    if(objects.length == 1) {
-      //Only the y values passed
+    if (objects.length == 1) {
+      // Only the y values passed
 
       y = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       x = new double[y.length];
-      for(int i=0; i<y.length; i++) {
+      for (int i = 0; i < y.length; i++) {
         x[i] = i;
       }
 
-    } else if(objects.length == 3) {
+    } else if (objects.length == 3) {
       // x, y and degree passed
 
       Object second = objects[1];
       x = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
-      y = ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
-      degree = ((Number)objects[2]).intValue();
-    } else if(objects.length == 2) {
-      if(objects[1] instanceof List) {
+      y =
+          ((List<?>) second)
+              .stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+      degree = ((Number) objects[2]).intValue();
+    } else if (objects.length == 2) {
+      if (objects[1] instanceof List) {
         // x and y passed
         Object second = objects[1];
-        x = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
-        y = ((List<?>) second).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+        x =
+            ((List<?>) first)
+                .stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+        y =
+            ((List<?>) second)
+                .stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
       } else {
         // y and degree passed
-        y = ((List<?>) first).stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
+        y =
+            ((List<?>) first)
+                .stream().mapToDouble(value -> ((Number) value).doubleValue()).toArray();
         x = new double[y.length];
-        for(int i=0; i<y.length; i++) {
+        for (int i = 0; i < y.length; i++) {
           x[i] = i;
         }
 
-        degree = ((Number)objects[1]).intValue();
+        degree = ((Number) objects[1]).intValue();
       }
     }
 
     PolynomialCurveFitter curveFitter = PolynomialCurveFitter.create(degree);
     WeightedObservedPoints points = new WeightedObservedPoints();
-    for(int i=0; i<x.length; i++) {
+    for (int i = 0; i < x.length; i++) {
       points.add(x[i], y[i]);
     }
 
@@ -93,8 +101,8 @@ public class PolyFitDerivativeEvaluator extends RecursiveNumericEvaluator implem
     UnivariateFunction univariateFunction = pf.derivative();
 
     List<Double> list = new ArrayList<>();
-    for(double xvalue : x) {
-      double yvalue= univariateFunction.value(xvalue);
+    for (double xvalue : x) {
+      double yvalue = univariateFunction.value(xvalue);
       list.add(yvalue);
     }
 

@@ -26,13 +26,12 @@ import org.w3c.dom.Element;
 
 public class HelloQueryBuilder extends SolrQueryBuilder {
 
-  public HelloQueryBuilder(String defaultField, Analyzer analyzer,
-      SolrQueryRequest req, QueryBuilder queryFactory) {
+  public HelloQueryBuilder(
+      String defaultField, Analyzer analyzer, SolrQueryRequest req, QueryBuilder queryFactory) {
     super(defaultField, analyzer, req, queryFactory);
   }
 
   public Query getQuery(Element e) throws ParserException {
     return new MatchAllDocsQuery();
   }
-
 }

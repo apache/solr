@@ -17,27 +17,26 @@
 package org.apache.solr.servlet;
 
 import java.io.IOException;
-
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
-
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- * Provides a convenient extension of the {@link ServletInputStream} class that can be subclassed by developers wishing
- * to adapt the behavior of a Stream. One such example may be to override {@link #close()} to instead be a no-op as in
- * SOLR-8933.
+ * Provides a convenient extension of the {@link ServletInputStream} class that can be subclassed by
+ * developers wishing to adapt the behavior of a Stream. One such example may be to override {@link
+ * #close()} to instead be a no-op as in SOLR-8933.
  *
- * This class implements the Wrapper or Decorator pattern. Methods default to calling through to the wrapped stream.
+ * <p>This class implements the Wrapper or Decorator pattern. Methods default to calling through to
+ * the wrapped stream.
  */
 @SuppressForbidden(reason = "delegate methods")
 public class ServletInputStreamWrapper extends ServletInputStream {
   ServletInputStream stream;
-  
+
   public ServletInputStreamWrapper(ServletInputStream stream) throws IOException {
     this.stream = stream;
   }
-  
+
   public int hashCode() {
     return stream.hashCode();
   }
@@ -101,5 +100,4 @@ public class ServletInputStreamWrapper extends ServletInputStream {
   public String toString() {
     return stream.toString();
   }
-  
 }

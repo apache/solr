@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
-
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.SolrTestCaseJ4;
@@ -38,7 +37,7 @@ import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL
 public class TestSmileRequest extends SolrTestCaseJ4 {
-  private static SolrTestCaseHS.SolrInstances servers;  // for distributed testing
+  private static SolrTestCaseHS.SolrInstances servers; // for distributed testing
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -67,28 +66,29 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
   public void testDistribJsonRequest() throws Exception {
     initServers();
     SolrTestCaseHS.Client client = servers.getClient(random().nextInt());
-    client.tester = new SolrTestCaseHS.Client.Tester() {
-      @Override
-      public void assertJQ(SolrClient client, SolrParams args, String... tests) throws Exception {
-        ((HttpSolrClient) client).setParser(SmileResponseParser.inst);
-        QueryRequest query = new QueryRequest(args);
-        String path = args.get("qt");
-        if (path != null) {
-          query.setPath(path);
-        }
-        NamedList<Object> rsp = client.request(query);
-        @SuppressWarnings({"rawtypes"})
-        Map m = rsp.asMap(5);
-        String jsonStr = Utils.toJSONString(m);
-        SolrTestCaseHS.matchJSON(jsonStr, tests);
-      }
-    };
+    client.tester =
+        new SolrTestCaseHS.Client.Tester() {
+          @Override
+          public void assertJQ(SolrClient client, SolrParams args, String... tests)
+              throws Exception {
+            ((HttpSolrClient) client).setParser(SmileResponseParser.inst);
+            QueryRequest query = new QueryRequest(args);
+            String path = args.get("qt");
+            if (path != null) {
+              query.setPath(path);
+            }
+            NamedList<Object> rsp = client.request(query);
+            @SuppressWarnings({"rawtypes"})
+            Map m = rsp.asMap(5);
+            String jsonStr = Utils.toJSONString(m);
+            SolrTestCaseHS.matchJSON(jsonStr, tests);
+          }
+        };
     client.queryDefaults().set("shards", servers.getShards());
     TestJsonRequest.doJsonRequest(client, true);
-
   }
 
-  //adding this to core adds the dependency on a few extra jars to our distribution.
+  // adding this to core adds the dependency on a few extra jars to our distribution.
   // So this is not added there
   public static class SmileResponseParser extends BinaryResponseParser {
     public static final SmileResponseParser inst = new SmileResponseParser();
@@ -106,9 +106,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
         return new NamedList(m);
       } catch (IOException e) {
         throw new RuntimeException(e);
-
       }
     }
-
   }
 }

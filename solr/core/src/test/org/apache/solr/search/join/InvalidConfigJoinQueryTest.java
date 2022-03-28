@@ -42,6 +42,18 @@ public class InvalidConfigJoinQueryTest extends SolrTestCaseJ4 {
     SolrClient client = new EmbeddedSolrServer(h.getCore());
     req.commit(client, null);
 
-    assertThrows(SolrException.class, () -> assertJQ(req("q", "{!join from=id to=locid_s v=$q1}", "q1", "type_s:loc", "fl", "id", "sort", "id asc")));
+    assertThrows(
+        SolrException.class,
+        () ->
+            assertJQ(
+                req(
+                    "q",
+                    "{!join from=id to=locid_s v=$q1}",
+                    "q1",
+                    "type_s:loc",
+                    "fl",
+                    "id",
+                    "sort",
+                    "id asc")));
   }
 }

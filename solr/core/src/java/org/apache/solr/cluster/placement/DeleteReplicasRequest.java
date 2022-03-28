@@ -17,13 +17,10 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Set;
 import org.apache.solr.cluster.Replica;
 
-import java.util.Set;
-
-/**
- * Delete replicas request.
- */
+/** Delete replicas request. */
 public interface DeleteReplicasRequest extends ModificationRequest {
   Set<Replica> getReplicas();
 }

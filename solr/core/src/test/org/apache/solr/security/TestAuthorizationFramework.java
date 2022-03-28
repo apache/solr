@@ -23,11 +23,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -44,16 +44,21 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final int TIMEOUT = 10000;
+
   public void distribSetUp() throws Exception {
     super.distribSetUp();
-    try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
-        TIMEOUT, TIMEOUT)) {
-      zkStateReader.getZkClient().create(ZkStateReader.SOLR_SECURITY_CONF_PATH,
-          "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}".getBytes(StandardCharsets.UTF_8),
-          CreateMode.PERSISTENT, true);
+    try (ZkStateReader zkStateReader =
+        new ZkStateReader(zkServer.getZkAddress(), TIMEOUT, TIMEOUT)) {
+      zkStateReader
+          .getZkClient()
+          .create(
+              ZkStateReader.SOLR_SECURITY_CONF_PATH,
+              "{\"authorization\":{\"class\":\"org.apache.solr.security.MockAuthorizationPlugin\"}}"
+                  .getBytes(StandardCharsets.UTF_8),
+              CreateMode.PERSISTENT,
+              true);
     }
   }
-
 
   @Test
   public void authorizationFrameworkTest() throws Exception {
@@ -63,7 +68,12 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
     try {
       waitForThingsToLevelOut(10, TimeUnit.SECONDS);
       String baseUrl = jettys.get(0).getBaseUrl().toString();
-      verifySecurityStatus(cloudClient.getLbClient().getHttpClient(), baseUrl + "/admin/authorization", "authorization/class", MockAuthorizationPlugin.class.getName(), 20);
+      verifySecurityStatus(
+          ((CloudLegacySolrClient) cloudClient).getHttpClient(),
+          baseUrl + "/admin/authorization",
+          "authorization/class",
+          MockAuthorizationPlugin.class.getName(),
+          20);
       log.info("Starting test");
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add("q", "*:*");
@@ -78,7 +88,6 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
     } finally {
       MockAuthorizationPlugin.denyUsers.clear();
       MockAuthorizationPlugin.protectedResources.clear();
-
     }
   }
 
@@ -86,16 +95,18 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
   public void distribTearDown() throws Exception {
     super.distribTearDown();
     MockAuthorizationPlugin.denyUsers.clear();
-
   }
 
-  public static void verifySecurityStatus(HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
+  public static void verifySecurityStatus(
+      HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
     boolean success = false;
     String s = null;
     List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
     for (int i = 0; i < count; i++) {
       HttpGet get = new HttpGet(url);
-      s = EntityUtils.toString(cl.execute(get, HttpClientUtil.createNewHttpClientRequestContext()).getEntity());
+      s =
+          EntityUtils.toString(
+              cl.execute(get, HttpClientUtil.createNewHttpClientRequestContext()).getEntity());
       Map<?, ?> m = (Map<?, ?>) Utils.fromJSONString(s);
 
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
@@ -113,6 +124,5 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
       Thread.sleep(50);
     }
     assertTrue("No match for " + objPath + " = " + expected + ", full response = " + s, success);
-
   }
 }

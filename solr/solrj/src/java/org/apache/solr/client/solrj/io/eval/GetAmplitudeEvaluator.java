@@ -19,23 +19,28 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class GetAmplitudeEvaluator extends RecursiveObjectEvaluator implements OneValueWorker {
   private static final long serialVersionUID = 1;
 
-  public GetAmplitudeEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public GetAmplitudeEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if(!(value instanceof VectorFunction)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a Vector Function",toExpression(constructingFactory), value.getClass().getSimpleName()));
+    if (!(value instanceof VectorFunction)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting a Vector Function",
+              toExpression(constructingFactory),
+              value.getClass().getSimpleName()));
     } else {
-      VectorFunction vectorFunction = (VectorFunction)value;
+      VectorFunction vectorFunction = (VectorFunction) value;
       return vectorFunction.getFromContext("amplitude");
     }
   }

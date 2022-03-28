@@ -20,7 +20,7 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 public class AddReplicaPropertyPayload implements ReflectMapWriter {
-  @JsonProperty(required =  true)
+  @JsonProperty(required = true)
   public String shard;
 
   @JsonProperty(required = true)
@@ -32,6 +32,5 @@ public class AddReplicaPropertyPayload implements ReflectMapWriter {
   @JsonProperty(required = true)
   public String value;
 
-  @JsonProperty
-  public Boolean shardUnique = null;
+  @JsonProperty public Boolean shardUnique = null;
 }

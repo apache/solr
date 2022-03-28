@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ArrayEvaluator;
@@ -29,127 +29,120 @@ import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class ArrayEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public ArrayEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("array", ArrayEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("array", ArrayEvaluator.class);
+    values = new HashMap<String, Object>();
   }
 
   @Test
-  public void arrayLongSortAscTest() throws IOException{
+  public void arrayLongSortAscTest() throws IOException {
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c, sort=asc)");
     StreamContext context = new StreamContext();
     evaluator.setStreamContext(context);
     Object result;
-    
+
     values.put("a", 1L);
     values.put("b", 3L);
     values.put("c", 2L);
-    
+
     result = evaluator.evaluate(new Tuple(values));
-    
+
     Assert.assertTrue(result instanceof List<?>);
-    
-    Assert.assertEquals(3, ((List<?>)result).size());
-    Assert.assertEquals(1D, ((List<?>)result).get(0));
-    Assert.assertEquals(2D, ((List<?>)result).get(1));
-    Assert.assertEquals(3D, ((List<?>)result).get(2));
+
+    Assert.assertEquals(3, ((List<?>) result).size());
+    Assert.assertEquals(1D, ((List<?>) result).get(0));
+    Assert.assertEquals(2D, ((List<?>) result).get(1));
+    Assert.assertEquals(3D, ((List<?>) result).get(2));
   }
 
   @Test
-  public void arrayLongSortDescTest() throws IOException{
+  public void arrayLongSortDescTest() throws IOException {
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c, sort=desc)");
     StreamContext context = new StreamContext();
     evaluator.setStreamContext(context);
     Object result;
-    
+
     values.put("a", 1L);
     values.put("b", 3L);
     values.put("c", 2L);
-    
+
     result = evaluator.evaluate(new Tuple(values));
-    
+
     Assert.assertTrue(result instanceof List<?>);
-    
-    Assert.assertEquals(3, ((List<?>)result).size());
-    Assert.assertEquals(3D, ((List<?>)result).get(0));
-    Assert.assertEquals(2D, ((List<?>)result).get(1));
-    Assert.assertEquals(1D, ((List<?>)result).get(2));
+
+    Assert.assertEquals(3, ((List<?>) result).size());
+    Assert.assertEquals(3D, ((List<?>) result).get(0));
+    Assert.assertEquals(2D, ((List<?>) result).get(1));
+    Assert.assertEquals(1D, ((List<?>) result).get(2));
   }
-  
+
   @Test
-  public void arrayStringSortAscTest() throws IOException{
+  public void arrayStringSortAscTest() throws IOException {
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c, sort=asc)");
     StreamContext context = new StreamContext();
     evaluator.setStreamContext(context);
     Object result;
-    
+
     values.put("a", "a");
     values.put("b", "c");
     values.put("c", "b");
-    
+
     result = evaluator.evaluate(new Tuple(values));
-    
+
     Assert.assertTrue(result instanceof List<?>);
-    
-    Assert.assertEquals(3, ((List<?>)result).size());
-    Assert.assertEquals("a", ((List<?>)result).get(0));
-    Assert.assertEquals("b", ((List<?>)result).get(1));
-    Assert.assertEquals("c", ((List<?>)result).get(2));
+
+    Assert.assertEquals(3, ((List<?>) result).size());
+    Assert.assertEquals("a", ((List<?>) result).get(0));
+    Assert.assertEquals("b", ((List<?>) result).get(1));
+    Assert.assertEquals("c", ((List<?>) result).get(2));
   }
 
   @Test
-  public void arrayStringSortDescTest() throws IOException{
+  public void arrayStringSortDescTest() throws IOException {
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c, sort=desc)");
     StreamContext context = new StreamContext();
     evaluator.setStreamContext(context);
     Object result;
-    
+
     values.put("a", "a");
     values.put("b", "c");
     values.put("c", "b");
-    
+
     result = evaluator.evaluate(new Tuple(values));
-    
+
     Assert.assertTrue(result instanceof List<?>);
-    
-    Assert.assertEquals(3, ((List<?>)result).size());
-    Assert.assertEquals("c", ((List<?>)result).get(0));
-    Assert.assertEquals("b", ((List<?>)result).get(1));
-    Assert.assertEquals("a", ((List<?>)result).get(2));
+
+    Assert.assertEquals(3, ((List<?>) result).size());
+    Assert.assertEquals("c", ((List<?>) result).get(0));
+    Assert.assertEquals("b", ((List<?>) result).get(1));
+    Assert.assertEquals("a", ((List<?>) result).get(2));
   }
-  
+
   @Test
-  public void arrayStringUnsortedTest() throws IOException{
+  public void arrayStringUnsortedTest() throws IOException {
     StreamEvaluator evaluator = factory.constructEvaluator("array(a,b,c)");
     StreamContext context = new StreamContext();
     evaluator.setStreamContext(context);
     Object result;
-    
+
     values.put("a", "a");
     values.put("b", "c");
     values.put("c", "b");
-    
+
     result = evaluator.evaluate(new Tuple(values));
-    
+
     Assert.assertTrue(result instanceof List<?>);
-    
-    Assert.assertEquals(3, ((List<?>)result).size());
-    Assert.assertEquals("a", ((List<?>)result).get(0));
-    Assert.assertEquals("c", ((List<?>)result).get(1));
-    Assert.assertEquals("b", ((List<?>)result).get(2));
+
+    Assert.assertEquals(3, ((List<?>) result).size());
+    Assert.assertEquals("a", ((List<?>) result).get(0));
+    Assert.assertEquals("c", ((List<?>) result).get(1));
+    Assert.assertEquals("b", ((List<?>) result).get(2));
   }
-
-
-
-
 }

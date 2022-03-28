@@ -16,6 +16,9 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertList;
+import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertMaps;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
@@ -70,9 +72,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertList;
-import static org.apache.solr.client.solrj.io.stream.StreamAssert.assertMaps;
-
 @Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
@@ -103,9 +102,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(collection, 2, 2);
-    
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
+
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        collection, cluster.getZkStateReader(), false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     }
@@ -2911,7 +2910,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       //Lets sleep long enough for daemon updates to run.
       //Lets stop the daemons
-      ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream", "action", "list"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream", "action", "list"));
 
       int workersComplete = 0;
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
@@ -3085,7 +3084,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuples.size() == 2);
 
 
-      ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream", "action", "list"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream", "action", "list"));
 
       int workersComplete = 0;
 
@@ -3467,7 +3466,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
       //Lets sleep long enough for daemon updates to run.
       //Lets stop the daemons
-      ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream", "action", "list"));
+      ModifiableSolrParams sParams = new ModifiableSolrParams(params(CommonParams.QT, "/stream", "action", "list"));
 
       int workersComplete = 0;
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
@@ -3671,7 +3670,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     updateRequest.commit(cluster.getSolrClient(), "uknownCollection");
 
     // find a node with a replica
-    ClusterState clusterState = cluster.getSolrClient().getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cluster.getSolrClient().getClusterState();
     DocCollection coll = clusterState.getCollection(COLLECTIONORALIAS);
     String node = coll.getReplicas().iterator().next().getNodeName();
     String url = null;

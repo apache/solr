@@ -17,16 +17,13 @@
 package org.apache.solr.client.solrj.request.beans;
 
 import java.util.Map;
-
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 public class CreateConfigPayload implements ReflectMapWriter {
   @JsonProperty(required = true)
   public String name;
-  @JsonProperty
-  public String baseConfigSet;
-  @JsonProperty
-  public Map<String,Object> properties;
 
+  @JsonProperty public String baseConfigSet;
+  @JsonProperty public Map<String, Object> properties;
 }

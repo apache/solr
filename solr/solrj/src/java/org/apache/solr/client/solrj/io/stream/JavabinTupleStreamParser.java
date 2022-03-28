@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -25,7 +24,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -37,7 +35,6 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
   private boolean onlyJsonTypes = false;
   int objectSize;
 
-
   public JavabinTupleStreamParser(InputStream is, boolean onlyJsonTypes) throws IOException {
     this.onlyJsonTypes = onlyJsonTypes;
     this.is = is;
@@ -45,11 +42,10 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     if (!readTillDocs()) arraySize = 0;
   }
 
-
   private boolean readTillDocs() throws IOException {
     if (isObjectType(fis)) {
       if (tagByte == SOLRDOCLST) {
-        readVal(fis);// this is the metadata, throw it away
+        readVal(fis); // this is the metadata, throw it away
         tagByte = fis.readByte();
         arraySize = readSize(fis);
         return true;
@@ -59,8 +55,8 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
         if (k == END_OBJ) break;
         if ("docs".equals(k)) {
           tagByte = fis.readByte();
-          if (tagByte == ITERATOR) return true;//docs must be an iterator or
-          if (tagByte >>> 5 == ARR >>> 5) {// an array
+          if (tagByte == ITERATOR) return true; // docs must be an iterator or
+          if (tagByte >>> 5 == ARR >>> 5) { // an array
             arraySize = readSize(fis);
             return true;
           }
@@ -75,13 +71,12 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     }
     return false;
 
-    //here after it will be a stream of maps
+    // here after it will be a stream of maps
   }
 
   private boolean isObjectType(DataInputInputStream dis) throws IOException {
     tagByte = dis.readByte();
-    if (tagByte >>> 5 == ORDERED_MAP >>> 5 ||
-        tagByte >>> 5 == NAMED_LST >>> 5) {
+    if (tagByte >>> 5 == ORDERED_MAP >>> 5 || tagByte >>> 5 == NAMED_LST >>> 5) {
       objectSize = readSize(dis);
       return true;
     }
@@ -96,7 +91,7 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     return tagByte == SOLRDOCLST;
   }
 
-  private Map<?,?> readAsMap(DataInputInputStream dis) throws IOException {
+  private Map<?, ?> readAsMap(DataInputInputStream dis) throws IOException {
     int sz = readSize(dis);
     Map<String, Object> m = new LinkedHashMap<>();
     for (int i = 0; i < sz; i++) {
@@ -107,7 +102,7 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
     return m;
   }
 
-  private Map<?,?> readSolrDocumentAsMap(DataInputInputStream dis) throws IOException {
+  private Map<?, ?> readSolrDocumentAsMap(DataInputInputStream dis) throws IOException {
     tagByte = dis.readByte();
     int size = readSize(dis);
     Map<String, Object> doc = new LinkedHashMap<>();
@@ -145,33 +140,37 @@ public class JavabinTupleStreamParser extends JavaBinCodec implements TupleStrea
       }
 
       switch (tagByte) {
-        case INT: {
-          int i = dis.readInt();
-          return (long) i;
-        }
-        case FLOAT: {
-          float v = dis.readFloat();
-          return (double) v;
-        }
-        case BYTE: {
-          byte b = dis.readByte();
-          return (long) b;
-        }
-        case SHORT: {
-          short s = dis.readShort();
-          return (long) s;
-        }
+        case INT:
+          {
+            int i = dis.readInt();
+            return (long) i;
+          }
+        case FLOAT:
+          {
+            float v = dis.readFloat();
+            return (double) v;
+          }
+        case BYTE:
+          {
+            byte b = dis.readByte();
+            return (long) b;
+          }
+        case SHORT:
+          {
+            short s = dis.readShort();
+            return (long) s;
+          }
 
-        case DATE: {
-          return Instant.ofEpochMilli(dis.readLong()).toString();
-        }
+        case DATE:
+          {
+            return Instant.ofEpochMilli(dis.readLong()).toString();
+          }
 
         default:
           return super.readObject(dis);
       }
     } else return super.readObject(dis);
   }
-
 
   @Override
   @SuppressWarnings({"unchecked"})
