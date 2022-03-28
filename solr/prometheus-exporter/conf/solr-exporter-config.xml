@@ -568,6 +568,9 @@
           Query related core metrics; see jq-templates for details on the core-query template used below
           -->
           <str>
+            $jq:core-query(requests_total, select(.key | endswith(".requestTimes")), count, COUNTER)
+          </str>
+          <str>
             $jq:core-query(errors_1minRate, select(.key | endswith(".errors")), 1minRate)
           </str>
           <str>
