@@ -679,7 +679,7 @@ groups:
     title: Run the smoke tester
     depends: build_rc
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       tmp_dir: '{{ [rc_folder, ''smoketest''] | path_join }}'
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
@@ -699,7 +699,7 @@ groups:
       Here we'll import the artifacts into Subversion.
     depends: smoke_tester
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       dist_url: '{{ dist_url_base }}/{{ dist_folder}}'
     commands: !Commands
@@ -718,7 +718,7 @@ groups:
       area and checks hash and signatures, but does not re-run all tests.
     depends: import_svn
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_url: '{{ dist_url_base }}/{{ dist_folder}}'
       tmp_dir: '{{ [rc_folder, ''smoketest_staged''] | path_join }}'
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
@@ -752,12 +752,12 @@ groups:
       Please vote for release candidate {{ rc_number }} for Solr {{ release_version }}
 
       The artifacts can be downloaded from:
-      {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
 
       You can run the smoke tester directly with this command:
 
       python3 -u dev-tools/scripts/smokeTestRelease.py \
-      {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
 
       The vote will be open for at least 72 hours i.e. until {{ vote_close }}.
 
@@ -878,7 +878,7 @@ groups:
     id: rm_staged_mvn
     title: Delete mvn and docker artifacts from staging repo
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       dist_stage_url: '{{ dist_url_base }}/{{ dist_folder}}'
     commands: !Commands
@@ -894,7 +894,7 @@ groups:
     id: mv_to_release
     title: Move release artifacts to release repo
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_stage_url: '{{ dist_url_base }}/{{ dist_folder}}'
       dist_release_url: https://dist.apache.org/repos/dist/release/solr
     commands: !Commands
@@ -907,7 +907,7 @@ groups:
         logfile: svn_mv_solr.log
         tee: true
       - !Command
-        cmd: svn rm -m "Clean up the RC folder for {{ release_version }} RC{{ rc_number }}"  {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+        cmd: svn rm -m "Clean up the RC folder for {{ release_version }} RC{{ rc_number }}"  {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
         logfile: svn_rm_containing.log
         comment: Clean up containing folder on the staging repo
         tee: true
@@ -916,7 +916,7 @@ groups:
     id: stage_maven
     title: Stage the maven artifacts for publishing
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       confirm_each_command: true
