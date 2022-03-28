@@ -112,7 +112,7 @@ public class ZkTestServer {
   class ZKServerMain {
 
     private volatile ServerCnxnFactory cnxnFactory;
-    public volatile ZooKeeperServer zooKeeperServer;
+    private volatile ZooKeeperServer zooKeeperServer;
     private volatile LimitViolationAction violationReportAction = LimitViolationAction.REPORT;
     private volatile WatchLimiter limiter = new WatchLimiter(1, LimitViolationAction.IGNORE);
 
