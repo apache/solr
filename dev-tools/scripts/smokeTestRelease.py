@@ -766,7 +766,7 @@ def removeTrailingZeros(version):
 def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
   print('    download artifacts')
   artifacts = []
-  artifactsURL = '%s/solr/maven/org/apache/solr/' % baseURL
+  artifactsURL = '%s/maven/org/apache/solr/' % baseURL
   targetDir = '%s/maven/org/apache/solr' % tmpDir
   if not os.path.exists(targetDir):
     os.makedirs(targetDir)
@@ -1139,7 +1139,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     unpackAndVerify(java, tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs)
     print()
     print('Test Maven artifacts...')
-    checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile)
+    checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile)
   else:
     print("Solr test done (--download-only specified)")
 
