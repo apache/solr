@@ -328,7 +328,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       // Just check that the proper number of cores are loaded since making the test depend on order
       // would be fragile
       assertEquals(
-          "There should only be 3 cores loaded, coreLOS and two coreT? cores",
+          "There should only be 3 cores loaded, coreLOS and two coreT? cores. Actual: "+cc.getLoadedCoreNames(),
           3,
           cc.getLoadedCoreNames().size());
 
