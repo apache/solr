@@ -447,18 +447,12 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
         Collection<String> indexedFields = solrIndexSearcher.getDocFetcher().getIndexedFieldNames();
 
-        Predicate<String> predicate = null;
-        for (String f : expandWildcardsInHighlightFields(indexedFields, queryFieldPattern)) {
-          if (predicate == null) {
-            predicate = f::equals;
-          } else {
-            predicate = predicate.or(f::equals);
-          }
-        }
-        if (predicate == null) {
+        final Set<String> fields =
+            Set.of(expandWildcardsInHighlightFields(indexedFields, queryFieldPattern));
+        if (fields.isEmpty()) {
           return NO_FIELD_MATCH_PREDICATE;
         }
-        return predicate;
+        return fields::contains;
       }
 
       return NOT_REQUIRED_FIELD_MATCH_PREDICATE;
