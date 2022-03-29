@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.OrEvaluator;
@@ -26,47 +26,44 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class OrEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public OrEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("or", OrEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("or", OrEvaluator.class);
+    values = new HashMap<String, Object>();
   }
-    
+
   @Test
-  public void orTwoBooleans() throws Exception{
+  public void orTwoBooleans() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("or(a,b)");
     Object result;
-    
+
     values.clear();
     values.put("a", true);
     values.put("b", true);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", true);
     values.put("b", false);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", false);
     values.put("b", true);
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", false);
     values.put("b", false);
@@ -74,12 +71,12 @@ public class OrEvaluatorTest extends SolrTestCase {
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(false, result);
   }
-  
+
   @Test
-  public void orWithSubAndsBooleans() throws Exception{
+  public void orWithSubAndsBooleans() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("or(a,or(b,c))");
     Object result;
-    
+
     values.clear();
     values.put("a", true);
     values.put("b", true);
@@ -95,7 +92,7 @@ public class OrEvaluatorTest extends SolrTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", true);
     values.put("b", false);
@@ -103,7 +100,7 @@ public class OrEvaluatorTest extends SolrTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", false);
     values.put("b", true);
@@ -111,7 +108,7 @@ public class OrEvaluatorTest extends SolrTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof Boolean);
     Assert.assertEquals(true, result);
-    
+
     values.clear();
     values.put("a", false);
     values.put("b", false);

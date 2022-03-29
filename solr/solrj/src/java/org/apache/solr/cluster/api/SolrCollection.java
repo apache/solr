@@ -28,7 +28,6 @@ public interface SolrCollection {
   /** Name of the configset used by this collection */
   String config();
 
-  /**Router used in this collection */
+  /** Router used in this collection */
   Router router();
-
 }

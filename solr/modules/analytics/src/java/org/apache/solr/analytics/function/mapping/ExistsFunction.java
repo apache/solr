@@ -16,36 +16,36 @@
  */
 package org.apache.solr.analytics.function.mapping;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-
 import org.apache.solr.analytics.ExpressionFactory.CreatorFunction;
 import org.apache.solr.analytics.value.AnalyticsValue;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.BooleanValue;
 import org.apache.solr.analytics.value.BooleanValue.AbstractBooleanValue;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 
 /**
  * A mapping function to test if a value.
- * <p>
- * Any {@link AnalyticsValueStream} can be passed in, and a {@link BooleanValue} will be returned representing whether a value exists.
+ *
+ * <p>Any {@link AnalyticsValueStream} can be passed in, and a {@link BooleanValue} will be returned
+ * representing whether a value exists.
  */
 public class ExistsFunction {
   public static final String name = "exists";
-  public static final CreatorFunction creatorFunction = (params -> {
-    if (params.length != 1) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires 1 parameter.");
-    }
-    AnalyticsValueStream param = params[0];
-    if (param instanceof AnalyticsValue) {
-      return new ValueExistsFunction((AnalyticsValue)param);
-    }
-    return new ValueStreamExistsFunction(param);
-  });
+  public static final CreatorFunction creatorFunction =
+      (params -> {
+        if (params.length != 1) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST, "The " + name + " function requires 1 parameter.");
+        }
+        AnalyticsValueStream param = params[0];
+        if (param instanceof AnalyticsValue) {
+          return new ValueExistsFunction((AnalyticsValue) param);
+        }
+        return new ValueStreamExistsFunction(param);
+      });
 
-  /**
-   * Exists function that supports {@link AnalyticsValueStream}s.
-   */
+  /** Exists function that supports {@link AnalyticsValueStream}s. */
   static class ValueStreamExistsFunction extends AbstractBooleanValue {
     private final AnalyticsValueStream param;
     public static final String name = ExistsFunction.name;
@@ -54,17 +54,19 @@ public class ExistsFunction {
 
     public ValueStreamExistsFunction(AnalyticsValueStream param) throws SolrException {
       this.param = param;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, param);
     }
 
     private boolean exists;
+
     @Override
     public boolean getBoolean() {
       exists = false;
       param.streamObjects(val -> exists = true);
       return exists;
     }
+
     @Override
     public boolean exists() {
       return true;
@@ -74,19 +76,19 @@ public class ExistsFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
     }
   }
 
-  /**
-   * Exists function that supports {@link AnalyticsValue}s.
-   */
+  /** Exists function that supports {@link AnalyticsValue}s. */
   static class ValueExistsFunction extends AbstractBooleanValue {
     private final AnalyticsValue param;
     public static final String name = ExistsFunction.name;
@@ -95,8 +97,8 @@ public class ExistsFunction {
 
     public ValueExistsFunction(AnalyticsValue param) throws SolrException {
       this.param = param;
-      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,param);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name, param);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr, param);
     }
 
     @Override
@@ -104,6 +106,7 @@ public class ExistsFunction {
       param.getObject();
       return param.exists();
     }
+
     @Override
     public boolean exists() {
       return true;
@@ -113,14 +116,15 @@ public class ExistsFunction {
     public String getName() {
       return name;
     }
+
     @Override
     public String getExpressionStr() {
       return exprStr;
     }
+
     @Override
     public ExpressionType getExpressionType() {
       return funcType;
     }
   }
 }
-

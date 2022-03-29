@@ -18,7 +18,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.util.concurrent.ExecutorService;
-
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
@@ -29,9 +28,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
 
-/**
- * Context passed to Collection API commands when they execute in the Overseer.
- */
+/** Context passed to Collection API commands when they execute in the Overseer. */
 public class OcmhCollectionCommandContext implements CollectionCommandContext {
   private final OverseerCollectionMessageHandler ocmh;
 
@@ -40,7 +37,7 @@ public class OcmhCollectionCommandContext implements CollectionCommandContext {
   }
 
   @Override
-  public  boolean isDistributedCollectionAPI() {
+  public boolean isDistributedCollectionAPI() {
     return false;
   }
 

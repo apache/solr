@@ -18,30 +18,28 @@ package org.apache.solr.client.solrj.io.comp;
 
 import java.util.Locale;
 
-/**
- * Enum for supported comparator ordering
- */
+/** Enum for supported comparator ordering */
 public enum ComparatorOrder {
-  ASCENDING, DESCENDING;
-  
-  public static ComparatorOrder fromString(String order){
-    switch(order.toLowerCase(Locale.ROOT)){
+  ASCENDING,
+  DESCENDING;
+
+  public static ComparatorOrder fromString(String order) {
+    switch (order.toLowerCase(Locale.ROOT)) {
       case "asc":
         return ComparatorOrder.ASCENDING;
       case "desc":
         return ComparatorOrder.DESCENDING;
       default:
-        throw new IllegalArgumentException(String.format(Locale.ROOT,"Unknown order '%s'", order));
+        throw new IllegalArgumentException(String.format(Locale.ROOT, "Unknown order '%s'", order));
     }
   }
-  
-  public String toString(){
-    switch(this){
+
+  public String toString() {
+    switch (this) {
       case DESCENDING:
         return "desc";
       default:
         return "asc";
-        
     }
   }
 }

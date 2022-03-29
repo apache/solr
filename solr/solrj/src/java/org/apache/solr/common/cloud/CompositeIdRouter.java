@@ -16,21 +16,22 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
 /**
- * CompositeIdRouter partitions ids based on a {@link #SEPARATOR}, hashes each partition and merges the hashes together
- * to map the id to a slice. This allows bucketing of like groups of ids.
+ * CompositeIdRouter partitions ids based on a {@link #SEPARATOR}, hashes each partition and merges
+ * the hashes together to map the id to a slice. This allows bucketing of like groups of ids.
  *
- * Allows basic separation split between 32 bits as example given below, or using {@link #bitsSeparator} can specify exact bits
+ * <p>Allows basic separation split between 32 bits as example given below, or using {@link
+ * #bitsSeparator} can specify exact bits
+ *
  * <pre>
  * Example inputs:
  * user!uniqueid
@@ -38,8 +39,9 @@ import java.util.List;
  * user/4!uniqueid
  * app/2!user/4!uniqueid
  * </pre>
- * Lets say you had a set of records you want to index together such as a contact in a database, using a prefix of contact!contactid
- * would allow all contact ids to be bucketed together.
+ *
+ * Lets say you had a set of records you want to index together such as a contact in a database,
+ * using a prefix of contact!contactid would allow all contact ids to be bucketed together.
  *
  * <pre>
  * An Example:
@@ -86,12 +88,15 @@ public class CompositeIdRouter extends HashBasedRouter {
   private int bits = 16;
 
   @Override
-  public int sliceHash(String id, SolrInputDocument doc, SolrParams params, DocCollection collection) {
+  public int sliceHash(
+      String id, SolrInputDocument doc, SolrParams params, DocCollection collection) {
     String shardFieldName = getRouteField(collection);
     if (shardFieldName != null && doc != null) {
       Object o = doc.getFieldValue(shardFieldName);
       if (o == null)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No value for :" + shardFieldName + ". Unable to identify shard");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "No value for :" + shardFieldName + ". Unable to identify shard");
       id = o.toString();
     }
     if (id.indexOf(SEPARATOR) < 0) {
@@ -102,8 +107,14 @@ public class CompositeIdRouter extends HashBasedRouter {
   }
 
   @Override
-  public Slice getTargetSlice(String id, SolrInputDocument sdoc, String route, SolrParams params, DocCollection collection) {
-    // if this is a delete-by-id (sdoc==null), then return null if the route is missing and there is a route field defined.
+  public Slice getTargetSlice(
+      String id,
+      SolrInputDocument sdoc,
+      String route,
+      SolrParams params,
+      DocCollection collection) {
+    // if this is a delete-by-id (sdoc==null), then return null if the route is missing and there is
+    // a route field defined.
     // otherwise, we will return the slice using the hash on the id
     if (sdoc == null && route == null) {
       String shardFieldName = getRouteField(collection);
@@ -113,7 +124,6 @@ public class CompositeIdRouter extends HashBasedRouter {
     }
     return super.getTargetSlice(id, sdoc, route, params, collection);
   }
-
 
   /**
    * Get Range for a given CompositeId based route key
@@ -147,7 +157,8 @@ public class CompositeIdRouter extends HashBasedRouter {
   }
 
   @Override
-  public Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection) {
+  public Collection<Slice> getSearchSlicesSingle(
+      String shardKey, SolrParams params, DocCollection collection) {
     if (shardKey == null) {
       // search across whole collection
       // TODO: this may need modification in the future when shard splitting could cause an overlap
@@ -157,7 +168,8 @@ public class CompositeIdRouter extends HashBasedRouter {
 
     if (shardKey.indexOf(SEPARATOR) < 0) {
       // shardKey is a simple id, so don't do a range
-      return Collections.singletonList(hashToSlice(Hash.murmurhash3_x86_32(id, 0, id.length(), 0), collection));
+      return Collections.singletonList(
+          hashToSlice(Hash.murmurhash3_x86_32(id, 0, id.length(), 0), collection));
     }
 
     Range completeRange = new KeyParser(id).getRange();
@@ -231,7 +243,7 @@ public class CompositeIdRouter extends HashBasedRouter {
 
       if (round && ((end & mask) != mask)) {
         // round up or down?
-        int increment = 1 << bits;  // 0x00010000
+        int increment = 1 << bits; // 0x00010000
         long roundDown = (end | mask) - increment;
         long roundUp = (end | mask) + increment;
         if (end - roundDown < roundUp - end && roundDown > start) {
@@ -253,9 +265,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     return ranges;
   }
 
-  /**
-   * Helper class to calculate parts, masks etc for an id.
-   */
+  /** Helper class to calculate parts, masks etc for an id. */
   static class KeyParser {
     String key;
     int[] numBits;
@@ -279,7 +289,7 @@ public class CompositeIdRouter extends HashBasedRouter {
           if (-1 == secondSeparatorPos) {
             partsList.add(key.substring(firstSeparatorPos + 1));
           } else if (secondSeparatorPos == lastPos) {
-            // Don't make any more parts if the key has exactly two separators and 
+            // Don't make any more parts if the key has exactly two separators and
             // they're the last two chars - back-compatibility with the behavior of
             // String.split() - see SOLR-6257.
             if (firstSeparatorPos < secondSeparatorPos - 1) {
@@ -295,8 +305,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       pieces = partsList.size();
       String[] parts = partsList.toArray(new String[pieces]);
       numBits = new int[2];
-      if (key.endsWith("!") && pieces < 3)
-        pieces++;
+      if (key.endsWith("!") && pieces < 3) pieces++;
       hashes = new int[pieces];
 
       if (pieces == 3) {
@@ -317,11 +326,9 @@ public class CompositeIdRouter extends HashBasedRouter {
             parts[i] = parts[i].substring(0, commaIdx);
           }
         }
-        //Last component of an ID that ends with a '!'
-        if(i >= parts.length)
-          hashes[i] = Hash.murmurhash3_x86_32("", 0, "".length(), 0);
-        else
-          hashes[i] = Hash.murmurhash3_x86_32(parts[i], 0, parts[i].length(), 0);
+        // Last component of an ID that ends with a '!'
+        if (i >= parts.length) hashes[i] = Hash.murmurhash3_x86_32("", 0, "".length(), 0);
+        else hashes[i] = Hash.murmurhash3_x86_32(parts[i], 0, parts[i].length(), 0);
       }
       masks = getMasks();
     }
@@ -350,15 +357,11 @@ public class CompositeIdRouter extends HashBasedRouter {
       return r;
     }
 
-    /**
-     * Get bit masks for routing based on routing level
-     */
+    /** Get bit masks for routing based on routing level */
     private int[] getMasks() {
       int[] masks;
-      if (triLevel)
-        masks = getBitMasks(numBits[0], numBits[1]);
-      else
-        masks = getBitMasks(numBits[0]);
+      if (triLevel) masks = getBitMasks(numBits[0], numBits[1]);
+      else masks = getBitMasks(numBits[0]);
 
       return masks;
     }
@@ -395,10 +398,8 @@ public class CompositeIdRouter extends HashBasedRouter {
     int getHash() {
       int result = hashes[0] & masks[0];
 
-      for (int i = 1; i < pieces; i++)
-        result = result | (hashes[i] & masks[i]);
+      for (int i = 1; i < pieces; i++) result = result | (hashes[i] & masks[i]);
       return result;
     }
-
   }
 }

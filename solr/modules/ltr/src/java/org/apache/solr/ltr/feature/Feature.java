@@ -19,7 +19,6 @@ package org.apache.solr.ltr.feature;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
@@ -37,45 +36,52 @@ import org.apache.solr.request.macro.MacroExpander;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- * A recipe for computing a feature.  Subclass this for specialized feature calculations.
- * <p>
- * A feature consists of
+ * A recipe for computing a feature. Subclass this for specialized feature calculations.
+ *
+ * <p>A feature consists of
+ *
  * <ul>
- * <li> a name as the identifier
- * <li> parameters to represent the specific feature
+ *   <li>a name as the identifier
+ *   <li>parameters to represent the specific feature
  * </ul>
- * <p>
- * Example configuration (snippet):
- * <pre>{
-   "class" : "...",
-   "name" : "myFeature",
-   "params" : {
-       ...
-   }
-}</pre>
- * <p>
- * {@link Feature} is an abstract class and concrete classes should implement
- * the {@link #validate()} function, and must implement the {@link #paramsToMap()}
- * and createWeight() methods.
+ *
+ * <p>Example configuration (snippet):
+ *
+ * <pre>
+ * {
+ *   "class" : "...",
+ *   "name" : "myFeature",
+ *   "params" : {
+ *     ...
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>{@link Feature} is an abstract class and concrete classes should implement the {@link
+ * #validate()} function, and must implement the {@link #paramsToMap()} and createWeight() methods.
  */
 public abstract class Feature extends Query implements Accountable {
   private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(Feature.class);
 
-  final protected String name;
+  protected final String name;
   private int index = -1;
   private float defaultValue = 0.0f;
   private Object defaultValueObject = null;
 
-  final private Map<String,Object> params;
+  private final Map<String, Object> params;
 
-  public static Feature getInstance(SolrResourceLoader solrResourceLoader,
-      String className, String name, Map<String,Object> params) {
-    final Feature f = solrResourceLoader.newInstance(
-        className,
-        Feature.class,
-        new String[0], // no sub packages
-        new Class<?>[] { String.class, Map.class },
-        new Object[] { name, params });
+  public static Feature getInstance(
+      SolrResourceLoader solrResourceLoader,
+      String className,
+      String name,
+      Map<String, Object> params) {
+    final Feature f =
+        solrResourceLoader.newInstance(
+            className,
+            Feature.class,
+            new String[0], // no sub packages
+            new Class<?>[] {String.class, Map.class},
+            new Object[] {name, params});
     if (params != null) {
       SolrPluginUtils.invokeSetters(f, params.entrySet());
     }
@@ -83,17 +89,16 @@ public abstract class Feature extends Query implements Accountable {
     return f;
   }
 
-  public Feature(String name, Map<String,Object> params) {
+  public Feature(String name, Map<String, Object> params) {
     this.name = name;
     this.params = params;
   }
 
   /**
-   * As part of creation of a feature instance, this function confirms
-   * that the feature parameters are valid.
+   * As part of creation of a feature instance, this function confirms that the feature parameters
+   * are valid.
    *
-   * @throws FeatureException
-   *             Feature Exception
+   * @throws FeatureException Feature Exception
    */
   protected abstract void validate() throws FeatureException;
 
@@ -102,7 +107,7 @@ public abstract class Feature extends Query implements Accountable {
     final StringBuilder sb = new StringBuilder(64); // default initialCapacity of 16 won't be enough
     sb.append(getClass().getSimpleName());
     sb.append(" [name=").append(name);
-    final LinkedHashMap<String,Object> params = paramsToMap();
+    final LinkedHashMap<String, Object> params = paramsToMap();
     if (params != null) {
       sb.append(", params=").append(params);
     }
@@ -110,17 +115,22 @@ public abstract class Feature extends Query implements Accountable {
     return sb.toString();
   }
 
-  public abstract FeatureWeight createWeight(IndexSearcher searcher,
-      boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException;
+  public abstract FeatureWeight createWeight(
+      IndexSearcher searcher,
+      boolean needsScores,
+      SolrQueryRequest request,
+      Query originalQuery,
+      Map<String, String[]> efi)
+      throws IOException;
 
   public float getDefaultValue() {
     return defaultValue;
   }
 
-  public void setDefaultValue(Object obj){
+  public void setDefaultValue(Object obj) {
     this.defaultValueObject = obj;
     if (obj instanceof String) {
-      defaultValue = Float.parseFloat((String)obj);
+      defaultValue = Float.parseFloat((String) obj);
     } else if (obj instanceof Double) {
       defaultValue = ((Double) obj).floatValue();
     } else if (obj instanceof Float) {
@@ -134,7 +144,6 @@ public abstract class Feature extends Query implements Accountable {
     }
   }
 
-
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -147,14 +156,14 @@ public abstract class Feature extends Query implements Accountable {
 
   @Override
   public boolean equals(Object o) {
-    return sameClassAs(o) &&  equalsTo(getClass().cast(o));
+    return sameClassAs(o) && equalsTo(getClass().cast(o));
   }
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(name) +
-        RamUsageEstimator.sizeOfObject(params);
+    return BASE_RAM_BYTES
+        + RamUsageEstimator.sizeOfObject(name)
+        + RamUsageEstimator.sizeOfObject(params);
   }
 
   @Override
@@ -198,55 +207,52 @@ public abstract class Feature extends Query implements Accountable {
   }
 
   /**
-   * @param index
-   *          Unique ID for this feature. Similar to feature name, except it can
-   *          be used to directly access the feature in the global list of
-   *          features.
+   * @param index Unique ID for this feature. Similar to feature name, except it can be used to
+   *     directly access the feature in the global list of features.
    */
   public void setIndex(int index) {
     this.index = index;
   }
 
-  public abstract LinkedHashMap<String,Object> paramsToMap();
+  public abstract LinkedHashMap<String, Object> paramsToMap();
 
-  protected LinkedHashMap<String,Object> defaultParamsToMap() {
-    final LinkedHashMap<String,Object> params = new LinkedHashMap<>();
+  protected LinkedHashMap<String, Object> defaultParamsToMap() {
+    final LinkedHashMap<String, Object> params = new LinkedHashMap<>();
     if (defaultValueObject != null) {
       params.put("defaultValue", defaultValueObject);
     }
     return params;
   }
 
-  /**
-   * Weight for a feature
-   **/
+  /** Weight for a feature */
   public abstract class FeatureWeight extends Weight {
 
-    final protected IndexSearcher searcher;
-    final protected SolrQueryRequest request;
-    final protected Map<String,String[]> efi;
-    final protected MacroExpander macroExpander;
-    final protected Query originalQuery;
+    protected final IndexSearcher searcher;
+    protected final SolrQueryRequest request;
+    protected final Map<String, String[]> efi;
+    protected final MacroExpander macroExpander;
+    protected final Query originalQuery;
 
     /**
-     * Initialize a feature without the normalizer from the feature file. This is
-     * called on initial construction since multiple models share the same
-     * features, but have different normalizers. A concrete model's feature is
-     * copied through featForNewModel().
+     * Initialize a feature without the normalizer from the feature file. This is called on initial
+     * construction since multiple models share the same features, but have different normalizers. A
+     * concrete model's feature is copied through featForNewModel().
      *
-     * @param q
-     *          Solr query associated with this FeatureWeight
-     * @param searcher
-     *          Solr searcher available for features if they need them
+     * @param q Solr query associated with this FeatureWeight
+     * @param searcher Solr searcher available for features if they need them
      */
-    public FeatureWeight(Query q, IndexSearcher searcher,
-        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
+    public FeatureWeight(
+        Query q,
+        IndexSearcher searcher,
+        SolrQueryRequest request,
+        Query originalQuery,
+        Map<String, String[]> efi) {
       super(q);
       this.searcher = searcher;
       this.request = request;
       this.originalQuery = originalQuery;
       this.efi = efi;
-      macroExpander = new MacroExpander(efi,true);
+      macroExpander = new MacroExpander(efi, true);
     }
 
     public String getName() {
@@ -262,8 +268,7 @@ public abstract class Feature extends Query implements Accountable {
     }
 
     @Override
-    public abstract FeatureScorer scorer(LeafReaderContext context)
-        throws IOException;
+    public abstract FeatureScorer scorer(LeafReaderContext context) throws IOException;
 
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
@@ -271,8 +276,7 @@ public abstract class Feature extends Query implements Accountable {
     }
 
     @Override
-    public Explanation explain(LeafReaderContext context, int doc)
-        throws IOException {
+    public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       final FeatureScorer r = scorer(context);
       float score = getDefaultValue();
       if (r != null) {
@@ -281,34 +285,30 @@ public abstract class Feature extends Query implements Accountable {
           score = r.score();
         }
         return Explanation.match(score, toString());
-      }else{
+      } else {
         return Explanation.match(score, "The feature has no value");
       }
     }
 
     /**
-     * Used in the FeatureWeight's explain. Each feature should implement this
-     * returning properties of the specific scorer useful for an explain. For
-     * example "MyCustomClassFeature [name=" + name + "myVariable:" + myVariable +
-     * "]";  If not provided, a default implementation will return basic feature
-     * properties, which might not include query time specific values.
+     * Used in the FeatureWeight's explain. Each feature should implement this returning properties
+     * of the specific scorer useful for an explain. For example "MyCustomClassFeature [name=" +
+     * name + "myVariable:" + myVariable + "]"; If not provided, a default implementation will
+     * return basic feature properties, which might not include query time specific values.
      */
     @Override
     public String toString() {
       return Feature.this.toString();
     }
 
-    /**
-     * A 'recipe' for computing a feature
-     */
+    /** A 'recipe' for computing a feature */
     public abstract class FeatureScorer extends Scorer {
 
-      final protected String name;
+      protected final String name;
       private DocInfo docInfo;
-      final protected DocIdSetIterator itr;
+      protected final DocIdSetIterator itr;
 
-      public FeatureScorer(Feature.FeatureWeight weight,
-          DocIdSetIterator itr) {
+      public FeatureScorer(Feature.FeatureWeight weight, DocIdSetIterator itr) {
         super(weight);
         this.itr = itr;
         name = weight.getName();
@@ -318,9 +318,7 @@ public abstract class Feature extends Query implements Accountable {
       @Override
       public abstract float score() throws IOException;
 
-      /**
-       * Used to provide context from initial score steps to later reranking steps.
-       */
+      /** Used to provide context from initial score steps to later reranking steps. */
       public void setDocInfo(DocInfo docInfo) {
         this.docInfo = docInfo;
       }
@@ -341,12 +339,12 @@ public abstract class Feature extends Query implements Accountable {
     }
 
     /**
-     * A <code>FeatureScorer</code> that contains a <code>Scorer</code>,
-     * which it delegates to where appropriate.
+     * A <code>FeatureScorer</code> that contains a <code>Scorer</code>, which it delegates to where
+     * appropriate.
      */
     public abstract class FilterFeatureScorer extends FeatureScorer {
 
-      final protected Scorer in;
+      protected final Scorer in;
 
       public FilterFeatureScorer(Feature.FeatureWeight weight, Scorer scorer) {
         super(weight, null);
@@ -376,20 +374,17 @@ public abstract class Feature extends Query implements Accountable {
       public float getMaxScore(int upTo) throws IOException {
         return in.getMaxScore(upTo);
       }
-
     }
 
     /**
-     * Default FeatureScorer class that returns the score passed in. Can be used
-     * as a simple ValueFeature, or to return a default scorer in case an
-     * underlying feature's scorer is null.
+     * Default FeatureScorer class that returns the score passed in. Can be used as a simple
+     * ValueFeature, or to return a default scorer in case an underlying feature's scorer is null.
      */
     public class ValueFeatureScorer extends FeatureScorer {
       float constScore;
 
-      public ValueFeatureScorer(FeatureWeight weight, float constScore,
-          DocIdSetIterator itr) {
-        super(weight,itr);
+      public ValueFeatureScorer(FeatureWeight weight, float constScore, DocIdSetIterator itr) {
+        super(weight, itr);
         this.constScore = constScore;
       }
 
@@ -403,7 +398,5 @@ public abstract class Feature extends Query implements Accountable {
         return constScore;
       }
     }
-
   }
-
 }

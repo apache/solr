@@ -18,7 +18,6 @@ package org.apache.solr.ltr.interleaving;
 
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
 import org.apache.solr.ltr.model.LTRScoringModel;
@@ -36,9 +35,11 @@ public class LTRInterleavingScoringQuery extends LTRScoringQuery {
     super(ltrScoringModel, extractAllFeatures);
   }
 
-  public LTRInterleavingScoringQuery(LTRScoringModel ltrScoringModel,
+  public LTRInterleavingScoringQuery(
+      LTRScoringModel ltrScoringModel,
       Map<String, String[]> externalFeatureInfo,
-      boolean extractAllFeatures, LTRThreadModule ltrThreadMgr) {
+      boolean extractAllFeatures,
+      LTRThreadModule ltrThreadMgr) {
     super(ltrScoringModel, externalFeatureInfo, extractAllFeatures, ltrThreadMgr);
   }
 
@@ -49,5 +50,4 @@ public class LTRInterleavingScoringQuery extends LTRScoringQuery {
   public void setPickedInterleavingDocIds(Set<Integer> pickedInterleavingDocIds) {
     this.pickedInterleavingDocIds = pickedInterleavingDocIds;
   }
-
 }

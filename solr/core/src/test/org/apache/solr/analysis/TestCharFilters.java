@@ -20,14 +20,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
 /**
- * Tests that charfilters are being applied properly
- * (e.g. once and only once) with mockcharfilter.
+ * Tests that charfilters are being applied properly (e.g. once and only once) with mockcharfilter.
  */
 public class TestCharFilters extends SolrTestCaseJ4 {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-charfilters.xml");
+    initCore("solrconfig-basic.xml", "schema-charfilters.xml");
     // add some docs
     assertU(adoc("id", "1", "content", "aab"));
     assertU(adoc("id", "2", "content", "aabaa"));
@@ -35,42 +34,42 @@ public class TestCharFilters extends SolrTestCaseJ4 {
     assertU(adoc("id", "4", "content2", "aba"));
     assertU(commit());
   }
-  
+
   /**
-   * Test query analysis: at querytime MockCharFilter will
-   * double the 'a', so ab -&gt; aab, and aba -&gt; aabaa
-   * 
-   * We run the test twice to make sure reuse is working
+   * Test query analysis: at querytime MockCharFilter will double the 'a', so ab -&gt; aab, and aba
+   * -&gt; aabaa
+   *
+   * <p>We run the test twice to make sure reuse is working
    */
   public void testQueryAnalysis() {
-    assertQ("Query analysis: ",
-       req("fl", "id", "q", "content:ab", "sort", "id asc"),
-                "//*[@numFound='1']",
-                "//result/doc[1]/str[@name='id'][.=1]"
-    );
-    assertQ("Query analysis: ",
+    assertQ(
+        "Query analysis: ",
+        req("fl", "id", "q", "content:ab", "sort", "id asc"),
+        "//*[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.=1]");
+    assertQ(
+        "Query analysis: ",
         req("fl", "id", "q", "content:aba", "sort", "id asc"),
-                 "//*[@numFound='1']",
-                 "//result/doc[1]/str[@name='id'][.=2]"
-    );
+        "//*[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.=2]");
   }
-  
+
   /**
-   * Test index analysis: at indextime MockCharFilter will
-   * double the 'a', so ab -&gt; aab, and aba -&gt; aabaa
-   * 
-   * We run the test twice to make sure reuse is working
+   * Test index analysis: at indextime MockCharFilter will double the 'a', so ab -&gt; aab, and aba
+   * -&gt; aabaa
+   *
+   * <p>We run the test twice to make sure reuse is working
    */
   public void testIndexAnalysis() {
-    assertQ("Index analysis: ",
-       req("fl", "id", "q", "content2:aab", "sort", "id asc"),
-                "//*[@numFound='1']",
-                "//result/doc[1]/str[@name='id'][.=3]"
-    );
-    assertQ("Index analysis: ",
+    assertQ(
+        "Index analysis: ",
+        req("fl", "id", "q", "content2:aab", "sort", "id asc"),
+        "//*[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.=3]");
+    assertQ(
+        "Index analysis: ",
         req("fl", "id", "q", "content2:aabaa", "sort", "id asc"),
-                 "//*[@numFound='1']",
-                 "//result/doc[1]/str[@name='id'][.=4]"
-    );
+        "//*[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.=4]");
   }
 }

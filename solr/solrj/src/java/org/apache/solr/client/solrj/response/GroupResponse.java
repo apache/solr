@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * Overall grouping result. Contains a list of {@link GroupCommand} instances that is the result of
  * one the following parameters:
+ *
  * <ul>
  *   <li>group.field
  *   <li>group.func

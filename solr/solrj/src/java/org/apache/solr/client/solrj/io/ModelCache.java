@@ -16,64 +16,53 @@
  */
 package org.apache.solr.client.solrj.io;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+
 import java.io.IOException;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
-import static org.apache.solr.common.params.CommonParams.SORT;
-import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
-
-
-/**
- *  The Model cache keeps a local in-memory copy of models
- */
-
+/** The Model cache keeps a local in-memory copy of models */
 public class ModelCache {
 
   private LRU models;
   private String defaultZkHost;
   private SolrClientCache solrClientCache;
 
-  public ModelCache(int size,
-                    String defaultZkHost,
-                    SolrClientCache solrClientCache) {
+  public ModelCache(int size, String defaultZkHost, SolrClientCache solrClientCache) {
     this.models = new LRU(size);
     this.defaultZkHost = defaultZkHost;
     this.solrClientCache = solrClientCache;
   }
 
-  public Tuple getModel(String collection,
-                        String modelID,
-                        long checkMillis) throws IOException {
+  public Tuple getModel(String collection, String modelID, long checkMillis) throws IOException {
     return getModel(defaultZkHost, collection, modelID, checkMillis);
   }
 
-  public Tuple getModel(String zkHost,
-                        String collection,
-                        String modelID,
-                        long checkMillis) throws IOException {
+  public Tuple getModel(String zkHost, String collection, String modelID, long checkMillis)
+      throws IOException {
     Model model = null;
     long currentTime = new Date().getTime();
     synchronized (this) {
       model = models.get(modelID);
-      if(model != null && ((currentTime - model.getLastChecked()) <= checkMillis)) {
+      if (model != null && ((currentTime - model.getLastChecked()) <= checkMillis)) {
         return model.getTuple();
       }
 
-      if(model != null){
-        //model is expired
+      if (model != null) {
+        // model is expired
         models.remove(modelID);
       }
     }
 
-    //Model is not in cache or has expired so fetch the model
+    // Model is not in cache or has expired so fetch the model
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("q","name_s:"+modelID);
+    params.set("q", "name_s:" + modelID);
     params.set("fl", "terms_ss, idfs_ds, weights_ds, iteration_i, _version_");
     params.set(SORT, "iteration_i desc");
     StreamContext streamContext = new StreamContext();
@@ -92,7 +81,7 @@ public class ModelCache {
     }
 
     synchronized (this) {
-      //check again to see if another thread has updated the same model
+      // check again to see if another thread has updated the same model
       Model m = models.get(modelID);
       if (m != null) {
         Tuple t = m.getTuple();
@@ -137,7 +126,7 @@ public class ModelCache {
     }
 
     public boolean removeEldestEntry(Map.Entry<String, Model> eldest) {
-      if(size()> maxSize) {
+      if (size() > maxSize) {
         return true;
       } else {
         return false;

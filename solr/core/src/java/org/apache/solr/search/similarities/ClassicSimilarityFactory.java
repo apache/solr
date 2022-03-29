@@ -24,28 +24,30 @@ import org.apache.solr.schema.SimilarityFactory;
 
 /**
  * Factory for {@link ClassicSimilarity}
- * <p>
- * ClassicSimilarity is Lucene's original scoring implementation, based
- * upon the Vector Space Model.
- * <p>
- * Optional settings:
+ *
+ * <p>ClassicSimilarity is Lucene's original scoring implementation, based upon the Vector Space
+ * Model.
+ *
+ * <p>Optional settings:
+ *
  * <ul>
- *   <li>discountOverlaps (bool): Sets
- *       {@link ClassicSimilarity#setDiscountOverlaps(boolean)}</li>
+ *   <li>discountOverlaps (bool): Sets {@link ClassicSimilarity#setDiscountOverlaps(boolean)}
  * </ul>
+ *
  * @see TFIDFSimilarity
  * @lucene.experimental
  */
 public class ClassicSimilarityFactory extends SimilarityFactory {
 
-  /** Init param name for specifying the value to use in 
-   * {@link ClassicSimilarity#setDiscountOverlaps(boolean)} 
+  /**
+   * Init param name for specifying the value to use in {@link
+   * ClassicSimilarity#setDiscountOverlaps(boolean)}
    */
   public static final String DISCOUNT_OVERLAPS = "discountOverlaps";
 
-  /** 
-   * Controls the value of {@link ClassicSimilarity#setDiscountOverlaps(boolean)} 
-   * on newly constructed instances of {@link ClassicSimilarity}
+  /**
+   * Controls the value of {@link ClassicSimilarity#setDiscountOverlaps(boolean)} on newly
+   * constructed instances of {@link ClassicSimilarity}
    */
   protected boolean discountOverlaps = true;
 

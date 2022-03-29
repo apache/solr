@@ -17,7 +17,6 @@
 package org.apache.solr.analytics.function.reduction.data;
 
 import java.util.function.Consumer;
-
 import org.apache.solr.analytics.stream.reservation.DoubleCheckedReservation;
 import org.apache.solr.analytics.stream.reservation.FloatCheckedReservation;
 import org.apache.solr.analytics.stream.reservation.IntCheckedReservation;
@@ -33,15 +32,16 @@ import org.apache.solr.analytics.value.StringValueStream;
 
 /**
  * Collector of max values.
- * <p>
- * Supported types are:
+ *
+ * <p>Supported types are:
+ *
  * <ul>
- * <li>Int
- * <li>Long
- * <li>Float
- * <li>Double
- * <li>Date (through longs)
- * <li>String
+ *   <li>Int
+ *   <li>Long
+ *   <li>Float
+ *   <li>Double
+ *   <li>Date (through longs)
+ *   <li>String
  * </ul>
  *
  * @param <T> The type of data being processed.
@@ -51,7 +51,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
   private final String exprStr;
 
   protected MaxCollector(AnalyticsValueStream param) {
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    this.exprStr = AnalyticsValueStream.createExpressionString(name, param);
   }
 
   private boolean exists;
@@ -79,6 +79,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
   public String getName() {
     return name;
   }
+
   @Override
   public String getExpressionStr() {
     return exprStr;
@@ -112,16 +113,19 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
 
     int tempMax;
     boolean tempExists;
+
     @Override
     public void collect() {
       tempExists = false;
-      param.streamInts( val -> {
-        if (!tempExists || val > tempMax) {
-          tempMax = val;
-          tempExists = true;
-        }
-      });
+      param.streamInts(
+          val -> {
+            if (!tempExists || val > tempMax) {
+              tempMax = val;
+              tempExists = true;
+            }
+          });
     }
+
     @Override
     protected void apply(MaxData data) {
       if (tempExists && (!data.exists || tempMax > data.val)) {
@@ -131,37 +135,35 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new IntCheckedReservation(
-          value -> {
-            if (!ioData.exists || value > ioData.val) {
-              ioData.val = value;
-              ioData.exists = true;
-            }
-          },
-          ()-> ioData.val,
-          ()-> ioData.exists
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new IntCheckedReservation(
+              value -> {
+                if (!ioData.exists || value > ioData.val) {
+                  ioData.val = value;
+                  ioData.exists = true;
+                }
+              },
+              () -> ioData.val,
+              () -> ioData.exists));
     }
 
     @Override
     public void setMergedData(ReductionData data) {
       super.setData(data);
-      max = ((MaxData)data).val;
+      max = ((MaxData) data).val;
     }
 
     @Override
     public void setData(ReductionData data) {
       super.setData(data);
-      max = ((MaxData)data).val;
+      max = ((MaxData) data).val;
     }
 
     public static class MaxData extends ReductionData {
       int val;
     }
   }
-
-
 
   public static class LongMaxCollector extends MaxCollector<LongMaxCollector.MaxData> {
     private LongValueStream param;
@@ -191,16 +193,19 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
 
     long tempMax;
     boolean tempExists;
+
     @Override
     public void collect() {
       tempExists = false;
-      param.streamLongs( val -> {
-        if (!tempExists || val > tempMax) {
-          tempMax = val;
-          tempExists = true;
-        }
-      });
+      param.streamLongs(
+          val -> {
+            if (!tempExists || val > tempMax) {
+              tempMax = val;
+              tempExists = true;
+            }
+          });
     }
+
     @Override
     protected void apply(MaxData data) {
       if (tempExists && (!data.exists || tempMax > data.val)) {
@@ -210,29 +215,29 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new LongCheckedReservation(
-          value -> {
-            if (!ioData.exists || value > ioData.val) {
-              ioData.val = value;
-              ioData.exists = true;
-            }
-          },
-          ()-> ioData.val,
-          ()-> ioData.exists
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new LongCheckedReservation(
+              value -> {
+                if (!ioData.exists || value > ioData.val) {
+                  ioData.val = value;
+                  ioData.exists = true;
+                }
+              },
+              () -> ioData.val,
+              () -> ioData.exists));
     }
 
     @Override
     public void setMergedData(ReductionData data) {
       super.setData(data);
-      max = ((MaxData)data).val;
+      max = ((MaxData) data).val;
     }
 
     @Override
     public void setData(ReductionData data) {
       super.setData(data);
-      max = ((MaxData)data).val;
+      max = ((MaxData) data).val;
     }
 
     public static class MaxData extends ReductionData {
@@ -268,16 +273,19 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
 
     float tempMax;
     boolean tempExists;
+
     @Override
     public void collect() {
       tempExists = false;
-      param.streamFloats( val -> {
-        if (!tempExists || val > tempMax) {
-          tempMax = val;
-          tempExists = true;
-        }
-      });
+      param.streamFloats(
+          val -> {
+            if (!tempExists || val > tempMax) {
+              tempMax = val;
+              tempExists = true;
+            }
+          });
     }
+
     @Override
     protected void apply(MaxData data) {
       if (tempExists && (!data.exists || tempMax > data.val)) {
@@ -287,29 +295,29 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new FloatCheckedReservation(
-          value -> {
-            if (!ioData.exists || value > ioData.val) {
-              ioData.val = value;
-              ioData.exists = true;
-            }
-          },
-          ()-> ioData.val,
-          ()-> ioData.exists
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new FloatCheckedReservation(
+              value -> {
+                if (!ioData.exists || value > ioData.val) {
+                  ioData.val = value;
+                  ioData.exists = true;
+                }
+              },
+              () -> ioData.val,
+              () -> ioData.exists));
     }
 
     @Override
     public void setMergedData(ReductionData data) {
       super.setData(data);
-      max = ((MaxData)data).val;
+      max = ((MaxData) data).val;
     }
 
     @Override
     public void setData(ReductionData data) {
       super.setData(data);
-      max = ((MaxData)data).val;
+      max = ((MaxData) data).val;
     }
 
     public static class MaxData extends ReductionData {
@@ -345,16 +353,19 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
 
     double tempMax;
     boolean tempExists;
+
     @Override
     public void collect() {
       tempExists = false;
-      param.streamDoubles( val -> {
-        if (!tempExists || val > tempMax) {
-          tempMax = val;
-          tempExists = true;
-        }
-      });
+      param.streamDoubles(
+          val -> {
+            if (!tempExists || val > tempMax) {
+              tempMax = val;
+              tempExists = true;
+            }
+          });
     }
+
     @Override
     protected void apply(MaxData data) {
       if (tempExists && (!data.exists || tempMax > data.val)) {
@@ -364,37 +375,35 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new DoubleCheckedReservation(
-          value -> {
-            if (!ioData.exists || value > ioData.val) {
-              ioData.val = value;
-              ioData.exists = true;
-            }
-          },
-          ()-> ioData.val,
-          ()-> ioData.exists
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new DoubleCheckedReservation(
+              value -> {
+                if (!ioData.exists || value > ioData.val) {
+                  ioData.val = value;
+                  ioData.exists = true;
+                }
+              },
+              () -> ioData.val,
+              () -> ioData.exists));
     }
 
     @Override
     public void setMergedData(ReductionData data) {
       super.setData(data);
-      max = ((MaxData)data).val;
+      max = ((MaxData) data).val;
     }
 
     @Override
     public void setData(ReductionData data) {
       super.setData(data);
-      max = ((MaxData)data).val;
+      max = ((MaxData) data).val;
     }
 
     public static class MaxData extends ReductionData {
       double val;
     }
   }
-
-
 
   public static class StringMaxCollector extends MaxCollector<StringMaxCollector.MaxData> {
     private StringValueStream param;
@@ -424,16 +433,19 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
 
     String tempMax;
     boolean tempExists;
+
     @Override
     public void collect() {
       tempExists = false;
-      param.streamStrings( val -> {
-        if (!tempExists || val.compareTo(tempMax) > 0) {
-          tempMax = val;
-          tempExists = true;
-        }
-      });
+      param.streamStrings(
+          val -> {
+            if (!tempExists || val.compareTo(tempMax) > 0) {
+              tempMax = val;
+              tempExists = true;
+            }
+          });
     }
+
     @Override
     protected void apply(MaxData data) {
       if (tempExists && (!data.exists || tempMax.compareTo(data.val) > 0)) {
@@ -443,29 +455,29 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
     }
 
     @Override
-    public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
-      consumer.accept(new StringCheckedReservation(
-          value -> {
-            if (!ioData.exists || value.compareTo(ioData.val) > 0) {
-              ioData.val = value;
-              ioData.exists = true;
-            }
-          },
-          ()-> ioData.val,
-          ()-> ioData.exists
-        ));
+    public void submitReservations(Consumer<ReductionDataReservation<?, ?>> consumer) {
+      consumer.accept(
+          new StringCheckedReservation(
+              value -> {
+                if (!ioData.exists || value.compareTo(ioData.val) > 0) {
+                  ioData.val = value;
+                  ioData.exists = true;
+                }
+              },
+              () -> ioData.val,
+              () -> ioData.exists));
     }
 
     @Override
     public void setMergedData(ReductionData data) {
       super.setData(data);
-      max = ((MaxData)data).val;
+      max = ((MaxData) data).val;
     }
 
     @Override
     public void setData(ReductionData data) {
       super.setData(data);
-      max = ((MaxData)data).val;
+      max = ((MaxData) data).val;
     }
 
     public static class MaxData extends ReductionData {

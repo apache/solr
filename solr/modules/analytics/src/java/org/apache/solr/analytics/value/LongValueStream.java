@@ -22,8 +22,8 @@ import java.util.function.LongConsumer;
 
 /**
  * A multi-valued analytics value that can be represented as a long.
- * <p>
- * The back-end production of the value can change inbetween calls to {@link #streamLongs},
+ *
+ * <p>The back-end production of the value can change inbetween calls to {@link #streamLongs},
  * resulting in different values on each call.
  */
 public interface LongValueStream extends AnalyticsValueStream {
@@ -35,27 +35,32 @@ public interface LongValueStream extends AnalyticsValueStream {
   void streamLongs(LongConsumer cons);
 
   /**
-   * An interface that represents all of the types a {@link LongValueStream} should be able to cast to.
+   * An interface that represents all of the types a {@link LongValueStream} should be able to cast
+   * to.
    */
-  public static interface CastingLongValueStream extends LongValueStream, DoubleValueStream,
-                                                         StringValueStream { }
+  public static interface CastingLongValueStream
+      extends LongValueStream, DoubleValueStream, StringValueStream {}
 
   /**
-   * An abstract base for {@link CastingLongValueStream} that automatically casts to all types if {@link #streamLongs} is implemented.
+   * An abstract base for {@link CastingLongValueStream} that automatically casts to all types if
+   * {@link #streamLongs} is implemented.
    */
-  public static abstract class AbstractLongValueStream implements CastingLongValueStream {
+  public abstract static class AbstractLongValueStream implements CastingLongValueStream {
     @Override
     public void streamDoubles(DoubleConsumer cons) {
       streamLongs((long val) -> cons.accept(val));
     }
+
     @Override
     public void streamStrings(Consumer<String> cons) {
       streamLongs((long val) -> cons.accept(Long.toString(val)));
     }
+
     @Override
     public void streamObjects(Consumer<Object> cons) {
       streamLongs((long val) -> cons.accept(val));
     }
+
     @Override
     public AnalyticsValueStream convertToConstant() {
       return this;

@@ -20,7 +20,6 @@ package org.apache.solr.prometheus.utils;
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -37,7 +36,8 @@ public class Helpers {
 
   public static void indexAllDocs(SolrClient client) throws IOException, SolrServerException {
     File exampleDocsDir = new File(SolrTestCaseJ4.getFile("exampledocs").getAbsolutePath());
-    File[] xmlFiles = Objects.requireNonNull(exampleDocsDir.listFiles((dir, name) -> name.endsWith(".xml")));
+    File[] xmlFiles =
+        Objects.requireNonNull(exampleDocsDir.listFiles((dir, name) -> name.endsWith(".xml")));
     for (File xml : xmlFiles) {
       ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
       req.addFile(xml, "application/xml");
@@ -52,8 +52,9 @@ public class Helpers {
   public static Pair<String, Double> parseMetricsLine(String line) {
     int spaceIdx = line.lastIndexOf(" ");
     if (spaceIdx == -1) {
-      throw new IllegalArgumentException("Failed parsing metrics line, must contain a space. Line was: " + line);
+      throw new IllegalArgumentException(
+          "Failed parsing metrics line, must contain a space. Line was: " + line);
     }
-    return new Pair<>(line.substring(0,spaceIdx), Double.parseDouble(line.substring(spaceIdx)));
+    return new Pair<>(line.substring(0, spaceIdx), Double.parseDouble(line.substring(spaceIdx)));
   }
 }

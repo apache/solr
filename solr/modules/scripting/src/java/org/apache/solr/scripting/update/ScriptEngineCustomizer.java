@@ -19,10 +19,10 @@ package org.apache.solr.scripting.update;
 import javax.script.ScriptEngine;
 
 /**
- * Enables customization of a script engine. Will mostly be used to register engine scoped variables.
+ * Enables customization of a script engine. Will mostly be used to register engine scoped
+ * variables.
  */
 public interface ScriptEngineCustomizer {
 
   void customize(ScriptEngine engine);
-
 }

@@ -775,7 +775,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (collection) (solr_metrics_core_query_1minRate{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"})",
+              "expr": "sum by (collection) (solr_metrics_core_query_1minRate{internal=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"})",
               "interval": "",
               "legendFormat": "{{collection}}",
               "refId": "A"
@@ -886,7 +886,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (base_url) (solr_metrics_core_query_1minRate{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"})",
+              "expr": "sum by (base_url) (solr_metrics_core_query_1minRate{internal=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"})",
               "interval": "",
               "intervalFactor": 2,
               "legendFormat": "{{base_url}}",
@@ -994,7 +994,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "solr_metrics_core_query_p95_ms{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
+              "expr": "solr_metrics_core_query_p95_ms{internal=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -1095,7 +1095,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "solr_metrics_core_query_5minRate{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
+              "expr": "solr_metrics_core_query_5minRate{internal=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -1196,7 +1196,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "solr_metrics_core_query_p99_ms{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
+              "expr": "solr_metrics_core_query_p99_ms{internal=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -1297,7 +1297,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "solr_metrics_core_query_1minRate{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
+              "expr": "solr_metrics_core_query_1minRate{internal=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
               "format": "time_series",
               "instant": false,
               "interval": "",
@@ -1399,7 +1399,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "solr_metrics_core_query_p75_ms{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
+              "expr": "solr_metrics_core_query_p75_ms{internal=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -1501,7 +1501,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "increase(solr_metrics_core_query_local_count{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}[1m])",
+              "expr": "increase(solr_metrics_core_query_requests_total{internal!=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}[1m])",
               "format": "time_series",
               "instant": false,
               "interval": "",
@@ -1603,7 +1603,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "solr_metrics_core_query_local_1minRate{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
+              "expr": "solr_metrics_core_query_1minRate{internal!=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
               "format": "time_series",
               "instant": false,
               "interval": "",
@@ -1705,7 +1705,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "solr_metrics_core_query_local_p95_ms{base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
+              "expr": "solr_metrics_core_query_p95_ms{internal!=\"false\",base_url=~\"$base_url\",collection=~\"$collection\",shard=~\"$shard\",replica=~\"$replica\",core=~\"$core\",searchHandler=~\"$searchHandler\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 3,

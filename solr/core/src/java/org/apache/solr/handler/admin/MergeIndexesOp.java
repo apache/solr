@@ -17,11 +17,10 @@
 
 package org.apache.solr.handler.admin;
 
+import com.google.common.collect.Lists;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
 import java.util.*;
-
-import com.google.common.collect.Lists;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -41,7 +40,6 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -65,20 +63,22 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
       if (dirNames == null || dirNames.length == 0) {
         String[] sources = params.getParams("srcCore");
         if (sources == null || sources.length == 0)
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
               "At least one indexDir or srcCore must be specified");
 
         for (int i = 0; i < sources.length; i++) {
           String source = sources[i];
           SolrCore srcCore = it.handler.coreContainer.getCore(source);
           if (srcCore == null)
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "Core: " + source + " does not exist");
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST, "Core: " + source + " does not exist");
           sourceCores.add(srcCore);
         }
       } else {
         // Validate each 'indexDir' input as valid
-        Arrays.stream(dirNames).forEach(indexDir -> core.getCoreContainer().assertPathAllowed(Paths.get(indexDir)));
+        Arrays.stream(dirNames)
+            .forEach(indexDir -> core.getCoreContainer().assertPathAllowed(Paths.get(indexDir)));
         DirectoryFactory dirFactory = core.getDirectoryFactory();
         for (int i = 0; i < dirNames.length; i++) {
           boolean markAsDone = false;
@@ -87,7 +87,11 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
               markAsDone = true;
             }
           }
-          Directory dir = dirFactory.get(dirNames[i], DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
+          Directory dir =
+              dirFactory.get(
+                  dirNames[i],
+                  DirectoryFactory.DirContext.DEFAULT,
+                  core.getSolrConfig().indexConfig.lockType);
           dirsToBeReleased.put(dir, markAsDone);
           // TODO: why doesn't this use the IR factory? what is going on here?
           readersToBeClosed.add(DirectoryReader.open(dir));
@@ -110,8 +114,7 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
       UpdateRequestProcessorChain processorChain =
           core.getUpdateProcessingChain(params.get(UpdateParams.UPDATE_CHAIN));
       wrappedReq = new LocalSolrQueryRequest(core, it.req.getParams());
-      UpdateRequestProcessor processor =
-          processorChain.createProcessor(wrappedReq, it.rsp);
+      UpdateRequestProcessor processor = processorChain.createProcessor(wrappedReq, it.rsp);
       processor.processMergeIndexes(new MergeIndexesCommand(readers, it.req));
     } catch (Exception e) {
       // log and rethrow so that if the finally fails we don't lose the original problem

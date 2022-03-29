@@ -23,48 +23,41 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * 
- *
  * @since solr 1.3
  */
 public class QueryRequest extends SolrRequest<QueryResponse> {
 
   private SolrParams query;
-  
-  public QueryRequest()
-  {
-    super( METHOD.GET, null );
+
+  public QueryRequest() {
+    super(METHOD.GET, null);
   }
 
-  public QueryRequest( SolrParams q )
-  {
-    super( METHOD.GET, null );
-    query = q;
-  }
-  
-  public QueryRequest( SolrParams q, METHOD method )
-  {
-    super( method, null );
+  public QueryRequest(SolrParams q) {
+    super(METHOD.GET, null);
     query = q;
   }
 
-  /**
-   * Use the params 'QT' parameter if it exists
-   */
+  public QueryRequest(SolrParams q, METHOD method) {
+    super(method, null);
+    query = q;
+  }
+
+  /** Use the params 'QT' parameter if it exists */
   @Override
   public String getPath() {
-    String qt = query == null ? null : query.get( CommonParams.QT );
-    if( qt == null ) {
+    String qt = query == null ? null : query.get(CommonParams.QT);
+    if (qt == null) {
       qt = super.getPath();
     }
-    if( qt != null && qt.startsWith( "/" ) ) {
+    if (qt != null && qt.startsWith("/")) {
       return qt;
     }
     return "/select";
   }
-  
-  //---------------------------------------------------------------------------------
-  //---------------------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------
 
   @Override
   protected QueryResponse createResponse(SolrClient client) {
@@ -81,4 +74,3 @@ public class QueryRequest extends SolrRequest<QueryResponse> {
     return SolrRequestType.QUERY.toString();
   }
 }
-

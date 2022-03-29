@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.analytics.ExpressionFactory;
 import org.junit.Test;
 
@@ -39,15 +38,18 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void singleValuedTrieFloatTest() throws IOException {
     FloatField valueField = new FloatField("float_f_t");
-    Map<String,Float> values = new HashMap<>();
+    Map<String, Float> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      float value = valueField.getFloat();
-      if (valueField.exists()) {
-        values.put(id, value);
-      }
-      return valueField.exists();
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              float value = valueField.getFloat();
+              if (valueField.exists()) {
+                values.put(id, value);
+              }
+              return valueField.exists();
+            });
 
     checkSingleFieldValues(singleFloats, values, missing);
   }
@@ -55,15 +57,18 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void singleValuedPointFloatTest() throws IOException {
     FloatField valueField = new FloatField("float_f_p");
-    Map<String,Float> values = new HashMap<>();
+    Map<String, Float> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      float value = valueField.getFloat();
-      if (valueField.exists()) {
-        values.put(id, value);
-      }
-      return valueField.exists();
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              float value = valueField.getFloat();
+              if (valueField.exists()) {
+                values.put(id, value);
+              }
+              return valueField.exists();
+            });
 
     checkSingleFieldValues(singleFloats, values, missing);
   }
@@ -71,18 +76,22 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void multiValuedTrieFloatTest() throws IOException {
     FloatMultiTrieField valueField = new FloatMultiTrieField("float_fm_t");
-    Map<String,Map<Float,Integer>> values = new HashMap<>();
+    Map<String, Map<Float, Integer>> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      Map<Float, Integer> doc = new HashMap<>();
-      valueField.streamFloats( value -> {
-        doc.put(value, doc.getOrDefault(value, 0) + 1);
-      });
-      if (doc.size() > 0) {
-        values.put(id, doc);
-      }
-      return doc.size() > 0;
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              Map<Float, Integer> doc = new HashMap<>();
+              valueField.streamFloats(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
+              if (doc.size() > 0) {
+                values.put(id, doc);
+              }
+              return doc.size() > 0;
+            });
 
     checkMultiFieldValues(multiFloats, values, missing, true);
   }
@@ -90,18 +99,22 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
   @Test
   public void multiValuedPointFloatTest() throws IOException {
     FloatMultiPointField valueField = new FloatMultiPointField("float_fm_p");
-    Map<String,Map<Float,Integer>> values = new HashMap<>();
+    Map<String, Map<Float, Integer>> values = new HashMap<>();
 
-    Set<String> missing = collectFieldValues(valueField, id -> {
-      Map<Float, Integer> doc = new HashMap<>();
-      valueField.streamFloats( value -> {
-        doc.put(value, doc.getOrDefault(value, 0) + 1);
-      });
-      if (doc.size() > 0) {
-        values.put(id, doc);
-      }
-      return doc.size() > 0;
-    });
+    Set<String> missing =
+        collectFieldValues(
+            valueField,
+            id -> {
+              Map<Float, Integer> doc = new HashMap<>();
+              valueField.streamFloats(
+                  value -> {
+                    doc.put(value, doc.getOrDefault(value, 0) + 1);
+                  });
+              if (doc.size() > 0) {
+                values.put(id, doc);
+              }
+              return doc.size() > 0;
+            });
 
     checkMultiFieldValues(multiFloats, values, missing, false);
   }

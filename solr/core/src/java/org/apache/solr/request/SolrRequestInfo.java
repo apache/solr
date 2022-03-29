@@ -16,7 +16,6 @@
  */
 package org.apache.solr.request;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
@@ -26,7 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
-
+import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -42,7 +41,8 @@ public class SolrRequestInfo {
 
   private static final int MAX_STACK_SIZE = 10;
 
-  private static final ThreadLocal<Deque<SolrRequestInfo>> threadLocal = ThreadLocal.withInitial(LinkedList::new);
+  private static final ThreadLocal<Deque<SolrRequestInfo>> threadLocal =
+      ThreadLocal.withInitial(LinkedList::new);
 
   private int refCount = 1; // prevent closing when still used
 
@@ -65,8 +65,8 @@ public class SolrRequestInfo {
   }
 
   /**
-   * Adds the SolrRequestInfo onto a stack held in a {@link ThreadLocal}.
-   * Remember to call {@link #clearRequestInfo()}!
+   * Adds the SolrRequestInfo onto a stack held in a {@link ThreadLocal}. Remember to call {@link
+   * #clearRequestInfo()}!
    */
   public static void setRequestInfo(SolrRequestInfo info) {
     Deque<SolrRequestInfo> stack = threadLocal.get();
@@ -81,7 +81,7 @@ public class SolrRequestInfo {
     stack.push(info);
   }
 
-  /** Removes the most recent SolrRequestInfo from the stack.  Close hooks are called. */
+  /** Removes the most recent SolrRequestInfo from the stack. Close hooks are called. */
   public static void clearRequestInfo() {
     log.trace("clearRequestInfo()");
     Deque<SolrRequestInfo> stack = threadLocal.get();
@@ -95,8 +95,8 @@ public class SolrRequestInfo {
   }
 
   /**
-   * This reset method is more of a protection mechanism as
-   * we expect it to be empty by now because all "set" calls need to be balanced with a "clear".
+   * This reset method is more of a protection mechanism as we expect it to be empty by now because
+   * all "set" calls need to be balanced with a "clear".
    */
   public static void reset() {
     log.trace("reset()");
@@ -130,9 +130,11 @@ public class SolrRequestInfo {
 
   public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp) {
     this.req = req;
-    this.rsp = rsp;    
+    this.rsp = rsp;
   }
-  public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
+
+  public SolrRequestInfo(
+      SolrQueryRequest req, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
     this(req, rsp);
     this.setAction(action);
   }
@@ -142,7 +144,8 @@ public class SolrRequestInfo {
     this.rsp = rsp;
   }
 
-  public SolrRequestInfo(HttpServletRequest httpReq, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
+  public SolrRequestInfo(
+      HttpServletRequest httpReq, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
     this(httpReq, rsp);
     this.action = action;
   }
@@ -153,8 +156,7 @@ public class SolrRequestInfo {
     return null;
   }
 
-
-  public Date getNOW() {    
+  public Date getNOW() {
     if (now != null) return now;
 
     long ms = 0;
@@ -172,7 +174,7 @@ public class SolrRequestInfo {
 
   /** The TimeZone specified by the request, or UTC if none was specified. */
   public TimeZone getClientTimeZone() {
-    if (tz == null)  {
+    if (tz == null) {
       tz = TimeZoneUtils.parseTimezone(req.getParams().get(CommonParams.TZ));
     }
     return tz;
@@ -217,8 +219,9 @@ public class SolrRequestInfo {
   }
 
   /**
-   * Used when making remote requests to other Solr nodes from the thread associated with this request,
-   * true means the server token header should be used instead of the Principal associated with the request.
+   * Used when making remote requests to other Solr nodes from the thread associated with this
+   * request, true means the server token header should be used instead of the Principal associated
+   * with the request.
    */
   public boolean useServerToken() {
     return useServerToken;

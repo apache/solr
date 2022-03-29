@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
@@ -45,7 +44,38 @@ dependencies {
 
   api project(':solr:solrj')
   api project(':solr:server')
+
   permitUnusedDeclared project(':solr:server')
+
+  // --- start of server/build.grade declared dependencies ---
+
+  // Note: server/build.gradle declares these dependencies yet
+  // we only want them to show up in server/lib when packaged
+  // and NOT in server/solr-webapp/webapp/WEB-INF/lib. So any
+  // "api" dependency in server/build.gradle that is needed in
+  // core/build.gradle needs to be defined as "compileOnlyApi"
+  // below.
+
+  compileOnlyApi 'io.dropwizard.metrics:metrics-core'
+  compileOnlyApi ('io.dropwizard.metrics:metrics-graphite', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
+  compileOnlyApi 'io.dropwizard.metrics:metrics-jmx'
+  compileOnlyApi 'io.dropwizard.metrics:metrics-jvm'
+
+  compileOnlyApi 'org.eclipse.jetty:jetty-alpn-server'
+  compileOnlyApi 'org.eclipse.jetty:jetty-http'
+  compileOnlyApi 'org.eclipse.jetty:jetty-io'
+  compileOnlyApi 'org.eclipse.jetty:jetty-rewrite'
+  compileOnlyApi 'org.eclipse.jetty:jetty-server'
+  compileOnlyApi 'org.eclipse.jetty:jetty-servlet'
+  compileOnlyApi 'org.eclipse.jetty:jetty-util'
+
+  compileOnlyApi 'org.eclipse.jetty.http2:http2-common'
+  compileOnlyApi 'org.eclipse.jetty.http2:http2-server'
+
+  compileOnlyApi 'javax.servlet:javax.servlet-api'
+  // --- end of server/build.gradle declared dependencies ---
 
   // Non-API below; although there are exceptions
 
@@ -89,21 +119,9 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
-  compileOnlyApi 'javax.servlet:javax.servlet-api'
-
   implementation 'org.eclipse.jetty:jetty-client'
 
-  compileOnlyApi 'org.eclipse.jetty.http2:http2-common'
-  compileOnlyApi 'org.eclipse.jetty.http2:http2-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-alpn-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-http'
-  compileOnlyApi 'org.eclipse.jetty:jetty-io'
-  compileOnlyApi 'org.eclipse.jetty:jetty-rewrite'
-  compileOnlyApi 'org.eclipse.jetty:jetty-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-servlet'
-  compileOnlyApi 'org.eclipse.jetty:jetty-util'
-
-  // ZooKeeper & Curator
+  // ZooKeeper
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
     exclude group: "log4j", module: "log4j"
@@ -112,11 +130,9 @@ dependencies {
   implementation ('org.apache.zookeeper:zookeeper-jute') {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
+  testImplementation 'org.apache.zookeeper:zookeeper::tests'
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly ('org.xerial.snappy:snappy-java')
-  implementation ('org.apache.curator:curator-client')
-  implementation ('org.apache.curator:curator-framework')
-  runtimeOnly ('org.apache.curator:curator-recipes')
 
   // For Package Manager
   implementation 'com.github.zafarkhaja:java-semver'
@@ -142,51 +158,9 @@ dependencies {
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 
-  implementation 'io.dropwizard.metrics:metrics-core'
-  implementation ('io.dropwizard.metrics:metrics-graphite', {
-    exclude group: "com.rabbitmq", module: "amqp-client"
-  })
-  implementation 'io.dropwizard.metrics:metrics-jmx'
-  implementation 'io.dropwizard.metrics:metrics-jvm'
-
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
-
-  // SQL Parser via Calcite
-  implementation ('org.apache.calcite:calcite-core', {
-    exclude group: 'org.apache.calcite.avatica', module: 'avatica-metrics'
-    exclude group: 'com.google.guava', module: 'guava' // TODO remove this to keep versions in sync
-    exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-yaml'
-    exclude group: 'com.google.uzaygezen', module: 'uzaygezen-core'
-    exclude group: 'com.yahoo.datasketches', module: 'sketches-core'
-    exclude group: 'org.apache.commons', module: 'commons-dbcp2'
-    exclude group: 'net.minidev', module: 'json-smart'
-    exclude group: 'net.hydromatic', module: 'aggdesigner-algorithm'
-  })
-  // sub-deps of calcite-core that we reference directly
-  implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
-  implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
-  permitUnusedDeclared 'org.apache.calcite.avatica:avatica-core'
-
-  // Hadoop auth framework
-  implementation 'org.apache.hadoop:hadoop-annotations'
-  permitUnusedDeclared 'org.apache.hadoop:hadoop-annotations'
-  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
-  // transitive of hadoop-common; used by Kerberos auth
-  runtimeOnly 'commons-collections:commons-collections'
-  runtimeOnly 'com.google.re2j:re2j'
-  runtimeOnly 'org.apache.commons:commons-configuration2'
-  runtimeOnly 'org.apache.htrace:htrace-core4' // note: removed in Hadoop 3.3.2
-  runtimeOnly 'org.apache.kerby:kerb-core'
-  runtimeOnly 'org.apache.kerby:kerb-util'
-
-  // Hadoop MiniKdc Dependencies (for Kerberos auth tests)
-  testImplementation ('org.apache.hadoop:hadoop-minikdc', {
-    exclude group:'org.apache.kerby', module:'kerby-xdr'
-    exclude group:'org.apache.kerby', module:'token-provider'
-  })
 
   testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 

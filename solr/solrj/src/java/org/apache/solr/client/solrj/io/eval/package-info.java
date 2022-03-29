@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Evaluators for the Streaming Aggregation API
- **/
+/** Evaluators for the Streaming Aggregation API */
 package org.apache.solr.client.solrj.io.eval;

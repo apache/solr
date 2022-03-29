@@ -249,7 +249,7 @@ SQL:: SQL query support.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/sql` |{solr-javadocs}/core/org/apache/solr/handler/SQLHandler.html[SQLHandler] |`_SQL`
+|`solr/<collection>/sql` |{solr-javadocs}/modules/sql/org/apache/solr/handler/sql/SQLHandler.html[SQLHandler] |`_SQL`
 |===
 
 Streaming Expressions:: Distributed stream processing.

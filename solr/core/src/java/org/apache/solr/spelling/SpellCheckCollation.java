@@ -37,8 +37,7 @@ public class SpellCheckCollation implements Comparable<SpellCheckCollation> {
     return misspellingsAndCorrections;
   }
 
-  public void setMisspellingsAndCorrections(
-      NamedList<String> misspellingsAndCorrections) {
+  public void setMisspellingsAndCorrections(NamedList<String> misspellingsAndCorrections) {
     this.misspellingsAndCorrections = misspellingsAndCorrections;
   }
 

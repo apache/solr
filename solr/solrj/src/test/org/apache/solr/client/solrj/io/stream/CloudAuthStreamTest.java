@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -26,7 +28,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -46,8 +47,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 /**
  * tests various streaming expressions (via the SolrJ {@link SolrStream} API) against a SolrCloud cluster
@@ -130,8 +129,13 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     }
     
     for (String collection : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
-      cluster.getSolrClient().waitForState(collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-                                           (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+      cluster
+          .getZkStateReader()
+          .waitForState(
+              collection,
+              DEFAULT_TIMEOUT,
+              TimeUnit.SECONDS,
+              (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
     }
 
     solrUrl = cluster.getRandomJetty(random()).getProxyBaseUrl().toString();
@@ -823,8 +827,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
    * Sigh.  DaemonStream requires polling the same core where the stream was exectured.
    */
   protected static String getRandomCoreUrl(final String collection) throws Exception {
-    final List<String> replicaUrls = 
-      cluster.getSolrClient().getZkStateReader().getClusterState()
+      final List<String> replicaUrls =
+      cluster.getSolrClient().getClusterState()
       .getCollectionOrNull(collection).getReplicas().stream()
       .map(Replica::getCoreUrl).collect(Collectors.toList());
     Collections.shuffle(replicaUrls, random());

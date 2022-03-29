@@ -20,7 +20,6 @@ package org.apache.solr.client.ref_guide_examples;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.List;
-
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.ExternalPaths;
@@ -32,14 +31,14 @@ import org.junit.Test;
 /**
  * Examples showing how to manipulate configsets in ZK.
  *
- * Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference Guide.
+ * <p>Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference
+ * Guide.
  */
 public class ZkConfigFilesTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setUpCluster() throws Exception {
-    configureCluster(1)
-        .configure();
+    configureCluster(1).configure();
   }
 
   private static ConfigSetService getConfigSetService() {
@@ -65,7 +64,8 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
 
   @Test
   public void testCanUploadConfigToZk() throws Exception {
-    final String localConfigSetDirectory = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).getAbsolutePath();
+    final String localConfigSetDirectory =
+        new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).getAbsolutePath();
 
     assertConfigsContainOnly();
 
@@ -83,7 +83,9 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
 
     assertEquals(expectedSize, actualConfigs.size());
     for (String expectedConfig : expectedConfigs) {
-      assertTrue("Expected ZK to contain " + expectedConfig + ", but it didn't.  Actual configs: ", actualConfigs.contains(expectedConfig));
+      assertTrue(
+          "Expected ZK to contain " + expectedConfig + ", but it didn't.  Actual configs: ",
+          actualConfigs.contains(expectedConfig));
     }
   }
 }

@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -42,7 +41,8 @@ public final class WrappedQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return q.createWeight(searcher, scoreMode, boost);
   }
 
@@ -65,7 +65,7 @@ public final class WrappedQuery extends ExtendedQueryBase {
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof WrappedQuery) {
-      return this.q.equals(((WrappedQuery)obj).q);
+      return this.q.equals(((WrappedQuery) obj).q);
     }
     return q.equals(obj);
   }
@@ -75,4 +75,3 @@ public final class WrappedQuery extends ExtendedQueryBase {
     return getOptions() + q.toString();
   }
 }
-

@@ -23,31 +23,31 @@ import java.util.Map;
 
 public abstract class SolrDocumentBase<T, K> implements Map<String, T>, Serializable, MapWriter {
 
-  /** Get all field names.
-  */
+  /** Get all field names. */
   public abstract Collection<String> getFieldNames();
 
-  /** Set a field with implied null value for boost.
+  /**
+   * Set a field with implied null value for boost.
+   *
    * @param name name of the field to set
    * @param value value of the field
    */
   public abstract void setField(String name, Object value);
 
-  /** 
-   * Add a field to the document.
-   * @param name Name of the field, should match one of the field names defined under "fields" tag in schema.xml.
-   * @param value Value of the field, should be of same class type as defined by "type" attribute of the corresponding field in schema.xml. 
-   */
-  public abstract void addField(String name, Object value); 
-
   /**
-   * Get the first value or collection of values for a given field.
+   * Add a field to the document.
+   *
+   * @param name Name of the field, should match one of the field names defined under "fields" tag
+   *     in schema.xml.
+   * @param value Value of the field, should be of same class type as defined by "type" attribute of
+   *     the corresponding field in schema.xml.
    */
+  public abstract void addField(String name, Object value);
+
+  /** Get the first value or collection of values for a given field. */
   public abstract Object getFieldValue(String name);
 
-  /**
-   * Get a collection of values for a given field name
-   */
+  /** Get a collection of values for a given field name */
   public abstract Collection<Object> getFieldValues(String name);
 
   public abstract void addChildDocument(K child);
@@ -55,19 +55,16 @@ public abstract class SolrDocumentBase<T, K> implements Map<String, T>, Serializ
   public abstract void addChildDocuments(Collection<K> children);
 
   /**
-   * Returns the list of <em>anonymous</em> child documents, or null if none.
-   * There may be other "labelled" child documents found in field values, in which the field name is the label.
-   * This may be deprecated in 8.0.
+   * Returns the list of <em>anonymous</em> child documents, or null if none. There may be other
+   * "labelled" child documents found in field values, in which the field name is the label. This
+   * may be deprecated in 8.0.
    */
   public abstract List<K> getChildDocuments();
 
   /** Has <em>anonymous</em> children? */
   public abstract boolean hasChildDocuments();
 
-  /**
-   * The <em>anonymous</em> child document count.
-   */
+  /** The <em>anonymous</em> child document count. */
   @Deprecated
   public abstract int getChildDocumentCount();
-
 }

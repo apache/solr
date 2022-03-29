@@ -22,13 +22,13 @@ import java.util.Locale;
 public interface OneValueWorker extends ValueWorker {
 
   Object doWork(Object value) throws IOException;
-  
-  default Object doWork(Object ... values) throws IOException{
-    if(1 != values.length){
-      throw new IOException(String.format(Locale.ROOT, "Expecting 1 value but found %d", values.length));
+
+  default Object doWork(Object... values) throws IOException {
+    if (1 != values.length) {
+      throw new IOException(
+          String.format(Locale.ROOT, "Expecting 1 value but found %d", values.length));
     }
-    
+
     return doWork(values[0]);
   }
-    
 }
