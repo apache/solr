@@ -34,13 +34,13 @@ ARG SOLR_DOWNLOAD_URL
 # TODO: see patch in SOLR-15250 for some example ideas on fixing this to be more strict
 
 # Override the default solr download location with a prefered mirror, e.g.:
-#   docker build -t mine --build-arg SOLR_DOWNLOAD_SERVER=http://www-eu.apache.org/dist/lucene/solr .
+#   docker build -t mine --build-arg SOLR_DOWNLOAD_SERVER=http://www-eu.apache.org/dist/solr/solr .
 ARG SOLR_DOWNLOAD_SERVER
 
 # These should never be overridden except for the purposes of testing the Dockerfile before release
-ARG SOLR_CLOSER_URL="http://www.apache.org/dyn/closer.lua?filename=solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz&action=download"
-ARG SOLR_DIST_URL="https://www.apache.org/dist/lucene/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"
-ARG SOLR_ARCHIVE_URL="https://archive.apache.org/dist/lucene/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"
+ARG SOLR_CLOSER_URL="http://www.apache.org/dyn/closer.lua/solr/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz?action=download"
+ARG SOLR_DIST_URL="https://www.apache.org/dist/solr/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"
+ARG SOLR_ARCHIVE_URL="https://archive.apache.org/dist/solr/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"
 
 RUN set -ex; \
   apt-get update; \

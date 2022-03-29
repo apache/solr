@@ -765,12 +765,18 @@ groups:
       Please vote for release candidate {{ rc_number }} for Solr {{ release_version }}
 
       The artifacts can be downloaded from:
-      {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
+      {{ release_candidate_location }}
 
       You can run the smoke tester directly with this command:
 
       python3 -u dev-tools/scripts/smokeTestRelease.py \
-      {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
+      {{ release_candidate_location }}
+
+      You can build a release-candidate of the official docker image using the following command:
+
+      docker build {{ release_candidate_location }}/solr/docker/Dockerfile.official \
+        --build-arg SOLR_DOWNLOAD_URL={{ release_candidate_location }}/solr/solr-9.0.0.tgz \
+        -t solr-rc:9.0.0-rc1
 
       The vote will be open for at least 72 hours i.e. until {{ vote_close }}.
 
@@ -793,6 +799,7 @@ groups:
     vars:
       vote_close: '{{ vote_close_72h }}'
       vote_close_epoch: '{{ vote_close_72h_epoch }}'
+      release_candidate_location: '{{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}'
     persist_vars:
     - vote_close
     - vote_close_epoch
