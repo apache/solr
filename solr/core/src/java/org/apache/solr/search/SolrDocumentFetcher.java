@@ -45,6 +45,7 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
@@ -225,17 +226,10 @@ public class SolrDocumentFetcher {
   public Collection<String> getIndexedFieldNames() {
     synchronized (this) {
       if (indexedFieldNames == null) {
-        indexedFieldNames = new LinkedList<>();
+        indexedFieldNames = new ArrayList<>();
         for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
-          final String fieldName = fieldInfo.name;
-          try {
-            SchemaField field = searcher.getSchema().getField(fieldName);
-            if (field.indexed()) {
-              indexedFieldNames.add(fieldName);
-            }
-          } catch (RuntimeException e) {
-            // getField() throws a SolrException, but it arrives as a RuntimeException
-            log.warn("Field [{}] found in index, but not defined in schema.", fieldName);
+          if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
+            indexedFieldNames.add(fieldInfo.name);
           }
         }
       }
