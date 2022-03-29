@@ -16,6 +16,8 @@ Improvements
 
 * SOLR-15652: Add Slack channel for community support to Admin UI footer, update links.  (Eric Pugh)
 
+* SOLR-16002: Avoid redundant `FilterQuery` caching, e.g. via `filter($query)` syntax. (Michael Gibney, David Smiley)
+
 Optimizations
 ---------------------
 (No changes)
