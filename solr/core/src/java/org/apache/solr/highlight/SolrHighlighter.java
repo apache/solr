@@ -71,7 +71,7 @@ public abstract class SolrHighlighter {
       }
     } else {
       fields =
-          expandWildcardsInHighlightFields(
+          expandWildcardsInFields(
               () -> request.getSearcher().getDocFetcher().getStoredHighlightFieldNames(), fields);
     }
 
@@ -87,25 +87,25 @@ public abstract class SolrHighlighter {
     return (arr == null || arr.length == 0 || arr[0] == null || arr[0].trim().length() == 0);
   }
 
-  private static String[] expandWildcardsInHighlightFields(
-      Supplier<Collection<String>> storedHighlightFieldNames, String... fields) {
+  private static String[] expandWildcardsInFields(
+      Supplier<Collection<String>> availableFieldNamesSupplier, String... fields) {
     Set<String> expandedFields = new LinkedHashSet<String>();
     for (String field : fields) {
-      expandWildcardsInHighlightFields(
-          expandedFields, storedHighlightFieldNames, SolrPluginUtils.split(field));
+      expandWildcardsInFields(
+          expandedFields, availableFieldNamesSupplier, SolrPluginUtils.split(field));
     }
     return expandedFields.toArray(new String[] {});
   }
 
-  private static void expandWildcardsInHighlightFields(
+  private static void expandWildcardsInFields(
       Set<String> expandedFields,
-      Supplier<Collection<String>> storedHighlightFieldNames,
+      Supplier<Collection<String>> availableFieldNamesSupplier,
       String... fields) {
     for (String field : fields) {
       if (field.contains("*")) {
         // create a Java regular expression from the wildcard string
         String fieldRegex = field.replaceAll("\\*", ".*");
-        for (String storedFieldName : storedHighlightFieldNames.get()) {
+        for (String storedFieldName : availableFieldNamesSupplier.get()) {
           if (storedFieldName.matches(fieldRegex)) {
             expandedFields.add(storedFieldName);
           }
