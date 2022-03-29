@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
+
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
@@ -95,12 +97,12 @@ public abstract class SolrHighlighter {
       for (String field : SolrPluginUtils.split(inField)) {
         if (field.contains("*")) {
           // create a Java regular expression from the wildcard string
-          String fieldRegex = field.replaceAll("\\*", ".*");
+          Pattern fieldRegex = Pattern.compile(field.replaceAll("\\*", ".*"));
           if (availableFieldNames == null) {
             availableFieldNames = availableFieldNamesSupplier.get();
           }
           for (String availableFieldName : availableFieldNames) {
-            if (availableFieldName.matches(fieldRegex)) {
+            if (fieldRegex.matcher(availableFieldName).matches()) {
               expandedFields.add(availableFieldName);
             }
           }
