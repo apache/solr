@@ -88,32 +88,28 @@ public abstract class SolrHighlighter {
   }
 
   private static String[] expandWildcardsInFields(
-      Supplier<Collection<String>> availableFieldNamesSupplier, String... fields) {
+      Supplier<Collection<String>> availableFieldNamesSupplier, String... inFields) {
     Set<String> expandedFields = new LinkedHashSet<String>();
-    for (String field : fields) {
-      expandWildcardsInFields(
-          expandedFields, availableFieldNamesSupplier, SolrPluginUtils.split(field));
-    }
-    return expandedFields.toArray(new String[] {});
-  }
-
-  private static void expandWildcardsInFields(
-      Set<String> expandedFields,
-      Supplier<Collection<String>> availableFieldNamesSupplier,
-      String... fields) {
-    for (String field : fields) {
-      if (field.contains("*")) {
-        // create a Java regular expression from the wildcard string
-        String fieldRegex = field.replaceAll("\\*", ".*");
-        for (String storedFieldName : availableFieldNamesSupplier.get()) {
-          if (storedFieldName.matches(fieldRegex)) {
-            expandedFields.add(storedFieldName);
+    Collection<String> availableFieldNames = null;
+    for (String inField : inFields) {
+      for (String field : SolrPluginUtils.split(inField)) {
+        if (field.contains("*")) {
+          // create a Java regular expression from the wildcard string
+          String fieldRegex = field.replaceAll("\\*", ".*");
+          if (availableFieldNames == null) {
+            availableFieldNames = availableFieldNamesSupplier.get();
           }
+          for (String availableFieldName : availableFieldNames) {
+            if (availableFieldName.matches(fieldRegex)) {
+              expandedFields.add(availableFieldName);
+            }
+          }
+        } else {
+          expandedFields.add(field);
         }
-      } else {
-        expandedFields.add(field);
       }
     }
+    return expandedFields.toArray(new String[] {});
   }
 
   /**
