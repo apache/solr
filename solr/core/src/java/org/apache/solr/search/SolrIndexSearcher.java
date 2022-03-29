@@ -122,11 +122,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final int queryResultMaxDocsCached;
   private final boolean useFilterForSortedQuery;
 
-  /**
-   * Special-case cache to handle the lazy-init of {@link #liveDocs}.
-   */
+  /** Special-case cache to handle the lazy-init of {@link #liveDocs}. */
   @SuppressWarnings({"unchecked", "rawtypes"})
   private final CompletableFuture<BitDocSet>[] liveDocsCache = new CompletableFuture[1];
+
   private final Supplier<BitDocSet> computeLiveDocs = this::computeLiveDocs;
 
   private final boolean cachingEnabled;
@@ -960,8 +959,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static final MatchAllDocsQuery MATCH_ALL_DOCS_QUERY = new MatchAllDocsQuery();
 
   /**
-   * A naively cached canonical `liveDocs` DocSet. This does not need to be volatile. It may be set multiple times,
-   * but should always be set to the same value, as all set values should pass through `liveDocsCache.computeIfAbsent`
+   * A naively cached canonical `liveDocs` DocSet. This does not need to be volatile. It may be set
+   * multiple times, but should always be set to the same value, as all set values should pass
+   * through `liveDocsCache.computeIfAbsent`
    */
   private BitDocSet liveDocs;
 
@@ -992,7 +992,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           final Bits segLiveDocs = r.getLiveDocs();
           final int segDocBase = ctx.docBase;
           if (segLiveDocs == null) {
-            // `LeafReader.getLiveDocs()` returns null if no deleted docs -- accordingly, set all bits in seg range
+            // `LeafReader.getLiveDocs()` returns null if no deleted docs -- accordingly, set all
+            // bits in seg range
             bs.set(segDocBase, segDocBase + r.maxDoc());
           } else {
             DocSetUtil.copyTo(segLiveDocs, 0, r.maxDoc(), bs, segDocBase);
@@ -1062,10 +1063,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /**
-   * If some process external to {@link SolrIndexSearcher} has produced a DocSet whose cardinality matches
-   * that of `liveDocs`, this method provides such caller the ability to offer its own DocSet to be cached
-   * in the searcher. The caller should then use the returned value (which may or may not be derived from
-   * the DocSet instance supplied), allowing more efficient memory use.
+   * If some process external to {@link SolrIndexSearcher} has produced a DocSet whose cardinality
+   * matches that of `liveDocs`, this method provides such caller the ability to offer its own
+   * DocSet to be cached in the searcher. The caller should then use the returned value (which may
+   * or may not be derived from the DocSet instance supplied), allowing more efficient memory use.
+   *
    * @lucene.internal
    */
   public BitDocSet offerLiveDocs(Supplier<DocSet> docSetSupplier, int suppliedSize) {
@@ -1504,7 +1506,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         // defaults to sort-by-score, so can't use filterCache
         return false;
       } else {
-        return Arrays.stream(sort.getSort()).noneMatch((sf) -> sf.getType() == SortField.Type.SCORE);
+        return Arrays.stream(sort.getSort())
+            .noneMatch((sf) -> sf.getType() == SortField.Type.SCORE);
       }
     }
   }
@@ -1602,23 +1605,32 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) != 0 || filterCache == null) {
       needSort = true; // this value should be irrelevant when `useFilterCache=false`
       useFilterCache = false;
-    } else if (q instanceof MatchAllDocsQuery // special-case MatchAllDocsQuery: implicit default useFilterForSortedQuery=true
-            || (useFilterForSortedQuery && QueryUtils.isConstantScoreQuery(q))) { // default behavior should not risk filterCache thrashing
-      // We only need to sort if we're returning results AND sorting by something other than SCORE (sort by
-      // "score" alone is pointless for these constant score queries)
+    } else if (q instanceof MatchAllDocsQuery
+        || (useFilterForSortedQuery && QueryUtils.isConstantScoreQuery(q))) {
+      // special-case MatchAllDocsQuery: implicit default useFilterForSortedQuery=true;
+      // otherwise, default behavior should not risk filterCache thrashing, so require
+      // `useFilterForSortedQuery==true`
+
+      // We only need to sort if we're returning results AND sorting by something other than SCORE
+      // (sort by "score" alone is pointless for these constant score queries)
       final Sort sort = cmd.getSort();
       needSort = cmd.getLen() > 0 && sortIncludesOtherThanScore(sort);
       if (!needSort) {
         useFilterCache = true;
       } else {
-        // NOTE: if `sort:score` is specified, it will have no effect, so we really _could_ in principle always
-        // use filterCache; but this would be a user request misconfiguration, and supporting it would require
-        // us to mess with user sort, or ignore the fact that sort expects `score` to be present ... so just
-        // make the optimization contingent on the absence of `score` in the requested sort.
-        useFilterCache = Arrays.stream(sort.getSort()).noneMatch((sf) -> sf.getType() == SortField.Type.SCORE);
+        /*
+        NOTE: if `sort:score` is specified, it will have no effect, so we really _could_ in
+        principle always use filterCache; but this would be a user request misconfiguration,
+        and supporting it would require us to mess with user sort, or ignore the fact that sort
+        expects `score` to be present ... so just make the optimization contingent on the absence
+        of `score` in the requested sort.
+         */
+        useFilterCache =
+            Arrays.stream(sort.getSort()).noneMatch((sf) -> sf.getType() == SortField.Type.SCORE);
       }
     } else {
-      needSort = cmd.getLen() > 0; // for non-constant-score queries, must sort unless no docs requested
+      // for non-constant-score queries, must sort unless no docs requested
+      needSort = cmd.getLen() > 0;
       useFilterCache = useFilterCacheForDynamicScoreQuery(needSort, cmd);
     }
 
@@ -2521,18 +2533,23 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     parentContext.gauge(() -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
     parentContext.gauge(
-            () -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(fullSortCount::sum, true, "fullSortCount", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(skipSortCount::sum, true, "skipSortCount", Category.SEARCHER.toString(), scope);
-    final MetricsMap liveDocsCacheMetrics = new MetricsMap((map) -> {
-      final long asyncHitCount = liveDocsAsyncHitCount.sum();
-      map.put("inserts", liveDocsInsertsCount.sum());
-      map.put("asyncHits", asyncHitCount);
-      // for compatibility with CaffeineCache, `asyncHits` is a subset of `hits`
-      map.put("hits", liveDocsHitCount.sum() + asyncHitCount);
-      map.put("naiveHits", liveDocsNaiveCacheHitCount.sum());
-    });
-    parentContext.gauge(liveDocsCacheMetrics, true, "liveDocsCache", Category.SEARCHER.toString(), scope);
+        () -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(
+        fullSortCount::sum, true, "fullSortCount", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(
+        skipSortCount::sum, true, "skipSortCount", Category.SEARCHER.toString(), scope);
+    final MetricsMap liveDocsCacheMetrics =
+        new MetricsMap(
+            (map) -> {
+              final long asyncHitCount = liveDocsAsyncHitCount.sum();
+              map.put("inserts", liveDocsInsertsCount.sum());
+              map.put("asyncHits", asyncHitCount);
+              // for compatibility with CaffeineCache, `asyncHits` is a subset of `hits`
+              map.put("hits", liveDocsHitCount.sum() + asyncHitCount);
+              map.put("naiveHits", liveDocsNaiveCacheHitCount.sum());
+            });
+    parentContext.gauge(
+        liveDocsCacheMetrics, true, "liveDocsCache", Category.SEARCHER.toString(), scope);
     // reader stats
     parentContext.gauge(
         rgauge(parentContext.nullNumber(), () -> reader.numDocs()),
