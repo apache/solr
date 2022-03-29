@@ -34,7 +34,7 @@ ARG SOLR_DOWNLOAD_URL
 # TODO: see patch in SOLR-15250 for some example ideas on fixing this to be more strict
 
 # Override the default solr download location with a prefered mirror, e.g.:
-#   docker build -t mine --build-arg SOLR_DOWNLOAD_SERVER=http://www-eu.apache.org/dist/solr/solr .
+#   docker build -t mine --build-arg SOLR_DOWNLOAD_SERVER=https://downloads.apache.org/solr/solr .
 ARG SOLR_DOWNLOAD_SERVER
 
 # These should never be overridden except for the purposes of testing the Dockerfile before release
