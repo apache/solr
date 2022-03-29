@@ -77,12 +77,7 @@ public class AbstractVMParamsZkACLAndCredentialsProvidersTestBase extends SolrTe
 
     SolrZkClient zkClient =
         new SolrZkClient(
-            zkServer.getZkHost(),
-            AbstractZkTestCase.TIMEOUT,
-            AbstractZkTestCase.TIMEOUT,
-            null,
-            null,
-            null);
+            zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
@@ -107,7 +102,7 @@ public class AbstractVMParamsZkACLAndCredentialsProvidersTestBase extends SolrTe
     // no (or completely open) ACLs added. Therefore hack your way into being authorized for
     // creating anyway
     zkClient
-        .getSolrZooKeeper()
+        .getZooKeeper()
         .addAuthInfo(
             "digest",
             ("connectAndAllACLUsername:connectAndAllACLPassword").getBytes(StandardCharsets.UTF_8));
@@ -204,7 +199,7 @@ public class AbstractVMParamsZkACLAndCredentialsProvidersTestBase extends SolrTe
       // no (or completely open) ACLs added. Therefore hack your way into being authorized for
       // creating anyway
       zkClient
-          .getSolrZooKeeper()
+          .getZooKeeper()
           .addAuthInfo(
               "digest",
               ("connectAndAllACLUsername:connectAndAllACLPassword")
