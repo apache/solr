@@ -21,21 +21,15 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 public class PrepareCoreRecoveryPayload implements ReflectMapWriter {
-    @JsonProperty
-    public String nodeName;
+  @JsonProperty public String nodeName;
 
-    @JsonProperty
-    public String coreNodeName;
+  @JsonProperty public String coreNodeName;
 
-    @JsonProperty
-    public String state;
+  @JsonProperty public String state;
 
-    @JsonProperty
-    public Boolean checkLive;
+  @JsonProperty public Boolean checkLive;
 
-    @JsonProperty
-    public Boolean onlyIfLeader;
+  @JsonProperty public Boolean onlyIfLeader;
 
-    @JsonProperty
-    public Boolean onlyIfLeaderActive;
+  @JsonProperty public Boolean onlyIfLeaderActive;
 }

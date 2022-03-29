@@ -192,12 +192,16 @@ public abstract class Feature extends Query implements Accountable {
     return true;
   }
 
-  /** @return the name */
+  /**
+   * @return the name
+   */
   public String getName() {
     return name;
   }
 
-  /** @return the id */
+  /**
+   * @return the id
+   */
   public int getIndex() {
     return index;
   }

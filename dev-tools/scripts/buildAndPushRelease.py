@@ -122,7 +122,9 @@ def prepare(root, version, gpg_key_id, gpg_password, gpg_home=None, sign_gradle=
         ' -Dversion.release=%s' % version
   if dev_mode:
     cmd += ' -Pvalidation.git.failOnModified=false'
-  if gpg_key_id is not None:
+  if gpg_key_id is None:
+    cmd += ' -Psign=false -x signJarsPublication'  # Disable signing if no key provided to script
+  else:
     cmd += ' -Psign --max-workers 2'
     if sign_gradle:
       print("  Signing method is gradle java-plugin")

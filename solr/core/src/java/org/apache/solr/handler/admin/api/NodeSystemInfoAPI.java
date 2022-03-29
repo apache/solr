@@ -17,33 +17,34 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
+
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.admin.SystemInfoHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
-
 /**
  * V2 API for getting "system" information from the receiving node.
  *
- * This includes current resource utilization, information about the installation (location, version, etc.), and JVM settings.
+ * <p>This includes current resource utilization, information about the installation (location,
+ * version, etc.), and JVM settings.
  *
- * This API (GET /v2/node/system) is analogous to the v1 /admin/info/system.
+ * <p>This API (GET /v2/node/system) is analogous to the v1 /admin/info/system.
  */
 public class NodeSystemInfoAPI {
-    private final SystemInfoHandler handler;
+  private final SystemInfoHandler handler;
 
-    public NodeSystemInfoAPI(SystemInfoHandler handler) {
-        this.handler = handler;
-    }
+  public NodeSystemInfoAPI(SystemInfoHandler handler) {
+    this.handler = handler;
+  }
 
-    @EndPoint(
-            path = {"/node/system"},
-            method = GET,
-            permission = CONFIG_READ_PERM)
-    public void getSystemInformation(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        handler.handleRequestBody(req, rsp);
-    }
+  @EndPoint(
+      path = {"/node/system"},
+      method = GET,
+      permission = CONFIG_READ_PERM)
+  public void getSystemInformation(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    handler.handleRequestBody(req, rsp);
+  }
 }

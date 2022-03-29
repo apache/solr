@@ -16,17 +16,16 @@
  */
 package org.apache.solr.common.util;
 
+import javax.xml.stream.Location;
+import javax.xml.stream.XMLReporter;
+import javax.xml.transform.ErrorListener;
+import javax.xml.transform.TransformerException;
 import org.slf4j.Logger;
-
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
-import javax.xml.transform.ErrorListener;
-import javax.xml.transform.TransformerException;
-import javax.xml.stream.Location;
-import javax.xml.stream.XMLReporter;
 
-public final class XMLErrorLogger implements ErrorHandler,ErrorListener,XMLReporter {
+public final class XMLErrorLogger implements ErrorHandler, ErrorListener, XMLReporter {
 
   private final Logger log;
 
@@ -38,7 +37,12 @@ public final class XMLErrorLogger implements ErrorHandler,ErrorListener,XMLRepor
 
   @Override
   public void warning(SAXParseException e) {
-    log.warn("XML parse warning in '{}', line {}, column {}:", e.getSystemId(), e.getLineNumber(), e.getColumnNumber(), e);
+    log.warn(
+        "XML parse warning in '{}', line {}, column {}:",
+        e.getSystemId(),
+        e.getLineNumber(),
+        e.getColumnNumber(),
+        e);
   }
 
   @Override
@@ -73,11 +77,14 @@ public final class XMLErrorLogger implements ErrorHandler,ErrorListener,XMLRepor
   @Override
   public void report(String message, String errorType, Object relatedInformation, Location loc) {
     final StringBuilder sb = new StringBuilder("XML parser reported ").append(errorType);
-    if (loc !=  null) {
-      sb.append(" in \"").append(loc.getSystemId()).append("\", line ")
-        .append(loc.getLineNumber()).append(", column ").append(loc.getColumnNumber());
+    if (loc != null) {
+      sb.append(" in \"")
+          .append(loc.getSystemId())
+          .append("\", line ")
+          .append(loc.getLineNumber())
+          .append(", column ")
+          .append(loc.getColumnNumber());
     }
     log.warn("{}", sb.append(": ").append(message));
   }
-
 }

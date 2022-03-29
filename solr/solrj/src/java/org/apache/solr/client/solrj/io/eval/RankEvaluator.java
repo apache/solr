@@ -21,33 +21,42 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
-
 import org.apache.commons.math3.stat.ranking.NaturalRanking;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class RankEvaluator extends RecursiveNumericEvaluator implements OneValueWorker {
   protected static final long serialVersionUID = 1L;
-  
-  public RankEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public RankEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
-    
-    if(1 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 1 value but found %d",expression,containedEvaluators.size()));
+
+    if (1 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting exactly 1 value but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
-  public Object doWork(Object value){
-    if(null == value){
+  public Object doWork(Object value) {
+    if (null == value) {
       return null;
-    }
-    else if(value instanceof List){
-      NaturalRanking rank = new NaturalRanking();      
-      return Arrays.stream(rank.rank(((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).toArray())).boxed().collect(Collectors.toList());
-    }
-    else{
-      return doWork(Arrays.asList((Number)value));
+    } else if (value instanceof List) {
+      NaturalRanking rank = new NaturalRanking();
+      return Arrays.stream(
+              rank.rank(
+                  ((List<?>) value)
+                      .stream()
+                          .mapToDouble(innerValue -> ((Number) innerValue).doubleValue())
+                          .toArray()))
+          .boxed()
+          .collect(Collectors.toList());
+    } else {
+      return doWork(Arrays.asList((Number) value));
     }
   }
 }

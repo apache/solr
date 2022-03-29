@@ -18,9 +18,7 @@ package org.apache.solr.cloud.api.collections;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 
-/**
- * Tests the Cloud Collections API.
- */
+/** Tests the Cloud Collections API. */
 @Slow
 public class CollectionsAPIDistributedZkTest extends AbstractCollectionsAPIDistributedZkTestBase {
 

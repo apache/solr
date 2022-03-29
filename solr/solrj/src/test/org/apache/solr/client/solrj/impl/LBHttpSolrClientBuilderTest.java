@@ -20,13 +20,11 @@ package org.apache.solr.client.solrj.impl;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
 import org.junit.Test;
 
-/**
- * Unit tests for {@link Builder}.
- */
+/** Unit tests for {@link Builder}. */
 public class LBHttpSolrClientBuilderTest extends SolrTestCase {
   private static final String ANY_BASE_SOLR_URL = "ANY_BASE_SOLR_URL";
   private static final HttpClient ANY_HTTP_CLIENT = HttpClientBuilder.create().build();
@@ -34,31 +32,29 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
 
   @Test
   public void providesHttpClientToClient() {
-    try(LBHttpSolrClient createdClient = new Builder()
-        .withBaseSolrUrl(ANY_BASE_SOLR_URL)
-        .withHttpClient(ANY_HTTP_CLIENT)
-        .build()) {
+    try (LBHttpSolrClient createdClient =
+        new Builder().withBaseSolrUrl(ANY_BASE_SOLR_URL).withHttpClient(ANY_HTTP_CLIENT).build()) {
       assertTrue(createdClient.getHttpClient().equals(ANY_HTTP_CLIENT));
     }
   }
-  
+
   @Test
   public void providesResponseParserToClient() {
-    try(LBHttpSolrClient createdClient = new Builder()
-        .withBaseSolrUrl(ANY_BASE_SOLR_URL)
-        .withResponseParser(ANY_RESPONSE_PARSER)
-        .build()) {
+    try (LBHttpSolrClient createdClient =
+        new Builder()
+            .withBaseSolrUrl(ANY_BASE_SOLR_URL)
+            .withResponseParser(ANY_RESPONSE_PARSER)
+            .build()) {
       assertTrue(createdClient.getParser().equals(ANY_RESPONSE_PARSER));
     }
   }
-  
+
   @Test
   public void testDefaultsToBinaryResponseParserWhenNoneProvided() {
-    try(LBHttpSolrClient createdClient = new Builder()
-        .withBaseSolrUrl(ANY_BASE_SOLR_URL)
-        .build()) {
+    try (LBHttpSolrClient createdClient =
+        new Builder().withBaseSolrUrl(ANY_BASE_SOLR_URL).build()) {
       final ResponseParser usedParser = createdClient.getParser();
-    
+
       assertTrue(usedParser instanceof BinaryResponseParser);
     }
   }

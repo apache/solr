@@ -18,11 +18,11 @@ package org.apache.solr.ltr;
 import static java.util.stream.Collectors.toList;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -31,7 +31,6 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.ltr.feature.FieldValueFeature;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.SolrFeature;
@@ -326,9 +325,9 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   private void setupSolrCluster(int numShards, int numReplicas, int numServers) throws Exception {
     JettyConfig jc = buildJettyConfig("/solr");
     jc = JettyConfig.builder(jc).build();
-    solrCluster = new MiniSolrCloudCluster(numServers, tmpSolrHome.toPath(), jc);
-    File configDir = tmpSolrHome.toPath().resolve("collection1/conf").toFile();
-    solrCluster.uploadConfigSet(configDir.toPath(), "conf1");
+    solrCluster = new MiniSolrCloudCluster(numServers, tmpSolrHome, jc);
+    Path configDir = tmpSolrHome.resolve("collection1/conf");
+    solrCluster.uploadConfigSet(configDir, "conf1");
 
     solrCluster.getSolrClient().setDefaultCollection(COLLECTION);
 
@@ -353,9 +352,8 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     response = create.process(solrCluster.getSolrClient());
 
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
-      fail("Could not create collection. Response" + response.toString());
+      fail("Could not create collection. Response" + response);
     }
-    ZkStateReader zkStateReader = solrCluster.getSolrClient().getZkStateReader();
     solrCluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
   }
 
@@ -475,7 +473,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   @AfterClass
   public static void after() throws Exception {
     if (null != tmpSolrHome) {
-      FileUtils.deleteDirectory(tmpSolrHome);
+      PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
     System.clearProperty("managed.schema.mutable");

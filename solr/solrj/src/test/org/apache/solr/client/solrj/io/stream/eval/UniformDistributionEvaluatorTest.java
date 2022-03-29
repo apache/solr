@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -27,17 +27,15 @@ import org.apache.solr.client.solrj.io.eval.UniformDistributionEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class UniformDistributionEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public UniformDistributionEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("unif", UniformDistributionEvaluator.class);
-    values = new HashMap<String,Object>();
+    values = new HashMap<String, Object>();
   }
 
   @Test
@@ -47,9 +45,11 @@ public class UniformDistributionEvaluatorTest extends SolrTestCase {
     values.put("l1", 3);
     values.put("l2", 7);
 
-    UniformRealDistribution dist = new UniformRealDistribution(3,7);
-    Assert.assertEquals(dist.getNumericalMean(),
-        ((UniformRealDistribution) factory.constructEvaluator("unif(l1,l2)").evaluate(new Tuple(values))).getNumericalMean());
+    UniformRealDistribution dist = new UniformRealDistribution(3, 7);
+    Assert.assertEquals(
+        dist.getNumericalMean(),
+        ((UniformRealDistribution)
+                factory.constructEvaluator("unif(l1,l2)").evaluate(new Tuple(values)))
+            .getNumericalMean());
   }
-    
 }

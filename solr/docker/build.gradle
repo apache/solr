@@ -42,6 +42,9 @@ configurations {
   packaging {
     canBeResolved = true
   }
+  packagingLocal {
+    canBeResolved = true
+  }
   packagingOfficial {
     canBeResolved = true
   }
@@ -70,6 +73,10 @@ ext {
 dependencies {
   packaging files(packagingDir) {
     builtBy 'assemblePackaging'
+  }
+
+  packagingLocal files("${dockerfilesDirPath}/Dockerfile.local") {
+    builtBy 'createDockerfileLocal'
   }
 
   packagingOfficial files("${dockerfilesDirPath}/Dockerfile.official") {

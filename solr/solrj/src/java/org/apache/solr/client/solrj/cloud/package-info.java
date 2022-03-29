@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Common classes for SolrCloud.
- */
-
+/** Common classes for SolrCloud. */
 package org.apache.solr.client.solrj.cloud;
-

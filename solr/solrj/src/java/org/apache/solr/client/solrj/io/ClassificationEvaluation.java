@@ -37,10 +37,10 @@ public class ClassificationEvaluation {
   }
 
   public void putToMap(Map<? super String, ? super Long> map) {
-    map.put("truePositive_i",truePositive);
-    map.put("trueNegative_i",trueNegative);
-    map.put("falsePositive_i",falsePositive);
-    map.put("falseNegative_i",falseNegative);
+    map.put("truePositive_i", truePositive);
+    map.put("trueNegative_i", trueNegative);
+    map.put("falsePositive_i", falsePositive);
+    map.put("falseNegative_i", falseNegative);
   }
 
   public Map<String, Long> toMap() {
@@ -80,6 +80,7 @@ public class ClassificationEvaluation {
   }
 
   public double getAccuracy() {
-    return (double) (truePositive + trueNegative) / (truePositive + trueNegative + falseNegative + falsePositive);
+    return (double) (truePositive + trueNegative)
+        / (truePositive + trueNegative + falseNegative + falsePositive);
   }
 }

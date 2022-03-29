@@ -17,6 +17,15 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.Shard;
@@ -29,23 +38,15 @@ import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 /**
- * <p>Factory for creating {@link SimplePlacementPlugin}, a placement plugin implementing the logic from the old <code>LegacyAssignStrategy</code>.
- *  This chooses nodes with the fewest cores (especially cores of the same collection).</p>
+ * Factory for creating {@link SimplePlacementPlugin}, a placement plugin implementing the logic
+ * from the old <code>LegacyAssignStrategy</code>. This chooses nodes with the fewest cores
+ * (especially cores of the same collection).
  *
- * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.</p>
+ * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.
  */
-public class SimplePlacementFactory implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
+public class SimplePlacementFactory
+    implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
 
   @Override
   public PlacementPlugin createPluginInstance() {
@@ -54,7 +55,9 @@ public class SimplePlacementFactory implements PlacementPluginFactory<PlacementP
 
   public static class SimplePlacementPlugin implements PlacementPlugin {
     @Override
-    public List<PlacementPlan> computePlacements(Collection<PlacementRequest> requests, PlacementContext placementContext) throws PlacementException {
+    public List<PlacementPlan> computePlacements(
+        Collection<PlacementRequest> requests, PlacementContext placementContext)
+        throws PlacementException {
       List<PlacementPlan> placementPlans = new ArrayList<>(requests.size());
       Map<Node, ReplicaCount> nodeVsShardCount = getNodeVsShardCount(placementContext);
       for (PlacementRequest request : requests) {
@@ -63,35 +66,53 @@ public class SimplePlacementFactory implements PlacementPluginFactory<PlacementP
           totalReplicasPerShard += request.getCountReplicasToCreate(rt);
         }
 
-        Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
+        Set<ReplicaPlacement> replicaPlacements =
+            new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
 
         Collection<ReplicaCount> replicaCounts = nodeVsShardCount.values();
 
         if (request.getTargetNodes().size() < replicaCounts.size()) {
-          replicaCounts = replicaCounts.stream().filter(rc -> request.getTargetNodes().contains(rc.node())).collect(Collectors.toList());
+          replicaCounts =
+              replicaCounts.stream()
+                  .filter(rc -> request.getTargetNodes().contains(rc.node()))
+                  .collect(Collectors.toList());
         }
 
         for (String shard : request.getShardNames()) {
-          // Reset the ordering of the nodes for each shard, using the replicas added in the previous shards and assign requests
-          List<Node> nodeList = replicaCounts.stream()
-              .sorted(Comparator.<ReplicaCount>comparingInt(rc -> rc.weight(request.getCollection().getName())).thenComparing(ReplicaCount::nodeName))
-              .map(ReplicaCount::node)
-              .collect(Collectors.toList());
+          // Reset the ordering of the nodes for each shard, using the replicas added in the
+          // previous shards and assign requests
+          List<Node> nodeList =
+              replicaCounts.stream()
+                  .sorted(
+                      Comparator.<ReplicaCount>comparingInt(
+                              rc -> rc.weight(request.getCollection().getName()))
+                          .thenComparing(ReplicaCount::nodeName))
+                  .map(ReplicaCount::node)
+                  .collect(Collectors.toList());
           int replicaNumOfShard = 0;
           for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
             for (int i = 0; i < request.getCountReplicasToCreate(replicaType); i++) {
               Node assignedNode = nodeList.get(replicaNumOfShard++ % nodeList.size());
 
-              replicaPlacements.add(placementContext.getPlacementPlanFactory().createReplicaPlacement(request.getCollection(), shard, assignedNode, replicaType));
+              replicaPlacements.add(
+                  placementContext
+                      .getPlacementPlanFactory()
+                      .createReplicaPlacement(
+                          request.getCollection(), shard, assignedNode, replicaType));
 
-              ReplicaCount replicaCount = nodeVsShardCount.computeIfAbsent(assignedNode, ReplicaCount::new);
+              ReplicaCount replicaCount =
+                  nodeVsShardCount.computeIfAbsent(assignedNode, ReplicaCount::new);
               replicaCount.totalReplicas++;
-              replicaCount.collectionReplicas.merge(request.getCollection().getName(), 1, Integer::sum);
+              replicaCount.collectionReplicas.merge(
+                  request.getCollection().getName(), 1, Integer::sum);
             }
           }
         }
 
-        placementPlans.add(placementContext.getPlacementPlanFactory().createPlacementPlan(request, replicaPlacements));
+        placementPlans.add(
+            placementContext
+                .getPlacementPlanFactory()
+                .createPlacementPlan(request, replicaPlacements));
       }
       return placementPlans;
     }
@@ -105,7 +126,7 @@ public class SimplePlacementFactory implements PlacementPluginFactory<PlacementP
 
       // if we get here we were not given a createNodeList, build a map with real counts.
       for (SolrCollection collection : placementContext.getCluster().collections()) {
-        //identify suitable nodes  by checking the no:of cores in each of them
+        // identify suitable nodes  by checking the no:of cores in each of them
         for (Shard shard : collection.shards()) {
           for (Replica replica : shard.replicas()) {
             ReplicaCount count = nodeVsShardCount.get(replica.getNode());

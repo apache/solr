@@ -27,7 +27,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
@@ -39,14 +38,12 @@ import org.apache.solr.util.JmxUtil;
 import org.apache.solr.util.TestHarness;
 import org.junit.Test;
 
-/**
- *
- */
+/** */
 public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReporter() throws Exception {
-    int jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1: 0;
+    int jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1 : 0;
     Path home = Paths.get(TEST_HOME());
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
@@ -58,12 +55,19 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
       Thread.sleep(1000);
       // define the port where MockGraphite is running
       System.setProperty("mock-graphite-port", String.valueOf(mock.port));
-      String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-graphitereporter.xml").toFile(), "UTF-8");
+      String solrXml =
+          FileUtils.readFileToString(
+              Paths.get(home.toString(), "solr-graphitereporter.xml").toFile(), "UTF-8");
       NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
-      CoreContainer cc = createCoreContainer(cfg, new TestHarness.TestCoresLocator
-                                             (DEFAULT_TEST_CORENAME, initAndGetDataDir().getAbsolutePath(),
-                                              "solrconfig.xml", "schema.xml"));
-                                             
+      CoreContainer cc =
+          createCoreContainer(
+              cfg,
+              new TestHarness.TestCoresLocator(
+                  DEFAULT_TEST_CORENAME,
+                  initAndGetDataDir().getAbsolutePath(),
+                  "solrconfig.xml",
+                  "schema.xml"));
+
       h.coreName = DEFAULT_TEST_CORENAME;
       SolrMetricManager metricManager = cc.getMetricManager();
       Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.node");
@@ -98,8 +102,8 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
       while (!stop) {
         try {
           Socket s = server.accept();
-          BufferedReader br = new BufferedReader(
-              new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
+          BufferedReader br =
+              new BufferedReader(new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
           String line;
           while ((line = br.readLine()) != null) {
             lines.add(line);
@@ -117,5 +121,4 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
       }
     }
   }
-
 }

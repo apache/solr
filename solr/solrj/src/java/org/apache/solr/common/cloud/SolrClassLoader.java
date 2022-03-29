@@ -16,13 +16,13 @@
  */
 package org.apache.solr.common.cloud;
 
-
 /** A generic interface to load plugin classes */
 public interface SolrClassLoader {
 
-    <T> T newInstance(String cname, Class<T> expectedType, String... subpackages);
+  <T> T newInstance(String cname, Class<T> expectedType, String... subpackages);
 
-    <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class<?>[] params, Object[] args);
+  <T> T newInstance(
+      String cName, Class<T> expectedType, String[] subPackages, Class<?>[] params, Object[] args);
 
-    <T> Class<? extends T> findClass(String cname, Class<T> expectedType);
+  <T> Class<? extends T> findClass(String cname, Class<T> expectedType);
 }

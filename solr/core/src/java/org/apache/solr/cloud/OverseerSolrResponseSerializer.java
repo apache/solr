@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -26,12 +25,14 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 
 public class OverseerSolrResponseSerializer {
-  
+
   /**
    * This method serializes the content of an {@code OverseerSolrResponse}. Note that:
+   *
    * <ul>
-   * <li>The elapsed time is not serialized</li>
-   * <li>"Unknown" elements for the Javabin format will be serialized as Strings. See {@link org.apache.solr.common.util.JavaBinCodec#writeVal}</li>
+   *   <li>The elapsed time is not serialized
+   *   <li>"Unknown" elements for the Javabin format will be serialized as Strings. See {@link
+   *       org.apache.solr.common.util.JavaBinCodec#writeVal}
    * </ul>
    */
   @SuppressWarnings("deprecation")
@@ -42,19 +43,22 @@ public class OverseerSolrResponseSerializer {
     }
     try {
       return Utils.toJavabin(responseObject.getResponse()).readAllBytes();
-    } catch (IOException|RuntimeException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Exception serializing response to Javabin", e);
+    } catch (IOException | RuntimeException e) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Exception serializing response to Javabin", e);
     }
   }
-  
+
   static boolean useUnsafeSerialization() {
     String useUnsafeOverseerResponse = System.getProperty("solr.useUnsafeOverseerResponse");
     return useUnsafeOverseerResponse != null && ("true".equals(useUnsafeOverseerResponse));
   }
-  
+
   static boolean useUnsafeDeserialization() {
     String useUnsafeOverseerResponse = System.getProperty("solr.useUnsafeOverseerResponse");
-    return useUnsafeOverseerResponse != null && ("true".equals(useUnsafeOverseerResponse) || "deserialization".equals(useUnsafeOverseerResponse));
+    return useUnsafeOverseerResponse != null
+        && ("true".equals(useUnsafeOverseerResponse)
+            || "deserialization".equals(useUnsafeOverseerResponse));
   }
 
   @SuppressWarnings("deprecation")
@@ -64,12 +68,12 @@ public class OverseerSolrResponseSerializer {
       @SuppressWarnings("unchecked")
       NamedList<Object> response = (NamedList<Object>) Utils.fromJavabin(responseBytes);
       return new OverseerSolrResponse(response);
-    } catch (IOException|RuntimeException e) {
+    } catch (IOException | RuntimeException e) {
       if (useUnsafeDeserialization()) {
         return (OverseerSolrResponse) SolrResponse.deserialize(responseBytes);
       }
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Exception deserializing response from Javabin", e);
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Exception deserializing response from Javabin", e);
     }
   }
-
 }

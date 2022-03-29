@@ -17,10 +17,10 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.junit.Assert.*;
+
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class SolrEnvironmentTest {
 

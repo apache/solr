@@ -125,6 +125,8 @@ This is only applicable for users returning information in JSON format, which is
 * SOLR-14660: HDFS storage support has been moved to a module. Existing Solr configurations do not need any HDFS-related
 changes, however the module needs to be installed - see the section xref:deployment-guide:solr-on-hdfs.adoc[].
 
+* SOLR-16040: If you are using the HDFS backup repository, you need to change the repository class to `org.apache.solr.hdfs.backup.repository.HdfsBackupRepository` - see the xref:deployment-guide:backup-restore.adoc#hdfsbackuprepository[HDFS Backup Repository] section.
+
 * SOLR-13989: Hadoop authentication support has been moved to the hadoop-auth module. Existing Solr configurations do not need any Hadoop authentication related
 changes, however the module needs to be installed - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
 
@@ -135,6 +137,12 @@ changes, however the module needs to be installed - see the section xref:query-g
 
 * SOLR-15097: JWTAuthPlugin has been moved to a module. Users need to add the module to classpath. The plugin has also
   changed package name to `org.apache.solr.security.jwt`, but can still be loaded as shortform `class="solr.JWTAuthPlugin"`.
+
+* SOLR-14401: Metrics: Only SearchHandler and subclasses have "local" metrics now.
+It's now tracked as if it's another handler with a "[shard]" suffix, e.g. "/select[shard]".
+There are no longer ".distrib." named metrics; all metrics are assumed to be such except
+"[shard]". The default Prometheus exporter config splits that component to a new label
+named "internal".  The sample Grafana dashboard now filters to include or exclude this.
 
 == New Features & Enhancements
 
@@ -339,3 +347,4 @@ where they really belong: /admin/threads, /admin/properties, /admin/logging
 
 * Atomic/partial updates to nested documents now _require_ the `\_root_` field to clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.
 
+* SolrJ: The project is migrating away from the Apache HttpClient dependency in favor of Jetty's client (supporting HTTP/2), to occur over the 9x releases.  We deprecated HttpSolrClient and friends in favor of Http2SolrClient and equivalents.  For SolrCloud, the former CloudSolrClient was renamed CloudLegacySolrClient (deprecated), and instead BaseCloudSolrClient was renamed to CloudSolrClient and given a Builder for the Jetty based HTTP/2 client.

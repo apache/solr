@@ -17,17 +17,16 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.UnavailableException;
-import javax.servlet.WriteListener;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
-
+import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.UnavailableException;
+import javax.servlet.WriteListener;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -47,14 +46,14 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig(
+            "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
-    CollectionAdminRequest
-        .createCollection(COLLECTION, "config", NUM_SHARD, REPLICA_FACTOR)
+    CollectionAdminRequest.createCollection(COLLECTION, "config", NUM_SHARD, REPLICA_FACTOR)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
-        false, true, 30);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        COLLECTION, cluster.getZkStateReader(), false, true, 30);
   }
 
   @Test
@@ -68,7 +67,8 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
   @Test
   public void testWrongUtf8InQ() throws Exception {
     var baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
-    var request = new URL(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0"); // Illegal UTF-8 string
+    var request =
+        new URL(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0"); // Illegal UTF-8 string
     var connection = (HttpURLConnection) request.openConnection();
     assertEquals(400, connection.getResponseCode());
   }
@@ -79,7 +79,9 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
     SolrDispatchFilter dispatchFilter = jettySolrRunner.getSolrDispatchFilter();
     for (int i = 0; i < NUM_SHARD * REPLICA_FACTOR * 20; i++) {
       if (coreNames.size() == numCores) return;
-      HttpSolrCall httpSolrCall = new HttpSolrCall(dispatchFilter, dispatchFilter.getCores(), testRequest, new TestResponse(), false);
+      HttpSolrCall httpSolrCall =
+          new HttpSolrCall(
+              dispatchFilter, dispatchFilter.getCores(), testRequest, new TestResponse(), false);
       try {
         httpSolrCall.init();
       } catch (Exception e) {
@@ -106,14 +108,10 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
         }
 
         @Override
-        public void setWriteListener(WriteListener writeListener) {
-
-        }
+        public void setWriteListener(WriteListener writeListener) {}
 
         @Override
-        public void write(int b) throws IOException {
-
-        }
+        public void write(int b) throws IOException {}
       };
     }
 
@@ -165,9 +163,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
         }
 
         @Override
-        public void setReadListener(ReadListener readListener) {
-
-        }
+        public void setReadListener(ReadListener readListener) {}
 
         @Override
         public int read() throws IOException {
@@ -176,5 +172,4 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
       };
     }
   }
-
 }

@@ -19,7 +19,6 @@ package org.apache.solr.search.grouping.distributed.command;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiCollector;
@@ -38,9 +37,7 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.grouping.Command;
 import org.apache.solr.search.grouping.collector.FilterCollector;
 
-/**
- *
- */
+/** */
 public class QueryCommand implements Command<QueryCommandResult> {
 
   public static class Builder {
@@ -81,8 +78,8 @@ public class QueryCommand implements Command<QueryCommandResult> {
     }
 
     /**
-     * Sets the group query from the specified groupQueryString.
-     * The groupQueryString is parsed into a query.
+     * Sets the group query from the specified groupQueryString. The groupQueryString is parsed into
+     * a query.
      *
      * @param groupQueryString The group query string to parse
      * @param request The current request
@@ -121,13 +118,17 @@ public class QueryCommand implements Command<QueryCommandResult> {
     }
 
     public QueryCommand build() {
-      if (sort == null || query == null || docSet == null || docsToCollect == null || mainQuery == null) {
+      if (sort == null
+          || query == null
+          || docSet == null
+          || docsToCollect == null
+          || mainQuery == null) {
         throw new IllegalStateException("All fields must be set");
       }
 
-      return new QueryCommand(sort, query, docsToCollect, needScores, docSet, queryString, mainQuery);
+      return new QueryCommand(
+          sort, query, docsToCollect, needScores, docSet, queryString, mainQuery);
     }
-
   }
 
   private final Sort sort;
@@ -143,13 +144,14 @@ public class QueryCommand implements Command<QueryCommandResult> {
   private MaxScoreCollector maxScoreCollector;
   private TopDocs topDocs;
 
-  private QueryCommand(Sort sort,
-                       Query query,
-                       int docsToCollect,
-                       boolean needScores,
-                       DocSet docSet,
-                       String queryString,
-                       Query mainQuery) {
+  private QueryCommand(
+      Sort sort,
+      Query query,
+      int docsToCollect,
+      boolean needScores,
+      DocSet docSet,
+      String queryString,
+      Query mainQuery) {
     this.sort = sort;
     this.query = query;
     this.docsToCollect = docsToCollect;
@@ -163,7 +165,8 @@ public class QueryCommand implements Command<QueryCommandResult> {
   public List<Collector> create() throws IOException {
     Collector subCollector;
     if (sort == null || sort.equals(Sort.RELEVANCE)) {
-      subCollector = topDocsCollector = TopScoreDocCollector.create(docsToCollect, Integer.MAX_VALUE);
+      subCollector =
+          topDocsCollector = TopScoreDocCollector.create(docsToCollect, Integer.MAX_VALUE);
     } else {
       topDocsCollector = TopFieldCollector.create(sort, docsToCollect, Integer.MAX_VALUE);
       if (needScores) {

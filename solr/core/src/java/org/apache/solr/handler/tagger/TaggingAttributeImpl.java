@@ -25,14 +25,10 @@ package org.apache.solr.handler.tagger;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
-/**
- * Implementation of the {@link TaggingAttribute}
- */
+/** Implementation of the {@link TaggingAttribute} */
 public class TaggingAttributeImpl extends AttributeImpl implements TaggingAttribute {
 
-  /**
-   * the private field initialised with {@link TaggingAttribute#DEFAULT_TAGGABLE}
-   */
+  /** the private field initialised with {@link TaggingAttribute#DEFAULT_TAGGABLE} */
   private boolean taggable = TaggingAttribute.DEFAULT_TAGGABLE;
 
   /*
@@ -75,5 +71,4 @@ public class TaggingAttributeImpl extends AttributeImpl implements TaggingAttrib
   public void reflectWith(AttributeReflector reflector) {
     reflector.reflect(TaggingAttribute.class, "taggable", isTaggable());
   }
-
 }

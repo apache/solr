@@ -17,7 +17,19 @@
 
 package org.apache.solr.handler;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
+import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.google.common.collect.Maps;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.cloud.ConfigSetCmds;
@@ -36,22 +48,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
-/**
- * Unit tests for the v2 to v1 API mappings found in {@link ClusterAPI}
- */
+/** Unit tests for the v2 to v1 API mappings found in {@link ClusterAPI} */
 public class V2ClusterAPIMappingTest {
   private ApiBag apiBag;
   private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
@@ -78,7 +75,8 @@ public class V2ClusterAPIMappingTest {
 
   @Test
   public void testAsyncCommandStatusAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedV1Params("/cluster/command-status/someId", "GET", null);
+    final SolrParams v1Params =
+        captureConvertedV1Params("/cluster/command-status/someId", "GET", null);
 
     assertEquals(CollectionParams.CollectionAction.REQUESTSTATUS.lowerName, v1Params.get(ACTION));
     assertEquals("someId", v1Params.get(REQUESTID));
@@ -107,7 +105,8 @@ public class V2ClusterAPIMappingTest {
 
   @Test
   public void testDeleteCommandStatusAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedV1Params("/cluster/command-status/someId", "DELETE", null);
+    final SolrParams v1Params =
+        captureConvertedV1Params("/cluster/command-status/someId", "DELETE", null);
 
     assertEquals(CollectionParams.CollectionAction.DELETESTATUS.lowerName, v1Params.get(ACTION));
     assertEquals("someId", v1Params.get(REQUESTID));
@@ -116,7 +115,8 @@ public class V2ClusterAPIMappingTest {
   // TODO This should probably really get its own class.
   @Test
   public void testDeleteConfigetAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedConfigsetV1Params("/cluster/configs/someConfigset", "DELETE", null);
+    final SolrParams v1Params =
+        captureConvertedConfigsetV1Params("/cluster/configs/someConfigset", "DELETE", null);
 
     assertEquals(ConfigSetParams.ConfigSetAction.DELETE.toString(), v1Params.get(ACTION));
     assertEquals("someConfigset", v1Params.get(NAME));
@@ -131,11 +131,14 @@ public class V2ClusterAPIMappingTest {
 
   @Test
   public void testCreateConfigsetAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedConfigsetV1Params("/cluster/configs", "POST",
-            "{'create': {" +
-                    "'name': 'new_configset_name', " +
-                    "'baseConfigSet':'some_existing_configset', " +
-                    "'properties': {'prop1': 'val1', 'prop2': 'val2'}}}");
+    final SolrParams v1Params =
+        captureConvertedConfigsetV1Params(
+            "/cluster/configs",
+            "POST",
+            "{'create': {"
+                + "'name': 'new_configset_name', "
+                + "'baseConfigSet':'some_existing_configset', "
+                + "'properties': {'prop1': 'val1', 'prop2': 'val2'}}}");
 
     assertEquals(ConfigSetParams.ConfigSetAction.CREATE.toString(), v1Params.get(ACTION));
     assertEquals("new_configset_name", v1Params.get(NAME));
@@ -146,7 +149,8 @@ public class V2ClusterAPIMappingTest {
 
   @Test
   public void testUploadConfigsetAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedConfigsetV1Params("/cluster/configs/someConfigSetName", "PUT", null);
+    final SolrParams v1Params =
+        captureConvertedConfigsetV1Params("/cluster/configs/someConfigSetName", "PUT", null);
 
     assertEquals(ConfigSetParams.ConfigSetAction.UPLOAD.toString(), v1Params.get(ACTION));
     assertEquals("someConfigSetName", v1Params.get(NAME));
@@ -158,21 +162,27 @@ public class V2ClusterAPIMappingTest {
 
   @Test
   public void testAddFileToConfigsetAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedConfigsetV1Params("/cluster/configs/someConfigSetName/some/file/path", "PUT", null);
+    final SolrParams v1Params =
+        captureConvertedConfigsetV1Params(
+            "/cluster/configs/someConfigSetName/some/file/path", "PUT", null);
 
     assertEquals(ConfigSetParams.ConfigSetAction.UPLOAD.toString(), v1Params.get(ACTION));
     assertEquals("someConfigSetName", v1Params.get(NAME));
-    assertEquals("/some/file/path", v1Params.get(ConfigSetParams.FILE_PATH)); // Note the leading '/' that makes the path appear absolute
+    assertEquals(
+        "/some/file/path",
+        v1Params.get(
+            ConfigSetParams.FILE_PATH)); // Note the leading '/' that makes the path appear absolute
     assertEquals(true, v1Params.getPrimitiveBool(ConfigSetParams.OVERWRITE));
     assertEquals(false, v1Params.getPrimitiveBool(ConfigSetParams.CLEANUP));
   }
 
   @Test
   public void testAddRoleAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedV1Params("/cluster", "POST",
-            "{'add-role': {" +
-                    "'node': 'some_node_name', " +
-                    "'role':'some_role'}}");
+    final SolrParams v1Params =
+        captureConvertedV1Params(
+            "/cluster",
+            "POST",
+            "{'add-role': {" + "'node': 'some_node_name', " + "'role':'some_role'}}");
 
     assertEquals(CollectionParams.CollectionAction.ADDROLE.toString(), v1Params.get(ACTION));
     assertEquals("some_node_name", v1Params.get("node"));
@@ -181,10 +191,11 @@ public class V2ClusterAPIMappingTest {
 
   @Test
   public void testRemoveRoleAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedV1Params("/cluster", "POST",
-            "{'remove-role': {" +
-                    "'node': 'some_node_name', " +
-                    "'role':'some_role'}}");
+    final SolrParams v1Params =
+        captureConvertedV1Params(
+            "/cluster",
+            "POST",
+            "{'remove-role': {" + "'node': 'some_node_name', " + "'role':'some_role'}}");
 
     assertEquals(CollectionParams.CollectionAction.REMOVEROLE.toString(), v1Params.get(ACTION));
     assertEquals("some_node_name", v1Params.get("node"));
@@ -193,46 +204,52 @@ public class V2ClusterAPIMappingTest {
 
   @Test
   public void testSetPropertyAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedV1Params("/cluster", "POST",
-            "{'set-property': {" +
-                    "'name': 'some_prop_name', " +
-                    "'val':'some_value'}}");
+    final SolrParams v1Params =
+        captureConvertedV1Params(
+            "/cluster",
+            "POST",
+            "{'set-property': {" + "'name': 'some_prop_name', " + "'val':'some_value'}}");
 
     assertEquals(CollectionParams.CollectionAction.CLUSTERPROP.toString(), v1Params.get(ACTION));
     assertEquals("some_prop_name", v1Params.get(NAME));
     assertEquals("some_value", v1Params.get("val"));
   }
 
-  private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody) throws Exception {
+  private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody)
+      throws Exception {
     return doCaptureParams(path, method, v2RequestBody, mockCollectionsHandler);
   }
 
-  private SolrParams captureConvertedConfigsetV1Params(String path, String method, String v2RequestBody) throws Exception {
+  private SolrParams captureConvertedConfigsetV1Params(
+      String path, String method, String v2RequestBody) throws Exception {
     return doCaptureParams(path, method, v2RequestBody, mockConfigSetHandler);
   }
 
-  private SolrParams doCaptureParams(String path, String method, String v2RequestBody, RequestHandlerBase mockHandler) throws Exception {
+  private SolrParams doCaptureParams(
+      String path, String method, String v2RequestBody, RequestHandlerBase mockHandler)
+      throws Exception {
     final HashMap<String, String> parts = new HashMap<>();
     final Api api = apiBag.lookup(path, method, parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
-    final LocalSolrQueryRequest req = new LocalSolrQueryRequest(null, Maps.newHashMap()) {
-      @Override
-      public List<CommandOperation> getCommands(boolean validateInput) {
-        if (v2RequestBody == null) return Collections.emptyList();
-        return ApiBag.getCommandOperations(new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
-      }
+    final LocalSolrQueryRequest req =
+        new LocalSolrQueryRequest(null, Maps.newHashMap()) {
+          @Override
+          public List<CommandOperation> getCommands(boolean validateInput) {
+            if (v2RequestBody == null) return Collections.emptyList();
+            return ApiBag.getCommandOperations(
+                new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
+          }
 
-      @Override
-      public Map<String, String> getPathTemplateValues() {
-        return parts;
-      }
+          @Override
+          public Map<String, String> getPathTemplateValues() {
+            return parts;
+          }
 
-      @Override
-      public String getHttpMethod() {
-        return method;
-      }
-    };
-
+          @Override
+          public String getHttpMethod() {
+            return method;
+          }
+        };
 
     api.call(req, rsp);
     verify(mockHandler).handleRequestBody(queryRequestCaptor.capture(), any());

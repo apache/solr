@@ -18,36 +18,28 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * Node metric identifier, corresponding
- * to a node-level metric registry and the internal metric name.
+ * Node metric identifier, corresponding to a node-level metric registry and the internal metric
+ * name.
  */
 public interface NodeMetric<T> extends Metric<T> {
 
   /**
-   * Metric registry. If this metric identifier uses a fully-qualified
-   * metric key instead, then this method will return {@link Registry#UNSPECIFIED}.
+   * Metric registry. If this metric identifier uses a fully-qualified metric key instead, then this
+   * method will return {@link Registry#UNSPECIFIED}.
    */
   Registry getRegistry();
 
-  /**
-   * Registry options for node metrics.
-   */
+  /** Registry options for node metrics. */
   enum Registry {
-    /**
-     * corresponds to solr.node
-     */
+    /** corresponds to solr.node */
     SOLR_NODE,
-    /**
-     * corresponds to solr.jvm
-     */
+    /** corresponds to solr.jvm */
     SOLR_JVM,
-    /**
-     * corresponds to solr.jetty
-     */
+    /** corresponds to solr.jetty */
     SOLR_JETTY,
     /**
-     * In case when the registry name is not relevant (eg. a fully-qualified
-     * metric key was provided as the metric name).
+     * In case when the registry name is not relevant (eg. a fully-qualified metric key was provided
+     * as the metric name).
      */
     UNSPECIFIED
   }

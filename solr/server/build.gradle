@@ -19,6 +19,11 @@ apply plugin: 'java-library'
 
 description = 'Solr Server'
 
+// No java classes from this module
+jar.enabled(false)
+javadoc.enabled(false)
+compileJava.enabled(false)
+
 configurations {
   api {
     exclude group: "org.slf4j"
@@ -30,6 +35,10 @@ configurations {
 }
 
 dependencies {
+  // If any of the below "api" declared dependencies are
+  // used in core/build.gradle, then they must be declared
+  // as "compileOnlyApi" in core/build.gradle.
+
   permitUnusedDeclared 'io.dropwizard.metrics:metrics-core'
   api('io.dropwizard.metrics:metrics-core', {
     exclude group: "com.rabbitmq", module: "amqp-client"

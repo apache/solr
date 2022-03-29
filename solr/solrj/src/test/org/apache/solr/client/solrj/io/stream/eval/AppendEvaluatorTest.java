@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AppendEvaluator;
@@ -28,35 +28,31 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class AppendEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public AppendEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("append", AppendEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("append", AppendEvaluator.class);
+    values = new HashMap<String, Object>();
   }
-    
+
   @Test
-  public void multiField() throws Exception{
+  public void multiField() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("append(a,b,c)");
     Object result;
-    
+
     values.clear();
     values.put("a", 1);
-    values.put("b", Arrays.asList("foo","bar","baz"));
+    values.put("b", Arrays.asList("foo", "bar", "baz"));
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof List);
-    Assert.assertEquals(1D, ((List)result).get(0));
-    Assert.assertEquals("foo", ((List)result).get(1));
-    Assert.assertEquals("bar", ((List)result).get(2));
-    Assert.assertEquals("baz", ((List)result).get(3));
-    
+    Assert.assertEquals(1D, ((List) result).get(0));
+    Assert.assertEquals("foo", ((List) result).get(1));
+    Assert.assertEquals("bar", ((List) result).get(2));
+    Assert.assertEquals("baz", ((List) result).get(3));
   }
 }

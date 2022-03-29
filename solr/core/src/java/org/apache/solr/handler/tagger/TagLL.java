@@ -23,32 +23,29 @@
 package org.apache.solr.handler.tagger;
 
 import java.io.IOException;
-
 import org.apache.lucene.util.BytesRef;
 
 /**
  * This is a Tag -- a startOffset, endOffset and value.
- * <p>
- * A Tag starts without a value in an
- * "advancing" state.  {@link #advance(org.apache.lucene.util.BytesRef, int)}
- * is called with subsequent words and then eventually it won't advance any
- * more, and value is set (could be null).
- * <p>
- * A Tag is also a doubly-linked-list (hence the LL in the name). All tags share
- * a reference to the head via a 1-element array, which is potentially modified
- * if any of the linked-list methods are called. Tags in the list should have
- * equal or increasing start offsets.
+ *
+ * <p>A Tag starts without a value in an "advancing" state. {@link
+ * #advance(org.apache.lucene.util.BytesRef, int)} is called with subsequent words and then
+ * eventually it won't advance any more, and value is set (could be null).
+ *
+ * <p>A Tag is also a doubly-linked-list (hence the LL in the name). All tags share a reference to
+ * the head via a 1-element array, which is potentially modified if any of the linked-list methods
+ * are called. Tags in the list should have equal or increasing start offsets.
  */
-public class TagLL{
+public class TagLL {
 
-  private final TagLL[] head;//a shared pointer to the head; 1 element
+  private final TagLL[] head; // a shared pointer to the head; 1 element
   TagLL prevTag, nextTag; // linked list
 
   private TermPrefixCursor cursor;
 
-  final int startOffset;//inclusive
-  int endOffset;//exclusive
-  Object value;//null means unset
+  final int startOffset; // inclusive
+  int endOffset; // exclusive
+  Object value; // null means unset
 
   /** optional boolean used by some TagClusterReducer's */
   boolean mark = false;
@@ -62,22 +59,18 @@ public class TagLL{
   }
 
   /**
-   * Advances this tag with "word" at offset "offset".  If this tag is not in
-   * an advancing state then it does nothing. If it is advancing and prior to
-   * advancing further it sees a value, then a non-advancing tag may be inserted
-   * into the LL as side-effect. If this returns false (it didn't advance) and
-   * if there is no value, then it will also be removed.
+   * Advances this tag with "word" at offset "offset". If this tag is not in an advancing state then
+   * it does nothing. If it is advancing and prior to advancing further it sees a value, then a
+   * non-advancing tag may be inserted into the LL as side-effect. If this returns false (it didn't
+   * advance) and if there is no value, then it will also be removed.
    *
-   *
-   * @param word      The next word or null if at an end
-   * @param offset    The last character in word's offset in the underlying
-   *                  stream. If word is null then it's meaningless.
-   *
-   * @return          Whether it advanced or not.
+   * @param word The next word or null if at an end
+   * @param offset The last character in word's offset in the underlying stream. If word is null
+   *     then it's meaningless.
+   * @return Whether it advanced or not.
    */
   boolean advance(BytesRef word, int offset) throws IOException {
-    if (!isAdvancing())
-      return false;
+    if (!isAdvancing()) return false;
 
     Object iVal = cursor.getDocIds();
 
@@ -93,18 +86,17 @@ public class TagLL{
     } else {
       this.value = iVal;
       this.cursor = null;
-      if (iVal == null)
-        removeLL();
+      if (iVal == null) removeLL();
       return false;
     }
   }
 
-  /** Removes this tag from the chain, connecting prevTag and nextTag. Does not
-   * modify "this" object's pointers, so the caller can refer to nextTag after
-   * removing it. */
+  /**
+   * Removes this tag from the chain, connecting prevTag and nextTag. Does not modify "this"
+   * object's pointers, so the caller can refer to nextTag after removing it.
+   */
   public void removeLL() {
-    if (head[0] == this)
-      head[0] = nextTag;
+    if (head[0] == this) head[0] = nextTag;
     if (prevTag != null) {
       prevTag.nextTag = nextTag;
     }
@@ -153,15 +145,15 @@ public class TagLL{
   public int getStartOffset() {
     return startOffset;
   }
+
   public int getEndOffset() {
     return endOffset;
   }
+
   public boolean overlaps(TagLL other) {
-    //don't use >= or <= because startOffset is inclusive while endOffset is exclusive
-    if (startOffset < other.startOffset)
-      return endOffset > other.startOffset;
-    else
-      return startOffset < other.endOffset;
+    // don't use >= or <= because startOffset is inclusive while endOffset is exclusive
+    if (startOffset < other.startOffset) return endOffset > other.startOffset;
+    else return startOffset < other.endOffset;
   }
 
   boolean isAdvancing() {
@@ -170,7 +162,13 @@ public class TagLL{
 
   @Override
   public String toString() {
-    return (prevTag != null ? '*' : '-') + "|" + (nextTag != null ? '*' : '-') +
-        " " + startOffset + " to " + endOffset + (isAdvancing() ? '+' : " #" + value);
+    return (prevTag != null ? '*' : '-')
+        + "|"
+        + (nextTag != null ? '*' : '-')
+        + " "
+        + startOffset
+        + " to "
+        + endOffset
+        + (isAdvancing() ? '+' : " #" + value);
   }
 }

@@ -20,14 +20,15 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * An advanced multi-field query parser based on the DisMax parser.
- * See Wiki page https://solr.apache.org/guide/edismax-query-parser.html
+ * An advanced multi-field query parser based on the DisMax parser. See Wiki page
+ * https://solr.apache.org/guide/edismax-query-parser.html
  */
 public class ExtendedDismaxQParserPlugin extends QParserPlugin {
   public static final String NAME = "edismax";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new ExtendedDismaxQParser(qstr, localParams, params, req);
   }
 }

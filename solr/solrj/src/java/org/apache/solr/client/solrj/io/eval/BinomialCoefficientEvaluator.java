@@ -19,28 +19,39 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.commons.math3.util.*;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class BinomialCoefficientEvaluator extends RecursiveNumericEvaluator implements ManyValueWorker {
+public class BinomialCoefficientEvaluator extends RecursiveNumericEvaluator
+    implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public BinomialCoefficientEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
+  public BinomialCoefficientEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
-    if(2 != containedEvaluators.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two values but found %d",expression, containedEvaluators.size()));
+    if (2 != containedEvaluators.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting two values but found %d",
+              expression,
+              containedEvaluators.size()));
     }
   }
 
   @Override
   public Object doWork(Object... values) throws IOException {
-    if(2 != values.length){
-      throw new IOException(String.format(Locale.ROOT,"%s(...) only works with 2 values but %d were provided", constructingFactory.getFunctionName(getClass()), values.length));
+    if (2 != values.length) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "%s(...) only works with 2 values but %d were provided",
+              constructingFactory.getFunctionName(getClass()),
+              values.length));
     }
-    int set = ((Number)values[0]).intValue();
-    int subset = ((Number)values[1]).intValue();
+    int set = ((Number) values[0]).intValue();
+    int subset = ((Number) values[1]).intValue();
     return CombinatoricsUtils.binomialCoefficient(set, subset);
   }
 }
