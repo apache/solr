@@ -22,7 +22,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
