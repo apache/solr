@@ -20,6 +20,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
 import java.util.Collections;
@@ -44,8 +46,10 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 @Slow
 @SolrTestCaseJ4.SuppressSSL
@@ -335,6 +339,23 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     } finally {
       server.shutdown();
     }
+  }
+
+  @Test
+  public void testTouchConfDir() throws KeeperException, InterruptedException {
+    ZkSolrResourceLoader zkLoader = mock(ZkSolrResourceLoader.class);
+    ZkController zkController = mock(ZkController.class);
+    SolrZkClient zkClient = mock(SolrZkClient.class);
+    when(zkLoader.getZkController()).thenReturn(zkController);
+    when(zkController.getZkClient()).thenReturn(zkClient);
+    String configPath = "configs/path";
+    when(zkLoader.getConfigSetZkPath()).thenReturn(configPath);
+    byte[] data = {123, 124};
+    when(zkClient.getData(configPath, null, null, true)).thenReturn(data);
+
+    ZkController.touchConfDir(zkLoader);
+
+    verify(zkClient).setData(configPath, data, true);
   }
 
   private CoreContainer getCoreContainer() {
