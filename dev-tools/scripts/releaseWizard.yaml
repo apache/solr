@@ -775,8 +775,8 @@ groups:
       You can build a release-candidate of the official docker image using the following command:
 
       docker build {{ release_candidate_location }}/solr/docker/Dockerfile.official \
-        --build-arg SOLR_DOWNLOAD_URL={{ release_candidate_location }}/solr/solr-9.0.0.tgz \
-        -t solr-rc:9.0.0-rc1
+        --build-arg SOLR_DOWNLOAD_URL={{ release_candidate_location }}/solr/solr-{{ release_version }}.tgz \
+        -t solr-rc:{{ release_version }}-{{ rc_number }}
 
       The vote will be open for at least 72 hours i.e. until {{ vote_close }}.
 
