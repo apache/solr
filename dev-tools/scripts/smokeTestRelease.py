@@ -766,7 +766,7 @@ def removeTrailingZeros(version):
 def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
   print('    download artifacts')
   artifacts = []
-  artifactsURL = '%s/maven/org/apache/solr/' % baseURL
+  artifactsURL = '%s/solr/maven/org/apache/solr/' % baseURL
   targetDir = '%s/maven/org/apache/solr' % tmpDir
   if not os.path.exists(targetDir):
     os.makedirs(targetDir)
