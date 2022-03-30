@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.SentinelIntSet;
@@ -41,7 +42,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
@@ -581,13 +581,10 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
 
     // start with a smallish number of documents, and test that we can do a full walk using a
     // sort on *every* field in the schema...
-
-    List<SolrInputDocument> initialDocs = new ArrayList<>();
-    for (int i = 1; i <= numInitialDocs; i++) {
-      SolrInputDocument doc = CursorPagingTest.buildRandomDocument(i);
-      initialDocs.add(doc);
-      indexDoc(doc);
-    }
+    indexDocs(
+        IntStream.rangeClosed(1, numInitialDocs)
+            .mapToObj(CursorPagingTest::buildRandomDocument)
+            .iterator());
     commit();
 
     for (String f : allFieldNames) {
@@ -618,10 +615,10 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     }
 
     // now add a lot more docs, and test a handful of randomized multi-level sorts
-    for (int i = numInitialDocs + 1; i <= totalDocs; i++) {
-      SolrInputDocument doc = CursorPagingTest.buildRandomDocument(i);
-      indexDoc(doc);
-    }
+    indexDocs(
+        IntStream.rangeClosed(numInitialDocs + 1, totalDocs)
+            .mapToObj(CursorPagingTest::buildRandomDocument)
+            .iterator());
     commit();
 
     final int numRandomSorts = atLeast(3);
