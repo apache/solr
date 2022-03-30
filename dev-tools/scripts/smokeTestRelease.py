@@ -630,7 +630,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     java.run_java11('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest.log' % unpackPath)
     print("    build binary release w/ Java 11")
     java.run_java11('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble.log' % unpackPath)
-    testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java11_home, True)
+    testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java11_home)
 
     if java.run_java17:
       print("    run tests w/ Java 17 and testArgs='%s'..." % testArgs)
@@ -639,7 +639,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
       java.run_java17('./gradlew --no-daemon integrationTest -Dversion.release=%s' % version, '%s/itest-java17.log' % unpackPath)
       print("    build binary release w/ Java 17")
       java.run_java17('./gradlew --no-daemon dev -Dversion.release=%s' % version, '%s/assemble-java17.log' % unpackPath)
-      testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java17_home, True)
+      testSolrExample("%s/solr/packaging/build/dev" % unpackPath, java.java17_home)
 
   else:
     # Binary tarball
@@ -652,7 +652,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     shutil.copytree(unpackPath, java11UnpackPath)
     os.chdir(java11UnpackPath)
     print('    test solr example w/ Java 11...')
-    testSolrExample(java11UnpackPath, java.java11_home, False)
+    testSolrExample(java11UnpackPath, java.java11_home)
 
     if java.run_java17:
       print('    copying unpacked distribution for Java 17 ...')
@@ -662,7 +662,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
       shutil.copytree(unpackPath, java17UnpackPath)
       os.chdir(java17UnpackPath)
       print('    test solr example w/ Java 17...')
-      testSolrExample(java17UnpackPath, java.java17_home, False)
+      testSolrExample(java17UnpackPath, java.java17_home)
 
     os.chdir(unpackPath)
 
@@ -704,10 +704,11 @@ def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('localhost', port)) == 0
 
-def testSolrExample(unpackPath, javaPath, isSrc):
+def testSolrExample(binaryDistPath, javaPath):
   # test solr using some examples it comes with
-  logFile = '%s/solr-example.log' % unpackPath
-  os.chdir(unpackPath)
+  logFile = '%s/solr-example.log' % binaryDistPath
+  old_cwd = os.getcwd() # So we can back-track
+  os.chdir(binaryDistPath)
 
   print('      start Solr instance (log=%s)...' % logFile)
   env = {}
@@ -724,7 +725,7 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   except:
      print('      Stop failed due to: '+sys.exc_info()[0])
 
-  print('      Running techproducts example on port 8983 from %s' % unpackPath)
+  print('      Running techproducts example on port 8983 from %s' % binaryDistPath)
   try:
     if not cygwin:
       runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
@@ -749,14 +750,14 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   finally:
     # Stop server:
     print('      stop server using: bin/solr stop -p 8983')
-    os.chdir(unpackPath)
+    os.chdir(binaryDistPath)
 
     if not cygwin:
       subprocess.call(['bin/solr','stop','-p','8983'])
     else:
       subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
 
-  os.chdir(unpackPath)
+  os.chdir(old_cwd)
 
 
 def removeTrailingZeros(version):
@@ -766,7 +767,7 @@ def removeTrailingZeros(version):
 def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
   print('    download artifacts')
   artifacts = []
-  artifactsURL = '%s/solr/maven/org/apache/solr/' % baseURL
+  artifactsURL = '%s/maven/org/apache/solr/' % baseURL
   targetDir = '%s/maven/org/apache/solr' % tmpDir
   if not os.path.exists(targetDir):
     os.makedirs(targetDir)
@@ -1139,7 +1140,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     unpackAndVerify(java, tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs)
     print()
     print('Test Maven artifacts...')
-    checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile)
+    checkMaven(solrPath, tmpDir, gitRevision, version, isSigned, keysFile)
   else:
     print("Solr test done (--download-only specified)")
 
