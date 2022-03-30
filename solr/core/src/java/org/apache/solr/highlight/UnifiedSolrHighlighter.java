@@ -236,7 +236,6 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
   /** From {@link #getHighlighter(org.apache.solr.request.SolrQueryRequest)}. */
   protected static class SolrExtendedUnifiedHighlighter extends UnifiedHighlighter {
-    protected static final Predicate<String> NO_FIELD_MATCH_PREDICATE = s -> false;
     protected static final Predicate<String> NOT_REQUIRED_FIELD_MATCH_PREDICATE = s -> true;
     private final SolrIndexSearcher solrIndexSearcher;
     protected final SolrParams params;
@@ -449,9 +448,6 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
         final Set<String> fields =
             Set.of(expandWildcardsInHighlightFields(indexedFields, queryFieldPattern));
-        if (fields.isEmpty()) {
-          return NO_FIELD_MATCH_PREDICATE;
-        }
         return fields::contains;
       }
 
