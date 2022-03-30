@@ -614,7 +614,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     nonexistentDocUpdate.setField("id", 2);
     nonexistentDocUpdate.setField("inplace_updatable_float", map("set", "50"));
 
-    SolrInputDocument docs[] = new SolrInputDocument[] {existingDocUpdate, nonexistentDocUpdate};
+    List<SolrInputDocument> docs = List.of(existingDocUpdate, nonexistentDocUpdate);
 
     SolrClient solrClient = clients.get(random().nextInt(clients.size()));
     add(solrClient, null, docs);
