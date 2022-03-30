@@ -571,6 +571,41 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/*)=0");
   }
 
+  public void testRequireFieldMatchWithQueryFieldPattern() {
+    // without requiring of a field match
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text,text2,text3",
+            "hl.queryFieldPattern", "text,text2,text3",
+            "hl.requireFieldMatch", "false",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text2']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text2']/str='second <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='<em>crappy</em> <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> <em>document</em>'");
+    // with requiring of a field match
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text,text2,text3",
+            "hl.queryFieldPattern", "text,text2,text3",
+            "hl.requireFieldMatch", "true",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'",
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text2']/*)=0",
+        "count(//lst[@name='highlighting']/lst[@name='102']/arr[@name='text2']/*)=0",
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/*)=0",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> document'");
+  }
+
   public void testQueryFieldPatternIndexedNotStored() {
 
     // highlighting on text3 uses all query terms
