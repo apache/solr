@@ -230,4 +230,59 @@ public class OrderedExecutorTest extends SolrTestCase {
   private static class IntBox {
     int value;
   }
+
+  @Test
+  public void testMaxSize() throws InterruptedException {
+    OrderedExecutor orderedExecutor =
+        new OrderedExecutor(1, ExecutorUtil.newMDCAwareCachedThreadPool("single"));
+
+    CountDownLatch isRunning = new CountDownLatch(1);
+    CountDownLatch blockingLatch = new CountDownLatch(1);
+
+    try {
+      orderedExecutor.execute(
+          () -> {
+            // This will aquire and hold the single max size semaphore permit
+            try {
+              isRunning.countDown();
+              blockingLatch.await();
+            } catch (InterruptedException e) {
+              e.printStackTrace();
+            }
+          });
+
+      isRunning.await(2, TimeUnit.SECONDS);
+
+      // Add another task in a background thread so that we can interrupt it
+      // This _should_ be blocked on the first task because there is only one execution slot
+      CountDownLatch taskTwoFinished = new CountDownLatch(1);
+      Thread t = new Thread(() -> orderedExecutor.execute(2, () -> taskTwoFinished.countDown()));
+      t.start();
+      while (t.getState() != Thread.State.WAITING) {
+        // Wait long enough for Task 2 to have inserted a key into the map and then wait on the
+        // semaphore
+        Thread.sleep(10);
+      }
+      t.interrupt();
+      t.join();
+
+      // Release the first thread
+      assertFalse(
+          "Did not expect task #2 to complete", taskTwoFinished.await(0, TimeUnit.NANOSECONDS));
+      blockingLatch.countDown();
+
+      // Tasks without a lock can safely execute again
+      orderedExecutor.execute(() -> {});
+
+      // New threads for lock #2 should be able to execute
+      t = new Thread(() -> orderedExecutor.execute(2, () -> {}));
+      t.start();
+
+      // This will also get caught by ThreadLeakControl if it fails
+      t.join(TimeUnit.SECONDS.toMillis(2));
+      assertFalse("Task should have completed", t.isAlive());
+    } finally {
+      orderedExecutor.shutdownAndAwaitTermination();
+    }
+  }
 }
