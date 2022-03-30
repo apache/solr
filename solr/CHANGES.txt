@@ -41,7 +41,7 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
 
 Bug Fixes
 ---------------------
