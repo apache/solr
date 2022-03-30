@@ -20,12 +20,11 @@ Optimizations
 
 Bug Fixes
 ---------------------
-* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
-  halving the latency of synchronous commits (Michael Gibney)
+(No changes)
 
 Other Changes
 ---------------------
-* SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
+(No changes)
 
 ==================  9.1.0 ==================
 
@@ -60,8 +59,13 @@ Bug Fixes
 
 * SOLR-16112: DefaultSolrHighlighter.doHighlighting to Query#rewrite multiple times if necessary. (Christine Poerschke)
 
+* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
+  halving the latency of synchronous commits (Michael Gibney)
+
 Other Changes
 ---------------------
+* SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
+
 * SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
 
 * SOLR-15923: Cue users in 404 message that Solr is running and the url is incorrect. (Eric Pugh, Mike Drob, Shawn Heisey)
