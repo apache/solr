@@ -256,14 +256,11 @@ public class OrderedExecutorTest extends SolrTestCase {
       // Add another task in a background thread so that we can interrupt it
       // This _should_ be blocked on the first task because there is only one execution slot
       CountDownLatch taskTwoFinished = new CountDownLatch(1);
-      Thread t = new Thread(() -> orderedExecutor.execute(2, () -> taskTwoFinished.countDown()));
+      Thread t = new Thread(() -> orderedExecutor.execute(2, taskTwoFinished::countDown));
       t.start();
-      while (t.getState() != Thread.State.WAITING) {
-        // Wait long enough for Task 2 to have inserted a key into the map and then wait on the
-        // semaphore
-        Thread.sleep(10);
-      }
+      // Interrupt the thread now, but it won't throw until it calls acquire()
       t.interrupt();
+      // It should complete gracefully from here
       t.join();
 
       // Release the first thread
@@ -273,7 +270,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       // Tasks without a lock can safely execute again
       orderedExecutor.execute(() -> {});
 
-      // New threads for lock #2 should be able to execute
+      // New threads for lock #2 should be able to execute as well
       t = new Thread(() -> orderedExecutor.execute(2, () -> {}));
       t.start();
 
