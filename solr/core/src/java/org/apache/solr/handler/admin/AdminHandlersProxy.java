@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -53,6 +54,7 @@ import org.slf4j.LoggerFactory;
 public class AdminHandlersProxy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_NODES = "nodes";
+  private static final Pattern PARAM_NODES_PATTERN = Pattern.compile("^[^/:]+:\\d+_[\\w/]+$");
 
   // Proxy this request to a different remote node if 'node' parameter is provided
   public static boolean maybeProxyToNodes(
@@ -81,7 +83,7 @@ public class AdminHandlersProxy {
     } else {
       nodes = new HashSet<>(Arrays.asList(nodeNames.split(",")));
       for (String nodeName : nodes) {
-        if (!nodeName.matches("^[^/:]+:\\d+_[\\w/]+$")) {
+        if (!PARAM_NODES_PATTERN.matcher(nodeName).matches()) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
               "Parameter " + PARAM_NODES + " has wrong format");

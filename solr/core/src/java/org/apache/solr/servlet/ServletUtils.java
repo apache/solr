@@ -44,6 +44,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import org.apache.http.HttpHeaders;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.tracing.HttpServletCarrier;
@@ -96,6 +97,7 @@ public abstract class ServletUtils {
 
           return new ServletInputStreamWrapper(super.getInputStream()) {
             @Override
+            @SuppressForbidden(reason = "String.matches(String) use in assert only")
             public void close() {
               // even though we skip closes, we let local tests know not to close so that a full
               // understanding can take place
@@ -133,6 +135,7 @@ public abstract class ServletUtils {
 
           return new ServletOutputStreamWrapper(super.getOutputStream()) {
             @Override
+            @SuppressForbidden(reason = "String.matches(String) use in assert only")
             public void close() {
               // even though we skip closes, we let local tests know not to close so that a full
               // understanding can take place
