@@ -202,7 +202,7 @@ public class SolrDocumentFetcher {
   public Collection<String> getStoredHighlightFieldNames() {
     synchronized (this) {
       if (storedHighlightFieldNames == null) {
-        storedHighlightFieldNames = new LinkedList<>();
+        storedHighlightFieldNames = new ArrayList<>();
         for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
           final String fieldName = fieldInfo.name;
           try {
