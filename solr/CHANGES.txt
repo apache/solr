@@ -20,12 +20,11 @@ Optimizations
 
 Bug Fixes
 ---------------------
-* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
-  halving the latency of synchronous commits (Michael Gibney)
+(No changes)
 
 Other Changes
 ---------------------
-* SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
+(No changes)
 
 ==================  9.1.0 ==================
 
@@ -39,9 +38,11 @@ Improvements
 
 * SOLR-15652: Add Slack channel for community support to Admin UI footer, update links.  (Eric Pugh)
 
+* SOLR-16002: Avoid redundant `FilterQuery` caching, e.g. via `filter($query)` syntax. (Michael Gibney, David Smiley)
+
 Optimizations
 ---------------------
-(No changes)
+* SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
 
 Bug Fixes
 ---------------------
@@ -53,8 +54,15 @@ Bug Fixes
 
 * SOLR-16089: Fix empty columns in Cloud Node UI Screen when replica is in down state. (hossman)
 
+* SOLR-16112: DefaultSolrHighlighter.doHighlighting to Query#rewrite multiple times if necessary. (Christine Poerschke)
+
+* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
+  halving the latency of synchronous commits (Michael Gibney)
+
 Other Changes
 ---------------------
+* SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
+
 * SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
 
 * SOLR-15923: Cue users in 404 message that Solr is running and the url is incorrect. (Eric Pugh, Mike Drob, Shawn Heisey)
@@ -63,11 +71,15 @@ Other Changes
 
 * SOLR-15886: Remove deprecated showItems configuration value from solrconfig.xml files (Andy Lester via Eric Pugh)
 
+* SOLR-16114: SolrZooKeeper has been removed in favor of using ZooKeeper directly. (Mike Drob)
+
 Build
 ---------------------
 * SOLR-16053: Upgrade scriptDepVersions (Kevin Risden)
 
 * SOLR-16050: Upgrade to errorprone 2.11.0 (Kevin Risden)
+
+* Upgrade forbiddenapis to 3.3 (Uwe Schindler)
 
 ==================  9.0.0 ==================
 

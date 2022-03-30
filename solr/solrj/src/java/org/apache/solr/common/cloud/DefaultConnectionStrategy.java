@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
   @Override
   public void connect(String serverAddress, int timeout, Watcher watcher, ZkUpdate updater)
       throws IOException, InterruptedException, TimeoutException {
-    SolrZooKeeper zk = createSolrZooKeeper(serverAddress, timeout, watcher);
+    ZooKeeper zk = createZooKeeper(serverAddress, timeout, watcher);
     boolean success = false;
     try {
       updater.update(zk);
@@ -52,7 +53,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
       final ZkUpdate updater)
       throws IOException, InterruptedException, TimeoutException {
     log.warn("Connection expired - starting a new one...");
-    SolrZooKeeper zk = createSolrZooKeeper(serverAddress, zkClientTimeout, watcher);
+    ZooKeeper zk = createZooKeeper(serverAddress, zkClientTimeout, watcher);
     boolean success = false;
     try {
       updater.update(zk);

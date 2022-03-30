@@ -288,7 +288,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   }
 
   private void forceSessionExpire() throws InterruptedException, TimeoutException {
-    long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+    long sessionId = zkClient.getZooKeeper().getSessionId();
     zkServer.expire(sessionId);
     zkClient.getConnectionManager().waitForDisconnected(10000);
     zkClient.getConnectionManager().waitForConnected(10000);
@@ -299,7 +299,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
       Thread.sleep(50);
     }
     assertTrue(zkClient.isConnected());
-    assertFalse(sessionId == zkClient.getSolrZooKeeper().getSessionId());
+    assertNotEquals(sessionId, zkClient.getZooKeeper().getSessionId());
   }
 
   protected ZkDistributedQueue makeDistributedQueue(String dqZNode) throws Exception {

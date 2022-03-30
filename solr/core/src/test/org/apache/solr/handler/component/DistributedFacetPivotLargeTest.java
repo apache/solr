@@ -1574,13 +1574,13 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
    * Builds up a SolrInputDocument using the specified fields, then adds it to the specified client
    * as well as the control client
    *
-   * @see #indexDoc(org.apache.solr.client.solrj.SolrClient,SolrParams,SolrInputDocument...)
+   * @see #indexDoc(SolrClient, SolrParams, SolrInputDocument)
    * @see #sdoc
    */
   private void addPivotDoc(SolrClient client, Object... fields)
       throws IOException, SolrServerException {
 
-    indexDoc(client, params(), sdoc(fields));
+    indexDocs(client, null, List.of(sdoc(fields)));
   }
 
   private int docNumber = 0;

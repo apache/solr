@@ -20,6 +20,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -87,7 +88,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     SolrClient client1 = clients.get(1);
     SolrClient client2 = clients.get(2);
 
-    long v = 0;
+    int v = 0;
     add(client0, seenLeader, sdoc("id", "1", "_version_", ++v));
 
     // this fails because client0 has no context (i.e. no updates of its own to judge if applying
@@ -213,26 +214,23 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     // now lets check fingerprinting causes appropriate fails
     v = 4000;
-    add(client0, seenLeader, sdoc("id", Integer.toString((int) v), "_version_", v));
+    add(client0, seenLeader, sdoc("id", Integer.toString(v), "_version_", v));
     docsAdded.add(4000);
     int toAdd = numVersions + 10;
-    for (int i = 0; i < toAdd; i++) {
-      add(
-          client0,
-          seenLeader,
-          sdoc("id", Integer.toString((int) v + i + 1), "_version_", v + i + 1));
-      add(
-          client1,
-          seenLeader,
-          sdoc("id", Integer.toString((int) v + i + 1), "_version_", v + i + 1));
-      docsAdded.add((int) v + i + 1);
+
+    List<SolrInputDocument> additionalDocs = new ArrayList<>(toAdd);
+    for (int i = v + 1; i < v + toAdd + 1; i++) {
+      additionalDocs.add(sdoc("id", Integer.toString(i), "_version_", i));
+      docsAdded.add(i);
     }
+    add(client0, seenLeader, additionalDocs);
+    add(client1, seenLeader, additionalDocs);
 
     // client0 now has an additional add beyond our window and the fingerprint should cause this to
     // fail
     assertSync(client1, numVersions, false, shardsArr[0]);
 
-    // if we turn of fingerprinting, it should succeed
+    // if we turn off fingerprinting, it should succeed
     System.setProperty("solr.disableFingerprint", "true");
     try {
       assertSync(client1, numVersions, true, shardsArr[0]);
@@ -241,15 +239,13 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     }
 
     // lets add the missing document and verify that order doesn't matter
-    add(client1, seenLeader, sdoc("id", Integer.toString((int) v), "_version_", v));
+    add(client1, seenLeader, sdoc("id", Integer.toString(v), "_version_", v));
     assertSync(client1, numVersions, true, shardsArr[0]);
 
     // lets do some overwrites to ensure that repeated updates and maxDoc don't matter
     for (int i = 0; i < 10; i++) {
-      add(
-          client0,
-          seenLeader,
-          sdoc("id", Integer.toString((int) v + i + 1), "_version_", v + i + 1));
+      // add individually instead of in batch to create more writes
+      add(client0, seenLeader, sdoc("id", Integer.toString(v + i + 1), "_version_", v + i + 1));
     }
     assertSync(client1, numVersions, true, shardsArr[0]);
 

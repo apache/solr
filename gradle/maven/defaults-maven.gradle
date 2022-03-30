@@ -25,7 +25,6 @@ configure(rootProject) {
   ext {
     published = [
         ":solr:core",
-        ":solr:server",
         ":solr:solrj",
         ":solr:modules:analysis-extras",
         ":solr:modules:analytics",

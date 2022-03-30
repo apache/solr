@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CloudConfig;
@@ -31,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ThreadLeakLingering(linger = 30)
+@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-16122")
 public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -66,8 +68,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
                 long timeout =
                     System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
                 while (System.nanoTime() < timeout) {
-                  long sessionId = zkController.getZkClient().getSolrZooKeeper().getSessionId();
-                  server.expire(sessionId);
+                  server.expire(zkController.getZkClient().getZooKeeper().getSessionId());
                   try {
                     Thread.sleep(10);
                   } catch (InterruptedException e) {

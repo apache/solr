@@ -38,14 +38,16 @@ dependencies {
   implementation 'org.apache.lucene:lucene-queries'
   implementation 'org.apache.lucene:lucene-suggest'
 
-  implementation('org.apache.zookeeper:zookeeper', {
+
+  var zkExcludes = {
     exclude group: "org.apache.yetus", module: "audience-annotations"
     exclude group: "log4j", module: "log4j"
     exclude group: "org.slf4j", module: "slf4j-log4j12"
-  })
-  implementation ('org.apache.zookeeper:zookeeper-jute') {
-    exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
+
+  implementation('org.apache.zookeeper:zookeeper', zkExcludes)
+  implementation('org.apache.zookeeper:zookeeper-jute', zkExcludes)
+  implementation('org.apache.zookeeper:zookeeper::tests', zkExcludes)
 
   implementation 'commons-io:commons-io'
   implementation 'org.slf4j:slf4j-api'
