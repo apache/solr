@@ -267,8 +267,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       t.join();
 
       // Release the first thread
-      assertFalse(
-          "Did not expect task #2 to complete", taskTwoFinished.await(0, TimeUnit.NANOSECONDS));
+      assertFalse("Did not expect task #2 to complete", taskTwoFinished.await(0, TimeUnit.SECONDS));
       blockingLatch.countDown();
 
       // Tasks without a lock can safely execute again
