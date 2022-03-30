@@ -80,6 +80,10 @@ public class OrderedExecutor implements Executor {
     ExecutorUtil.shutdownAndAwaitTermination(delegate);
   }
 
+  public void shutdownNowAndAwaitTermination() {
+    ExecutorUtil.shutdownNowAndAwaitTermination(delegate);
+  }
+
   /**
    * A set of locks by a key {@code T}, kind of like Google Striped but the keys are sparse/lazy.
    */

@@ -79,7 +79,7 @@ public class TestCancellableCollector extends SolrTestCase {
             0L,
             TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<Runnable>(),
-            new NamedThreadFactory("TestIndexSearcher"));
+            new NamedThreadFactory("TestCancellableCollector"));
   }
 
   @Override
@@ -89,7 +89,7 @@ public class TestCancellableCollector extends SolrTestCase {
     dir.close();
 
     if (executor != null) {
-      executor.shutdown();
+      ExecutorUtil.shutdownNowAndAwaitTermination(executor);
     }
 
     executor = null;

@@ -100,8 +100,8 @@ public class OrderedExecutorTest extends SolrTestCase {
         fail("interupt while trying to poll event queue");
       }
     } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(controlExecutor);
-      orderedExecutor.shutdownAndAwaitTermination();
+      ExecutorUtil.shutdownNowAndAwaitTermination(controlExecutor);
+      orderedExecutor.shutdownNowAndAwaitTermination();
     }
   }
 
@@ -202,8 +202,8 @@ public class OrderedExecutorTest extends SolrTestCase {
         fail("interupt while trying to release the barrier and await the postBarrierLatch");
       }
     } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(controlExecutor);
-      orderedExecutor.shutdownAndAwaitTermination();
+      ExecutorUtil.shutdownNowAndAwaitTermination(controlExecutor);
+      orderedExecutor.shutdownNowAndAwaitTermination();
     }
   }
 
