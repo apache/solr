@@ -107,7 +107,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
         new SolrZkClientFactoryUsingCompletelyNewProviders(null, null, null, null)
             .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     zkClient
-        .getSolrZooKeeper()
+        .getZooKeeper()
         .addAuthInfo(
             "digest",
             ("connectAndAllACLUsername:connectAndAllACLPassword").getBytes(DATA_ENCODING));

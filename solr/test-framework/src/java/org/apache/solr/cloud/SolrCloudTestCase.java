@@ -34,6 +34,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -291,7 +292,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       throws IOException, SolrServerException {
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
     try (HttpSolrClient client =
-        getHttpSolrClient(jetty.getBaseUrl().toString(), cluster.getSolrClient().getHttpClient())) {
+        getHttpSolrClient(
+            jetty.getBaseUrl().toString(),
+            ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())) {
       return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
     }
   }

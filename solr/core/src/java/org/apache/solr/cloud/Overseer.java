@@ -35,6 +35,7 @@ import java.util.function.BiConsumer;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -52,7 +53,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -828,7 +828,7 @@ public class Overseer implements SolrCloseable {
       return;
     }
     try (CloudSolrClient client =
-        new CloudSolrClient.Builder(
+        new CloudLegacySolrClient.Builder(
                 Collections.singletonList(getZkController().getZkServerAddress()), Optional.empty())
             .withSocketTimeout(30000)
             .withConnectionTimeout(15000)
@@ -1021,11 +1021,7 @@ public class Overseer implements SolrCloseable {
         "/overseer/queue",
         zkStats,
         STATE_UPDATE_MAX_QUEUE,
-        new ConnectionManager.IsClosed() {
-          public boolean isClosed() {
-            return Overseer.this.isClosed() || zkController.getCoreContainer().isShutDown();
-          }
-        });
+        () -> Overseer.this.isClosed() || zkController.getCoreContainer().isShutDown());
   }
 
   /**

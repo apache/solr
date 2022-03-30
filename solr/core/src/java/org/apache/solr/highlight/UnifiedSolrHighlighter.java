@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
@@ -444,10 +445,12 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
           params.getFieldParams(field, HighlightParams.QUERY_FIELD_PATTERN);
       if (queryFieldPattern != null && queryFieldPattern.length != 0) {
 
-        Collection<String> indexedFields = solrIndexSearcher.getDocFetcher().getIndexedFieldNames();
+        Supplier<Collection<String>> indexedFieldsSupplier =
+            () -> solrIndexSearcher.getDocFetcher().getIndexedFieldNames();
 
-        final Set<String> fields =
-            Set.of(expandWildcardsInHighlightFields(indexedFields, queryFieldPattern));
+        Set<String> fields =
+            Set.of(expandWildcardsInFields(indexedFieldsSupplier, queryFieldPattern));
+
         return fields::contains;
       }
 

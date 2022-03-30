@@ -16,7 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.impl.BaseCloudSolrClient.RouteResponse;
+import static org.apache.solr.client.solrj.impl.CloudSolrClient.RouteResponse;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -854,7 +854,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     try (CloudSolrClient solrClient =
         getCloudSolrClient(cluster.getZkServer().getZkAddress(), client)) {
 
-      assertTrue(solrClient.getLbClient().getHttpClient() == client);
+      assertSame(((CloudLegacySolrClient) solrClient).getLbClient().getHttpClient(), client);
 
     } finally {
       HttpClientUtil.close(client);

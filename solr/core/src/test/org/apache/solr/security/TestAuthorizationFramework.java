@@ -27,6 +27,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -68,7 +69,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
       waitForThingsToLevelOut(10, TimeUnit.SECONDS);
       String baseUrl = jettys.get(0).getBaseUrl().toString();
       verifySecurityStatus(
-          cloudClient.getLbClient().getHttpClient(),
+          ((CloudLegacySolrClient) cloudClient).getHttpClient(),
           baseUrl + "/admin/authorization",
           "authorization/class",
           MockAuthorizationPlugin.class.getName(),

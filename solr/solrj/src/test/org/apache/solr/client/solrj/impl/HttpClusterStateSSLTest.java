@@ -88,7 +88,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
     try (CloudSolrClient httpBasedCloudSolrClient =
         new CloudSolrClient.Builder(Collections.singletonList(url0.toExternalForm())).build()) {
       ClusterStateProvider csp = httpBasedCloudSolrClient.getClusterStateProvider();
-      assertTrue(csp instanceof HttpClusterStateProvider);
+      assertTrue(csp instanceof Http2ClusterStateProvider);
       verifyUrlSchemeInClusterState(csp.getClusterState(), collectionId, expectedReplicas);
     }
 

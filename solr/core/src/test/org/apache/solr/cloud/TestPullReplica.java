@@ -37,6 +37,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -148,7 +149,7 @@ public class TestPullReplica extends SolrCloudTestCase {
           // These options should all mean the same
           url = url + pickRandom("", "&nrtReplicas=1", "&replicationFactor=1");
           HttpGet createCollectionGet = new HttpGet(url);
-          cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
+          getHttpClient().execute(createCollectionGet);
           break;
         case 2:
           // Sometimes use V2 API
@@ -168,8 +169,7 @@ public class TestPullReplica extends SolrCloudTestCase {
           HttpPost createCollectionPost = new HttpPost(url);
           createCollectionPost.setHeader("Content-type", "application/json");
           createCollectionPost.setEntity(new StringEntity(requestBody));
-          HttpResponse httpResponse =
-              cluster.getSolrClient().getHttpClient().execute(createCollectionPost);
+          HttpResponse httpResponse = getHttpClient().execute(createCollectionPost);
           assertEquals(200, httpResponse.getStatusLine().getStatusCode());
           break;
       }
@@ -459,7 +459,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         collectionName,
         activeReplicaCount(numReplicas, 0, numReplicas));
     DocCollection docCollection = assertNumberOfReplicas(numReplicas, 0, numReplicas, false, true);
-    HttpClient httpClient = cluster.getSolrClient().getHttpClient();
+    HttpClient httpClient = getHttpClient();
     int id = 0;
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
@@ -858,7 +858,7 @@ public class TestPullReplica extends SolrCloudTestCase {
                 shardName,
                 type);
         HttpGet addReplicaGet = new HttpGet(url);
-        HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaGet);
+        HttpResponse httpResponse = getHttpClient().execute(addReplicaGet);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         break;
       case 2: // Add replica with V2 API
@@ -873,9 +873,13 @@ public class TestPullReplica extends SolrCloudTestCase {
         HttpPost addReplicaPost = new HttpPost(url);
         addReplicaPost.setHeader("Content-type", "application/json");
         addReplicaPost.setEntity(new StringEntity(requestBody));
-        httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaPost);
+        httpResponse = getHttpClient().execute(addReplicaPost);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         break;
     }
+  }
+
+  private HttpClient getHttpClient() {
+    return ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
   }
 }
