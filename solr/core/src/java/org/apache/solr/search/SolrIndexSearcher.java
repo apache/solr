@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -122,9 +121,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final int queryResultMaxDocsCached;
   private final boolean useFilterForSortedQuery;
 
-  /** Special-case cache to handle the lazy-init of {@link #liveDocs}. */
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private final CompletableFuture<BitDocSet>[] liveDocsCache = new CompletableFuture[1];
+  /**
+   * Special-case cache, mainly used as a synchronization point to handle the lazy-init of {@link
+   * #liveDocs}.
+   */
+  private final BitDocSet[] liveDocsCache = new BitDocSet[1];
 
   private final Supplier<BitDocSet> computeLiveDocs = this::computeLiveDocs;
 
@@ -137,7 +138,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final LongAdder liveDocsNaiveCacheHitCount = new LongAdder();
   private final LongAdder liveDocsInsertsCount = new LongAdder();
   private final LongAdder liveDocsHitCount = new LongAdder();
-  private final LongAdder liveDocsAsyncHitCount = new LongAdder();
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final Map<String, SolrCache<?, ?>> cacheMap;
@@ -1005,33 +1005,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   private BitDocSet populateLiveDocs(Supplier<BitDocSet> liveDocsSupplier) {
-    final boolean computeInline;
-    final CompletableFuture<BitDocSet> liveDocsCacheInstance;
+    final BitDocSet inlineDocs;
     synchronized (liveDocsCache) {
-      if (liveDocsCache[0] != null) {
-        computeInline = false;
-        liveDocsCacheInstance = liveDocsCache[0];
-      } else {
-        computeInline = true;
-        liveDocsCacheInstance = new CompletableFuture<>();
-        liveDocsCache[0] = liveDocsCacheInstance;
-      }
-    }
-    final BitDocSet docs;
-    if (computeInline) {
-      docs = liveDocsSupplier.get();
-      liveDocsCacheInstance.complete(docs);
-      liveDocs = docs;
-      liveDocsInsertsCount.increment();
-    } else {
-      if (liveDocsCacheInstance.isDone()) {
+      final BitDocSet cachedLiveDocs = liveDocsCache[0];
+      if (cachedLiveDocs != null) {
         liveDocsHitCount.increment();
+        return cachedLiveDocs;
       } else {
-        liveDocsAsyncHitCount.increment();
+        inlineDocs = liveDocsSupplier.get();
+        liveDocsCache[0] = inlineDocs;
       }
-      docs = liveDocsCacheInstance.join();
     }
-    return docs;
+    liveDocs = inlineDocs;
+    liveDocsInsertsCount.increment();
+    return inlineDocs;
   }
 
   /**
@@ -2541,11 +2528,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final MetricsMap liveDocsCacheMetrics =
         new MetricsMap(
             (map) -> {
-              final long asyncHitCount = liveDocsAsyncHitCount.sum();
               map.put("inserts", liveDocsInsertsCount.sum());
-              map.put("asyncHits", asyncHitCount);
-              // for compatibility with CaffeineCache, `asyncHits` is a subset of `hits`
-              map.put("hits", liveDocsHitCount.sum() + asyncHitCount);
+              map.put("hits", liveDocsHitCount.sum());
               map.put("naiveHits", liveDocsNaiveCacheHitCount.sum());
             });
     parentContext.gauge(
