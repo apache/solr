@@ -232,7 +232,9 @@ public class HttpSolrCall {
     return collectionsList != null ? collectionsList : Collections.emptyList();
   }
 
-  @SuppressForbidden(reason = "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
+  @SuppressForbidden(
+      reason =
+          "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   protected void init() throws Exception {
     // check for management path
     String alternate = cores.getManagementPath();

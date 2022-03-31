@@ -170,7 +170,9 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   }
 
   @Override
-  @SuppressForbidden(reason = "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
+  @SuppressForbidden(
+      reason =
+          "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
       throws IOException, ServletException {
     try (var mdcSnapshot = MDCSnapshot.create()) {

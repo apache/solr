@@ -73,7 +73,9 @@ public class V2HttpCall extends HttpSolrCall {
     super(solrDispatchFilter, cc, request, response, retry);
   }
 
-  @SuppressForbidden(reason = "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
+  @SuppressForbidden(
+      reason =
+          "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   protected void init() throws Exception {
     queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
     String path = this.path;
