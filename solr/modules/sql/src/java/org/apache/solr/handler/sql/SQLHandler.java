@@ -69,6 +69,8 @@ public class SQLHandler extends RequestHandlerBase
     }
 
     CalciteSolrDriver.INSTANCE.setSolrClientCache(coreContainer.getSolrClientCache());
+
+    Thread.currentThread().setContextClassLoader(core.getResourceLoader().getClassLoader());
   }
 
   @Override
