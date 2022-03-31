@@ -279,7 +279,7 @@ public class JDBCStream extends TupleStream implements Expressible {
   protected Driver getDriver() throws IOException {
     try {
       if (null != driverClassName) {
-        Class.forName(driverClassName, true, getClass().getClassLoader());
+        Class.forName(driverClassName, true, Thread.currentThread().getContextClassLoader());
       }
     } catch (ClassNotFoundException e) {
       throw new IOException(
