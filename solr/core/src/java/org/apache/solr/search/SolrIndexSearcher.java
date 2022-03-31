@@ -121,14 +121,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final int queryResultMaxDocsCached;
   private final boolean useFilterForSortedQuery;
 
-  /**
-   * Special-case cache, mainly used as a synchronization point to handle the lazy-init of {@link
-   * #liveDocs}.
-   */
-  private final BitDocSet[] liveDocsCache = new BitDocSet[1];
-
-  private final Supplier<BitDocSet> computeLiveDocs = this::computeLiveDocs;
-
   private final boolean cachingEnabled;
   private final SolrCache<Query, DocSet> filterCache;
   private final SolrCache<QueryResultKey, DocList> queryResultCache;
@@ -958,11 +950,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private static final MatchAllDocsQuery MATCH_ALL_DOCS_QUERY = new MatchAllDocsQuery();
 
-  /**
-   * A naively cached canonical `liveDocs` DocSet. This does not need to be volatile. It may be set
-   * multiple times, but should always be set to the same value, as all set values should pass
-   * through `liveDocsCache.computeIfAbsent`
-   */
+  /** Used as a synchronization point to handle the lazy-init of {@link #liveDocs}. */
+  private final Object liveDocsCacheLock = new Object();
+
   private BitDocSet liveDocs;
 
   private static final BitDocSet EMPTY = new BitDocSet(new FixedBitSet(0), 0);
@@ -1005,20 +995,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   private BitDocSet populateLiveDocs(Supplier<BitDocSet> liveDocsSupplier) {
-    final BitDocSet inlineDocs;
-    synchronized (liveDocsCache) {
-      final BitDocSet cachedLiveDocs = liveDocsCache[0];
-      if (cachedLiveDocs != null) {
+    synchronized (liveDocsCacheLock) {
+      if (liveDocs != null) {
         liveDocsHitCount.increment();
-        return cachedLiveDocs;
       } else {
-        inlineDocs = liveDocsSupplier.get();
-        liveDocsCache[0] = inlineDocs;
+        liveDocs = liveDocsSupplier.get();
+        liveDocsInsertsCount.increment();
       }
     }
-    liveDocs = inlineDocs;
-    liveDocsInsertsCount.increment();
-    return inlineDocs;
+    return liveDocs;
   }
 
   /**
@@ -1031,7 +1016,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (docs != null) {
       liveDocsNaiveCacheHitCount.increment();
     } else {
-      docs = populateLiveDocs(computeLiveDocs);
+      docs = populateLiveDocs(this::computeLiveDocs);
       // assert DocSetUtil.equals(docs, DocSetUtil.createDocSetGeneric(this, MATCH_ALL_DOCS_QUERY));
     }
     assert docs.size() == numDocs();
@@ -1059,14 +1044,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public BitDocSet offerLiveDocs(Supplier<DocSet> docSetSupplier, int suppliedSize) {
     assert suppliedSize == numDocs();
-    BitDocSet ret = liveDocs;
+    final BitDocSet ret = liveDocs;
     if (ret != null) {
       liveDocsNaiveCacheHitCount.increment();
       return ret;
     }
     // a few places currently expect BitDocSet
-    ret = populateLiveDocs(() -> makeBitDocSet(docSetSupplier.get()));
-    return ret;
+    return populateLiveDocs(() -> makeBitDocSet(docSetSupplier.get()));
   }
 
   private static Comparator<ExtendedQuery> sortByCost =
