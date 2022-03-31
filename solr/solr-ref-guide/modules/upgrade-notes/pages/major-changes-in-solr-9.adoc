@@ -38,17 +38,21 @@ If you have an old collection that was initially created with a Solr version pri
 
 If you are using Solr in standalone mode with the xref:query-guide:query-elevation-component.adoc[] with it's elevation file in the data directory, you'll have to move it to the xref:configuration-guide:config-sets.adoc[Configset] folder instead.
 
+Some metrics have changed names due to the removal of "master" and "slave" terminology in 8.x. If you rely on metrics, alerts and monitors on Solr KPIs that mention "master" or "slave", you will need to prepare for those metrics now appearing with "leader" and "follower" in their names instead.
+
 === Rolling Upgrades
 
-WARNING: Rolling upgrades from Solr 8 to Solr 9 require upgrading from Solr 8.7 or newer.
+If you are planning to upgrade your cluster using a rolling upgrade model (upgrade each node in succession, as opposed to standing up a brand new 9.x cluster), please read the following carefully.
 
-* SOLR-14702: All references to "master" and "slave" were replaced in the code with "leader" and "follower".
-This includes API calls for the replication handler and metrics.
-Some metrics also changed, alerts and monitors on Solr KPIs that mention "master" or "slave" will also now be "leader" and "follower"
+Rolling upgrades from Solr 8 to Solr 9 require upgrading from Solr 8.7 or newer. If you run an 8.x. version prior to 8.7 we recommend that you first upgrade to 8.11.
 
-* SOLR-15965: Internode communication secured by PKI Authentication has changed formats. For detailed information, see
-  xref:deployment-guide:authentication-and-authorization-plugins.adoc#pkiauthenticationplugin[PKI Authentication Plugin].
-  A rolling upgrade from Solr 8 to Solr 9 requires the following multiple restart sequence:
+*PKI Authentication*
+
+Internode communication secured by PKI Authentication has changed formats. For detailed information, see
+xref:deployment-guide:authentication-and-authorization-plugins.adoc#pkiauthenticationplugin[PKI Authentication Plugin].
+
+A rolling upgrade from Solr 8 to Solr 9 requires the following multiple restart sequence:
+
 1. Upgrade to Solr 9 and set system properties: `solr.pki.sendVersion=v1` and `solr.pki.acceptVersions=v1,v2`. This will allow Solr 9 nodes to send messages to Solr 8 nodes while the upgrade is in progress.
 2. Restart with `solr.pki.sendVersion=v2` (default, can be unset) and `solr.pki.acceptVersions=v1,v2`. This will force all nodes to send the new header.
 3. (Optional) Restart with system property `solr.pki.acceptVersions=v2` (default, can be unset) to prevent outdated nodes from connecting to your cluster.
