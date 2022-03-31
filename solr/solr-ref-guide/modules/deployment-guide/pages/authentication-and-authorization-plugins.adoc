@@ -213,7 +213,7 @@ They may do this through the so-called `HttpClientBuilder` mechanism, or they ma
 The `PKIAuthenticationPlugin` provides a built-in authentication mechanism where each Solr node is a super user and is fully trusted by other Solr nodes through the use of Public Key Infrastructure (PKI).
 Each Authentication plugin may choose to delegate all or some inter-node traffic to the PKI plugin.
 
-There are currently two versions of the PKI Authentication protocol available in Solr.For each outgoing request `PKIAuthenticationPlugin` adds a special header which carries the request timestamp and user principal.
+There are currently two versions of the PKI Authentication protocol available in Solr. For each outgoing request `PKIAuthenticationPlugin` adds a special header which carries the request timestamp and user principal.
 When a node receives a request with this special header, it will verify to message using the corresponding source node's public key.
 Message validation is only attempted for incoming traffic from other Solr nodes registered in ZooKeeper.
 If the request passes PKI validation and the timestamp is less than 5 seconds old, then the request will be trusted.
