@@ -31,6 +31,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -59,6 +60,7 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.client.solrj.util.InputStreamResponseListener;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
@@ -80,7 +82,6 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.FormContentProvider;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartContentProvider;
 import org.eclipse.jetty.client.util.OutputStreamContentProvider;
 import org.eclipse.jetty.client.util.StringContentProvider;
@@ -347,7 +348,7 @@ public class Http2SolrClient extends SolrClient {
             .header(HttpHeader.CONTENT_TYPE, contentType)
             .content(provider);
     decorateRequest(postRequest, updateRequest);
-    InputStreamResponseListener responseListener = new InputStreamResponseListener();
+    InputStreamResponseListener responseListener = new InputStreamResponseListener(idleTimeout);
     postRequest.send(responseListener);
 
     boolean isXml = ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType());
@@ -402,7 +403,11 @@ public class Http2SolrClient extends SolrClient {
     req.onRequestQueued(asyncTracker.queuedListener)
         .onComplete(asyncTracker.completeListener)
         .send(
-            new InputStreamResponseListener() {
+            new InputStreamResponseListener(idleTimeout) {
+              {
+                setRequestTimeoutBasedOnTimeAllowed(solrRequest.getParams(), this);
+              }
+
               @Override
               public void onHeaders(Response response) {
                 super.onHeaders(response);
@@ -444,7 +449,8 @@ public class Http2SolrClient extends SolrClient {
         solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
 
     try {
-      InputStreamResponseListener listener = new InputStreamResponseListener();
+      InputStreamResponseListener listener = new InputStreamResponseListener(idleTimeout);
+      setRequestTimeoutBasedOnTimeAllowed(solrRequest.getParams(), listener);
       req.send(listener);
       Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
       InputStream is = listener.getInputStream();
@@ -1080,5 +1086,24 @@ public class Http2SolrClient extends SolrClient {
         System.getProperty("solr.jetty.ssl.verifyClientHostName"));
 
     return sslContextFactory;
+  }
+
+  /**
+   * If a <code>timeAllowed=X</code> is specified in the params, use (30ms + 2X) as a requestTimeout
+   * on the response listener. This should give the remote node ample time to recognize it's
+   * exceeded <code>timeAllowed</code> and response to the request, but if it doesn't then we want
+   * to abort in a reasonably proportinate amount of time and not wait forever.
+   *
+   * @see CommonParams#TIME_ALLOWED
+   */
+  private static void setRequestTimeoutBasedOnTimeAllowed(
+      final SolrParams params, final InputStreamResponseListener listener) {
+    if (null != params) {
+      final Long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED);
+      if (null != timeAllowed) {
+        listener.setRequestTimeout(
+            Instant.now().plusMillis(30).plusMillis(timeAllowed.longValue() * 2L));
+      }
+    }
   }
 }
