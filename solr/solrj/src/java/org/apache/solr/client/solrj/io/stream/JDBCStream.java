@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -276,9 +277,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     this.streamContext = context;
   }
 
-  /** Opens the JDBCStream */
-  public void open() throws IOException {
-
+  protected Driver getDriver() throws IOException {
     try {
       if (null != driverClassName) {
         Class.forName(driverClassName, true, getClass().getClassLoader());
@@ -292,9 +291,11 @@ public class JDBCStream extends TupleStream implements Expressible {
     // likely want to provide the driverClassName. Not being able to find a driver generally means
     // the driver has not been loaded.
     try {
-      if (null == DriverManager.getDriver(connectionUrl)) {
+      Driver driver = DriverManager.getDriver(connectionUrl);
+      if (null == driver) {
         throw new SQLException("DriverManager.getDriver(url) returned null");
       }
+      return driver;
     } catch (SQLException e) {
       throw new IOException(
           String.format(
@@ -304,9 +305,12 @@ public class JDBCStream extends TupleStream implements Expressible {
               connectionUrl),
           e);
     }
+  }
 
+  /** Opens the JDBCStream */
+  public void open() throws IOException {
     try {
-      connection = DriverManager.getConnection(connectionUrl, connectionProperties);
+      connection = getDriver().connect(connectionUrl, connectionProperties);
     } catch (SQLException e) {
       throw new IOException(
           String.format(Locale.ROOT, "Failed to open JDBC connection to '%s'", connectionUrl), e);

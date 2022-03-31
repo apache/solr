@@ -18,9 +18,12 @@ package org.apache.solr.handler.sql;
 
 import java.io.IOException;
 import java.sql.Array;
+import java.sql.Driver;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.Locale;
 import java.util.Properties;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.JDBCStream;
@@ -77,5 +80,10 @@ public class CalciteJDBCStream extends JDBCStream {
       }
     }
     return valueSelector;
+  }
+
+  @Override
+  protected Driver getDriver() {
+    return CalciteSolrDriver.INSTANCE;
   }
 }
