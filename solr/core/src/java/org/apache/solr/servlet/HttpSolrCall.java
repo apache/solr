@@ -323,6 +323,8 @@ public class HttpSolrCall {
 
     // With a valid core...
     if (core != null) {
+      Thread.currentThread().setContextClassLoader(core.getResourceLoader().getClassLoader());
+
       config = core.getSolrConfig();
       // get or create/cache the parser for the core
       SolrRequestParsers parser = config.getRequestParsers();

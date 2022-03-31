@@ -175,6 +175,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       assert null != mdcSnapshot; // prevent compiler warning
       MDCLoggingContext.reset();
       MDCLoggingContext.setNode(getCores());
+      Thread.currentThread().setContextClassLoader(getCores().getResourceLoader().getClassLoader());
 
       doFilter(request, response, chain, false);
     }

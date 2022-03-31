@@ -153,6 +153,8 @@ public class V2HttpCall extends HttpSolrCall {
               SolrException.ErrorCode.NOT_FOUND,
               "no core retrieved for core name: " + origCorename + ". Path: " + path);
         }
+      } else {
+        Thread.currentThread().setContextClassLoader(core.getResourceLoader().getClassLoader());
       }
 
       this.path = path = path.substring(prefix.length() + pathSegments.get(1).length() + 2);
