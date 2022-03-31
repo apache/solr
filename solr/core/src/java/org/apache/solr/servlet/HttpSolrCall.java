@@ -99,6 +99,7 @@ import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -231,6 +232,7 @@ public class HttpSolrCall {
     return collectionsList != null ? collectionsList : Collections.emptyList();
   }
 
+  @SuppressForbidden(reason = "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   protected void init() throws Exception {
     // check for management path
     String alternate = cores.getManagementPath();
