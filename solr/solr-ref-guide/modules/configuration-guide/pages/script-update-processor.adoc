@@ -30,12 +30,13 @@ However, you are introducing some potential security vulnerabilities.
 
 == Installing the ScriptingUpdateProcessor and Scripting Engines
 
-The scripting update processor lives in the module `/modules/scripting`, and you need to explicitly add it to your Solr setup.
+This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be added to the classpath before use
+by adding it to the list of modules via `solr.modules=scripting`.
 
 Java 11 and previous versions come with a JavaScript engine called Nashorn, but Java 12 will require you to add your own JavaScript engine.
-Other supported scripting engines like JRuby, Jython, Groovy, all require you to add JAR files.
+Other supported scripting engines like JRuby, Jython, Groovy, all require you to add JAR files to Solr.
 
-Learn more about adding the `modules/scripting/lib/solr-scripting-*.jar` file, and any other needed JAR files (depending on your scripting engine) into Solr's xref:libs.adoc#lib-directories[Lib Directories].
+Learn more about adding any other needed JAR files (depending on your scripting engine) into Solr's xref:libs.adoc#lib-directories[Lib Directories].
 
 == Configuration
 
@@ -110,12 +111,18 @@ This is useful for logging information from the script.
 `params`::
 The "params" object, if any specified, from the configuration.
 
+== Try it Out
+
+To try out scripting, enable the `<updateRequestProcessorChain name="script">` configuration in the
+file `./server/solr/configsets/sample_techproducts_configs/conf/solrconfig.xml`. Then start Solr via
+`bin/solr start -e techproducts -Dsolr.modules=scripting`.
+
+This URL demonstrates specifying the "script" update chain: `http://localhost:8983/solr/techproducts/update?commit=true&stream.contentType=text/csv&fieldnames=id,description&stream.body=1,foo&update.chain=script` which logs the following:
+
 == Examples
 
 The `processAdd()` and the other script methods can return false to skip further processing of the document.
 All methods must be defined, though generally the `processAdd()` method is where the action is.
-
-Here's a URL that works with the techproducts example setup demonstrating specifying the "script" update chain: `http://localhost:8983/solr/techproducts/update?commit=true&stream.contentType=text/csv&fieldnames=id,description&stream.body=1,foo&update.chain=script` which logs the following:
 
 [source,text]
 ----
