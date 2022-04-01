@@ -103,7 +103,14 @@ public class OrderedExecutor implements Executor {
         // myLock was successfully inserted
       }
       // won the lock
-      sizeSemaphore.acquire();
+      try {
+        sizeSemaphore.acquire();
+      } catch (InterruptedException e) {
+        if (t != null) {
+          map.remove(t).countDown();
+        }
+        throw e;
+      }
     }
 
     public void remove(T t) {
