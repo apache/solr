@@ -48,6 +48,10 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+// nocommit: we need to switch from using 'Object lock' to using a ReentrantLock w/Condition we can await on
+// nocommit: safest plan is to adopt all changes in https://github.com/eclipse/jetty.project/pull/7260 as is ...
+// nocommit: ...(while also pulling in "AutoLock") and add requestTimeout logic to await() call
+
 /**
  * Fork of jetty's <code>InputStreamResponseListener</code> that adds support for an (optional)
  * <code>requestTimeout</code> (which defaults to 1 hour from instantiation) as well as a
@@ -86,7 +90,7 @@ public class InputStreamResponseListener extends Listener.Adapter {
   private static final Logger log = Log.getLogger(InputStreamResponseListener.class);
   private static final DeferredContentProvider.Chunk EOF =
       new DeferredContentProvider.Chunk(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
-  private final Object lock = this;
+  private final Object lock = this; 
   private final CountDownLatch responseLatch = new CountDownLatch(1);
   private final CountDownLatch resultLatch = new CountDownLatch(1);
   private final AtomicReference<InputStream> stream = new AtomicReference<>();
@@ -316,12 +320,15 @@ public class InputStreamResponseListener extends Listener.Adapter {
 
             if (closed) throw new AsynchronousCloseException();
 
+            // nocommit: this check shouldn't be needed/used here - the await call should tell us to Timeout
             if (requestTimeout.isBefore(Instant.now()))
               throw new TimeoutException("requestTimeout exceeded");
 
             // NOTE: convert maxWaitLimit to Instant for comparison, rather then vice-versa, so we
             // don't risk ArithemticException
             final Instant now = Instant.now();
+            // nocommit: replace this with await, if result is false throw TimeoutException...
+            // nocommit: ...exception message should mention waitLimit, unless requestTime.isBefore(now())
             lock.wait(
                 now.plusMillis(maxWaitLimit).isBefore(requestTimeout)
                     ? maxWaitLimit
