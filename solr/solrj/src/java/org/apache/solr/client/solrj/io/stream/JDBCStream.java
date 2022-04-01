@@ -277,6 +277,12 @@ public class JDBCStream extends TupleStream implements Expressible {
   }
 
   protected Driver getDriver() throws IOException {
+    // The DriverManager uses this class's ClassLoader to determine if it can load the driver given by driverClassName.
+    // Therefore, if you are loading in a driver from a separate ClassLoader than java was started with, it will likely
+    // not work. Instead, create a class that inherits this class and override this getDriver() method.
+    // Unfortunately it is impossible to use a custom ClassLoader with DriverManager, so we would need to
+    // remove our use of this class in order to support JDBC drivers loaded in via solr's additional library methods.
+    // This comment is relevant for JDBC drivers loaded in via custom plugins and even Solr modules.
     try {
       if (null != driverClassName) {
         Class.forName(driverClassName);
