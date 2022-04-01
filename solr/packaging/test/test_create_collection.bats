@@ -28,7 +28,7 @@ setup_file() {
 
 teardown_file() {
   common_setup
-  run solr stop -all
+  solr stop -all
 }
 
 setup() {

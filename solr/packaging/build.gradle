@@ -217,7 +217,7 @@ class BatsTask extends Exec {
     executable "$project.ext.nodeProjectDir/node_modules/bats/bin/bats"
 
     // Note: tests to run must be listed after all other arguments
-    setArgs(['--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
+    setArgs(['--print-output-on-failure', '-x', '--verbose-run'] + (testFiles.empty ? testDir : testFiles))
 
     super.exec()
   }

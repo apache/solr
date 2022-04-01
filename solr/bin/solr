@@ -64,6 +64,7 @@ fi
 
 # This helps with debugging when running bats tests but not the whole script is compliant yet
 # set -u
+# set -o pipefail
 
 # Resolve symlinks to this script
 while [ -h "$SOLR_SCRIPT" ] ; do
@@ -848,8 +849,8 @@ function stop_solr() {
         # Check if a process is running with the specified PID.
         # -o stat will output the STAT, where Z indicates a zombie
         # stat='' removes the header (--no-headers isn't supported on all platforms)
-        STAT=`ps -o stat='' $SOLR_PID | tr -d ' '`
-        if [[ "$STAT" != "" && "$STAT" != "Z" ]]; then
+        STAT=`(ps -o stat='' $SOLR_PID || :) | tr -d ' '`
+        if [[ "${STAT:-Z}" != "Z" ]]; then
           slept=$((loops * 2))
           if [ $slept -lt $SOLR_STOP_WAIT ]; then
             sleep 2
@@ -868,9 +869,9 @@ function stop_solr() {
     exit 0
   fi
 
-  STAT=`ps -o stat='' $SOLR_PID | tr -d ' '`
-  if [[ "$STAT" != "" && "$STAT" != "Z" ]]; then
-    if [ "$JSTACK" != "" ]; then
+  STAT=`(ps -o stat='' $SOLR_PID || :) | tr -d ' '`
+  if [[ "${STAT:-Z}" != "Z" ]]; then
+    if [ -n "{$JSTACK:-}" ]; then
       echo -e "Solr process $SOLR_PID is still running; jstacking it now."
       $JSTACK $SOLR_PID
     elif [ "$JATTACH" != "" ]; then
@@ -884,13 +885,13 @@ function stop_solr() {
     sleep 10
   fi
 
-  STAT=`ps -o stat='' $SOLR_PID | tr -d ' '`
-  if [ "$STAT" == "Z" ]; then
+  STAT=`(ps -o stat='' $SOLR_PID || :) | tr -d ' '`
+  if [ "${STAT:-}" == "Z" ]; then
     # This can happen if, for example, you are running Solr inside a docker container with multiple processes
     # rather than running it is as the only service. The --init flag on docker avoids that particular problem.
     echo -e "Solr process $SOLR_PID has terminated abnormally. Solr has exited but a zombie process entry remains."
     exit 1
-  elif [ "$STAT" != "" ]; then
+  elif [ -n "${STAT:-}" ]; then
     echo "ERROR: Failed to kill previous Solr Java process $SOLR_PID ... script fails."
     exit 1
   fi
@@ -1905,12 +1906,12 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
   # see if Solr is already running
   SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
 
-  if [ -z "$SOLR_PID" ]; then
+  if [ -z "${SOLR_PID:-}" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+    SOLR_PID=`ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r`
   fi
 
-  if [ "$SOLR_PID" != "" ]; then
+  if [ -n "${SOLR_PID:-}" ]; then
     echo -e "\nPort $SOLR_PORT is already being used by another process (pid: $SOLR_PID)\nPlease choose a different port using the -p option.\n"
     exit 1
   fi
@@ -1920,7 +1921,7 @@ else
   SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+    SOLR_PID=`ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r`
   fi
   if [ "$SOLR_PID" != "" ]; then
     stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
