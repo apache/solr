@@ -23,10 +23,8 @@ setup_file() {
   # set up paths and helpers
   common_setup
 
-  # TODO There's possibly something in our start script that if slightly sloppy,
-  # so we launch with "run" because it is more lenient.
-  run solr start -c
-  # DEBUG : echo "# $output" >&3
+  solr start -c -V >&3
+  # echo $output >&3
 }
 
 teardown_file() {
@@ -36,7 +34,7 @@ teardown_file() {
   # Conversely, on shutdown, we do need this to execute strictly
   # because using "run" will eat filing test exit codes
   solr stop -all
-  # DEBUG : echo "# " ; solr stop -V -all >&3
+  # DEBUG : (echo -n "# " ; solr stop -V -all) >&3
 }
 
 @test "nothing" {
