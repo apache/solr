@@ -113,16 +113,13 @@ The "params" object, if any specified, from the configuration.
 
 == Try it Out
 
+There is a JavaScript example `update-script.js` as part of the "techproducts" configset.
+
 To try out scripting, enable the `<updateRequestProcessorChain name="script">` configuration in the
 file `./server/solr/configsets/sample_techproducts_configs/conf/solrconfig.xml`. Then start Solr via
 `bin/solr start -e techproducts -Dsolr.modules=scripting`.
 
 This URL demonstrates specifying the "script" update chain: `http://localhost:8983/solr/techproducts/update?commit=true&stream.contentType=text/csv&fieldnames=id,description&stream.body=1,foo&update.chain=script` which logs the following:
-
-== Examples
-
-The `processAdd()` and the other script methods can return false to skip further processing of the document.
-All methods must be defined, though generally the `processAdd()` method is where the action is.
 
 [source,text]
 ----
@@ -131,9 +128,14 @@ INFO: update-script#processAdd: id=1
 
 You can see the message recorded in the Solr logging UI.
 
+== Examples
+
+The `processAdd()` and the other script methods can return false to skip further processing of the document.
+All methods must be defined, though generally the `processAdd()` method is where the action is.
+
 === Javascript
 
-Note: There is a JavaScript example `update-script.js` as part of the "techproducts" configset.
+Note:
 Check `solrconfig.xml` and uncomment the update request processor definition to enable this feature.
 
 [source,javascript]
