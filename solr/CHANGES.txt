@@ -20,12 +20,11 @@ Optimizations
 
 Bug Fixes
 ---------------------
-* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
-  halving the latency of synchronous commits (Michael Gibney)
+(No changes)
 
 Other Changes
 ---------------------
-* SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
+(No changes)
 
 ==================  9.1.0 ==================
 
@@ -43,7 +42,7 @@ Improvements
 
 Optimizations
 ---------------------
-SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
+* SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
 
 Bug Fixes
 ---------------------
@@ -57,8 +56,13 @@ Bug Fixes
 
 * SOLR-16112: DefaultSolrHighlighter.doHighlighting to Query#rewrite multiple times if necessary. (Christine Poerschke)
 
+* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
+  halving the latency of synchronous commits (Michael Gibney)
+
 Other Changes
 ---------------------
+* SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
+
 * SOLR-15776: Admin UI is now aware of logged-in user's permissions and can adapt accordingly (janhoy)
 
 * SOLR-15923: Cue users in 404 message that Solr is running and the url is incorrect. (Eric Pugh, Mike Drob, Shawn Heisey)
@@ -316,6 +320,10 @@ Improvements
   healthy (Pushkar Raste, Anshum Gupta)
 
 * SOLR-15590: Start CoreContainer via ServletContextListener (Gus Heck)
+
+* SOLR-16131: Jetty threads' contextClassLoaders are set to the Solr core's resourceLoader's classLoader.
+  This allows for custom plugins and Solr modules to rely on 3rd part dependencies that use the thread contextClassLoader.
+  (Houston Putman)
 
 Build
 ---------------------

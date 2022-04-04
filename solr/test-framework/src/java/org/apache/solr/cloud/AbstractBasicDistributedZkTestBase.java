@@ -710,7 +710,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("commitWithin", 10);
-    add(cloudClient, params, getDoc("id", 300), getDoc("id", 301));
+    add(cloudClient, params, List.of(getDoc("id", 300), getDoc("id", 301)));
 
     newSearcherHook.waitForSearcher(DEFAULT_COLLECTION, 2, 20000, false);
 
