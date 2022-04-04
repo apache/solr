@@ -184,6 +184,7 @@ task integrationTests(type: BatsTask) {
   def integrationTestOutput = "$buildDir/test-output"
   def solrHome = "$integrationTestOutput/solr-home"
 
+  inputs.dir(distDir)
   outputs.dir(integrationTestOutput)
   outputs.dir(solrHome)
 
