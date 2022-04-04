@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_setup
-  run solr start -c
+  solr start -c
 
   local source_configset_dir="$SOLR_TIP/server/solr/configsets/sample_techproducts_configs"
   test -d $source_configset_dir
@@ -28,7 +28,7 @@ setup_file() {
 
 teardown_file() {
   common_setup
-  run solr stop -all
+  solr stop -all
 }
 
 setup() {

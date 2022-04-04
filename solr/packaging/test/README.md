@@ -49,6 +49,8 @@ Test are defined as `@test "description of the test" { ... }`
 Some tests will start clusters or create collections,
  please take care to delete any resources that you create.
  They will not be cleaned for you automatically.
+ The example `test_bats.bats` shows how to properly do setup and teardown,
+ along with debug advice and explanations of some subtle traps to avoid.
 
 It is recommended that you install and run `shellcheck` to verify your test scripts and catch common mistakes before committing your changes.
 
