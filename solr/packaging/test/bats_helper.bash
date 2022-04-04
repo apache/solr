@@ -27,6 +27,7 @@ common_setup() {
     load "${BATS_LIB_PREFIX}/bats-assert/load.bash"
 
     PATH="${SOLR_TIP:-.}/bin:$PATH"
+    export SOLR_ULIMIT_CHECKS=false
 }
 
 delete_all_collections() {

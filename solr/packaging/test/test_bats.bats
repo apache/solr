@@ -15,19 +15,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This file has stubs for setup and teardown of a cluster and debugging hints
+
 load bats_helper
 
-setup() {
+setup_file() {
+  # set up paths and helpers
   common_setup
+
+  solr start -c -V
+  # echo $output >&3
 }
 
-teardown() {
-  solr stop -all >/dev/null 2>&1
+teardown_file() {
+  # set up paths, not preserved from setup
+  common_setup
+
+  # Conversely, on shutdown, we do need this to execute strictly
+  # because using "run" will eat filing test exit codes
+  solr stop -all
+  # DEBUG : (echo -n "# " ; solr stop -V -all) >&3
 }
 
-@test "SOLR11740 check f" {
-  solr start
-  solr start -p 7574
-  run bash -c 'solr stop -all 2>&1'
-  refute_output --partial 'forcefully killing'
+@test "nothing" {
+  # hint: if we need to demonstrate a failing test, change this line to 'false'
+  true
 }
