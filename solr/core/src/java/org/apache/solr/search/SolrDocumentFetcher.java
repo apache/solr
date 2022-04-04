@@ -45,6 +45,7 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
@@ -112,6 +113,8 @@ public class SolrDocumentFetcher {
   private final Set<String> largeFields;
 
   private Collection<String> storedHighlightFieldNames; // lazy populated; use getter
+
+  private Collection<String> indexedFieldNames; // lazy populated; use getter
 
   @SuppressWarnings({"unchecked"})
   SolrDocumentFetcher(SolrIndexSearcher searcher, SolrConfig solrConfig, boolean cachingEnabled) {
@@ -199,7 +202,7 @@ public class SolrDocumentFetcher {
   public Collection<String> getStoredHighlightFieldNames() {
     synchronized (this) {
       if (storedHighlightFieldNames == null) {
-        storedHighlightFieldNames = new LinkedList<>();
+        storedHighlightFieldNames = new ArrayList<>();
         for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
           final String fieldName = fieldInfo.name;
           try {
@@ -216,6 +219,21 @@ public class SolrDocumentFetcher {
         }
       }
       return storedHighlightFieldNames;
+    }
+  }
+
+  /** Returns a collection of the names of all indexed fields which the index reader knows about. */
+  public Collection<String> getIndexedFieldNames() {
+    synchronized (this) {
+      if (indexedFieldNames == null) {
+        indexedFieldNames = new ArrayList<>();
+        for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
+          if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
+            indexedFieldNames.add(fieldInfo.name);
+          }
+        }
+      }
+      return indexedFieldNames;
     }
   }
 

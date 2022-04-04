@@ -8,7 +8,8 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 
 New Features
 ---------------------
-(No changes)
+* SOLR-16111: Add hl.queryFieldPattern support, an advanced alternative to the hl.requireFieldMatch boolean flag.
+  (Christine Poerschke, David Smiley)
 
 Improvements
 ---------------------
