@@ -46,6 +46,7 @@ import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -169,12 +170,16 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   }
 
   @Override
+  @SuppressForbidden(
+      reason =
+          "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
       throws IOException, ServletException {
     try (var mdcSnapshot = MDCSnapshot.create()) {
       assert null != mdcSnapshot; // prevent compiler warning
       MDCLoggingContext.reset();
       MDCLoggingContext.setNode(getCores());
+      Thread.currentThread().setContextClassLoader(getCores().getResourceLoader().getClassLoader());
 
       doFilter(request, response, chain, false);
     }
