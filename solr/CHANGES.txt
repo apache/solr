@@ -30,7 +30,8 @@ Other Changes
 
 New Features
 ---------------------
-(No changes)
+* SOLR-16111: Add hl.queryFieldPattern support, an advanced alternative to the hl.requireFieldMatch boolean flag.
+  (Christine Poerschke, David Smiley)
 
 Improvements
 ---------------------
