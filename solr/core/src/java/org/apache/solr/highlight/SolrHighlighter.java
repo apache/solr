@@ -88,7 +88,7 @@ public abstract class SolrHighlighter {
     return (arr == null || arr.length == 0 || arr[0] == null || arr[0].trim().length() == 0);
   }
 
-  private static String[] expandWildcardsInFields(
+  protected static String[] expandWildcardsInFields(
       Supplier<Collection<String>> availableFieldNamesSupplier, String... inFields) {
     Set<String> expandedFields = new LinkedHashSet<String>();
     Collection<String> availableFieldNames = null;
