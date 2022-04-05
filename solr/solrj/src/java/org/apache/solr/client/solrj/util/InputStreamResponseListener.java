@@ -31,6 +31,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -48,10 +49,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-// nocommit: we need to switch from using 'Object lock' to using a ReentrantLock w/Condition we can await on
-// nocommit: safest plan is to adopt all changes in https://github.com/eclipse/jetty.project/pull/7260 as is ...
-// nocommit: ...(while also pulling in "AutoLock") and add requestTimeout logic to await() call
-
 /**
  * Fork of jetty's <code>InputStreamResponseListener</code> that adds support for an (optional)
  * <code>requestTimeout</code> (which defaults to 1 hour from instantiation) as well as a
@@ -64,7 +61,8 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>Typical usage is:
  *
  * <pre>
- * InputStreamResponseListener listener = new InputStreamResponseListener();
+ * long maxWaitLimit = 5000;
+ * InputStreamResponseListener listener = new InputStreamResponseListener(maxWaitLimit);
  * client.newRequest(...).send(listener);
  *
  * // Wait for the response headers to arrive
@@ -85,12 +83,14 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>If the consumer is faster than the producer, then the consumer will block with the typical
  * {@link InputStream#read()} semantic. If the consumer is slower than the producer, then the
  * producer will block until the client consumes.
+ *
+ * @see <a href="https://github.com/eclipse/jetty.project/pull/7260">Jetty PR#7260</a>
  */
 public class InputStreamResponseListener extends Listener.Adapter {
   private static final Logger log = Log.getLogger(InputStreamResponseListener.class);
   private static final DeferredContentProvider.Chunk EOF =
       new DeferredContentProvider.Chunk(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
-  private final Object lock = this; 
+  private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
   private final CountDownLatch responseLatch = new CountDownLatch(1);
   private final CountDownLatch resultLatch = new CountDownLatch(1);
   private final AtomicReference<InputStream> stream = new AtomicReference<>();
@@ -121,22 +121,29 @@ public class InputStreamResponseListener extends Listener.Adapter {
    * will throw an {@link IOException} wrapping a {@link TimeoutException}. Defaults to 1 HOUR from
    * when this Listener was constructed.
    *
+   * <p><b>NOTE:</b> This timeout is only checked when the caller is blocked waiting for more data
+   * to be recieved, it will not cause any failures in situations where the caller is slower to
+   * consume the content then the remote server is to provided it.
+   *
    * @param requestTimeout Instant past which all response chunks must be recieved, if null then
    *     {@link Instant#MAX} is used
+   * @see #getInputStream
    */
   public void setRequestTimeout(final Instant requestTimeout) {
     requestTimeoutRef.set(null == requestTimeout ? Instant.MAX : requestTimeout);
   }
 
   @Override
+  @SuppressWarnings("try")
   public void onHeaders(Response response) {
-    synchronized (lock) {
+    try (AutoLock l = lock.lock()) {
       this.response = response;
       responseLatch.countDown();
     }
   }
 
   @Override
+  @SuppressWarnings("try")
   public void onContent(Response response, ByteBuffer content, Callback callback) {
     if (content.remaining() == 0) {
       if (log.isDebugEnabled()) {
@@ -147,14 +154,14 @@ public class InputStreamResponseListener extends Listener.Adapter {
     }
 
     boolean closed;
-    synchronized (lock) {
+    try (AutoLock.WithCondition l = lock.lock()) {
       closed = this.closed;
       if (!closed) {
         if (log.isDebugEnabled()) {
           log.debug("Queueing content {}", content);
         }
         chunks.add(new DeferredContentProvider.Chunk(content, callback));
-        lock.notifyAll();
+        l.signalAll();
       }
     }
 
@@ -167,10 +174,11 @@ public class InputStreamResponseListener extends Listener.Adapter {
   }
 
   @Override
+  @SuppressWarnings("try")
   public void onSuccess(Response response) {
-    synchronized (lock) {
+    try (AutoLock.WithCondition l = lock.lock()) {
       if (!closed) chunks.add(EOF);
-      lock.notifyAll();
+      l.signalAll();
     }
 
     if (log.isDebugEnabled()) {
@@ -179,27 +187,34 @@ public class InputStreamResponseListener extends Listener.Adapter {
   }
 
   @Override
+  @SuppressWarnings("try")
   public void onFailure(Response response, Throwable failure) {
     List<Callback> callbacks;
-    synchronized (lock) {
+    try (AutoLock.WithCondition l = lock.lock()) {
       if (this.failure != null) return;
+      if (failure == null) {
+        failure = new IOException("Generic failure");
+        log.warn("Missing failure in onFailure() callback", failure);
+      }
       this.failure = failure;
       callbacks = drain();
-      lock.notifyAll();
+      l.signalAll();
     }
 
     if (log.isDebugEnabled()) {
       log.debug("Content failure", failure);
     }
 
-    callbacks.forEach(callback -> callback.failed(failure));
+    Throwable f = failure;
+    callbacks.forEach(callback -> callback.failed(f));
   }
 
   @Override
+  @SuppressWarnings("try")
   public void onComplete(Result result) {
     Throwable failure = result.getFailure();
     List<Callback> callbacks = Collections.emptyList();
-    synchronized (lock) {
+    try (AutoLock.WithCondition l = lock.lock()) {
       this.result = result;
       if (result.isFailed() && this.failure == null) {
         this.failure = failure;
@@ -208,12 +223,15 @@ public class InputStreamResponseListener extends Listener.Adapter {
       // Notify the response latch in case of request failures.
       responseLatch.countDown();
       resultLatch.countDown();
-      lock.notifyAll();
+      l.signalAll();
     }
 
     if (log.isDebugEnabled()) {
-      if (failure == null) log.debug("Result success");
-      else log.debug("Result failure", failure);
+      if (failure == null) {
+        log.debug("Result success");
+      } else {
+        log.debug("Result failure", failure);
+      }
     }
 
     callbacks.forEach(callback -> callback.failed(failure));
@@ -232,11 +250,12 @@ public class InputStreamResponseListener extends Listener.Adapter {
    * @throws TimeoutException if the timeout expires
    * @throws ExecutionException if a failure happened
    */
+  @SuppressWarnings("try")
   public Response get(long timeout, TimeUnit unit)
       throws InterruptedException, TimeoutException, ExecutionException {
     boolean expired = !responseLatch.await(timeout, unit);
     if (expired) throw new TimeoutException();
-    synchronized (lock) {
+    try (AutoLock l = lock.lock()) {
       // If the request failed there is no response.
       if (response == null) throw new ExecutionException(failure);
       return response;
@@ -256,10 +275,11 @@ public class InputStreamResponseListener extends Listener.Adapter {
    * @throws TimeoutException if the timeout expires
    * @see #get(long, TimeUnit)
    */
+  @SuppressWarnings("try")
   public Result await(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
     boolean expired = !resultLatch.await(timeout, unit);
     if (expired) throw new TimeoutException();
-    synchronized (lock) {
+    try (AutoLock l = lock.lock()) {
       return result;
     }
   }
@@ -270,6 +290,11 @@ public class InputStreamResponseListener extends Listener.Adapter {
    * <p>The method may be invoked only once; subsequent invocations will return a closed {@link
    * InputStream}.
    *
+   * <p>{@link InputStream#read} calls on this <code>InputStream</code> may block up to the
+   * configured <code>maxWaitLimit</code> or until the {@link #setRequestTimeout} (which ever is
+   * sooner) if no data is currently available, at which point an {@link IOException} wrapping a
+   * {@link TimeoutException} wll be thrown
+   *
    * @return an input stream providing the response content
    */
   public InputStream getInputStream() {
@@ -278,9 +303,10 @@ public class InputStreamResponseListener extends Listener.Adapter {
     return IO.getClosedStream();
   }
 
+  @SuppressWarnings("try")
   private List<Callback> drain() {
     List<Callback> callbacks = new ArrayList<>();
-    synchronized (lock) {
+    try (AutoLock l = lock.lock()) {
       while (true) {
         DeferredContentProvider.Chunk chunk = chunks.peek();
         if (chunk == null || chunk == EOF) break;
@@ -289,6 +315,23 @@ public class InputStreamResponseListener extends Listener.Adapter {
       }
     }
     return callbacks;
+  }
+
+  @Override
+  @SuppressWarnings("try")
+  public String toString() {
+    try (AutoLock l = lock.lock()) {
+      return String.format(
+          Locale.ROOT,
+          "%s@%x[response=%s,result=%s,closed=%b,failure=%s,chunks=%s]",
+          getClass().getSimpleName(),
+          hashCode(),
+          response,
+          result,
+          closed,
+          failure,
+          chunks);
+    }
   }
 
   private class Input extends InputStream {
@@ -300,17 +343,49 @@ public class InputStreamResponseListener extends Listener.Adapter {
       return tmp[0] & 0xFF;
     }
 
+    /**
+     * awaits on the condition until either <code>maxWaitLimit</code> or <code>requestTimeout</code>
+     * is reached (whichever is sooner)
+     *
+     * @return an explantion as to why the condition wait expired, or null if the condition was met
+     *     in a timely manner
+     */
+    private final String awaitOrReturnError(final AutoLock.WithCondition condition)
+        throws InterruptedException {
+      final Instant effectiveNow = Instant.now();
+      final Instant requestTimeout = requestTimeoutRef.get();
+      assert null != requestTimeout;
+
+      if (effectiveNow.isBefore(requestTimeout)) {
+        // NOTE: convert maxWaitLimit to Instant for comparison, rather then vice-versa, so we
+        // don't risk ArithemticException.  (await in MILLIS instead of NANOS for same reason)
+        final long awaitAmountMillis =
+            effectiveNow.plusMillis(maxWaitLimit).isBefore(requestTimeout)
+                ? maxWaitLimit
+                : Math.min(1L, Duration.between(effectiveNow, requestTimeout).toMillis());
+
+        if (condition.await(awaitAmountMillis, TimeUnit.MILLISECONDS)) {
+          return null;
+        } else {
+          return (awaitAmountMillis < maxWaitLimit ? "requestTimeout" : "maxWaitLimit")
+              + " exceeded";
+        }
+      } // else...
+
+      // we've already reached (or exceeded) requestTimeout w/o any waiting
+      return "requestTimeout exceeded";
+    }
+
     @Override
     public int read(byte[] b, int offset, int length) throws IOException {
       try {
-        int result;
+        int result = 0;
         Callback callback = null;
-        synchronized (lock) {
+        List<Callback> callbacks = Collections.emptyList();
+        Throwable timeoutFailure = null;
+        try (AutoLock.WithCondition l = lock.lock()) {
           DeferredContentProvider.Chunk chunk;
           while (true) {
-            final Instant requestTimeout = requestTimeoutRef.get();
-            assert null != requestTimeout;
-
             chunk = chunks.peek();
             if (chunk == EOF) return -1;
 
@@ -320,35 +395,38 @@ public class InputStreamResponseListener extends Listener.Adapter {
 
             if (closed) throw new AsynchronousCloseException();
 
-            // nocommit: this check shouldn't be needed/used here - the await call should tell us to Timeout
-            if (requestTimeout.isBefore(Instant.now()))
-              throw new TimeoutException("requestTimeout exceeded");
-
-            // NOTE: convert maxWaitLimit to Instant for comparison, rather then vice-versa, so we
-            // don't risk ArithemticException
-            final Instant now = Instant.now();
-            // nocommit: replace this with await, if result is false throw TimeoutException...
-            // nocommit: ...exception message should mention waitLimit, unless requestTime.isBefore(now())
-            lock.wait(
-                now.plusMillis(maxWaitLimit).isBefore(requestTimeout)
-                    ? maxWaitLimit
-                    : Duration.between(Instant.now(), requestTimeout).toMillis());
+            final String expirationReason = awaitOrReturnError(l);
+            if (null != expirationReason) {
+              if (log.isDebugEnabled()) {
+                log.debug(
+                    "Read timed out: {}, {}", expirationReason, InputStreamResponseListener.this);
+              }
+              failure = timeoutFailure = new TimeoutException("Read timeout: " + expirationReason);
+              callbacks = drain();
+              break;
+            }
           }
 
-          ByteBuffer buffer = chunk.buffer;
-          result = Math.min(buffer.remaining(), length);
-          buffer.get(b, offset, result);
-          if (!buffer.hasRemaining()) {
-            callback = chunk.callback;
-            chunks.poll();
+          if (timeoutFailure == null) {
+            ByteBuffer buffer = chunk.buffer;
+            result = Math.min(buffer.remaining(), length);
+            buffer.get(b, offset, result);
+            if (!buffer.hasRemaining()) {
+              callback = chunk.callback;
+              chunks.poll();
+            }
           }
         }
-        if (callback != null) callback.succeeded();
-        return result;
+        if (timeoutFailure == null) {
+          if (callback != null) callback.succeeded();
+          return result;
+        } else {
+          Throwable f = timeoutFailure;
+          callbacks.forEach(c -> c.failed(f));
+          throw toIOException(f);
+        }
       } catch (InterruptedException x) {
         throw new InterruptedIOException();
-      } catch (TimeoutException y) {
-        throw toIOException(y);
       }
     }
 
@@ -360,11 +438,11 @@ public class InputStreamResponseListener extends Listener.Adapter {
     @Override
     public void close() throws IOException {
       List<Callback> callbacks;
-      synchronized (lock) {
+      try (AutoLock.WithCondition l = lock.lock()) {
         if (closed) return;
         closed = true;
         callbacks = drain();
-        lock.notifyAll();
+        l.signalAll();
       }
 
       if (log.isDebugEnabled()) {

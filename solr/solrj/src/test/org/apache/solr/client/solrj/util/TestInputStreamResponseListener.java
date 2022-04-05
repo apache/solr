@@ -16,97 +16,111 @@
  */
 package org.apache.solr.client.solrj.util;
 
-import java.io.InputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import static org.hamcrest.core.StringContains.containsString;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.util.Callback;
-
-import static org.hamcrest.core.StringContains.containsString;
 
 public class TestInputStreamResponseListener extends SolrTestCase {
 
   public void testNoDataTriggersWaitLimit() throws Exception {
     final long waitLimit = 1000; // millis
     final InputStreamResponseListener listener = new InputStreamResponseListener(waitLimit);
+    listener.setRequestTimeout(null);
 
-    // nocommit: we should be able to use a null requestTimeout to pass this test....
-    // nocommit: (the waitLimit should be enough to trigger failure)
-    listener.setRequestTimeout(Instant.now()); // nocommit
-    // nocommit: // listener.setRequestTimeout(null);
-    
     // emulate low level transport code providing headers, and then nothing else...
-    final HttpResponse dummyResponse = new HttpResponse(null /* bogus request */, Collections.emptyList());
+    final HttpResponse dummyResponse =
+        new HttpResponse(null /* bogus request */, Collections.emptyList());
     listener.onHeaders(dummyResponse);
 
     // client tries to consume, but there is never any content...
     assertEquals(dummyResponse, listener.get(0, TimeUnit.SECONDS));
-    final ForkJoinTask<IOException> readTask = ForkJoinPool.commonPool().submit(() -> {
-        try (final InputStream stream = listener.getInputStream()) {
-          return expectThrows(IOException.class, () -> {
-              int trash = stream.read();
-            });
-        }
-      });
-    final IOException expected = readTask.get(waitLimit * 2L, TimeUnit.MILLISECONDS);
+    final ForkJoinTask<IOException> readTask =
+        ForkJoinPool.commonPool()
+            .submit(
+                () -> {
+                  // (Do this in a ForkJoin thread so we can easily fail test if read() doesn't
+                  // throw IOException in a timely manner)
+                  try (final InputStream stream = listener.getInputStream()) {
+                    return expectThrows(
+                        IOException.class,
+                        () -> {
+                          int trash = stream.read();
+                        });
+                  }
+                });
+    final IOException expected = readTask.get(waitLimit * 3L, TimeUnit.MILLISECONDS);
     assertNotNull(expected.getCause());
     assertEquals(TimeoutException.class, expected.getCause().getClass());
-
-    // nocommit: this should be something about waitLimit...
-    assertThat(expected.getCause().getMessage(), containsString("requestTimeout exceeded"));
+    assertThat(expected.getCause().getMessage(), containsString("maxWaitLimit exceeded"));
   }
 
-
-      
   public void testReallySlowDataTriggersRequestTimeout() throws Exception {
-    final long writeDelayMillies = 500;
-    final InputStreamResponseListener listener = new InputStreamResponseListener(writeDelayMillies * 2);
-    
-    // emulate low level transport code providing headers, and then writes a (slow) never ending stream of bytes
-    final HttpResponse dummyResponse = new HttpResponse(null /* bogus request */, Collections.emptyList());
+    final long writeDelayMillies = 100;
+    // crazy long maxWaitLimit relative to how often new data should be available
+    final InputStreamResponseListener listener =
+        new InputStreamResponseListener(5 * writeDelayMillies);
+
+    // emulate low level transport code providing headers, and then writes a (slow) never ending
+    // stream of bytes
+    final HttpResponse dummyResponse =
+        new HttpResponse(null /* bogus request */, Collections.emptyList());
     listener.onHeaders(dummyResponse);
-    final CountDownLatch writeTaskCloseLatch = new CountDownLatch(1);
+    final CountDownLatch closeLatch = new CountDownLatch(1);
     try {
-      final ForkJoinTask<Boolean> writeTask = ForkJoinPool.commonPool().submit(() -> {
-          final ByteBuffer dataToWriteForever = ByteBuffer.allocate(5);
-          while (0 < writeTaskCloseLatch.getCount()) {
-            dataToWriteForever.position(0);
-            listener.onContent(dummyResponse, dataToWriteForever, Callback.NOOP);
-            Thread.sleep(writeDelayMillies);
-          }
-          return true;
-        });
+      final ForkJoinTask<Boolean> writeTask =
+          ForkJoinPool.commonPool()
+              .submit(
+                  () -> {
+                    final ByteBuffer dataToWriteForever = ByteBuffer.allocate(5);
+                    while (0 < closeLatch.getCount()) {
+                      dataToWriteForever.position(0);
+                      listener.onContent(dummyResponse, dataToWriteForever, Callback.NOOP);
+                      Thread.sleep(writeDelayMillies);
+                    }
+                    return true;
+                  });
 
       // client reads "forever" ... until read times out because requestTimeout exceeded
       assertEquals(dummyResponse, listener.get(0, TimeUnit.SECONDS));
-      final IOException expected = expectThrows(IOException.class, () -> {
-          final Instant requestTimeout = Instant.now().plus(1, ChronoUnit.MINUTES);
-          listener.setRequestTimeout(requestTimeout);
-          final Instant forever = requestTimeout.plusSeconds(60);
-          try (final InputStream stream = listener.getInputStream()) {
-            while (Instant.now().isBefore(forever)) {
-              int trash = stream.read(); // this should eventually throw an exception
-            }
-          }
-        });
+      final ForkJoinTask<IOException> readTask =
+          ForkJoinPool.commonPool()
+              .submit(
+                  () -> {
+                    // (Do this in a ForkJoin thread so we can easily fail test if read() doesn't
+                    // throw IOException in a timely manner)
+                    return expectThrows(
+                        IOException.class,
+                        () -> {
+                          final Instant requestTimeout = Instant.now().plus(5, ChronoUnit.SECONDS);
+                          listener.setRequestTimeout(requestTimeout);
+                          final Instant forever = requestTimeout.plusSeconds(60);
+                          try (final InputStream stream = listener.getInputStream()) {
+                            while (0 < closeLatch.getCount()) {
+                              int trash =
+                                  stream.read(); // this should eventually throw an exception
+                            }
+                          }
+                        });
+                  });
+      final IOException expected = readTask.get(10, TimeUnit.SECONDS);
       assertNotNull(expected.getCause());
       assertEquals(TimeoutException.class, expected.getCause().getClass());
       assertThat(expected.getCause().getMessage(), containsString("requestTimeout exceeded"));
     } finally {
-      writeTaskCloseLatch.countDown();
+      closeLatch.countDown();
     }
   }
 }
