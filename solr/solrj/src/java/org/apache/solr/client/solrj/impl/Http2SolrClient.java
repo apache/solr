@@ -1089,10 +1089,10 @@ public class Http2SolrClient extends SolrClient {
   }
 
   /**
-   * If a <code>timeAllowed=X</code> is specified in the params, use (30ms + 2X) as a requestTimeout
-   * on the response listener. This should give the remote node ample time to recognize it's
-   * exceeded <code>timeAllowed</code> and response to the request, but if it doesn't then we want
-   * to abort in a reasonably proportinate amount of time and not wait forever.
+   * If a <code>timeAllowed=X</code> is specified in the params, use <code>max(500ms, 2X)</code> as
+   * a requestTimeout on the response listener. This should give the remote node ample time to
+   * recognize it's exceeded <code>timeAllowed</code> and respond to the request, but if it doesn't
+   * then we want to abort in a reasonably proportinate amount of time and not wait forever.
    *
    * @see CommonParams#TIME_ALLOWED
    */
@@ -1102,7 +1102,7 @@ public class Http2SolrClient extends SolrClient {
       final Long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED);
       if (null != timeAllowed) {
         listener.setRequestTimeout(
-            Instant.now().plusMillis(30).plusMillis(timeAllowed.longValue() * 2L));
+            Instant.now().plusMillis(Math.max(500, timeAllowed.longValue() * 2L)));
       }
     }
   }
