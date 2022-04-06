@@ -193,12 +193,11 @@ public abstract class ConfigSetService {
         String.format(
             Locale.ROOT,
             "Could not find solrconfig.xml at %s, %s or %s",
-            Path.of(configSetDir, "solrconfig.xml").normalize().toAbsolutePath().toString(),
-            Path.of(configSetDir, "conf", "solrconfig.xml").normalize().toAbsolutePath().toString(),
+            Path.of(confDir, "solrconfig.xml").normalize().toAbsolutePath(),
+            Path.of(confDir, "conf", "solrconfig.xml").normalize().toAbsolutePath(),
             Path.of(configSetDir, confDir, "conf", "solrconfig.xml")
                 .normalize()
-                .toAbsolutePath()
-                .toString()));
+                .toAbsolutePath()));
   }
 
   /** If in SolrCloud mode, upload configSets for each SolrCore in solr.xml. */

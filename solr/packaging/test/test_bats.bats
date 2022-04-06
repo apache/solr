@@ -21,7 +21,7 @@ load bats_helper
 
 setup_file() {
   # set up paths and helpers
-  common_setup
+  common_clean_setup
 
   solr start -c -V
   # echo $output >&3

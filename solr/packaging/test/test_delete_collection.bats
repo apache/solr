@@ -18,7 +18,7 @@
 load bats_helper
 
 setup_file() {
-  common_setup
+  common_clean_setup
   solr start -c
 }
 

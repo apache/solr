@@ -18,7 +18,7 @@
 load bats_helper
 
 setup() {
-  common_setup
+  common_clean_setup
 }
 
 teardown() {

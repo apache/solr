@@ -30,6 +30,15 @@ common_setup() {
     export SOLR_ULIMIT_CHECKS=false
 }
 
+common_clean_setup() {
+    common_setup
+
+    if [ -d "${SOLR_HOME}" ]; then
+        rm -r "${SOLR_HOME}"
+        mkdir "${SOLR_HOME}"
+    fi
+}
+
 delete_all_collections() {
   local collection_list="$(solr zk ls /collections -z localhost:9983)"
   for collection in $collection_list; do
