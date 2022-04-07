@@ -183,19 +183,26 @@ task integrationTests(type: BatsTask) {
 
   def integrationTestOutput = "$buildDir/test-output"
   def solrHome = "$integrationTestOutput/solr-home"
+  def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
 
   inputs.dir(distDir)
   outputs.dir(integrationTestOutput)
-  outputs.dir(solrHome)
 
   doFirst {
+    delete integrationTestOutput
+    mkdir integrationTestOutput
+    mkdir solrHome
+    mkdir solrTestFailuresDir
+
     // TODO - if quiet then don't tee
     standardOutput = new TeeOutputStream(System.out, new FileOutputStream("$integrationTestOutput/test-output.txt"))
+
   }
 
   environment SOLR_TIP: distDir.toString()
   environment SOLR_HOME: solrHome
   environment SOLR_LOGS_DIR: "$solrHome/logs"
+  environment TEST_FAILURE_DIR: solrTestFailuresDir
   environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
 }
 

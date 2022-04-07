@@ -32,6 +32,9 @@ setup() {
 }
 
 teardown() {
+  # save a snapshot of SOLR_HOME for failed tests
+  save_home_on_failure
+
   delete_all_collections
 }
 

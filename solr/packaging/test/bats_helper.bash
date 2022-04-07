@@ -46,6 +46,15 @@ common_clean_setup() {
     fi
 }
 
+# Use this method in all "teardown" functions
+save_home_on_failure() {
+    if [[ -z "${BATS_TEST_COMPLETED:-}" ]] && [[ -z "${BATS_TEST_SKIPPED:-}" ]] && [ -d "${SOLR_HOME}" ]; then
+        local solrhome_failure_dir="${TEST_FAILURE_DIR}/${BATS_SUITE_TEST_NUMBER}-${BATS_TEST_NUMBER}"
+        cp -r "${SOLR_HOME}" "${solrhome_failure_dir}"
+        >&2 echo "Please find the SOLR_HOME snapshot for failed test #${BATS_TEST_NUMBER} at: ${solrhome_failure_dir}"
+    fi
+}
+
 delete_all_collections() {
   local collection_list="$(solr zk ls /collections -z localhost:9983)"
   for collection in $collection_list; do

@@ -37,6 +37,11 @@ teardown_file() {
   # DEBUG : (echo -n "# " ; solr stop -V -all) >&3
 }
 
+teardown() {
+  # save a snapshot of SOLR_HOME for failed tests
+  save_home_on_failure
+}
+
 @test "nothing" {
   # hint: if we need to demonstrate a failing test, change this line to 'false'
   true
