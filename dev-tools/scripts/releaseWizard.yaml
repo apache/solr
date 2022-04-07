@@ -292,9 +292,10 @@ groups:
     id: fix_build_failures
     title: Look into common build failures
     description: |
-      Look over recent build results sent to the builds@lucene.apache.org list and try to address any recurring
+      Look over recent build results sent to the builds@solr.apache.org list and try to address any recurring
       failures. It's best to fix common failures now, so they don't pop up later and interfere with release smoke
-      testing. Build email archives are available at https://lists.apache.org/list.html?builds@lucene.apache.org.
+      testing. Build email archives are available at https://lists.apache.org/list.html?builds@solr.apache.org.
+      You can also find failure statistics at http://fucit.org/solr-jenkins-reports/
   - !Todo
     id: decide_branch_date
     title: Decide the date for branching
