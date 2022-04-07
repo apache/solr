@@ -21,7 +21,7 @@ load bats_helper
 
 setup_file() {
   # set up paths and helpers
-  common_setup
+  common_clean_setup
 
   solr start -c -V
   # echo $output >&3
@@ -35,6 +35,11 @@ teardown_file() {
   # because using "run" will eat filing test exit codes
   solr stop -all
   # DEBUG : (echo -n "# " ; solr stop -V -all) >&3
+}
+
+teardown() {
+  # save a snapshot of SOLR_HOME for failed tests
+  save_home_on_failure
 }
 
 @test "nothing" {
