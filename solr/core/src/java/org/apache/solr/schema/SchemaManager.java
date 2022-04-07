@@ -129,7 +129,8 @@ public class SchemaManager {
           }
 
           try {
-            SolrConfigHandler configHandler = ((SolrConfigHandler)req.getCore().getRequestHandler("/config"));
+            SolrConfigHandler configHandler =
+                ((SolrConfigHandler) req.getCore().getRequestHandler("/config"));
             if (configHandler.getReloadLock().tryLock()) {
               latestVersion =
                   ZkController.persistConfigResourceToZooKeeper(

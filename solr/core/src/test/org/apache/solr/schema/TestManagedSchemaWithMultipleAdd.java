@@ -17,6 +17,10 @@
 
 package org.apache.solr.schema;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -32,75 +36,76 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 public class TestManagedSchemaWithMultipleAdd extends SolrCloudTestCase {
 
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-    private static final int AUTOSOFTCOMMIT_MAXTIME_MS = 3000;
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final int AUTOSOFTCOMMIT_MAXTIME_MS = 3000;
 
-    @BeforeClass
-    public static void createClusterAndInitSysProperties() throws Exception {
-        System.setProperty("managed.schema.mutable", "true");
-        System.setProperty("solr.autoSoftCommit.maxTime", Integer.toString(AUTOSOFTCOMMIT_MAXTIME_MS));
-        configureCluster(1)
-                .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed-autocommit").resolve("conf"))
-                .configure();
+  @BeforeClass
+  public static void createClusterAndInitSysProperties() throws Exception {
+    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("solr.autoSoftCommit.maxTime", Integer.toString(AUTOSOFTCOMMIT_MAXTIME_MS));
+    configureCluster(1)
+        .addConfig(
+            "conf1",
+            TEST_PATH().resolve("configsets").resolve("cloud-managed-autocommit").resolve("conf"))
+        .configure();
+  }
+
+  @AfterClass
+  public static void afterRestartWhileUpdatingTest() {
+    System.clearProperty("managed.schema.mutable");
+    System.clearProperty("solr.autoSoftCommit.maxTime");
+  }
+
+  @Test
+  public void test() throws Exception {
+    String collection = "testschemaapi";
+    CollectionAdminRequest.createCollection(collection, "conf1", 1, 1)
+        .process(cluster.getSolrClient());
+    testAddFieldAndMultipleDocument(collection);
+  }
+
+  private void testAddFieldAndMultipleDocument(String collection)
+      throws IOException, SolrServerException, InterruptedException {
+
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+
+    String fieldName = "myNewField1";
+    addStringField(fieldName, collection, cloudClient);
+
+    UpdateRequest ureq = new UpdateRequest();
+    int numDocs = 1000;
+    for (int i = 0; i < numDocs; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", i);
+      doc.addField(fieldName, "value" + i);
+      ureq = ureq.add(doc);
     }
+    cloudClient.request(ureq, collection);
 
-    @AfterClass
-    public static void afterRestartWhileUpdatingTest() {
-        System.clearProperty("managed.schema.mutable");
-        System.clearProperty("solr.autoSoftCommit.maxTime");
+    // The issue we test in this class does not appear when using explicit commits.
+    // Because of this we are waiting for autoSoftCommit to finish if there is one.
+    Thread.sleep(AUTOSOFTCOMMIT_MAXTIME_MS + 500);
+
+    assertEquals(
+        numDocs, cloudClient.query(collection, new SolrQuery("*:*")).getResults().getNumFound());
+  }
+
+  private void addStringField(String fieldName, String collection, CloudSolrClient cloudClient)
+      throws IOException, SolrServerException {
+    Map<String, Object> fieldAttributes = new LinkedHashMap<>();
+    fieldAttributes.put("name", fieldName);
+    fieldAttributes.put("type", "string");
+    SchemaRequest.AddField addFieldUpdateSchemaRequest =
+        new SchemaRequest.AddField(fieldAttributes);
+    SchemaResponse.UpdateResponse addFieldResponse =
+        addFieldUpdateSchemaRequest.process(cloudClient, collection);
+    assertEquals(0, addFieldResponse.getStatus());
+    assertNull(addFieldResponse.getResponse().get("errors"));
+
+    if (log.isInfoEnabled()) {
+      log.info("added new field = {}", fieldName);
     }
-
-    @Test
-    public void test() throws Exception {
-        String collection = "testschemaapi";
-        CollectionAdminRequest.createCollection(collection, "conf1", 1, 1)
-                .process(cluster.getSolrClient());
-        testAddFieldAndMultipleDocument(collection);
-    }
-
-    private void testAddFieldAndMultipleDocument(String collection) throws IOException, SolrServerException, InterruptedException {
-
-        CloudSolrClient cloudClient = cluster.getSolrClient();
-
-        String fieldName = "myNewField1";
-        addStringField(fieldName, collection, cloudClient);
-
-        UpdateRequest ureq = new UpdateRequest();
-        int numDocs = 1000;
-        for (int i=0;i<numDocs;i++) {
-            SolrInputDocument doc = new SolrInputDocument();
-            doc.addField("id", i);
-            doc.addField(fieldName, "value" + i);
-            ureq = ureq.add(doc);
-        }
-        cloudClient.request(ureq, collection);
-
-        // The issue we test in this class does not appear when using explicit commits.
-        // Because of this we are waiting for autoSoftCommit to finish if there is one.
-        Thread.sleep( AUTOSOFTCOMMIT_MAXTIME_MS + 500 );
-
-        assertEquals(numDocs, cloudClient.query(collection, new SolrQuery("*:*")).getResults().getNumFound());
-    }
-
-
-    private void addStringField(String fieldName, String collection, CloudSolrClient cloudClient) throws IOException, SolrServerException {
-        Map<String, Object> fieldAttributes = new LinkedHashMap<>();
-        fieldAttributes.put("name", fieldName);
-        fieldAttributes.put("type", "string");
-        SchemaRequest.AddField addFieldUpdateSchemaRequest = new SchemaRequest.AddField(fieldAttributes);
-        SchemaResponse.UpdateResponse addFieldResponse = addFieldUpdateSchemaRequest.process(cloudClient, collection);
-        assertEquals(0, addFieldResponse.getStatus());
-        assertNull(addFieldResponse.getResponse().get("errors"));
-
-        if (log.isInfoEnabled()) {
-            log.info("added new field = {}", fieldName);
-        }
-    }
+  }
 }
