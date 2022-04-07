@@ -1014,8 +1014,10 @@ public class IndexFetcher {
     // must get the latest solrCore object because the one we have might be closed because of a
     // reload
     // todo stop keeping solrCore around
-    SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName());
-    try {
+    try (SolrCore core = solrCore.getCoreContainer().getCore(solrCore.getName())) {
+      if (core == null) {
+        return; // core closed, presumably
+      }
       @SuppressWarnings("unchecked")
       Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
       searcher = core.getSearcher(true, true, waitSearcher, true);
@@ -1031,7 +1033,6 @@ public class IndexFetcher {
       if (searcher != null) {
         searcher.decref();
       }
-      core.close();
     }
 
     // update the commit point in replication handler
