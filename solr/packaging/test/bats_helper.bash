@@ -15,6 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Use this method when in all "teardown"/"teardownFile" functions and any "setup" functions that should not clear the SOLR_HOME directory.
+# - "teardown"/"teardownFile" usually stop all Solr processes, so you should not clear the SOLR_HOME directory before they are run.
+#   The SOLR_HOME directory will be cleared when the next test file is executed.
+# - "setup" should use "common_setup" if a Solr process is NOT being started in that same "setup" function.
 common_setup() {
     if [ -z ${BATS_LIB_PREFIX:-} ]; then
         # Debugging help, if you want to run bats directly, try to detect where libraries might be
@@ -30,6 +34,9 @@ common_setup() {
     export SOLR_ULIMIT_CHECKS=false
 }
 
+# Use this method in all "setupFile" functions and any "setup" functions that should start with a clean SOLR_HOME directory.
+# - "setupFile" should always start with a clean SOLR_HOME, so "common_clean_setup" should always be used there instead of "common_setup".
+# - "setup" should only use "common_clean_setup" if a Solr Process is created in that same "setup" function.
 common_clean_setup() {
     common_setup
 
