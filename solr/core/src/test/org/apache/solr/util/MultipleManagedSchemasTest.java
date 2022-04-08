@@ -16,16 +16,26 @@
  */
 package org.apache.solr.util;
 
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 public class MultipleManagedSchemasTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    SolrCLI.FAKE_EXIT = true;
+    System.setProperty("managed.schema.mutable", "true");
     configureCluster(1).configure();
   }
 
@@ -34,30 +44,38 @@ public class MultipleManagedSchemasTest extends SolrCloudTestCase {
     if (cluster != null) {
       cluster.shutdown();
     }
-    SolrCLI.FAKE_EXIT = false;
     super.tearDown();
   }
 
   @Test
   public void testSameCollectionNameWithMultipleSchemas() throws Exception {
-    String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
-    String configsets = TEST_PATH().resolve("configsets").toString();
+    CloudSolrClient client = cluster.getSolrClient();
 
-    SolrCLI.main(new String[] { "create_collection",
-        "-name", "COLL1",
-        "-solrUrl", solrUrl,
-        "-confdir", "_default",
-        "-configsetsDir", configsets
-    });
-    SolrCLI.main(new String[] { "delete",
-        "-name", "COLL1",
-        "-solrUrl", solrUrl,
-    }); // Also deleted the configset from ZK
-    SolrCLI.main(new String[] { "create_collection",
-        "-name", "COLL1",
-        "-solrUrl", solrUrl,
-        "-confdir", "cloud-managed",
-        "-configsetsDir", configsets
-    });
+    String name = "COLL1";
+    String zkPath = ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + name;
+
+    ZkMaintenanceUtils.uploadToZK(cluster.getZkClient(), configset("_default"), zkPath, null);
+    // Passing null for the second argument makes this test succeed
+    CollectionAdminRequest.createCollection(name, name, 1, 1).process(client);
+
+    // Verify that the config set and collection were created
+    ConfigSetAdminRequest.List list = new ConfigSetAdminRequest.List();
+    assertTrue("Should have COLL1 config set", list.process(client).getConfigSets().contains("COLL1"));
+    assertTrue("Should have created COLL1", CollectionAdminRequest.listCollections(client).contains("COLL1"));
+
+    // Delete the config set and collection, and verify
+    CollectionAdminRequest.deleteCollection(name).process(client);
+    new ConfigSetAdminRequest.Delete().setConfigSetName(name).process(client);
+
+    assertFalse("Should not have COLL1 config set", list.process(client).getConfigSets().contains("COLL1"));
+    assertTrue("Should have deleted all collections", CollectionAdminRequest.listCollections(client).isEmpty());
+
+    // Upload the replacement config set
+    ZkMaintenanceUtils.uploadToZK(cluster.getZkClient(), configset("cloud-managed"), zkPath, null);
+    assertTrue("Should have COLL1 config set", list.process(client).getConfigSets().contains("COLL1"));
+
+    // This is the call that fails
+    // Passing null for the config name here also lets the test pass!
+    CollectionAdminRequest.createCollection(name, name, 1, 1).process(client);
   }
 }

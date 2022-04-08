@@ -127,12 +127,6 @@ import org.slf4j.LoggerFactory;
 
 /** Command-line utility for working with Solr. */
 public class SolrCLI implements CLIO {
-  /**
-   * When true, we will call System.exit; When false, throw an Exception on abnormal termination.
-   * <p>Useful for testing purposes
-   */
-  public static boolean FAKE_EXIT = false;
-
   private static final long MAX_WAIT_FOR_CORE_LOAD_NANOS =
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
@@ -252,21 +246,9 @@ public class SolrCLI implements CLIO {
             .build()
       };
 
-  private static class ExecutionTerminatedException extends RuntimeException {
-    final int code;
-
-    ExecutionTerminatedException(int code) {
-      this.code = code;
-    }
-  }
-
   private static void exit(int exitStatus) {
     try {
-      if (FAKE_EXIT) {
-        throw new ExecutionTerminatedException(exitStatus);
-      } else {
-        System.exit(exitStatus);
-      }
+      System.exit(exitStatus);
     } catch (java.lang.SecurityException secExc) {
       if (exitStatus != 0)
         throw new RuntimeException("SolrCLI failed to exit with status " + exitStatus);
@@ -275,19 +257,6 @@ public class SolrCLI implements CLIO {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
-    try {
-      doMain(args);
-    } catch (ExecutionTerminatedException e) {
-      if (e.code != 0) {
-        throw e;
-      } else {
-        // Terminate normally!
-      }
-    }
-  }
-
-  /** Runs a tool. */
-  public static void doMain(String[] args) throws Exception {
     if (args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0) {
       CLIO.err(
           "Invalid command-line args! Must pass the name of a tool to run.\n"
@@ -309,10 +278,10 @@ public class SolrCLI implements CLIO {
       tool = findTool(args);
     } catch (IllegalArgumentException iae) {
       CLIO.err(iae.getMessage());
-      exit(1);
+      System.exit(1);
     }
     CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
-    exit(tool.runTool(cli));
+    System.exit(tool.runTool(cli));
   }
 
   public static Tool findTool(String[] args) throws Exception {
@@ -2615,7 +2584,6 @@ public class SolrCLI implements CLIO {
             "Failed to delete collection '" + collectionName + "' due to: " + sse.getMessage());
       }
 
-      echo((deleteConfig ? "" : "Not ") + "deleting config " + configName);
       if (deleteConfig) {
         String configZnode = "/configs/" + configName;
         try {
@@ -4341,7 +4309,7 @@ public class SolrCLI implements CLIO {
             CLIO.out(
                 "Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
             printAuthEnablingInstructions(config);
-            exit(0);
+            System.exit(0);
           }
 
           // update the solr.in.sh file to contain the necessary authentication lines
@@ -4372,7 +4340,7 @@ public class SolrCLI implements CLIO {
                 "Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
             CLIO.out(
                 "Security has been disabled. Please remove any SOLR_AUTH_TYPE or SOLR_AUTHENTICATION_OPTS configuration from solr.in.sh/solr.in.cmd.\n");
-            exit(0);
+            System.exit(0);
           }
 
           // update the solr.in.sh file to comment out the necessary authentication lines
@@ -4517,7 +4485,7 @@ public class SolrCLI implements CLIO {
             CLIO.out(
                 "Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
             printAuthEnablingInstructions(username, password);
-            exit(0);
+            System.exit(0);
           }
           String authConfDir = cli.getOptionValue("authConfDir");
           File basicAuthConfFile = new File(authConfDir + File.separator + "basicAuth.conf");
@@ -4525,7 +4493,7 @@ public class SolrCLI implements CLIO {
           if (basicAuthConfFile.getParentFile().canWrite() == false) {
             CLIO.out("Cannot write to file: " + basicAuthConfFile.getAbsolutePath());
             printAuthEnablingInstructions(username, password);
-            exit(0);
+            System.exit(0);
           }
 
           FileUtils.writeStringToFile(
@@ -4566,7 +4534,7 @@ public class SolrCLI implements CLIO {
                 "Solr include file " + solrIncludeFilename + " doesn't exist or is not writeable.");
             CLIO.out(
                 "Security has been disabled. Please remove any SOLR_AUTH_TYPE or SOLR_AUTHENTICATION_OPTS configuration from solr.in.sh/solr.in.cmd.\n");
-            exit(0);
+            System.exit(0);
           }
 
           // update the solr.in.sh file to comment out the necessary authentication lines
