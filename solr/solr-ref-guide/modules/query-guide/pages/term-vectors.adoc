@@ -119,7 +119,7 @@ The phrase query "Man on Fire" is searched for and the top 5000 results, by scor
 A single field from the results is return which is the `review_t` field that contains text of the movie review.
 
 Then `cartesianProduct` function is run over the search results.
-The `cartesianProduct` function applies the `analyze` function, which takes the `review_t` field and analyzes it with the Lucene/Solr analyzer attached to the `text_bigrams` schema field.
+The `cartesianProduct` function applies the `analyze` function, which takes the `review_t` field and analyzes it with the analyzer attached to the `text_bigrams` schema field.
 This analyzer emits the bigrams found in the text field.
 The `cartesianProduct` function explodes each bigram into its own tuple with the bigram stored in the field `term`.
 
@@ -132,7 +132,7 @@ Then Zeppelin-Solr is used to visualize the top 10 ten bigrams.
 
 image::math-expressions/text-analytics.png[]
 
-Lucene/Solr analyzers can be configured in many different ways to support aggregations over NLP entities (people, places, companies, etc.) as well as tokens extracted with regular expressions or dictionaries.
+Analyzers can be configured in many different ways to support aggregations over NLP entities (people, places, companies, etc.) as well as tokens extracted with regular expressions or dictionaries.
 
 == TF-IDF Term Vectors
 

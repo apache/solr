@@ -39,7 +39,7 @@ There are several points to keep in mind:
 
 * Running Solr with too little "headroom" allocated for the heap can cause excessive resources to be consumed by continual GC.
 Thus the 25-50% recommendation above.
-* Lucene/Solr makes extensive use of MMapDirectory, which uses RAM _not_ reserved for the JVM for most of the Lucene index.
+* Solr makes extensive use of MMapDirectory, which uses RAM _not_ reserved for the JVM for most of the Lucene index.
 Therefore, as much memory as possible should be left for the operating system to use for this purpose.
 * The heap allocated should be as small as possible while maintaining good performance.
 8-16Gb is quite common, and larger heaps are sometimes used.

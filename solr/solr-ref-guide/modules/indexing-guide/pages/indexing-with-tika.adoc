@@ -46,7 +46,7 @@ Solr Cell supplies some metadata of its own too.
 You can configure which elements should be included/ignored, and which should map to another field.
 * Solr Cell maps each piece of metadata onto a field.
 By default it maps to the same name but several parameters control how this is done.
-* When Solr Cell finishes creating the internal `SolrInputDocument`, the rest of the Lucene/Solr indexing stack takes over.
+* When Solr Cell finishes creating the internal `SolrInputDocument`, the rest of the Solr indexing stack takes over.
 The next step after any update handler is the xref:configuration-guide:update-request-processors.adoc[Update Request Processor] chain.
 
 Solr Cell is a module, which means it's not automatically included with Solr but must be configured.
