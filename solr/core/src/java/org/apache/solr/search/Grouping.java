@@ -461,7 +461,16 @@ public class Grouping {
       searcher.search(QueryUtils.combineQueryAndFilter(query, filterQuery), collector);
     } catch (TimeLimitingCollector.TimeExceededException
         | ExitableDirectoryReader.ExitingReaderException x) {
-      log.warn("Query: {}; ", query, x);
+      if (log.isWarnEnabled()) {
+        String queryToLog = query.toString();
+        if (queryToLog.length() > 1000) {
+          // INFO log long queries separately
+          log.info("Query: {}; ", query);
+          queryToLog = query.getClass().getName();
+          // to make WARN logged exception content more visible
+        }
+        log.warn("Query: {}; ", queryToLog, x);
+      }
       qr.setPartialResults(true);
     }
   }
