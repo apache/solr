@@ -574,7 +574,7 @@ for an overview of the main new features of Solr 8.4.
 
 When upgrading to 8.4.x users should be aware of the following major changes from 8.3.
 
-*Reminder:*  If you set the `postingsFormat` or `docValuesFormat` in the schema in order to use a non-default option, you risk preventing yourself from upgrading your Lucene/Solr software at future versions.
+*Reminder:*  If you set the `postingsFormat` or `docValuesFormat` in the schema in order to use a non-default option, you risk preventing yourself from upgrading your Solr software at future versions, due to changed version of the Lucene library.
 Multiple non-default postings formats changed in 8.4, thus rendering the index data from a previous index.
 This includes "FST50" which was recommended by the Solr TaggerHandler for performance reasons.
 There is now improved documentation to navigate this trade-off choice.

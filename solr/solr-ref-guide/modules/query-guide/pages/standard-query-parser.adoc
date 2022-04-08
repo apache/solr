@@ -220,7 +220,7 @@ However for float/double types that support `NaN` values, these two queries perf
 
 === Boosting a Term with "^"
 
-Lucene/Solr provides the relevance level of matching documents based on the terms found.
+Solr provides the relevance level of matching documents based on the terms found.
 To boost a term use the caret symbol `^` with a boost factor (a number) at the end of the term you are searching.
 The higher the boost factor, the more relevant the term will be.
 
@@ -372,7 +372,7 @@ For example, to search for (1+1):2 without having Solr interpret the plus sign a
 
 == Grouping Terms to Form Sub-Queries
 
-Lucene/Solr supports using parentheses to group clauses to form sub-queries.
+Solr supports using parentheses to group clauses to form sub-queries.
 This can be very useful if you want to control the Boolean logic for a query.
 
 The query below searches for either "jakarta" or "apache" and "website":
