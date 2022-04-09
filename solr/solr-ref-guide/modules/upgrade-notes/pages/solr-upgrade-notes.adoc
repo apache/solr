@@ -31,7 +31,7 @@ When planning your Solr upgrade, consider the customizations you have made to
 your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`]
 file found in your Solr package.
 That file includes all the changes and updates
-that may effect your existing implementation.
+that may affect your existing implementation.
 
 Detailed steps for upgrading a Solr cluster are in the section xref:deployment-guide:upgrading-a-solr-cluster.adoc[].
 
@@ -51,7 +51,7 @@ Rolling upgrades from Solr 8 to Solr 9 require first upgrading the cluster to ve
 
 Users upgrading from versions of Solr prior to 8.x are strongly encouraged to consult {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
 
-The upgrade from Solr 8.x to Solr 8.0 introduced several *major* changes that you should be aware of before upgrading.
+The upgrade from Solr 7.x to Solr 8.0 introduced several *major* changes that you should be aware of before upgrading.
 Please do a thorough review of the section xref:major-changes-in-solr-8.adoc[] before starting your upgrade.
 
 A summary of the significant changes between Solr 6.x and Solr 7.0 is in the section xref:major-changes-in-solr-7.adoc[].
