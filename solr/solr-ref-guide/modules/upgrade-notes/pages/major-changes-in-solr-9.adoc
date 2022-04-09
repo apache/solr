@@ -59,21 +59,18 @@ A rolling upgrade from Solr 8 to Solr 9 requires the following multiple restart 
 
 === Reindexing After Upgrade
 
+It is always strongly recommended that you fully reindex your documents after a major version upgrade. For details, see the xref:indexing-guide:reindexing.adoc[] section, which covers several strategies for how to reindex.
+
 In Solr 8, it's possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
-Due to changes in Lucene 9, that isn't possible any more; the component was removed.
-If re-indexing is too onerous, use this mechanism in Solr 8.
+Due to changes in Lucene 9, that isn't possible anymore; the component was removed.
 
 == Solr 9.0 Raw Notes (NOT YET EDITED)
 
 _(raw; not yet edited)_
 
 
-* SOLR-13671: Allow 'var' keyword in Java sources
 
-* SOLR-12055 introduces async logging by default. There's a small window where log messages may be lost in the event of some hard crash.
-Switch back to synchronous logging if this is unacceptable, see comments in the log4j2 configuration files (log4j2.xml by default).
 
-* SOLR-13323: The unused package org.apache.solr.internal.csv.writer and associated classes/tests that were easily confused with but not used by org.apache.solr.response.CSVWriter (or any other code) have been removed
 
 * SOLR-13854, SOLR-13858: SolrMetricProducer / SolrInfoBean APIs have changed and third-party components that implement these APIs need to be updated.
 
@@ -151,6 +148,8 @@ named "internal".  The sample Grafana dashboard now filters to include or exclud
 
 === Other
 
+* SOLR-13671: Allow 'var' keyword in Java sources
+
 // TBD
 
 * Replica placement plugins
@@ -225,6 +224,9 @@ values serialized in this way will need to be updated accordingly.
 
 * SOLR-12901: Highlighting: hl.method=unified is the new default.  Use hl.method=original
   to switch back if needed.
+
+* SOLR-12055 introduces async logging by default. There's a small window where log messages may be lost in the event of some hard crash.
+Switch back to synchronous logging if this is unacceptable, see comments in the log4j2 configuration files (log4j2.xml by default).
 
 === solr.xml maxBooleanClauses now enforced recursively
 
@@ -374,6 +376,8 @@ where they really belong: /admin/threads, /admin/properties, /admin/logging
 * Atomic/partial updates to nested documents now _require_ the `\_root_` field to clearly show the document isn't a root document.  Solr 8 would fallback on the `\_route_` param but no longer.
 
 * SolrJ: The project is migrating away from the Apache HttpClient dependency in favor of Jetty's client (supporting HTTP/2), to occur over the 9x releases.  We deprecated HttpSolrClient and friends in favor of Http2SolrClient and equivalents.  For SolrCloud, the former CloudSolrClient was renamed CloudLegacySolrClient (deprecated), and instead BaseCloudSolrClient was renamed to CloudSolrClient and given a Builder for the Jetty based HTTP/2 client.
+
+* SOLR-13323: The unused package org.apache.solr.internal.csv.writer and associated classes/tests that were easily confused with but not used by org.apache.solr.response.CSVWriter (or any other code) have been removed
 
 === Solr Binary Release `dist/` Directory
 
