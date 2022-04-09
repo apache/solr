@@ -833,7 +833,7 @@
             (if $object.value == true then 1.0 else 0.0 end) as $value |
             if $parent_key_item_len == 3 then
             {
-              name: "solr_metrics_core_replication_master",
+              name: "solr_metrics_core_replication_leader",
               type: "GAUGE",
               help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "handler", "core"],
@@ -842,7 +842,7 @@
             }
             else
             {
-              name: "solr_metrics_core_replication_master",
+              name: "solr_metrics_core_replication_leader",
               type: "GAUGE",
               help: "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
               label_names: ["category", "handler", "core", "collection", "shard", "replica"],

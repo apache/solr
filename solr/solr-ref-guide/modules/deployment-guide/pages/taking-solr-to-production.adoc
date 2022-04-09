@@ -386,7 +386,7 @@ Errors such as "too many open files", "connection error", and "max processes exc
 
 === Avoid Swapping (*nix Operating Systems)
 
-When running a Java application like Lucene/Solr, having the OS swap memory to disk is a very bad situation.
+When running a Java application like Solr, having the OS swap memory to disk is a very bad situation.
 We usually prefer a hard crash so other healthy Solr nodes can take over, instead of letting a Solr node swap, causing terrible performance, timeouts and an unstable system.
 So our recommendation is to disable swap on the host altogether or reduce the "swappiness".
 These instructions are valid for Linux environments.

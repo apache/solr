@@ -30,7 +30,8 @@ Other Changes
 
 New Features
 ---------------------
-(No changes)
+* SOLR-16111: Add hl.queryFieldPattern support, an advanced alternative to the hl.requireFieldMatch boolean flag.
+  (Christine Poerschke, David Smiley)
 
 Improvements
 ---------------------
@@ -43,6 +44,9 @@ Improvements
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
+
+* SOLR-14765: Optimize DocList creation for sort-irrelevant cases. This issue also reworks the building and caching of liveDocs
+  in SolrIndexSearcher, and refines/clarifies the effect of `useFilterForSortedQuery` (Michael Gibney, Mike Drob, David Smiley)
 
 Bug Fixes
 ---------------------
@@ -320,6 +324,10 @@ Improvements
   healthy (Pushkar Raste, Anshum Gupta)
 
 * SOLR-15590: Start CoreContainer via ServletContextListener (Gus Heck)
+
+* SOLR-16131: Jetty threads' contextClassLoaders are set to the Solr core's resourceLoader's classLoader.
+  This allows for custom plugins and Solr modules to rely on 3rd part dependencies that use the thread contextClassLoader.
+  (Houston Putman)
 
 Build
 ---------------------

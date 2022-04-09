@@ -128,7 +128,7 @@ public class PluginBag<T> implements AutoCloseable {
                 (Class<T>) meta.clazz,
                 meta.getCleanTag(),
                 null,
-                core.getResourceLoader(info.pkgName));
+                core.getResourceLoader());
         initInstance(inst, info);
         return new PluginHolder<>(info, inst);
       }

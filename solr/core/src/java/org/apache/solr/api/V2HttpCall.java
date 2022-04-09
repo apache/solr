@@ -37,6 +37,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.PathTrie;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
@@ -72,6 +73,9 @@ public class V2HttpCall extends HttpSolrCall {
     super(solrDispatchFilter, cc, request, response, retry);
   }
 
+  @SuppressForbidden(
+      reason =
+          "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   protected void init() throws Exception {
     queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
     String path = this.path;
@@ -153,6 +157,8 @@ public class V2HttpCall extends HttpSolrCall {
               SolrException.ErrorCode.NOT_FOUND,
               "no core retrieved for core name: " + origCorename + ". Path: " + path);
         }
+      } else {
+        Thread.currentThread().setContextClassLoader(core.getResourceLoader().getClassLoader());
       }
 
       this.path = path = path.substring(prefix.length() + pathSegments.get(1).length() + 2);
