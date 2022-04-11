@@ -35,7 +35,7 @@ public class MultipleManagedSchemasTest extends SolrCloudTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("managed.schema.mutable", "false");
     configureCluster(1).configure();
   }
 
@@ -77,5 +77,6 @@ public class MultipleManagedSchemasTest extends SolrCloudTestCase {
     // This is the call that fails
     // Passing null for the config name here also lets the test pass!
     CollectionAdminRequest.createCollection(name, name, 1, 1).process(client);
+    assertTrue("Should have created COLL1", CollectionAdminRequest.listCollections(client).contains("COLL1"));
   }
 }
