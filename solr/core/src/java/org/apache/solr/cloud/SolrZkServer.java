@@ -70,7 +70,7 @@ public class SolrZkServer {
 
     // if the string wasn't passed as zkHost, then use the standalone server we started
     if (zkRun == null) return null;
-    return "localhost:" + zkProps.getClientPortAddress().getPort();
+    return zkProps.getClientPortAddress().getHostString() + ":" + zkProps.getClientPortAddress().getPort();
   }
 
   public void parseConfig() {
