@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
@@ -26,8 +27,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
 
 public class MultipleManagedSchemasTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -60,23 +59,32 @@ public class MultipleManagedSchemasTest extends SolrCloudTestCase {
 
     // Verify that the config set and collection were created
     ConfigSetAdminRequest.List list = new ConfigSetAdminRequest.List();
-    assertTrue("Should have COLL1 config set", list.process(client).getConfigSets().contains("COLL1"));
-    assertTrue("Should have created COLL1", CollectionAdminRequest.listCollections(client).contains("COLL1"));
+    assertTrue(
+        "Should have COLL1 config set", list.process(client).getConfigSets().contains("COLL1"));
+    assertTrue(
+        "Should have created COLL1",
+        CollectionAdminRequest.listCollections(client).contains("COLL1"));
 
     // Delete the config set and collection, and verify
     CollectionAdminRequest.deleteCollection(name).process(client);
     new ConfigSetAdminRequest.Delete().setConfigSetName(name).process(client);
 
-    assertFalse("Should not have COLL1 config set", list.process(client).getConfigSets().contains("COLL1"));
-    assertTrue("Should have deleted all collections", CollectionAdminRequest.listCollections(client).isEmpty());
+    assertFalse(
+        "Should not have COLL1 config set", list.process(client).getConfigSets().contains("COLL1"));
+    assertTrue(
+        "Should have deleted all collections",
+        CollectionAdminRequest.listCollections(client).isEmpty());
 
     // Upload the replacement config set
     ZkMaintenanceUtils.uploadToZK(cluster.getZkClient(), configset("cloud-managed"), zkPath, null);
-    assertTrue("Should have COLL1 config set", list.process(client).getConfigSets().contains("COLL1"));
+    assertTrue(
+        "Should have COLL1 config set", list.process(client).getConfigSets().contains("COLL1"));
 
     // This is the call that fails
     // Passing null for the config name here also lets the test pass!
     CollectionAdminRequest.createCollection(name, name, 1, 1).process(client);
-    assertTrue("Should have created COLL1", CollectionAdminRequest.listCollections(client).contains("COLL1"));
+    assertTrue(
+        "Should have created COLL1",
+        CollectionAdminRequest.listCollections(client).contains("COLL1"));
   }
 }
