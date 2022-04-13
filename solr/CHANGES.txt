@@ -783,6 +783,8 @@ Bug Fixes
 
 * SOLR-16164: ConfigSet API returns error if untrusted user creates from _default configset (Eric Pugh, Kevin Risden)
 
+* SOLR-16154: Event listeners submit through core container executor service instead of separate thread (Mike Drob, Kevin Risden)
+
 ==================  8.11.2 ==================
 
 Bug Fixes

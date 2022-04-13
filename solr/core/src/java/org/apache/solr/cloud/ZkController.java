@@ -220,8 +220,7 @@ public class ZkController implements Closeable {
 
   @Deprecated
   // keeps track of replicas that have been asked to recover by leaders running on this node
-  private final Map<String, String> replicasInLeaderInitiatedRecovery =
-      new HashMap<String, String>();
+  private final Map<String, String> replicasInLeaderInitiatedRecovery = new HashMap<>();
 
   // This is an expert and unsupported development mode that does not create
   // an Overseer or register a /live node. This let's you monitor the cluster
@@ -232,7 +231,7 @@ public class ZkController implements Closeable {
   // keeps track of a list of objects that need to know a new ZooKeeper session was created after
   // expiration occurred ref is held as a HashSet since we clone the set before notifying to avoid
   // synchronizing too long
-  private HashSet<OnReconnect> reconnectListeners = new HashSet<OnReconnect>();
+  private HashSet<OnReconnect> reconnectListeners = new HashSet<>();
 
   private class RegisterCoreAsync implements Callable<Object> {
 
@@ -614,7 +613,9 @@ public class ZkController implements Closeable {
         try {
           log.debug(
               "calling waitForLeaderToSeeDownState for coreZkNodeName={} collection={} shard={}",
-              new Object[] {coreZkNodeName, collection, slice});
+              coreZkNodeName,
+              collection,
+              slice);
           waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
         } catch (Exception e) {
           log.warn(
@@ -1468,8 +1469,8 @@ public class ZkController implements Closeable {
       // zk, we are willing to wait a while to find it in state
       String clusterStateLeaderUrl = zkStateReader.getLeaderUrl(collection, shardId, timeoutms * 2);
       int tries = 0;
-      final long msInSec = 1000L;
-      int maxTries = (int) Math.floor(leaderConflictResolveWait / msInSec);
+      final int msInSec = 1000;
+      int maxTries = leaderConflictResolveWait / msInSec;
       while (!leaderUrl.equals(clusterStateLeaderUrl)) {
         if (cc.isShutDown()) throw new AlreadyClosedException();
         if (tries > maxTries) {
@@ -2596,10 +2597,8 @@ public class ZkController implements Closeable {
       }
 
     } catch (KeeperException.BadVersionException bve) {
-      int v = -1;
       try {
-        Stat stat = zkClient.exists(resourceLocation, null, true);
-        v = stat.getVersion();
+        zkClient.exists(resourceLocation, null, true);
       } catch (Exception e) {
         log.error("Exception during ZooKeeper node checking ", e);
       }
@@ -2754,19 +2753,18 @@ public class ZkController implements Closeable {
       if (listeners != null && !listeners.isEmpty()) {
         final Set<Runnable> listenersCopy = new HashSet<>(listeners);
         // run these in a separate thread because this can be long running
-        new Thread(
-                () -> {
-                  log.debug("Running listeners for {}", zkDir);
-                  for (final Runnable listener : listenersCopy) {
-                    try {
-                      listener.run();
-                    } catch (Exception e) {
-                      log.warn("listener throws error", e);
-                    }
-                  }
-                },
-                "ZKEventListenerThread")
-            .start();
+        Runnable work =
+            () -> {
+              log.debug("Running listeners for {}", zkDir);
+              for (final Runnable listener : listenersCopy) {
+                try {
+                  listener.run();
+                } catch (RuntimeException e) {
+                  log.warn("listener throws error", e);
+                }
+              }
+            };
+        cc.getCoreZkRegisterExecutorService().submit(work);
       }
     }
     return true;
@@ -2866,7 +2864,6 @@ public class ZkController implements Closeable {
       Collection<Slice> slices = collection.getSlices();
 
       for (Slice slice : slices) {
-        Collection<Replica> replicas = slice.getReplicas();
         Replica r = slice.getReplica(dcore.getCloudDescriptor().getCoreNodeName());
         if (r != null) {
           return true;
