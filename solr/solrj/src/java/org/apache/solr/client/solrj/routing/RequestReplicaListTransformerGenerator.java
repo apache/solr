@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.NodePropsProvider;
@@ -116,7 +115,9 @@ public class RequestReplicaListTransformerGenerator {
               localHostAddress != null
                   ? localHostAddress
                   : this.localHostAddress, // could still be null
-                  nodePropsProvider != null ? nodePropsProvider : this.nodePropsProvider, // could still be null
+              nodePropsProvider != null
+                  ? nodePropsProvider
+                  : this.nodePropsProvider, // could still be null
               defaultRltFactory,
               stableRltFactory);
       ReplicaListTransformer baseReplicaListTransformer =

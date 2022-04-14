@@ -22,53 +22,49 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 
-import org.apache.solr.common.NavigableObject;
-
-/**
- * Fetch lazily and cache a node's system properties
- *
- */
-public class NodePropsProvider  implements AutoCloseable {
+/** Fetch lazily and cache a node's system properties */
+public class NodePropsProvider implements AutoCloseable {
   private volatile boolean isClosed = false;
-  private final Map<String ,Map<String, Object>> nodeVsTagsCache = new ConcurrentHashMap<>();
+  private final Map<String, Map<String, Object>> nodeVsTagsCache = new ConcurrentHashMap<>();
   private ZkStateReader zkStateReader;
   private final CloudLegacySolrClient solrClient;
 
   public NodePropsProvider(CloudLegacySolrClient solrClient, ZkStateReader zkStateReader) {
     this.zkStateReader = zkStateReader;
     this.solrClient = solrClient;
-    zkStateReader.registerLiveNodesListener((oldNodes, newNodes) -> {
-      for (String n : oldNodes) {
-        if(!newNodes.contains(n)) {
-          //this node has gone down, clear data
-          nodeVsTagsCache.remove(n);
-        }
-      }
-      return isClosed;
-    });
-
+    zkStateReader.registerLiveNodesListener(
+        (oldNodes, newNodes) -> {
+          for (String n : oldNodes) {
+            if (!newNodes.contains(n)) {
+              // this node has gone down, clear data
+              nodeVsTagsCache.remove(n);
+            }
+          }
+          return isClosed;
+        });
   }
 
   public Map<String, Object> getSystemProperties(String nodeName, Collection<String> tags) {
-    Map<String, Object> cached = nodeVsTagsCache.computeIfAbsent(nodeName, s -> new LinkedHashMap<>());
+    Map<String, Object> cached =
+        nodeVsTagsCache.computeIfAbsent(nodeName, s -> new LinkedHashMap<>());
     Map<String, Object> result = new LinkedHashMap<>();
     for (String tag : tags) {
       if (!cached.containsKey(tag)) {
-        //at least one property is missing. fetch properties from the node
+        // at least one property is missing. fetch properties from the node
         Map<String, Object> props = fetchProps(nodeName, tags);
-        //make a copy
+        // make a copy
         cached = new LinkedHashMap<>(cached);
-        //merge all properties
+        // merge all properties
         cached.putAll(props);
-        //update the cache with the new set of properties
+        // update the cache with the new set of properties
         nodeVsTagsCache.put(nodeName, cached);
         return props;
       } else {
@@ -82,9 +78,9 @@ public class NodePropsProvider  implements AutoCloseable {
     SolrParams p = new ModifiableSolrParams();
     StringBuilder sb = new StringBuilder(zkStateReader.getBaseUrlForNodeName(nodeName));
     sb.append("/admin/metrics?omitHeader=true&wt=javabin");
-    LinkedHashMap<String,String> keys= new LinkedHashMap<>();
+    LinkedHashMap<String, String> keys = new LinkedHashMap<>();
     for (String tag : tags) {
-      String metricsKey = "solr.jvm:system.properties:"+tag;
+      String metricsKey = "solr.jvm:system.properties:" + tag;
       keys.put(tag, metricsKey);
       sb.append("&key=").append(metricsKey);
     }
@@ -92,7 +88,9 @@ public class NodePropsProvider  implements AutoCloseable {
     GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", p);
 
     Map<String, Object> result = new LinkedHashMap<>();
-    NavigableObject response = (NavigableObject) Utils.executeGET(solrClient.getHttpClient(), sb.toString(), Utils.JAVABINCONSUMER);
+    NavigableObject response =
+        (NavigableObject)
+            Utils.executeGET(solrClient.getHttpClient(), sb.toString(), Utils.JAVABINCONSUMER);
     NavigableObject metrics = (NavigableObject) response._get("metrics", Collections.emptyMap());
     keys.forEach((tag, key) -> result.put(tag, metrics._get(key, null)));
     return result;
@@ -101,6 +99,5 @@ public class NodePropsProvider  implements AutoCloseable {
   @Override
   public void close() {
     isClosed = true;
-
   }
 }

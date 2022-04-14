@@ -20,7 +20,6 @@ package org.apache.solr.common.cloud;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -32,20 +31,25 @@ public class TestNodePropsProvider extends SolrCloudTestCase {
   public void testSysProps() throws Exception {
     System.setProperty("metricsEnabled", "true");
     MiniSolrCloudCluster cluster =
-            configureCluster(4)
-                    .withJettyConfig(jetty -> jetty.enableV2(true))
-                    .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
-                    .configure();
+        configureCluster(4)
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+            .configure();
 
     System.clearProperty("metricsEnabled");
-    NodePropsProvider nodePropsProvider = cluster.getRandomJetty(random()).getCoreContainer().getZkController().getNodePropsProvider();
+    NodePropsProvider nodePropsProvider =
+        cluster
+            .getRandomJetty(random())
+            .getCoreContainer()
+            .getZkController()
+            .getNodePropsProvider();
 
     try {
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
         List<String> tags = Arrays.asList("file.encoding", "java.vm.version");
         Map<String, Object> props = nodePropsProvider.getSystemProperties(j.getNodeName(), tags);
         for (String tag : tags) assertNotNull(props.get(tag));
-        tags = Arrays.asList("file.encoding", "java.vm.version","os.arch" );
+        tags = Arrays.asList("file.encoding", "java.vm.version", "os.arch");
         props = nodePropsProvider.getSystemProperties(j.getNodeName(), tags);
         for (String tag : tags) assertNotNull(props.get(tag));
       }
