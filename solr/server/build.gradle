@@ -25,15 +25,10 @@ javadoc.enabled(false)
 compileJava.enabled(false)
 
 configurations {
-  coreLibs
-  libExt {
-    canBeResolved = false
-  }
-  serverLib {
-    canBeResolved = false
-  }
-  runtimeOnly {
-    extendsFrom libExt, serverLib
+  libExt
+  serverLib
+  runtimeClasspath {
+    extendsFrom serverLib, libExt
   }
   startJar
   webapp
@@ -41,8 +36,6 @@ configurations {
 }
 
 dependencies {
-  coreLibs project(':solr:core')
-
   serverLib 'org.eclipse.jetty:jetty-continuation'
   serverLib 'org.eclipse.jetty:jetty-deploy'
   serverLib 'org.eclipse.jetty:jetty-http'
