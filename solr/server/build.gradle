@@ -28,6 +28,9 @@ configurations {
   coreLibs
   libExt
   serverLib
+  runtimeOnly {
+    extendsFrom libExt, serverLib
+  }
   startJar
   webapp
   packaging
