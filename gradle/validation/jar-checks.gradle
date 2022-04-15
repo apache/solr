@@ -106,8 +106,10 @@ subprojects {
 
       def excludeRules = configurations.jarValidation.excludeRules
 
+      ArrayList<org.gradle.api.artifacts.Configuration> configurationsToCheck = new ArrayList<>(configurations.jarValidation.extendsFrom)
       ArrayDeque<ResolvedDependency> queue = new ArrayDeque<>()
-      configurations.jarValidation.extendsFrom.each { conf ->
+      for (int i = 0; i < configurationsToCheck.size(); i++) {
+        org.gradle.api.artifacts.Configuration conf = configurationsToCheck.get(i)
         if (excludeRules) {
           conf = conf.copyRecursive()
           conf.canBeResolved = true
@@ -119,6 +121,7 @@ subprojects {
         if (conf.canBeResolved) {
           queue.addAll(conf.resolvedConfiguration.firstLevelModuleDependencies)
         }
+        configurationsToCheck.addAll(conf.extendsFrom)
       }
 
       def visited = new HashSet<>()

@@ -26,8 +26,12 @@ compileJava.enabled(false)
 
 configurations {
   coreLibs
-  libExt
-  serverLib
+  libExt {
+    canBeResolved = false
+  }
+  serverLib {
+    canBeResolved = false
+  }
   runtimeOnly {
     extendsFrom libExt, serverLib
   }
@@ -95,8 +99,6 @@ dependencies {
 afterEvaluate {
   configurations {
     jarValidation.extendsFrom startJar
-    jarValidation.extendsFrom libExt
-    jarValidation.extendsFrom serverLib
   }
 }
 
