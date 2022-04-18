@@ -199,11 +199,32 @@
 #SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
 
 # Settings for ZK ACL
-#SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider \
-#  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider \
+#SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.acl.DigestZkACLProvider \
+#  -DzkCredentialsProvider=org.apache.solr.common.cloud.acl.DigestZkCredentialsProvider \
+#  -DzkCredentialsInjector=org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector \
 #  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD \
 #  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
 #SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
+
+# use a a Java properties file zkDigestCredentialsFile
+#...
+#   -DzkDigestCredentialsFile=/path/to/zkDigestCredentialsFile.properties
+#...
+
+# Use a Secret Manager stored zk credentials.
+# -DzkSecretCredentialsProvider expects a class implementing org.apache.solr.common.cloud.acl.SecretCredentialsProvider
+# ...
+#   -DzkCredentialsInjector=org.apache.solr.common.cloud.acl.SecretCredentialInjector \
+#       -DzkSecretCredentialsProvider=org.apache.solr.secret.zk.AWSSecretCredentialsProvider \
+#       -DzkSecretCredentialSecretName=zkCredentialsSecret \
+#       -DzkCredentialsAWSSecretRegion=us-west-2"
+# ...
+
+# Use a custom injector to inject ZK credentials into DigestZkACLProvider
+# -DzkCredentialsInjector expects a class implementing org.apache.solr.common.cloud.acl.ZkCredentialsInjector
+# ...
+#   -DzkCredentialsInjector=fully.qualified.class.CustomInjectorClassName"
+# ...
 
 # Jetty GZIP module enabled by default
 #SOLR_GZIP_ENABLED=true

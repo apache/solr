@@ -18,10 +18,27 @@ package org.apache.solr.common.cloud;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import org.apache.solr.common.cloud.acl.DefaultZkCredentialsInjector;
+import org.apache.solr.common.cloud.acl.ZkCredentialsInjector;
+import org.apache.solr.common.cloud.acl.ZkCredentialsProvider;
 
 public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
 
   private Collection<ZkCredentials> zkCredentials;
+  protected ZkCredentialsInjector zkCredentialsInjector;
+
+  public DefaultZkCredentialsProvider() {
+    this(new DefaultZkCredentialsInjector());
+  }
+
+  public DefaultZkCredentialsProvider(ZkCredentialsInjector zkCredentialsInjector) {
+    this.zkCredentialsInjector = zkCredentialsInjector;
+  }
+
+  @Override
+  public void setZkCredentialsInjector(ZkCredentialsInjector zkCredentialsInjector) {
+    this.zkCredentialsInjector = zkCredentialsInjector;
+  }
 
   @Override
   public Collection<ZkCredentials> getCredentials() {
@@ -34,6 +51,6 @@ public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
   }
 
   protected Collection<ZkCredentials> createCredentials() {
-    return new ArrayList<ZkCredentials>();
+    return new ArrayList<>();
   }
 }

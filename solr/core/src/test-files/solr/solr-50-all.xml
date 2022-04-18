@@ -43,6 +43,7 @@
     <str name="zkHost">testZkHost</str>
     <str name="zkACLProvider">DefaultZkACLProvider</str>
     <str name="zkCredentialsProvider">DefaultZkCredentialsProvider</str>
+    <str name="zkCredentialsInjector">DefaultZkCredentialsInjector</str>
   </solrcloud>
 
   <logging>

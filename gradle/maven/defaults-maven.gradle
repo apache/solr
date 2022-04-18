@@ -36,6 +36,7 @@ configure(rootProject) {
         ":solr:modules:langid",
         ":solr:modules:ltr",
         ":solr:modules:s3-repository",
+        ":solr:modules:aws-secret-provider",
         ":solr:modules:scripting",
         ":solr:prometheus-exporter",
         ":solr:test-framework",
