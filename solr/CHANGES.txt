@@ -686,6 +686,8 @@ Bug Fixes
 
 * SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
 
+* SOLR-16143: SolrConfig ResourceProvider can miss updates from ZooKeeper (Mike Drob)
+
 ==================  8.11.1 ==================
 
 Bug Fixes
