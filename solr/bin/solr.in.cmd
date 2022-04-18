@@ -175,11 +175,27 @@ REM set SOLR_AUTH_TYPE=basic
 REM set SOLR_AUTHENTICATION_OPTS=-Dbasicauth=solr:SolrRocks
 
 REM Settings for ZK ACL
-REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider ^
-REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider ^
+REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.acl.DigestZkACLProvider ^
+REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.acl.DigestZkCredentialsProvider ^
+REM  -DzkCredentialsInjector=org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector ^
 REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
+
+REM Use a Secret Manager stored zk credentials.
+REM -DzkSecretCredentialsProvider expects a class implementing org.apache.solr.common.cloud.acl.SecretCredentialsProvider
+REM  ...
+REM  -DzkCredentialsInjector=org.apache.solr.common.cloud.acl.SecretCredentialInjector ^
+REM  -DzkSecretCredentialsProvider=org.apache.solr.secret.zk.AWSSecretCredentialsProvider ^
+REM  -DzkSecretCredentialSecretName=zkCredentialsSecret ^
+REM  -DzkCredentialsAWSSecretRegion=us-west-2
+REM ...
+
+REM Use a custom injector to inject ZK credentials into DigestZkACLProvider
+REM -DzkCredentialsInjector expects a class implementing org.apache.solr.common.cloud.acl.ZkCredentialsInjector
+REM  ...
+REM  -DzkCredentialsInjector=fully.qualified.class.CustomInjectorClassName
+REM ...
 
 REM Jetty GZIP module enabled by default
 REM set SOLR_GZIP_ENABLED=true

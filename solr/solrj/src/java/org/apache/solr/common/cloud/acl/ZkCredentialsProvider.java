@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud;
+package org.apache.solr.common.cloud.acl;
 
 import java.util.Collection;
 
 public interface ZkCredentialsProvider {
 
-  public class ZkCredentials {
+  class ZkCredentials {
     String scheme;
     byte[] auth;
 
@@ -40,4 +40,6 @@ public interface ZkCredentialsProvider {
   }
 
   Collection<ZkCredentials> getCredentials();
+
+  void setZkCredentialsInjector(ZkCredentialsInjector zkCredentialsInjector);
 }

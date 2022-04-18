@@ -529,6 +529,9 @@ public class SolrXmlConfig {
         case "zkCredentialsProvider":
           builder.setZkCredentialsProviderClass(value);
           break;
+        case "zkCredentialsInjector":
+          builder.setZkCredentialsInjectorClass(value);
+          break;
         case "createCollectionWaitTimeTillActive":
           builder.setCreateCollectionWaitTimeTillActive(parseInt(name, value));
           break;

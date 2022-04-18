@@ -34,6 +34,10 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
+import org.apache.solr.common.cloud.acl.DefaultZkCredentialsInjector;
+import org.apache.solr.common.cloud.acl.ZkACLProvider;
+import org.apache.solr.common.cloud.acl.ZkCredentialsInjector;
+import org.apache.solr.common.cloud.acl.ZkCredentialsProvider;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -82,6 +86,7 @@ public class SolrZkClient implements Closeable {
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
   private int zkClientTimeout;
   private ZkACLProvider zkACLProvider;
+  private ZkCredentialsInjector zkCredentialsInjector;
   private String zkServerAddress;
 
   private IsClosed higherLevelIsClosed;
@@ -153,6 +158,7 @@ public class SolrZkClient implements Closeable {
     this.zkClientConnectionStrategy = strat;
 
     if (!strat.hasZkCredentialsToAddAutomatically()) {
+      zkCredentialsInjector = createZkCredentialsInjector();
       ZkCredentialsProvider zkCredentialsToAddAutomatically =
           createZkCredentialsToAddAutomatically();
       strat.setZkCredentialsToAddAutomatically(zkCredentialsToAddAutomatically);
@@ -236,8 +242,11 @@ public class SolrZkClient implements Closeable {
     if (!StringUtils.isEmpty(zkCredentialsProviderClassName)) {
       try {
         log.info("Using ZkCredentialsProvider: {}", zkCredentialsProviderClassName);
-        return (ZkCredentialsProvider)
-            Class.forName(zkCredentialsProviderClassName).getConstructor().newInstance();
+        ZkCredentialsProvider zkCredentialsProvider =
+            (ZkCredentialsProvider)
+                Class.forName(zkCredentialsProviderClassName).getConstructor().newInstance();
+        zkCredentialsProvider.setZkCredentialsInjector(zkCredentialsInjector);
+        return zkCredentialsProvider;
       } catch (Throwable t) {
         // just ignore - go default
         log.warn(
@@ -245,7 +254,7 @@ public class SolrZkClient implements Closeable {
             t);
       }
     }
-    log.debug("Using default ZkCredentialsProvider");
+    log.warn("Using default ZkCredentialsProvider");
     return new DefaultZkCredentialsProvider();
   }
 
@@ -256,7 +265,10 @@ public class SolrZkClient implements Closeable {
     if (!StringUtils.isEmpty(zkACLProviderClassName)) {
       try {
         log.info("Using ZkACLProvider: {}", zkACLProviderClassName);
-        return (ZkACLProvider) Class.forName(zkACLProviderClassName).getConstructor().newInstance();
+        ZkACLProvider zkACLProvider =
+            (ZkACLProvider) Class.forName(zkACLProviderClassName).getConstructor().newInstance();
+        zkACLProvider.setZkCredentialsInjector(zkCredentialsInjector);
+        return zkACLProvider;
       } catch (Throwable t) {
         // just ignore - go default
         log.warn(
@@ -264,8 +276,30 @@ public class SolrZkClient implements Closeable {
             t);
       }
     }
-    log.debug("Using default ZkACLProvider");
+    log.warn("Using default ZkACLProvider");
     return new DefaultZkACLProvider();
+  }
+
+  public static final String ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME =
+      "zkCredentialsInjector";
+
+  protected ZkCredentialsInjector createZkCredentialsInjector() {
+    String zkCredentialsInjectorClassName =
+        System.getProperty(ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME);
+    if (!StringUtils.isEmpty(zkCredentialsInjectorClassName)) {
+      try {
+        log.info("Using ZkCredentialsInjector: {}", zkCredentialsInjectorClassName);
+        return (ZkCredentialsInjector)
+            Class.forName(zkCredentialsInjectorClassName).getConstructor().newInstance();
+      } catch (Throwable t) {
+        // just ignore - go default
+        log.warn(
+            "VM param ZkCredentialsInjector does not point to a class implementing ZkCredentialsInjector and with a non-arg constructor",
+            t);
+      }
+    }
+    log.warn("Using default ZkCredentialsInjector");
+    return new DefaultZkCredentialsInjector();
   }
 
   /** Returns true if client is connected */

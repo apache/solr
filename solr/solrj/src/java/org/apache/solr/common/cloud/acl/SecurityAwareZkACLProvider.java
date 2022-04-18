@@ -14,9 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud;
+package org.apache.solr.common.cloud.acl;
 
 import java.util.List;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.data.ACL;
 
 /**
@@ -28,6 +29,20 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
 
   private List<ACL> nonSecurityACLsToAdd;
   private List<ACL> securityACLsToAdd;
+  protected ZkCredentialsInjector zkCredentialsInjector;
+
+  public SecurityAwareZkACLProvider() {
+    this(new DefaultZkCredentialsInjector());
+  }
+
+  public SecurityAwareZkACLProvider(ZkCredentialsInjector zkCredentialsInjector) {
+    this.zkCredentialsInjector = zkCredentialsInjector;
+  }
+
+  @Override
+  public void setZkCredentialsInjector(ZkCredentialsInjector zkCredentialsInjector) {
+    this.zkCredentialsInjector = zkCredentialsInjector;
+  }
 
   @Override
   public final List<ACL> getACLsToAdd(String zNodePath) {
