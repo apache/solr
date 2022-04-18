@@ -90,7 +90,7 @@ if [[ -z "$ASF_PASSWORD" ]]; then
 fi
 
 NEXUS_ROOT=https://repository.apache.org/service/local/staging
-NEXUS_PROFILE=5a6a03b6801d3e # Profile for Solr staging uploads (currently using lucene, update when solr is created)
+NEXUS_PROFILE=4bfe5196a41e63 # Profile for Solr staging uploads
 
 # Using Nexus API documented here:
 # https://support.sonatype.com/entries/39720203-Uploading-to-a-Staging-Repository-via-REST-API
@@ -99,13 +99,9 @@ function create_staging_repo() {
   repo_request="<promoteRequest><data><description>Apache Solr $SOLR_VERSION (commit $COMMIT_HASH)</description></data></promoteRequest>"
   out=$(curl -X POST -d "$repo_request" -u "$ASF_USERNAME:$ASF_PASSWORD" \
     -H "Content-Type:application/xml" -v \
-    $NEXUS_ROOT/profiles/$NEXUS_PROFILE/start)
-  staged_repo_id=$(echo $out | sed -e "s/.*\(orgapachelucene-[0-9]\{4\}\).*/\1/")
+    "$NEXUS_ROOT/profiles/$NEXUS_PROFILE/start")
+  staged_repo_id=$(echo $out | sed -e "s/.*\(orgapachesolr-[0-9]\{4\}\).*/\1/")
   echo "$staged_repo_id"
-}
-
-function upload_to_staging_repo() {
-  curl -u $ASF_USERNAME:$ASF_PASSWORD --upload-file $file_short $dest_url
 }
 
 function finalize_staging_repo() {
@@ -113,7 +109,7 @@ function finalize_staging_repo() {
   repo_request="<promoteRequest><data><stagedRepositoryId>$STAGING_REPO_ID</stagedRepositoryId><description>Apache Solr $SOLR_VERSION (commit $COMMIT_HASH)</description></data></promoteRequest>"
       out=$(curl -X POST -d "$repo_request" -u "$ASF_USERNAME:$ASF_PASSWORD" \
         -H "Content-Type:application/xml" -v \
-        $NEXUS_ROOT/profiles/$NEXUS_PROFILE/finish)
+        "$NEXUS_ROOT/profiles/$NEXUS_PROFILE/finish")
 }
 
 echo "Creating Nexus staging repository"
@@ -131,9 +127,9 @@ echo "Uploading files to Nexus staging repository"
       continue
     fi
     # strip leading ./
-    file_short=$(echo $file | sed -e "s/\.\///")
+    file_short="$(echo "$file" | sed -e "s/\.\///")"
     echo "  Uploading $file_short"
-    curl -u "$ASF_USERNAME:$ASF_PASSWORD" --upload-file $file_short "$NEXUS_FILE_UPLOAD_URL/$file_short"
+    curl -u "$ASF_USERNAME:$ASF_PASSWORD" --upload-file "$file_short" "$NEXUS_FILE_UPLOAD_URL/$file_short"
   done
 )
 
