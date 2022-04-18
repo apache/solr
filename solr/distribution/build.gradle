@@ -151,30 +151,3 @@ tasks.matching {it.name in [
 ]}.all {
   group "distribution"
 }
-
-// Prepare a sonatype ZIP bundle with all maven artifacts.
-task prepareSonatypeBundle(type: Zip) {
-  description "Prepare Sonatype Nexus ZIP bundle with all Maven artifacts. Requires -Prelease.dir=..."
-
-  destinationDirectory = file("${buildDir}/sonatype")
-  archiveFileName = "artifact-bundle-solr.zip"
-
-  from({ ->
-    def releaseDir = propertyOrDefault("release.dir", null)
-    if (releaseDir == null) {
-      throw new GradleException("Pass an explicit release directory path with -Prelease.dir=...")
-    }
-    if (!file("${releaseDir}/maven").exists()) {
-      throw new GradleException("Something is wrong, this is not a release directory: " + releaseDir)
-    }
-
-    return file("${releaseDir}/maven/")
-  }, {
-    exclude "**/maven-metadata.*"
-    exclude "**/*.md5"
-    exclude "**/*.sha*"
-  })
-
-  includeEmptyDirs = false
-  duplicatesStrategy = DuplicatesStrategy.FAIL
-}
