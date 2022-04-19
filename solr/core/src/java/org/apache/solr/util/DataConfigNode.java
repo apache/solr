@@ -130,7 +130,7 @@ public class DataConfigNode implements ConfigNode {
         (s, configNodes) -> {
           if (configNodes != null) {
             for (ConfigNode node : configNodes) {
-              if(!fun.apply(node)) break;
+              if (Boolean.FALSE == fun.apply(node)) break;
             }
           }
         });
