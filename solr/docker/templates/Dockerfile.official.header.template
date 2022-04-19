@@ -56,7 +56,6 @@ RUN set -ex; \
       pgp.mit.edu \
       keyserver.ubuntu.com \
       hkp://keyserver.ubuntu.com:80 \
-      hkp://p80.pool.sks-keyservers.net:80 \
     ; do \
       echo "  trying $server for $key"; \
       gpg --batch --keyserver "$server" --keyserver-options timeout=10 --recv-keys "$key" && found=yes && break; \
