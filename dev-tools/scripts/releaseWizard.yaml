@@ -289,6 +289,14 @@ groups:
     title: Select JIRA issues to be included
     description: Set the appropriate "Fix Version" in JIRA for the issues that should be included in the release.
   - !Todo
+    id: fix_build_failures
+    title: Look into common build failures
+    description: |
+      Look over recent build results sent to the builds@solr.apache.org list and try to address any recurring
+      failures. It's best to fix common failures now, so they don't pop up later and interfere with release smoke
+      testing. Build email archives are available at https://lists.apache.org/list.html?builds@solr.apache.org.
+      You can also find failure statistics at http://fucit.org/solr-jenkins-reports/
+  - !Todo
     id: decide_branch_date
     title: Decide the date for branching
     types:
@@ -299,7 +307,7 @@ groups:
       name: branch_date
   - !Todo
     id: decide_freeze_length
-    title: Decide the lenght of feature freeze
+    title: Decide the length of feature freeze
     types:
     - major
     - minor
@@ -628,6 +636,14 @@ groups:
         cmd: git checkout {{ release_branch }}
         stdout: true
       - !Command
+        cmd: git clean -df && git checkout -- .
+        comment: Make sure checkout is clean and up to date
+        logfile: git_clean.log
+        tee: true
+      - !Command
+        cmd: git pull --ff-only
+        tee: true
+      - !Command
         cmd: "{{ gradle_cmd }} documentation"
     post_description: Check that the task passed. If it failed, commit fixes for the failures before proceeding.
   - !Todo
@@ -765,12 +781,20 @@ groups:
       Please vote for release candidate {{ rc_number }} for Solr {{ release_version }}
 
       The artifacts can be downloaded from:
-      {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
+      {{ release_candidate_location }}
 
       You can run the smoke tester directly with this command:
 
       python3 -u dev-tools/scripts/smokeTestRelease.py \
-      {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
+      {{ release_candidate_location }}
+
+      You can build a release-candidate of the official docker image using the following command:
+
+      DIST_BASE={{ dist_url_base }} && \
+        RC_FOLDER={{ release_candidate_rc_folder }} && \
+        docker build $DIST_BASE/$RC_FOLDER/solr/docker/Dockerfile.official \
+        --build-arg SOLR_DOWNLOAD_URL=$DIST_BASE/$RC_FOLDER/solr/solr-{{ release_version }}.tgz \
+        -t solr-rc:{{ release_version }}-{{ rc_number }}
 
       The vote will be open for at least 72 hours i.e. until {{ vote_close }}.
 
@@ -793,6 +817,8 @@ groups:
     vars:
       vote_close: '{{ vote_close_72h }}'
       vote_close_epoch: '{{ vote_close_72h_epoch }}'
+      release_candidate_rc_folder: 'solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}'
+      release_candidate_location: '{{ dist_url_base }}/{{ release_candidate_rc_folder }}'
     persist_vars:
     - vote_close
     - vote_close_epoch

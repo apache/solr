@@ -15,57 +15,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This file has stubs for setup and teardown of a cluster and debugging hints
+
 load bats_helper
 
 setup_file() {
+  # set up paths and helpers
   common_clean_setup
-  solr start -c
+
+  solr start -c -V
+  # echo $output >&3
 }
 
 teardown_file() {
+  # set up paths, not preserved from setup
   common_setup
-  solr stop -all
-}
 
-setup() {
-  common_setup
+  # Conversely, on shutdown, we do need this to execute strictly
+  # because using "run" will eat filing test exit codes
+  solr stop -all
+  # DEBUG : (echo -n "# " ; solr stop -V -all) >&3
 }
 
 teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
-
-  delete_all_collections
 }
 
-@test "can delete collections" {
-  solr create_collection -c "COLL_NAME"
-  assert collection_exists "COLL_NAME"
-
-  solr delete -c "COLL_NAME"
-  refute collection_exists "COLL_NAME"
-}
-
-@test "collection delete also deletes zk config" {
-  solr create_collection -c "COLL_NAME"
-  assert config_exists "COLL_NAME"
-
-  solr delete -c "COLL_NAME"
-  refute config_exists "COLL_NAME"
-}
-
-@test "deletes accompanying zk config with nondefault name" {
-  solr create_collection -c "COLL_NAME" -n "NONDEFAULT_CONFIG_NAME"
-  assert config_exists "NONDEFAULT_CONFIG_NAME"
-
-  solr delete -c "COLL_NAME"
-  refute config_exists "NONDEFAULT_CONFIG_NAME"
-}
-
-@test "deleteConfig option can opt to leave config in zk" {
-  solr create_collection -c "COLL_NAME"
-  assert config_exists "COLL_NAME"
-
-  solr delete -c "COLL_NAME" -deleteConfig false
-  assert config_exists "COLL_NAME"
+@test "nothing" {
+  # hint: if we need to demonstrate a failing test, change this line to 'false'
+  true
 }

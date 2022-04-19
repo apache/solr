@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -275,9 +276,15 @@ public class JDBCStream extends TupleStream implements Expressible {
     this.streamContext = context;
   }
 
-  /** Opens the JDBCStream */
-  public void open() throws IOException {
-
+  protected Driver getDriver() throws IOException {
+    // The DriverManager uses this class's ClassLoader to determine if it can load the driver given
+    // by driverClassName. Therefore, if you are loading in a driver from a separate ClassLoader
+    // than java was started with, it will likely not work. Instead, create a class that inherits
+    // this class and override this getDriver() method.
+    // Unfortunately it is impossible to use a custom ClassLoader with DriverManager, so we would
+    // need to remove our use of this class in order to support JDBC drivers loaded in via solr's
+    // additional library methods. This comment is relevant for JDBC drivers loaded in via custom
+    // plugins and even Solr modules.
     try {
       if (null != driverClassName) {
         Class.forName(driverClassName);
@@ -291,9 +298,11 @@ public class JDBCStream extends TupleStream implements Expressible {
     // likely want to provide the driverClassName. Not being able to find a driver generally means
     // the driver has not been loaded.
     try {
-      if (null == DriverManager.getDriver(connectionUrl)) {
+      Driver driver = DriverManager.getDriver(connectionUrl);
+      if (null == driver) {
         throw new SQLException("DriverManager.getDriver(url) returned null");
       }
+      return driver;
     } catch (SQLException e) {
       throw new IOException(
           String.format(
@@ -303,9 +312,12 @@ public class JDBCStream extends TupleStream implements Expressible {
               connectionUrl),
           e);
     }
+  }
 
+  /** Opens the JDBCStream */
+  public void open() throws IOException {
     try {
-      connection = DriverManager.getConnection(connectionUrl, connectionProperties);
+      connection = getDriver().connect(connectionUrl, connectionProperties);
     } catch (SQLException e) {
       throw new IOException(
           String.format(Locale.ROOT, "Failed to open JDBC connection to '%s'", connectionUrl), e);

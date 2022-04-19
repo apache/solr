@@ -15,6 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Use this method when in all "teardown"/"teardownFile" functions and any "setup" functions that should not clear the SOLR_HOME directory.
+# - "teardown"/"teardownFile" usually stop all Solr processes, so you should not clear the SOLR_HOME directory before they are run.
+#   The SOLR_HOME directory will be cleared when the next test file is executed.
+# - "setup" should use "common_setup" if a Solr process is NOT being started in that same "setup" function.
 common_setup() {
     if [ -z ${BATS_LIB_PREFIX:-} ]; then
         # Debugging help, if you want to run bats directly, try to detect where libraries might be
@@ -27,6 +31,28 @@ common_setup() {
     load "${BATS_LIB_PREFIX}/bats-assert/load.bash"
 
     PATH="${SOLR_TIP:-.}/bin:$PATH"
+    export SOLR_ULIMIT_CHECKS=false
+}
+
+# Use this method in all "setupFile" functions and any "setup" functions that should start with a clean SOLR_HOME directory.
+# - "setupFile" should always start with a clean SOLR_HOME, so "common_clean_setup" should always be used there instead of "common_setup".
+# - "setup" should only use "common_clean_setup" if a Solr Process is created in that same "setup" function.
+common_clean_setup() {
+    common_setup
+
+    if [ -d "${SOLR_HOME}" ]; then
+        rm -r "${SOLR_HOME}"
+        mkdir "${SOLR_HOME}"
+    fi
+}
+
+# Use this method in all "teardown" functions
+save_home_on_failure() {
+    if [[ -z "${BATS_TEST_COMPLETED:-}" ]] && [[ -z "${BATS_TEST_SKIPPED:-}" ]] && [ -d "${SOLR_HOME}" ]; then
+        local solrhome_failure_dir="${TEST_FAILURE_DIR}/${BATS_SUITE_TEST_NUMBER}-${BATS_TEST_NUMBER}"
+        cp -r "${SOLR_HOME}" "${solrhome_failure_dir}"
+        >&2 echo "Please find the SOLR_HOME snapshot for failed test #${BATS_TEST_NUMBER} at: ${solrhome_failure_dir}"
+    fi
 }
 
 delete_all_collections() {

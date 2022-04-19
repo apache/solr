@@ -19,17 +19,22 @@ load bats_helper
 
 setup() {
   common_clean_setup
-
-  run solr auth disable
 }
 
-@test "auth rejects blockUnknown option with invalid boolean" {
-  run ! solr auth enable -type basicAuth -credentials any:any -blockUnknown ture
-  assert_output --partial "Argument [blockUnknown] must be either true or false, but was [ture]"
+teardown() {
+  # save a snapshot of SOLR_HOME for failed tests
+  save_home_on_failure
+
+  delete_all_collections
+  solr stop -all >/dev/null 2>&1
 }
 
-@test "auth rejects updateIncludeFileOnly option with invalid boolean" {
-  run ! solr auth enable -type basicAuth -credentials any:any -updateIncludeFileOnly ture
-  assert_output --partial "Argument [updateIncludeFileOnly] must be either true or false, but was [ture]"
+@test "SQL Module" {
+  run solr start -c -Dsolr.modules=sql
+  run solr create_collection -c COLL_NAME
+  run solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10
+  assert_output --partial '"docs":'
+  assert_output --partial '"EOF":true'
+  assert_output --partial '"RESPONSE_TIME":'
+  refute_output --partial '"EXCEPTION"'
 }
-
