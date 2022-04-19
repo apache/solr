@@ -533,6 +533,10 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "html escaped",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.encoder", "html"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first &lt;i&gt;sentence&lt;&#x2F;i&gt;.'");
+    assertQ(
+        "html stripped",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.encoder", "stripHTML"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first sentence.'");
   }
 
   public void testRangeQuery() {
