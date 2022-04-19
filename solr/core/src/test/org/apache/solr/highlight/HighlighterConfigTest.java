@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.handler.component.HighlightComponent;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,10 +30,20 @@ import org.slf4j.LoggerFactory;
 public class HighlighterConfigTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static boolean useUnified;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    useUnified = random().nextBoolean();
+    if (useUnified) {
+      System.setProperty("solr.highlighting", UnifiedSolrHighlighter.class.getName());
+    }
     initCore("solrconfig-highlight.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    System.clearProperty("solr.highlighting");
   }
 
   @Override
@@ -53,6 +64,10 @@ public class HighlighterConfigTest extends SolrTestCaseJ4 {
     SolrHighlighter highlighter = getHighlighter();
     log.info("highlighter");
 
+    if (useUnified) {
+      assertTrue(highlighter instanceof UnifiedSolrHighlighter);
+      return;
+    }
     assertTrue(highlighter instanceof DummyHighlighter);
 
     // check to see that doHighlight is called from the DummyHighlighter

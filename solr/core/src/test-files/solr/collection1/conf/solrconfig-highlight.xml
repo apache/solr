@@ -34,7 +34,7 @@
   <requestHandler name="/select" class="solr.SearchHandler"/>
 
   <searchComponent class="solr.HighlightComponent" name="highlight">
-    <highlighting class="org.apache.solr.highlight.DummyHighlighter">
+    <highlighting class="${solr.highlighting:org.apache.solr.highlight.DummyHighlighter}">
       <!-- Configure the standard fragmenter -->
       <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
         <lst name="defaults">
