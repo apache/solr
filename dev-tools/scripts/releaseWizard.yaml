@@ -932,6 +932,7 @@ groups:
   - !Todo
     id: mv_to_release
     title: Move release artifacts to release repo
+    depends: rm_staged_mvn
     vars:
       dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_stage_url: '{{ dist_url_base }}/{{ dist_folder}}'
@@ -950,7 +951,58 @@ groups:
         logfile: svn_rm_containing.log
         comment: Clean up containing folder on the staging repo
         tee: true
-    post_description: 'Note at this point you will see the Jenkins job "Solr-SmokeRelease-main" begin to fail, until you run the "Generate Backcompat Indexes" '
+  - !Todo
+    id: docker-publish
+    title: Publish the Official Solr Dockerfile
+    depends: mv_to_release
+    description: |
+      For every release, we publish the official dockerfile for solr via the methods required by Docker.
+      
+      This will start the process, and will ultimately create a PR in https://github.com/docker-library/official-images.
+      This PR creation is automated, you do not need to do more work beyond these steps.
+      
+      When that PR is approved and merged, the Official image for this Solr version will be built and available for use.
+    vars:
+      docker_version: '{{ release_version_major }}.{{ release_version_minor }}'
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
+    commands: !Commands
+      root_folder: '{{ release_folder }}'
+      commands_text: Make sure that each command is successful. This is very imperative.
+      confirm_each_command: true
+      remove_files:
+        - '{{ git_solr_docker_folder }}'
+      commands:
+        - !Command
+          cmd: git clone --progress https://gitbox.apache.org/repos/asf/solr-docker.git solr-docker
+          comment: Run this command to clone the solr-docker git repo
+          logfile: solr_docker_git_clone.log
+        - !Command
+          cmd: git checkout main && git pull --ff-only
+          cwd: solr-docker
+          comment: Checkout the most recent main version
+          logfile: solr_docker_git_checkout.log
+        - !Command
+          cmd: "mkdir -p {{ docker_version }} && cp {{ [dist_file_path, dist_folder, 'solr', 'docker', 'Dockerfile.official'] | path_join }} {{ docker_version }}/Dockerfile"
+          cwd: solr-docker
+          comment: Add the new Dockerfile to the repo
+          logfile: solr_docker_add_dockerfile.log
+        - !Command
+          cmd: 'git add {{ docker_version }}/Dockerfile && git commit -m "Apache Solr release {{ release_version }}"'
+          cwd: solr-docker
+          comment: Commit the new Dockerfile
+          logfile: solr_docker_commit.log
+        - !Command
+          cmd: git show HEAD
+          cwd: solr-docker
+          comment: Check that the commit look correct. Only one Dockerfile should be added or updated.
+          logfile: solr_docker_check_commit.log
+          tee: true
+        - !Command
+          cmd: git push
+          cwd: solr-docker
+          comment: Push the commit
+          logfile: solr_docker_git_push.log
+          tee: true
   - !Todo
     id: stage_maven
     title: Stage the maven artifacts for publishing
