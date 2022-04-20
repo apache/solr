@@ -101,8 +101,8 @@ public class FiltersQParser extends QParser {
 
     for (String filter : params == null ? new String[0] : params) {
       if (filter == null || filter.length() == 0) {
-        throw new SyntaxError(
-            "Filter '" + filter + "' has been picked in " + stringIncludingLocalParams);
+        // it is ok to specify a filter param that is not present
+        continue;
       }
       // as a side effect, qparser is mapped by tags in req context
       QParser parser = subQuery(filter, null);
