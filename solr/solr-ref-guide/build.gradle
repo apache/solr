@@ -22,6 +22,7 @@ description = 'Solr Reference Guide'
 def officialSiteIncludePrerelease = propertyOrEnvOrDefault("refguide.official.includePrereleaseVersions", "SOLR_REF_GUIDE_OFFICIAL_INCLUDE_PRERELEASE", "false").toBoolean()
 
 def buildLocalUI = propertyOrEnvOrDefault("refguide.buildLocalUI", "SOLR_REF_GUIDE_BUILD_LOCAL_UI", "false").toBoolean()
+def isBranchReleased = propertyOrEnvOrDefault("refguide.isBranchReleased", "SOLR_REF_GUIDE_IS_BRANCH_RELEASED", "false").toBoolean()
 
 // This escapes strings inside YAML templates
 // WARNING: Strings in YAML must use single quotes for this to work correctly!
@@ -69,7 +70,7 @@ ext {
  */
 task buildLocalAntoraYaml {
     group = 'Site - Local'
-    description "Creates an local antora.yml with all variables populated. Note: This will change the antora.yml in the repo, not a build folder."
+    description "Creates a local antora.yml with all variables populated."
 
     def templateYaml = "antora.template.yml"
 
@@ -77,11 +78,24 @@ task buildLocalAntoraYaml {
     outputs.file(project.ext.localAntoraYaml)
 
     def splitVersion = version.toString().split("\\p{Punct}")
+    def displayVersion = "${splitVersion[0]}.${splitVersion[1]}"
+    def prerelease = false
+    if (!isBranchReleased) {
+        if (splitVersion[1] == "0") {
+            prerelease = "-alpha"
+        }
+        else {
+            prerelease = "-beta"
+        }
+        displayVersion += prerelease
+    }
     def props = [
         solr_version       : "${splitVersion[0]}.${splitVersion[1]}.${splitVersion[2]}",
         solr_version_major : splitVersion[0],
         solr_version_minor : splitVersion[1],
         solr_version_patch : splitVersion[2],
+        displayVersion     : displayVersion,
+        prerelease         : prerelease,
     ]
     props.putAll([
         solr_javadocs_link : "https://solr.apache.org/docs/${props.solr_version.replaceAll("\\.", "_")}",
