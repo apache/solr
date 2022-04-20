@@ -418,6 +418,33 @@ groups:
         cmd: git push --set-upstream origin {{ release_branch }}
         tee: true
   - !Todo
+    id: update_minor_branch_prerelease_antora
+    title: Update Ref Guide Metadata for new Minor Branch
+    description: |
+      This will update the "solr/solr-ref-guide/antora.yml" file.
+      
+      The file shouldn't change much, but it should pick up new dependency versions, if they have changed.
+    types:
+    - major
+    - minor
+    depends: create_minor_branch
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to update the antora.yml
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        tee: true
+      - !Command
+        cmd: git pull --ff-only
+        tee: true
+      - !Command
+        cmd: {{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false
+        tee: true
+      - !Command
+        cmd: git add solr/solr-ref-guide/antora.yml && git commit -m "Update Antora metadata for pre-released minor version {{ release_version }}" && git push
+        tee: true
+  - !Todo
     id: add_version_major
     title: Add a new major version on main branch
     types:
@@ -431,6 +458,9 @@ groups:
       commands:
       - !Command
         cmd: git checkout main
+        tee: true
+      - !Command
+        cmd: {{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false
         tee: true
       - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
@@ -456,6 +486,9 @@ groups:
       commands:
       - !Command
         cmd: git checkout {{ stable_branch }}
+        tee: true
+      - !Command
+        cmd: {{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false
         tee: true
       - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
@@ -1088,6 +1121,50 @@ groups:
         cmd: svn -m "Add docs, changes and javadocs for Solr {{ release_version }}"  import {{ git_checkout_folder }}/solr/build/docs  https://svn.apache.org/repos/infra/sites/solr/docs/{{ version }}
         logfile: add-docs-solr.log
         comment: Add docs for Solr
+  - !Todo
+    id: update_minor_branch_release_antora
+    title: Update Ref Guide Metadata for release
+    description: |
+      The Solr minor branches do not contain up-to-date ref-guide metadata (antora.yml).
+      Instead, they have the information from the last release.
+      This allows us to build the official documentation from these minor branches, instead of from the release tags.
+      
+      This means that we can make fixes to older ref-guides without requiring a new release for those versions.
+    depends: tag_release
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to update the ref-guide antora metadata for the released version {{ release_version }}
+      commands:
+      - !Command
+        cmd: git checkout releases/solr/{{ release_version }}
+        tee: true
+      - !Command
+        cmd: git clean -df && git checkout -- .
+        comment: Make sure checkout is clean and up to date
+        logfile: git_clean.log
+      - !Command
+        cmd: {{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=true
+        tee: true
+      - !Command
+        cmd: git stash
+        tee: true
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        tee: true
+      - !Command
+        cmd: git clean -df && git checkout -- .
+        comment: Make sure checkout is clean and up to date
+        logfile: git_clean.log
+        tee: true
+      - !Command
+        cmd: git pull --ff-only
+        tee: true
+      - !Command
+        cmd: git stash pop
+        tee: true
+      - !Command
+        cmd: git add solr/solr-ref-guide/antora.yml && git commit -m "Update Antora metadata for released minor version {{ release_version }}" && git push
+        tee: true
   - !Todo
     id: check_ref_guide_complete
     title: Check that the reference guide is ready
