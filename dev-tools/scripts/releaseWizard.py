@@ -88,6 +88,7 @@ def expand_jinja(text, vars=None):
         'git_checkout_folder': state.get_git_checkout_folder(),
         'ref_guide_svn_folder': state.get_ref_guide_svn_folder(),
         'git_website_folder': state.get_website_git_folder(),
+        'git_solr_docker_folder': state.get_solr_docker_git_folder(),
         'dist_url_base': 'https://dist.apache.org/repos/dist/dev/solr',
         'm2_repository_url': 'https://repository.apache.org/service/local/staging/deploy/maven2',
         'dist_file_path': state.get_dist_folder(),
@@ -571,6 +572,10 @@ class ReleaseState:
 
     def get_website_git_folder(self):
         folder = os.path.join(self.get_release_folder(), "solr-site")
+        return folder
+
+    def get_solr_docker_git_folder(self):
+        folder = os.path.join(self.get_release_folder(), "solr-docker")
         return folder
 
     def get_minor_branch_name(self):

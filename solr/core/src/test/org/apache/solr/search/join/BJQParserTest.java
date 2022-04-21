@@ -30,7 +30,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
@@ -568,12 +567,18 @@ public class BJQParserTest extends SolrTestCaseJ4 {
             "child_s:[* TO *]"),
         "//*[@numFound='18']");
 
-    assertQEx(
-        "expecting exception on weird param",
+    /*
+    The below is admittedly a weird request; but QParser param dereferencing provides no way to
+    distinguish between `{!filters param=}` and `{!filters param=$fqs}` where `fqs` param is
+    absent. Because we want to support the latter case, we must also support the former, even it
+    would arguably make sense to throw a syntax error in the former case.
+     */
+    assertQ(
+        "should support weird absent param spec",
         req(
             "q", "{!filters v=$gchq param=}\"",
             "gchq", "child_s:[* TO *]"),
-        ErrorCode.BAD_REQUEST);
+        "//*[@numFound='18']");
 
     assertQ( // omit main query
         req(
