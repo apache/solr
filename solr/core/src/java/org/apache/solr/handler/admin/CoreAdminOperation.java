@@ -186,6 +186,7 @@ public enum CoreAdminOperation implements CoreAdminOp {
           else
             throw new SolrException(ErrorCode.SERVER_ERROR, "Could not start buffering updates", e);
         } finally {
+          // TODO: req must be closed _before_ core is closed?
           if (it.req != null) it.req.close();
         }
       }),

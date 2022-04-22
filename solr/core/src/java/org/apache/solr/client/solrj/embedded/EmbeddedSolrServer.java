@@ -270,6 +270,7 @@ public class EmbeddedSolrServer extends SolrClient {
     } catch (Exception ex) {
       throw new SolrServerException(ex);
     } finally {
+      // TODO: req must be closed _before_ core is closed?
       if (req != null) {
         req.close();
         SolrRequestInfo.clearRequestInfo();

@@ -93,6 +93,7 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
       }
     } finally {
       // no recoveryStrat close for now
+      // TODO: syncStrategy may need to be closed _before_ core is closed?
       if (syncStrategy != null) {
         syncStrategy.close();
       }

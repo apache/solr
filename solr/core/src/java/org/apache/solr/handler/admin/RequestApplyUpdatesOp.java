@@ -66,6 +66,7 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Could not apply buffered updates", e);
     } finally {
+      // TODO: req must be closed _before_ core is closed?
       if (it.req != null) it.req.close();
     }
   }
