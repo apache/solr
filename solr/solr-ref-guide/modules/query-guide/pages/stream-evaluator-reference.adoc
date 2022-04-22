@@ -1238,7 +1238,9 @@ The `length` function returns the length of a numeric array.
 [source,text]
 length(numericArray)
 
-== lerp (TOD0)
+== lerp
+
+// TODO
 
 == loess
 
