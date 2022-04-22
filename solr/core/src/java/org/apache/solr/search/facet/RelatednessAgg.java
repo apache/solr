@@ -531,11 +531,10 @@ public class RelatednessAgg extends AggValueSource {
         long fg_count, long fg_size, long bg_count, long bg_size, double relatedness) {
       this.fg_count = fg_count;
       this.fg_size = fg_size;
-      this.fg_pop =
-          roundTo5Digits((double) fg_count / bg_size); // yes, BACKGROUND size is intentional
+      this.fg_pop = (double) fg_count / bg_size; // yes, BACKGROUND size is intentional
       this.bg_count = bg_count;
       this.bg_size = bg_size;
-      this.bg_pop = roundTo5Digits((double) bg_count / bg_size);
+      this.bg_pop = (double) bg_count / bg_size;
       this.relatedness = relatedness;
     }
 
@@ -589,9 +588,8 @@ public class RelatednessAgg extends AggValueSource {
         return; // values already computed;
       }
 
-      this.fg_pop =
-          roundTo5Digits((double) fg_count / bg_size); // yes, BACKGROUND size is intentional
-      this.bg_pop = roundTo5Digits((double) bg_count / bg_size);
+      this.fg_pop = (double) fg_count / bg_size; // yes, BACKGROUND size is intentional
+      this.bg_pop = (double) bg_count / bg_size;
 
       if (0.0D < agg.min_pop) {
         // if min_pop is configured, and either (fg|bg) popularity is lower then that value
@@ -680,8 +678,8 @@ public class RelatednessAgg extends AggValueSource {
         // there's no need to bother computing these when returning results *to* a shard coordinator
         // only useful to external clients
         result.add(RELATEDNESS, this.getRelatedness());
-        result.add(FG_POP, this.getForegroundPopularity());
-        result.add(BG_POP, this.getBackgroundPopularity());
+        result.add(FG_POP, roundTo5Digits(this.getForegroundPopularity()));
+        result.add(BG_POP, roundTo5Digits(this.getBackgroundPopularity()));
       }
 
       return result;

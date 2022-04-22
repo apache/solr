@@ -18,12 +18,8 @@
 load bats_helper
 
 setup_file() {
-  common_setup
+  common_clean_setup
   solr start -c
-
-  local source_configset_dir="$SOLR_TIP/server/solr/configsets/sample_techproducts_configs"
-  test -d $source_configset_dir
-  cp -r $source_configset_dir "$BATS_TMPDIR/config"
 }
 
 teardown_file() {
@@ -36,6 +32,9 @@ setup() {
 }
 
 teardown() {
+  # save a snapshot of SOLR_HOME for failed tests
+  save_home_on_failure
+
   delete_all_collections
 }
 
@@ -55,7 +54,12 @@ teardown() {
 }
 
 @test "accept d option with explicit path to config" {
-  run solr create_collection -c COLL_NAME -d "$BATS_TMPDIR/config"
+  local source_configset_dir="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs"
+  local dest_configset_dir="${BATS_TEST_TMPDIR}/config"
+  test -d $source_configset_dir
+  cp -r "${source_configset_dir}" "${dest_configset_dir}"
+
+  run solr create_collection -c COLL_NAME -d "${dest_configset_dir}"
   assert_output --partial "Created collection 'COLL_NAME'"
 }
 
