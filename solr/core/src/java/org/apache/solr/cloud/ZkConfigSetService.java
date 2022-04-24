@@ -233,10 +233,14 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public Map<String, Object> getConfigMetadata(String configName) throws IOException {
     try {
+
+      byte[] bytedata = zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null, true);
+      if (bytedata == null) return new HashMap<>();
+
       @SuppressWarnings("unchecked")
       Map<String, Object> data =
           (Map<String, Object>)
-              Utils.fromJSON(zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null, true));
+              Utils.fromJSON(bytedata);
       if (data == null) return new HashMap<>();
       return data;
     } catch (KeeperException | InterruptedException e) {
