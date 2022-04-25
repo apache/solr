@@ -43,6 +43,8 @@ Bug Fixes
 
 * SOLR-13044: Fix NPE during core close racing with index replication check.  (David Smiley, hossman)
 
+* SOLR-16168: Spellcheck NPE if invalid dictionary name is provided (Kevin Risden)
+
 Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
