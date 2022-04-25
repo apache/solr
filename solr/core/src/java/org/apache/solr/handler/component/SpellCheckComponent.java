@@ -131,23 +131,23 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       return;
     }
     boolean shardRequest = "true".equals(params.get(ShardParams.IS_SHARD));
-    String q = params.get(SPELLCHECK_Q);
-    SolrSpellChecker spellChecker = getSpellChecker(params);
-    Collection<Token> tokens = null;
 
-    if (q != null) {
-      // we have a spell check param, tokenize it with the query analyzer applicable for this
-      // spellchecker
-      tokens = getTokens(q, spellChecker.getQueryAnalyzer());
-    } else {
-      q = rb.getQueryString();
-      if (q == null) {
-        q = params.get(CommonParams.Q);
+    SolrSpellChecker spellChecker = getSpellChecker(params);
+    if (spellChecker != null) {
+      Collection<Token> tokens;
+      String q = params.get(SPELLCHECK_Q);
+      if (q != null) {
+        // we have a spell check param, tokenize it with the query analyzer applicable for this
+        // spellchecker
+        tokens = getTokens(q, spellChecker.getQueryAnalyzer());
+      } else {
+        q = rb.getQueryString();
+        if (q == null) {
+          q = params.get(CommonParams.Q);
+        }
+        tokens = queryConverter.convert(q);
       }
-      tokens = queryConverter.convert(q);
-    }
-    if (tokens != null && tokens.isEmpty() == false) {
-      if (spellChecker != null) {
+      if (tokens != null && tokens.isEmpty() == false) {
         int count = params.getInt(SPELLCHECK_COUNT, 1);
         boolean onlyMorePopular =
             params.getBool(SPELLCHECK_ONLY_MORE_POPULAR, DEFAULT_ONLY_MORE_POPULAR);
@@ -215,13 +215,12 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         }
 
         rb.rsp.add("spellcheck", response);
-
-      } else {
-        throw new SolrException(
-            SolrException.ErrorCode.NOT_FOUND,
-            "Specified dictionaries do not exist: "
-                + getDictionaryNameAsSingleString(getDictionaryNames(params)));
       }
+    } else {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          "Specified dictionaries do not exist: "
+              + getDictionaryNameAsSingleString(getDictionaryNames(params)));
     }
   }
 
