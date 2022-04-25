@@ -2691,9 +2691,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
         tuple = dstream.read();
         assertEquals(14, (long) tuple.getLong(id));
-        tuple =
-            dstream
-                .read(); // This should trigger a checkpoint as it's the 4th read from the stream.
+        // This should trigger a checkpoint as it's the 4th read from the stream.
+        tuple = dstream.read();
         assertEquals(15, (long) tuple.getLong(id));
 
         dstream.shutdown();
