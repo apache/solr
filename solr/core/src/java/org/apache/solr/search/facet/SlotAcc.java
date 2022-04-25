@@ -862,7 +862,7 @@ public abstract class SlotAcc implements Closeable {
 
     @Override
     public void collect(int doc, int slot, IntFunction<SlotContext> slotContext)
-            throws IOException {
+        throws IOException {
       // No-op
     }
 
@@ -878,7 +878,7 @@ public abstract class SlotAcc implements Closeable {
 
     @Override
     public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext)
-            throws IOException {
+        throws IOException {
       return docs.size(); // dressed up no-op
     }
 
@@ -901,7 +901,8 @@ public abstract class SlotAcc implements Closeable {
     public long getCount(int slot) {
       throw new UnsupportedOperationException("not supported");
     }
-  };
+  }
+  ;
 
   static class CountSlotArrAcc extends CountSlotAcc {
     long[] result;

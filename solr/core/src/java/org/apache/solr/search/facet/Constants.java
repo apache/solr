@@ -18,6 +18,8 @@
 package org.apache.solr.search.facet;
 
 public class Constants {
-  public static final SlotAcc.DevNullCountSlotAcc DEV_NULL_SLOT_ACC = new SlotAcc.DevNullCountSlotAcc();
-  private Constants() { }
+  public static final SlotAcc.DevNullCountSlotAcc DEV_NULL_SLOT_ACC =
+      new SlotAcc.DevNullCountSlotAcc();
+
+  private Constants() {}
 }
