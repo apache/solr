@@ -49,7 +49,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
           .process(cluster.getSolrClient());
 
       log.info("Sanity check that our collection has come online");
-      cluster.getSolrClient().waitForState(col_name, 30, TimeUnit.SECONDS, clusterShape(1, 1));
+      cluster.getZkStateReader().waitForState(col_name, 30, TimeUnit.SECONDS, clusterShape(1, 1));
 
       log.info("Shutdown 1 node");
       final JettySolrRunner nodeToStop = cluster.getJettySolrRunner(0);
@@ -62,7 +62,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       // down)...
       log.info("Now check if waitForState will recognize we already have the exepcted state");
       cluster
-          .getSolrClient()
+          .getZkStateReader()
           .waitForState(col_name, 500, TimeUnit.MILLISECONDS, clusterShape(1, 0));
 
     } finally {
@@ -84,7 +84,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
 
       log.info("Sanity check that our collection has come online");
       cluster
-          .getSolrClient()
+          .getZkStateReader()
           .waitForState(col_name, 30, TimeUnit.SECONDS, SolrCloudTestCase.clusterShape(1, 1));
 
       // HACK implementation detail...
@@ -102,7 +102,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
               () -> {
                 try {
                   cluster
-                      .getSolrClient()
+                      .getZkStateReader()
                       .waitForState(
                           col_name,
                           180,
@@ -115,7 +115,6 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
                 return;
               },
               null);
-
       log.info("Awaiting latch...");
       if (!latch.await(120, TimeUnit.SECONDS)) {
         fail(

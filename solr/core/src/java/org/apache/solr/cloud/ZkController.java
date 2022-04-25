@@ -60,7 +60,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
@@ -181,7 +181,7 @@ public class ZkController implements Closeable {
   private final SolrZkClient zkClient;
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
-  private CloudSolrClient cloudSolrClient;
+  private CloudLegacySolrClient cloudSolrClient;
 
   private final String zkServerAddress; // example: 127.0.0.1:54062/solr
 
@@ -317,7 +317,11 @@ public class ZkController implements Closeable {
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
     this.clientTimeout = cloudConfig.getZkClientTimeout();
-    DefaultConnectionStrategy strat = new DefaultConnectionStrategy();
+
+    String connectionStrategy = System.getProperty("solr.zookeeper.connectionStrategy");
+    ZkClientConnectionStrategy strat =
+        ZkClientConnectionStrategy.forName(connectionStrategy, new DefaultConnectionStrategy());
+
     String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
     ZkACLProvider zkACLProvider = null;
     if (zkACLProviderClass != null && zkACLProviderClass.trim().length() > 0) {
@@ -471,13 +475,7 @@ public class ZkController implements Closeable {
               }
             },
             zkACLProvider,
-            new ConnectionManager.IsClosed() {
-
-              @Override
-              public boolean isClosed() {
-                return cc.isShutDown();
-              }
-            });
+            cc::isShutDown);
 
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
@@ -830,7 +828,7 @@ public class ZkController implements Closeable {
         return cloudManager;
       }
       cloudSolrClient =
-          new CloudSolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
+          new CloudLegacySolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
               .withSocketTimeout(30000)
               .withConnectionTimeout(15000)
               .withHttpClient(cc.getUpdateShardHandler().getDefaultHttpClient())
@@ -1057,8 +1055,7 @@ public class ZkController implements Closeable {
     }
 
     boolean deleted =
-        deletedLatch.await(
-            zkClient.getSolrZooKeeper().getSessionTimeout() * 2, TimeUnit.MILLISECONDS);
+        deletedLatch.await(zkClient.getZooKeeper().getSessionTimeout() * 2, TimeUnit.MILLISECONDS);
     if (!deleted) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
@@ -1159,7 +1156,7 @@ public class ZkController implements Closeable {
     String chrootPath = zkHost.substring(zkHost.indexOf("/"), zkHost.length());
 
     SolrZkClient tmpClient =
-        new SolrZkClient(zkHost.substring(0, zkHost.indexOf("/")), 60000, 30000, null, null, null);
+        new SolrZkClient(zkHost.substring(0, zkHost.indexOf("/")), 60000, 30000);
     boolean exists = tmpClient.exists(chrootPath, true);
     if (!exists && create) {
       log.info("creating chroot {}", chrootPath);

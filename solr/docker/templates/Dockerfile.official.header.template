@@ -34,13 +34,13 @@ ARG SOLR_DOWNLOAD_URL
 # TODO: see patch in SOLR-15250 for some example ideas on fixing this to be more strict
 
 # Override the default solr download location with a prefered mirror, e.g.:
-#   docker build -t mine --build-arg SOLR_DOWNLOAD_SERVER=http://www-eu.apache.org/dist/lucene/solr .
+#   docker build -t mine --build-arg SOLR_DOWNLOAD_SERVER=https://downloads.apache.org/solr/solr .
 ARG SOLR_DOWNLOAD_SERVER
 
 # These should never be overridden except for the purposes of testing the Dockerfile before release
-ARG SOLR_CLOSER_URL="http://www.apache.org/dyn/closer.lua?filename=solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz&action=download"
-ARG SOLR_DIST_URL="https://www.apache.org/dist/lucene/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"
-ARG SOLR_ARCHIVE_URL="https://archive.apache.org/dist/lucene/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"
+ARG SOLR_CLOSER_URL="http://www.apache.org/dyn/closer.lua?action=download&filename=/solr/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"
+ARG SOLR_DIST_URL="https://www.apache.org/dist/solr/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"
+ARG SOLR_ARCHIVE_URL="https://archive.apache.org/dist/solr/solr/$SOLR_VERSION/solr-$SOLR_VERSION.tgz"
 
 RUN set -ex; \
   apt-get update; \
@@ -53,10 +53,9 @@ RUN set -ex; \
   for key in $SOLR_KEYS; do \
     found=''; \
     for server in \
-      ha.pool.sks-keyservers.net \
-      hkp://keyserver.ubuntu.com:80 \
-      hkp://p80.pool.sks-keyservers.net:80 \
       pgp.mit.edu \
+      keyserver.ubuntu.com \
+      hkp://keyserver.ubuntu.com:80 \
     ; do \
       echo "  trying $server for $key"; \
       gpg --batch --keyserver "$server" --keyserver-options timeout=10 --recv-keys "$key" && found=yes && break; \
@@ -64,7 +63,7 @@ RUN set -ex; \
     done; \
     test -z "$found" && echo >&2 "error: failed to fetch $key from several disparate servers -- network issues?" && exit 1; \
   done; \
-  MAX_REDIRECTS=1; \
+  MAX_REDIRECTS=2; \
   if [ -n "$SOLR_DOWNLOAD_URL" ]; then \
     # If a custom URL is defined, we download from non-ASF mirror URL and allow more redirects and skip GPG step
     # This takes effect only if the SOLR_DOWNLOAD_URL build-arg is specified, typically in downstream Dockerfiles
@@ -90,5 +89,6 @@ RUN set -ex; \
   fi; \
   { command -v gpgconf; gpgconf --kill all || :; }; \
   rm -r "$GNUPGHOME"; \
-  tar -C /opt --extract --preserve-permissions --file "/opt/solr-$SOLR_VERSION.tgz";
+  tar -C /opt --extract --preserve-permissions --file "/opt/solr-$SOLR_VERSION.tgz"; \
+  rm "/opt/solr-$SOLR_VERSION.tgz"*;
 

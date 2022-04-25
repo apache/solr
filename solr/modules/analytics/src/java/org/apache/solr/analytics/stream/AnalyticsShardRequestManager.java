@@ -32,8 +32,8 @@ import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.AnalyticsRequestParser;
 import org.apache.solr.analytics.TimeExceededStubException;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
@@ -83,7 +83,9 @@ public class AnalyticsShardRequestManager {
    */
   public void sendRequests(String collection, String zkHost) throws IOException {
     this.replicaUrls = new ArrayList<>();
-    this.cloudSolrClient = new Builder(Collections.singletonList(zkHost), Optional.empty()).build();
+    this.cloudSolrClient =
+        new CloudLegacySolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+            .build();
     try {
       this.cloudSolrClient.connect();
       pickShards(collection);
@@ -102,7 +104,7 @@ public class AnalyticsShardRequestManager {
   protected void pickShards(String collection) throws IOException {
     try {
 
-      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
       ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
 

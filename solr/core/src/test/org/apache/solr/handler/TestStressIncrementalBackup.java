@@ -75,7 +75,6 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
     Replica r =
         cluster
             .getSolrClient()
-            .getZkStateReader()
             .getClusterState()
             .getCollection(DEFAULT_TEST_COLLECTION_NAME)
             .getActiveSlices()

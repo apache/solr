@@ -88,13 +88,9 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
     // First, add a bunch of documents in a single update with the same new field.
     // This tests that the replicas properly handle schema additions.
 
+    getCommonCloudSolrClient();
     int slices =
-        getCommonCloudSolrClient()
-            .getZkStateReader()
-            .getClusterState()
-            .getCollection("collection1")
-            .getActiveSlices()
-            .size();
+        cloudClient.getClusterState().getCollection("collection1").getActiveSlices().size();
     int trials = 50;
     // generate enough docs so that we can expect at least a doc per slice
     int numDocsPerTrial = (int) (slices * (Math.log(slices) + 1));

@@ -38,6 +38,11 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   private final Map<String, SolrInputField> _fields;
   private List<SolrInputDocument> _childDocuments;
 
+  // Required by reflection based libraries for (de)serialization
+  public SolrInputDocument() {
+    _fields = new LinkedHashMap<>();
+  }
+
   public SolrInputDocument(String... fields) {
     _fields = new LinkedHashMap<>();
     assert fields.length % 2 == 0;

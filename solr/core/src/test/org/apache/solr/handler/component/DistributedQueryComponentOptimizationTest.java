@@ -63,7 +63,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster
-        .getSolrClient()
+        .getZkStateReader()
         .waitForState(
             COLLECTION,
             DEFAULT_TIMEOUT,
@@ -726,7 +726,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
       String... values) {
     TrackingShardHandlerFactory.ShardRequestAndParams getByIdRequest =
         trackingQueue.getShardRequestByPurpose(
-            cluster.getSolrClient().getZkStateReader(), collection, shard, purpose);
+            cluster.getZkStateReader(), collection, shard, purpose);
     assertParamsEquals(getByIdRequest, paramName, values);
   }
 

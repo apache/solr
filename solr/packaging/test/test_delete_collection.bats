@@ -18,13 +18,13 @@
 load bats_helper
 
 setup_file() {
-  common_setup
-  run solr start -c
+  common_clean_setup
+  solr start -c
 }
 
 teardown_file() {
   common_setup
-  run solr stop -all
+  solr stop -all
 }
 
 setup() {
@@ -32,6 +32,9 @@ setup() {
 }
 
 teardown() {
+  # save a snapshot of SOLR_HOME for failed tests
+  save_home_on_failure
+
   delete_all_collections
 }
 

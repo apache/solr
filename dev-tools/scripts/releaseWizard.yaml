@@ -289,6 +289,14 @@ groups:
     title: Select JIRA issues to be included
     description: Set the appropriate "Fix Version" in JIRA for the issues that should be included in the release.
   - !Todo
+    id: fix_build_failures
+    title: Look into common build failures
+    description: |
+      Look over recent build results sent to the builds@solr.apache.org list and try to address any recurring
+      failures. It's best to fix common failures now, so they don't pop up later and interfere with release smoke
+      testing. Build email archives are available at https://lists.apache.org/list.html?builds@solr.apache.org.
+      You can also find failure statistics at http://fucit.org/solr-jenkins-reports/
+  - !Todo
     id: decide_branch_date
     title: Decide the date for branching
     types:
@@ -299,7 +307,7 @@ groups:
       name: branch_date
   - !Todo
     id: decide_freeze_length
-    title: Decide the lenght of feature freeze
+    title: Decide the length of feature freeze
     types:
     - major
     - minor
@@ -628,6 +636,14 @@ groups:
         cmd: git checkout {{ release_branch }}
         stdout: true
       - !Command
+        cmd: git clean -df && git checkout -- .
+        comment: Make sure checkout is clean and up to date
+        logfile: git_clean.log
+        tee: true
+      - !Command
+        cmd: git pull --ff-only
+        tee: true
+      - !Command
         cmd: "{{ gradle_cmd }} documentation"
     post_description: Check that the task passed. If it failed, commit fixes for the failures before proceeding.
   - !Todo
@@ -692,7 +708,7 @@ groups:
     title: Run the smoke tester
     depends: build_rc
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       tmp_dir: '{{ [rc_folder, ''smoketest''] | path_join }}'
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
@@ -712,7 +728,7 @@ groups:
       Here we'll import the artifacts into Subversion.
     depends: smoke_tester
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       dist_url: '{{ dist_url_base }}/{{ dist_folder}}'
     commands: !Commands
@@ -731,7 +747,7 @@ groups:
       area and checks hash and signatures, but does not re-run all tests.
     depends: import_svn
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_url: '{{ dist_url_base }}/{{ dist_folder}}'
       tmp_dir: '{{ [rc_folder, ''smoketest_staged''] | path_join }}'
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
@@ -765,12 +781,20 @@ groups:
       Please vote for release candidate {{ rc_number }} for Solr {{ release_version }}
 
       The artifacts can be downloaded from:
-      {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      {{ release_candidate_location }}
 
       You can run the smoke tester directly with this command:
 
       python3 -u dev-tools/scripts/smokeTestRelease.py \
-      {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      {{ release_candidate_location }}
+
+      You can build a release-candidate of the official docker image using the following command:
+
+      DIST_BASE={{ dist_url_base }} && \
+        RC_FOLDER={{ release_candidate_rc_folder }} && \
+        docker build $DIST_BASE/$RC_FOLDER/solr/docker/Dockerfile.official \
+        --build-arg SOLR_DOWNLOAD_URL=$DIST_BASE/$RC_FOLDER/solr/solr-{{ release_version }}.tgz \
+        -t solr-rc:{{ release_version }}-{{ rc_number }}
 
       The vote will be open for at least 72 hours i.e. until {{ vote_close }}.
 
@@ -793,6 +817,8 @@ groups:
     vars:
       vote_close: '{{ vote_close_72h }}'
       vote_close_epoch: '{{ vote_close_72h_epoch }}'
+      release_candidate_rc_folder: 'solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}'
+      release_candidate_location: '{{ dist_url_base }}/{{ release_candidate_rc_folder }}'
     persist_vars:
     - vote_close
     - vote_close_epoch
@@ -889,25 +915,26 @@ groups:
         tee: true
   - !Todo
     id: rm_staged_mvn
-    title: Delete mvn artifacts from staging repo
+    title: Delete mvn and docker artifacts from staging repo
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       dist_stage_url: '{{ dist_url_base }}/{{ dist_folder}}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       confirm_each_command: false
-      commands_text: This will remove maven artifacts so they do not end up in the Distribution Directory
+      commands_text: This will remove maven and docker artifacts so they do not end up in the Distribution Directory
       commands:
       - !Command
-        cmd: svn rm -m "Delete the solr maven artifacts"  {{ dist_stage_url }}/solr/maven
+        cmd: svn rm -m "Delete the solr maven and docker artifacts"  {{ dist_stage_url }}/solr/maven  {{ dist_stage_url }}/solr/docker
         logfile: svn_rm_mvn_solr.log
         tee: true
   - !Todo
     id: mv_to_release
     title: Move release artifacts to release repo
+    depends: rm_staged_mvn
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_stage_url: '{{ dist_url_base }}/{{ dist_folder}}'
       dist_release_url: https://dist.apache.org/repos/dist/release/solr
     commands: !Commands
@@ -920,16 +947,67 @@ groups:
         logfile: svn_mv_solr.log
         tee: true
       - !Command
-        cmd: svn rm -m "Clean up the RC folder for {{ release_version }} RC{{ rc_number }}"  {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+        cmd: svn rm -m "Clean up the RC folder for {{ release_version }} RC{{ rc_number }}"  {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
         logfile: svn_rm_containing.log
         comment: Clean up containing folder on the staging repo
         tee: true
-    post_description: 'Note at this point you will see the Jenkins job "Solr-SmokeRelease-main" begin to fail, until you run the "Generate Backcompat Indexes" '
+  - !Todo
+    id: docker-publish
+    title: Publish the Official Solr Dockerfile
+    depends: mv_to_release
+    description: |
+      For every release, we publish the official dockerfile for solr via the methods required by Docker.
+      
+      This will start the process, and will ultimately create a PR in https://github.com/docker-library/official-images.
+      This PR creation is automated, you do not need to do more work beyond these steps.
+      
+      When that PR is approved and merged, the Official image for this Solr version will be built and available for use.
+    vars:
+      docker_version: '{{ release_version_major }}.{{ release_version_minor }}'
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
+    commands: !Commands
+      root_folder: '{{ release_folder }}'
+      commands_text: Make sure that each command is successful. This is very imperative.
+      confirm_each_command: true
+      remove_files:
+        - '{{ git_solr_docker_folder }}'
+      commands:
+        - !Command
+          cmd: git clone --progress https://gitbox.apache.org/repos/asf/solr-docker.git solr-docker
+          comment: Run this command to clone the solr-docker git repo
+          logfile: solr_docker_git_clone.log
+        - !Command
+          cmd: git checkout main && git pull --ff-only
+          cwd: solr-docker
+          comment: Checkout the most recent main version
+          logfile: solr_docker_git_checkout.log
+        - !Command
+          cmd: "mkdir -p {{ docker_version }} && cp {{ [dist_file_path, dist_folder, 'solr', 'docker', 'Dockerfile.official'] | path_join }} {{ docker_version }}/Dockerfile"
+          cwd: solr-docker
+          comment: Add the new Dockerfile to the repo
+          logfile: solr_docker_add_dockerfile.log
+        - !Command
+          cmd: 'git add {{ docker_version }}/Dockerfile && git commit -m "Apache Solr release {{ release_version }}"'
+          cwd: solr-docker
+          comment: Commit the new Dockerfile
+          logfile: solr_docker_commit.log
+        - !Command
+          cmd: git show HEAD
+          cwd: solr-docker
+          comment: Check that the commit look correct. Only one Dockerfile should be added or updated.
+          logfile: solr_docker_check_commit.log
+          tee: true
+        - !Command
+          cmd: git push
+          cwd: solr-docker
+          comment: Push the commit
+          logfile: solr_docker_git_push.log
+          tee: true
   - !Todo
     id: stage_maven
     title: Stage the maven artifacts for publishing
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       confirm_each_command: true

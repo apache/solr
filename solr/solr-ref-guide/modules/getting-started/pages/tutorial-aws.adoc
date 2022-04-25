@@ -140,7 +140,7 @@ $ java -version
 +
 [source,bash,subs="verbatim,attributes+"]
 # download desired version of Solr
-$ wget http://archive.apache.org/dist/lucene/solr/{solr-full-version}/solr-{solr-full-version}.tgz
+$ wget http://archive.apache.org/dist/solr/solr/{solr-full-version}/solr-{solr-full-version}.tgz
 # untar
 $ tar -zxvf solr-{solr-full-version}.tgz
 # set SOLR_HOME

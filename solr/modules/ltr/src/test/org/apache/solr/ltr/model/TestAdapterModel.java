@@ -19,13 +19,13 @@ package org.apache.solr.ltr.model;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
@@ -62,13 +62,13 @@ public class TestAdapterModel extends TestRerankBase {
         "popularity", FieldValueFeature.class.getName(), "test", "{\"field\":\"popularity\"}");
 
     scoreValue = random().nextFloat();
-    final File scoreValueFile = new File(tmpConfDir, "scoreValue.txt");
+    final Path scoreValueFile = tmpConfDir.resolve("scoreValue.txt");
     try (BufferedWriter writer =
         new BufferedWriter(
-            new OutputStreamWriter(new FileOutputStream(scoreValueFile), StandardCharsets.UTF_8))) {
+            new OutputStreamWriter(
+                Files.newOutputStream(scoreValueFile), StandardCharsets.UTF_8))) {
       writer.write(Float.toString(scoreValue));
     }
-    scoreValueFile.deleteOnExit();
 
     final String modelJson =
         getModelInJson(
@@ -76,7 +76,7 @@ public class TestAdapterModel extends TestRerankBase {
             CustomModel.class.getName(),
             new String[] {"popularity"},
             "test",
-            "{\"answerFileName\":\"" + scoreValueFile.getName() + "\"}");
+            "{\"answerFileName\":\"" + scoreValueFile.getFileName().toString() + "\"}");
     assertJPut(ManagedModelStore.REST_END_POINT, modelJson, "/responseHeader/status==0");
   }
 

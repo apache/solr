@@ -69,6 +69,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
@@ -1579,7 +1580,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       httpRequest.setEntity(
           new ByteArrayEntity(bytarr.array(), bytarr.arrayOffset(), bytarr.limit()));
       log.info("Uploading configset with user {}", username);
-      entity = cloudClient.getLbClient().getHttpClient().execute(httpRequest).getEntity();
+      entity =
+          ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpRequest).getEntity();
       try {
         response = EntityUtils.toString(entity, UTF_8);
         m = (Map<?, ?>) Utils.fromJSONString(response);

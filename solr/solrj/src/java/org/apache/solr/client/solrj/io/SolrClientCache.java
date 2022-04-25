@@ -27,13 +27,18 @@ import java.util.Objects;
 import java.util.Optional;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** The SolrClientCache caches SolrClients so they can be reused by different TupleStreams. */
+/**
+ * The SolrClientCache caches SolrClients so they can be reused by different TupleStreams.
+ *
+ * <p>TODO: Cut this over to using Solr's new Http2 clients
+ */
 public class SolrClientCache implements Serializable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -54,10 +59,12 @@ public class SolrClientCache implements Serializable {
     httpClient = null;
   }
 
+  @Deprecated(since = "9.0")
   public SolrClientCache(HttpClient httpClient) {
     this.httpClient = httpClient;
   }
 
+  @Deprecated(since = "9.0")
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
 
     // Timeouts should never be lower then 60000 but they can be set higher
@@ -76,8 +83,8 @@ public class SolrClientCache implements Serializable {
     } else {
       final List<String> hosts = new ArrayList<String>();
       hosts.add(zkHost);
-      CloudSolrClient.Builder builder =
-          new CloudSolrClient.Builder(hosts, Optional.empty())
+      var builder =
+          new CloudLegacySolrClient.Builder(hosts, Optional.empty())
               .withSocketTimeout(socketTimeout)
               .withConnectionTimeout(conTimeout);
       if (httpClient != null) {
@@ -92,6 +99,7 @@ public class SolrClientCache implements Serializable {
     return client;
   }
 
+  @Deprecated(since = "9.0")
   public synchronized HttpSolrClient getHttpSolrClient(String host) {
     HttpSolrClient client;
     if (solrClients.containsKey(host)) {

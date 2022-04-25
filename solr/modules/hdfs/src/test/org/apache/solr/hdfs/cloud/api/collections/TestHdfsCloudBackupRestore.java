@@ -217,7 +217,7 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
 
     BackupManager mgr =
         BackupManager.forRestore(
-            repo, solrClient.getZkStateReader(), repo.resolve(baseLoc, backupName));
+            repo, cluster.getZkStateReader(), repo.resolve(baseLoc, backupName));
     BackupProperties props = mgr.readBackupProperties();
     assertNotNull(props);
     assertEquals(collectionName, props.getCollection());

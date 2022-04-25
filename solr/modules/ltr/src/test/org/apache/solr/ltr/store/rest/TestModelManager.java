@@ -39,7 +39,7 @@ public class TestModelManager extends TestRerankBase {
 
   @Test
   public void test() throws Exception {
-    final SolrResourceLoader loader = new SolrResourceLoader(tmpSolrHome.toPath());
+    final SolrResourceLoader loader = new SolrResourceLoader(tmpSolrHome);
 
     final RestManager.Registry registry = loader.getManagedResourceRegistry();
     assertNotNull(

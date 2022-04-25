@@ -1,8 +1,8 @@
 name: solr
 version: '${solr_version_major}_${solr_version_minor}'
-display_version: '${solr_version_major}.${solr_version_minor}'
-# Marking a version as 'prerelease: true' is only needed for unpublished branches
-#prerelease: true
+display_version: '${displayVersion}'
+# Marking a version as 'prerelease: false' is only needed for published branches (minor version branches, branch_x_y, that have had a release)
+prerelease: ${prerelease}
 title: Solr Reference Guide
 nav:
 - modules/getting-started/getting-started-nav.adoc

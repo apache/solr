@@ -47,6 +47,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrCloseable;
@@ -220,6 +222,20 @@ public class ZkStateReader implements SolrCloseable {
 
   // only kept to identify if the cleaner has already been started.
   private Future<?> collectionPropsCacheCleaner;
+
+  /**
+   * Gets the ZkStateReader inside a ZK based SolrClient.
+   *
+   * @throws IllegalArgumentException if solrClient isn't ZK based.
+   */
+  public static ZkStateReader from(CloudSolrClient solrClient) {
+    try {
+      var provider = (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
+      return provider.getZkStateReader();
+    } catch (ClassCastException e) {
+      throw new IllegalArgumentException("client has no Zk stateReader", e);
+    }
+  }
 
   private static class CollectionWatch<T> {
 
@@ -1651,6 +1667,8 @@ public class ZkStateReader implements SolrCloseable {
    * are encouraged to use the more specific methods register methods as it may reduce the number of
    * ZooKeeper watchers needed, and reduce the amount of network/cpu used.
    *
+   * @param collection the collection to watch
+   * @param stateWatcher a watcher that will be called when the state changes
    * @see #registerDocCollectionWatcher
    * @see #registerLiveNodesListener
    */
@@ -1669,7 +1687,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   /**
-   * Register a DocCollectionWatcher to be called when the state of a collection changes
+   * Register a DocCollectionWatcher to be called when the cluster state for a collection changes.
    *
    * <p>The Watcher will automatically be removed when it's <code>onStateChanged</code> returns
    * <code>true</code>
@@ -2203,7 +2221,7 @@ public class ZkStateReader implements SolrCloseable {
     public boolean update() throws KeeperException, InterruptedException {
       log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
       // Call sync() first to ensure the subsequent read (getData) is up to date.
-      zkClient.getSolrZooKeeper().sync(ALIASES, null, null);
+      zkClient.getZooKeeper().sync(ALIASES, null, null);
       Stat stat = new Stat();
       final byte[] data = zkClient.getData(ALIASES, null, stat, true);
       return setIfNewer(Aliases.fromJSON(data, stat.getVersion()));

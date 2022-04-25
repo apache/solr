@@ -2613,7 +2613,7 @@ public class StreamingTest extends SolrCloudTestCase {
 
     StreamContext streamContext = new StreamContext();
     streamContext.setLocal(true);
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
     List<String> strings =
         zkStateReader.aliasesManager.getAliases().resolveAliases(COLLECTIONORALIAS);
     String collName = strings.size() > 0 ? strings.get(0) : COLLECTIONORALIAS;
@@ -2944,7 +2944,7 @@ public class StreamingTest extends SolrCloudTestCase {
         params(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":nrt"));
 
     try {
-      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      ZkStateReader zkStateReader = cluster.getZkStateReader();
       List<String> strings =
           zkStateReader.aliasesManager.getAliases().resolveAliases(MULTI_REPLICA_COLLECTIONORALIAS);
       String collName = strings.size() > 0 ? strings.get(0) : MULTI_REPLICA_COLLECTIONORALIAS;
@@ -3091,7 +3091,7 @@ public class StreamingTest extends SolrCloudTestCase {
       }
 
       List<String> baseUrls = new LinkedList<>();
-      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      ZkStateReader zkStateReader = cluster.getZkStateReader();
       List<String> resolved =
           zkStateReader.aliasesManager.getAliases().resolveAliases(MULTI_REPLICA_COLLECTIONORALIAS);
       Set<String> liveNodes = zkStateReader.getClusterState().getLiveNodes();

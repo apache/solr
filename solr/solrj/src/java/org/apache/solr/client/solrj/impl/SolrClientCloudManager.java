@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
 public class SolrClientCloudManager implements SolrCloudManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected final CloudSolrClient solrClient;
+  protected final CloudLegacySolrClient solrClient;
   private final ZkDistribStateManager stateManager;
   private final DistributedQueueFactory queueFactory;
   private final ZkStateReader zkStateReader;
@@ -60,15 +60,18 @@ public class SolrClientCloudManager implements SolrCloudManager {
   private final boolean closeObjectCache;
   private volatile boolean isClosed;
 
-  public SolrClientCloudManager(DistributedQueueFactory queueFactory, CloudSolrClient solrClient) {
+  public SolrClientCloudManager(
+      DistributedQueueFactory queueFactory, CloudLegacySolrClient solrClient) {
     this(queueFactory, solrClient, null);
   }
 
   public SolrClientCloudManager(
-      DistributedQueueFactory queueFactory, CloudSolrClient solrClient, ObjectCache objectCache) {
+      DistributedQueueFactory queueFactory,
+      CloudLegacySolrClient solrClient,
+      ObjectCache objectCache) {
     this.queueFactory = queueFactory;
     this.solrClient = solrClient;
-    this.zkStateReader = solrClient.getZkStateReader();
+    this.zkStateReader = ZkStateReader.from(solrClient);
     this.zkClient = zkStateReader.getZkClient();
     this.stateManager = new ZkDistribStateManager(zkClient);
     this.isClosed = false;

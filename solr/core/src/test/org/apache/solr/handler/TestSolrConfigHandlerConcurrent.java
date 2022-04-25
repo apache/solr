@@ -31,6 +31,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -138,8 +139,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         return;
       }
 
-      DocCollection coll =
-          cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
+      DocCollection coll = cloudClient.getClusterState().getCollection("collection1");
       List<String> urls = new ArrayList<>();
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas())
@@ -197,7 +197,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
     HttpGet get = new HttpGet(uri);
     HttpEntity entity = null;
     try {
-      entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
+      entity = ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(get).getEntity();
       String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
       try {
         return (LinkedHashMapWriter)

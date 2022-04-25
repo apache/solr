@@ -43,9 +43,7 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.junit.After;
@@ -86,8 +84,12 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         RequestStatusState.COMPLETED,
         CollectionAdminRequest.createCollection(name, "_default", 2, 2)
             .processAndWait(cloudClient, DEFAULT_TIMEOUT));
-    cloudClient.waitForState(
-        name, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    ZkStateReader.from(cloudClient)
+        .waitForState(
+            name,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
     cloudClient.setDefaultCollection(name);
     return name;
   }
@@ -146,12 +148,15 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
         CollectionAdminRequest.createCollectionWithImplicitRouter(
                 name, "_default", "shard1,shard2", 2)
             .processAndWait(cloudClient, DEFAULT_TIMEOUT));
-    cloudClient.waitForState(
-        name, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    ZkStateReader.from(cloudClient)
+        .waitForState(
+            name,
+            (long) DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (CollectionStatePredicate) (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
     cloudClient.setDefaultCollection(name);
 
-    final DocCollection docCol =
-        cloudClient.getZkStateReader().getClusterState().getCollection(name);
+    final DocCollection docCol = cloudClient.getClusterState().getCollection(name);
     try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
         SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
 
@@ -261,12 +266,15 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             .setRouterField("routefield_s")
             .setShards("shard1,shard2")
             .processAndWait(cloudClient, DEFAULT_TIMEOUT));
-    cloudClient.waitForState(
-        name, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+    ZkStateReader.from(cloudClient)
+        .waitForState(
+            name,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
     cloudClient.setDefaultCollection(name);
 
-    final DocCollection docCol =
-        cloudClient.getZkStateReader().getClusterState().getCollection(name);
+    final DocCollection docCol = cloudClient.getClusterState().getCollection(name);
     try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader().getCoreUrl());
         SolrClient shard2 = getHttpSolrClient(docCol.getSlice("shard2").getLeader().getCoreUrl())) {
 
@@ -398,21 +406,20 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
                 .setCreateNodeSet(leaderToPartition.getNodeName() + "," + otherLeader.getNodeName())
                 .processAndWait(cloudClient, DEFAULT_TIMEOUT));
 
-        cloudClient.waitForState(
-            collectionName,
-            DEFAULT_TIMEOUT,
-            TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
+        ZkStateReader.from(cloudClient)
+            .waitForState(
+                collectionName,
+                DEFAULT_TIMEOUT,
+                TimeUnit.SECONDS,
+                (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
 
         { // HACK: Check the leaderProps for the shard hosted on the node we're going to kill...
           final Replica leaderProps =
               cloudClient
-                  .getZkStateReader()
                   .getClusterState()
                   .getCollection(collectionName)
                   .getLeaderReplicas(leaderToPartition.getNodeName())
                   .get(0);
-
           // No point in this test if these aren't true...
           assertNotNull(
               "Sanity check: leaderProps isn't a leader?: " + leaderProps.toString(),
@@ -734,7 +741,6 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final DocCollection collection =
         cluster
             .getSolrClient()
-            .getZkStateReader()
             .getClusterState()
             .getCollection(cluster.getSolrClient().getDefaultCollection());
     log.info("Checking shard consistency via: {}", perReplicaParams);

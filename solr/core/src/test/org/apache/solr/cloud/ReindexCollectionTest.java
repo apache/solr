@@ -187,8 +187,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     String prefix = ReindexCollectionCmd.TARGET_COL_PREFIX + targetCollection;
     while (!timeOut.hasTimedOut()) {
       timeOut.sleep(500);
-      for (String name :
-          cloudManager.getClusterStateProvider().getClusterState().getCollectionsMap().keySet()) {
+      for (String name : cloudManager.getClusterState().getCollectionsMap().keySet()) {
         if (name.startsWith(prefix)) {
           realTargetCollection = name;
           break;
@@ -209,11 +208,11 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
               ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
           return ReindexCollectionCmd.State.FINISHED == state;
         });
-    solrClient.getZkStateReader().aliasesManager.update();
+    ZkStateReader.from(solrClient).aliasesManager.update();
     // verify the target docs exist
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
     assertEquals("copied num docs", NUM_DOCS, rsp.getResults().getNumFound());
-    ClusterState state = solrClient.getClusterStateProvider().getClusterState();
+    ClusterState state = solrClient.getClusterState();
     if (sourceRemove) {
       assertFalse("source collection still present", state.hasCollection(sourceCollection));
     }
@@ -308,9 +307,9 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     }
 
     // check the shape of the new collection
-    ClusterState clusterState = solrClient.getClusterStateProvider().getClusterState();
+    ClusterState clusterState = solrClient.getClusterState();
     List<String> aliases =
-        solrClient.getZkStateReader().getAliases().resolveAliases(targetCollection);
+        ZkStateReader.from(solrClient).getAliases().resolveAliases(targetCollection);
     assertFalse(aliases.isEmpty());
     String realTargetCollection = aliases.get(0);
     DocCollection coll = clusterState.getCollection(realTargetCollection);
@@ -365,7 +364,6 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
 
     // verify that the target and checkpoint collections don't exist
     cloudManager
-        .getClusterStateProvider()
         .getClusterState()
         .forEachCollection(
             coll -> {

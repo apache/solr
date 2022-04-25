@@ -119,7 +119,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collection, 2, 2);
 
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        collection, cluster.getSolrClient().getZkStateReader(), false, true, TIMEOUT);
+        collection, cluster.getZkStateReader(), false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)
           .process(cluster.getSolrClient());
@@ -4301,7 +4301,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     updateRequest.commit(cluster.getSolrClient(), "uknownCollection");
 
     // find a node with a replica
-    ClusterState clusterState = cluster.getSolrClient().getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cluster.getSolrClient().getClusterState();
     DocCollection coll = clusterState.getCollection(COLLECTIONORALIAS);
     String node = coll.getReplicas().iterator().next().getNodeName();
     String url = null;

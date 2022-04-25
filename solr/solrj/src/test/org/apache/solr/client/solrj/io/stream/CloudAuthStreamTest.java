@@ -131,7 +131,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
     for (String collection : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
       cluster
-          .getSolrClient()
+          .getZkStateReader()
           .waitForState(
               collection,
               DEFAULT_TIMEOUT,
@@ -998,7 +998,6 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   protected static String getRandomCoreUrl(final String collection) throws Exception {
     final List<String> replicaUrls =
         cluster
-            .getSolrClient()
             .getZkStateReader()
             .getClusterState()
             .getCollectionOrNull(collection)

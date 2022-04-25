@@ -75,11 +75,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
             .processAndWait(cluster.getSolrClient(), SolrCloudTestCase.DEFAULT_TIMEOUT);
 
         AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-            collection,
-            cluster.getSolrClient().getZkStateReader(),
-            false,
-            true,
-            SolrCloudTestCase.DEFAULT_TIMEOUT);
+            collection, cluster.getZkStateReader(), false, true, SolrCloudTestCase.DEFAULT_TIMEOUT);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

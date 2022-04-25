@@ -85,7 +85,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        collection, cluster.getSolrClient().getZkStateReader(), false, true, TIMEOUT);
+        collection, cluster.getZkStateReader(), false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)
           .process(cluster.getSolrClient());
@@ -4229,7 +4229,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
     // find a node with a replica
-    ClusterState clusterState = cluster.getSolrClient().getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cluster.getSolrClient().getClusterState();
     String collection = useAlias ? COLLECTIONORALIAS + "_collection" : COLLECTIONORALIAS;
     DocCollection coll = clusterState.getCollection(collection);
     String node = coll.getReplicas().iterator().next().getNodeName();

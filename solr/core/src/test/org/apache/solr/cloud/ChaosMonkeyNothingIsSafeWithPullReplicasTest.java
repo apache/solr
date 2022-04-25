@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -155,8 +156,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
     // Using this low timeout will also help us catch index stalling.
     clientSoTimeout = 8000;
 
-    DocCollection docCollection =
-        cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION);
+    DocCollection docCollection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     assertEquals(this.sliceCount, docCollection.getSlices().size());
     Slice s = docCollection.getSlice("shard1");
     assertNotNull(s);
@@ -179,7 +179,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
     try {
       handle.clear();
       handle.put("timestamp", SKIPVAL);
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+      ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
       // make sure we have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
         zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
@@ -219,7 +219,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       if (runFullThrottle) {
         ftIndexThread =
             new FullThrottleStoppableIndexingThread(
-                cloudClient.getHttpClient(),
+                ((CloudLegacySolrClient) cloudClient).getHttpClient(),
                 controlClient,
                 cloudClient,
                 clients,
@@ -349,7 +349,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       testSuccessful = true;
     } finally {
       if (!testSuccessful) {
-        logReplicaTypesReplicationInfo(DEFAULT_COLLECTION, cloudClient.getZkStateReader());
+        logReplicaTypesReplicationInfo(DEFAULT_COLLECTION, ZkStateReader.from(cloudClient));
         printLayout();
       }
     }

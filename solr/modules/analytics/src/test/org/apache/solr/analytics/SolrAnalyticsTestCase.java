@@ -58,7 +58,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1)
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
-        COLLECTIONORALIAS, cluster.getSolrClient().getZkStateReader(), false, true, TIMEOUT);
+        COLLECTIONORALIAS, cluster.getZkStateReader(), false, true, TIMEOUT);
 
     new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 

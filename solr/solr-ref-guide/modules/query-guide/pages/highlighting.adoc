@@ -116,6 +116,19 @@ If set to `true`, only query terms aligning with the field being highlighted wil
 If the query references fields different from the field being highlighted and they have different text analysis, the query may not highlight query terms it should have and vice versa.
 The analysis used is that of the field being highlighted (`hl.fl`), not the query fields.
 
+`hl.queryFieldPattern`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `none`
+|===
++
+Similar to `hl.requireFieldMatch` but allows for multiple fields to match e.g. `q=fieldA:one OR fieldB:two OR fieldC:three` `hl.fl=fieldA` `hl.queryFieldPattern=fieldA,fieldB`
++
+Also allows for the `hl.fl` field to be absent in the query e.g. `q=fieldA:one OR fieldB:two` `hl.fl=fieldZ` `hl.queryFieldPattern=fieldA`
++
+If a `hl.queryFieldPattern` and `hl.requireFieldMatch=true` are both specified then the `hl.queryFieldPattern` is silently ignored.
+
 `hl.usePhraseHighlighter`::
 +
 [%autowidth,frame=none]

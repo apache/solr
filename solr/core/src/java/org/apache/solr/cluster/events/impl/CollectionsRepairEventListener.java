@@ -168,7 +168,7 @@ public class CollectionsRepairEventListener
     // collection / positions
     Map<String, List<ReplicaPosition>> newPositions = new HashMap<>();
     try {
-      ClusterState clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
+      ClusterState clusterState = solrCloudManager.getClusterState();
       clusterState.forEachCollection(
           coll -> {
             // shard / type / count

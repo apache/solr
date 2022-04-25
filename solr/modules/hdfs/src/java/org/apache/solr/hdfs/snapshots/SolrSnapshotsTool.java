@@ -46,6 +46,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.fs.Path;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -102,7 +103,8 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
 
   public SolrSnapshotsTool(String solrZkEnsemble) {
     solrClient =
-        new CloudSolrClient.Builder(Collections.singletonList(solrZkEnsemble), Optional.empty())
+        new CloudLegacySolrClient.Builder(
+                Collections.singletonList(solrZkEnsemble), Optional.empty())
             .build();
   }
 
@@ -254,8 +256,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
           "The snapshot named " + snapshotName + " is not found for collection " + collectionName);
     }
 
-    DocCollection collectionState =
-        solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    DocCollection collectionState = solrClient.getClusterState().getCollection(collectionName);
     for (Slice s : collectionState.getSlices()) {
       List<CoreSnapshotMetaData> replicaSnaps = meta.getReplicaSnapshotsForShard(s.getName());
       // Prepare a list of *existing* replicas (since one or more replicas could have been deleted

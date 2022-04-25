@@ -27,7 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.SortedMap;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -174,7 +174,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
 
   public static void cleanUpJettyHome(File solrHome) throws Exception {
     if (solrHome.exists()) {
-      FileUtils.deleteDirectory(solrHome);
+      PathUtils.deleteDirectory(solrHome.toPath());
     }
   }
 
