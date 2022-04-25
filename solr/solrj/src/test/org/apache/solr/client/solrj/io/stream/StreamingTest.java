@@ -1262,11 +1262,8 @@ public class StreamingTest extends SolrCloudTestCase {
     pairs.add("d_sing");
     pairs.add(Double.toString(iSeq + 5)); // 105
     pairs.add("dt_sing");
-    pairs.add(
-        String.format(
-            Locale.ROOT,
-            "2000-01-01T%02d:00:00Z",
-            base)); // Works as long as we add fewer than 60 docs
+    // Works as long as we add fewer than 60 docs
+    pairs.add(String.format(Locale.ROOT, "2000-01-01T%02d:00:00Z", base));
     pairs.add("b_sing");
     pairs.add((base % 2) == 0 ? "T" : "F"); // Tricky
 
@@ -1351,9 +1348,8 @@ public class StreamingTest extends SolrCloudTestCase {
           selectOrder.size(),
           tuples.size());
 
-      for (int idx = 0;
-          idx < selectOrder.size();
-          ++idx) { // Tuples should be in lock step with the orders passed in.
+      // Tuples should be in lock step with the orders passed in.
+      for (int idx = 0; idx < selectOrder.size(); ++idx) {
         assertEquals(
             "Order for missing docValues fields wrong for field '"
                 + field
@@ -2855,8 +2851,7 @@ public class StreamingTest extends SolrCloudTestCase {
     try (CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams)) {
 
       stream.setStreamContext(streamContext);
-      Tuple tuple =
-          getTuple(stream); // All I really care about is that all the fields are returned. There's
+      Tuple tuple = getTuple(stream);
 
       assertEquals("Integers should be returned", 11, tuple.getLong("i_sing").longValue());
       assertEquals(
@@ -3111,9 +3106,8 @@ public class StreamingTest extends SolrCloudTestCase {
       assertEquals(expectedNumStreams, solrStreams.size());
       for (TupleStream next : solrStreams) {
         SolrStream ss = (SolrStream) next;
-        assertTrue(
-            baseUrls.contains(
-                ss.getBaseUrl())); // SolrStream uses the baseUrl of the replica and not the coreUrl
+        // SolrStream uses the baseUrl of the replica and not the coreUrl
+        assertTrue(baseUrls.contains(ss.getBaseUrl()));
       }
 
       // verify core filtering
