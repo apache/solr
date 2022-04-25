@@ -379,20 +379,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     }
 
     { // WRITE_X user should be able to update X via a (search) stream from Y (routed via Y)
-      final String expr =
-          "update("
-              + COLLECTION_X
-              // note batch size
-              + ", batchSize=50,                   "
-              + "       search("
-              + COLLECTION_Y
-              + ",                          "
-              // 10 matches = 1 batch
-              + "              q=\"foo_i:[* TO 10]\",                     "
-              + "              rows=100,                                  "
-              // pruneVersionField default true
-              + "              fl=\"id,foo_i,_version_\",                 "
-              + "              sort=\"foo_i desc\"))                      ";
+      // note batch size - 10 matches = 1 batch
+      // pruneVersionField default true
+      final String expr = "update(" + COLLECTION_X + ", batchSize=50, search(" + COLLECTION_Y + ", q=\"foo_i:[* TO 10]\", rows=100, fl=\"id,foo_i,_version_\", sort=\"foo_i desc\"))";
 
       final SolrStream solrStream =
           new SolrStream(
@@ -406,19 +395,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     }
 
     { // WRITE_X user should be able to update X via a (search) stream from Y (routed via X)...
-      final String expr =
-          "update("
-              + COLLECTION_X
-              // note batch size
-              + ", batchSize=5,                    "
-              + "       search("
-              + COLLECTION_Y
-              + ",                          "
-              // 13 matches = 3 batches
-              + "              q=\"foo_i:[30 TO *]\",                     "
-              + "              rows=100,                                  "
-              + "              fl=\"id,foo_i\",                           "
-              + "              sort=\"foo_i desc\"))                      ";
+      // note batch size - 13 matches = 3 batches
+      final String expr = "update(" + COLLECTION_X + ", batchSize=5, search(" + COLLECTION_Y + ", q=\"foo_i:[30 TO *]\", rows=100, fl=\"id,foo_i\", sort=\"foo_i desc\"))";
 
       final SolrStream solrStream =
           new SolrStream(
@@ -468,12 +446,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
   public void testExecutorUpdateStream() throws Exception {
     final String expr =
-        "executor(threads=1,                                              "
-            + "         tuple(expr_s=\"update("
+        "executor(threads=1, tuple(expr_s=\"update("
             + COLLECTION_X
-            + ", batchSize=5,    "
-            + "                               tuple(id=42,a_i=1,b_i=5))       "
-            + "                      \"))                                       ";
+            + ", batchSize=5, tuple(id=42,a_i=1,b_i=5))\"))";
     final SolrStream solrStream =
         new SolrStream(solrUrl + "/" + COLLECTION_X, params("qt", "/stream", "expr", expr));
     solrStream.setCredentials(WRITE_X_USER, WRITE_X_USER);
@@ -492,16 +467,13 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       for (String path : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
         final String trace = user + ":" + path;
         final String expr =
-            "executor(threads=1,                                                         "
-                + "         tuple(expr_s=\"update("
+            "executor(threads=1,tuple(expr_s=\"update("
                 + COLLECTION_X
-                + ", batchSize=5,               "
-                + "                               tuple(id='"
+                + ", batchSize=5,tuple(id='"
                 + (++id)
                 + "',foo_s='"
                 + trace
-                + "'))    "
-                + "                      \"))                                                  ";
+                + "'))\"))";
         final SolrStream solrStream =
             new SolrStream(
                 solrUrl + "/" + path,
@@ -529,15 +501,10 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     log.info("Using Daemon @ {}", daemonUrl);
 
     {
-      final String expr
-          // NOTE: inspite of what is implied by 'terminate=true', this daemon will
-          // NEVER terminate on it's own as long as the updates are successful
-          // (aparently that requires usage of anest topic() stream to set a "sleepMillis"?!?!?!)
-          =
-          "daemon(id=daemonId,runInterval=1000,terminate=true,           "
-              + "       update("
+      // NOTE: in spite of what is implied by 'terminate=true', this daemon will NEVER terminate on it's own as long as the updates are successful (apparently that requires usage of a topic() stream to set a "sleepMillis"?!)
+      final String expr = "daemon(id=daemonId,runInterval=1000,terminate=true,update("
               + COLLECTION_X
-              + ",tuple(id=42,a_i=1,b_i=5)))     ";
+              + ",tuple(id=42,a_i=1,b_i=5)))";
       final SolrStream solrStream =
           new SolrStream(daemonUrl, params("qt", "/stream", "expr", expr));
       solrStream.setCredentials(WRITE_X_USER, WRITE_X_USER);
@@ -707,21 +674,10 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     assertEquals(42L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
 
     { // WRITE_X user should be able to delete X via a query from X
-      final String expr =
-          "delete("
-              + COLLECTION_X
-              // note batch size
-              + ", batchSize=5,                    "
-              + "       search("
-              + COLLECTION_X
-              + ",                          "
-              // 10 matches = 2 batches
-              + "              q=\"foo_i:[* TO 10]\",                     "
-              + "              rows=100,                                  "
-              // foo_i should be ignored...
-              + "              fl=\"id,foo_i,_version_\",                 "
-              // version constraint should be ok
-              + "              sort=\"foo_i desc\"))                      ";
+      // note batch size - 10 matches = 2 batches
+      // foo_i should be ignored...
+      // version constraint should be ok
+      final String expr = "delete(" + COLLECTION_X + ", batchSize=5, search(" + COLLECTION_X + ", q=\"foo_i:[* TO 10]\", rows=100, fl=\"id,foo_i,_version_\", sort=\"foo_i desc\"))";
 
       final SolrStream solrStream =
           new SolrStream(solrUrl + "/" + COLLECTION_X, params("qt", "/stream", "expr", expr));
@@ -838,24 +794,11 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     assertEquals(42L - 1L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
     assertEquals(42L, commitAndCountDocsInCollection(COLLECTION_Y, WRITE_Y_USER));
 
-    { // WRITE_X user should be able to delete ids from X via a (search) stream from Y (routed via
-      // Y)
-      final String expr =
-          "delete("
-              + COLLECTION_X
-              // note batch size
-              + ", batchSize=50,                   "
-              // NOTE: ignoring Y version to del X
-              + "       pruneVersionField=true,                           "
-              + "       search("
-              + COLLECTION_Y
-              + ",                          "
-              // 10 matches = 1 batch
-              + "              q=\"foo_i:[* TO 10]\",                     "
-              + "              rows=100,                                  "
-              // foo_i & version should be ignored
-              + "              fl=\"id,foo_i,_version_\",                 "
-              + "              sort=\"foo_i desc\"))                      ";
+    { // WRITE_X user should be able to delete ids from X via a stream from Y (routed via Y)
+      // note batch size - 10 matches = 1 batch
+      // NOTE: ignoring Y version to del X
+      // foo_i & version should be ignored
+      final String expr = "delete(" + COLLECTION_X + ", batchSize=50, pruneVersionField=true, search(" + COLLECTION_Y + ", q=\"foo_i:[* TO 10]\", rows=100, fl=\"id,foo_i,_version_\", sort=\"foo_i desc\"))";
 
       final SolrStream solrStream =
           new SolrStream(
@@ -871,22 +814,10 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     assertEquals(42L - 1L - 10L, commitAndCountDocsInCollection(COLLECTION_X, WRITE_X_USER));
     assertEquals(42L, commitAndCountDocsInCollection(COLLECTION_Y, WRITE_Y_USER));
 
-    { // WRITE_X user should be able to delete ids from X via a (search) stream from Y (routed via
-      // X)...
-      final String expr =
-          "delete("
-              + COLLECTION_X
-              // note batch size
-              + ", batchSize=5,                    "
-              + "       search("
-              + COLLECTION_Y
-              + ",                          "
-              // 13 matches = 3 batches
-              + "              q=\"foo_i:[30 TO *]\",                     "
-              + "              rows=100,                                  "
-              // foo_i should be ignored
-              + "              fl=\"id,foo_i\",                           "
-              + "              sort=\"foo_i desc\"))                      ";
+    { // WRITE_X user should be able to delete ids from X via a stream from Y (routed via X)...
+      // note batch size - 13 matches = 3 batches
+      // foo_i should be ignored
+      final String expr = "delete(" + COLLECTION_X + ", batchSize=5, search(" + COLLECTION_Y + ", q=\"foo_i:[30 TO *]\", rows=100, fl=\"id,foo_i\", sort=\"foo_i desc\"))                      ";
 
       final SolrStream solrStream =
           new SolrStream(
