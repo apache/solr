@@ -69,8 +69,8 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   private static final String ALIAS_NAME = "SOME_ALIAS_WITH_MANY_COLLS";
 
   private static final String id = "id";
-  private static final int NUM_COLLECTIONS =
-      2; // this test requires at least 2 collections, each with multiple shards
+  // this test requires at least 2 collections, each with multiple shards
+  private static final int NUM_COLLECTIONS = 2;
   private static final int NUM_DOCS_PER_COLLECTION = 40;
   private static final int NUM_SHARDS_PER_COLLECTION = 4;
   private static final int CARDINALITY = 10;
