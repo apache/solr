@@ -47,6 +47,8 @@ Bug Fixes
 
 * SOLR-16168: Spellcheck NPE if invalid dictionary name is provided (Kevin Risden)
 
+* SOLR-15830: Concurrent core reloads mess up commits when using Schema API (Bence Szabo via Andras Salamon)
+
 Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
