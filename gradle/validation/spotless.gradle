@@ -53,9 +53,6 @@ configure(project(":solr").subprojects) { prj ->
               "src/java/org/apache/solr/parser/Token.java",
               "src/java/org/apache/solr/parser/TokenMgrError.java"
             break
-          case ":solr:solrj":
-            targetExclude "src/test/org/apache/solr/client/solrj/io/stream/*.java"
-            break
           case ":solr:modules:hdfs":
             // Exclude Hadoop copied files to make upgrades easier
             targetExclude "src/**/org/apache/hadoop/**"
