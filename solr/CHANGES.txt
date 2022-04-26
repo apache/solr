@@ -65,6 +65,8 @@ Bug Fixes
 
 * SOLR-13044: Fix NPE during core close racing with index replication check.  (David Smiley, hossman)
 
+* SOLR-16145: Fix very rare NPE in SolrCloud rejoinOverseerElection. (David Smiley)
+
 * SOLR-16168: Spellcheck NPE if invalid dictionary name is provided (Kevin Risden)
 
 Other Changes
