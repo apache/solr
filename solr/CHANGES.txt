@@ -12375,7 +12375,7 @@ Other Changes
 
 * SOLR-6448: Add SolrJ support for all current Collection API calls. (Anshum Gupta)
 
-* Fixed a typo in various solrconfig.xml files.  (sdumitriu - pull request #120)
+* Fixed a typo in various solrconfig.xml files.  (sdumitriu)
 
 * SOLR-6895: SolrServer classes are renamed to *SolrClient.  The existing
   classes still exist, but are deprecated. (Alan Woodward, Erik Hatcher)
@@ -13986,7 +13986,7 @@ Other Changes
   (Karl Wright via Shawn Heisey)
 
 * SOLR-2794: change the default of hl.phraseLimit to 5000.
-  (Michael Della Bitta via Robert Muir, Koji, zarni - pull request #11)
+  (Michael Della Bitta via Robert Muir, Koji, zarni)
 
 * SOLR-5632: Improve response message for reloading a non-existent core.
   (Anshum Gupta via Mark Miller)
