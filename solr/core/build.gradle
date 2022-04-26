@@ -65,6 +65,9 @@ dependencies {
 
   // Jetty (both for client and server, which is only used by EmbeddedSolrServer)
   implementation 'org.eclipse.jetty:jetty-alpn-server'
+  runtimeOnly('org.eclipse.jetty:jetty-alpn-java-server', {
+    exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
+  })
   jettyClientImplementation 'org.eclipse.jetty:jetty-http'
   jettyClientImplementation 'org.eclipse.jetty:jetty-io'
   implementation 'org.eclipse.jetty:jetty-rewrite'
