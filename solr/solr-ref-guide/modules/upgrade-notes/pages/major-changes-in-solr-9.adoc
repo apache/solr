@@ -132,8 +132,6 @@ named "internal".  The sample Grafana dashboard now filters to include or exclud
 
 === Security
 
-* SOLR-15857: Solr now supports Secret Manager for Zookeeper ACL/credentials retrieval. It also allow injecting customer Credentials Injectors.
-
 === Scalability
 
 === Modules

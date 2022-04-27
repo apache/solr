@@ -41,6 +41,12 @@ Improvements
 
 * SOLR-16002: Avoid redundant `FilterQuery` caching, e.g. via `filter($query)` syntax. (Michael Gibney, David Smiley)
 
+Security
+----------------------
+* SOLR-15857: Solr now supports Secret Manager for Zookeeper ACL/credentials retrieval.
+  The default supported SM is AWS SM.
+  It also allows injecting custom Credentials Injectors. (Lamine Idjeraoui)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
