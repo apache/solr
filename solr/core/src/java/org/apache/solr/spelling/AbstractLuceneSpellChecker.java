@@ -141,6 +141,10 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
 
     int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
     for (Token token : options.tokens) {
+      if (token.length() == 0) {
+        result.add(token, Collections.emptyList());
+        continue;
+      }
       String tokenText = new String(token.buffer(), 0, token.length());
       term = new Term(field, tokenText);
       int docFreq = 0;
