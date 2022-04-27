@@ -44,6 +44,12 @@ Improvements
 * SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
   halving the latency of synchronous commits (Michael Gibney)
 
+Security
+----------------------
+* SOLR-15857: Solr now supports Secret Manager for Zookeeper ACL/credentials retrieval.
+  The default supported SM is AWS SM.
+  It also allows injecting custom Credentials Injectors. (Lamine Idjeraoui)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
@@ -63,15 +69,8 @@ Bug Fixes
 
 * SOLR-16112: DefaultSolrHighlighter.doHighlighting to Query#rewrite multiple times if necessary. (Christine Poerschke)
 
-* SOLR-13044: Fix NPE during core close racing with index replication check.  (David Smiley, hossman)
-
-* SOLR-16145: Fix very rare NPE in SolrCloud rejoinOverseerElection. (David Smiley)
-
-* SOLR-16168: Spellcheck NPE if invalid dictionary name is provided (Kevin Risden)
-
-* SOLR-15830: Concurrent core reloads mess up commits when using Schema API (Bence Szabo via Andras Salamon)
-
-* SOLR-16169: IndexBasedSpellChecker with empty spellcheck.q results in NegativeArraySizeException (Kevin Risden)
+* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
+  halving the latency of synchronous commits (Michael Gibney)
 
 Other Changes
 ---------------------
@@ -776,8 +775,6 @@ Bug Fixes
   but look like nonsense to Calcite, such as AND'd filters on the same multi-valued field (Timothy Potter, Kiran Chitturi)
 
 * SOLR-16022: Enforce special character requirements on passwords with length less than 15 (Timothy Potter)
-
-* SOLR-16143: SolrConfig ResourceProvider can miss updates from ZooKeeper (Mike Drob)
 
 ==================  8.11.2 ==================
 
@@ -12401,7 +12398,7 @@ Other Changes
 
 * SOLR-6448: Add SolrJ support for all current Collection API calls. (Anshum Gupta)
 
-* Fixed a typo in various solrconfig.xml files.  (sdumitriu)
+* Fixed a typo in various solrconfig.xml files.  (sdumitriu - pull request #120)
 
 * SOLR-6895: SolrServer classes are renamed to *SolrClient.  The existing
   classes still exist, but are deprecated. (Alan Woodward, Erik Hatcher)
@@ -14012,7 +14009,7 @@ Other Changes
   (Karl Wright via Shawn Heisey)
 
 * SOLR-2794: change the default of hl.phraseLimit to 5000.
-  (Michael Della Bitta via Robert Muir, Koji, zarni)
+  (Michael Della Bitta via Robert Muir, Koji, zarni - pull request #11)
 
 * SOLR-5632: Improve response message for reloading a non-existent core.
   (Anshum Gupta via Mark Miller)
