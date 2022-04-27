@@ -79,11 +79,19 @@ For a few examples of how this could be done, see this blog post by Erick Ericks
 
 You can try out the Tika framework using the `schemaless` example included in Solr.
 
-This command will simply start Solr and create a core/collection named "gettingstarted" with the `_default` configset.
+This command will start Solr, create a core/collection named `gettingstarted` with the `_default` configset, and enable the extraction module. Then the `/update/extract` handler is added to the `gettingstarted` core/collection to enable Solr Cell.
 
 [source,bash]
 ----
-bin/solr -e schemaless
+bin/solr start -e schemaless -Dsolr.modules=extraction
+
+curl -X POST -H 'Content-type:application/json' -d '{
+  "add-requesthandler": {
+    "name": "/update/extract",
+    "class": "solr.extraction.ExtractingRequestHandler",
+    "defaults":{ "lowernames": "true", "captureAttr":"true"}
+  }
+}' 'http://localhost:8983/solr/gettingstarted/config'
 ----
 
 Once Solr is started, you can use curl to send a sample PDF included with Solr via HTTP POST:
