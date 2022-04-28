@@ -19,9 +19,12 @@ Improvements
 
 * SOLR-16002: Avoid redundant `FilterQuery` caching, e.g. via `filter($query)` syntax. (Michael Gibney, David Smiley)
 
+* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
+  halving the latency of synchronous commits (Michael Gibney)
+
 Optimizations
 ---------------------
-SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
+* SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
 
 * SOLR-14765: Optimize DocList creation for sort-irrelevant cases. This issue also reworks the building and caching of liveDocs
   in SolrIndexSearcher, and refines/clarifies the effect of `useFilterForSortedQuery` (Michael Gibney, Mike Drob, David Smiley)
@@ -37,9 +40,6 @@ Bug Fixes
 * SOLR-16089: Fix empty columns in Cloud Node UI Screen when replica is in down state. (hossman)
 
 * SOLR-16112: DefaultSolrHighlighter.doHighlighting to Query#rewrite multiple times if necessary. (Christine Poerschke)
-
-* SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
-  halving the latency of synchronous commits (Michael Gibney)
 
 * SOLR-13044: Fix NPE during core close racing with index replication check.  (David Smiley, hossman)
 
