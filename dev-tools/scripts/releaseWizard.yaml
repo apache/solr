@@ -418,6 +418,33 @@ groups:
         cmd: git push --set-upstream origin {{ release_branch }}
         tee: true
   - !Todo
+    id: update_minor_branch_prerelease_antora
+    title: Update Ref Guide Metadata for new Minor Branch
+    description: |
+      This will update the "solr/solr-ref-guide/antora.yml" file.
+      
+      The file shouldn't change much, but it should pick up new dependency versions, if they have changed.
+    types:
+    - major
+    - minor
+    depends: create_minor_branch
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to update the antora.yml
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        tee: true
+      - !Command
+        cmd: git pull --ff-only
+        tee: true
+      - !Command
+        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
+        tee: true
+      - !Command
+        cmd: git add solr/solr-ref-guide/antora.yml && git commit -m "Update Antora metadata for pre-released minor version {{ release_version }}" && git push
+        tee: true
+  - !Todo
     id: add_version_major
     title: Add a new major version on main branch
     types:
@@ -431,6 +458,9 @@ groups:
       commands:
       - !Command
         cmd: git checkout main
+        tee: true
+      - !Command
+        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
         tee: true
       - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
@@ -456,6 +486,9 @@ groups:
       commands:
       - !Command
         cmd: git checkout {{ stable_branch }}
+        tee: true
+      - !Command
+        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
         tee: true
       - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
@@ -1089,6 +1122,50 @@ groups:
         logfile: add-docs-solr.log
         comment: Add docs for Solr
   - !Todo
+    id: update_minor_branch_release_antora
+    title: Update Ref Guide Metadata for release
+    description: |
+      The Solr minor branches do not contain up-to-date ref-guide metadata (antora.yml).
+      Instead, they have the information from the last release.
+      This allows us to build the official documentation from these minor branches, instead of from the release tags.
+      
+      This means that we can make fixes to older ref-guides without requiring a new release for those versions.
+    depends: tag_release
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to update the ref-guide antora metadata for the released version {{ release_version }}
+      commands:
+      - !Command
+        cmd: git checkout releases/solr/{{ release_version }}
+        tee: true
+      - !Command
+        cmd: git clean -df && git checkout -- .
+        comment: Make sure checkout is clean and up to date
+        logfile: git_clean.log
+      - !Command
+        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=true"
+        tee: true
+      - !Command
+        cmd: git stash
+        tee: true
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        tee: true
+      - !Command
+        cmd: git clean -df && git checkout -- .
+        comment: Make sure checkout is clean and up to date
+        logfile: git_clean.log
+        tee: true
+      - !Command
+        cmd: git pull --ff-only
+        tee: true
+      - !Command
+        cmd: git stash pop
+        tee: true
+      - !Command
+        cmd: git add solr/solr-ref-guide/antora.yml && git commit -m "Update Antora metadata for released minor version {{ release_version }}" && git push
+        tee: true
+  - !Todo
     id: check_ref_guide_complete
     title: Check that the reference guide is ready
     types:
@@ -1099,85 +1176,38 @@ groups:
       and (if applicable) also the "Major changes in Solr ..." section must be up to date for the latest release.
       Check that the the Blocker JIRA issue created in the beginning of the release process is resolved.
   - !Todo
-    id: build_final_ref_guide
-    title: Build the ref guide
-    links:
-      - https://solr.apache.org/guide/{{ release_version_refguide }}
+    id: build_ref_guide_htaccess
+    title: Build the ref guide .htaccess file
+    depends: update_minor_branch_release_antora
+    vars:
+      antora_htaccess_file: "{{ [rc_folder, 'antora.htaccess'] | path_join }}"
+    persist_vars:
+      - 'antora_htaccess_file'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Build the Solr Ref Guide
+      commands_text: Build the official Solr Ref Guide and store the generated .htaccess file
+      remove_files:
+        - '{{ antora_htaccess_file }}'
       commands:
+        - !Command
+          cmd: git checkout main
+          tee: true
+        - !Command
+          cmd: git clean -df && git checkout -- .
+          comment: Make sure checkout is clean and up to date
+          logfile: git_clean.log
+        - !Command
+          cmd: git pull --ff-only
+          tee: true
         - !Command
           cmd: "{{ gradle_cmd }} solr:solr-ref-guide:clean"
           comment: Clean the Ref Guide build
         - !Command
-          cmd: "{{ gradle_cmd }} solr:solr-ref-guide:buildSite -PsolrGuideDraft=false"
-          comment: Build Ref Guide
-  - !Todo
-    id: upload_final_ref_guide_new
-    title: Upload the ref guide
-    links:
-      - https://solr.apache.org/guide/{{ release_version_refguide }}
-    depends:
-      - build_final_ref_guide
-    types:
-      - major
-      - minor
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Upload the Solr Ref Guide to SVN production tree
-      commands:
+          cmd: "{{ gradle_cmd }} solr:solr-ref-guide:buildOfficialSite -Prefguide.official.includePrereleaseVersions=false"
+          comment: Build Official Ref Guide Site
         - !Command
-          cmd: svn -m "Add Solr Ref Guide {{ release_version }}" import {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site  https://svn.apache.org/repos/infra/sites/solr/guide/{{ release_version_refguide }}
-          logfile: svn-upload-ref-guide.log
-          comment: Upload Solr Ref Guide
-  - !Todo
-    id: upload_final_ref_guide_changes
-    title: Upload (and overwrite-write) the ref guide
-    links:
-      - https://solr.apache.org/guide/{{ release_version_refguide }}
-    depends:
-      - build_final_ref_guide
-    types:
-      - bugfix
-    commands: !Commands
-      root_folder: '{{ ref_guide_svn_folder }}'
-      commands_text: Upload the Solr Ref Guide to SVN production tree, overwriting the previous version
-      confirm_each_command: true
-      commands:
-        - !Command
-          cmd: svn co https://svn.apache.org/repos/infra/sites/solr/guide/{{ release_version_refguide }} "{{ ref_guide_svn_folder }}"
-          logfile: ref-guide-svn-co.log
-          comment: Checkout the existing Solr Ref Guide for version {{ ref_guide_svn_folder }}
-          cwd: '{{ git_checkout_folder }}'
-        - !Command
-          cmd: cp -r {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site {{ ref_guide_svn_folder }}
-          comment: Copy and overwrite new Solr Ref Guide
-          cwd: '{{ git_checkout_folder }}'
-        - !Command
-          cmd: svn status
-          comment: Check that the changes in the ref-guide look good for this bugfix version
-          stdout: true
-        - !Command
-          cmd: svn status | grep '^!' | awk '{print $2}'
-          comment: List files that will be deleted in online refguide
-        - !Command
-          cmd: svn status | grep '^!' | awk '{print $2}' | xargs svn delete
-          comment: Confirm delete of files in SVN (DOUBLE CHECK)
-        - !Command
-          cmd: svn add --force .
-          comment: Add new and modified files in SVN
-        - !Command
-          cmd: svn status
-          comment: There should be no staged changes left in svn, all should be ready to commit
-          stdout: true
-        - !Command
-          cmd: diff {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site {{ ref_guide_svn_folder }}
-          comment: There should be no difference between the ref-guide build and the version in svn.
-          stdout: true
-        - !Command
-          cmd: svn commit -m "Update Solr Ref Guide {{ release_version_refguide }}, for version {{ release_version }}"
-          comment: Upload Solr Ref Guide
+          cmd: cp solr/solr-ref-guide/build/site/.htaccess "{{ antora_htaccess_file }}"
+          comment: Store copy of the official Ref Guide .htaccess file
   - !Todo
     id: website_git_clone
     title: Do a clean git clone of the website repo
@@ -1220,9 +1250,36 @@ groups:
     post_description: |
       You will push and verify all changes in a later step
   - !Todo
+    id: website_update_antora_htaccess
+    title: Update website ref-guide htaccess
+    depends:
+      - website_update_versions
+      - build_ref_guide_htaccess
+    vars:
+      release_tag: releases/solr/{{ release_version }}
+      antora_htaccess_location: themes/solr/templates/htaccess.ref-guide-antora
+    description: |
+      We need to update the website so that the redirects generated by antora (for the ref-guide) are respected in solr.apache.org.
+
+      Fortunately the only thing you need to change is the `htaccess.ref-guide-antora` file, and the build will do the rest.
+    commands: !Commands
+      root_folder: '{{ git_website_folder }}'
+      commands_text: Change the ref-guide-antora htaccess
+      commands:
+        - !Command
+          cmd: cp "{{ build_ref_guide_htaccess.antora_htaccess_file }}" "{{ antora_htaccess_location }}"
+          comment: Copy the ref-guide-antora htaccess
+          stdout: true
+        - !Command
+          cmd: git commit -am "Update the htaccess.ref-guide-antora for release {{ release_version }}"
+          logfile: ref-guide-antora.log
+          stdout: true
+    post_description: |
+      You will push and verify all changes in a later step
+  - !Todo
     id: prepare_announce_solr
     title: Author the Solr release news
-    depends: website_git_clone
+    depends: website_update_antora_htaccess
     description: |
       Edit a news text for the Solr website. This text will be the basis for the release announcement email later.
       This step will open an editor with a template. You will need to copy/paste the final release announcement text
@@ -1247,7 +1304,7 @@ groups:
   - !Todo
     id: update_other
     title: Update rest of webpage
-    depends: website_update_versions
+    depends: prepare_announce_solr
     description: |
       Update the rest of the web page. Please review all files in the checkout
       and consider if any need change based on what changes there are in the
@@ -1274,7 +1331,7 @@ groups:
     id: stage_website
     title: Stage the website changes
     depends:
-    - prepare_announce_solr
+    - update_other
     description: |
       Push the website changes to 'main' branch, and check the staging site.
       You will get a chance to preview the diff of all changes before you push.
