@@ -170,9 +170,11 @@ public enum CoreAdminOperation implements CoreAdminOp {
         String cname = params.required().get(CoreAdminParams.NAME);
         log().info("Starting to buffer updates on core:" + cname);
 
-        try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-          if (core == null)
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Core [" + cname + "] does not exist");
+        SolrCore core = it.handler.coreContainer.getCore(cname);
+        if (core == null) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Core [" + cname + "] does not exist");
+        }
+        try {
           UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();
           if (updateLog.getState() != UpdateLog.State.ACTIVE) {
             throw new SolrException(
@@ -186,8 +188,12 @@ public enum CoreAdminOperation implements CoreAdminOp {
           else
             throw new SolrException(ErrorCode.SERVER_ERROR, "Could not start buffering updates", e);
         } finally {
-          // TODO: req must be closed _before_ core is closed?
           if (it.req != null) it.req.close();
+          // NOTE: `req` must be closed _before_ core, because `req` can hold a reference to
+          // SolrIndexSearcher which can in some cases block `core.close()` from completing
+          // successfully (by holding a reference to a core Directory). Hence we cannot trivially
+          // use try-with-resources to close `core`.
+          core.close();
         }
       }),
   REQUESTAPPLYUPDATES_OP(REQUESTAPPLYUPDATES, new RequestApplyUpdatesOp()),

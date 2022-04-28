@@ -349,7 +349,6 @@ public class TestHarness extends BaseTestHarness {
   public String query(String handler, SolrQueryRequest req) throws Exception {
     try (var mdcSnap = MDCSnapshot.create()) {
       assert null != mdcSnap; // prevent compiler warning of unused var
-      // TODO: close core? See e61cd9654b06, 1dba8a6f6b1c
       SolrCore core = req.getCore();
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));

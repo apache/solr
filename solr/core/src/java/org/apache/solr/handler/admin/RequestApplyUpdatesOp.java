@@ -33,10 +33,11 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
     String cname = params.required().get(CoreAdminParams.NAME);
     CoreAdminOperation.log().info("Applying buffered updates on core: " + cname);
     CoreContainer coreContainer = it.handler.coreContainer;
-    try (SolrCore core = coreContainer.getCore(cname)) {
-      if (core == null)
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Core [" + cname + "] not found");
+    SolrCore core = coreContainer.getCore(cname);
+    if (core == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Core [" + cname + "] not found");
+    }
+    try {
       UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();
       if (updateLog.getState() != UpdateLog.State.BUFFERING) {
         throw new SolrException(
@@ -66,8 +67,12 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Could not apply buffered updates", e);
     } finally {
-      // TODO: req must be closed _before_ core is closed?
       if (it.req != null) it.req.close();
+      // NOTE: `req` must be closed _before_ core, because `req` can hold a reference to
+      // SolrIndexSearcher which can in some cases block `core.close()` from completing
+      // successfully (by holding a reference to a core Directory). Hence we cannot trivially
+      // use try-with-resources to close `core`.
+      core.close();
     }
   }
 }
