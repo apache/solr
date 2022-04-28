@@ -35,7 +35,8 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
     CoreContainer coreContainer = it.handler.coreContainer;
     SolrCore core = coreContainer.getCore(cname);
     if (core == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Core [" + cname + "] not found");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Core [" + cname + "] not found");
     }
     try {
       UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();

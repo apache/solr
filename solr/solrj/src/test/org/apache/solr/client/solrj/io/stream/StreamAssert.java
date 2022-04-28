@@ -21,16 +21,17 @@ import java.util.Map;
 
 class StreamAssert {
   static boolean assertMaps(List<Map<?, ?>> maps, int... ids) throws Exception {
-    if(maps.size() != ids.length) {
-      throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
+    if (maps.size() != ids.length) {
+      throw new Exception(
+          "Expected id count != actual map count:" + ids.length + ":" + maps.size());
     }
 
-    int i=0;
-    for(int val : ids) {
-      Map<?,?> t = maps.get(i);
-      String tip = (String)t.get("id");
-      if(!tip.equals(Integer.toString(val))) {
-        throw new Exception("Found value:"+tip+" expecting:"+val);
+    int i = 0;
+    for (int val : ids) {
+      Map<?, ?> t = maps.get(i);
+      String tip = (String) t.get("id");
+      if (!tip.equals(Integer.toString(val))) {
+        throw new Exception("Found value:" + tip + " expecting:" + val);
       }
       ++i;
     }
@@ -38,15 +39,15 @@ class StreamAssert {
   }
 
   static boolean assertList(List<?> list, Object... vals) throws Exception {
-    if(list.size() != vals.length) {
-      throw new Exception("Lists are not the same size:"+list.size() +" : "+vals.length);
+    if (list.size() != vals.length) {
+      throw new Exception("Lists are not the same size:" + list.size() + " : " + vals.length);
     }
 
-    for(int i=0; i<list.size(); i++) {
+    for (int i = 0; i < list.size(); i++) {
       Object a = list.get(i);
       Object b = vals[i];
-      if(!a.equals(b)) {
-        throw new Exception("List items not equals:"+a+" : "+b);
+      if (!a.equals(b)) {
+        throw new Exception("List items not equals:" + a + " : " + b);
       }
     }
 
