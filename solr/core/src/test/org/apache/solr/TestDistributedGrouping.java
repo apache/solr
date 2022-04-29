@@ -1656,23 +1656,36 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     // Grouping with child doc and childValue() function
     SolrInputDocument parent = new SolrInputDocument("id", "1", "class_s1", "parent");
-    SolrInputDocument child = new SolrInputDocument("id", "2", "class_s1", "child", "value_s1", "abc123");
+    SolrInputDocument child =
+        new SolrInputDocument("id", "2", "class_s1", "child", "value_s1", "abc123");
     parent.addChildDocument(child);
     indexDoc(parent);
     commit();
 
     // Distributed grouping with sort on a string field in child document
-    // Crashes with java.lang.ClassCastException: class java.lang.String cannot be cast to class org.apache.lucene.util.BytesRef
+    // Crashes with java.lang.ClassCastException: class java.lang.String cannot be cast to class
+    // org.apache.lucene.util.BytesRef
     // during TopGroupsResultTransformer.serializeTopGroups()
     // in org.apache.solr.schema.FieldType.marshalStringSortValue(
-    simpleQuery("seq0", "({!parent which='class_s1:parent' v='id:2'})",
-        "group.field", "id",
-        "group.limit", "1",
-        "group.sort", "childfield(value_s1,$seq0) desc",
-        "group", "true",
-        "indent", "true",
-        "q.op", "OR",
-        "q", "id:1 AND +({!parent which='class_s1:parent' v='value_s1:abc123'})");
+    QueryResponse res =
+        query(
+            "seq0",
+            "({!parent which='class_s1:parent' v='id:2'})",
+            "group.field",
+            "id",
+            "group.limit",
+            "1",
+            "group.sort",
+            "childfield(value_s1,$seq0) desc",
+            "group",
+            "true",
+            "indent",
+            "true",
+            "q.op",
+            "OR",
+            "q",
+            "id:1 AND +({!parent which='class_s1:parent' v='value_s1:abc123'})");
+    System.out.println(res);
   }
 
   private void simpleQuery(Object... queryParams) throws SolrServerException, IOException {

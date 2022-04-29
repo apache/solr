@@ -45,6 +45,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final class BlockJoinSortFieldValueSource extends ValueSource {
+    // SOLR-16172 Removing this custom comparator fixes the issue...
     private static final class BytesToStringComparator extends FieldComparator<String> {
       private final FieldComparator<BytesRef> byteRefs;
 
@@ -133,6 +134,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
         @Override
         public FieldComparator<?> getComparator(int numHits, int sortPos) {
           final FieldComparator<?> comparator = super.getComparator(numHits, sortPos);
+          // SOLR-16172 Returning the default comparator fixes the crash, why was this needed?
           return type == Type.STRING
               ? new BytesToStringComparator((FieldComparator<BytesRef>) comparator)
               : comparator;
