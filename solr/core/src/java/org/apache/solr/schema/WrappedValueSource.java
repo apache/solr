@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -28,10 +27,10 @@ import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.SortField;
 
 /**
- * Wraps a ValueSource that derives values directly from a particular SchemaField.
- * This allows a relatively clean way to set missingValue on ValueSource.getSortField,
- * and also clearly marks SortFields that are directly associated with a SchemaField
- * (e.g., for purposes of marshaling/unmarshaling sort values).
+ * Wraps a ValueSource that derives values directly from a particular SchemaField. This allows a
+ * relatively clean way to set missingValue on ValueSource.getSortField, and also clearly marks
+ * SortFields that are directly associated with a SchemaField (e.g., for purposes of
+ * marshaling/unmarshaling sort values).
  */
 public class WrappedValueSource extends ValueSource {
 
@@ -66,7 +65,8 @@ public class WrappedValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     return backing.getValues(context, readerContext);
   }
 
@@ -77,7 +77,7 @@ public class WrappedValueSource extends ValueSource {
     } else if (!(o instanceof ValueSource)) {
       return false;
     } else {
-      return backing.equals(unwrap((ValueSource)o));
+      return backing.equals(unwrap((ValueSource) o));
     }
   }
 
@@ -88,14 +88,14 @@ public class WrappedValueSource extends ValueSource {
 
   @Override
   public String description() {
-    return "<wrapped "+backing.description()+">";
+    return "<wrapped " + backing.description() + ">";
   }
 
   public static ValueSource unwrap(ValueSource vs) {
     if (vs == null) {
       return null;
     } else if (vs instanceof WrappedValueSource) {
-      return ((WrappedValueSource)vs).unwrap();
+      return ((WrappedValueSource) vs).unwrap();
     } else {
       return vs;
     }

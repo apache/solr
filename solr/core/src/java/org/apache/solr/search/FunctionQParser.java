@@ -90,7 +90,8 @@ public class FunctionQParser extends QParser {
     List<ValueSource> lst = null;
 
     for (; ; ) {
-      ValueSource valsource = parseValueSource((FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER) | FLAG_TOP_LEVEL);
+      ValueSource valsource =
+          parseValueSource((FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER) | FLAG_TOP_LEVEL);
       sp.eatws();
       if (!parseMultipleSources) {
         vs = valsource;
@@ -449,7 +450,7 @@ public class FunctionQParser extends QParser {
     if ((flags & FLAG_CONSUME_DELIMITER) != 0) {
       consumeArgumentDelimiter();
     }
-    
+
     if ((flags & FLAG_TOP_LEVEL) == 0 && valueSource instanceof WrappedFieldValueSource) {
       return ((WrappedFieldValueSource) valueSource).unwrap();
     } else {

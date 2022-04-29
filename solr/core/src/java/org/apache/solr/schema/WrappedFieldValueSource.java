@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -28,10 +27,10 @@ import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.SortField;
 
 /**
- * Wraps a ValueSource that derives values directly from a particular SchemaField.
- * This allows a relatively clean way to set missingValue on ValueSource.getSortField,
- * and also clearly marks SortFields that are directly associated with a SchemaField
- * (e.g., for purposes of marshaling/unmarshaling sort values).
+ * Wraps a ValueSource that derives values directly from a particular SchemaField. This allows a
+ * relatively clean way to set missingValue on ValueSource.getSortField, and also clearly marks
+ * SortFields that are directly associated with a SchemaField (e.g., for purposes of
+ * marshaling/unmarshaling sort values).
  */
 public class WrappedFieldValueSource extends ValueSource {
 
@@ -70,14 +69,16 @@ public class WrappedFieldValueSource extends ValueSource {
   public SortField getSortField(boolean reverse) {
     SortField ret = backing.getSortField(reverse);
     Object missingValue;
-    if (ret.getMissingValue() == null && (missingValue = f.getSortField(reverse).getMissingValue()) != null) {
+    if (ret.getMissingValue() == null
+        && (missingValue = f.getSortField(reverse).getMissingValue()) != null) {
       ret.setMissingValue(missingValue);
     }
     return ret;
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     return backing.getValues(context, readerContext);
   }
 
@@ -88,7 +89,7 @@ public class WrappedFieldValueSource extends ValueSource {
     } else if (!(o instanceof WrappedFieldValueSource)) {
       return false;
     } else {
-      WrappedFieldValueSource other = (WrappedFieldValueSource)o;
+      WrappedFieldValueSource other = (WrappedFieldValueSource) o;
       return other.backing.equals(this.backing) && other.f.equals(this.f);
     }
   }
@@ -100,6 +101,6 @@ public class WrappedFieldValueSource extends ValueSource {
 
   @Override
   public String description() {
-    return "<wrapped "+backing.description()+", schemaField="+f+">";
+    return "<wrapped " + backing.description() + ", schemaField=" + f + ">";
   }
 }

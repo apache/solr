@@ -16,9 +16,7 @@
  */
 package org.apache.solr.schema;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -33,15 +31,16 @@ import org.apache.lucene.search.comparators.LongComparator;
 
 /**
  * SortField wrapping numeric {@link SortedSetDocValues}.
- * <p>
- * A SortedSetDocValues contains multiple values for a field, so sorting with
- * this technique "selects" a value as the representative sort value for the document.
- * <p>
- * By default, the minimum value in the list is selected as the sort value, but
- * this can be customized.
- * <p>
- * Like sorting by string, this also supports sorting missing values as first or last,
- * via {@link #setMissingValue(Object)}.
+ *
+ * <p>A SortedSetDocValues contains multiple values for a field, so sorting with this technique
+ * "selects" a value as the representative sort value for the document.
+ *
+ * <p>By default, the minimum value in the list is selected as the sort value, but this can be
+ * customized.
+ *
+ * <p>Like sorting by string, this also supports sorting missing values as first or last, via {@link
+ * #setMissingValue(Object)}.
+ *
  * @see SortedSetSelector
  */
 public class NumericSortedSetSortField extends SortField {
@@ -50,9 +49,9 @@ public class NumericSortedSetSortField extends SortField {
   private final NumberType numberType;
 
   /**
-   * Creates a sort, by the minimum value in the set
-   * for the document.
-   * @param field Name of field to sort by.  Must not be null.
+   * Creates a sort, by the minimum value in the set for the document.
+   *
+   * @param field Name of field to sort by. Must not be null.
    * @param type Type of values
    */
   public NumericSortedSetSortField(String field, NumberType type) {
@@ -60,9 +59,9 @@ public class NumericSortedSetSortField extends SortField {
   }
 
   /**
-   * Creates a sort, possibly in reverse, by the minimum value in the set
-   * for the document.
-   * @param field Name of field to sort by.  Must not be null.
+   * Creates a sort, possibly in reverse, by the minimum value in the set for the document.
+   *
+   * @param field Name of field to sort by. Must not be null.
    * @param type Type of values
    * @param reverse True if natural order should be reversed.
    */
@@ -71,14 +70,16 @@ public class NumericSortedSetSortField extends SortField {
   }
 
   /**
-   * Creates a sort, possibly in reverse, specifying how the sort value from
-   * the document's set is selected.
-   * @param field Name of field to sort by.  Must not be null.
+   * Creates a sort, possibly in reverse, specifying how the sort value from the document's set is
+   * selected.
+   *
+   * @param field Name of field to sort by. Must not be null.
    * @param numericType Type of values
    * @param reverse True if natural order should be reversed.
    * @param selector custom selector type for choosing the sort value from the set.
    */
-  public NumericSortedSetSortField(String field, NumberType numericType, boolean reverse, SortedSetSelector.Type selector) {
+  public NumericSortedSetSortField(
+      String field, NumberType numericType, boolean reverse, SortedSetSelector.Type selector) {
     super(field, SortField.Type.CUSTOM, reverse);
     if (selector == null) {
       throw new NullPointerException();
@@ -140,27 +141,35 @@ public class NumericSortedSetSortField extends SortField {
 
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
-    switch(numberType) {
+    switch (numberType) {
       case INTEGER:
-        return new IntComparator(numHits, getField(), (Integer) missingValue, getReverse(), sortPos) {
+        return new IntComparator(
+            numHits, getField(), (Integer) missingValue, getReverse(), sortPos) {
           @Override
-          public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+          public LeafFieldComparator getLeafComparator(LeafReaderContext context)
+              throws IOException {
             return new IntLeafComparator(context) {
               @Override
-              protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-                return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
+              protected NumericDocValues getNumericDocValues(
+                  LeafReaderContext context, String field) throws IOException {
+                return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(
+                    context.reader(), field, selector, numberType.sortType);
               }
             };
           }
         };
       case FLOAT:
-        return new FloatComparator(numHits, getField(), (Float) missingValue, getReverse(), sortPos) {
+        return new FloatComparator(
+            numHits, getField(), (Float) missingValue, getReverse(), sortPos) {
           @Override
-          public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+          public LeafFieldComparator getLeafComparator(LeafReaderContext context)
+              throws IOException {
             return new FloatLeafComparator(context) {
               @Override
-              protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-                return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
+              protected NumericDocValues getNumericDocValues(
+                  LeafReaderContext context, String field) throws IOException {
+                return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(
+                    context.reader(), field, selector, numberType.sortType);
               }
             };
           }
@@ -168,23 +177,30 @@ public class NumericSortedSetSortField extends SortField {
       case LONG:
         return new LongComparator(numHits, getField(), (Long) missingValue, getReverse(), sortPos) {
           @Override
-          public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+          public LeafFieldComparator getLeafComparator(LeafReaderContext context)
+              throws IOException {
             return new LongLeafComparator(context) {
               @Override
-              protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-                return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
+              protected NumericDocValues getNumericDocValues(
+                  LeafReaderContext context, String field) throws IOException {
+                return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(
+                    context.reader(), field, selector, numberType.sortType);
               }
             };
           }
         };
       case DOUBLE:
-        return new DoubleComparator(numHits, getField(), (Double) missingValue, getReverse(), sortPos) {
+        return new DoubleComparator(
+            numHits, getField(), (Double) missingValue, getReverse(), sortPos) {
           @Override
-          public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+          public LeafFieldComparator getLeafComparator(LeafReaderContext context)
+              throws IOException {
             return new DoubleLeafComparator(context) {
               @Override
-              protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-                return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
+              protected NumericDocValues getNumericDocValues(
+                  LeafReaderContext context, String field) throws IOException {
+                return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(
+                    context.reader(), field, selector, numberType.sortType);
               }
             };
           }

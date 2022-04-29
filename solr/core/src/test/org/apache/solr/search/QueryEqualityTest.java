@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Query;
@@ -1350,7 +1349,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       for (int i = 0; i < inputs.length; i++) {
         Query q = QParser.getParser(inputs[i], defType, true, req).getQuery();
-        queries[i] = q instanceof FunctionQuery ? unwrapFQValueSource((FunctionQuery)q) : q;
+        queries[i] = q instanceof FunctionQuery ? unwrapFQValueSource((FunctionQuery) q) : q;
       }
     } finally {
       SolrRequestInfo.clearRequestInfo();
@@ -1370,7 +1369,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   private static FunctionQuery unwrapFQValueSource(FunctionQuery q) {
     ValueSource vs = q.getValueSource();
     if (vs instanceof WrappedFieldValueSource) {
-      return new FunctionQuery(((WrappedFieldValueSource)vs).unwrap());
+      return new FunctionQuery(((WrappedFieldValueSource) vs).unwrap());
     } else {
       return q;
     }

@@ -16,17 +16,13 @@
  */
 package org.apache.solr.schema;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.FilterNumericDocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
-import org.apache.solr.schema.NumericSortedSetSortField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.search.SortedSetSelector.Type;
@@ -53,14 +49,18 @@ public class NumericSortedSetFieldSource extends SortedSetFieldSource {
 
   private static NumberType validateType(NumberType type) {
     switch (type) {
-      // whitelisted types
+        // whitelisted types
       case LONG:
       case INTEGER:
       case DOUBLE:
       case FLOAT:
         return type;
       default:
-        throw new IllegalStateException(NumericSortedSetFieldSource.class+" should not be instantiated with type \""+type+'"');
+        throw new IllegalStateException(
+            NumericSortedSetFieldSource.class
+                + " should not be instantiated with type \""
+                + type
+                + '"');
     }
   }
 
@@ -71,7 +71,9 @@ public class NumericSortedSetFieldSource extends SortedSetFieldSource {
     return ret;
   }
 
-  public static NumericDocValues sortedSetAsNumericDocValues(LeafReader reader, String field, SortedSetSelector.Type selector, SortField.Type numericType) throws IOException {
+  public static NumericDocValues sortedSetAsNumericDocValues(
+      LeafReader reader, String field, SortedSetSelector.Type selector, SortField.Type numericType)
+      throws IOException {
     SortedSetDocValues sortedSet = DocValues.getSortedSet(reader, field);
     SortedDocValues singleValuedView = SortedSetSelector.wrap(sortedSet, selector);
     return new SortedSetNumericDocValues(singleValuedView, numericType);
@@ -86,6 +88,7 @@ public class NumericSortedSetFieldSource extends SortedSetFieldSource {
       this.backing = backing;
       this.numericType = numericType;
     }
+
     @Override
     public long longValue() throws IOException {
       BytesRef bytes = backing.lookupOrd(backing.ordValue());

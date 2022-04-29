@@ -20,34 +20,30 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
-
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.search.stats.ExactStatsCache;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
-import org.apache.solr.cloud.SolrCloudTestCase;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
 /**
  * @see TestSortByMinMaxFunction
- **/
+ */
 public class SortByFunctionTest extends SolrCloudTestCase {
 
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
@@ -57,22 +53,25 @@ public class SortByFunctionTest extends SolrCloudTestCase {
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
   private static ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     // multi replicas should not matter...
     final int repFactor = usually() ? 1 : 2;
     // ... but we definitely want to test multiple shards
-    final int numShards = TestUtil.nextInt(random(), 1, (usually() ? 2 :3));
+    final int numShards = TestUtil.nextInt(random(), 1, (usually() ? 2 : 3));
     final int numNodes = (numShards * repFactor);
-   
+
     final String configName = DEBUG_LABEL + "_config-set";
     final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
-    System.setProperty("solr.statsCache", ExactStatsCache.class.getName()); // for distributed sort stability
+
+    // for distributed sort stability
+    System.setProperty("solr.statsCache", ExactStatsCache.class.getName());
+
     System.setProperty("solr.numericIdCopyFrom", "disabled_i");
-    
+
     configureCluster(numNodes).addConfig(configName, configDir).configure();
-    
+
     Map<String, String> collectionProperties = new LinkedHashMap<>();
     collectionProperties.put("config", "solrconfig.xml");
     collectionProperties.put("schema", "schema.xml");
@@ -91,10 +90,11 @@ public class SortByFunctionTest extends SolrCloudTestCase {
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
   }
-  
+
   @AfterClass
   private static void afterClass() throws Exception {
-    CLOUD_CLIENT.close(); CLOUD_CLIENT = null;
+    CLOUD_CLIENT.close();
+    CLOUD_CLIENT = null;
     for (HttpSolrClient client : CLIENTS) {
       client.close();
     }
@@ -116,9 +116,9 @@ public class SortByFunctionTest extends SolrCloudTestCase {
     assertNull(getRandClient(random()).commit().getException());
   }
 
-  /** 
-   * given query params and a list of uniqueKey values, asserts that documents 
-   * returned by the request match the list of ids and are in the specified order.
+  /**
+   * given query params and a list of uniqueKey values, asserts that documents returned by the
+   * request match the list of ids and are in the specified order.
    */
   public void assertSortedResults(SolrParams p, String... ids) throws Exception {
     QueryResponse rsp = getRandClient(random()).query(p);
@@ -131,51 +131,111 @@ public class SortByFunctionTest extends SolrCloudTestCase {
       i++;
     }
   }
-  
+
   public void test() throws Exception {
-    assertAdd(sdoc("id", "1", "x_td1", "0", "y_td1", "2", "w_td1", "25", "z_td1", "5", "f_t", "ipod"));
-    assertAdd(sdoc("id", "2", "x_td1", "2", "y_td1", "2", "w_td1", "15", "z_td1", "5", "f_t", "ipod other other other other"));
-    assertAdd(sdoc("id", "3", "x_td1", "3", "y_td1", "2", "w_td1", "55", "z_td1", "5", "f_t", "ipod other other other other other other other other"));
-    assertAdd(sdoc("id", "4", "x_td1", "4", "y_td1", "2", "w_td1", "45", "z_td1", "5", "f_t", "ipod other other other other other other"));
+    assertAdd(
+        sdoc("id", "1", "x_td1", "0", "y_td1", "2", "w_td1", "25", "z_td1", "5", "f_t", "ipod"));
+    assertAdd(
+        sdoc(
+            "id",
+            "2",
+            "x_td1",
+            "2",
+            "y_td1",
+            "2",
+            "w_td1",
+            "15",
+            "z_td1",
+            "5",
+            "f_t",
+            "ipod other other other other"));
+    assertAdd(
+        sdoc(
+            "id",
+            "3",
+            "x_td1",
+            "3",
+            "y_td1",
+            "2",
+            "w_td1",
+            "55",
+            "z_td1",
+            "5",
+            "f_t",
+            "ipod other other other other other other other other"));
+    assertAdd(
+        sdoc(
+            "id",
+            "4",
+            "x_td1",
+            "4",
+            "y_td1",
+            "2",
+            "w_td1",
+            "45",
+            "z_td1",
+            "5",
+            "f_t",
+            "ipod other other other other other other"));
     assertCommit();
 
-    assertSortedResults(params("fl", "id,score", "q", "f_t:ipod", "sort", "score desc"),
-                        "1", "2", "4", "3");
+    assertSortedResults(
+        params("fl", "id,score", "q", "f_t:ipod", "sort", "score desc"), "1", "2", "4", "3");
 
-    assertSortedResults(params("fl", "*,score", "q", "*:*", "sort", "sum(x_td1, y_td1) desc"),
-                        "4", "3", "2", "1");
+    assertSortedResults(
+        params("fl", "*,score", "q", "*:*", "sort", "sum(x_td1, y_td1) desc"), "4", "3", "2", "1");
 
-    assertSortedResults(params("fl", "*,score", "q", "*:*", "sort", "sum(x_td1, y_td1) asc"),
-                        "1", "2", "3", "4");
+    assertSortedResults(
+        params("fl", "*,score", "q", "*:*", "sort", "sum(x_td1, y_td1) asc"), "1", "2", "3", "4");
 
-    //the function is equal, w_td1 separates
-    assertSortedResults(params("q", "*:*", "fl", "id", "sort", "sum(z_td1, y_td1) asc, w_td1 asc"),
-                        "2", "1", "4", "3");
-
+    // the function is equal, w_td1 separates
+    assertSortedResults(
+        params("q", "*:*", "fl", "id", "sort", "sum(z_td1, y_td1) asc, w_td1 asc"),
+        "2",
+        "1",
+        "4",
+        "3");
   }
-  
-  public void testSortJoinDocFreq() throws Exception
-  {
-    assertAdd(sdoc("id", "1!4", "id_s1", "D", "links_mfacet", "A", "links_mfacet", "B", "links_mfacet", "C" ) );
-    assertAdd(sdoc("id", "1!3", "id_s1", "C", "links_mfacet", "A", "links_mfacet", "B" ) );
+
+  public void testSortJoinDocFreq() throws Exception {
+    assertAdd(
+        sdoc(
+            "id",
+            "1!4",
+            "id_s1",
+            "D",
+            "links_mfacet",
+            "A",
+            "links_mfacet",
+            "B",
+            "links_mfacet",
+            "C"));
+    assertAdd(sdoc("id", "1!3", "id_s1", "C", "links_mfacet", "A", "links_mfacet", "B"));
     assertCommit(); // Make sure it uses two readers
-    assertAdd(sdoc("id", "1!2", "id_s1", "B", "links_mfacet", "A" ) );
-    assertAdd(sdoc("id", "1!1", "id_s1", "A"  ) );
+    assertAdd(sdoc("id", "1!2", "id_s1", "B", "links_mfacet", "A"));
+    assertAdd(sdoc("id", "1!1", "id_s1", "A"));
     assertCommit();
 
-    assertSortedResults(params("q", "links_mfacet:B", "fl", "id", "sort", "id asc"),
-                        "1!3", "1!4");
-    
-    assertSortedResults(params("q", "*:*", "fl", "id", "sort", "joindf(id_s1, links_mfacet) desc"),
-                        "1!1", "1!2", "1!3", "1!4");
+    assertSortedResults(params("q", "links_mfacet:B", "fl", "id", "sort", "id asc"), "1!3", "1!4");
 
-    assertSortedResults(params("q", "*:*", "fl", "id", "sort", "joindf(id_s1, links_mfacet) asc"),
-                        "1!4", "1!3", "1!2", "1!1");
+    assertSortedResults(
+        params("q", "*:*", "fl", "id", "sort", "joindf(id_s1, links_mfacet) desc"),
+        "1!1",
+        "1!2",
+        "1!3",
+        "1!4");
+
+    assertSortedResults(
+        params("q", "*:*", "fl", "id", "sort", "joindf(id_s1, links_mfacet) asc"),
+        "1!4",
+        "1!3",
+        "1!2",
+        "1!1");
   }
 
   // nocommit: test explicit "sort=field(multivalued_str_field,min|max) asc|desc"
   // nocommit: test implicit "sort=multivalued_str_field asc|desc"
-  
+
   /**
    * The sort clauses to test in <code>testFieldSortSpecifiedAsFunction</code>.
    *
@@ -202,44 +262,79 @@ public class SortByFunctionTest extends SolrCloudTestCase {
     final long X = Y - 1L;
 
     // test is predicated on the idea that if long -> double converstion is happening under the hood
-    // then we lose precision in sorting; so lets sanity check that our JVM isn't doing something wacky
+    // then we lose precision in sorting; so lets sanity check that our JVM isn't doing something
+    // wacky
     // in converstion that violates the principle of the test
-    
-    assertEquals("WTF? small longs cast to double aren't equivalent?",
-                 (double)A, (double)B, 0.0D);
-    assertEquals("WTF? small longs cast to double aren't equivalent?",
-                 (double)A, (double)C, 0.0D);
-    
-    assertEquals("WTF? big longs cast to double aren't equivalent?",
-                 (double)Z, (double)Y, 0.0D);
-    assertEquals("WTF? big longs cast to double aren't equivalent?",
-                 (double)Z, (double)X, 0.0D);
-    
+
+    assertEquals(
+        "WTF? small longs cast to double aren't equivalent?", (double) A, (double) B, 0.0D);
+    assertEquals(
+        "WTF? small longs cast to double aren't equivalent?", (double) A, (double) C, 0.0D);
+
+    assertEquals("WTF? big longs cast to double aren't equivalent?", (double) Z, (double) Y, 0.0D);
+    assertEquals("WTF? big longs cast to double aren't equivalent?", (double) Z, (double) X, 0.0D);
+
     for (int i = 1; i <= 3; i++) {
       // inconsistent id structure to ensure lexigraphic/numeric id sort isn't a factor
-      assertAdd(sdoc("id", "99" + i, "primary_tl1", X, "secondary_tl1", i,
-                     "multi_l_dv", X, "multi_l_dv", A));
-      assertAdd(sdoc("id", i + "55", "primary_tl1", Y, "secondary_tl1", i,
-                     "multi_l_dv", Y, "multi_l_dv", B));
-      assertAdd(sdoc("id", "6" + i + "6", "primary_tl1", Z, "secondary_tl1", i,
-                     "multi_l_dv", Z, "multi_l_dv", C));
+      assertAdd(
+          sdoc(
+              "id",
+              "99" + i,
+              "primary_tl1",
+              X,
+              "secondary_tl1",
+              i,
+              "multi_l_dv",
+              X,
+              "multi_l_dv",
+              A));
+      assertAdd(
+          sdoc(
+              "id",
+              i + "55",
+              "primary_tl1",
+              Y,
+              "secondary_tl1",
+              i,
+              "multi_l_dv",
+              Y,
+              "multi_l_dv",
+              B));
+      assertAdd(
+          sdoc(
+              "id",
+              "6" + i + "6",
+              "primary_tl1",
+              Z,
+              "secondary_tl1",
+              i,
+              "multi_l_dv",
+              Z,
+              "multi_l_dv",
+              C));
     }
     assertCommit();
 
     // all of these sorts should result in the exact same order
     // min/max of a field is tested in TestSortByMinMaxFunction
     for (String primarySort : getFieldFunctionClausesToTest()) {
-      assertSortedResults(params("q", "*:*",
-                                 "sort", primarySort + " asc, secondary_tl1 asc"),
-                          "991", "992", "993",
-                          "155", "255", "355",
-                          "616", "626", "636");
+      assertSortedResults(
+          params("q", "*:*", "sort", primarySort + " asc, secondary_tl1 asc"),
+          "991",
+          "992",
+          "993",
+          "155",
+          "255",
+          "355",
+          "616",
+          "626",
+          "636");
     }
   }
-  
-  /** 
-   * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed 
-   * at a node in our cluster 
+
+  /**
+   * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
+   * in our cluster
    */
   public static SolrClient getRandClient(Random rand) {
     int numClients = CLIENTS.size();
@@ -247,12 +342,10 @@ public class SortByFunctionTest extends SolrCloudTestCase {
 
     return (idx == numClients) ? CLOUD_CLIENT : CLIENTS.get(idx);
   }
-  
+
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assert null != client.getDefaultCollection();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        ZkStateReader.from(client),
-                                                        true, true, 330);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
-
 }

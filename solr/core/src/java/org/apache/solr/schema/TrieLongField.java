@@ -26,7 +26,6 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
-import org.apache.solr.schema.NumericSortedSetFieldSource;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
@@ -66,7 +65,7 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
 
   @Override
   protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
-    
+
     return new NumericSortedSetFieldSource(f, choice, NumberType.LONG) {
       @Override
       public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
