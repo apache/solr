@@ -16,8 +16,6 @@
  */
 package org.apache.solr.rest;
 
-import static org.apache.solr.common.util.Utils.fromJSON;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
@@ -44,6 +42,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -388,7 +387,7 @@ public class RestManager {
       Iterator<ContentStream> iter = req.getContentStreams().iterator();
       if (iter.hasNext()) {
         try (Reader reader = iter.next().getReader()) {
-          return fromJSON(reader);
+          return Utils.fromJSON(reader);
         } catch (IOException ioExc) {
           throw new SolrException(ErrorCode.SERVER_ERROR, ioExc);
         }
