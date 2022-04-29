@@ -17,9 +17,78 @@
 
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
+import java.util.function.IntFunction;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.search.DocSet;
+
+/** constants used in facets package */
 public class Constants {
-  public static final SlotAcc.DevNullCountSlotAcc DEV_NULL_SLOT_ACC =
-      new SlotAcc.DevNullCountSlotAcc();
+  public static final SlotAcc.CountSlotAcc DEV_NULL_SLOT_ACC = new DevNullCountSlotAcc();
 
   private Constants() {}
+
+  /**
+   * This CountSlotAcc exists as a /dev/null sink for callers of collect(...) and other "write"-type
+   * methods. It should be used in contexts where "read"-type access methods will never be called.
+   */
+  private static class DevNullCountSlotAcc extends SlotAcc.CountSlotAcc {
+
+    public DevNullCountSlotAcc() {
+      super(null);
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      // No-op
+    }
+
+    @Override
+    public void reset() throws IOException {
+      // No-op
+    }
+
+    @Override
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext)
+        throws IOException {
+      // No-op
+    }
+
+    @Override
+    public void incrementCount(int slot, long count) {
+      // No-op
+    }
+
+    @Override
+    public void setNextReader(LeafReaderContext readerContext) throws IOException {
+      // No-op
+    }
+
+    @Override
+    public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext)
+        throws IOException {
+      return docs.size(); // dressed up no-op
+    }
+
+    @Override
+    public Object getValue(int slotNum) throws IOException {
+      throw new UnsupportedOperationException("not supported");
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      throw new UnsupportedOperationException("not supported");
+    }
+
+    @Override
+    public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
+      throw new UnsupportedOperationException("not supported");
+    }
+
+    @Override
+    public long getCount(int slot) {
+      throw new UnsupportedOperationException("not supported");
+    }
+  }
 }
