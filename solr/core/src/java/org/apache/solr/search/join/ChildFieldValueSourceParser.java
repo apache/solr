@@ -22,15 +22,12 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ToParentBlockJoinSortField;
-import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.WrappedFieldValueSource;
@@ -166,6 +163,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
       log.error("can't parse {}", fp.getString(), e);
       throw e;
     }
-    return new WrappedFieldValueSource(sf, new BlockJoinSortFieldValueSource(childFilter, parentFilter, sf));
+    return new WrappedFieldValueSource(
+        sf, new BlockJoinSortFieldValueSource(childFilter, parentFilter, sf));
   }
 }
