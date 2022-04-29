@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -1652,6 +1653,26 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         i1,
         "debug",
         "true");
+
+    // Grouping with child doc and childValue() function
+    SolrInputDocument parent = new SolrInputDocument("id", "1", "class_s1", "parent");
+    SolrInputDocument child = new SolrInputDocument("id", "2", "class_s1", "child", "value_s1", "abc123");
+    parent.addChildDocument(child);
+    indexDoc(parent);
+    commit();
+
+    // Distributed grouping with sort on a string field in child document
+    // Crashes with java.lang.ClassCastException: class java.lang.String cannot be cast to class org.apache.lucene.util.BytesRef
+    // during TopGroupsResultTransformer.serializeTopGroups()
+    // in org.apache.solr.schema.FieldType.marshalStringSortValue(
+    simpleQuery("seq0", "({!parent which='class_s1:parent' v='id:2'})",
+        "group.field", "id",
+        "group.limit", "1",
+        "group.sort", "childfield(value_s1,$seq0) desc",
+        "group", "true",
+        "indent", "true",
+        "q.op", "OR",
+        "q", "id:1 AND +({!parent which='class_s1:parent' v='value_s1:abc123'})");
   }
 
   private void simpleQuery(Object... queryParams) throws SolrServerException, IOException {
