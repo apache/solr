@@ -233,8 +233,8 @@ public class SortByFunctionTest extends SolrCloudTestCase {
         "1!1");
   }
 
-  // nocommit: test explicit "sort=field(multivalued_str_field,min|max) asc|desc"
-  // nocommit: test implicit "sort=multivalued_str_field asc|desc"
+  // TODO: test explicit "sort=field(multivalued_str_field,min|max) asc|desc"
+  // TODO: test implicit "sort=multivalued_str_field asc|desc"
 
   /**
    * The sort clauses to test in <code>testFieldSortSpecifiedAsFunction</code>.
