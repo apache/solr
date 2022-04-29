@@ -18,50 +18,55 @@ package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class MinMetric extends Metric {
-  
+
   private long longMin = Long.MAX_VALUE;
   private double doubleMin = Double.MAX_VALUE;
   private String columnName;
 
-  public MinMetric(String columnName){
+  public MinMetric(String columnName) {
     init("min", columnName);
   }
 
-  public MinMetric(StreamExpression expression, StreamFactory factory) throws IOException{
+  public MinMetric(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String functionName = expression.getFunctionName();
     String columnName = factory.getValueOperand(expression, 0);
-    
+
     // validate expression contains only what we want.
-    if(null == columnName){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expected %s(columnName)", expression, functionName));
+    if (null == columnName) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expected %s(columnName)",
+              expression,
+              functionName));
     }
-    if(1 != expression.getParameters().size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
+    if (1 != expression.getParameters().size()) {
+      throw new IOException(
+          String.format(Locale.ROOT, "Invalid expression %s - unknown operands found", expression));
     }
-    
-    init(functionName, columnName);    
+
+    init(functionName, columnName);
   }
-  
-  private void init(String functionName, String columnName){
+
+  private void init(String functionName, String columnName) {
     this.columnName = columnName;
     setFunctionName(functionName);
     setIdentifier(functionName, "(", columnName, ")");
   }
 
   public String[] getColumns() {
-    return new String[]{columnName};
+    return new String[] {columnName};
   }
 
   public Number getValue() {
-    if(longMin == Long.MAX_VALUE) {
+    if (longMin == Long.MAX_VALUE) {
       return doubleMin;
     } else {
       return longMin;
@@ -70,26 +75,26 @@ public class MinMetric extends Metric {
 
   public void update(Tuple tuple) {
     Object o = tuple.get(columnName);
-    if(o instanceof Double) {
+    if (o instanceof Double) {
       double d = (double) o;
       if (d < doubleMin) {
         doubleMin = d;
       }
-    } else if(o instanceof Float) {
+    } else if (o instanceof Float) {
       Float f = (Float) o;
       double d = f.doubleValue();
       if (d < doubleMin) {
         doubleMin = d;
       }
-    } else if(o instanceof Integer) {
-      Integer i = (Integer)o;
+    } else if (o instanceof Integer) {
+      Integer i = (Integer) o;
       long l = i.longValue();
-      if(l < longMin) {
+      if (l < longMin) {
         longMin = l;
       }
-    } else {
-      long l = (long)o;
-      if(l < longMin) {
+    } else if (o instanceof Long) {
+      long l = (long) o;
+      if (l < longMin) {
         longMin = l;
       }
     }

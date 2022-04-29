@@ -18,7 +18,7 @@
 
 <!--
      For more details about configurations options that may appear in
-     this file, see http://wiki.apache.org/solr/SolrConfigXml.
+     this file, see https://solr.apache.org/guide/configuring-solrconfig-xml.html.
 -->
 <config>
   <!-- In all configuration below, a prefix of "solr." for class names
@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>9.0.0</luceneMatchVersion>
+  <luceneMatchVersion>9.0</luceneMatchVersion>
 
   <!-- <lib/> directives can be used to instruct Solr to load any Jars
        identified and use them to resolve any "plugins" specified in
@@ -69,19 +69,18 @@
        If a 'dir' option (with or without a regex) is used and nothing
        is found that matches, a warning will be logged.
 
-       The examples below can be used to load some solr-contribs along
+       The examples below can be used to load some solr modules along
        with their external dependencies.
     -->
-  <lib dir="${solr.install.dir:../../../..}/contrib/extraction/lib" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-cell-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/extraction/lib" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/contrib/clustering/lib/" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-clustering-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/clustering/lib/" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/contrib/langid/lib/" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-langid-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/langid/lib/" regex=".*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/modules/ltr/lib/" regex=".*\.jar" />
+
+  <lib dir="${solr.install.dir:../../../..}/modules/scripting/lib/" regex=".*\.jar" />
 
   <!-- an exact 'path' can be used instead of a 'dir' to specify a
        specific jar file.  This will cause a serious error to be logged
@@ -212,7 +211,7 @@
                    'simple' is the default
 
          More details on the nuances of each LockFactory...
-         http://wiki.apache.org/lucene-java/AvailableLockFactories
+         https://cwiki.apache.org/confluence/display/lucene/AvailableLockFactories
     -->
     <lockType>${solr.lock.type:native}</lockType>
 
@@ -258,25 +257,6 @@
      <infoStream>true</infoStream>
   </indexConfig>
 
-
-  <!-- JMX
-
-       This example enables JMX if and only if an existing MBeanServer
-       is found, use this if you want to configure JMX through JVM
-       parameters. Remove this to disable exposing Solr configuration
-       and statistics to JMX.
-
-       For more details see http://wiki.apache.org/solr/SolrJmx
-    -->
-  <jmx />
-  <!-- If you want to connect to a particular server, specify the
-       agentId
-    -->
-  <!-- <jmx agentId="myAgent" /> -->
-  <!-- If you want to start a new MBeanServer, specify the serviceUrl -->
-  <!-- <jmx serviceUrl="service:jmx:rmi:///jndi/rmi://localhost:9999/solr"/>
-    -->
-
   <!-- The default high-performance update handler -->
   <updateHandler class="solr.DirectUpdateHandler2">
 
@@ -304,7 +284,7 @@
          Instead of enabling autoCommit, consider using "commitWithin"
          when adding documents.
 
-         http://wiki.apache.org/solr/UpdateXmlMessages
+         https://solr.apache.org/guide/indexing-with-update-handlers.html
 
          maxDocs - Maximum number of documents to add since the last
                    commit before automatically triggering a new commit.
@@ -379,11 +359,11 @@
   <query>
 
     <!-- Maximum number of clauses allowed when parsing a boolean query string.
-         
+
          This limit only impacts boolean queries specified by a user as part of a query string,
          and provides per-collection controls on how complex user specified boolean queries can
          be.  Query strings that specify more clauses then this will result in an error.
-         
+
          If this per-collection limit is greater then the global `maxBooleanClauses` limit
          specified in `solr.xml`, it will have no effect, as that setting also limits the size
          of user specified boolean queries.
@@ -420,7 +400,7 @@
            initialSize - the initial capacity (number of entries) of
                the cache.  (see java.util.HashMap)
            autowarmCount - the number of entries to prepopulate from
-               and old cache.
+               an old cache.
            maxRamMB - the maximum amount of RAM (in MB) that this cache is allowed
                       to occupy. Note that when this option is specified, the size
                       and initialSize parameters are ignored.
@@ -468,18 +448,18 @@
     <!--
        <fieldValueCache size="512"
                         autowarmCount="128"
-                        showItems="32" />
+                        />
       -->
 
     <!-- Feature Values Cache
 
-         Cache used by the Learning To Rank (LTR) contrib module.
+         Cache used by the Learning To Rank (LTR) module.
 
          You will need to set the solr.ltr.enabled system property
          when running solr to run with ltr enabled:
            -Dsolr.ltr.enabled=true
 
-         https://lucene.apache.org/solr/guide/learning-to-rank.html
+         https://solr.apache.org/guide/learning-to-rank.html
       -->
     <cache enable="${solr.ltr.enabled:false}" name="QUERY_DOC_FV"
            class="solr.CaffeineCache"
@@ -656,6 +636,9 @@
          enableRemoteStreaming - enables use of the stream.file
          and stream.url parameters for specifying remote streams.
 
+         enableStreamBody - This attribute controls whether streaming
+         content from the HTTP parameter stream.body is allowed.
+
          multipartUploadLimitInKB - specifies the max size (in KiB) of
          Multipart File Uploads that Solr will allow in a Request.
 
@@ -674,12 +657,12 @@
          *** WARNING ***
          Before enabling remote streaming, you should make sure your
          system has authentication enabled.
-
-    <requestParsers enableRemoteStreaming="false"
+       -->
+    <requestParsers enableRemoteStreaming="true"
+                    enableStreamBody="true"
                     multipartUploadLimitInKB="-1"
                     formdataUploadLimitInKB="-1"
                     addHttpRequestToContext="false"/>
-      -->
 
     <!-- HTTP Caching
 
@@ -738,7 +721,7 @@
 
   <!-- Request Handlers
 
-       https://lucene.apache.org/solr/guide/requesthandlers-and-searchcomponents-in-solrconfig.html
+       https://solr.apache.org/guide/requesthandlers-and-searchcomponents-in-solrconfig.html
 
        Incoming queries will be dispatched to a specific handler by name based on the path specified in the request.
 
@@ -757,7 +740,6 @@
      <lst name="defaults">
        <str name="echoParams">explicit</str>
        <int name="rows">10</int>
-       <bool name="preferLocalShards">false</bool>
      </lst>
     <!-- "appends" example to ensure only products in stock are returned when using this Search Handler -->
     <!--
@@ -807,7 +789,7 @@
 
   <!-- Solr Cell Update Request Handler
 
-       https://lucene.apache.org/solr/guide/uploading-data-with-solr-cell-using-apache-tika.html
+       https://solr.apache.org/guide/indexing-with-tika.html
 
     -->
   <requestHandler name="/update/extract"
@@ -824,12 +806,23 @@
     </lst>
   </requestHandler>
 
+  <!-- XSLT Update Request Handler
+
+       https://solr.apache.org/guide/indexing-with-update-handlers.html#using-xslt-to-transform-xml-index-updates
+
+    -->
+  <requestHandler name="/update/xslt"
+                  startup="lazy"
+                  class="solr.scripting.xslt.XSLTUpdateRequestHandler" >
+    <int name="xsltCacheLifetimeSeconds">5</int>
+  </requestHandler>
+
    <!-- Spell Check
 
         The spell check component can return a list of alternative spelling
         suggestions.
 
-        https://lucene.apache.org/solr/guide/spell-checking.html
+        https://solr.apache.org/guide/spell-checking.html
      -->
   <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
 
@@ -923,7 +916,7 @@
        IN OTHER WORDS, THERE IS REALLY GOOD CHANCE THE SETUP BELOW IS
        NOT WHAT YOU WANT FOR YOUR PRODUCTION SYSTEM!
 
-       See https://lucene.apache.org/solr/guide/spell-checking.html for details
+       See https://solr.apache.org/guide/spell-checking.html for details
        on the request parameters.
     -->
   <requestHandler name="/spell" class="solr.SearchHandler" startup="lazy">
@@ -954,7 +947,7 @@
        As with the rest of this solrconfig.xml file, the configuration of this component is purely
        an example that applies specifically to this configset and example documents.
 
-       See: https://lucene.apache.org/solr/guide/suggester.html
+       See: https://solr.apache.org/guide/suggester.html
     -->
   <searchComponent name="suggest" class="solr.SuggestComponent">
     <lst name="suggester">
@@ -982,7 +975,7 @@
 
   <!-- Term Vector Component
 
-       https://lucene.apache.org/solr/guide/the-term-vector-component.html
+       https://solr.apache.org/guide/the-term-vector-component.html
     -->
   <searchComponent name="tvComponent" class="solr.TermVectorComponent"/>
 
@@ -1002,81 +995,76 @@
     </arr>
   </requestHandler>
 
-  <!-- Clustering Component
+  <!-- Search results clustering component
 
        You'll need to set the solr.clustering.enabled system property
        when running solr to run with clustering enabled:
        -Dsolr.clustering.enabled=true
 
-       https://lucene.apache.org/solr/guide/result-clustering.html
+       https://solr.apache.org/guide/result-clustering.html
     -->
   <searchComponent name="clustering"
                    enable="${solr.clustering.enabled:false}"
                    class="solr.clustering.ClusteringComponent" >
     <!--
-    Declaration of "engines" (clustering algorithms).
+    Declaration of "engines" (named sets of configuration parameters).
 
-    The open source algorithms from Carrot2.org project:
-      * org.carrot2.clustering.lingo.LingoClusteringAlgorithm
-      * org.carrot2.clustering.stc.STCClusteringAlgorithm
-      * org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm
+    Various algorithms are available (names are loaded via service provider
+    extension point). The open source algorithms from Carrot2.org project:
+      * Lingo
+      * STC
+      * Bisecting K-Means
 
-    Commercial algorithm Lingo3G (needs to be installed separately):
-      * com.carrotsearch.lingo3g.Lingo3GClusteringAlgorithm
+    Commercial algorithm Lingo3G from Carrot Search (needs to be installed separately):
+      * Lingo3G
     -->
 
     <lst name="engine">
       <str name="name">lingo3g</str>
       <bool name="optional">true</bool>
-      <str name="carrot.algorithm">com.carrotsearch.lingo3g.Lingo3GClusteringAlgorithm</str>
-      <str name="carrot.resourcesDir">clustering/carrot2</str>
+      <str name="clustering.algorithm">Lingo3G</str>
+      <str name="clustering.fields">name, features</str>
+      <bool name="clustering.includeOtherTopics">true</bool>
+      <str name="clustering.language">English</str>
     </lst>
 
     <lst name="engine">
       <str name="name">lingo</str>
-      <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
-      <str name="carrot.resourcesDir">clustering/carrot2</str>
+      <str name="clustering.algorithm">Lingo</str>
+      <str name="clustering.fields">name, features</str>
+      <bool name="clustering.includeOtherTopics">true</bool>
+      <str name="clustering.language">English</str>
     </lst>
 
     <lst name="engine">
       <str name="name">stc</str>
-      <str name="carrot.algorithm">org.carrot2.clustering.stc.STCClusteringAlgorithm</str>
-      <str name="carrot.resourcesDir">clustering/carrot2</str>
+      <str name="clustering.algorithm">STC</str>
+      <str name="clustering.fields">name, features</str>
+      <bool name="clustering.includeOtherTopics">true</bool>
+      <str name="clustering.language">English</str>
     </lst>
 
     <lst name="engine">
       <str name="name">kmeans</str>
-      <str name="carrot.algorithm">org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm</str>
-      <str name="carrot.resourcesDir">clustering/carrot2</str>
+      <str name="clustering.algorithm">Bisecting K-Means</str>
+      <str name="clustering.fields">name, features</str>
+      <bool name="clustering.includeOtherTopics">true</bool>
+      <str name="clustering.language">English</str>
     </lst>
   </searchComponent>
 
   <!-- A request handler for demonstrating the clustering component.
-       This is meant as an example.
-       In reality you will likely want to add the component to your
-       already specified request handlers.
+       This is meant as an example - in reality you will likely want
+       to add the clustering component to your default request handler.
     -->
   <requestHandler name="/clustering"
                   startup="lazy"
                   enable="${solr.clustering.enabled:false}"
                   class="solr.SearchHandler">
     <lst name="defaults">
+      <!-- Enable clustering component by default. -->
       <bool name="clustering">true</bool>
-      <bool name="clustering.results">true</bool>
-      <!-- Field name with the logical "title" of a each document (optional) -->
-      <str name="carrot.title">name</str>
-      <!-- Field name with the logical "URL" of a each document (optional) -->
-      <str name="carrot.url">id</str>
-      <!-- Field name with the logical "content" of a each document (optional) -->
-      <str name="carrot.snippet">features</str>
-      <!-- Apply highlighter to the title/ content and use this for clustering. -->
-      <bool name="carrot.produceSummary">true</bool>
-      <!-- the maximum number of labels per cluster -->
-      <!--<int name="carrot.numDescriptions">5</int>-->
-      <!-- produce sub clusters -->
-      <bool name="carrot.outputSubClusters">false</bool>
 
-      <!-- Configure the remaining request handler parameters. -->
       <str name="defType">edismax</str>
       <str name="qf">
         text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
@@ -1085,6 +1073,8 @@
       <str name="rows">100</str>
       <str name="fl">*,score</str>
     </lst>
+
+    <!-- Append the clustering component at the end of the search handler's list of components. -->
     <arr name="last-components">
       <str>clustering</str>
     </arr>
@@ -1093,7 +1083,7 @@
 
   <!-- Query Elevation Component
 
-       https://lucene.apache.org/solr/guide/the-query-elevation-component.html
+       https://solr.apache.org/guide/query-elevation-component.html
 
        a search component that enables you to configure the top
        results for a given query regardless of the normal lucene
@@ -1117,9 +1107,11 @@
 
   <!-- Highlighting Component
 
-       https://lucene.apache.org/solr/guide/highlighting.html
+       https://solr.apache.org/guide/highlighting.html
     -->
   <searchComponent class="solr.HighlightComponent" name="highlight">
+    <!-- note: the hl.method=unified highlighter is not configured here; it's completely configured
+via parameters.  The below configuration supports hl.method=original and fastVector. -->
     <highlighting>
       <!-- Configure the standard fragmenter -->
       <!-- This could most likely be commented out in the "default" case -->
@@ -1222,7 +1214,7 @@
   </searchComponent>
 
   <!-- Update Request Processors
-       https://lucene.apache.org/solr/guide/update-request-processors.html
+       https://solr.apache.org/guide/update-request-processors.html
 
        Chains or individual Update Request Processor Factories can be declared and referenced
        to preprocess documents sent to Update Request Handlers.
@@ -1241,7 +1233,6 @@
        <processor class="solr.processor.SignatureUpdateProcessorFactory">
          <bool name="enabled">true</bool>
          <str name="signatureField">id</str>
-         <bool name="overwriteDupes">false</bool>
          <str name="fields">name,features,cat</str>
          <str name="signatureClass">solr.processor.Lookup3Signature</str>
        </processor>
@@ -1253,13 +1244,13 @@
   <!-- Language identification
 
        This example update request process chain identifies the language of the incoming
-       documents using the langid contrib. The detected language is
+       documents using the langid module. The detected language is
        written to field language_s. No field name mapping is done.
        The fields used for detection are text, title, subject and description,
        making this example suitable for detecting languages form full-text
        rich documents injected via ExtractingRequestHandler.
 
-       See more about langId at https://lucene.apache.org/solr/guide/detecting-languages-during-indexing.html
+       See more about langId at https://solr.apache.org/guide/language-detection.html
     -->
     <!--
      <updateRequestProcessorChain name="langid">
@@ -1275,25 +1266,26 @@
 
   <!-- Script update processor
 
-    This example hooks in an update processor implemented using JavaScript.
+    This example hooks in an update processor implemented using JavaScript and demonstrates
+    how to pass in custom parameters.
 
-    See more about the script update processor at http://wiki.apache.org/solr/ScriptUpdateProcessor
+    See more about script update processor at https://solr.apache.org/guide/script-update-processor.html
   -->
   <!--
-    <updateRequestProcessorChain name="script">
-      <processor class="solr.StatelessScriptUpdateProcessorFactory">
-        <str name="script">update-script.js</str>
-        <lst name="params">
-          <str name="config_param">example config parameter</str>
-        </lst>
-      </processor>
-      <processor class="solr.RunUpdateProcessorFactory" />
-    </updateRequestProcessorChain>
+  <updateRequestProcessorChain name="script">
+    <processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory">
+      <str name="script">update-script.js</str>
+      <lst name="params">
+        <str name="config_param">example config parameter</str>
+      </lst>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
   -->
 
   <!-- Response Writers
 
-       http://wiki.apache.org/solr/QueryResponseWriter
+       https://solr.apache.org/guide/response-writers.html
 
        Request responses will be written using the writer specified by
        the 'wt' request parameter matching the name of a registered
@@ -1318,27 +1310,21 @@
      <queryResponseWriter name="schema.xml" class="solr.SchemaXmlResponseWriter"/>
     -->
 
-  <!-- Overriding the content-type of the response writer.
-   -->
-  <queryResponseWriter name="json" class="solr.JSONResponseWriter">
-     <!-- For the purposes of the tutorial, JSON responses are written as
-      plain text so that they are easy to read in *any* browser.
-      If you expect a MIME type of "application/json" just remove this override.
-     -->
-    <str name="content-type">text/plain; charset=UTF-8</str>
-  </queryResponseWriter>
-
   <!-- XSLT response writer transforms the XML output by any xslt file found
-       in Solr's conf/xslt directory.  Changes to xslt files are checked for
-       every xsltCacheLifetimeSeconds.
-    -->
-  <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter">
+       in Solr's conf/xslt directory.  Changes to xslt files are checked
+       every xsltCacheLifetimeSeconds.  This is part of the Scripting module.
+
+       See more about this response writer at https://solr.apache.org/guide/response-writers.html#xslt-response-writer
+  -->
+  <queryResponseWriter name="xslt"
+                          startup="lazy"
+                          class="solr.scripting.xslt.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
   </queryResponseWriter>
 
   <!-- Query Parsers
 
-       https://lucene.apache.org/solr/guide/query-syntax-and-parsing.html
+       https://solr.apache.org/guide/query-syntax-and-parsing.html
 
        Multiple QParserPlugins can be registered by name, and then
        used in either the "defType" param for the QueryComponent (used
@@ -1351,7 +1337,7 @@
 
   <!-- Function Parsers
 
-       http://wiki.apache.org/solr/FunctionQuery
+       https://solr.apache.org/guide/function-queries.html
 
        Multiple ValueSourceParsers can be registered by name, and then
        used as function names when using the "func" QParser.
@@ -1368,14 +1354,14 @@
         when running solr to run with ltr enabled:
           -Dsolr.ltr.enabled=true
 
-        https://lucene.apache.org/solr/guide/learning-to-rank.html
+        https://solr.apache.org/guide/learning-to-rank.html
 
         Query parser is used to rerank top docs with a provided model
     -->
   <queryParser enable="${solr.ltr.enabled:false}" name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin"/>
 
   <!-- Document Transformers
-       http://wiki.apache.org/solr/DocTransformers
+       https://solr.apache.org/guide/document-transformers.html
     -->
   <!--
      Could be something like:
@@ -1409,10 +1395,9 @@
       when running solr to run with ltr enabled:
         -Dsolr.ltr.enabled=true
 
-      https://lucene.apache.org/solr/guide/learning-to-rank.html
+      https://solr.apache.org/guide/learning-to-rank.html
       -->
     <transformer enable="${solr.ltr.enabled:false}" name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
       <str name="fvCacheName">QUERY_DOC_FV</str>
     </transformer>
-
 </config>

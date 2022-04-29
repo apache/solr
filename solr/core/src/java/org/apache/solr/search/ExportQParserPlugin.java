@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
@@ -43,22 +42,24 @@ public class ExportQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "xport";
 
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
     return new ExportQParser(qstr, localParams, params, request);
   }
 
   public class ExportQParser extends QParser {
-    
-    public ExportQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
+
+    public ExportQParser(
+        String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
       super(qstr, localParams, params, request);
     }
-    
+
     public Query parse() throws SyntaxError {
       try {
-          return new ExportQuery(localParams, params, req);
-        } catch (Exception e) {
-          throw new SyntaxError(e.getMessage(), e);
-        }
+        return new ExportQuery(localParams, params, req);
+      } catch (Exception e) {
+        throw new SyntaxError(e.getMessage(), e);
+      }
     }
   }
 
@@ -82,42 +83,37 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException{
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       return mainQuery.createWeight(searcher, scoreMode, boost);
     }
 
     public Query rewrite(IndexReader reader) throws IOException {
       Query q = mainQuery.rewrite(reader);
-      if(q == mainQuery) {
+      if (q == mainQuery) {
         return super.rewrite(reader);
       } else {
         return clone().wrap(q);
       }
     }
 
-    @SuppressWarnings({"rawtypes"})
-    public TopDocsCollector getTopDocsCollector(int len,
-                                                QueryCommand cmd,
-                                                IndexSearcher searcher) throws IOException {
+    public TopDocsCollector<ScoreDoc> getTopDocsCollector(
+        int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
       int leafCount = searcher.getTopReaderContext().leaves().size();
       FixedBitSet[] sets = new FixedBitSet[leafCount];
       return new ExportCollector(sets);
     }
 
     public int hashCode() {
-      return classHash() + 
-          31 * id.hashCode() +
-          31 * Objects.hash(mainQuery);
+      return classHash() + 31 * id.hashCode() + 31 * Objects.hash(mainQuery);
     }
 
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
+      return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
-    
+
     private boolean equalsTo(ExportQuery other) {
-      return Objects.equals(id, other.id) &&
-             Objects.equals(mainQuery, other.mainQuery);
+      return Objects.equals(id, other.id) && Objects.equals(mainQuery, other.mainQuery);
     }
 
     public String toString(String s) {
@@ -129,21 +125,18 @@ public class ExportQParserPlugin extends QParserPlugin {
       visitor.visitLeaf(this);
     }
 
-    public ExportQuery() {
+    public ExportQuery() {}
 
-    }
-    
-    public ExportQuery(SolrParams localParams, SolrParams params, SolrQueryRequest request) throws IOException {
+    public ExportQuery(SolrParams localParams, SolrParams params, SolrQueryRequest request)
+        throws IOException {
       id = new Object();
     }
   }
-  
-  @SuppressWarnings({"rawtypes"})
-  private static class ExportCollector extends TopDocsCollector  {
+
+  private static class ExportCollector extends TopDocsCollector<ScoreDoc> {
 
     private FixedBitSet[] sets;
 
-    @SuppressWarnings({"unchecked"})
     public ExportCollector(FixedBitSet[] sets) {
       super(null);
       this.sets = sets;
@@ -154,12 +147,12 @@ public class ExportQParserPlugin extends QParserPlugin {
       final FixedBitSet set = new FixedBitSet(context.reader().maxDoc());
       this.sets[context.ord] = set;
       return new LeafCollector() {
-        
+
         @Override
         public void setScorer(Scorable scorer) throws IOException {}
-        
+
         @Override
-        public void collect(int docId) throws IOException{
+        public void collect(int docId) throws IOException {
           ++totalHits;
           set.set(docId);
         }
@@ -168,24 +161,22 @@ public class ExportQParserPlugin extends QParserPlugin {
 
     private ScoreDoc[] getScoreDocs(int howMany) {
       ScoreDoc[] docs = new ScoreDoc[Math.min(totalHits, howMany)];
-      for(int i=0; i<docs.length; i++) {
-        docs[i] = new ScoreDoc(i,0);
+      for (int i = 0; i < docs.length; i++) {
+        docs[i] = new ScoreDoc(i, 0);
       }
 
       return docs;
     }
 
-    @SuppressWarnings({"unchecked"})
     public TopDocs topDocs(int start, int howMany) {
 
-      assert(sets != null);
+      assert (sets != null);
 
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
 
       SolrQueryRequest req = null;
-      if(info != null && ((req = info.getReq()) != null)) {
-        @SuppressWarnings({"rawtypes"})
-        Map context = req.getContext();
+      if (info != null && ((req = info.getReq()) != null)) {
+        Map<Object, Object> context = req.getContext();
         context.put("export", sets);
         context.put("totalHits", totalHits);
       }
@@ -200,5 +191,4 @@ public class ExportQParserPlugin extends QParserPlugin {
       return ScoreMode.COMPLETE_NO_SCORES;
     }
   }
-
 }

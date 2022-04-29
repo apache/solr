@@ -21,15 +21,17 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Locale;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.payloads.FloatEncoder;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.IntegerEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.MatchOperation;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
+import org.apache.lucene.queries.spans.SpanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -45,7 +47,8 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
 
     return new QParser(qstr, localParams, params, req) {
       @Override
@@ -53,6 +56,14 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
         String field = localParams.get(QueryParsing.F);
         String value = localParams.get(QueryParsing.V);
         String p = localParams.get("payloads");
+        // payloads and op parameter are probably mutually exclusive. we could consider making a
+        // different query not a span payload check query, but something that just operates on
+        // payloads without the span?
+        String strOp = localParams.get("op");
+        MatchOperation op = MatchOperation.EQ;
+        if (strOp != null) {
+          op = MatchOperation.valueOf(strOp.toUpperCase(Locale.ROOT));
+        }
 
         if (field == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'f' not specified");
@@ -81,29 +92,34 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
 
         PayloadEncoder encoder = null;
         String e = PayloadUtils.getPayloadEncoder(ft);
-        if ("float".equals(e)) {    // TODO: centralize this string->PayloadEncoder logic (see DelimitedPayloadTokenFilterFactory)
+        PayloadType payloadType = null;
+        if ("float".equals(e)) {
+          // TODO: centralize this string->PayloadEncoder logic (see
+          // DelimitedPayloadTokenFilterFactory)
           encoder = new FloatEncoder();
+          payloadType = PayloadType.FLOAT;
         } else if ("integer".equals(e)) {
           encoder = new IntegerEncoder();
+          payloadType = PayloadType.INT;
         } else if ("identity".equals(e)) {
           encoder = new IdentityEncoder();
+          payloadType = PayloadType.STRING;
         }
 
         if (encoder == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid encoder: " + e + " for field: " + field);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "invalid encoder: " + e + " for field: " + field);
         }
 
         List<BytesRef> payloads = new ArrayList<>();
-        String[] rawPayloads = p.split(" ");  // since payloads (most likely) came in whitespace delimited, just split
+        // since payloads (most likely) came in whitespace delimited, just split
+        String[] rawPayloads = p.split(" ");
         for (String rawPayload : rawPayloads) {
-          if (rawPayload.length() > 0)
-            payloads.add(encoder.encode(rawPayload.toCharArray()));
+          if (rawPayload.length() > 0) payloads.add(encoder.encode(rawPayload.toCharArray()));
         }
-
-        return new SpanPayloadCheckQuery(query, payloads);
+        return new SpanPayloadCheckQuery(query, payloads, payloadType, op);
       }
     };
-
-
   }
 }

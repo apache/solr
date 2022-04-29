@@ -17,13 +17,11 @@
 package org.apache.solr.common.cloud;
 
 import java.util.List;
-
 import org.apache.zookeeper.data.ACL;
 
 /**
- * {@link ZkACLProvider} capable of returning a different set of
- * {@link ACL}s for security-related znodes (default: subtree under /security)
- * vs non-security-related znodes.
+ * {@link ZkACLProvider} capable of returning a different set of {@link ACL}s for security-related
+ * znodes (default: subtree under /security and security.json) vs non-security-related znodes.
  */
 public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
   public static final String SECURITY_ZNODE_PATH = "/security";
@@ -31,9 +29,8 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
   private List<ACL> nonSecurityACLsToAdd;
   private List<ACL> securityACLsToAdd;
 
-
   @Override
-  public List<ACL> getACLsToAdd(String zNodePath) {
+  public final List<ACL> getACLsToAdd(String zNodePath) {
     if (isSecurityZNodePath(zNodePath)) {
       return getSecurityACLsToAdd();
     } else {
@@ -42,11 +39,10 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
   }
 
   protected boolean isSecurityZNodePath(String zNodePath) {
-    if (zNodePath != null
-        && (zNodePath.equals(SECURITY_ZNODE_PATH) || zNodePath.startsWith(SECURITY_ZNODE_PATH + "/"))) {
-      return true;
-    }
-    return false;
+    return zNodePath != null
+        && (zNodePath.equals(ZkStateReader.SOLR_SECURITY_CONF_PATH)
+            || zNodePath.equals(SECURITY_ZNODE_PATH)
+            || zNodePath.startsWith(SECURITY_ZNODE_PATH + "/"));
   }
 
   /**

@@ -17,32 +17,30 @@
 package org.apache.solr.util.plugin;
 
 import java.util.Map;
-
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.util.DOMUtil;
-import org.w3c.dom.Node;
 
 /**
- *
  * @since solr 1.3
  */
-public class NamedListPluginLoader<T extends NamedListInitializedPlugin> extends AbstractPluginLoader<T> 
-{
-  private final Map<String,T> registry;
-  
+public class NamedListPluginLoader<T extends NamedListInitializedPlugin>
+    extends AbstractPluginLoader<T> {
+  private final Map<String, T> registry;
+
   public NamedListPluginLoader(String name, Class<T> pluginClassType, Map<String, T> map) {
     super(name, pluginClassType);
     registry = map;
   }
 
   @Override
-  protected void init(T plugin,Node node) throws Exception {
-    plugin.init( DOMUtil.childNodesToNamedList(node) );
+  protected void init(T plugin, ConfigNode node) throws Exception {
+    plugin.init(DOMUtil.childNodesToNamedList(node));
   }
 
   @Override
   protected T register(String name, T plugin) throws Exception {
-    if( registry != null ) {
-      return registry.put( name, plugin );
+    if (registry != null) {
+      return registry.put(name, plugin);
     }
     return null;
   }

@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.response;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.util.NamedList;
 
-/**
- * Encapsulates responses from ClusteringComponent
- */
+/** Encapsulates responses from ClusteringComponent */
 public class ClusteringResponse {
-  private static final String CLUSTERS_NODE = "clusters";
-  private static final String LABELS_NODE = "labels";
-  private static final String DOCS_NODE = "docs";
-  private static final String SCORE_NODE = "score";
-  private static final String IS_OTHER_TOPICS = "other-topics";
+  public static final String CLUSTERS_NODE = "clusters";
+  public static final String LABELS_NODE = "labels";
+  public static final String DOCS_NODE = "docs";
+  public static final String SCORE_NODE = "score";
+  public static final String IS_OTHER_TOPICS = "other-topics";
+
   private List<Cluster> clusters;
 
   @SuppressWarnings("unchecked")
@@ -45,21 +44,22 @@ public class ClusteringResponse {
       for (Map.Entry<String, ?> e : clusterNode) {
         switch (e.getKey()) {
           case LABELS_NODE:
-            labelList = (List<String>) e.getValue(); 
+            labelList = (List<String>) e.getValue();
             break;
 
           case DOCS_NODE:
-            docIdList = (List<String>) e.getValue(); 
+            docIdList = (List<String>) e.getValue();
             break;
-            
+
           case SCORE_NODE:
-            score = (Double) e.getValue();
+            score = ((Number) e.getValue()).doubleValue();
             break;
 
           case CLUSTERS_NODE:
-            subclusters = new ClusteringResponse((List<NamedList<Object>>) e.getValue()).getClusters();
+            subclusters =
+                new ClusteringResponse((List<NamedList<Object>>) e.getValue()).getClusters();
             break;
-            
+
           case IS_OTHER_TOPICS:
             otherTopics = (Boolean) e.getValue();
             break;
@@ -73,5 +73,4 @@ public class ClusteringResponse {
   public List<Cluster> getClusters() {
     return clusters;
   }
-
 }

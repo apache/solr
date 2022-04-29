@@ -16,15 +16,12 @@
  */
 package org.apache.solr.handler.component;
 
-
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.After;
 import org.junit.Test;
 
-/**
- * SOLR-1730, tests what happens when a component fails to initialize properly
- *
- **/
-public class BadComponentTest extends SolrTestCaseJ4{
+/** SOLR-1730, tests what happens when a component fails to initialize properly */
+public class BadComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testBadElevate() throws Exception {
     try {
@@ -37,5 +34,10 @@ public class BadComponentTest extends SolrTestCaseJ4{
       System.clearProperty("elevate.file");
       resetExceptionIgnores();
     }
+  }
+
+  @After
+  public void deleteCoreThatFailedToInit() throws Exception {
+    deleteCore();
   }
 }

@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.ml.distance.DistanceMeasure;
 import org.apache.commons.math3.util.Precision;
@@ -30,11 +29,14 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class CosineDistanceEvaluator extends RecursiveEvaluator {
   protected static final long serialVersionUID = 1L;
 
-  public CosineDistanceEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public CosineDistanceEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
-  public CosineDistanceEvaluator(StreamExpression expression, StreamFactory factory, List<String> ignoredNamedParameters) throws IOException{
+  public CosineDistanceEvaluator(
+      StreamExpression expression, StreamFactory factory, List<String> ignoredNamedParameters)
+      throws IOException {
     super(expression, factory, ignoredNamedParameters);
   }
 
@@ -54,7 +56,7 @@ public class CosineDistanceEvaluator extends RecursiveEvaluator {
     private static final long serialVersionUID = -9108154600539125566L;
 
     public double compute(double[] v1, double[] v2) throws DimensionMismatchException {
-      return Precision.round(1-Math.abs(CosineSimilarityEvaluator.cosineSimilarity(v1, v2)), 8);
+      return Precision.round(1 - Math.abs(CosineSimilarityEvaluator.cosineSimilarity(v1, v2)), 8);
     }
   }
 }

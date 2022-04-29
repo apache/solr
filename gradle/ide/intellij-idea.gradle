@@ -29,6 +29,11 @@ allprojects {
 
   idea {
     module {
+      /* These are intentionally different from the standard Gradle paths.
+         When using the internal IntelliJ compiler instead of delegating to
+         the Gradle compiler, using the same directory can lead to strange
+         locking and staleness issues (esp Windows).
+       */
       outputDir file('build/idea/classes/main')
       testOutputDir file('build/idea/classes/test')
       downloadSources = true

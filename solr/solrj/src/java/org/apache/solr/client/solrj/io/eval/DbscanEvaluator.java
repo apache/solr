@@ -19,29 +19,26 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-
 import org.apache.commons.math3.ml.clustering.Cluster;
+import org.apache.commons.math3.ml.clustering.Clusterable;
+import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
 import org.apache.commons.math3.ml.distance.DistanceMeasure;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.commons.math3.ml.clustering.Clusterable;
-import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-
-  public DbscanEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public DbscanEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object doWork(Object... values) throws IOException {
 
     Matrix matrix = null;
@@ -49,49 +46,47 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
     int minPoints = 1;
     DistanceMeasure distanceMeasure = new EuclideanDistance();
 
-    if(values.length < 3 || values.length > 4) {
+    if (values.length < 3 || values.length > 4) {
       throw new IOException("The dbscan scan function requires 3 or 4 parameters.");
     }
 
-    if(values[0] instanceof Matrix) {
-      matrix = (Matrix)values[0];
+    if (values[0] instanceof Matrix) {
+      matrix = (Matrix) values[0];
     } else {
       throw new IOException("The first parameter for dbscan should be the observation matrix.");
     }
 
-    if(values[1] instanceof Number) {
-      e = ((Number)values[1]).doubleValue();
+    if (values[1] instanceof Number) {
+      e = ((Number) values[1]).doubleValue();
     } else {
       throw new IOException("The second parameter for dbscan should be e.");
     }
 
-    if(values[2] instanceof Number) {
-      minPoints = ((Number)values[2]).intValue();
+    if (values[2] instanceof Number) {
+      minPoints = ((Number) values[2]).intValue();
     } else {
       throw new IOException("The third parameter for dbscan should be minPoints.");
     }
 
-    if(values.length > 3) {
-      distanceMeasure = (DistanceMeasure)values[3];
+    if (values.length > 3) {
+      distanceMeasure = (DistanceMeasure) values[3];
     }
 
-    @SuppressWarnings({"rawtypes"})
-    DBSCANClusterer<ClusterPoint> dbscan = new DBSCANClusterer(e, minPoints, distanceMeasure);
+    DBSCANClusterer<ClusterPoint> dbscan = new DBSCANClusterer<>(e, minPoints, distanceMeasure);
     List<ClusterPoint> points = new ArrayList<>();
     double[][] data = matrix.getData();
     List<String> ids = matrix.getRowLabels();
 
-    for(int i=0; i<data.length; i++) {
+    for (int i = 0; i < data.length; i++) {
       double[] vec = data[i];
-      if(ids != null) {
+      if (ids != null) {
         points.add(new ClusterPoint(ids.get(i), vec));
       } else {
         points.add(new ClusterPoint(Integer.toString(i), vec));
       }
     }
 
-    @SuppressWarnings({"rawtypes"})
-    Map fields = new HashMap();
+    Map<String, Object> fields = new HashMap<>();
 
     fields.put("e", e);
     fields.put("minPoints", minPoints);
@@ -124,9 +119,10 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
     private List<String> columnLabels;
     private List<Cluster<ClusterPoint>> clusters;
 
-    public ClusterTuple(@SuppressWarnings({"rawtypes"})Map fields,
-                        List<Cluster<ClusterPoint>> clusters,
-                        List<String> columnLabels) {
+    public ClusterTuple(
+        Map<String, Object> fields,
+        List<Cluster<ClusterPoint>> clusters,
+        List<String> columnLabels) {
       super(fields);
       this.clusters = clusters;
       this.columnLabels = columnLabels;
@@ -141,4 +137,3 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
     }
   }
 }
-

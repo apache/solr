@@ -88,7 +88,7 @@ public class NumericSortedSetFieldSource extends SortedSetFieldSource {
     }
     @Override
     public long longValue() throws IOException {
-      BytesRef bytes = backing.binaryValue();
+      BytesRef bytes = backing.lookupOrd(backing.ordValue());
       assert bytes.length > 0;
       switch (numericType) {
         case INT:

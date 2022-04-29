@@ -16,6 +16,10 @@
  */
 package org.apache.solr.logging;
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -25,11 +29,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class TestLogWatcher extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -47,11 +46,11 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
   //       explicitly. See SOLR-12732.
   @Test
   public void testLog4jWatcher() throws InterruptedException {
-    @SuppressWarnings({"rawtypes"})
-    LogWatcher watcher = null;
+    LogWatcher<?> watcher = null;
     int lim = random().nextInt(3) + 2;
-    // Every time through this loop, insure that, of all the test messages that have been logged, only the current
-    // test message is present. NOTE: there may be log messages from the superclass the first time around.
+    // Every time through this loop, insure that, of all the test messages that have been logged,
+    // only the current test message is present. NOTE: there may be log messages from the superclass
+    // the first time around.
     List<String> oldMessages = new ArrayList<>(lim);
     for (int idx = 0; idx < lim; ++idx) {
 
@@ -97,7 +96,10 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
           System.out.println("    " + oldMsg);
         }
 
-        fail("Did not find expected message state, dumped current watcher's messages above, last message added: '" + msg + "'");
+        fail(
+            "Did not find expected message state, dumped current watcher's messages above, last message added: '"
+                + msg
+                + "'");
       }
       oldMessages.add(msg);
     }

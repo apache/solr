@@ -19,10 +19,9 @@ package org.apache.solr.search;
 
 import java.util.Arrays;
 import java.util.Collections;
-
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LazyDocument;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.AfterClass;
@@ -40,7 +39,8 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   public static void initManagedSchemaCore() throws Exception {
     // This testing approach means no schema file or per-test temp solr-home!
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("managed.schema.resourceName", "schema-one-field-no-dynamic-field-unique-key.xml");
+    System.setProperty(
+        "managed.schema.resourceName", "schema-one-field-no-dynamic-field-unique-key.xml");
     System.setProperty("enable.update.log", "false");
     System.setProperty("documentCache.enabled", "true");
     System.setProperty("enableLazyFieldLoading", "true");
@@ -50,16 +50,27 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     // TODO SOLR-10229 will make this easier
     boolean PERSIST_FALSE = false; // don't write to test resource dir
     IndexSchema schema = h.getCore().getLatestSchema();
-    schema = schema.addFieldTypes(Collections.singletonList(
-        schema.newFieldType("textType", "solr.TextField", // redundant; TODO improve api
-            map("name", "textType",   "class", "solr.TextField",
-                "analyzer", map("class", "org.apache.lucene.analysis.standard.StandardAnalyzer")))),
-        PERSIST_FALSE);
-    schema = schema.addFields(Arrays.asList(
-        schema.newField(LAZY_FIELD, "textType", map()),
-        schema.newField(BIG_FIELD, "textType", map("large", true))),
-        Collections.emptyMap(),
-        PERSIST_FALSE);
+    schema =
+        schema.addFieldTypes(
+            Collections.singletonList(
+                schema.newFieldType(
+                    "textType",
+                    "solr.TextField", // redundant; TODO improve api
+                    map(
+                        "name",
+                        "textType",
+                        "class",
+                        "solr.TextField",
+                        "analyzer",
+                        map("class", "org.apache.lucene.analysis.standard.StandardAnalyzer")))),
+            PERSIST_FALSE);
+    schema =
+        schema.addFields(
+            Arrays.asList(
+                schema.newField(LAZY_FIELD, "textType", map()),
+                schema.newField(BIG_FIELD, "textType", map("large", true))),
+            Collections.emptyMap(),
+            PERSIST_FALSE);
 
     h.getCore().setLatestSchema(schema);
   }
@@ -100,17 +111,17 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   }
 
   private void assertEager(Document d, String fieldName) {
-    assertFalse( d.getField(fieldName) instanceof LazyDocument.LazyField);
+    assertFalse(d.getField(fieldName) instanceof LazyDocument.LazyField);
   }
 
   private void assertLazyNotLoaded(Document d, String fieldName) {
     IndexableField field = d.getField(fieldName);
     if (fieldName == BIG_FIELD) {
       assertTrue(field instanceof SolrDocumentFetcher.LargeLazyField);
-      assertFalse(((SolrDocumentFetcher.LargeLazyField)field).hasBeenLoaded());
+      assertFalse(((SolrDocumentFetcher.LargeLazyField) field).hasBeenLoaded());
     } else {
       assertTrue(field instanceof LazyDocument.LazyField);
-      assertFalse(((LazyDocument.LazyField)field).hasBeenLoaded());
+      assertFalse(((LazyDocument.LazyField) field).hasBeenLoaded());
     }
   }
 
@@ -118,10 +129,10 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     IndexableField field = d.getField(fieldName);
     if (fieldName == BIG_FIELD) {
       assertTrue(field instanceof SolrDocumentFetcher.LargeLazyField);
-      assertTrue(((SolrDocumentFetcher.LargeLazyField)field).hasBeenLoaded());
+      assertTrue(((SolrDocumentFetcher.LargeLazyField) field).hasBeenLoaded());
     } else {
       assertTrue(field instanceof LazyDocument.LazyField);
-      assertTrue(((LazyDocument.LazyField)field).hasBeenLoaded());
+      assertTrue(((LazyDocument.LazyField) field).hasBeenLoaded());
     }
   }
 }

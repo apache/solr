@@ -39,9 +39,6 @@ buildscript {
 // Configure license checksum folder for top-level projects.
 // (The file("licenses") inside the configure scope resolves
 // relative to the current project so they're not the same).
-configure(project(":lucene")) {
-  ext.licensesDir = file("licenses")
-}
 configure(project(":solr")) {
   ext.licensesDir = file("licenses")
 }
@@ -100,8 +97,6 @@ subprojects {
     dependsOn configurations.jarValidation
 
     doFirst {
-      def isSolr = project.path.startsWith(":solr")
-
       // When gradle resolves a configuration it applies exclude rules from inherited configurations
       // globally (this seems like a bug to me). So we process each inherited configuration independently
       // but make sure there are no other dependencies on jarValidation itself.
@@ -117,7 +112,9 @@ subprojects {
           conf = conf.copyRecursive()
           conf.canBeResolved = true
           conf.canBeConsumed = true
-          conf.excludeRules = excludeRules
+          def newConfExcludeRules = new HashSet<>(conf.excludeRules)
+          newConfExcludeRules.addAll(excludeRules)
+          conf.excludeRules = newConfExcludeRules
         }
         if (conf.canBeResolved) {
           queue.addAll(conf.resolvedConfiguration.firstLevelModuleDependencies)
@@ -135,28 +132,20 @@ subprojects {
           continue
         }
 
-        // Skip any artifacts from Lucene modules.
-        if (dep.moduleGroup.startsWith("org.apache.lucene")) {
-          // ... but process their transitive dependencies for Solr compatibility.
-          if (isSolr) {
-            queue.addAll(dep.children)
-          }
-        } else {
-          queue.addAll(dep.children)
-          dep.moduleArtifacts.each { resolvedArtifact ->
-            def file = resolvedArtifact.file
-            if (visited.add(file)) {
-              infos.add([
-                  name           : resolvedArtifact.name,
-                  jarName        : file.toPath().getFileName().toString(),
-                  path           : file,
-                  module         : resolvedArtifact.moduleVersion,
-                  checksum       : provider { new DigestUtils(DigestUtils.sha1Digest).digestAsHex(file).trim() },
-                  // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
-                  // so that we can determine unused dangling files later on.
-                  referencedFiles: []
-              ])
-            }
+        queue.addAll(dep.children)
+        dep.moduleArtifacts.each { resolvedArtifact ->
+          def file = resolvedArtifact.file
+          if (visited.add(file)) {
+            infos.add([
+                name           : resolvedArtifact.name,
+                jarName        : file.toPath().getFileName().toString(),
+                path           : file,
+                module         : resolvedArtifact.moduleVersion,
+                checksum       : provider { new DigestUtils(DigestUtils.sha1Digest).digestAsHex(file).trim() },
+                // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
+                // so that we can determine unused dangling files later on.
+                referencedFiles: []
+            ])
           }
         }
       }
@@ -273,7 +262,10 @@ subprojects {
 
 // Add top-project level tasks validating dangling files
 // and regenerating dependency checksums.
-configure([project(":solr"), project(":lucene"),]) {
+def plist = []
+plist.add(project(":solr"))
+
+configure(plist) {
   def validationTasks = subprojects.collectMany { it.tasks.matching { it.name == "licenses" } }
   def jarInfoTasks = subprojects.collectMany { it.tasks.matching { it.name == "collectJarInfos" } }
 
@@ -333,9 +325,13 @@ configure([project(":solr"), project(":lucene"),]) {
     }
 
     doFirst {
-      def allReferenced = validationTasks.collectMany { task ->
-        task.project.jarInfos.collectMany { it.referencedFiles }
-      }.collect { it.toString() }
+      def allReferenced = validationTasks
+          // Only collect for enabled tasks: https://issues.apache.org/jira/browse/LUCENE-9780
+          .findAll { it.enabled }
+          .collectMany { task ->
+            task.project.jarInfos.collectMany { it.referencedFiles }
+          }
+          .collect { it.toString() }
 
       def patterns = ext.exclude
       def allExisting = fileTree(licensesDir, {
@@ -358,15 +354,6 @@ configure([project(":solr"), project(":lucene"),]) {
 // Exclude files that are not a result of direct dependencies but have to be there.
 // It would be probably better to move non-dependency licenses into the actual project
 // where they're used and only assemble them for the distribution package.
-configure(project(":lucene")) {
-  checkDanglingLicenseFiles {
-    exclude += [
-        "elegant-icon-font-*",
-        "ant-*",
-        "ivy-*",
-    ]
-  }
-}
 
 configure(project(":solr")) {
   checkDanglingLicenseFiles {

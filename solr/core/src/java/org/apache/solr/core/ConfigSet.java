@@ -19,10 +19,9 @@ package org.apache.solr.core;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 
-
 /**
- * Stores a core's configuration in the form of a SolrConfig and IndexSchema.
- * Immutable.
+ * Stores a core's configuration in the form of a SolrConfig and IndexSchema. Immutable.
+ *
  * @see ConfigSetService
  */
 public class ConfigSet {
@@ -34,14 +33,16 @@ public class ConfigSet {
 
   private final SchemaSupplier schemaSupplier;
 
-  @SuppressWarnings({"rawtypes"})
-  private final NamedList properties;
+  private final NamedList<?> properties;
 
   private final boolean trusted;
 
-  @SuppressWarnings({"rawtypes"})
-  public ConfigSet(String name, SolrConfig solrConfig, SchemaSupplier indexSchemaSupplier,
-                   NamedList properties, boolean trusted) {
+  public ConfigSet(
+      String name,
+      SolrConfig solrConfig,
+      SchemaSupplier indexSchemaSupplier,
+      NamedList<?> properties,
+      boolean trusted) {
     this.name = name;
     this.solrconfig = solrConfig;
     this.schemaSupplier = indexSchemaSupplier;
@@ -59,19 +60,18 @@ public class ConfigSet {
   }
 
   /**
-   *
    * @param forceFetch get a fresh value and not cached value
    */
   public IndexSchema getIndexSchema(boolean forceFetch) {
-    if(forceFetch)  schema = schemaSupplier.get(true);
+    if (forceFetch) schema = schemaSupplier.get(true);
     return schema;
   }
+
   public IndexSchema getIndexSchema() {
     return schema;
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public NamedList getProperties() {
+  public NamedList<?> getProperties() {
     return properties;
   }
 
@@ -79,13 +79,12 @@ public class ConfigSet {
     return trusted;
   }
 
-  /**Provide a Schema object on demand
-   * We want IndexSchema Objects to be lazily instantiated because when a configset is
-   * created the {@link SolrResourceLoader} associated with it is not associated with a core
-   * So, we may not be able to update the core if we the schema classes are updated
-   * */
+  /**
+   * Provide a Schema object on demand We want IndexSchema Objects to be lazily instantiated because
+   * when a configset is created the {@link SolrResourceLoader} associated with it is not associated
+   * with a core So, we may not be able to update the core if we the schema classes are updated
+   */
   interface SchemaSupplier {
     IndexSchema get(boolean forceFetch);
-
   }
 }

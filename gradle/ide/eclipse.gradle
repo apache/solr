@@ -27,7 +27,7 @@ configure(rootProject) {
 
   eclipse {
     project {
-      name = "Apache Lucene Solr ${version}"
+      name = "Apache Solr ${version}"
     }
 
     classpath {

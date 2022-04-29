@@ -16,14 +16,13 @@
  */
 package org.apache.solr.schema;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
 import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.search.SortField;
-
-import java.io.IOException;
-import java.util.Map;
 
 public class StrFieldSource extends FieldCacheSource {
 
@@ -54,7 +53,8 @@ public class StrFieldSource extends FieldCacheSource {
   }
 
   @Override
-  public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     return new DocTermsIndexDocValues(this, readerContext, field) {
 
       @Override
@@ -86,13 +86,13 @@ public class StrFieldSource extends FieldCacheSource {
 
   @Override
   public boolean equals(Object o) {
-    return o instanceof StrFieldSource
-            && super.equals(o);
+    return o instanceof StrFieldSource && super.equals(o);
   }
 
   private static int hcode = StrFieldSource.class.hashCode();
+
   @Override
   public int hashCode() {
     return hcode + super.hashCode();
-  };
+  }
 }

@@ -24,16 +24,13 @@ public class ShufflingReplicaListTransformer implements ReplicaListTransformer {
 
   private final Random r;
 
-  public ShufflingReplicaListTransformer(Random r)
-  {
+  public ShufflingReplicaListTransformer(Random r) {
     this.r = r;
   }
 
-  public void transform(List<?> choices)
-  {
+  public <T> void transform(List<T> choices) {
     if (choices.size() > 1) {
       Collections.shuffle(choices, r);
     }
   }
-
 }

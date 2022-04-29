@@ -16,23 +16,19 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SuppressForbidden;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- * 
- * 
  * @since solr 1.3
  */
 public abstract class SolrResponse implements Serializable, MapWriter {
@@ -42,11 +38,11 @@ public abstract class SolrResponse implements Serializable, MapWriter {
 
   /** Elapsed time in milliseconds for the request as seen from the client. */
   public abstract long getElapsedTime();
-  
+
   public abstract void setResponse(NamedList<Object> rsp);
 
   public abstract void setElapsedTime(long elapsedTime);
-  
+
   public abstract NamedList<Object> getResponse();
 
   @Override
@@ -55,16 +51,16 @@ public abstract class SolrResponse implements Serializable, MapWriter {
   }
 
   public Exception getException() {
-    @SuppressWarnings({"rawtypes"})
-    NamedList exp = (NamedList) getResponse().get("exception");
+    NamedList<?> exp = (NamedList<?>) getResponse().get("exception");
     if (exp == null) {
       return null;
     }
     Integer rspCode = (Integer) exp.get("rspCode");
-    ErrorCode errorCode = rspCode != null && rspCode != -1 ? ErrorCode.getErrorCode(rspCode) : ErrorCode.SERVER_ERROR;
-    return new SolrException(errorCode, (String)exp.get("msg"));
+    ErrorCode errorCode =
+        rspCode != null && rspCode != -1 ? ErrorCode.getErrorCode(rspCode) : ErrorCode.SERVER_ERROR;
+    return new SolrException(errorCode, (String) exp.get("msg"));
   }
-  
+
   @SuppressForbidden(reason = "XXX: security hole")
   @Deprecated
   public static byte[] serializable(SolrResponse response) {
@@ -77,7 +73,7 @@ public abstract class SolrResponse implements Serializable, MapWriter {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
-  
+
   @SuppressForbidden(reason = "XXX: security hole")
   @Deprecated
   public static SolrResponse deserialize(byte[] bytes) {

@@ -19,7 +19,6 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -44,7 +43,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link JoinQuery} implementation using global (top-level) DocValues ordinals to efficiently compare values in the "from" and "to" fields.
+ * {@link JoinQuery} implementation using global (top-level) DocValues ordinals to efficiently
+ * compare values in the "from" and "to" fields.
  */
 public class TopLevelJoinQuery extends JoinQuery {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -54,27 +54,36 @@ public class TopLevelJoinQuery extends JoinQuery {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    if (! (searcher instanceof SolrIndexSearcher)) {
-      log.debug("Falling back to JoinQueryWeight because searcher [{}] is not the required SolrIndexSearcher", searcher);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
+    if (!(searcher instanceof SolrIndexSearcher)) {
+      log.debug(
+          "Falling back to JoinQueryWeight because searcher [{}] is not the required SolrIndexSearcher",
+          searcher);
       return super.createWeight(searcher, scoreMode, boost);
     }
 
     final SolrIndexSearcher solrSearcher = (SolrIndexSearcher) searcher;
-    final JoinQueryWeight weight = new JoinQueryWeight(solrSearcher, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
+    final JoinQueryWeight weight =
+        new JoinQueryWeight(solrSearcher, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
     final SolrIndexSearcher fromSearcher = weight.fromSearcher;
     final SolrIndexSearcher toSearcher = weight.toSearcher;
 
     try {
-      final SortedSetDocValues topLevelFromDocValues = validateAndFetchDocValues(fromSearcher, fromField, "from");
-      final SortedSetDocValues topLevelToDocValues = validateAndFetchDocValues(toSearcher, toField, "to");
+      final SortedSetDocValues topLevelFromDocValues =
+          validateAndFetchDocValues(fromSearcher, fromField, "from");
+      final SortedSetDocValues topLevelToDocValues =
+          validateAndFetchDocValues(toSearcher, toField, "to");
       if (topLevelFromDocValues.getValueCount() == 0 || topLevelToDocValues.getValueCount() == 0) {
         return createNoMatchesWeight(boost);
       }
 
-      final LongBitSet fromOrdBitSet = findFieldOrdinalsMatchingQuery(q, fromField, fromSearcher, topLevelFromDocValues);
+      final LongBitSet fromOrdBitSet =
+          findFieldOrdinalsMatchingQuery(q, fromField, fromSearcher, topLevelFromDocValues);
       final LongBitSet toOrdBitSet = new LongBitSet(topLevelToDocValues.getValueCount());
-      final BitsetBounds toBitsetBounds = convertFromOrdinalsIntoToField(fromOrdBitSet, topLevelFromDocValues, toOrdBitSet, topLevelToDocValues);
+      final BitsetBounds toBitsetBounds =
+          convertFromOrdinalsIntoToField(
+              fromOrdBitSet, topLevelFromDocValues, toOrdBitSet, topLevelToDocValues);
 
       final boolean toMultivalued = toSearcher.getSchema().getFieldOrNull(toField).multiValued();
       return new ConstantScoreWeight(this, boost) {
@@ -83,31 +92,39 @@ public class TopLevelJoinQuery extends JoinQuery {
             return null;
           }
 
-          final DocIdSetIterator toApproximation = (toMultivalued) ? context.reader().getSortedSetDocValues(toField) :
-              context.reader().getSortedDocValues(toField);
+          final DocIdSetIterator toApproximation =
+              (toMultivalued)
+                  ? context.reader().getSortedSetDocValues(toField)
+                  : context.reader().getSortedDocValues(toField);
           if (toApproximation == null) {
             return null;
           }
 
           final int docBase = context.docBase;
-          return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(toApproximation) {
-            public boolean matches() throws IOException {
-              final boolean hasDoc = topLevelToDocValues.advanceExact(docBase + approximation.docID());
-              if (hasDoc) {
-                for (long ord = topLevelToDocValues.nextOrd(); ord != -1L; ord = topLevelToDocValues.nextOrd()) {
-                  if (toOrdBitSet.get(ord)) {
-                    return true;
+          return new ConstantScoreScorer(
+              this,
+              this.score(),
+              scoreMode,
+              new TwoPhaseIterator(toApproximation) {
+                public boolean matches() throws IOException {
+                  final boolean hasDoc =
+                      topLevelToDocValues.advanceExact(docBase + approximation.docID());
+                  if (hasDoc) {
+                    for (long ord = topLevelToDocValues.nextOrd();
+                        ord != -1L;
+                        ord = topLevelToDocValues.nextOrd()) {
+                      if (toOrdBitSet.get(ord)) {
+                        return true;
+                      }
+                    }
                   }
+                  return false;
                 }
-              }
-              return false;
-            }
 
-            public float matchCost() {
-              return 10.0F;
-            }
-          });
-
+                public float matchCost() {
+                  return 10.0F;
+                }
+              });
         }
 
         public boolean isCacheable(LeafReaderContext ctx) {
@@ -133,17 +150,24 @@ public class TopLevelJoinQuery extends JoinQuery {
     };
   }
 
-  private SortedSetDocValues validateAndFetchDocValues(SolrIndexSearcher solrSearcher, String fieldName, String querySide) throws IOException {
+  private SortedSetDocValues validateAndFetchDocValues(
+      SolrIndexSearcher solrSearcher, String fieldName, String querySide) throws IOException {
     final IndexSchema schema = solrSearcher.getSchema();
     final SchemaField field = schema.getFieldOrNull(fieldName);
     if (field == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, querySide + " field '" + fieldName + "' does not exist");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          querySide + " field '" + fieldName + "' does not exist");
     }
 
     if (!field.hasDocValues()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "'top-level' join queries require both 'from' and 'to' fields to have docValues, but " + querySide +
-              " field [" + fieldName +  "] does not.");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "'top-level' join queries require both 'from' and 'to' fields to have docValues, but "
+              + querySide
+              + " field ["
+              + fieldName
+              + "] does not.");
     }
 
     final LeafReader leafReader = solrSearcher.getSlowAtomicReader();
@@ -153,22 +177,30 @@ public class TopLevelJoinQuery extends JoinQuery {
     return DocValues.singleton(DocValues.getSorted(leafReader, fieldName));
   }
 
-  private static LongBitSet findFieldOrdinalsMatchingQuery(Query q, String field, SolrIndexSearcher searcher, SortedSetDocValues docValues) throws IOException {
+  private static LongBitSet findFieldOrdinalsMatchingQuery(
+      Query q, String field, SolrIndexSearcher searcher, SortedSetDocValues docValues)
+      throws IOException {
     final LongBitSet fromOrdBitSet = new LongBitSet(docValues.getValueCount());
-    final Collector fromCollector = new MultiValueTermOrdinalCollector(field, docValues, fromOrdBitSet);
+    final Collector fromCollector =
+        new MultiValueTermOrdinalCollector(field, docValues, fromOrdBitSet);
 
     searcher.search(q, fromCollector);
 
     return fromOrdBitSet;
   }
 
-  private BitsetBounds convertFromOrdinalsIntoToField(LongBitSet fromOrdBitSet, SortedSetDocValues fromDocValues,
-                                                      LongBitSet toOrdBitSet, SortedSetDocValues toDocValues) throws IOException {
+  protected BitsetBounds convertFromOrdinalsIntoToField(
+      LongBitSet fromOrdBitSet,
+      SortedSetDocValues fromDocValues,
+      LongBitSet toOrdBitSet,
+      SortedSetDocValues toDocValues)
+      throws IOException {
     long fromOrdinal = 0;
     long firstToOrd = BitsetBounds.NO_MATCHES;
     long lastToOrd = 0;
 
-    while (fromOrdinal < fromOrdBitSet.length() && (fromOrdinal = fromOrdBitSet.nextSetBit(fromOrdinal)) >= 0) {
+    while (fromOrdinal < fromOrdBitSet.length()
+        && (fromOrdinal = fromOrdBitSet.nextSetBit(fromOrdinal)) >= 0) {
       final BytesRef fromBytesRef = fromDocValues.lookupOrd(fromOrdinal);
       final long toOrdinal = lookupTerm(toDocValues, fromBytesRef, lastToOrd);
       if (toOrdinal >= 0) {
@@ -179,7 +211,7 @@ public class TopLevelJoinQuery extends JoinQuery {
       fromOrdinal++;
     }
 
-      return new BitsetBounds(firstToOrd, lastToOrd);
+    return new BitsetBounds(firstToOrd, lastToOrd);
   }
 
   /*
@@ -187,9 +219,10 @@ public class TopLevelJoinQuery extends JoinQuery {
    * optimization to narrow the search space where possible by providing a startOrd instead of beginning each search
    * at 0.
    */
-  private long lookupTerm(SortedSetDocValues docValues, BytesRef key, long startOrd) throws IOException {
+  private long lookupTerm(SortedSetDocValues docValues, BytesRef key, long startOrd)
+      throws IOException {
     long low = startOrd;
-    long high = docValues.getValueCount()-1;
+    long high = docValues.getValueCount() - 1;
 
     while (low <= high) {
       long mid = (low + high) >>> 1;
@@ -205,10 +238,10 @@ public class TopLevelJoinQuery extends JoinQuery {
       }
     }
 
-    return -(low + 1);  // key not found.
+    return -(low + 1); // key not found.
   }
 
-  private static class BitsetBounds {
+  protected static class BitsetBounds {
     public static final long NO_MATCHES = -1L;
     public final long lower;
     public final long upper;
@@ -216,6 +249,32 @@ public class TopLevelJoinQuery extends JoinQuery {
     public BitsetBounds(long lower, long upper) {
       this.lower = lower;
       this.upper = upper;
+    }
+  }
+
+  /**
+   * A {@link TopLevelJoinQuery} implementation optimized for when 'from' and 'to' cores and fields
+   * match and no ordinal- conversion is necessary.
+   */
+  static class SelfJoin extends TopLevelJoinQuery {
+    public SelfJoin(String joinField, Query subQuery) {
+      super(joinField, joinField, null, subQuery);
+    }
+
+    protected BitsetBounds convertFromOrdinalsIntoToField(
+        LongBitSet fromOrdBitSet,
+        SortedSetDocValues fromDocValues,
+        LongBitSet toOrdBitSet,
+        SortedSetDocValues toDocValues)
+        throws IOException {
+
+      // 'from' and 'to' ordinals are identical for self-joins.
+      toOrdBitSet.or(fromOrdBitSet);
+
+      // Calculate boundary ords used for other optimizations
+      final long firstToOrd = toOrdBitSet.nextSetBit(0);
+      final long lastToOrd = toOrdBitSet.prevSetBit(toOrdBitSet.length() - 1);
+      return new BitsetBounds(firstToOrd, lastToOrd);
     }
   }
 }

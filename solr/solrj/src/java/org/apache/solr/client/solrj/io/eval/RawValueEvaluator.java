@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -30,45 +29,53 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class RawValueEvaluator extends SourceEvaluator {
   private static final long serialVersionUID = 1L;
-  
+
   private Object value;
-  
-  public RawValueEvaluator(Object value){
+
+  public RawValueEvaluator(Object value) {
     init(value);
   }
-  
-  public RawValueEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+
+  public RawValueEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     // We have to do this because order of the parameters matter
-    List<StreamExpressionParameter> parameters = factory.getOperandsOfType(expression, StreamExpressionValue.class);
-    
-    if(expression.getParameters().size() != parameters.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found - expecting only raw values", expression));
+    List<StreamExpressionParameter> parameters =
+        factory.getOperandsOfType(expression, StreamExpressionValue.class);
+
+    if (expression.getParameters().size() != parameters.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - unknown operands found - expecting only raw values",
+              expression));
     }
-    
-    if(1 != parameters.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - only 1 value can exist in a %s(...) evaluator", expression, factory.getFunctionName(getClass())));
+
+    if (1 != parameters.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - only 1 value can exist in a %s(...) evaluator",
+              expression,
+              factory.getFunctionName(getClass())));
     }
-    
-    init(factory.constructPrimitiveObject(((StreamExpressionValue)parameters.get(0)).getValue()));
+
+    init(factory.constructPrimitiveObject(((StreamExpressionValue) parameters.get(0)).getValue()));
   }
-  
-  private void init(Object value){
-    if(value instanceof Integer){
-      this.value = (Long)value;
-    }
-    else if(value instanceof Float){
-      this.value = ((Float)value).doubleValue();
-    }
-    else{
+
+  private void init(Object value) {
+    if (value instanceof Integer) {
+      this.value = ((Integer) value).longValue();
+    } else if (value instanceof Float) {
+      this.value = ((Float) value).doubleValue();
+    } else {
       this.value = value;
     }
   }
-  
+
   @Override
   public Object evaluate(Tuple tuple) {
     return value;
   }
-  
+
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(getClass()));
@@ -79,9 +86,8 @@ public class RawValueEvaluator extends SourceEvaluator {
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
     return new Explanation(nodeId.toString())
-      .withExpressionType(ExpressionType.EVALUATOR)
-      .withImplementingClass(getClass().getName())
-      .withExpression(toExpression(factory).toString());
+        .withExpressionType(ExpressionType.EVALUATOR)
+        .withImplementingClass(getClass().getName())
+        .withExpression(toExpression(factory).toString());
   }
-
 }

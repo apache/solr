@@ -27,20 +27,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-//This is the client-side component of the snitch
+// This is the client-side component of the snitch
 public class ImplicitSnitch extends Snitch {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final Pattern hostAndPortPattern = Pattern.compile("(?:https?://)?([^:]+):(\\d+)");
 
-  //well known tags
+  // well known tags
   public static final String NODE = "node";
   public static final String PORT = "port";
   public static final String HOST = "host";
@@ -51,9 +50,10 @@ public class ImplicitSnitch extends Snitch {
   public static final String SYSPROP = "sysprop.";
   public static final String SYSLOADAVG = "sysLoadAvg";
   public static final String HEAPUSAGE = "heapUsage";
-  public static final String DISKTYPE = "diskType";
-  public static final List<String> IP_SNITCHES = Collections.unmodifiableList(Arrays.asList("ip_1", "ip_2", "ip_3", "ip_4"));
-  public static final Set<String> tags = Set.of(NODE, PORT, HOST, CORES, DISK, ROLE, "ip_1", "ip_2", "ip_3", "ip_4");
+  public static final List<String> IP_SNITCHES =
+      Collections.unmodifiableList(Arrays.asList("ip_1", "ip_2", "ip_3", "ip_4"));
+  public static final Set<String> tags =
+      Set.of(NODE, PORT, HOST, CORES, DISK, ROLE, HEAPUSAGE, "ip_1", "ip_2", "ip_3", "ip_4");
 
   @Override
   public void getTags(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
@@ -68,7 +68,8 @@ public class ImplicitSnitch extends Snitch {
         if (hostAndPortMatcher.find()) ctx.getTags().put(PORT, hostAndPortMatcher.group(2));
       }
       if (requestedTags.contains(ROLE)) fillRole(solrNode, ctx, ROLE);
-      if (requestedTags.contains(NODEROLE)) fillRole(solrNode, ctx, NODEROLE);// for new policy framework
+      if (requestedTags.contains(NODEROLE))
+        fillRole(solrNode, ctx, NODEROLE); // for new policy framework
 
       addIpTags(solrNode, requestedTags, ctx);
 
@@ -89,15 +90,16 @@ public class ImplicitSnitch extends Snitch {
     if (params.size() > 0) {
       Map<String, Object> vals = ctx.getNodeValues(solrNode, params.keySet());
       for (Map.Entry<String, Object> e : vals.entrySet()) {
-        if(e.getValue() != null) params.put(e.getKey(), e.getValue());
+        if (e.getValue() != null) params.put(e.getKey(), e.getValue());
       }
     }
     ctx.getTags().putAll(params);
   }
 
-  private void fillRole(String solrNode, SnitchContext ctx, String key) throws KeeperException, InterruptedException {
-    @SuppressWarnings({"rawtypes"})
-    Map roles = (Map) ctx.retrieve(ZkStateReader.ROLES); // we don't want to hit the ZK for each node
+  private void fillRole(String solrNode, SnitchContext ctx, String key)
+      throws KeeperException, InterruptedException {
+    Map<?, ?> roles =
+        (Map<?, ?>) ctx.retrieve(ZkStateReader.ROLES); // we don't want to hit the ZK for each node
     // so cache and reuse
     try {
       if (roles == null) roles = ctx.getZkJson(ZkStateReader.ROLES);
@@ -107,15 +109,12 @@ public class ImplicitSnitch extends Snitch {
     }
   }
 
-  private void cacheRoles(String solrNode, SnitchContext ctx, String key,
-                          @SuppressWarnings({"rawtypes"})Map roles) {
+  private void cacheRoles(String solrNode, SnitchContext ctx, String key, Map<?, ?> roles) {
     ctx.store(ZkStateReader.ROLES, roles);
     if (roles != null) {
-      for (Object o : roles.entrySet()) {
-        @SuppressWarnings({"rawtypes"})
-        Map.Entry e = (Map.Entry) o;
+      for (Map.Entry<?, ?> e : roles.entrySet()) {
         if (e.getValue() instanceof List) {
-          if (((List) e.getValue()).contains(solrNode)) {
+          if (((List<?>) e.getValue()).contains(solrNode)) {
             ctx.getTags().put(key, e.getKey());
             break;
           }
@@ -128,8 +127,7 @@ public class ImplicitSnitch extends Snitch {
 
   @Override
   public boolean isKnownTag(String tag) {
-    return tags.contains(tag) ||
-        tag.startsWith(SYSPROP);
+    return tags.contains(tag) || tag.startsWith(SYSPROP);
   }
 
   private void addIpTags(String solrNode, Set<String> requestedTags, SnitchContext context) {
@@ -159,9 +157,7 @@ public class ImplicitSnitch extends Snitch {
       if (requestedHostTags.contains(currentTagKey)) {
         context.getTags().put(currentTagKey, currentTagValue);
       }
-
     }
-
   }
 
   private String[] getIpFragments(String solrNode) {
@@ -171,12 +167,15 @@ public class ImplicitSnitch extends Snitch {
       if (host != null) {
         String ip = getHostIp(host);
         if (ip != null) {
-          return ip.split(HOST_FRAG_SEPARATOR_REGEX); //IPv6 support will be provided by SOLR-8523
+          return ip.split(HOST_FRAG_SEPARATOR_REGEX); // IPv6 support will be provided by SOLR-8523
         }
       }
     }
 
-    log.warn("Failed to match host IP address from node URL [{}] using regex [{}]", solrNode, hostAndPortPattern.pattern());
+    log.warn(
+        "Failed to match host IP address from node URL [{}] using regex [{}]",
+        solrNode,
+        hostAndPortPattern.pattern());
     return null;
   }
 
@@ -189,5 +188,4 @@ public class ImplicitSnitch extends Snitch {
       return null;
     }
   }
-
 }

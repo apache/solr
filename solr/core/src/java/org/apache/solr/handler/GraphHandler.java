@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -53,33 +52,27 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
- * <p>
- * Solr Request Handler for graph traversal with streaming functions that responds with GraphML markup.
- * </p>
- * <p>
- * It loads the default set of streaming expression functions via {@link org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory}.
- * </p>
- * <p>
- * To add additional functions, just define them as plugins in solrconfig.xml via
- * {@code
- * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" /&gt;
+ * Solr Request Handler for graph traversal with streaming functions that responds with GraphML
+ * markup.
+ *
+ * <p>It loads the default set of streaming expression functions via {@link
+ * org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory}.
+ *
+ * <p>To add additional functions, just define them as plugins in solrconfig.xml via {@code
+ * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream"
+ * /&gt; }
+ *
+ * <p>The @deprecated configuration method as of Solr 8.5 is {@code &lt;lst
+ * name="streamFunctions"&gt; &lt;str
+ * name="group"&gt;org.apache.solr.client.solrj.io.stream.ReducerStream&lt;/str&gt; &lt;str
+ * name="count"&gt;org.apache.solr.client.solrj.io.stream.RecordCountStream&lt;/str&gt; &lt;/lst&gt;
  * }
- * </p>
- * <p>
- * The @deprecated configuration method as of Solr 8.5 is
-  * {@code
- *  &lt;lst name="streamFunctions"&gt;
- *    &lt;str name="group"&gt;org.apache.solr.client.solrj.io.stream.ReducerStream&lt;/str&gt;
- *    &lt;str name="count"&gt;org.apache.solr.client.solrj.io.stream.RecordCountStream&lt;/str&gt;
- *  &lt;/lst&gt;
-  * }
- *</p>
  *
  * @since 6.1.0
  */
-public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
+public class GraphHandler extends RequestHandlerBase
+    implements SolrCoreAware, PermissionNameProvider {
 
   private StreamFactory streamFactory = new DefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -91,7 +84,6 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     return PermissionNameProvider.Name.READ_PERM;
   }
 
-  @SuppressWarnings({"unchecked"})
   public void inform(SolrCore core) {
     String defaultCollection;
     String defaultZkhost;
@@ -99,7 +91,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     this.coreName = core.getName();
     this.solrClientCache = coreContainer.getSolrClientCache();
 
-    if(coreContainer.isZooKeeperAware()) {
+    if (coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
       streamFactory.withCollectionZkHost(defaultCollection, defaultZkhost);
@@ -111,25 +103,30 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
 
     // Check deprecated approach.
     Object functionMappingsObj = initArgs.get("streamFunctions");
-    if(null != functionMappingsObj){
-      log.warn("solrconfig.xml: <streamFunctions> is deprecated for adding additional streaming functions to GraphHandler.");
-      NamedList<?> functionMappings = (NamedList<?>)functionMappingsObj;
-      for(Entry<String,?> functionMapping : functionMappings) {
+    if (null != functionMappingsObj) {
+      log.warn(
+          "solrconfig.xml: <streamFunctions> is deprecated for adding additional streaming functions to GraphHandler.");
+      NamedList<?> functionMappings = (NamedList<?>) functionMappingsObj;
+      for (Entry<String, ?> functionMapping : functionMappings) {
         String key = functionMapping.getKey();
-        PluginInfo pluginInfo = new PluginInfo(key, Collections.singletonMap("class", functionMapping.getValue()));
+        PluginInfo pluginInfo =
+            new PluginInfo(key, Collections.singletonMap("class", functionMapping.getValue()));
 
         if (pluginInfo.pkgName == null) {
-          Class<? extends Expressible> clazz = core.getResourceLoader().findClass((String) functionMapping.getValue(),
-              Expressible.class);
+          Class<? extends Expressible> clazz =
+              core.getResourceLoader()
+                  .findClass((String) functionMapping.getValue(), Expressible.class);
           streamFactory.withFunctionName(key, clazz);
         } else {
           @SuppressWarnings("resource")
-          StreamHandler.ExpressibleHolder holder = new StreamHandler.ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
-          streamFactory.withFunctionName(key, () -> holder.getClazz());
+          StreamHandler.ExpressibleHolder holder =
+              new StreamHandler.ExpressibleHolder(
+                  pluginInfo,
+                  core,
+                  SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
+          streamFactory.withFunctionName(key, holder);
         }
-
       }
-
     }
   }
 
@@ -139,16 +136,15 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     params = adjustParams(params);
     req.setParams(params);
 
-
     TupleStream tupleStream = null;
 
     try {
       tupleStream = this.streamFactory.constructStream(params.get("expr"));
     } catch (Exception e) {
-      //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
+      // Catch exceptions that occur while the stream is being created. This will include streaming
+      // expression parse rules.
       SolrException.log(log, e);
-      @SuppressWarnings({"rawtypes"})
-      Map requestContext = req.getContext();
+      Map<Object, Object> requestContext = req.getContext();
       requestContext.put("stream", new DummyErrorStream(e));
       return;
     }
@@ -159,8 +155,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     Traversal traversal = new Traversal();
     context.put("traversal", traversal);
     tupleStream.setStreamContext(context);
-    @SuppressWarnings({"rawtypes"})
-    Map requestContext = req.getContext();
+    Map<Object, Object> requestContext = req.getContext();
     requestContext.put("stream", new TimerStream(new ExceptionStream(tupleStream)));
     requestContext.put("traversal", traversal);
   }
@@ -173,29 +168,26 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     return null;
   }
 
-
   public static class DummyErrorStream extends TupleStream {
     private Exception e;
 
     public DummyErrorStream(Exception e) {
       this.e = e;
     }
+
     public StreamComparator getStreamSort() {
       return null;
     }
 
-    public void close() {
-    }
+    public void close() {}
 
-    public void open() {
-    }
+    public void open() {}
 
     public Exception getException() {
       return this.e;
     }
 
-    public void setStreamContext(StreamContext context) {
-    }
+    public void setStreamContext(StreamContext context) {}
 
     public List<TupleStream> children() {
       return null;
@@ -210,7 +202,6 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       return Tuple.EXCEPTION(e.getMessage(), true);
     }
   }
-
 
   private SolrParams adjustParams(SolrParams params) {
     ModifiableSolrParams adjustedParams = new ModifiableSolrParams();
@@ -254,15 +245,13 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       return null;
     }
 
-    @SuppressWarnings({"unchecked"})
     public Tuple read() throws IOException {
       Tuple tuple = this.tupleStream.read();
-      if(tuple.EOF) {
+      if (tuple.EOF) {
         long totalTime = (System.nanoTime() - begin) / 1000000;
         tuple.put(StreamParams.RESPONSE_TIME, totalTime);
       }
       return tuple;
     }
   }
-
 }

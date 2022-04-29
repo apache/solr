@@ -18,10 +18,9 @@
 -->
 
 <config>
-  <jmx />
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  
+
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}">
     <!-- used to keep RAM reqs down for HdfsDirectoryFactory -->
     <bool name="solr.hdfs.blockcache.enabled">${solr.hdfs.blockcache.enabled:true}</bool>
@@ -34,7 +33,7 @@
   <requestDispatcher>
     <requestParsers enableStreamBody="true" />
   </requestDispatcher>
-  
+
   <dataDir>${solr.data.dir:}</dataDir>
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -48,7 +47,7 @@
  </updateRequestProcessorChain>
 
   <requestHandler name="/select" class="solr.SearchHandler" />
-  
+
   <updateHandler class="solr.DirectUpdateHandler2">
     <!-- autocommit pending docs if certain criteria are met -->
     <autoCommit>
@@ -60,41 +59,17 @@
       <str name="numRecordsToKeep">${solr.ulog.numRecordsToKeep:100}</str>
       <int name="tlogDfsReplication">${solr.ulog.tlogDfsReplication:2}</int>
     </updateLog>
-    
-      
-    <autoCommit> 
+
+
+    <autoCommit>
       <maxTime>${solr.autoCommit.maxTime:-1}</maxTime>
-      <openSearcher>false</openSearcher> 
+      <openSearcher>false</openSearcher>
     </autoCommit>
 
-    <autoSoftCommit> 
+    <autoSoftCommit>
       <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
     </autoSoftCommit>
   </updateHandler>
-
-  <updateRequestProcessorChain name="dedupe">
-    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
-      <bool name="enabled">true</bool>
-      <bool name="overwriteDupes">true</bool>
-      <str name="fields">v_t,t_field</str>
-      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-  <updateRequestProcessorChain name="stored_sig">
-    <!-- this chain is valid even though the signature field is not
-         indexed, because we are not asking for dups to be overwritten
-      -->
-    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
-      <bool name="enabled">true</bool>
-      <str name="signatureField">non_indexed_signature_sS</str>
-      <bool name="overwriteDupes">false</bool>
-      <str name="fields">v_t,t_field</str>
-      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
-    </processor>
-    <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>
-
 
   <updateRequestProcessorChain name="distrib-dup-test-chain-explicit">
     <!-- explicit test using processors before and after distrib -->
@@ -110,7 +85,7 @@
       <str name="replacement">x_x</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
-  </updateRequestProcessorChain>  
+  </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="distrib-dup-test-chain-implicit">
     <!-- implicit test w/o distrib declared-->

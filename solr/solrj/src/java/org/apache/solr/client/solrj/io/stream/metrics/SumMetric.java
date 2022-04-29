@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -29,49 +28,55 @@ public class SumMetric extends Metric {
   private double doubleSum;
   private long longSum;
 
-  public SumMetric(String columnName){
+  public SumMetric(String columnName) {
     init("sum", columnName);
   }
 
-  public SumMetric(StreamExpression expression, StreamFactory factory) throws IOException{
+  public SumMetric(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String functionName = expression.getFunctionName();
     String columnName = factory.getValueOperand(expression, 0);
-    
+
     // validate expression contains only what we want.
-    if(null == columnName){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expected %s(columnName)", expression, functionName));
+    if (null == columnName) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expected %s(columnName)",
+              expression,
+              functionName));
     }
-    if(1 != expression.getParameters().size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
+    if (1 != expression.getParameters().size()) {
+      throw new IOException(
+          String.format(Locale.ROOT, "Invalid expression %s - unknown operands found", expression));
     }
-    
-    init(functionName, columnName);    
+
+    init(functionName, columnName);
   }
-  
-  private void init(String functionName, String columnName){
+
+  private void init(String functionName, String columnName) {
     this.columnName = columnName;
     setFunctionName(functionName);
     setIdentifier(functionName, "(", columnName, ")");
   }
 
   public String[] getColumns() {
-    return new String[]{columnName};
+    return new String[] {columnName};
   }
 
   public void update(Tuple tuple) {
     Object o = tuple.get(columnName);
-    if(o instanceof Double) {
+    if (o instanceof Double) {
       Double d = (Double) o;
       doubleSum += d;
-    } else if(o instanceof Float) {
+    } else if (o instanceof Float) {
       Float f = (Float) o;
       doubleSum += f.doubleValue();
-    } else if(o instanceof Integer) {
-      Integer i = (Integer)o;
+    } else if (o instanceof Integer) {
+      Integer i = (Integer) o;
       longSum += i.longValue();
-    } else {
-      Long l = (Long)o;
+    } else if (o instanceof Long) {
+      Long l = (Long) o;
       longSum += l;
     }
   }
@@ -81,13 +86,13 @@ public class SumMetric extends Metric {
   }
 
   public Number getValue() {
-    if(longSum == 0) {
+    if (longSum == 0) {
       return doubleSum;
     } else {
       return longSum;
     }
   }
-  
+
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     return new StreamExpression(getFunctionName()).withParameter(columnName);

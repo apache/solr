@@ -31,7 +31,6 @@
 
   <xi:include href="./solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-  <jmx/>
   <updateHandler class="solr.DirectUpdateHandler2">
     <!--updateLog>
       <str name="dir">${solr.ulog.dir:}</str>
@@ -66,11 +65,4 @@
 
   </requestHandler>
 
-  <queryResponseWriter name="json" class="solr.JSONResponseWriter">
-    <!-- For the purposes of the tutorial, JSON responses are written as
-     plain text so that they are easy to read in *any* browser.
-     If you expect a MIME type of "application/json" just remove this override.
-    -->
-    <str name="content-type">text/plain; charset=UTF-8</str>
-  </queryResponseWriter>
 </config>

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import org.apache.tools.ant.util.TeeOutputStream
+
 // This project puts together a "distribution", assembling dependencies from
 // various other projects.
 
@@ -31,48 +33,86 @@ ext {
 }
 
 configurations {
-  distSolr {
-    transitive = false
-  }
-  distSolrj
-  contrib
+  modules
   example
+  prometheusExporter
   server
   docs
+  docker
+  solrTgz
+  solrTgzSignature
+}
+
+artifacts {
+  solrTgz(distTar)
 }
 
 dependencies {
-  distSolrj project(":solr:solrj")
-
-  [":solr:contrib:analysis-extras",
-   ":solr:contrib:analytics",
-   ":solr:contrib:extraction",
-   ":solr:contrib:clustering",
-   ":solr:contrib:jaegertracer-configurator",
-   ":solr:contrib:langid",
-   ":solr:contrib:ltr",
-   ":solr:contrib:prometheus-exporter",
-  ].each { contribName ->
-    distSolr project(contribName)
-    contrib  project(path: contribName, configuration: "packaging")
+  project(":solr:modules").childProjects.values().stream().map(project -> project.path).each { module ->
+    modules project(path: module, configuration: "packaging")
   }
 
-  distSolr project(":solr:core")
-  distSolr project(":solr:solrj")
-  distSolr project(":solr:test-framework")
+  prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
 
   // Copy files from documentation output
   docs project(path: ':solr:documentation', configuration: 'minimalSite')
+
+  docker project(path: ':solr:docker', configuration: 'packaging')
+
+  solrTgzSignature files("$buildDir/distributions/solr-${version}.tgz.asc") {
+    builtBy ":solr:distribution:signBinaryTgz"
+  }
 }
 
 distributions {
   main {
     distributionBaseName = 'solr'
     contents {
-      // TODO: This is missing module README files, as compared to 8x
+
+      from(rootDir, {
+        include "LICENSE.txt"
+        include "NOTICE.txt"
+      })
+
+      from(project(":solr").projectDir, {
+        include "bin/**"
+        include "licenses/**"
+        exclude "licenses/README.committers.txt"
+        include "CHANGES.txt"
+        include "README.md"
+      })
+
+      from(configurations.modules, {
+        into "modules"
+      })
+
+      from(configurations.example, {
+        into "example"
+      })
+
+      from(configurations.prometheusExporter, {
+        into "prometheus-exporter"
+      })
+
+      from(configurations.server, {
+        into "server"
+      })
+
+      from(configurations.docs, {
+        into "docs"
+      })
+
+      from(configurations.docker, {
+        into "docker"
+        filesMatching([
+            "scripts/**",
+        ]) { copy ->
+          copy.setMode(0755)
+        }
+      })
 
       // Manually correct posix permissions (matters when packaging on Windows).
       filesMatching([
@@ -86,44 +126,6 @@ distributions {
         copy.setMode(0755)
       }
 
-      from(project(":solr").projectDir, {
-        include "bin/**"
-        include "licenses/**"
-        exclude "licenses/README.committers.txt"
-        include "CHANGES.txt"
-        include "LICENSE.txt"
-        include "NOTICE.txt"
-        include "README.md"
-      })
-
-      from(project(":lucene").projectDir, {
-        include "CHANGES.txt"
-        rename { file -> 'LUCENE_CHANGES.txt' }
-      })
-
-      from(configurations.contrib, {
-        into "contrib"
-      })
-
-      from(configurations.distSolr, {
-        into "dist"
-      })
-
-      from(configurations.distSolrj - configurations.distSolr, {
-        into "dist/solrj-lib"
-      })
-
-      from(configurations.example, {
-        into "example"
-      })
-
-      from(configurations.server, {
-        into "server"
-      })
-
-      from(configurations.docs, {
-        into "docs"
-      })
     }
   }
 }
@@ -140,4 +142,78 @@ task dev(type: Copy) {
   into devDir
 }
 
+distTar {
+  compression = Compression.GZIP
+}
+
+distZip.enabled = false
+
 assemble.dependsOn installDist
+
+task downloadBats(type: NpmTask) {
+  group = 'Build Dependency Download'
+  args = ["install", "bats",
+                     "ztombol/bats-support",
+                     "ztombol/bats-assert",
+  ]
+
+  inputs.files("${project.ext.nodeProjectDir}/package.json")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-support")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-assert")
+}
+
+task integrationTests(type: BatsTask) {
+  dependsOn installDist
+  dependsOn downloadBats
+
+  def integrationTestOutput = "$buildDir/test-output"
+  def solrHome = "$integrationTestOutput/solr-home"
+  def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
+
+  inputs.dir(distDir)
+  outputs.dir(integrationTestOutput)
+
+  doFirst {
+    delete integrationTestOutput
+    mkdir integrationTestOutput
+    mkdir solrHome
+    mkdir solrTestFailuresDir
+
+    // TODO - if quiet then don't tee
+    standardOutput = new TeeOutputStream(System.out, new FileOutputStream("$integrationTestOutput/test-output.txt"))
+
+  }
+
+  environment SOLR_TIP: distDir.toString()
+  environment SOLR_HOME: solrHome
+  environment SOLR_LOGS_DIR: "$solrHome/logs"
+  environment TEST_FAILURE_DIR: solrTestFailuresDir
+  environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
+}
+
+class BatsTask extends Exec {
+  @InputDirectory
+  String testDir = 'test'
+
+  @Input
+  var testFiles = []
+
+  @Option(option = "tests", description = "Sets test cases to be included")
+  public void setTestNamePatterns(List<String> tests) {
+    // TODO: bats --filter <regex>
+    tests.each { testFiles << "$testDir/$it" }
+  }
+
+  @Override
+  @TaskAction
+  protected void exec() {
+    executable "$project.ext.nodeProjectDir/node_modules/bats/bin/bats"
+
+    // Note: tests to run must be listed after all other arguments
+    // Additional debugging output: -x, --verbose-run
+    setArgs(['--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
+
+    super.exec()
+  }
+}

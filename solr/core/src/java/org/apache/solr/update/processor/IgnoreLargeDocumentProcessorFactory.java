@@ -17,11 +17,13 @@
 
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -30,15 +32,11 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
 /**
- * <p>
- * Gives system administrators a way to ignore very large update from clients.
- * When an update goes through processors its size can change
- * therefore this processor should be the last processor of the chain.
- * </p>
+ * Gives system administrators a way to ignore very large update from clients. When an update goes
+ * through processors its size can change therefore this processor should be the last processor of
+ * the chain.
+ *
  * @since 7.4.0
  */
 public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorFactory {
@@ -48,25 +46,26 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
   private long maxDocumentSize = 1024 * 1024;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     maxDocumentSize = args.toSolrParams().required().getLong(LIMIT_SIZE_PARAM);
     args.remove(LIMIT_SIZE_PARAM);
 
     if (args.size() > 0) {
-      throw new SolrException(SERVER_ERROR,
-          "Unexpected init param(s): '" +
-              args.getName(0) + "'");
+      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): '" + args.getName(0) + "'");
     }
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return new UpdateRequestProcessor(next) {
       @Override
       public void processAdd(AddUpdateCommand cmd) throws IOException {
         long docSize = ObjectSizeEstimator.estimate(cmd.getSolrInputDocument());
         if (docSize / 1024 > maxDocumentSize) {
-          throw new SolrException(BAD_REQUEST, "Size of the document "+cmd.getPrintableId()+" is too large, around:"+docSize);
+          throw new SolrException(
+              BAD_REQUEST,
+              "Size of the document " + cmd.getPrintableId() + " is too large, around:" + docSize);
         }
         super.processAdd(cmd);
       }
@@ -76,20 +75,20 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
   /**
    * Util class for quickly estimate size of a {@link org.apache.solr.common.SolrInputDocument}
    * Compare to {@link org.apache.lucene.util.RamUsageEstimator}, this class have some pros
+   *
    * <ul>
-   * <li>does not use reflection
-   * <li>go as deep as needed to compute size of all {@link org.apache.solr.common.SolrInputField} and
-   * all {@link org.apache.solr.common.SolrInputDocument} children
-   * <li>compute size of String based on its length
-   * <li>fast estimate size of a {@link java.util.Map} or a {@link java.util.Collection}
+   *   <li>does not use reflection
+   *   <li>go as deep as needed to compute size of all {@link org.apache.solr.common.SolrInputField}
+   *       and all {@link org.apache.solr.common.SolrInputDocument} children
+   *   <li>compute size of String based on its length
+   *   <li>fast estimate size of a {@link java.util.Map} or a {@link java.util.Collection}
    * </ul>
    */
   // package private for testing
   static class ObjectSizeEstimator {
-    /**
-     * Sizes of primitive classes.
-     */
-    private static final Map<Class<?>,Integer> primitiveSizes = new IdentityHashMap<>();
+    /** Sizes of primitive classes. */
+    private static final Map<Class<?>, Integer> primitiveSizes = new IdentityHashMap<>();
+
     static {
       primitiveSizes.put(boolean.class, 1);
       primitiveSizes.put(Boolean.class, 1);
@@ -125,18 +124,17 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       return size;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     static long estimate(Object obj) {
       if (obj instanceof SolrInputDocument) {
         return estimate((SolrInputDocument) obj);
       }
 
       if (obj instanceof Map) {
-        return estimate((Map) obj);
+        return estimate((Map<?, ?>) obj);
       }
 
       if (obj instanceof Collection) {
-        return estimate((Collection) obj);
+        return estimate((Collection<?>) obj);
       }
 
       return primitiveEstimate(obj, 0L);
@@ -153,17 +151,17 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       return def;
     }
 
-    private static long estimate(Map<Object, Object> map) {
+    private static long estimate(Map<?, ?> map) {
       if (map.isEmpty()) return 0;
       long size = 0;
-      for (Map.Entry<Object, Object> entry : map.entrySet()) {
+      for (Map.Entry<?, ?> entry : map.entrySet()) {
         size += primitiveEstimate(entry.getKey(), 0L);
         size += estimate(entry.getValue());
       }
       return size;
     }
 
-    private static long estimate(@SuppressWarnings({"rawtypes"})Collection collection) {
+    private static long estimate(Collection<?> collection) {
       if (collection.isEmpty()) return 0;
       long size = 0;
       for (Object obj : collection) {
@@ -172,5 +170,4 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       return size;
     }
   }
-
 }

@@ -17,16 +17,17 @@
 
 package org.apache.solr.search.function;
 
-
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
-/** Placeholder value source.
- * @lucene.internal */
+/**
+ * Placeholder value source.
+ *
+ * @lucene.internal
+ */
 public class FieldNameValueSource extends ValueSource {
   private String fieldName;
 
@@ -39,14 +40,16 @@ public class FieldNameValueSource extends ValueSource {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
-  public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-    throw new UnsupportedOperationException("FieldNameValueSource should not be directly used: " + this);
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
+    throw new UnsupportedOperationException(
+        "FieldNameValueSource should not be directly used: " + this);
   }
 
   @Override
   public boolean equals(Object o) {
-    return o instanceof FieldNameValueSource && fieldName.equals(((FieldNameValueSource)o).getFieldName());
+    return o instanceof FieldNameValueSource
+        && fieldName.equals(((FieldNameValueSource) o).getFieldName());
   }
 
   @Override

@@ -16,6 +16,13 @@
  */
 package org.apache.solr;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -28,17 +35,14 @@ import org.apache.solr.core.SolrCore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import java.io.File;
-import java.io.IOException;
-
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
-  
+
   private static String tmpSolrHome;
   int port = 0;
   static final String context = "/solr";
 
   static final String collection = "collection1";
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     tmpSolrHome = createTempDir().toFile().getAbsolutePath();
@@ -47,97 +51,92 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void AfterClass() throws Exception {
-    
-  }
-  
+  public static void AfterClass() throws Exception {}
+
   public void testStopwordsAfterCoreReload() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
-    doc.setField( "id", "42" );
-    doc.setField( "teststop", "terma stopworda stopwordb stopwordc" );
-    
+    doc.setField("id", "42");
+    doc.setField("teststop", "terma stopworda stopwordb stopwordc");
+
     // default stopwords - stopworda and stopwordb
-    
+
     UpdateRequest up = new UpdateRequest();
     up.setAction(ACTION.COMMIT, true, true);
-    up.add( doc );
-    up.process( getSolrCore() );
+    up.add(doc);
+    up.process(getSolrCore());
 
     SolrQuery q = new SolrQuery();
-    QueryRequest r = new QueryRequest( q );
-    q.setQuery( "teststop:terma" );
-    assertEquals( 1, r.process( getSolrCore() ).getResults().size() );
+    QueryRequest r = new QueryRequest(q);
+    q.setQuery("teststop:terma");
+    assertEquals(1, r.process(getSolrCore()).getResults().size());
 
     q = new SolrQuery();
-    r = new QueryRequest( q );
-    q.setQuery( "teststop:stopworda" );
-    assertEquals( 0, r.process( getSolrCore() ).getResults().size() );
+    r = new QueryRequest(q);
+    q.setQuery("teststop:stopworda");
+    assertEquals(0, r.process(getSolrCore()).getResults().size());
 
     q = new SolrQuery();
-    r = new QueryRequest( q );
-    q.setQuery( "teststop:stopwordb" );
-    assertEquals( 0, r.process( getSolrCore() ).getResults().size() );
+    r = new QueryRequest(q);
+    q.setQuery("teststop:stopwordb");
+    assertEquals(0, r.process(getSolrCore()).getResults().size());
 
     q = new SolrQuery();
-    r = new QueryRequest( q );
-    q.setQuery( "teststop:stopwordc" );
-    assertEquals( 1, r.process( getSolrCore() ).getResults().size() );
+    r = new QueryRequest(q);
+    q.setQuery("teststop:stopwordc");
+    assertEquals(1, r.process(getSolrCore()).getResults().size());
 
     // overwrite stopwords file with stopword list ["stopwordc"] and reload the core
     overwriteStopwords("stopwordc\n");
     h.getCoreContainer().reload(collection);
 
-    up.process( getSolrCore() );
+    up.process(getSolrCore());
 
     q = new SolrQuery();
-    r = new QueryRequest( q );
-    q.setQuery( "teststop:terma" );
-    assertEquals( 1, r.process( getSolrCore() ).getResults().size() );
+    r = new QueryRequest(q);
+    q.setQuery("teststop:terma");
+    assertEquals(1, r.process(getSolrCore()).getResults().size());
 
     q = new SolrQuery();
-    r = new QueryRequest( q );
-    q.setQuery( "teststop:stopworda" );
+    r = new QueryRequest(q);
+    q.setQuery("teststop:stopworda");
     // stopworda is no longer a stopword
-    assertEquals( 1, r.process( getSolrCore() ).getResults().size() );
+    assertEquals(1, r.process(getSolrCore()).getResults().size());
 
     q = new SolrQuery();
-    r = new QueryRequest( q );
-    q.setQuery( "teststop:stopwordb" );
+    r = new QueryRequest(q);
+    q.setQuery("teststop:stopwordb");
     // stopwordb is no longer a stopword
-    assertEquals( 1, r.process( getSolrCore() ).getResults().size() );
+    assertEquals(1, r.process(getSolrCore()).getResults().size());
 
     q = new SolrQuery();
-    r = new QueryRequest( q );
-    q.setQuery( "teststop:stopwordc" );
+    r = new QueryRequest(q);
+    q.setQuery("teststop:stopwordc");
     // stopwordc should be a stopword
-    assertEquals( 0, r.process( getSolrCore() ).getResults().size() );
+    assertEquals(0, r.process(getSolrCore()).getResults().size());
   }
-  
+
   private void overwriteStopwords(String stopwords) throws IOException {
     try (SolrCore core = h.getCoreContainer().getCore(collection)) {
-      String configDir = core.getResourceLoader().getConfigDir();
-      FileUtils.moveFile(new File(configDir, "stopwords.txt"), new File(configDir, "stopwords.txt.bak"));
-      File file = new File(configDir, "stopwords.txt");
-      FileUtils.writeStringToFile(file, stopwords, "UTF-8");
-     
+      Path configPath = core.getResourceLoader().getConfigPath();
+      Files.move(configPath.resolve("stopwords.txt"), configPath.resolve("stopwords.txt.bak"));
+      Files.write(configPath.resolve("stopwords.txt"), stopwords.getBytes(StandardCharsets.UTF_8));
     }
   }
-  
+
   @Override
   public void tearDown() throws Exception {
-    String configDir;
+    Path configPath;
     try (SolrCore core = h.getCoreContainer().getCore(collection)) {
-      configDir = core.getResourceLoader().getConfigDir();
+      configPath = core.getResourceLoader().getConfigPath();
     }
     super.tearDown();
-    if (new File(configDir, "stopwords.txt.bak").exists()) {
-      FileUtils.deleteQuietly(new File(configDir, "stopwords.txt"));
-      FileUtils.moveFile(new File(configDir, "stopwords.txt.bak"), new File(configDir, "stopwords.txt"));
+    Path backupFile = configPath.resolve("stopwords.txt.bak");
+    if (Files.exists(backupFile)) {
+      Files.move(backupFile, configPath.resolve("stopwords.txt"), REPLACE_EXISTING);
     }
   }
 
   protected SolrClient getSolrCore() {
     return new EmbeddedSolrServer(h.getCoreContainer(), collection);
   }
-
 }

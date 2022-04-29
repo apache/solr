@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.search.stats.ExactStatsCache;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
@@ -44,9 +45,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-
 /**
- *
  * @see TestSortByMinMaxFunction
  **/
 public class SortByFunctionTest extends SolrCloudTestCase {
@@ -183,13 +182,13 @@ public class SortByFunctionTest extends SolrCloudTestCase {
    * @see #testFieldSortSpecifiedAsFunction
    */
   protected String[] getFieldFunctionClausesToTest() {
-    return new String[] { "primary_tl1", "field(primary_tl1)" };
+    return new String[] {"primary_tl1", "field(primary_tl1)"};
   }
 
   /**
-   * Sort by function normally compares the double value, but if a function is specified that identifies
-   * a single field, we should use the underlying field's SortField to save of a lot of type converstion 
-   * (and RAM), and keep the sort precision as high as possible
+   * Sort by function normally compares the double value, but if a function is specified that
+   * identifies a single field, we should use the underlying field's SortField to save of a lot of
+   * type converstion (and RAM), and keep the sort precision as high as possible
    *
    * @see #getFieldFunctionClausesToTest
    */
@@ -197,11 +196,11 @@ public class SortByFunctionTest extends SolrCloudTestCase {
     final long A = Long.MIN_VALUE;
     final long B = A + 1L;
     final long C = B + 1L;
-    
+
     final long Z = Long.MAX_VALUE;
     final long Y = Z - 1L;
     final long X = Y - 1L;
-    
+
     // test is predicated on the idea that if long -> double converstion is happening under the hood
     // then we lose precision in sorting; so lets sanity check that our JVM isn't doing something wacky
     // in converstion that violates the principle of the test
@@ -252,7 +251,7 @@ public class SortByFunctionTest extends SolrCloudTestCase {
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
     assert null != client.getDefaultCollection();
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(client.getDefaultCollection(),
-                                                        client.getZkStateReader(),
+                                                        ZkStateReader.from(client),
                                                         true, true, 330);
   }
 

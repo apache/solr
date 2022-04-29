@@ -19,9 +19,7 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.commons.math3.geometry.enclosing.EnclosingBall;
-
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -34,11 +32,15 @@ public class GetRadiusEvaluator extends RecursiveObjectEvaluator implements OneV
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if(!(value instanceof EnclosingBall)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting an EnclosingBall",toExpression(constructingFactory), value.getClass().getSimpleName()));
+    if (!(value instanceof EnclosingBall)) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - found type %s for value, expecting an EnclosingBall",
+              toExpression(constructingFactory),
+              value.getClass().getSimpleName()));
     } else {
-      @SuppressWarnings({"rawtypes"})
-      EnclosingBall enclosingBall = (EnclosingBall)value;
+      EnclosingBall<?, ?> enclosingBall = (EnclosingBall<?, ?>) value;
       return enclosingBall.getRadius();
     }
   }

@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,26 +17,27 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
+public class DeleteAliasCmd implements CollApiCmds.CollectionApiCommand {
+  private final CollectionCommandContext ccc;
 
-public class DeleteAliasCmd implements OverseerCollectionMessageHandler.Cmd {
-  private final OverseerCollectionMessageHandler ocmh;
-
-  public DeleteAliasCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public DeleteAliasCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     String aliasName = message.getStr(NAME);
 
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
-    zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(aliasName, null));
+    ZkStateReader zkStateReader = ccc.getZkStateReader();
+    zkStateReader.aliasesManager.applyModificationAndExportToZk(
+        a -> a.cloneWithCollectionAlias(aliasName, null));
   }
-
 }

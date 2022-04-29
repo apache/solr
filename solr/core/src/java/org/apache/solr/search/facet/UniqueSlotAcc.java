@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -32,10 +31,12 @@ abstract class UniqueSlotAcc extends SlotAcc {
   HLLAgg.HLLFactory factory;
   SchemaField field;
   FixedBitSet[] arr;
-  int[] counts;  // populated with the cardinality once
+  int[] counts; // populated with the cardinality once
   int nTerms;
 
-  public UniqueSlotAcc(FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
+  public UniqueSlotAcc(
+      FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory)
+      throws IOException {
     super(fcontext);
     this.factory = factory;
     arr = new FixedBitSet[numSlots];
@@ -59,13 +60,10 @@ abstract class UniqueSlotAcc extends SlotAcc {
     return getNonShardValue(slot);
   }
 
-  /**
-   * Returns the current slot value as long
-   * This is used to get non-sharded value
-   */
+  /** Returns the current slot value as long This is used to get non-sharded value */
   public long getNonShardValue(int slot) {
     long res;
-    if (counts != null) {  // will only be pre-populated if this was used for sorting.
+    if (counts != null) { // will only be pre-populated if this was used for sorting.
       res = counts[slot];
     } else {
       FixedBitSet bs = arr[slot];
@@ -74,7 +72,6 @@ abstract class UniqueSlotAcc extends SlotAcc {
     return res;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private Object getShardHLL(int slot) throws IOException {
     FixedBitSet ords = arr[slot];
     if (ords == null) return HLLAgg.NO_VALUES;
@@ -82,7 +79,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
     HLL hll = factory.getHLL();
     long maxOrd = ords.length();
     Hash.LongPair hashResult = new Hash.LongPair();
-    for(int ord=-1; ++ord < maxOrd;) {
+    for (int ord = -1; ++ord < maxOrd; ) {
       ord = ords.nextSetBit(ord);
       if (ord == DocIdSetIterator.NO_MORE_DOCS) break;
       BytesRef val = lookupOrd(ord);
@@ -93,12 +90,11 @@ abstract class UniqueSlotAcc extends SlotAcc {
       hll.addRaw(hashResult.val1);
     }
 
-    SimpleOrderedMap map = new SimpleOrderedMap();
+    SimpleOrderedMap<Object> map = new SimpleOrderedMap<>();
     map.add("hll", hll.toBytes());
     return map;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private Object getShardValue(int slot) throws IOException {
     if (factory != null) return getShardHLL(slot);
     FixedBitSet ords = arr[slot];
@@ -106,23 +102,23 @@ abstract class UniqueSlotAcc extends SlotAcc {
     if (counts != null) {
       unique = counts[slot];
     } else {
-      unique = ords==null ? 0 : ords.cardinality();
+      unique = ords == null ? 0 : ords.cardinality();
     }
 
-    SimpleOrderedMap map = new SimpleOrderedMap();
+    SimpleOrderedMap<Object> map = new SimpleOrderedMap<>();
     map.add("unique", unique);
     map.add("nTerms", nTerms);
 
-    int maxExplicit=100;
+    int maxExplicit = 100;
     // TODO: make configurable
     // TODO: share values across buckets
     if (unique > 0) {
 
-      List lst = new ArrayList( Math.min(unique, maxExplicit) );
+      List<Object> lst = new ArrayList<>(Math.min(unique, maxExplicit));
 
       int maxOrd = ords.length();
       if (maxOrd > 0) {
-        for (int ord=0; lst.size() < maxExplicit;) {
+        for (int ord = 0; lst.size() < maxExplicit; ) {
           ord = ords.nextSetBit(ord);
           if (ord == DocIdSetIterator.NO_MORE_DOCS) break;
           BytesRef val = lookupOrd(ord);
@@ -143,7 +139,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
   // we only calculate all the counts when sorting by count
   public void calcCounts() {
     counts = new int[arr.length];
-    for (int i=0; i<arr.length; i++) {
+    for (int i = 0; i < arr.length; i++) {
       FixedBitSet bs = arr[i];
       counts[i] = bs == null ? 0 : bs.cardinality();
     }
@@ -151,7 +147,7 @@ abstract class UniqueSlotAcc extends SlotAcc {
 
   @Override
   public int compare(int slotA, int slotB) {
-    if (counts == null) {  // TODO: a more efficient way to do this?  prepareSort?
+    if (counts == null) { // TODO: a more efficient way to do this?  prepareSort?
       calcCounts();
     }
     return counts[slotA] - counts[slotB];

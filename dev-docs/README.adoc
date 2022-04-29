@@ -1,4 +1,4 @@
-= Lucene Project Docs
+= Solr Developer Docs
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,6 +16,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This directory includes information for the Lucene project overall.
+This directory includes information for Solr developers.   There are some other
+sources of information for learning about developing on Solr:
 
-Also look in `lucene/dev-docs` for Lucene developer information and `solr/dev-docs` for Solr developer information.
+1. The help .txt files for the Gradle commands in the `help/` directory.
+
+2. Information on how to handle adding dependencies and related licensing
+details, see the information in `/solr/licenses/README.committers.txt`.
+
+3. The Solr Reference Guide, which provides primarily end user oriented documentation.
+However, the Ref Guide hosts it's own documentation on how to write Ref Guide content.
+
+There are a number of tools related to doing development on Solr available in the `/dev-tools`
+directory.

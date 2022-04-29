@@ -1,0 +1,45 @@
+= Installation and Deployment
+:page-children: system-requirements, \
+    installing-solr, \
+    taking-solr-to-production, \
+    jvm-settings, \
+    upgrading-a-solr-cluster, \
+    backup-restore, \
+    solr-in-docker, \
+    solr-on-hdfs
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[.lead]
+This section covers system requirements, installation, upgrades, and deployments.
+
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::install-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| <<system-requirements.adoc#,System Requirements>>: Solr system requirements.
+| <<installing-solr.adoc#,Installing Solr>>:  Solr installation process.
+| <<taking-solr-to-production.adoc#,Taking Solr to Production>>: Solr as a service and production considerations.
+| <<jvm-settings.adoc#,JVM Settings>>: Java Virtual Machines best practices.
+| <<upgrading-a-solr-cluster.adoc#,Upgrading a Solr Cluster>>: SolrCloud cluster upgrades.
+| <<backup-restore.adoc#,Backup and Restore>>: Solr backup strategies.
+| <<solr-in-docker#,Solr in Docker>>: Solr's Docker image.
+| <<solr-on-hdfs.adoc#,Solr on HDFS>>: Store Solr indexes and transaction logs in HDFS.
+|===
+// end::install-sections[]
+****

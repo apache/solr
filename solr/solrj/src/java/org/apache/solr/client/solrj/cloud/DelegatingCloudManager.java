@@ -18,72 +18,76 @@ package org.apache.solr.client.solrj.cloud;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
 
-/**
- * Base class for overriding some behavior of {@link SolrCloudManager}.
- */
+/** Base class for overriding some behavior of {@link SolrCloudManager}. */
 public class DelegatingCloudManager implements SolrCloudManager {
-    protected final SolrCloudManager delegate;
-    private ObjectCache objectCache = new ObjectCache();
-    private TimeSource timeSource = TimeSource.NANO_TIME;
+  protected final SolrCloudManager delegate;
+  private ObjectCache objectCache = new ObjectCache();
+  private TimeSource timeSource = TimeSource.NANO_TIME;
 
-    public DelegatingCloudManager(SolrCloudManager delegate) {
-        this.delegate = delegate;
-    }
+  public DelegatingCloudManager(SolrCloudManager delegate) {
+    this.delegate = delegate;
+  }
 
-    @Override
-    public ClusterStateProvider getClusterStateProvider() {
-        return delegate.getClusterStateProvider();
-    }
+  @Override
+  public ClusterStateProvider getClusterStateProvider() {
+    return delegate.getClusterStateProvider();
+  }
 
-    @Override
-    public NodeStateProvider getNodeStateProvider() {
-        return delegate.getNodeStateProvider();
-    }
+  @Override
+  public NodeStateProvider getNodeStateProvider() {
+    return delegate.getNodeStateProvider();
+  }
 
-    @Override
-    public DistribStateManager getDistribStateManager() {
-        return delegate.getDistribStateManager();
-    }
+  @Override
+  public DistribStateManager getDistribStateManager() {
+    return delegate.getDistribStateManager();
+  }
 
-    @Override
-    public DistributedQueueFactory getDistributedQueueFactory() {
-        return delegate.getDistributedQueueFactory();
-    }
+  @Override
+  public DistributedQueueFactory getDistributedQueueFactory() {
+    return delegate.getDistributedQueueFactory();
+  }
 
-    @Override
-    public ObjectCache getObjectCache() {
-        return delegate == null ? objectCache : delegate.getObjectCache();
-    }
+  @Override
+  public ObjectCache getObjectCache() {
+    return delegate == null ? objectCache : delegate.getObjectCache();
+  }
 
-    @Override
-    public boolean isClosed() {
-        return delegate.isClosed();
-    }
+  @Override
+  public boolean isClosed() {
+    return delegate.isClosed();
+  }
 
-    @Override
-    public TimeSource getTimeSource() {
-        return delegate == null ? timeSource : delegate.getTimeSource();
-    }
+  @Override
+  public TimeSource getTimeSource() {
+    return delegate == null ? timeSource : delegate.getTimeSource();
+  }
 
-    @Override
-    public SolrResponse request(@SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException {
-        return delegate.request(req);
-    }
+  @Override
+  public <T extends SolrResponse> T request(SolrRequest<T> req) throws IOException {
+    return delegate.request(req);
+  }
 
-    @Override
-    public byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException {
-        return delegate.httpRequest(url, method, headers, payload, timeout, followRedirects);
-    }
+  @Override
+  public byte[] httpRequest(
+      String url,
+      SolrRequest.METHOD method,
+      Map<String, String> headers,
+      String payload,
+      int timeout,
+      boolean followRedirects)
+      throws IOException {
+    return delegate.httpRequest(url, method, headers, payload, timeout, followRedirects);
+  }
 
-    @Override
-    public void close() throws IOException {
-        delegate.close();
-    }
+  @Override
+  public void close() throws IOException {
+    delegate.close();
+  }
 }

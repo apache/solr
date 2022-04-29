@@ -16,12 +16,11 @@
  */
 package org.apache.solr.update.processor;
 
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -34,27 +33,20 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
 /**
- * <p>
- * Attempts to mutate selected fields that have only CharSequence-typed values
- * into Boolean values.
- * </p>
- * <p>
- * The default selection behavior is to mutate both those fields that don't match
- * a schema field, as well as those fields that do match a schema field and have
- * a field type that uses class solr.BooleanField.
- * </p>
- * <p>
- * If all values are parseable as boolean (or are already Boolean), then the field
- * will be mutated, replacing each value with its parsed Boolean equivalent; 
- * otherwise, no mutation will occur.
- * </p>
- * <p>
- * The default true and false values are "true" and "false", respectively, and match
- * case-insensitively.  The following configuration changes the acceptable values, and
- * requires a case-sensitive match - note that either individual &lt;str&gt; elements
- * or &lt;arr&gt;-s of &lt;str&gt; elements may be used to specify the trueValue-s
- * and falseValue-s:
- * </p>
+ * Attempts to mutate selected fields that have only CharSequence-typed values into Boolean values.
+ *
+ * <p>The default selection behavior is to mutate both those fields that don't match a schema field,
+ * as well as those fields that do match a schema field and have a field type that uses class
+ * solr.BooleanField.
+ *
+ * <p>If all values are parseable as boolean (or are already Boolean), then the field will be
+ * mutated, replacing each value with its parsed Boolean equivalent; otherwise, no mutation will
+ * occur.
+ *
+ * <p>The default true and false values are "true" and "false", respectively, and match
+ * case-insensitively. The following configuration changes the acceptable values, and requires a
+ * case-sensitive match - note that either individual &lt;str&gt; elements or &lt;arr&gt;-s of
+ * &lt;str&gt; elements may be used to specify the trueValue-s and falseValue-s:
  *
  * <pre class="prettyprint">
  * &lt;processor class="solr.ParseBooleanFieldUpdateProcessorFactory"&gt;
@@ -66,72 +58,64 @@ import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSe
  *     &lt;str&gt;No&lt;/str&gt;
  *   &lt;/arr&gt;
  * &lt;/processor&gt;</pre>
+ *
  * @since 4.4.0
  */
 public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
   private static final String TRUE_VALUES_PARAM = "trueValue";
   private static final String FALSE_VALUES_PARAM = "falseValue";
   private static final String CASE_SENSITIVE_PARAM = "caseSensitive";
-  
-  private Set<String> trueValues = new HashSet<>(Arrays.asList(new String[] { "true" }));
-  private Set<String> falseValues = new HashSet<>(Arrays.asList(new String[] { "false" }));
+
+  private Set<String> trueValues = new HashSet<>(Collections.singleton("true"));
+  private Set<String> falseValues = new HashSet<>(Collections.singleton("false"));
   private boolean caseSensitive = false;
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, 
-                                            SolrQueryResponse rsp, 
-                                            UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return new AllValuesOrNoneFieldMutatingUpdateProcessor(getSelector(), next) {
       @Override
       protected Object mutateValue(Object srcVal) {
-        if (srcVal instanceof CharSequence) {
-          String stringVal = caseSensitive ? srcVal.toString() : srcVal.toString().toLowerCase(Locale.ROOT);
-          if (trueValues.contains(stringVal)) {
-            return true;
-          } else if (falseValues.contains(stringVal)) {
-            return false;
-          } else {
-            return SKIP_FIELD_VALUE_LIST_SINGLETON;
-          }
-        }
-        if (srcVal instanceof Boolean) {
-          return srcVal;
-        }
-        return SKIP_FIELD_VALUE_LIST_SINGLETON;
+        Object parsed = parsePossibleBoolean(srcVal, caseSensitive, trueValues, falseValues);
+        return parsed != null ? parsed : SKIP_FIELD_VALUE_LIST_SINGLETON;
       }
     };
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(NamedList<?> args) {
     Object caseSensitiveParam = args.remove(CASE_SENSITIVE_PARAM);
     if (null != caseSensitiveParam) {
       if (caseSensitiveParam instanceof Boolean) {
-        caseSensitive = (Boolean)caseSensitiveParam;
+        caseSensitive = (Boolean) caseSensitiveParam;
       } else {
-        caseSensitive = Boolean.valueOf(caseSensitiveParam.toString());
+        caseSensitive = Boolean.parseBoolean(caseSensitiveParam.toString());
       }
     }
 
-    @SuppressWarnings({"unchecked"})
     Collection<String> trueValuesParam = args.removeConfigArgs(TRUE_VALUES_PARAM);
-    if ( ! trueValuesParam.isEmpty()) {
+    if (!trueValuesParam.isEmpty()) {
       trueValues.clear();
       for (String trueVal : trueValuesParam) {
         trueValues.add(caseSensitive ? trueVal : trueVal.toLowerCase(Locale.ROOT));
       }
     }
 
-    @SuppressWarnings({"unchecked"})
     Collection<String> falseValuesParam = args.removeConfigArgs(FALSE_VALUES_PARAM);
-    if ( ! falseValuesParam.isEmpty()) {
+    if (!falseValuesParam.isEmpty()) {
       falseValues.clear();
       for (String val : falseValuesParam) {
         final String falseVal = caseSensitive ? val : val.toLowerCase(Locale.ROOT);
         if (trueValues.contains(falseVal)) {
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-              "Param '" + FALSE_VALUES_PARAM + "' contains a value also in param '" + TRUE_VALUES_PARAM
-                  + "': '" + val + "'");
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR,
+              "Param '"
+                  + FALSE_VALUES_PARAM
+                  + "' contains a value also in param '"
+                  + TRUE_VALUES_PARAM
+                  + "': '"
+                  + val
+                  + "'");
         }
         falseValues.add(falseVal);
       }
@@ -139,10 +123,9 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
     super.init(args);
   }
 
-
   /**
-   * Returns true if the field doesn't match any schema field or dynamic field,
-   *           or if the matched field's type is BoolField
+   * Returns true if the field doesn't match any schema field or dynamic field, or if the matched
+   * field's type is BoolField
    */
   @Override
   public FieldNameSelector getDefaultSelector(final SolrCore core) {
@@ -151,5 +134,24 @@ public class ParseBooleanFieldUpdateProcessorFactory extends FieldMutatingUpdate
       FieldType type = schema.getFieldTypeNoEx(fieldName);
       return (null == type) || (type instanceof BoolField);
     };
+  }
+
+  public static Object parsePossibleBoolean(
+      Object srcVal, boolean caseSensitive, Set<String> trueValues, Set<String> falseValues) {
+    if (srcVal instanceof CharSequence) {
+      String stringVal =
+          caseSensitive ? srcVal.toString() : srcVal.toString().toLowerCase(Locale.ROOT);
+      if (trueValues.contains(stringVal)) {
+        return true;
+      } else if (falseValues.contains(stringVal)) {
+        return false;
+      } else {
+        return null;
+      }
+    }
+    if (srcVal instanceof Boolean) {
+      return srcVal;
+    }
+    return null;
   }
 }

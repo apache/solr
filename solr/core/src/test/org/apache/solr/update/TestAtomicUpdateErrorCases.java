@@ -24,24 +24,26 @@ public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {
   public void testUpdateNoTLog() throws Exception {
     try {
       System.setProperty("enable.update.log", "false");
-      initCore("solrconfig.xml","schema15.xml");
-      
-      UpdateHandler uh = h.getCore().getUpdateHandler();
-      assertTrue("this test requires DirectUpdateHandler2",
-                 uh instanceof DirectUpdateHandler2);
+      initCore("solrconfig.xml", "schema15.xml");
 
-      assertNull("this test requires that the updateLog not be enabled, it " +
-                 "seems that someone modified the configs",
-                 ((DirectUpdateHandler2)uh).getUpdateLog());
-      
+      UpdateHandler uh = h.getCore().getUpdateHandler();
+      assertTrue("this test requires DirectUpdateHandler2", uh instanceof DirectUpdateHandler2);
+
+      assertNull(
+          "this test requires that the updateLog not be enabled, it "
+              + "seems that someone modified the configs",
+          ((DirectUpdateHandler2) uh).getUpdateLog());
+
       // creating docs should work fine
       addAndGetVersion(sdoc("id", "1", "val_i", "42"), null);
       assertU(commit());
 
       // updating docs should fail
       ignoreException("updateLog");
-      SolrException ex = expectThrows(SolrException.class,
-          () -> addAndGetVersion(sdoc("id", "1", "val_i", map("inc",-666)), null));
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () -> addAndGetVersion(sdoc("id", "1", "val_i", map("inc", -666)), null));
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().contains("unless <updateLog/> is configured"));
       resetExceptionIgnores();
@@ -53,22 +55,26 @@ public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {
 
   public void testUpdateNoDistribProcessor() throws Exception {
     try {
-      initCore("solrconfig-tlog.xml","schema15.xml");
-      
-      assertNotNull("this test requires an update chain named 'nodistrib'",
-                    h.getCore().getUpdateProcessingChain("nodistrib")); 
+      initCore("solrconfig-tlog.xml", "schema15.xml");
+
+      assertNotNull(
+          "this test requires an update chain named 'nodistrib'",
+          h.getCore().getUpdateProcessingChain("nodistrib"));
 
       // creating docs should work fine
-      addAndGetVersion(sdoc("id", "1", "val_i", "42"), 
-                       params("update.chain","nodistrib"));
+      addAndGetVersion(sdoc("id", "1", "val_i", "42"), params("update.chain", "nodistrib"));
       assertU(commit());
 
       ignoreException("DistributedUpdateProcessorFactory");
       // updating docs should fail
-      SolrException ex = expectThrows(SolrException.class, () -> {
-        addAndGetVersion(sdoc("id", "1", "val_i", map("inc",-666)),
-            params("update.chain","nodistrib"));
-      });
+      SolrException ex =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                addAndGetVersion(
+                    sdoc("id", "1", "val_i", map("inc", -666)),
+                    params("update.chain", "nodistrib"));
+              });
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().contains("DistributedUpdateProcessorFactory"));
       resetExceptionIgnores();
@@ -76,5 +82,4 @@ public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {
       deleteCore();
     }
   }
-
 }

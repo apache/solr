@@ -1,0 +1,88 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+// Pull and unpack Lucene javadocs from published Maven artifacts for use in local link checking.
+
+configure(project(":solr:documentation")) {
+  ext {
+    luceneDocsDir = file("${project.buildDir}/lucene-javadocs")
+  }
+
+  configurations {
+    javadocs {
+      // Not sure why we need this, otherwise regular JARs get sucked in, not just
+      // javadoc-classifier JARs
+      transitive = false
+      canBeResolved = true
+      canBeConsumed = true
+    }
+  }
+
+  dependencies {
+    // Note we can't use the abbreviated form (above) because we omit the version number
+    // for the palantir plugin and at the same time we wish to use the classifier.
+
+    // TODO:
+    // - For now this list is focused solely on the javadocs needed for ref-guide link validation.
+    // - If/when additional links are added from the ref-guide to additional lucene modules not listed here,
+    //   they can be added.
+    // - If/when we need the lucene javadocs for "all" lucene depdencies in Solr (ie: to do link checking
+    //   from all Solr javadocs?) then perhaps we can find a way to build this list programatically?
+    // - If these javadocs are (only every) consumed by the ref guide only, then these deps & associated tasks
+    //   should just be moved to the ref-guide build.gradle
+    javadocs group: 'org.apache.lucene', name: 'lucene-core', classifier: 'javadoc'
+    javadocs group: 'org.apache.lucene', name: 'lucene-analysis-common', classifier: 'javadoc'
+    javadocs group: 'org.apache.lucene', name: 'lucene-analysis-stempel', classifier: 'javadoc'
+    javadocs group: 'org.apache.lucene', name: 'lucene-queryparser', classifier: 'javadoc'
+    javadocs group: 'org.apache.lucene', name: 'lucene-sandbox', classifier: 'javadoc'
+    javadocs group: 'org.apache.lucene', name: 'lucene-spatial-extras', classifier: 'javadoc'
+  }
+
+
+  task collectLuceneJavadocs() {
+    description "Collect and unpack javadoc artifacts from 'javadocs' configuration"
+
+    dependsOn configurations.javadocs
+    inputs.files configurations.javadocs
+    outputs.dir project.ext.luceneDocsDir
+
+    doFirst {
+      def resolved = configurations.javadocs.resolvedConfiguration
+      resolved.resolvedArtifacts.each { artifact ->
+        def id = artifact.moduleVersion.id
+        // This mimics the directory stucture used on lucene.apache.org for the javadocs of all modules.
+        //
+        // HACK: the lucene.apache.org javadocs are organized to match the module directory structure in the repo,
+        // not the "flat" artifact names -- so there is no one size fits all way to determine the directory name.
+        // We have to "special case" that analysis-* modules are in an 'analysis/*' subdir, while the general rule is that
+        // '-' in artifact names are left as part of the dir name (ie: 'spatial-extras/')....
+        def path = id.name.replaceFirst('^lucene-', '').replaceFirst('^analysis-','analysis/')
+        project.sync {
+          from zipTree(artifact.file)
+          into file("${project.ext.luceneDocsDir}/${path}/")
+        }
+      }
+    }
+  }
+
+  artifacts {
+    javadocs luceneDocsDir, {
+      builtBy collectLuceneJavadocs
+    }
+  }
+}

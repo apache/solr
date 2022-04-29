@@ -15,29 +15,19 @@
  * limitations under the License.
  */
 package org.apache.solr.core;
-import java.io.File;
-import java.io.IOException;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NIOFSDirectory;
 
-
-/**
- * Factory to instantiate {@link org.apache.lucene.store.NIOFSDirectory}
- *
- **/
+/** Factory to instantiate {@link org.apache.lucene.store.NIOFSDirectory} */
 public class NIOFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
-  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
-    // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
-    return new NIOFSDirectory(new File(path).toPath(), lockFactory);
+  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
+      throws IOException {
+    return new NIOFSDirectory(Path.of(path), lockFactory);
   }
-  
-  @Override
-  public boolean isAbsolute(String path) {
-    return new File(path).isAbsolute();
-  }
-  
 }

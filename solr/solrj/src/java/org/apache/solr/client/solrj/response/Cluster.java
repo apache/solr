@@ -21,12 +21,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * This class represents a cluster of Solr Docs .
- * The cluster is produced from a set of Solr documents from the results.
- * It is a direct mapping for the Json object Solr is returning.
+ * This class represents a cluster of Solr Docs . The cluster is produced from a set of Solr
+ * documents from the results. It is a direct mapping for the Json object Solr is returning.
  */
 public class Cluster {
-
   private List<String> labels;
   private double score;
   private List<String> docIds;
@@ -39,29 +37,32 @@ public class Cluster {
 
   /**
    * @param labels the list of human readable labels associated to the cluster
-   * @param score  the score produced by the clustering algorithm for the current cluster
-   * @param docIds   the list of document Ids belonging to the cluster
+   * @param score the score produced by the clustering algorithm for the current cluster
+   * @param docIds the list of document Ids belonging to the cluster
    */
-  public Cluster(List<String> labels, double score, List<String> docIds, List<Cluster> subclusters, boolean otherTopics) {
-    this.labels = labels;
+  public Cluster(
+      List<String> labels,
+      double score,
+      List<String> docIds,
+      List<Cluster> subclusters,
+      boolean otherTopics) {
+    this.labels = Objects.requireNonNullElse(labels, Collections.emptyList());
     this.score = score;
-    this.docIds = docIds;
-    this.subclusters = subclusters;
+    this.docIds = Objects.requireNonNullElse(docIds, Collections.emptyList());
+    this.subclusters = Objects.requireNonNullElse(subclusters, Collections.emptyList());
     this.otherTopics = otherTopics;
   }
 
   @Override
   public boolean equals(Object o) {
-    return o != null &&
-           this.getClass().isInstance(o) &&
-           equalsTo((Cluster) o);
+    return o != null && this.getClass().isInstance(o) && equalsTo((Cluster) o);
   }
 
   private boolean equalsTo(Cluster o) {
-    return Double.compare(o.score, score) == 0 &&
-           Objects.equals(o.docIds, docIds) &&
-           Objects.equals(o.labels, labels) &&
-           Objects.equals(o.subclusters, subclusters);
+    return Double.compare(o.score, score) == 0
+        && Objects.equals(o.docIds, docIds)
+        && Objects.equals(o.labels, labels)
+        && Objects.equals(o.subclusters, subclusters);
   }
 
   @Override
@@ -93,13 +94,14 @@ public class Cluster {
     this.docIds = docIds;
   }
 
-  public List<Cluster> getSubclusters() {
+  public List<Cluster> getClusters() {
     return subclusters;
   }
 
   /**
-   * @return If <code>true</code>, the cluster contains references to documents that are not semantically associated
-   * and form a group of documents not related to any other cluster (or themselves).
+   * @return If <code>true</code>, the cluster contains references to documents that are not
+   *     semantically associated and form a group of documents not related to any other cluster (or
+   *     themselves).
    */
   public boolean isOtherTopics() {
     return otherTopics;

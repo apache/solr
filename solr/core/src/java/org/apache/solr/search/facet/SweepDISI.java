@@ -18,9 +18,7 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
@@ -35,16 +33,27 @@ abstract class SweepDISI extends DocIdSetIterator implements SweepCountAware {
     this.countAccs = countAccs;
   }
 
-  private static boolean addAcc(SweepCountAccStruct entry, DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs, LeafReaderContext subCtx, int idx) throws IOException {
-    final DocIdSet docIdSet = entry.docSet.getTopFilter().getDocIdSet(subCtx, null);
-    if (docIdSet == null || (subIterators[idx] = docIdSet.iterator()) == null) {
+  private static boolean addAcc(
+      SweepCountAccStruct entry,
+      DocIdSetIterator[] subIterators,
+      CountSlotAcc[] activeCountAccs,
+      LeafReaderContext subCtx,
+      int idx)
+      throws IOException {
+    if ((subIterators[idx] = entry.docSet.iterator(subCtx)) == null) {
       return false;
     }
     activeCountAccs[idx] = entry.countAcc;
     return true;
   }
 
-  static SweepDISI newInstance(SweepCountAccStruct base, List<SweepCountAccStruct> others, DocIdSetIterator[] subIterators, CountSlotAcc[] activeCountAccs, LeafReaderContext subCtx) throws IOException {
+  static SweepDISI newInstance(
+      SweepCountAccStruct base,
+      List<SweepCountAccStruct> others,
+      DocIdSetIterator[] subIterators,
+      CountSlotAcc[] activeCountAccs,
+      LeafReaderContext subCtx)
+      throws IOException {
     int activeCt = 0;
     final int baseIdx;
     if (base == null || !addAcc(base, subIterators, activeCountAccs, subCtx, activeCt)) {
@@ -61,7 +70,10 @@ abstract class SweepDISI extends DocIdSetIterator implements SweepCountAware {
       case 0:
         return null;
       case 1:
-        return new SingletonDISI(subIterators[0], activeCountAccs, baseIdx >= 0); // solr docsets already exclude any deleted docs
+        return new SingletonDISI(
+            subIterators[0],
+            activeCountAccs,
+            baseIdx >= 0); // solr docsets already exclude any deleted docs
       default:
         return new UnionDISI(subIterators, activeCountAccs, activeCt, baseIdx);
     }
@@ -81,5 +93,4 @@ abstract class SweepDISI extends DocIdSetIterator implements SweepCountAware {
   public long cost() {
     throw new UnsupportedOperationException("Not supported.");
   }
-
 }

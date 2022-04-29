@@ -17,9 +17,8 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
-
+import java.util.List;
 import org.apache.commons.math3.geometry.enclosing.EnclosingBall;
 import org.apache.commons.math3.geometry.enclosing.WelzlEncloser;
 import org.apache.commons.math3.geometry.euclidean.twod.DiskGenerator;
@@ -31,37 +30,36 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class EnclosingDiskEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
 
-  public EnclosingDiskEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public EnclosingDiskEvaluator(StreamExpression expression, StreamFactory factory)
+      throws IOException {
     super(expression, factory);
   }
 
   @Override
-  public Object doWork(Object... objects) throws IOException{
+  public Object doWork(Object... objects) throws IOException {
 
-    if(objects[0] instanceof Matrix) {
-      return getEnclosingDisk((Matrix)objects[0]);
+    if (objects[0] instanceof Matrix) {
+      return getEnclosingDisk((Matrix) objects[0]);
     } else {
       throw new IOException("The enclosingDisk function operates on a matrix of 2D vectors");
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public static EnclosingBall getEnclosingDisk(Matrix matrix) throws IOException {
+  public static EnclosingBall<Euclidean2D, Vector2D> getEnclosingDisk(Matrix matrix)
+      throws IOException {
     double[][] data = matrix.getData();
     List<Vector2D> points = new ArrayList<>(data.length);
-    if(data[0].length == 2) {
-      for(double[] row : data) {
+    if (data[0].length == 2) {
+      for (double[] row : data) {
         points.add(new Vector2D(row[0], row[1]));
       }
 
-
-      @SuppressWarnings({"unchecked"})
-      WelzlEncloser<Euclidean2D, Vector2D> welzlEncloser = new WelzlEncloser(.001, new DiskGenerator());
-      EnclosingBall enclosingBall = welzlEncloser.enclose(points);
+      WelzlEncloser<Euclidean2D, Vector2D> welzlEncloser =
+          new WelzlEncloser<>(.001, new DiskGenerator());
+      EnclosingBall<Euclidean2D, Vector2D> enclosingBall = welzlEncloser.enclose(points);
       return enclosingBall;
     } else {
       throw new IOException("The enclosingDisk function operates on a matrix of 2D vectors");
     }
   }
-
 }

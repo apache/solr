@@ -1,0 +1,45 @@
+#!/bin/bash
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# start solr in the foreground
+set -e
+
+if [[ "$VERBOSE" == "yes" ]]; then
+    set -x
+fi
+
+echo "Starting Solr"
+# determine TINI default. If it is already set, assume the user knows what they want
+if [[ -z "${TINI:-}" ]]; then
+  if [[ "$$" == 1 ]]; then
+    # Default to running tini, so we can run with an OOM script and have 'kill -9' work
+    TINI=yes
+  else
+    # Presumably we're already running under tini through 'docker --init', in which case we
+    # don't need to run it twice.
+    # It's also possible that we're run from a wrapper script without exec,
+    # in which case running tini would not be ideal either.
+    TINI=no
+  fi
+fi
+if [[ "$TINI" == yes ]]; then
+  exec tini -- solr -f "$@"
+elif [[ "$TINI" == no ]]; then
+  exec solr -f "$@"
+else
+  echo "invalid value TINI=$TINI"
+  exit 1
+fi

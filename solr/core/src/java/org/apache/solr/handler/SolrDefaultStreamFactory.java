@@ -18,12 +18,13 @@ package org.apache.solr.handler;
 
 import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.WeightedSumMetric;
 import org.apache.solr.core.SolrResourceLoader;
 
 /**
- * A default collection of mappings, used to convert strings into stream expressions.
- * Same as {@link DefaultStreamFactory} plus functions that rely directly on either
- * Lucene or Solr capabilities that are not part of {@link Lang}.
+ * A default collection of mappings, used to convert strings into stream expressions. Same as {@link
+ * DefaultStreamFactory} plus functions that rely directly on either Lucene or Solr capabilities
+ * that are not part of {@link Lang}.
  *
  * @since 7.5
  */
@@ -33,10 +34,11 @@ public class SolrDefaultStreamFactory extends DefaultStreamFactory {
 
   public SolrDefaultStreamFactory() {
     super();
-    this.withFunctionName("analyze",  AnalyzeEvaluator.class);
+    this.withFunctionName("analyze", AnalyzeEvaluator.class);
     this.withFunctionName("cat", CatStream.class);
     this.withFunctionName("classify", ClassifyStream.class);
     this.withFunctionName("haversineMeters", HaversineMetersEvaluator.class);
+    this.withFunctionName("wsum", WeightedSumMetric.class);
   }
 
   public SolrDefaultStreamFactory withSolrResourceLoader(SolrResourceLoader solrResourceLoader) {
@@ -51,5 +53,4 @@ public class SolrDefaultStreamFactory extends DefaultStreamFactory {
   public SolrResourceLoader getSolrResourceLoader() {
     return solrResourceLoader;
   }
-
 }

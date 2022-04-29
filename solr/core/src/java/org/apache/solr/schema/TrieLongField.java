@@ -18,12 +18,10 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
@@ -33,15 +31,16 @@ import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueLong;
+import org.apache.solr.legacy.LegacyNumericUtils;
 
 /**
  * A numeric field that can contain 64-bit signed two's complement integer values.
  *
  * <ul>
- *  <li>Min Value Allowed: -9223372036854775808</li>
- *  <li>Max Value Allowed: 9223372036854775807</li>
+ *   <li>Min Value Allowed: -9223372036854775808
+ *   <li>Max Value Allowed: 9223372036854775807
  * </ul>
- * 
+ *
  * @see Long
  * @deprecated Trie fields are deprecated as of Solr 7.0
  * @see LongPointField
@@ -54,12 +53,12 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
 
   @Override
   public Object toNativeType(Object val) {
-    if(val==null) return null;
+    if (val == null) return null;
     if (val instanceof Number) return ((Number) val).longValue();
     try {
       if (val instanceof CharSequence) return Long.parseLong(val.toString());
     } catch (NumberFormatException e) {
-      Double v = Double.parseDouble((String)val);
+      Double v = Double.parseDouble((String) val);
       return v.longValue();
     }
     return super.toNativeType(val);
@@ -70,18 +69,20 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
     
     return new NumericSortedSetFieldSource(f, choice, NumberType.LONG) {
       @Override
-      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
+      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+          throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
-        
+
         SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
         SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
-        
+
         return new LongDocValues(thisAsSortedSetFieldSource) {
           private int lastDocID;
 
           private boolean setDoc(int docID) throws IOException {
             if (docID < lastDocID) {
-              throw new IllegalArgumentException("docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
+              throw new IllegalArgumentException(
+                  "docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
             }
             if (docID > view.docID()) {
               lastDocID = docID;
@@ -94,7 +95,7 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
           @Override
           public long longVal(int doc) throws IOException {
             if (setDoc(doc)) {
-              BytesRef bytes = view.binaryValue();
+              BytesRef bytes = view.lookupOrd(view.ordValue());
               assert bytes.length > 0;
               return LegacyNumericUtils.prefixCodedToLong(bytes);
             } else {
@@ -111,17 +112,18 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
           public ValueFiller getValueFiller() {
             return new ValueFiller() {
               private final MutableValueLong mval = new MutableValueLong();
-              
+
               @Override
               public MutableValue getValue() {
                 return mval;
               }
-              
+
               @Override
               public void fillValue(int doc) throws IOException {
                 if (setDoc(doc)) {
                   mval.exists = true;
-                  mval.value = LegacyNumericUtils.prefixCodedToLong(view.binaryValue());
+                  mval.value =
+                      LegacyNumericUtils.prefixCodedToLong(view.lookupOrd(view.ordValue()));
                 } else {
                   mval.exists = false;
                   mval.value = 0L;

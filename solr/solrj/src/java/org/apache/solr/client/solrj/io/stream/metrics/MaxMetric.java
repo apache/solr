@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -29,34 +28,40 @@ public class MaxMetric extends Metric {
   private double doubleMax = -Double.MAX_VALUE;
   private String columnName;
 
-  public MaxMetric(String columnName){
+  public MaxMetric(String columnName) {
     init("max", columnName);
   }
 
-  public MaxMetric(StreamExpression expression, StreamFactory factory) throws IOException{
+  public MaxMetric(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String functionName = expression.getFunctionName();
     String columnName = factory.getValueOperand(expression, 0);
-    
+
     // validate expression contains only what we want.
-    if(null == columnName){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expected %s(columnName)", expression, functionName));
+    if (null == columnName) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expected %s(columnName)",
+              expression,
+              functionName));
     }
-    if(1 != expression.getParameters().size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - unknown operands found", expression));
+    if (1 != expression.getParameters().size()) {
+      throw new IOException(
+          String.format(Locale.ROOT, "Invalid expression %s - unknown operands found", expression));
     }
-    
-    init(functionName, columnName);    
+
+    init(functionName, columnName);
   }
-  
-  private void init(String functionName, String columnName){
+
+  private void init(String functionName, String columnName) {
     this.columnName = columnName;
     setFunctionName(functionName);
     setIdentifier(functionName, "(", columnName, ")");
   }
 
   public Number getValue() {
-    if(longMax == Long.MIN_VALUE) {
+    if (longMax == Long.MIN_VALUE) {
       return doubleMax;
     } else {
       return longMax;
@@ -64,31 +69,31 @@ public class MaxMetric extends Metric {
   }
 
   public String[] getColumns() {
-    return new String[]{columnName};
+    return new String[] {columnName};
   }
 
   public void update(Tuple tuple) {
     Object o = tuple.get(columnName);
-    if(o instanceof Double) {
+    if (o instanceof Double) {
       double d = (double) o;
       if (d > doubleMax) {
         doubleMax = d;
       }
-    }else if(o instanceof Float) {
+    } else if (o instanceof Float) {
       Float f = (Float) o;
       double d = f.doubleValue();
       if (d > doubleMax) {
         doubleMax = d;
       }
-    } else if(o instanceof Integer) {
-      Integer i = (Integer)o;
+    } else if (o instanceof Integer) {
+      Integer i = (Integer) o;
       long l = i.longValue();
-      if(l > longMax) {
+      if (l > longMax) {
         longMax = l;
       }
-    } else {
-      long l = (long)o;
-      if(l > longMax) {
+    } else if (o instanceof Long) {
+      long l = (long) o;
+      if (l > longMax) {
         longMax = l;
       }
     }
@@ -97,7 +102,7 @@ public class MaxMetric extends Metric {
   public Metric newInstance() {
     return new MaxMetric(columnName);
   }
-  
+
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     return new StreamExpression(getFunctionName()).withParameter(columnName);

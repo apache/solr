@@ -59,7 +59,7 @@ NOTES:
   function calls, but will be flagged if they contain plusses that aren't
   simple concatenation. This last is something of a style check.
 
-- You can get into some pretty convolued consructs trying to pass some of these
+- You can get into some pretty convoluted constructs trying to pass some of these
   checks. Adding //nowarn, with or without spaces will cause the line to pass
   no matter what. Please use this hack sparingly and be conscientious about
   surrounding with 'if (log.is*Enabled)'.

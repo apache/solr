@@ -17,7 +17,7 @@
 
 /**
  * Convenience classes for dealing with Schema API responses.
- * <p>
- * See &lt;a href="https://lucene.apache.org/solr/guide/schema-api.html"&gt;Schema API&lt;/a&gt;
+ *
+ * <p>See &lt;a href="https://solr.apache.org/guide/schema-api.html"&gt;Schema API&lt;/a&gt;
  */
 package org.apache.solr.client.solrj.response.schema;

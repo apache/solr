@@ -18,7 +18,6 @@
 package org.apache.solr.search.join;
 
 import java.util.*;
-
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -37,7 +36,8 @@ public class FiltersQParser extends QParser {
     return "param";
   }
 
-  protected FiltersQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  protected FiltersQParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
   }
 
@@ -53,7 +53,7 @@ public class FiltersQParser extends QParser {
     exclude(clauses.keySet());
 
     BooleanQuery.Builder builder = new BooleanQuery.Builder();
-    for (Map.Entry<QParser, Occur> clause: clauses.entrySet()) {
+    for (Map.Entry<QParser, Occur> clause : clauses.entrySet()) {
       builder.add(unwrapQuery(clause.getKey().getQuery(), clause.getValue()), clause.getValue());
     }
     // what about empty query?
@@ -78,8 +78,7 @@ public class FiltersQParser extends QParser {
     if (excludeTags != null) {
       tagsToExclude.addAll(StrUtils.splitSmart(excludeTags, ','));
     }
-    @SuppressWarnings("rawtypes")
-    Map tagMap = (Map) req.getContext().get("tags");
+    Map<?, ?> tagMap = (Map<?, ?>) req.getContext().get("tags");
     final Collection<QParser> excludeSet;
     if (tagMap != null && !tagMap.isEmpty() && !tagsToExclude.isEmpty()) {
       excludeSet = excludeSet(tagMap, tagsToExclude);
@@ -89,18 +88,21 @@ public class FiltersQParser extends QParser {
     clauses.removeAll(excludeSet);
   }
 
-  protected Map<QParser,Occur> clauses() throws SyntaxError {
+  protected Map<QParser, Occur> clauses() throws SyntaxError {
     String[] params = localParams.getParams(getFiltersParamName());
-    if(params!=null && params.length == 0) { // never happens 
-      throw new SyntaxError("Local parameter "+getFiltersParamName() + 
-                           " is not defined for "+stringIncludingLocalParams);
+    if (params != null && params.length == 0) { // never happens
+      throw new SyntaxError(
+          "Local parameter "
+              + getFiltersParamName()
+              + " is not defined for "
+              + stringIncludingLocalParams);
     }
-    Map<QParser,Occur> clauses = new IdentityHashMap<>();
-    
-    for (String filter : params==null ? new String[0] : params) {
-      if(filter==null || filter.length() == 0) {
-        throw new SyntaxError("Filter '"+filter + 
-                             "' has been picked in "+stringIncludingLocalParams);
+    Map<QParser, Occur> clauses = new IdentityHashMap<>();
+
+    for (String filter : params == null ? new String[0] : params) {
+      if (filter == null || filter.length() == 0) {
+        // it is ok to specify a filter param that is not present
+        continue;
       }
       // as a side effect, qparser is mapped by tags in req context
       QParser parser = subQuery(filter, null);
@@ -114,17 +116,16 @@ public class FiltersQParser extends QParser {
     return clauses;
   }
 
-  private Collection<QParser> excludeSet(@SuppressWarnings("rawtypes")
-                                     Map tagMap, Set<String> tagsToExclude) {
+  private Collection<QParser> excludeSet(Map<?, ?> tagMap, Set<String> tagsToExclude) {
 
-    IdentityHashMap<QParser,Boolean> excludeSet = new IdentityHashMap<>();
+    IdentityHashMap<QParser, Boolean> excludeSet = new IdentityHashMap<>();
     for (String excludeTag : tagsToExclude) {
       Object olst = tagMap.get(excludeTag);
       // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
       if (!(olst instanceof Collection)) continue;
-      for (Object o : (Collection<?>)olst) {
+      for (Object o : (Collection<?>) olst) {
         if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser)o;
+        QParser qp = (QParser) o;
         excludeSet.put(qp, Boolean.TRUE);
       }
     }

@@ -1,6 +1,6 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/schema-api.html",
-  "description": "The Schema API provides viewing, editing, adding, and deleting elements of Solr's schema. This API can only be used if Managed Schema is enabled and the schema is defined as mutable. See https://lucene.apache.org/solr/guide/schema-factory-definition-in-solrconfig.html for more information about enabling Managed Schema.",
+  "documentation": "https://solr.apache.org/guide/schema-api.html",
+  "description": "The Schema API provides viewing, editing, adding, and deleting elements of Solr's schema. This API can only be used if Managed Schema is enabled and the schema is defined as mutable. See https://solr.apache.org/guide/schema-factory-definition-in-solrconfig.html for more information about enabling Managed Schema.",
   "methods": [
     "POST"
   ],

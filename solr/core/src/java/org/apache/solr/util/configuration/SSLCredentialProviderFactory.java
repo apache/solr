@@ -17,33 +17,28 @@
 
 package org.apache.solr.util.configuration;
 
+import com.google.common.collect.ImmutableMap;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
-import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
-import org.apache.solr.util.configuration.providers.HadoopSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Class responsible to build SSL credential providers
- */
+/** Class responsible to build SSL credential providers */
 public class SSLCredentialProviderFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String DEFAULT_PROVIDER_CHAIN = "env;sysprop";
   public static final String PROVIDER_CHAIN_KEY = "solr.ssl.credential.provider.chain";
 
-  @SuppressWarnings({"rawtypes"})
-  private final static ImmutableMap<String, Class> defaultProviders = ImmutableMap.of(
-      "env", EnvSSLCredentialProvider.class,
-      "sysprop", SysPropSSLCredentialProvider.class,
-      "hadoop", HadoopSSLCredentialProvider.class
-  );
+  private static final Map<String, Class<? extends SSLCredentialProvider>> defaultProviders =
+      ImmutableMap.of(
+          "env", EnvSSLCredentialProvider.class,
+          "sysprop", SysPropSSLCredentialProvider.class);
 
   private String providerChain;
 
@@ -58,7 +53,9 @@ public class SSLCredentialProviderFactory {
   public List<SSLCredentialProvider> getProviders() {
     ArrayList<SSLCredentialProvider> providers = new ArrayList<>();
     if (log.isDebugEnabled()) {
-      log.debug(String.format(Locale.ROOT, "Processing SSL Credential Provider chain: %s", providerChain));
+      log.debug(
+          String.format(
+              Locale.ROOT, "Processing SSL Credential Provider chain: %s", providerChain));
     }
     String classPrefix = "class://";
     for (String provider : providerChain.split(";")) {
@@ -75,23 +72,34 @@ public class SSLCredentialProviderFactory {
 
   private SSLCredentialProvider getProviderByClassName(String clazzName) {
     try {
-      return (SSLCredentialProvider) Class.forName(clazzName).getConstructor().newInstance();
-    } catch (InstantiationException | ClassNotFoundException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      String msg = String.format(Locale.ROOT, "Could not instantiate %s credential provider", clazzName);
+      return Class.forName(clazzName)
+          .asSubclass(SSLCredentialProvider.class)
+          .getConstructor()
+          .newInstance();
+    } catch (InstantiationException
+        | ClassNotFoundException
+        | IllegalAccessException
+        | InvocationTargetException
+        | NoSuchMethodException e) {
+      String msg =
+          String.format(Locale.ROOT, "Could not instantiate %s credential provider", clazzName);
       log.error(msg);
       throw new RuntimeException(msg, e);
     }
   }
 
-  @SuppressWarnings({"unchecked"})
-  private SSLCredentialProvider getDefaultProvider(@SuppressWarnings({"rawtypes"})Class aClass) {
+  private SSLCredentialProvider getDefaultProvider(Class<? extends SSLCredentialProvider> aClass) {
     try {
-      return (SSLCredentialProvider) aClass.getConstructor().newInstance();
-    } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-      String msg = String.format(Locale.ROOT, "Could not instantiate %s credential provider", aClass.getName());
+      return aClass.getConstructor().newInstance();
+    } catch (InstantiationException
+        | IllegalAccessException
+        | InvocationTargetException
+        | NoSuchMethodException e) {
+      String msg =
+          String.format(
+              Locale.ROOT, "Could not instantiate %s credential provider", aClass.getName());
       log.error(msg);
       throw new RuntimeException(msg, e);
     }
   }
-
 }

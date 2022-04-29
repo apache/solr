@@ -22,7 +22,7 @@
 grant {
   // 3rd party jar resources (where symlinks are not supported), test-files/ resources
   permission java.io.FilePermission "${common.dir}${/}-", "read";
-  permission java.io.FilePermission "${common.dir}${/}..${/}solr${/}-", "read";
+  permission java.io.FilePermission "${common-solr.dir}${/}-", "read";
 
   // system jar resources
   permission java.io.FilePermission "${java.home}${/}-", "read";
@@ -39,6 +39,8 @@ grant {
   permission java.io.FilePermission "/path/to/solr/home/lib", "read";
 
   permission java.nio.file.LinkPermission "hard";
+
+  permission java.security.SecurityPermission "putProviderProperty.SolrTestNonSecure";
 
   // all possibilities of accepting/binding/connections on localhost with ports >=1024:
   permission java.net.SocketPermission "localhost:1024-", "accept,listen,connect,resolve";
@@ -67,7 +69,7 @@ grant {
   permission java.lang.RuntimePermission "getStackTrace";
   // needed for mock filesystems in tests
   permission java.lang.RuntimePermission "fileSystemProvider";
-  // needed for test of IOUtils.spins (maybe it can be avoided)
+  // needed by IndexFetcher
   permission java.lang.RuntimePermission "getFileStoreAttributes";
   // analyzers/uima: needed by lucene expressions' JavascriptCompiler
   permission java.lang.RuntimePermission "createClassLoader";
@@ -105,9 +107,6 @@ grant {
   permission java.lang.management.ManagementPermission "control";
   permission java.lang.management.ManagementPermission "monitor";
 
-  // needed by hadoop htrace
-  permission java.net.NetPermission "getNetworkInformation";
-
   // needed by DIH - possibly even after DIH is a package
   permission java.sql.SQLPermission "deregisterDriver";
 
@@ -140,6 +139,9 @@ grant {
   permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
   permission java.security.SecurityPermission "insertProvider";
 
+  // Needed by JWT integration tests & S3 tests
+  permission java.lang.RuntimePermission "setFactory";
+
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
 
   // SSL related properties for Solr tests
@@ -147,6 +149,10 @@ grant {
 
   // SASL/Kerberos related properties for Solr tests
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KerberosTicket * \"*\"", "read";
+
+  // Needed by zookeeper to configure SASL Auth in tests
+  permission javax.security.auth.AuthPermission "createLoginContext.Server";
+  permission javax.security.auth.AuthPermission "createLoginContext.Client";
   
   // may only be necessary with Java 7?
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KeyTab * \"*\"", "read";
@@ -161,6 +167,10 @@ grant {
 
   // used by solr to create sandboxes (e.g. script execution)
   permission java.security.SecurityPermission "createAccessControlContext";
+
+  // for Apache HttpClient useSystemProperties
+  permission java.net.NetPermission "getProxySelector";
+  permission java.net.NetPermission "requestPasswordAuthentication";
 };
 
 // additional permissions based on system properties set by /bin/solr
@@ -195,6 +205,11 @@ grant {
 
   permission java.io.FilePermission "${log4j.configurationFile}", "read,write,delete,readlink";
 
+  // Credentials for S3 Repository
+  permission java.io.FilePermission "${aws.sharedCredentialsFile}", "read,readlink";
+  permission java.io.FilePermission "${aws.configFile}", "read,readlink";
+  permission java.io.FilePermission "${user.home}${/}.aws${/}-", "read,readlink";
+
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";
 };
@@ -214,4 +229,6 @@ grant {
   permission java.io.FilePermission "${gradle.worker.jar}", "read";
   // Allow reading from classpath JARs (resources).
   permission java.io.FilePermission "${gradle.user.home}${/}-", "read";
+  // Allow read access to Lucene jars if "-Plucene.dev.version=" or "-Plucene.dev.path=" is used
+  permission java.io.FilePermission "${lucene-dev-path.dir}${/}-", "read";
 };

@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
@@ -53,7 +52,8 @@ import org.junit.Test;
 /**
  * Example SolrJ usage.
  *
- * Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference Guide.
+ * <p>Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference
+ * Guide.
  */
 public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
@@ -68,8 +68,10 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
         .addConfig("conf", new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
         .configure();
 
-    CollectionAdminResponse response = CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)
-        .process(cluster.getSolrClient());
+    CollectionAdminResponse response =
+        CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("techproducts", 1, 1);
   }
 
@@ -81,7 +83,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     final SolrClient client = getSolrClient();
 
     final List<TechProduct> products = new ArrayList<TechProduct>();
-    products.add(new TechProduct("1","Fitbit Alta"));
+    products.add(new TechProduct("1", "Fitbit Alta"));
     products.add(new TechProduct("2", "Sony Walkman"));
     products.add(new TechProduct("3", "Garmin GPS"));
 
@@ -120,7 +122,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     final SolrDocumentList documents = response.getResults();
 
     print("Found " + documents.getNumFound() + " documents");
-    for(SolrDocument document : documents) {
+    for (SolrDocument document : documents) {
       final String id = (String) document.getFirstValue("id");
       final String name = (String) document.getFirstValue("name");
 
@@ -151,11 +153,11 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
     print("Found " + documents.getNumFound() + " documents");
     assertEquals(numResultsToReturn, documents.size());
-    for(SolrDocument document : documents) {
+    for (SolrDocument document : documents) {
       final String id = (String) document.getFirstValue("id");
       final String name = (String) document.getFirstValue("name");
 
-      print("id: "+ id + "; name: " + name);
+      print("id: " + id + "; name: " + name);
     }
   }
 
@@ -217,7 +219,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
   @Test
   public void otherSolrApisExample() throws Exception {
-    expectLine("Found "+NUM_LIVE_NODES+" live nodes");
+    expectLine("Found " + NUM_LIVE_NODES + " live nodes");
     // tag::solrj-other-apis[]
     final SolrClient client = getSolrClient();
 
@@ -253,8 +255,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add("http://solr1:8983/solr");
     solrUrls.add("http://solr2:8983/solr");
-    return new CloudSolrClient.Builder(solrUrls)
-            .build();
+    return new CloudSolrClient.Builder(solrUrls).build();
     // end::solrj-cloudsolrclient-baseurl[]
   }
 
@@ -264,8 +265,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     zkServers.add("zookeeper1:2181");
     zkServers.add("zookeeper2:2181");
     zkServers.add("zookeeper3:2181");
-    return new CloudSolrClient.Builder(zkServers, Optional.empty())
-            .build();
+    return new CloudSolrClient.Builder(zkServers, Optional.empty()).build();
     // end::solrj-cloudsolrclient-zookeepernoroot[]
   }
 
@@ -275,8 +275,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     zkServers.add("zookeeper1:2181");
     zkServers.add("zookeeper2:2181");
     zkServers.add("zookeeper3:2181");
-    return new CloudSolrClient.Builder(zkServers, Optional.of("/solr"))
-            .build();
+    return new CloudSolrClient.Builder(zkServers, Optional.of("/solr")).build();
     // end::solrj-cloudsolrclient-zookeeperroot[]
   }
 
@@ -291,7 +290,8 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     @Field public String name;
 
     public TechProduct(String id, String name) {
-      this.id = id;  this.name = name;
+      this.id = id;
+      this.name = name;
     }
 
     public TechProduct() {}
@@ -304,10 +304,11 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
   private void print(String actualOutput) {
     final String nextExpectedLine = expectedLines.poll();
-    assertNotNull("No more output expected, but was asked to print: " + actualOutput, nextExpectedLine);
+    assertNotNull(
+        "No more output expected, but was asked to print: " + actualOutput, nextExpectedLine);
 
-    final String unexpectedOutputMessage = "Expected line containing " + nextExpectedLine + ", but printed line was: "
-        + actualOutput;
+    final String unexpectedOutputMessage =
+        "Expected line containing " + nextExpectedLine + ", but printed line was: " + actualOutput;
     assertTrue(unexpectedOutputMessage, actualOutput.contains(nextExpectedLine));
   }
 

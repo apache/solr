@@ -18,7 +18,6 @@
 package org.apache.solr.cluster.placement.impl;
 
 import java.util.Set;
-
 import org.apache.solr.cluster.placement.PlacementPlan;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
@@ -41,5 +40,15 @@ class PlacementPlanImpl implements PlacementPlan {
   @Override
   public Set<ReplicaPlacement> getReplicaPlacements() {
     return replicaPlacements;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("PlacementPlan{");
+    for (ReplicaPlacement placement : replicaPlacements) {
+      sb.append("\n").append(placement.toString());
+    }
+    sb.append("\n}");
+    return sb.toString();
   }
 }

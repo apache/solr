@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Support for creating docvalues on-the-fly from the inverted index at runtime. 
- */
+/** Support for creating docvalues on-the-fly from the inverted index at runtime. */
 package org.apache.solr.uninverting;

@@ -18,86 +18,109 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
-
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase {
+public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
+  private static final String DEFAULT_COLLECTION = "col1";
+  private static CloudSolrClient cloudClient;
+  private static List<SolrClient> clients; // not CloudSolrClient
 
-  public NestedShardedAtomicUpdateTest() {
-    stress = 0;
-    sliceCount = 4;
-    schemaString = "schema-nest.xml";
-  }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    configureCluster(1).addConfig("_default", configset("cloud-minimal")).configure();
+    // replace schema.xml with schema-test.xml
+    Path schemaPath = TEST_COLL1_CONF().resolve("schema-nest.xml");
+    cluster.getZkClient().setData("/configs/_default/schema.xml", schemaPath, true);
 
-  @Override
-  protected String getCloudSolrConfig() {
-    return "solrconfig-tlog.xml";
-  }
+    cloudClient = cluster.getSolrClient();
+    cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
 
-  @Override
-  protected String getCloudSchemaFile() {
-    return "schema-nest.xml";
-  }
+    CollectionAdminRequest.createCollection(DEFAULT_COLLECTION, 4, 1).process(cloudClient);
 
-  @Test
-  @ShardsFixed(num = 4)
-  public void test() throws Exception {
-    boolean testFinished = false;
-    try {
-      sendWrongRouteParam();
-      doNestedInplaceUpdateTest();
-      doRootShardRoutingTest();
-      testFinished = true;
-    } finally {
-      if (!testFinished) {
-        printLayoutOnTearDown = true;
-      }
+    clients = new ArrayList<>();
+    ClusterState clusterState = cloudClient.getClusterState();
+    for (Replica replica : clusterState.getCollection(DEFAULT_COLLECTION).getReplicas()) {
+      clients.add(getHttpSolrClient(replica.getCoreUrl()));
     }
   }
 
+  @AfterClass
+  public static void afterClass() throws Exception {
+    IOUtils.close(clients);
+  }
+
+  @Test
   public void doRootShardRoutingTest() throws Exception {
-    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    assertEquals(
+        4, cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     final String[] ids = {"3", "4", "5", "6"};
 
-    assertEquals("size of ids to index should be the same as the number of clients", clients.size(), ids.length);
+    assertEquals(
+        "size of ids to index should be the same as the number of clients",
+        clients.size(),
+        ids.length);
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
-    SolrInputDocument doc = sdoc("id", "1", "level_s", "root");
+    SolrInputDocument doc = sdoc("id", "1", "_root_", "1", "level_s", "root");
 
-    final SolrParams params = params("wt", "json", "_route_", "1");
-
-    int which = (params.get("_route_").hashCode() & 0x7fffffff) % clients.size();
+    int which = (doc.get("_root_").hashCode() & 0x7fffffff) % clients.size();
     SolrClient aClient = clients.get(which);
 
-    indexDoc(aClient, params, doc);
+    indexDoc(aClient, null, doc);
 
-    doc = sdoc("id", "1", "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
+    doc =
+        sdoc(
+            "id",
+            "1",
+            "_root_",
+            "1",
+            "children",
+            map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
 
-    indexDoc(aClient, params, doc);
+    indexDoc(aClient, null, doc);
 
-    for(int idIndex = 0; idIndex < ids.length; ++idIndex) {
+    for (int idIndex = 0; idIndex < ids.length; ++idIndex) {
 
-      doc = sdoc("id", "2", "grandChildren", map("add", sdocs(sdoc("id", ids[idIndex], "level_s", "grand_child"))));
+      doc =
+          sdoc(
+              "id",
+              "2",
+              "_root_",
+              "1",
+              "grandChildren",
+              map("add", sdocs(sdoc("id", ids[idIndex], "level_s", "grand_child"))));
 
-      indexDocAndRandomlyCommit(getRandomSolrClient(), params, doc);
+      indexDocAndRandomlyCommit(getRandomSolrClient(), null, doc);
 
-      doc = sdoc("id", "3", "inplace_updatable_int", map("inc", "1"));
+      doc = sdoc("id", "3", "_root_", "1", "inplace_updatable_int", map("inc", "1"));
 
-      indexDocAndRandomlyCommit(getRandomSolrClient(), params, doc);
+      indexDocAndRandomlyCommit(getRandomSolrClient(), null, doc);
 
       // assert RTG request respects _route_ param
-      QueryResponse routeRsp = getRandomSolrClient().query(params("qt","/get", "id","2", "_route_", "1"));
+      QueryResponse routeRsp =
+          getRandomSolrClient().query(params("qt", "/get", "id", "2", "_route_", "1"));
       SolrDocument results = (SolrDocument) routeRsp.getResponse().get("doc");
-      assertNotNull("RTG should find doc because _route_ was set to the root documents' ID", results);
+      assertNotNull(
+          "RTG should find doc because _route_ was set to the root documents' ID", results);
       assertEquals("2", results.getFieldValue("id"));
 
       // assert all docs are indexed under the same root
@@ -105,7 +128,8 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
       assertEquals(0, getRandomSolrClient().query(params("q", "-_root_:1")).getResults().size());
 
       // assert all docs are indexed inside the same block
-      QueryResponse rsp = getRandomSolrClient().query(params("qt","/get", "id","1", "fl", "*, [child]"));
+      QueryResponse rsp =
+          getRandomSolrClient().query(params("qt", "/get", "id", "1", "fl", "*, [child]"));
       SolrDocument val = (SolrDocument) rsp.getResponse().get("doc");
       assertEquals("1", val.getFieldValue("id"));
       @SuppressWarnings({"unchecked"})
@@ -117,121 +141,191 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
       List<SolrDocument> grandChildren = (List) childDoc.getFieldValues("grandChildren");
       assertEquals(idIndex + 1, grandChildren.size());
       SolrDocument grandChild = grandChildren.get(0);
-      assertEquals(idIndex + 1, grandChild.getFirstValue("inplace_updatable_int"));
       assertEquals("3", grandChild.getFieldValue("id"));
+      assertEquals(idIndex + 1, grandChild.getFirstValue("inplace_updatable_int"));
     }
   }
 
+  @Test
   public void doNestedInplaceUpdateTest() throws Exception {
-    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    assertEquals(
+        4, cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     final String[] ids = {"3", "4", "5", "6"};
 
-    assertEquals("size of ids to index should be the same as the number of clients", clients.size(), ids.length);
+    assertEquals(
+        "size of ids to index should be the same as the number of clients",
+        clients.size(),
+        ids.length);
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
-    SolrInputDocument doc = sdoc("id", "1", "level_s", "root");
+    SolrInputDocument doc = sdoc("id", "1", "_root_", "1", "level_s", "root");
 
-    final SolrParams params = params("wt", "json", "_route_", "1");
-
-    int which = (params.get("_route_").hashCode() & 0x7fffffff) % clients.size();
+    int which = (doc.get("_root_").hashCode() & 0x7fffffff) % clients.size();
     SolrClient aClient = clients.get(which);
 
-    indexDocAndRandomlyCommit(aClient, params, doc);
+    indexDocAndRandomlyCommit(aClient, null, doc);
 
-    doc = sdoc("id", "1", "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
+    doc =
+        sdoc(
+            "id",
+            "1",
+            "_root_",
+            "1",
+            "children",
+            map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
 
-    indexDocAndRandomlyCommit(aClient, params, doc);
+    indexDocAndRandomlyCommit(aClient, null, doc);
 
-    doc = sdoc("id", "2", "grandChildren", map("add", sdocs(sdoc("id", ids[0], "level_s", "grand_child"))));
+    doc =
+        sdoc(
+            "id",
+            "2",
+            "_root_",
+            "1",
+            "grandChildren",
+            map("add", sdocs(sdoc("id", ids[0], "level_s", "grand_child"))));
 
-    indexDocAndRandomlyCommit(aClient, params, doc);
+    indexDocAndRandomlyCommit(aClient, null, doc);
 
+    int id1InPlaceCounter = 0;
+    int id2InPlaceCounter = 0;
+    int id3InPlaceCounter = 0;
     for (int fieldValue = 1; fieldValue < 5; ++fieldValue) {
-      doc = sdoc("id", "3", "inplace_updatable_int", map("inc", "1"));
+      // randomly increment a field on a root, middle, and leaf doc
+      if (random().nextBoolean()) {
+        id1InPlaceCounter++;
+        indexDoc(
+            getRandomSolrClient(),
+            null,
+            sdoc("id", "1", "_root_", "1", "inplace_updatable_int", map("inc", "1")));
+      }
+      if (random().nextBoolean()) {
+        id2InPlaceCounter++;
+        indexDoc(
+            getRandomSolrClient(),
+            null,
+            sdoc("id", "2", "_root_", "1", "inplace_updatable_int", map("inc", "1")));
+      }
+      if (random().nextBoolean()) { // TODO consider removing this now-useless block?
+        id3InPlaceCounter++;
+        indexDoc(
+            getRandomSolrClient(),
+            null,
+            sdoc("id", "3", "_root_", "1", "inplace_updatable_int", map("inc", "1")));
+      }
+      if (random().nextBoolean()) {
+        getRandomSolrClient().commit();
+      }
 
-      indexDocAndRandomlyCommit(getRandomSolrClient(), params, doc);
+      if (random().nextBoolean()) {
+        // assert RTG request respects _route_ param
+        QueryResponse routeRsp =
+            getRandomSolrClient().query(params("qt", "/get", "id", "2", "_route_", "1"));
+        SolrDocument results = (SolrDocument) routeRsp.getResponse().get("doc");
+        assertNotNull(
+            "RTG should find doc because _route_ was set to the root documents' ID", results);
+        assertEquals("2", results.getFieldValue("id"));
+      }
 
-      // assert RTG request respects _route_ param
-      QueryResponse routeRsp = getRandomSolrClient().query(params("qt","/get", "id","2", "_route_", "1"));
-      SolrDocument results = (SolrDocument) routeRsp.getResponse().get("doc");
-      assertNotNull("RTG should find doc because _route_ was set to the root documents' ID", results);
-      assertEquals("2", results.getFieldValue("id"));
+      if (random().nextBoolean()) {
+        // assert all docs are indexed under the same root
+        assertEquals(0, getRandomSolrClient().query(params("q", "-_root_:1")).getResults().size());
+      }
 
-      // assert all docs are indexed under the same root
-      getRandomSolrClient().commit();
-      assertEquals(0, getRandomSolrClient().query(params("q", "-_root_:1")).getResults().size());
-
-      // assert all docs are indexed inside the same block
-      QueryResponse rsp = getRandomSolrClient().query(params("qt","/get", "id","1", "fl", "*, [child]"));
-      SolrDocument val = (SolrDocument) rsp.getResponse().get("doc");
-      assertEquals("1", val.getFieldValue("id"));
-      @SuppressWarnings({"unchecked"})
-      List<SolrDocument> children = (List) val.getFieldValues("children");
-      assertEquals(1, children.size());
-      SolrDocument childDoc = children.get(0);
-      assertEquals("2", childDoc.getFieldValue("id"));
-      @SuppressWarnings({"unchecked"})
-      List<SolrDocument> grandChildren = (List) childDoc.getFieldValues("grandChildren");
-      assertEquals(1, grandChildren.size());
-      SolrDocument grandChild = grandChildren.get(0);
-      assertEquals(fieldValue, grandChild.getFirstValue("inplace_updatable_int"));
-      assertEquals("3", grandChild.getFieldValue("id"));
+      if (random().nextBoolean()) {
+        // assert all docs are indexed inside the same block
+        QueryResponse rsp =
+            getRandomSolrClient().query(params("qt", "/get", "id", "1", "fl", "*, [child]"));
+        SolrDocument val = (SolrDocument) rsp.getResponse().get("doc");
+        assertEquals("1", val.getFieldValue("id"));
+        assertInplaceCounter(id1InPlaceCounter, val);
+        @SuppressWarnings({"unchecked"})
+        List<SolrDocument> children = (List) val.getFieldValues("children");
+        assertEquals(1, children.size());
+        SolrDocument childDoc = children.get(0);
+        assertEquals("2", childDoc.getFieldValue("id"));
+        assertInplaceCounter(id2InPlaceCounter, childDoc);
+        @SuppressWarnings({"unchecked"})
+        List<SolrDocument> grandChildren = (List) childDoc.getFieldValues("grandChildren");
+        assertEquals(1, grandChildren.size());
+        SolrDocument grandChild = grandChildren.get(0);
+        assertEquals("3", grandChild.getFieldValue("id"));
+        assertInplaceCounter(id3InPlaceCounter, grandChild);
+      }
     }
   }
 
+  private void assertInplaceCounter(int expected, SolrDocument val) {
+    Number result = (Number) val.getFirstValue("inplace_updatable_int");
+    if (expected == 0) {
+      assertNull(val.toString(), result);
+    } else {
+      assertNotNull(val.toString(), result);
+      assertEquals(expected, result.intValue());
+    }
+  }
+
+  @Test
   public void sendWrongRouteParam() throws Exception {
-    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    assertEquals(
+        4, cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     final String rootId = "1";
 
     SolrInputDocument doc = sdoc("id", rootId, "level_s", "root");
 
-    final SolrParams wrongRootParams = params("wt", "json", "_route_", "c");
-    final SolrParams rightParams = params("wt", "json", "_route_", rootId);
+    final SolrParams wrongRouteParams = params("_route_", "c");
+    final SolrParams rightParams = params("_route_", rootId);
 
     int which = (rootId.hashCode() & 0x7fffffff) % clients.size();
     SolrClient aClient = clients.get(which);
 
-    indexDocAndRandomlyCommit(aClient, params("wt", "json", "_route_", rootId), doc, false);
+    indexDocAndRandomlyCommit(aClient, null, doc);
 
-    final SolrInputDocument childDoc = sdoc("id", rootId, "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
+    final SolrInputDocument childDoc =
+        sdoc("id", rootId, "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
 
-    indexDocAndRandomlyCommit(aClient, rightParams, childDoc, false);
+    indexDocAndRandomlyCommit(aClient, rightParams, childDoc);
 
-    final SolrInputDocument grandChildDoc = sdoc("id", "2", "grandChildren",
-        map("add", sdocs(
-            sdoc("id", "3", "level_s", "grandChild")
-            )
-        )
-    );
+    final SolrInputDocument grandChildDoc =
+        sdoc(
+            "id",
+            "2",
+            "_root_",
+            rootId,
+            "grandChildren",
+            map("add", sdocs(sdoc("id", "3", "level_s", "grandChild"))));
 
-    SolrException e = expectThrows(SolrException.class,
-        "wrong \"_route_\" param should throw an exception",
-        () -> indexDocAndRandomlyCommit(aClient, wrongRootParams, grandChildDoc)
-    );
+    // despite the wrong param, it'll be routed correctly; we can find the doc after.
+    //   An error would have been okay too but routing correctly is also fine.
+    indexDoc(aClient, wrongRouteParams, grandChildDoc);
+    aClient.commit();
 
-    assertTrue("message should suggest the wrong \"_route_\" param was supplied",
-        e.getMessage().contains("perhaps the wrong \"_route_\" param was supplied"));
+    assertEquals(
+        1, aClient.query(params("_route_", rootId, "q", "id:3")).getResults().getNumFound());
   }
 
-  private void indexDocAndRandomlyCommit(SolrClient client, SolrParams params, SolrInputDocument sdoc) throws IOException, SolrServerException {
-    indexDocAndRandomlyCommit(client, params, sdoc, true);
-  }
-
-  private void indexDocAndRandomlyCommit(SolrClient client, SolrParams params, SolrInputDocument sdoc, boolean compareToControlCollection) throws IOException, SolrServerException {
-    if (compareToControlCollection) {
-      indexDoc(client, params, sdoc);
-    } else {
-      add(client, params, sdoc);
-    }
+  private void indexDocAndRandomlyCommit(
+      SolrClient client, SolrParams params, SolrInputDocument sdoc)
+      throws IOException, SolrServerException {
+    indexDoc(client, params, sdoc);
     // randomly commit docs
     if (random().nextBoolean()) {
       client.commit();
     }
   }
 
-  private SolrClient getRandomSolrClient() {
-    return clients.get(random().nextInt(clients.size()));
+  private void indexDoc(SolrClient client, SolrParams params, SolrInputDocument sdoc)
+      throws IOException, SolrServerException {
+    final UpdateRequest updateRequest = new UpdateRequest();
+    updateRequest.add(sdoc);
+    updateRequest.setParams(new ModifiableSolrParams(params));
+    updateRequest.process(client, null);
   }
 
+  private SolrClient getRandomSolrClient() {
+    // randomly return one of these clients, to include the cloudClient
+    final int index = random().nextInt(clients.size() + 1);
+    return index == clients.size() ? cloudClient : clients.get(index);
+  }
 }

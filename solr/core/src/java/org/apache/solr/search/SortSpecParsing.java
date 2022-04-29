@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
@@ -33,20 +32,21 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.WrappedFieldValueSource;
 
 public class SortSpecParsing {
-  
+
   public static final String DOCID = "_docid_";
   public static final String SCORE = "score";
 
   /**
-   * <p>
    * The form of the sort specification string currently parsed is:
-   * </p>
+   *
    * <pre>
    * SortSpec ::= SingleSort [, SingleSort]*
    * SingleSort ::= &lt;fieldname|function&gt; SortDirection
    * SortDirection ::= top | desc | bottom | asc
    * </pre>
+   *
    * Examples:
+   *
    * <pre>
    *   score desc               #normal sort by score (will return null)
    *   weight bottom            #sort by weight ascending
@@ -54,24 +54,26 @@ public class SortSpecParsing {
    *   height desc,weight desc  #sort by height descending, and use weight descending to break any ties
    *   height desc,weight asc   #sort by height descending, using weight ascending as a tiebreaker
    * </pre>
-   * @return a SortSpec object populated with the appropriate Sort (which may be null if
-   *         default score sort is used) and SchemaFields (where applicable) using
-   *         hardcoded default count &amp; offset values.
+   *
+   * @return a SortSpec object populated with the appropriate Sort (which may be null if default
+   *     score sort is used) and SchemaFields (where applicable) using hardcoded default count &amp;
+   *     offset values.
    */
   public static SortSpec parseSortSpec(String sortSpec, SolrQueryRequest req) {
     return parseSortSpecImpl(sortSpec, req.getSchema(), req);
   }
 
   /**
-   * <p>
    * The form of the (function free) sort specification string currently parsed is:
-   * </p>
+   *
    * <pre>
    * SortSpec ::= SingleSort [, SingleSort]*
    * SingleSort ::= &lt;fieldname&gt; SortDirection
    * SortDirection ::= top | desc | bottom | asc
    * </pre>
+   *
    * Examples:
+   *
    * <pre>
    *   score desc               #normal sort by score (will return null)
    *   weight bottom            #sort by weight ascending
@@ -79,16 +81,17 @@ public class SortSpecParsing {
    *   height desc,weight desc  #sort by height descending, and use weight descending to break any ties
    *   height desc,weight asc   #sort by height descending, using weight ascending as a tiebreaker
    * </pre>
-   * @return a SortSpec object populated with the appropriate Sort (which may be null if 
-   *         default score sort is used) and SchemaFields (where applicable) using 
-   *         hardcoded default count &amp; offset values.
+   *
+   * @return a SortSpec object populated with the appropriate Sort (which may be null if default
+   *     score sort is used) and SchemaFields (where applicable) using hardcoded default count &amp;
+   *     offset values.
    */
   public static SortSpec parseSortSpec(String sortSpec, IndexSchema schema) {
     return parseSortSpecImpl(sortSpec, schema, null);
   }
 
-  private static SortSpec parseSortSpecImpl(String sortSpec, IndexSchema schema,
-      SolrQueryRequest optionalReq) {
+  private static SortSpec parseSortSpecImpl(
+      String sortSpec, IndexSchema schema, SolrQueryRequest optionalReq) {
     if (sortSpec == null || sortSpec.length() == 0) return newEmptySortSpec();
 
     List<SortField> sorts = new ArrayList<>(4);
@@ -115,17 +118,17 @@ public class SortSpecParsing {
           Query q = null;
           try {
             if (parser instanceof FunctionQParser) {
-              FunctionQParser fparser = (FunctionQParser)parser;
+              FunctionQParser fparser = (FunctionQParser) parser;
               fparser.setParseMultipleSources(false);
               fparser.setParseToEnd(false);
-              
+
               q = fparser.getQuery();
-              
+
               if (fparser.localParams != null) {
                 if (fparser.valFollowedParams) {
                   // need to find the end of the function query via the string parser
                   int leftOver = fparser.sp.end - fparser.sp.pos;
-                  sp.pos = sp.end - leftOver;   // reset our parser to the same amount of leftover
+                  sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
                 } else {
                   // the value was via the "v" param in localParams, so we need to find
                   // the end of the local params themselves to pick up where we left off
@@ -134,7 +137,7 @@ public class SortSpecParsing {
               } else {
                 // need to find the end of the function query via the string parser
                 int leftOver = fparser.sp.end - fparser.sp.pos;
-                sp.pos = sp.end - leftOver;   // reset our parser to the same amount of leftover
+                sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
               }
             } else {
               // A QParser that's not for function queries.
@@ -150,11 +153,11 @@ public class SortSpecParsing {
               // we have a Query and a valid direction
               SchemaField sf = null;
               if (q instanceof FunctionQuery) {
-                ValueSource vs = ((FunctionQuery)q).getValueSource();
+                ValueSource vs = ((FunctionQuery) q).getValueSource();
                 SortField sortField = vs.getSortField(top);
                 if (vs instanceof WrappedFieldValueSource) {
                   // The values for this field may use fieldType-specific sort value (un/)marshaling
-                  sf = ((WrappedFieldValueSource)vs).getSchemaField();
+                  sf = ((WrappedFieldValueSource) vs).getSchemaField();
                 }
                 sorts.add(sortField);
               } else {
@@ -179,10 +182,11 @@ public class SortSpecParsing {
         }
         Boolean top = sp.getSortDirection();
         if (null == top) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
-                                    "Can't determine a Sort Order (asc or desc) in sort spec " + sp);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Can't determine a Sort Order (asc or desc) in sort spec " + sp);
         }
-        
+
         if (SCORE.equals(field)) {
           if (top) {
             sorts.add(SortField.FIELD_SCORE);
@@ -198,15 +202,15 @@ public class SortSpecParsing {
           SchemaField sf = schema.getFieldOrNull(field);
           if (null == sf) {
             if (null != qParserException) {
-              throw new SolrException
-                (SolrException.ErrorCode.BAD_REQUEST,
-                 "sort param could not be parsed as a query, and is not a "+
-                 "field that exists in the index: " + field,
-                 qParserException);
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "sort param could not be parsed as a query, and is not a "
+                      + "field that exists in the index: "
+                      + field,
+                  qParserException);
             }
-            throw new SolrException
-              (SolrException.ErrorCode.BAD_REQUEST,
-               "sort param field can't be found: " + field);
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST, "sort param field can't be found: " + field);
           }
           sorts.add(sf.getSortField(top));
           fields.add(sf);
@@ -217,9 +221,8 @@ public class SortSpecParsing {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error in sort: " + sortSpec, e);
     }
 
-
     // normalize a sort on score desc to null
-    if (sorts.size()==1 && sorts.get(0) == SortField.FIELD_SCORE) {
+    if (sorts.size() == 1 && sorts.get(0) == SortField.FIELD_SCORE) {
       return newEmptySortSpec();
     }
 
@@ -230,5 +233,4 @@ public class SortSpecParsing {
   private static SortSpec newEmptySortSpec() {
     return new SortSpec(null, Collections.<SchemaField>emptyList());
   }
-
 }

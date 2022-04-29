@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -39,25 +38,21 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * 
- */
+/** */
 public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void betterNotBeJ9() {
-    assumeFalse("FIXME: SOLR-5793: This test fails under IBM J9", 
-                Constants.JAVA_VENDOR.startsWith("IBM"));
+    assumeFalse(
+        "FIXME: SOLR-5793: This test fails under IBM J9", Constants.JAVA_VENDOR.startsWith("IBM"));
   }
-
 
   /** modified by tests as needed */
   private String chain = "dedupe";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    initCore("solrconfig.xml", "schema12.xml");
+    initCore("solrconfig-dedup-overwrites.xml", "schema15.xml");
   }
 
   @Override
@@ -77,37 +72,24 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       req.close();
     }
   }
-  
+
   @Test
   public void testDupeAllFieldsDetection() throws Exception {
-    
     this.chain = "dedupe-allfields";
-    
-    SolrCore core = h.getCore();
-    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(this.chain);
-    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
-    factory.setEnabled(true);
-    assertNotNull(chained);
+    assertNotNull(h.getCore().getUpdateProcessingChain(this.chain));
 
     addDoc(adoc("v_t", "Hello Dude man!"));
     addDoc(adoc("v_t", "Hello Dude man!", "name", "name1'"));
     addDoc(adoc("v_t", "Hello Dude man!", "name", "name2'"));
 
     addDoc(commit());
-    
-    checkNumDocs(3);
 
-    factory.setEnabled(false);
-  }  
+    checkNumDocs(3);
+  }
 
   @Test
   public void testDupeDetection() throws Exception {
-    SolrCore core = h.getCore();
-    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(
-        "dedupe");
-    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
-    factory.setEnabled(true);
-    assertNotNull(chained);
+    assertNotNull(h.getCore().getUpdateProcessingChain(this.chain));
 
     addDoc(adoc("id", "1a", "v_t", "Hello Dude man!", "name", "ali babi'"));
     addDoc(adoc("id", "2a", "name", "ali babi", "v_t", "Hello Dude man . -"));
@@ -120,8 +102,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
     checkNumDocs(1);
 
-    addDoc(adoc("id", "3b", "v_t", "Hello Dude man!", "t_field",
-        "fake value galore"));
+    addDoc(adoc("id", "3b", "v_t", "Hello Dude man!", "t_field", "fake value galore"));
 
     addDoc(commit());
 
@@ -143,60 +124,57 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     addDoc(commit());
 
     checkNumDocs(4);
-    factory.setEnabled(false);
   }
 
   @Test
   public void testMultiThreaded() throws Exception {
-    UpdateRequestProcessorChain chained = h.getCore().getUpdateProcessingChain(
-        "dedupe");
-    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
-    factory.setEnabled(true);
+    assertNotNull(h.getCore().getUpdateProcessingChain(this.chain));
+
     Thread[] threads = null;
     Thread[] threads2 = null;
 
     threads = new Thread[7];
     for (int i = 0; i < threads.length; i++) {
-      threads[i] = new Thread() {
+      threads[i] =
+          new Thread() {
 
-        @Override
-        public void run() {
-          for (int i = 0; i < 30; i++) {
-            // h.update(adoc("id", Integer.toString(1+ i), "v_t",
-            // "Goodbye Dude girl!"));
-            try {
-              addDoc(adoc("id", Integer.toString(1 + i), "v_t",
-                  "Goodbye Dude girl!"));
-            } catch (Exception e) {
-              throw new RuntimeException(e);
+            @Override
+            public void run() {
+              for (int i = 0; i < 30; i++) {
+                // h.update(adoc("id", Integer.toString(1+ i), "v_t",
+                // "Goodbye Dude girl!"));
+                try {
+                  addDoc(adoc("id", Integer.toString(1 + i), "v_t", "Goodbye Dude girl!"));
+                } catch (Exception e) {
+                  throw new RuntimeException(e);
+                }
+              }
             }
-          }
-        }
-      };
+          };
 
       threads[i].setName("testThread-" + i);
     }
 
     threads2 = new Thread[3];
     for (int i = 0; i < threads2.length; i++) {
-      threads2[i] = new Thread() {
+      threads2[i] =
+          new Thread() {
 
-        @Override
-        public void run() {
-          for (int i = 0; i < 10; i++) {
-            // h.update(adoc("id" , Integer.toString(1+ i + 10000), "v_t",
-            // "Goodbye Dude girl"));
-            // h.update(commit());
-            try {
-              addDoc(adoc("id", Integer.toString(1 + i), "v_t",
-                  "Goodbye Dude girl!"));
-              addDoc(commit());
-            } catch (Exception e) {
-              throw new RuntimeException(e);
+            @Override
+            public void run() {
+              for (int i = 0; i < 10; i++) {
+                // h.update(adoc("id" , Integer.toString(1+ i + 10000), "v_t",
+                // "Goodbye Dude girl"));
+                // h.update(commit());
+                try {
+                  addDoc(adoc("id", Integer.toString(1 + i), "v_t", "Goodbye Dude girl!"));
+                  addDoc(commit());
+                } catch (Exception e) {
+                  throw new RuntimeException(e);
+                }
+              }
             }
-          }
-        }
-      };
+          };
 
       threads2[i].setName("testThread2-" + i);
     }
@@ -221,19 +199,16 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     checkNumDocs(1);
-    factory.setEnabled(false);
   }
 
-  /**
-   * a non-indexed signatureField is fine as long as overwriteDupes==false
-   */
+  /** a non-indexed signatureField is fine as long as overwriteDupes==false */
   @Test
   public void testNonIndexedSignatureField() throws Exception {
-    SolrCore core = h.getCore();
+    this.chain = "stored_sig";
+    assertNotNull(h.getCore().getUpdateProcessingChain(this.chain));
 
-    checkNumDocs(0);    
+    checkNumDocs(0);
 
-    chain = "stored_sig";
     addDoc(adoc("id", "2a", "v_t", "Hello Dude man!", "name", "ali babi'"));
     addDoc(adoc("id", "2b", "v_t", "Hello Dude man!", "name", "ali babi'"));
     addDoc(commit());
@@ -255,27 +230,21 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     } catch (Exception e) {
       exception_ok = true;
     }
-    assertTrue("Should have gotten an exception from inform(SolrCore)", 
-               exception_ok);
+    assertTrue("Should have gotten an exception from inform(SolrCore)", exception_ok);
   }
-  
+
   @Test
   @SuppressWarnings({"rawtypes"})
   public void testNonStringFieldsValues() throws Exception {
     this.chain = "dedupe-allfields";
-    
-    SolrCore core = h.getCore();
-    UpdateRequestProcessorChain chained = core
-        .getUpdateProcessingChain(chain);
-    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
-    factory.setEnabled(true);
-    
-    Map<String,String[]> params = new HashMap<>();
+    assertNotNull(h.getCore().getUpdateProcessingChain(this.chain));
+
+    Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     params.put(UpdateParams.UPDATE_CHAIN, new String[] {chain});
-    
+
     UpdateRequest ureq = new UpdateRequest();
-    
+
     {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("v_t", "same");
@@ -306,14 +275,14 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       }
       docB.addField("ints_is", ints);
 
-      for (SolrInputDocument doc : new SolrInputDocument[] { docA, docB }) {
+      for (SolrInputDocument doc : new SolrInputDocument[] {docA, docB}) {
         doc.addField("v_t", "same");
         doc.addField("weight", 3.0f);
         ureq.add(doc);
       }
     }
     {
-      // now add another doc with the same values as A & B above, 
+      // now add another doc with the same values as A & B above,
       // but diff ints_is collection (diff order)
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("v_t", "same");
@@ -323,23 +292,21 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       }
       ureq.add(doc);
     }
-        
 
     LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), mmparams);
     try {
-      req.setContentStreams(Collections.singletonList(ContentStreamBase.create(new BinaryRequestWriter(), ureq)));
+      req.setContentStreams(
+          Collections.singletonList(ContentStreamBase.create(new BinaryRequestWriter(), ureq)));
       UpdateRequestHandler h = new UpdateRequestHandler();
-      h.init(new NamedList());
+      h.init(new NamedList<>());
       h.handleRequestBody(req, new SolrQueryResponse());
     } finally {
       req.close();
     }
-    
-    addDoc(commit());
-    
-    checkNumDocs(4);
-    
 
+    addDoc(commit());
+
+    checkNumDocs(4);
   }
 
   /** A list with an unusual toString */
@@ -347,13 +314,14 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     public UnusualList(int size) {
       super(size);
     }
+
     @Override
     public String toString() {
       return "UNUSUAL:" + super.toString();
     }
   }
 
-  private void addDoc(String doc) throws Exception  {
+  private void addDoc(String doc) throws Exception {
     addDoc(doc, chain);
   }
 }

@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
@@ -26,28 +26,25 @@ import org.apache.solr.client.solrj.io.eval.UuidEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class UuidEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public UuidEvaluatorTest() {
     super();
-    
-    factory = new StreamFactory()
-      .withFunctionName("uuid", UuidEvaluator.class);
-    values = new HashMap<String,Object>();
+
+    factory = new StreamFactory().withFunctionName("uuid", UuidEvaluator.class);
+    values = new HashMap<String, Object>();
   }
-    
+
   @Test
-  public void testUuid() throws Exception{
+  public void testUuid() throws Exception {
     StreamEvaluator evaluator = factory.constructEvaluator("uuid()");
     Assert.assertTrue(evaluator.evaluate(null) instanceof String);
-    String uuid = (String)evaluator.evaluate(null);
+    String uuid = (String) evaluator.evaluate(null);
     assertEquals(uuid.split("-").length, 5);
-    String uuid1 = (String)evaluator.evaluate(new Tuple(values));
+    String uuid1 = (String) evaluator.evaluate(new Tuple(values));
     assertNotEquals(uuid, uuid1);
   }
 }

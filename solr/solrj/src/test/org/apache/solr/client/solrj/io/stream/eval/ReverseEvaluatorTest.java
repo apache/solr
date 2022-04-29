@@ -20,39 +20,36 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ReverseEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
 public class ReverseEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
-  
+
   public ReverseEvaluatorTest() {
     super();
     factory = new StreamFactory().withFunctionName("reverse", ReverseEvaluator.class);
-    values = new HashMap<String,Object>();
+    values = new HashMap<String, Object>();
   }
 
   @Test
   public void test() throws IOException {
     double[] l1 = new double[] {3.4, 6.7, 4.5};
-    
+
     values.clear();
     values.put("l1", l1);
 
-    @SuppressWarnings({"rawtypes"})
-    List result = ((List<?>)factory.constructEvaluator("reverse(l1)").evaluate(new Tuple(values)));
+    List<?> result =
+        ((List<?>) factory.constructEvaluator("reverse(l1)").evaluate(new Tuple(values)));
 
     Assert.assertEquals(4.5, result.get(0));
     Assert.assertEquals(6.7, result.get(1));
     Assert.assertEquals(3.4, result.get(2));
   }
-    
 }

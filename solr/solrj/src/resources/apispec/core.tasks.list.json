@@ -1,0 +1,12 @@
+{
+  "documentation": "https://solr.apache.org/guide/task-management.html",
+  "description": "List currently running tasks",
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/tasks/list"
+    ]
+  }
+}

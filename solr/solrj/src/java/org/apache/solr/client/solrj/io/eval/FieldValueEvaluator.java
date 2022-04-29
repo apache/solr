@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.eval;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -34,7 +33,7 @@ public class FieldValueEvaluator extends SourceEvaluator {
   private String fieldName;
 
   public FieldValueEvaluator(String fieldName) {
-    if(fieldName.startsWith("'") && fieldName.endsWith("'") && fieldName.length() > 1){
+    if (fieldName.startsWith("'") && fieldName.endsWith("'") && fieldName.length() > 1) {
       fieldName = fieldName.substring(1, fieldName.length() - 1);
     }
 
@@ -42,7 +41,6 @@ public class FieldValueEvaluator extends SourceEvaluator {
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Object evaluate(Tuple tuple) throws IOException {
     Object value = tuple.get(fieldName);
 
@@ -51,35 +49,35 @@ public class FieldValueEvaluator extends SourceEvaluator {
     // when they are not available in the provided tuple. This means that all
     // evaluators can evaluate over both a stream's tuple and the context, and
     // can even evaluate over fields from both of them in the same evaluation
-    if(null == value && null != getStreamContext()){
+    if (null == value && null != getStreamContext()) {
       value = getStreamContext().getLets().get(fieldName);
 
       // If what's contained in the context is itself an evaluator then
       // we need to evaluate it
-      if(value instanceof StreamEvaluator){
-        value = ((StreamEvaluator)value).evaluate(tuple);
+      if (value instanceof StreamEvaluator) {
+        value = ((StreamEvaluator) value).evaluate(tuple);
       }
     }
 
     // if we have an array then convert to an ArrayList
     // if we have an iterable that is not a list then convert to ArrayList
     // lists are good to go
-    if(null != value){
-      if(value instanceof Object[]){
-        Object[] array = (Object[])value;
+    if (null != value) {
+      if (value instanceof Object[]) {
+        Object[] array = (Object[]) value;
         List<Object> list = new ArrayList<Object>(array.length);
-        for(Object obj : array){
+        for (Object obj : array) {
           list.add(obj);
         }
         return list;
-      } else if(value instanceof Matrix) {
+      } else if (value instanceof Matrix) {
         return value;
-      } else if(value instanceof VectorFunction) {
+      } else if (value instanceof VectorFunction) {
         return value;
-      } else if(value instanceof Iterable && !(value instanceof List<?>)){
-        Iterable<?> iter = (Iterable<?>)value;
+      } else if (value instanceof Iterable && !(value instanceof List<?>)) {
+        Iterable<?> iter = (Iterable<?>) value;
         List<Object> list = new ArrayList<Object>();
-        for(Object obj : iter){
+        for (Object obj : iter) {
           list.add(obj);
         }
         return list;
@@ -88,12 +86,16 @@ public class FieldValueEvaluator extends SourceEvaluator {
 
     StreamContext sc = getStreamContext();
 
-    if(sc != null) {sc.getTupleContext().remove("null");}
+    if (sc != null) {
+      sc.getTupleContext().remove("null");
+    }
 
-    if(value == null) {
-      if(sc != null) {sc.getTupleContext().put("null", fieldName);}
-      if(fieldName.startsWith("\"") && fieldName.endsWith("\"")) {
-        return fieldName.substring(1, fieldName.length()-1);
+    if (value == null) {
+      if (sc != null) {
+        sc.getTupleContext().put("null", fieldName);
+      }
+      if (fieldName.startsWith("\"") && fieldName.endsWith("\"")) {
+        return fieldName.substring(1, fieldName.length() - 1);
       } else {
         return null;
       }
@@ -114,5 +116,4 @@ public class FieldValueEvaluator extends SourceEvaluator {
         .withImplementingClass(getClass().getName())
         .withExpression(toExpression(factory).toString());
   }
-
 }

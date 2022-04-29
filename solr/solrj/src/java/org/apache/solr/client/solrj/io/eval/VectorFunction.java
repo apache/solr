@@ -16,29 +16,26 @@
  */
 package org.apache.solr.client.solrj.io.eval;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 
-@SuppressWarnings({"rawtypes"})
-public class VectorFunction extends ArrayList {
+public class VectorFunction extends ArrayList<Number> {
 
   protected static final long serialVersionUID = 1L;
 
   private Object function;
-  private Map context = new HashMap();
+  private Map<Object, Object> context = new HashMap<>();
 
-  @SuppressWarnings({"unchecked"})
   public VectorFunction(Object function, double[] results) {
     this.function = function;
-    for(double d : results) {
+    for (double d : results) {
       add(d);
     }
   }
 
-  @SuppressWarnings({"unchecked"})
-  public VectorFunction(Object function, List<Number> values) {
+  public VectorFunction(Object function, List<? extends Number> values) {
     this.function = function;
     addAll(values);
   }
@@ -47,7 +44,6 @@ public class VectorFunction extends ArrayList {
     return this.function;
   }
 
-  @SuppressWarnings({"unchecked"})
   public void addToContext(Object key, Object value) {
     this.context.put(key, value);
   }
@@ -55,5 +51,4 @@ public class VectorFunction extends ArrayList {
   public Object getFromContext(Object key) {
     return this.context.get(key);
   }
-
 }

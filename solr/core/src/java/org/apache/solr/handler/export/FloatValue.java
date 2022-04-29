@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -44,6 +43,8 @@ class FloatValue implements SortValue {
     return currentValue;
   }
 
+  public void toGlobalValue(SortValue previousValue) {}
+
   public String getField() {
     return field;
   }
@@ -59,7 +60,8 @@ class FloatValue implements SortValue {
 
   public void setCurrentValue(int docId) throws IOException {
     if (docId < lastDocID) {
-      throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
+      throw new AssertionError(
+          "docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
     }
     lastDocID = docId;
     int curDocID = vals.docID();
@@ -68,7 +70,7 @@ class FloatValue implements SortValue {
     }
     if (docId == curDocID) {
       present = true;
-      currentValue = Float.intBitsToFloat((int)vals.longValue());
+      currentValue = Float.intBitsToFloat((int) vals.longValue());
     } else {
       present = false;
       currentValue = 0f;
@@ -81,7 +83,7 @@ class FloatValue implements SortValue {
   }
 
   public void setCurrentValue(SortValue sv) {
-    FloatValue fv = (FloatValue)sv;
+    FloatValue fv = (FloatValue) sv;
     this.currentValue = fv.currentValue;
     this.present = fv.present;
   }
@@ -92,7 +94,7 @@ class FloatValue implements SortValue {
   }
 
   public int compareTo(SortValue o) {
-    FloatValue fv = (FloatValue)o;
+    FloatValue fv = (FloatValue) o;
     return comp.compare(currentValue, fv.currentValue);
   }
 }

@@ -23,7 +23,6 @@ import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
-
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -47,7 +46,14 @@ public class PackageListeners {
 
   public synchronized void addListener(Listener listener) {
     listeners.add(new SoftReference<>(listener));
+  }
 
+  public synchronized void addListener(Listener listener, boolean addFirst) {
+    if (addFirst) {
+      listeners.add(0, new SoftReference<>(listener));
+    } else {
+      addListener(listener);
+    }
   }
 
   public synchronized void removeListener(Listener listener) {
@@ -58,9 +64,7 @@ public class PackageListeners {
       if (pkgListener == null || pkgListener == listener) {
         it.remove();
       }
-
     }
-
   }
 
   synchronized void packagesUpdated(List<PackageLoader.Package> pkgs) {
@@ -71,7 +75,7 @@ public class PackageListeners {
         invokeListeners(pkgInfo, ctx);
       }
     } finally {
-      ctx.runLaterTasks(core::runAsync);
+      ctx.runLaterTasks(r -> core.getCoreContainer().runAsync(r));
       MDCLoggingContext.clear();
     }
   }
@@ -79,7 +83,7 @@ public class PackageListeners {
   private synchronized void invokeListeners(PackageLoader.Package pkg, Listener.Ctx ctx) {
     for (Reference<Listener> ref : listeners) {
       Listener listener = ref.get();
-      if(listener == null) continue;
+      if (listener == null) continue;
       if (listener.packageName() == null || listener.packageName().equals(pkg.name())) {
         listener.changed(pkg, ctx);
       }
@@ -97,26 +101,27 @@ public class PackageListeners {
     return result;
   }
 
-
   public interface Listener {
-    /**Name of the package or null to listen to all package changes */
+    /** Name of the package or null to listen to all package changes */
     String packageName();
 
-    PluginInfo pluginInfo();
+    /** fetch the package versions of class names */
+    Map<String, PackageAPI.PkgVersion> packageDetails();
 
-    /**A callback when the package is updated */
+    /** A callback when the package is updated */
     void changed(PackageLoader.Package pkg, Ctx ctx);
 
     default MapWriter getPackageVersion(PluginInfo.ClassName cName) {
       return null;
     }
+
     class Ctx {
       private Map<String, Runnable> runLater;
 
       /**
-       * If there are multiple packages to be updated and there are multiple listeners,
-       * This is executed after all of the {@link Listener#changed(PackageLoader.Package, Ctx)}
-       * calls are invoked. The name is a unique identifier that can be used by consumers to avoid duplicate
+       * If there are multiple packages to be updated and there are multiple listeners, This is
+       * executed after all of the {@link Listener#changed(PackageLoader.Package, Ctx)} calls are
+       * invoked. The name is a unique identifier that can be used by consumers to avoid duplicate
        * If no deduplication is required, use null as the name
        */
       public void runLater(String name, Runnable runnable) {
@@ -134,6 +139,5 @@ public class PackageListeners {
         }
       }
     }
-
   }
 }

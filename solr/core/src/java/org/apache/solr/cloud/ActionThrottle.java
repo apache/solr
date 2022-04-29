@@ -17,9 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.common.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +25,7 @@ import org.slf4j.LoggerFactory;
 // this class may be accessed by multiple threads, but only one at a time
 public class ActionThrottle {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private volatile Long lastActionStartedAt;
   private volatile Long minMsBetweenActions;
 
@@ -37,18 +35,19 @@ public class ActionThrottle {
   public ActionThrottle(String name, long minMsBetweenActions) {
     this(name, minMsBetweenActions, TimeSource.NANO_TIME);
   }
-  
+
   public ActionThrottle(String name, long minMsBetweenActions, TimeSource timeSource) {
     this.name = name;
     this.minMsBetweenActions = minMsBetweenActions;
     this.timeSource = timeSource;
   }
 
-  public ActionThrottle(String name, long minMsBetweenActions, long lastActionStartedAt)  {
+  public ActionThrottle(String name, long minMsBetweenActions, long lastActionStartedAt) {
     this(name, minMsBetweenActions, lastActionStartedAt, TimeSource.NANO_TIME);
   }
 
-  public ActionThrottle(String name, long minMsBetweenActions, long lastActionStartedAt, TimeSource timeSource)  {
+  public ActionThrottle(
+      String name, long minMsBetweenActions, long lastActionStartedAt, TimeSource timeSource) {
     this.name = name;
     this.minMsBetweenActions = minMsBetweenActions;
     this.lastActionStartedAt = lastActionStartedAt;
@@ -62,23 +61,24 @@ public class ActionThrottle {
   public void markAttemptingAction() {
     lastActionStartedAt = timeSource.getTimeNs();
   }
-  
+
   public void minimumWaitBetweenActions() {
     if (lastActionStartedAt == null) {
       return;
     }
     long diff = timeSource.getTimeNs() - lastActionStartedAt;
     int diffMs = (int) TimeUnit.MILLISECONDS.convert(diff, TimeUnit.NANOSECONDS);
-    long minNsBetweenActions = TimeUnit.NANOSECONDS.convert(minMsBetweenActions, TimeUnit.MILLISECONDS);
+    long minNsBetweenActions =
+        TimeUnit.NANOSECONDS.convert(minMsBetweenActions, TimeUnit.MILLISECONDS);
     log.debug("The last {} attempt started {}ms ago.", name, diffMs);
     int sleep = 0;
-    
+
     if (diffMs > 0 && diff < minNsBetweenActions) {
       sleep = (int) TimeUnit.MILLISECONDS.convert(minNsBetweenActions - diff, TimeUnit.NANOSECONDS);
     } else if (diffMs == 0) {
       sleep = minMsBetweenActions.intValue();
     }
-    
+
     if (sleep > 0) {
       log.info("Throttling {} attempts - waiting for {}ms", name, sleep);
       try {

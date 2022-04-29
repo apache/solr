@@ -18,12 +18,10 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
@@ -33,15 +31,16 @@ import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
+import org.apache.solr.legacy.LegacyNumericUtils;
 
 /**
  * A numeric field that can contain 32-bit signed two's complement integer values.
  *
  * <ul>
- *  <li>Min Value Allowed: -2147483648</li>
- *  <li>Max Value Allowed: 2147483647</li>
+ *   <li>Min Value Allowed: -2147483648
+ *   <li>Max Value Allowed: 2147483647
  * </ul>
- * 
+ *
  * @see Integer
  * @deprecated Trie fields are deprecated as of Solr 7.0
  * @see IntPointField
@@ -54,7 +53,7 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
 
   @Override
   public Object toNativeType(Object val) {
-    if(val==null) return null;
+    if (val == null) return null;
     if (val instanceof Number) return ((Number) val).intValue();
     try {
       if (val instanceof CharSequence) return Integer.parseInt(val.toString());
@@ -64,24 +63,26 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
     }
     return super.toNativeType(val);
   }
-  
+
   @Override
   protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
     
     return new NumericSortedSetFieldSource(f, choice, NumberType.INTEGER) {
       @Override
-      public FunctionValues getValues(@SuppressWarnings({"rawtypes"})Map context, LeafReaderContext readerContext) throws IOException {
+      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+          throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
-        
+
         SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
         SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
-        
+
         return new IntDocValues(thisAsSortedSetFieldSource) {
           private int lastDocID;
 
           private boolean setDoc(int docID) throws IOException {
             if (docID < lastDocID) {
-              throw new IllegalArgumentException("docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
+              throw new IllegalArgumentException(
+                  "docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
             }
             if (docID > view.docID()) {
               lastDocID = docID;
@@ -90,11 +91,11 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
               return docID == view.docID();
             }
           }
-          
+
           @Override
           public int intVal(int doc) throws IOException {
             if (setDoc(doc)) {
-              BytesRef bytes = view.binaryValue();
+              BytesRef bytes = view.lookupOrd(view.ordValue());
               assert bytes.length > 0;
               return LegacyNumericUtils.prefixCodedToInt(bytes);
             } else {
@@ -111,17 +112,17 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
           public ValueFiller getValueFiller() {
             return new ValueFiller() {
               private final MutableValueInt mval = new MutableValueInt();
-              
+
               @Override
               public MutableValue getValue() {
                 return mval;
               }
-              
+
               @Override
               public void fillValue(int doc) throws IOException {
                 if (setDoc(doc)) {
                   mval.exists = true;
-                  mval.value = LegacyNumericUtils.prefixCodedToInt(view.binaryValue());
+                  mval.value = LegacyNumericUtils.prefixCodedToInt(view.lookupOrd(view.ordValue()));
                 } else {
                   mval.exists = false;
                   mval.value = 0;

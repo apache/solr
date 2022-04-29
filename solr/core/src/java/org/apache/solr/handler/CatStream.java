@@ -18,14 +18,16 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
-
+import java.util.zip.GZIPInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -66,7 +68,8 @@ public class CatStream extends TupleStream implements Expressible {
     if (commaDelimitedFilepaths == null) {
       throw new IllegalArgumentException("No filepaths provided to stream");
     }
-    final String filepathsWithoutSurroundingQuotes = stripSurroundingQuotesIfTheyExist(commaDelimitedFilepaths);
+    final String filepathsWithoutSurroundingQuotes =
+        stripSurroundingQuotesIfTheyExist(commaDelimitedFilepaths);
     if (StringUtils.isEmpty(filepathsWithoutSurroundingQuotes)) {
       throw new IllegalArgumentException("No filepaths provided to stream");
     }
@@ -77,7 +80,8 @@ public class CatStream extends TupleStream implements Expressible {
 
   private String stripSurroundingQuotesIfTheyExist(String value) {
     if (value.length() < 2) return value;
-    if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
+    if ((value.startsWith("\"") && value.endsWith("\""))
+        || (value.startsWith("'") && value.endsWith("'"))) {
       return value.substring(1, value.length() - 1);
     }
 
@@ -88,14 +92,17 @@ public class CatStream extends TupleStream implements Expressible {
   public void setStreamContext(StreamContext context) {
     this.context = context;
     Object solrCoreObj = context.get("solr-core");
-    if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore) ) {
-      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "StreamContext must have SolrCore in solr-core key");
+    if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore)) {
+      throw new SolrException(
+          SolrException.ErrorCode.INVALID_STATE,
+          "StreamContext must have SolrCore in solr-core key");
     }
     final SolrCore core = (SolrCore) context.get("solr-core");
 
     this.chroot = core.getCoreContainer().getUserFilesPath();
-    if (! Files.exists(chroot)) {
-      throw new IllegalStateException(chroot + " directory used to load files must exist but could not be found!");
+    if (!Files.exists(chroot)) {
+      throw new IllegalStateException(
+          chroot + " directory used to load files must exist but could not be found!");
     }
   }
 
@@ -109,7 +116,7 @@ public class CatStream extends TupleStream implements Expressible {
     final List<CrawlFile> initialCrawlSeeds = validateAndSetFilepathsInSandbox();
 
     final List<CrawlFile> filesToCrawl = new ArrayList<>();
-    for (CrawlFile crawlSeed: initialCrawlSeeds) {
+    for (CrawlFile crawlSeed : initialCrawlSeeds) {
       findReadableFiles(crawlSeed, filesToCrawl);
     }
 
@@ -160,13 +167,15 @@ public class CatStream extends TupleStream implements Expressible {
     final List<CrawlFile> crawlSeeds = new ArrayList<>();
     for (String crawlRootStr : commaDelimitedFilepaths.split(",")) {
       Path crawlRootPath = chroot.resolve(crawlRootStr).normalize();
-      if (! crawlRootPath.startsWith(chroot)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+      if (!crawlRootPath.startsWith(chroot)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
             "file/directory to stream must be under " + chroot);
       }
 
-      if (! Files.exists(crawlRootPath)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+      if (!Files.exists(crawlRootPath)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
             "file/directory to stream doesn't exist: " + crawlRootStr);
       }
 
@@ -180,21 +189,25 @@ public class CatStream extends TupleStream implements Expressible {
     while (allFilesToCrawl.hasNext()) {
       closeCurrentFileIfSet();
       currentFilePath = allFilesToCrawl.next();
-      currentFileLines = FileUtils.lineIterator(currentFilePath.absolutePath.toFile(), "UTF-8");
+      if (currentFilePath.absolutePath.toString().endsWith(".gz")) {
+        currentFileLines =
+            new LineIterator(
+                new InputStreamReader(
+                    new GZIPInputStream(Files.newInputStream(currentFilePath.absolutePath)),
+                    StandardCharsets.UTF_8));
+      } else {
+        currentFileLines = FileUtils.lineIterator(currentFilePath.absolutePath.toFile(), "UTF-8");
+      }
       if (currentFileLines.hasNext()) return true;
     }
 
     return false;
   }
 
-  @SuppressWarnings({"unchecked"})
   private Tuple fetchNextLineFromCurrentFile() {
     linesReturned++;
 
-    return new Tuple(
-        "file", currentFilePath.displayPath,
-        "line", currentFileLines.next()
-    );
+    return new Tuple("file", currentFilePath.displayPath, "line", currentFileLines.next());
   }
 
   private boolean currentFileHasMoreLinesToRead() {
@@ -223,12 +236,16 @@ public class CatStream extends TupleStream implements Expressible {
       foundFiles.add(seed);
     } else if (Files.isDirectory(entry)) {
       try (Stream<Path> directoryContents = Files.list(entry)) {
-        directoryContents.sorted().forEach(iPath -> {
-          // debatable: should the separator be OS/file-system specific, or perhaps always "/" ?
-          final String displayPathSeparator = iPath.getFileSystem().getSeparator();
-          final String itemDisplayPath = seed.displayPath + displayPathSeparator + iPath.getFileName();
-          findReadableFiles(new CrawlFile(itemDisplayPath, iPath), foundFiles);
-        });
+        directoryContents
+            .sorted()
+            .forEach(
+                iPath -> {
+                  // should the separator be OS/file-system specific or always "/"?
+                  final String displayPathSeparator = iPath.getFileSystem().getSeparator();
+                  final String itemDisplayPath =
+                      seed.displayPath + displayPathSeparator + iPath.getFileName();
+                  findReadableFiles(new CrawlFile(itemDisplayPath, iPath), foundFiles);
+                });
       } catch (IOException e) {
         throw new RuntimeIOException(e);
       }
@@ -248,4 +265,3 @@ public class CatStream extends TupleStream implements Expressible {
     }
   }
 }
-

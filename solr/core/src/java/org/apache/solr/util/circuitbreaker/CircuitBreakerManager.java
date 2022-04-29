@@ -17,27 +17,26 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /**
- * Manages all registered circuit breaker instances. Responsible for a holistic view
- * of whether a circuit breaker has tripped or not.
+ * Manages all registered circuit breaker instances. Responsible for a holistic view of whether a
+ * circuit breaker has tripped or not.
  *
- * There are two typical ways of using this class's instance:
- * 1. Check if any circuit breaker has triggered -- and know which circuit breaker has triggered.
- * 2. Get an instance of a specific circuit breaker and perform checks.
+ * <p>There are two typical ways of using this class's instance: 1. Check if any circuit breaker has
+ * triggered -- and know which circuit breaker has triggered. 2. Get an instance of a specific
+ * circuit breaker and perform checks.
  *
- * It is a good practice to register new circuit breakers here if you want them checked for every
+ * <p>It is a good practice to register new circuit breakers here if you want them checked for every
  * request.
  *
- * NOTE: The current way of registering new default circuit breakers is minimal and not a long term
- * solution. There will be a follow up with a SIP for a schema API design.
+ * <p>NOTE: The current way of registering new default circuit breakers is minimal and not a long
+ * term solution. There will be a follow up with a SIP for a schema API design.
  */
 public class CircuitBreakerManager implements PluginInfoInitialized {
   // Class private to potentially allow "family" of circuit breakers to be enabled or disabled
@@ -70,6 +69,7 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
   }
   /**
    * Check and return circuit breakers that have triggered
+   *
    * @return CircuitBreakers which have triggered, null otherwise.
    */
   public List<CircuitBreaker> checkTripped() {
@@ -77,8 +77,7 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
 
     if (enableCircuitBreakerManager) {
       for (CircuitBreaker circuitBreaker : circuitBreakerList) {
-        if (circuitBreaker.isEnabled() &&
-            circuitBreaker.isTripped()) {
+        if (circuitBreaker.isEnabled() && circuitBreaker.isTripped()) {
           if (triggeredCircuitBreakers == null) {
             triggeredCircuitBreakers = new ArrayList<>();
           }
@@ -94,16 +93,13 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
   /**
    * Returns true if *any* circuit breaker has triggered, false if none have triggered.
    *
-   * <p>
-   * NOTE: This method short circuits the checking of circuit breakers -- the method will
-   * return as soon as it finds a circuit breaker that is enabled and has triggered.
-   * </p>
+   * <p>NOTE: This method short circuits the checking of circuit breakers -- the method will return
+   * as soon as it finds a circuit breaker that is enabled and has triggered.
    */
   public boolean checkAnyTripped() {
     if (enableCircuitBreakerManager) {
       for (CircuitBreaker circuitBreaker : circuitBreakerList) {
-        if (circuitBreaker.isEnabled() &&
-            circuitBreaker.isTripped()) {
+        if (circuitBreaker.isEnabled() && circuitBreaker.isTripped()) {
           return true;
         }
       }
@@ -130,14 +126,16 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
   }
 
   /**
-   * Register default circuit breakers and return a constructed CircuitBreakerManager
-   * instance which serves the given circuit breakers.
+   * Register default circuit breakers and return a constructed CircuitBreakerManager instance which
+   * serves the given circuit breakers.
    *
-   * Any default circuit breakers should be registered here.
+   * <p>Any default circuit breakers should be registered here.
    */
-  @SuppressWarnings({"rawtypes"})
   public static CircuitBreakerManager build(PluginInfo pluginInfo) {
-    boolean enabled = pluginInfo == null ? false : Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("enabled", "false"));
+    boolean enabled =
+        pluginInfo == null
+            ? false
+            : Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("enabled", "false"));
     CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(enabled);
 
     circuitBreakerManager.init(pluginInfo);
@@ -146,7 +144,6 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
   }
 
   @VisibleForTesting
-  @SuppressWarnings({"rawtypes"})
   public static CircuitBreaker.CircuitBreakerConfig buildCBConfig(PluginInfo pluginInfo) {
     boolean enabled = false;
     boolean cpuCBEnabled = false;
@@ -154,9 +151,8 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
     int memCBThreshold = 100;
     int cpuCBThreshold = 100;
 
-
     if (pluginInfo != null) {
-      NamedList args = pluginInfo.initArgs;
+      NamedList<?> args = pluginInfo.initArgs;
 
       enabled = Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("enabled", "false"));
 
@@ -168,7 +164,8 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
       }
     }
 
-    return new CircuitBreaker.CircuitBreakerConfig(enabled, memCBEnabled, memCBThreshold, cpuCBEnabled, cpuCBThreshold);
+    return new CircuitBreaker.CircuitBreakerConfig(
+        enabled, memCBEnabled, memCBThreshold, cpuCBEnabled, cpuCBThreshold);
   }
 
   public boolean isEnabled() {

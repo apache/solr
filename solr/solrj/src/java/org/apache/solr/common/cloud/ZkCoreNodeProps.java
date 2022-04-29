@@ -16,17 +16,19 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.util.Objects;
+
 public class ZkCoreNodeProps {
-  private ZkNodeProps nodeProps;
-  
+  private final ZkNodeProps nodeProps;
+
   public ZkCoreNodeProps(ZkNodeProps nodeProps) {
     this.nodeProps = nodeProps;
   }
-  
+
   public String getCoreUrl() {
-    return getCoreUrl(nodeProps.getStr(ZkStateReader.BASE_URL_PROP), nodeProps.getStr(ZkStateReader.CORE_NAME_PROP));
+    return getCoreUrl(this.nodeProps);
   }
-  
+
   public String getNodeName() {
     return nodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
   }
@@ -36,22 +38,36 @@ public class ZkCoreNodeProps {
   }
 
   public String getBaseUrl() {
-    return nodeProps.getStr(ZkStateReader.BASE_URL_PROP);
+    return getBaseUrl(this.nodeProps);
   }
-  
+
   public String getCoreName() {
     return nodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
   }
-  
-  public static String getCoreUrl(ZkNodeProps nodeProps) {
-    return getCoreUrl(nodeProps.getStr(ZkStateReader.BASE_URL_PROP), nodeProps.getStr(ZkStateReader.CORE_NAME_PROP));
+
+  private static String getBaseUrl(ZkNodeProps nodeProps) {
+    // if storing baseUrl in ZK is enabled and it's stored, just use what's stored, i.e. no
+    // self-healing here
+    String baseUrl = nodeProps.getStr(ZkStateReader.BASE_URL_PROP);
+    if (baseUrl == null) {
+      throw new IllegalStateException("base_url not set in: " + nodeProps);
+    }
+    return baseUrl;
   }
-  
+
+  public static String getCoreUrl(ZkNodeProps nodeProps) {
+    String baseUrl = getBaseUrl(nodeProps);
+    return baseUrl != null
+        ? getCoreUrl(baseUrl, nodeProps.getStr(ZkStateReader.CORE_NAME_PROP))
+        : null;
+  }
+
   public static String getCoreUrl(String baseUrl, String coreName) {
+    Objects.requireNonNull(baseUrl, "baseUrl must not be null");
     StringBuilder sb = new StringBuilder();
     sb.append(baseUrl);
     if (!baseUrl.endsWith("/")) sb.append("/");
-    sb.append(coreName);
+    sb.append(coreName != null ? coreName : "");
     if (!(sb.substring(sb.length() - 1).equals("/"))) sb.append("/");
     return sb.toString();
   }
@@ -68,6 +84,4 @@ public class ZkCoreNodeProps {
   public boolean isLeader() {
     return nodeProps.containsKey(ZkStateReader.LEADER_PROP);
   }
-
-
 }

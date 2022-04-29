@@ -17,14 +17,17 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -38,20 +41,14 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
-import static org.apache.solr.common.params.CommonParams.SORT;
-import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
-
 /**
- *  Iterates over a stream and fetches additional fields from a specified collection.
- *  Fetches are done in batches.
+ * Iterates over a stream and fetches additional fields from a specified collection. Fetches are
+ * done in batches.
  *
- *  Syntax:
- *
- *  fetch(collection, stream, on="a=b", fl="c,d,e", batchSize="50")
+ * <p>Syntax: fetch(collection, stream, on="a=b", fl="c,d,e", batchSize="50")
  *
  * @since 6.3.0
- **/
-
+ */
 public class FetchStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
@@ -70,63 +67,90 @@ public class FetchStream extends TupleStream implements Expressible {
   private boolean appendVersion = true;
   private boolean appendKey = true;
 
-  public FetchStream(String zkHost, String collection, TupleStream tupleStream, String on, String fieldList, int batchSize) throws IOException {
+  public FetchStream(
+      String zkHost,
+      String collection,
+      TupleStream tupleStream,
+      String on,
+      String fieldList,
+      int batchSize)
+      throws IOException {
     init(zkHost, collection, tupleStream, on, fieldList, batchSize);
   }
 
   public FetchStream(StreamExpression expression, StreamFactory factory) throws IOException {
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
     StreamExpressionNamedParameter onParam = factory.getNamedOperand(expression, "on");
     StreamExpressionNamedParameter flParam = factory.getNamedOperand(expression, "fl");
-    StreamExpressionNamedParameter batchSizeParam = factory.getNamedOperand(expression, "batchSize");
+    StreamExpressionNamedParameter batchSizeParam =
+        factory.getNamedOperand(expression, "batchSize");
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
     String on = null;
     String fl = null;
     int batchSize = 50;
 
-    if(onParam == null)  {
+    if (onParam == null) {
       throw new IOException("on parameter cannot be null for the fetch expression");
     } else {
-      on = ((StreamExpressionValue)onParam.getParameter()).getValue();
+      on = ((StreamExpressionValue) onParam.getParameter()).getValue();
     }
 
-    if(flParam == null)  {
+    if (flParam == null) {
       throw new IOException("fl parameter cannot be null for the fetch expression");
     } else {
-      fl = ((StreamExpressionValue)flParam.getParameter()).getValue();
+      fl = ((StreamExpressionValue) flParam.getParameter()).getValue();
     }
 
-    if(batchSizeParam != null)  {
-      batchSize = Integer.parseInt(((StreamExpressionValue)batchSizeParam.getParameter()).getValue());
+    if (batchSizeParam != null) {
+      batchSize =
+          Integer.parseInt(((StreamExpressionValue) batchSizeParam.getParameter()).getValue());
     }
 
-    if(1 != streamExpressions.size()){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a single stream but found %d",expression, streamExpressions.size()));
+    if (1 != streamExpressions.size()) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting a single stream but found %d",
+              expression,
+              streamExpressions.size()));
     }
 
     TupleStream stream = factory.constructStream(streamExpressions.get(0));
 
     String zkHost = null;
-    if(null == zkHostExpression){
+    if (null == zkHostExpression) {
       zkHost = factory.getCollectionZkHost(collectionName);
-      if(zkHost == null) {
+      if (zkHost == null) {
         zkHost = factory.getDefaultZkHost();
       }
+    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
+      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
     }
-    else if(zkHostExpression.getParameter() instanceof StreamExpressionValue){
-      zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
-    }
-    if(null == zkHost){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
+    if (null == zkHost) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - zkHost not found for collection '%s'",
+              expression,
+              collectionName));
     }
 
     init(zkHost, collectionName, stream, on, fl, batchSize);
   }
 
-  private void init(String zkHost, String collection, TupleStream tupleStream, String on, String fieldList, int batchSize) throws IOException{
+  private void init(
+      String zkHost,
+      String collection,
+      TupleStream tupleStream,
+      String on,
+      String fieldList,
+      int batchSize)
+      throws IOException {
     this.zkHost = zkHost;
     this.collection = collection;
     this.stream = tupleStream;
@@ -134,7 +158,7 @@ public class FetchStream extends TupleStream implements Expressible {
     this.fields = fieldList.split(",");
     this.fieldList = fieldList;
 
-    if(on.indexOf("=") > -1) {
+    if (on.indexOf("=") > -1) {
       String[] leftright = on.split("=");
       leftKey = leftright[0].trim();
       rightKey = leftright[1].trim();
@@ -142,13 +166,13 @@ public class FetchStream extends TupleStream implements Expressible {
       leftKey = rightKey = on;
     }
 
-    for(int i=0; i<fields.length; i++) {
+    for (int i = 0; i < fields.length; i++) {
       fields[i] = fields[i].trim();
-      if(fields[i].equals(VERSION_FIELD)) {
+      if (fields[i].equals(VERSION_FIELD)) {
         appendVersion = false;
       }
 
-      if(fields[i].equals(rightKey)) {
+      if (fields[i].equals(rightKey)) {
         appendKey = false;
       }
     }
@@ -159,21 +183,24 @@ public class FetchStream extends TupleStream implements Expressible {
     return toExpression(factory, true);
   }
 
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
 
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     expression.addParameter(collection);
-    expression.addParameter(new StreamExpressionNamedParameter("on", leftKey+"="+rightKey));
+    expression.addParameter(new StreamExpressionNamedParameter("on", leftKey + "=" + rightKey));
     expression.addParameter(new StreamExpressionNamedParameter("fl", fieldList));
-    expression.addParameter(new StreamExpressionNamedParameter("batchSize", Integer.toString(batchSize)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("batchSize", Integer.toString(batchSize)));
 
     // stream
-    if(includeStreams) {
+    if (includeStreams) {
       if (stream instanceof Expressible) {
         expression.addParameter(((Expressible) stream).toExpression(factory));
       } else {
-        throw new IOException("The FetchStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+        throw new IOException(
+            "The FetchStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
     }
 
@@ -184,9 +211,7 @@ public class FetchStream extends TupleStream implements Expressible {
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
     return new StreamExplanation(getStreamNodeId().toString())
-        .withChildren(new Explanation[]{
-            stream.toExplanation(factory)
-        })
+        .withChildren(new Explanation[] {stream.toExplanation(factory)})
         .withFunctionName(factory.getFunctionName(this.getClass()))
         .withImplementingClass(this.getClass().getName())
         .withExpressionType(ExpressionType.STREAM_DECORATOR)
@@ -199,23 +224,22 @@ public class FetchStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void open() throws IOException {
-    tuples = new ArrayList().iterator();
+    tuples = Collections.emptyIterator();
     stream.open();
   }
 
   private void fetchBatch() throws IOException {
     Tuple EOFTuple = null;
     List<Tuple> batch = new ArrayList<>(batchSize);
-    for(int i=0; i<batchSize; i++) {
+    for (int i = 0; i < batchSize; i++) {
       Tuple tuple = stream.read();
-      if(tuple.EOF) {
+      if (tuple.EOF) {
         EOFTuple = tuple;
         break;
       } else {
@@ -223,9 +247,9 @@ public class FetchStream extends TupleStream implements Expressible {
       }
     }
 
-    if(batch.size() > 0) {
+    if (batch.size() > 0) {
       StringBuilder buf = new StringBuilder(batch.size() * 10 + 20);
-      buf.append("{! df=").append(rightKey).append(" q.op=OR cache=false }");//disable queryCache
+      buf.append("{! df=").append(rightKey).append(" q.op=OR cache=false }"); // disable queryCache
       for (Tuple tuple : batch) {
         String key = tuple.getString(leftKey);
         buf.append(' ').append(ClientUtils.escapeQueryChars(key));
@@ -233,7 +257,7 @@ public class FetchStream extends TupleStream implements Expressible {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add("q", buf.toString());
-      params.add("fl", fieldList+appendFields());
+      params.add("fl", fieldList + appendFields());
       params.add("rows", Integer.toString(batchSize));
       params.add(SORT, "_version_ desc");
 
@@ -258,13 +282,13 @@ public class FetchStream extends TupleStream implements Expressible {
         cloudSolrStream.close();
       }
 
-      //Iterate the batch and add the fetched fields to the Tuples
+      // Iterate the batch and add the fetched fields to the Tuples
       for (Tuple batchTuple : batch) {
         Tuple fetchedTuple = fetched.get(batchTuple.getString(leftKey));
-        if(fetchedTuple !=null) {
+        if (fetchedTuple != null) {
           for (String field : fields) {
             Object value = fetchedTuple.get(field);
-            if(value != null) {
+            if (value != null) {
               batchTuple.put(field, value);
             }
           }
@@ -272,7 +296,7 @@ public class FetchStream extends TupleStream implements Expressible {
       }
     }
 
-    if(EOFTuple != null) {
+    if (EOFTuple != null) {
       batch.add(EOFTuple);
     }
 
@@ -284,14 +308,14 @@ public class FetchStream extends TupleStream implements Expressible {
   }
 
   public Tuple read() throws IOException {
-    if(!tuples.hasNext()) {
+    if (!tuples.hasNext()) {
       fetchBatch();
     }
 
     return tuples.next();
   }
 
-  public StreamComparator getStreamSort(){
+  public StreamComparator getStreamSort() {
     return stream.getStreamSort();
   }
 
@@ -301,12 +325,12 @@ public class FetchStream extends TupleStream implements Expressible {
 
   private String appendFields() {
     StringBuffer buf = new StringBuffer();
-    if(appendKey) {
+    if (appendKey) {
       buf.append(",");
       buf.append(rightKey);
     }
 
-    if(appendVersion) {
+    if (appendVersion) {
       buf.append(",_version_");
     }
     return buf.toString();

@@ -22,34 +22,48 @@ import org.junit.BeforeClass;
 public class TestOmitPositions extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig.xml", "schema.xml");
     // add some docs
-    assertU(adoc("id", "1", "nopositionstext", "this is a test this is only a test", "text", "just another test"));
-    assertU(adoc("id", "2", "nopositionstext", "test test test test test test test test test test test test test", "text", "have a nice day"));
+    assertU(
+        adoc(
+            "id",
+            "1",
+            "nopositionstext",
+            "this is a test this is only a test",
+            "text",
+            "just another test"));
+    assertU(
+        adoc(
+            "id",
+            "2",
+            "nopositionstext",
+            "test test test test test test test test test test test test test",
+            "text",
+            "have a nice day"));
     assertU(commit());
   }
-  
+
   public void testFrequencies() {
     // doc 2 should be ranked above doc 1
-    assertQ("term query: ",
-       req("fl", "id", "q", "nopositionstext:test"),
-              "//*[@numFound='2']",
-              "//result/doc[1]/str[@name='id'][.=2]",
-              "//result/doc[2]/str[@name='id'][.=1]"
-    );
+    assertQ(
+        "term query: ",
+        req("fl", "id", "q", "nopositionstext:test"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.=2]",
+        "//result/doc[2]/str[@name='id'][.=1]");
   }
-  
+
   public void testPositions() {
     // no results should be found:
     // lucene 3.x: silent failure
     // lucene 4.x: illegal state exception, field was indexed without positions
-    
+
     ignoreException("was indexed without position data");
     try {
-    assertQ("phrase query: ",
-       req("fl", "id", "q", "nopositionstext:\"test test\""),
-              "//*[@numFound='0']"
-    );
+      assertQ(
+          "phrase query: ",
+          req("fl", "id", "q", "nopositionstext:\"test test\""),
+          "//*[@numFound='0']");
     } catch (Exception expected) {
       assertTrue(expected.getCause() instanceof IllegalStateException);
       // in lucene 4.0, queries don't silently fail

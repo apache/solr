@@ -18,34 +18,45 @@
 package org.apache.solr.cluster;
 
 /**
- * An instantiation (or one of the copies) of a given {@link Shard} of a given {@link SolrCollection}.
+ * An instantiation (or one of the copies) of a given {@link Shard} of a given {@link
+ * SolrCollection}.
  */
 public interface Replica {
   Shard getShard();
 
   ReplicaType getType();
+
   ReplicaState getState();
 
   String getReplicaName();
 
-  /**
-   * The core name on disk
-   */
+  /** The core name on disk */
   String getCoreName();
 
-  /**
-   * {@link Node} on which this {@link Replica} is located.
-   */
+  /** {@link Node} on which this {@link Replica} is located. */
   Node getNode();
 
-  /**
-   * The order of this enum is important from the most to least "important" replica type.
-   */
+  /** The order of this enum is important from the most to least "important" replica type. */
   enum ReplicaType {
-    NRT, TLOG, PULL
+    NRT('n'),
+    TLOG('t'),
+    PULL('p');
+
+    private char suffixChar;
+
+    ReplicaType(char suffixChar) {
+      this.suffixChar = suffixChar;
+    }
+
+    public char getSuffixChar() {
+      return suffixChar;
+    }
   }
 
   enum ReplicaState {
-    ACTIVE, DOWN, RECOVERING, RECOVERY_FAILED
+    ACTIVE,
+    DOWN,
+    RECOVERING,
+    RECOVERY_FAILED
   }
 }
