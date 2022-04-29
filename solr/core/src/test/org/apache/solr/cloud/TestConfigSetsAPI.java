@@ -208,49 +208,44 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       assertTrue(isTrusted(zkClient, configsetName, trustedConfigsetSuffix));
       assertFalse(isTrusted(zkClient, configsetName, untrustedConfigsetSuffix));
       // base trusted -> untrusted
-      try {
-        ignoreException("unauthenticated request");
-        // trusted -> untrusted
-        createConfigSet(
-            null, // base is default trusted
-            "abc",
-            Collections.emptyMap(),
-            cluster.getSolrClient(),
-            null); // without username is untrusted
-        fail("Expecting exception");
-      } catch (SolrException e) {
-        assertEquals(SolrException.ErrorCode.UNAUTHORIZED.code, e.code());
-        unIgnoreException("unauthenticated request");
-      }
+      SolrException e =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  createConfigSet(
+                      null, // base is default trusted
+                      "abc",
+                      Collections.emptyMap(),
+                      cluster.getSolrClient(),
+                      null) // without username is untrusted
+              );
+      assertEquals(SolrException.ErrorCode.UNAUTHORIZED.code, e.code());
       // base trusted -> untrusted
-      try {
-        ignoreException("unauthenticated request");
-        // trusted -> untrusted
-        createConfigSet(
-            "_default", // base is default trusted
-            "def",
-            Collections.emptyMap(),
-            cluster.getSolrClient(),
-            null); // without username is untrusted
-        fail("Expecting exception");
-      } catch (SolrException e) {
-        assertEquals(SolrException.ErrorCode.UNAUTHORIZED.code, e.code());
-        unIgnoreException("unauthenticated request");
-      }
+      SolrException e2 =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  createConfigSet(
+                      "_default", // base is default trusted
+                      "def",
+                      Collections.emptyMap(),
+                      cluster.getSolrClient(),
+                      null) // without username is untrusted
+              );
+      assertEquals(SolrException.ErrorCode.UNAUTHORIZED.code, e2.code());
       // trusted -> untrusted
-      try {
-        ignoreException("unauthenticated request");
-        createConfigSet(
-            configsetName + trustedConfigsetSuffix,
-            "foo",
-            Collections.emptyMap(),
-            cluster.getSolrClient(),
-            null); // without username is untrusted
-        fail("Expecting exception");
-      } catch (SolrException e) {
-        assertEquals(SolrException.ErrorCode.UNAUTHORIZED.code, e.code());
-        unIgnoreException("unauthenticated request");
-      }
+      SolrException e3 =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  createConfigSet(
+                      configsetName + trustedConfigsetSuffix,
+                      "foo",
+                      Collections.emptyMap(),
+                      cluster.getSolrClient(),
+                      null) // without username is untrusted
+              );
+      assertEquals(SolrException.ErrorCode.UNAUTHORIZED.code, e3.code());
       // trusted -> trusted
       verifyCreate(
           configsetName + trustedConfigsetSuffix,
@@ -306,13 +301,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     try (final SolrClient solrClient = getHttpSolrClient(baseUrl)) {
       setupBaseConfigSet(baseConfigSetName, oldProps);
 
-      SolrZkClient zkClient =
+      try (SolrZkClient zkClient =
           new SolrZkClient(
               cluster.getZkServer().getZkAddress(),
               AbstractZkTestCase.TIMEOUT,
               AbstractZkTestCase.TIMEOUT,
-              null);
-      try {
+              null)) {
         assertFalse(getConfigSetService().checkConfigExists(configSetName));
 
         ConfigSetAdminResponse response =
@@ -321,8 +315,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         assertTrue(getConfigSetService().checkConfigExists(configSetName));
 
         verifyProperties(configSetName, oldProps, newProps, zkClient);
-      } finally {
-        zkClient.close();
       }
     }
   }

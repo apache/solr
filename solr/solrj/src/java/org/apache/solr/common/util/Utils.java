@@ -302,6 +302,8 @@ public class Utils {
   }
 
   public static Object fromJSON(byte[] utf8) {
+    // Need below check in both fromJSON methods since
+    // utf8.length returns a NPE without this check.
     if (utf8 == null || utf8.length == 0) {
       return Collections.emptyMap();
     }
@@ -309,7 +311,7 @@ public class Utils {
   }
 
   public static Object fromJSON(byte[] utf8, int offset, int length) {
-    if (utf8 == null || utf8.length == 0) {
+    if (utf8 == null || utf8.length == 0 || length == 0) {
       return Collections.emptyMap();
     }
     // convert directly from bytes to chars
