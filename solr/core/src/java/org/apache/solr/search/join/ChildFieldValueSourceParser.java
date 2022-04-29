@@ -33,6 +33,7 @@ import org.apache.lucene.search.join.ToParentBlockJoinSortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.WrappedFieldValueSource;
 import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.ValueSourceParser;
@@ -45,35 +46,6 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final class BlockJoinSortFieldValueSource extends ValueSource {
-    private static final class BytesToStringComparator extends FieldComparator<String> {
-      private final FieldComparator<BytesRef> byteRefs;
-
-      private BytesToStringComparator(FieldComparator<BytesRef> byteRefs) {
-        this.byteRefs = byteRefs;
-      }
-
-      @Override
-      public int compare(int slot1, int slot2) {
-        return byteRefs.compare(slot1, slot2);
-      }
-
-      @Override
-      public void setTopValue(String value) {
-        byteRefs.setTopValue(new BytesRef(value));
-      }
-
-      @Override
-      public String value(int slot) {
-        final BytesRef value = byteRefs.value(slot);
-        return value != null ? value.utf8ToString() : null;
-      }
-
-      @Override
-      public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-        return byteRefs.getLeafComparator(context);
-      }
-    }
-
     private final BitSetProducer childFilter;
     private final BitSetProducer parentFilter;
     private final SchemaField childField;
@@ -128,16 +100,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
     public SortField getSortField(boolean reverse) {
       final Type type = childField.getSortField(reverse).getType();
       return new ToParentBlockJoinSortField(
-          childField.getName(), type, reverse, parentFilter, childFilter) {
-        @SuppressWarnings("unchecked")
-        @Override
-        public FieldComparator<?> getComparator(int numHits, int sortPos) {
-          final FieldComparator<?> comparator = super.getComparator(numHits, sortPos);
-          return type == Type.STRING
-              ? new BytesToStringComparator((FieldComparator<BytesRef>) comparator)
-              : comparator;
-        }
-      };
+          childField.getName(), type, reverse, parentFilter, childFilter);
     }
 
     @Override
@@ -203,6 +166,6 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
       log.error("can't parse {}", fp.getString(), e);
       throw e;
     }
-    return new BlockJoinSortFieldValueSource(childFilter, parentFilter, sf);
+    return new WrappedFieldValueSource(sf, new BlockJoinSortFieldValueSource(childFilter, parentFilter, sf));
   }
 }

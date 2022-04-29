@@ -114,7 +114,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
             "foo_s1:bar");
     try {
       final SortSpec spec = SortSpecParsing.parseSortSpec(a, req);
-      assertNull(spec.getSchemaFields().get(0));
+      assertNotNull(spec.getSchemaFields().get(0));
       final Sort sort = spec.getSort();
       final SortField field = sort.getSort()[0];
       assertNotNull(field);
