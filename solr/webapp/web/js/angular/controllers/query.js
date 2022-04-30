@@ -249,7 +249,7 @@ solrAdminApp.controller('QueryController',
           $location.search(key, adminParams[key]);
         }
         var currentUrl = $location.$$url;
-        if (previousUrl === currentUrl) { //if the query send with same parameters
+        if (previousUrl === currentUrl) {
           $route.reload();
         }
       }
