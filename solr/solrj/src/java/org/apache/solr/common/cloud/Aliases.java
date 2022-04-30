@@ -95,12 +95,7 @@ public class Aliases {
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
   public static Aliases fromJSON(byte[] bytes, int zNodeVersion) {
-    Map<String, Map> aliasMap;
-    if (bytes == null || bytes.length == 0) {
-      aliasMap = Collections.emptyMap();
-    } else {
-      aliasMap = (Map<String, Map>) Utils.fromJSON(bytes);
-    }
+    Map<String, Map> aliasMap = (Map<String, Map>) Utils.fromJSON(bytes);
 
     @SuppressWarnings({"rawtypes"})
     Map colAliases = aliasMap.getOrDefault(COLLECTION, Collections.emptyMap());

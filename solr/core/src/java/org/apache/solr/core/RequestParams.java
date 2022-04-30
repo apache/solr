@@ -16,10 +16,6 @@
  */
 package org.apache.solr.core;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.util.Utils.fromJSON;
-import static org.apache.solr.common.util.Utils.getDeepCopy;
-
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.io.InputStream;
@@ -67,7 +63,7 @@ public class RequestParams implements MapSerializable {
 
   @SuppressWarnings({"rawtypes"})
   public static ParamSet createParamSet(Map map, Long version) {
-    Map copy = getDeepCopy(map, 3);
+    Map copy = Utils.getDeepCopy(map, 3);
     @SuppressWarnings("unchecked")
     Map<String, Long> meta = (Map<String, Long>) copy.remove("");
     if (meta == null && version != null) {
@@ -132,7 +128,7 @@ public class RequestParams implements MapSerializable {
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   public RequestParams setParams(String name, ParamSet paramSet) {
-    Map deepCopy = getDeepCopy(data, 3);
+    Map deepCopy = Utils.getDeepCopy(data, 3);
     Map p = (Map) deepCopy.get(NAME);
     if (p == null) deepCopy.put(NAME, p = new LinkedHashMap<>());
     if (paramSet == null) p.remove(name);
@@ -192,7 +188,7 @@ public class RequestParams implements MapSerializable {
         log.info("conf resource {} loaded . version : {} ", name, version);
       }
       try {
-        Map<?, ?> m = (Map<?, ?>) fromJSON(in);
+        Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(in);
         return new Object[] {m, version};
       } catch (Exception e) {
         throw new SolrException(
@@ -253,10 +249,10 @@ public class RequestParams implements MapSerializable {
     public ParamSet update(@SuppressWarnings({"rawtypes"}) Map map) {
       ParamSet p = createParamSet(map, null);
       return new ParamSet(
-          mergeMaps(getDeepCopy(defaults, 2), p.defaults),
-          mergeMaps(getDeepCopy(invariants, 2), p.invariants),
-          mergeMaps(getDeepCopy(appends, 2), p.appends),
-          mergeMaps(getDeepCopy(meta, 2), singletonMap("v", getVersion() + 1)));
+          mergeMaps(Utils.getDeepCopy(defaults, 2), p.defaults),
+          mergeMaps(Utils.getDeepCopy(invariants, 2), p.invariants),
+          mergeMaps(Utils.getDeepCopy(appends, 2), p.appends),
+          mergeMaps(Utils.getDeepCopy(meta, 2), Collections.singletonMap("v", getVersion() + 1)));
     }
 
     private static <K, V> Map<K, V> mergeMaps(Map<K, V> m1, Map<K, V> m2) {
