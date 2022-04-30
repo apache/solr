@@ -757,6 +757,8 @@ Bug Fixes
 
 * SOLR-16143: SolrConfig ResourceProvider can miss updates from ZooKeeper (Mike Drob)
 
+* SOLR-16164: ConfigSet API returns error if untrusted user creates from _default configset (Eric Pugh, Kevin Risden)
+
 ==================  8.11.2 ==================
 
 Bug Fixes

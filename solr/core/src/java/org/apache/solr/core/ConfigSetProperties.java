@@ -16,8 +16,6 @@
  */
 package org.apache.solr.core;
 
-import static org.apache.solr.common.util.Utils.fromJSON;
-
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +24,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +72,7 @@ public class ConfigSetProperties {
 
   public static NamedList<Object> readFromInputStream(InputStreamReader reader) {
     try {
-      Object object = fromJSON(reader);
+      Object object = Utils.fromJSON(reader);
       if (!(object instanceof Map)) {
         final String objectClass = object == null ? "null" : object.getClass().getName();
         throw new SolrException(

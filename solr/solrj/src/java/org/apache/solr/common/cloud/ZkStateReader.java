@@ -18,7 +18,6 @@ package org.apache.solr.common.cloud;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySortedSet;
-import static org.apache.solr.common.util.Utils.fromJSON;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -441,7 +440,7 @@ public class ZkStateReader implements SolrCloseable {
               cd.data =
                   pair.first() == null || pair.first().length == 0
                       ? emptyMap()
-                      : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
+                      : Utils.getDeepCopy((Map) Utils.fromJSON(pair.first()), 4, false);
               cd.version = pair.second() == null ? -1 : pair.second().getVersion();
               securityData = cd;
               securityNodeListener.run();
