@@ -30,7 +30,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.WrappedFieldValueSource;
 import org.apache.solr.search.facet.AggValueSource;
 import org.apache.solr.search.function.FieldNameValueSource;
 
@@ -451,11 +450,7 @@ public class FunctionQParser extends QParser {
       consumeArgumentDelimiter();
     }
 
-    if ((flags & FLAG_TOP_LEVEL) == 0 && valueSource instanceof WrappedFieldValueSource) {
-      return ((WrappedFieldValueSource) valueSource).unwrap();
-    } else {
-      return valueSource;
-    }
+    return valueSource;
   }
 
   /**

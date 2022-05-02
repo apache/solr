@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -29,7 +30,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.WrappedFieldValueSource;
 
 public class SortSpecParsing {
 
@@ -155,9 +155,9 @@ public class SortSpecParsing {
               if (q instanceof FunctionQuery) {
                 ValueSource vs = ((FunctionQuery) q).getValueSource();
                 SortField sortField = vs.getSortField(top);
-                if (vs instanceof WrappedFieldValueSource) {
+                if (vs instanceof FieldCacheSource) {
                   // The values for this field may use fieldType-specific sort value (un/)marshaling
-                  sf = ((WrappedFieldValueSource) vs).getSchemaField();
+                  sf = schema.getField(((FieldCacheSource) vs).getField());
                 }
                 sorts.add(sortField);
               } else {

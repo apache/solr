@@ -48,7 +48,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.WrappedFieldValueSource;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
@@ -280,7 +279,7 @@ public class StatsField {
         // if this ValueSource directly corresponds to a SchemaField, act as if
         // we were asked to compute stats on it directly
         // ie:  "stats.field={!func key=foo}field(foo)" == "stats.field=foo"
-        sf = extractSchemaField(vs);
+        sf = extractSchemaField(vs, searcher.getSchema());
         if (null != sf) {
           vs = null;
         }
@@ -359,12 +358,14 @@ public class StatsField {
    * returns it.
    *
    * @param vs ValueSource we've been asked to compute stats of
+   * @param schema The Schema to use
    * @returns Corrisponding {@link SchemaField} or null if the ValueSource is more complex
    * @see FieldCacheSource
    */
-  private static SchemaField extractSchemaField(ValueSource vs) {
-    if (vs instanceof WrappedFieldValueSource) {
-      return ((WrappedFieldValueSource) vs).getSchemaField();
+  private static SchemaField extractSchemaField(ValueSource vs, IndexSchema schema) {
+    if (vs instanceof FieldCacheSource) {
+      String fieldName = ((FieldCacheSource) vs).getField();
+      return schema.getField(fieldName);
     }
     return null;
   }

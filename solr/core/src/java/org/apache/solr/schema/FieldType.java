@@ -878,10 +878,6 @@ public abstract class FieldType extends FieldProperties {
     return getSortField(field, type.sortType, reverse, type.sortMissingLow, type.sortMissingHigh);
   }
 
-  public static ValueSource wrapFieldValueSource(SchemaField f, ValueSource backing) {
-    return new WrappedFieldValueSource(f, backing);
-  }
-
   /** called to get the default value source (normally, from the Lucene FieldCache.) */
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     field.checkFieldCacheSource();

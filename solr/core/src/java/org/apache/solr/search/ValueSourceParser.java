@@ -494,11 +494,10 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
                     SolrException.ErrorCode.BAD_REQUEST,
                     "Multi-Valued field selector '" + s + "' not supported");
               }
-              return FieldType.wrapFieldValueSource(
-                  f, f.getType().getSingleValueSource(selector, f, fp));
+              return f.getType().getSingleValueSource(selector, f, fp);
             }
             // simple field ValueSource
-            return FieldType.wrapFieldValueSource(f, f.getType().getValueSource(f, fp));
+            return f.getType().getValueSource(f, fp);
           }
         });
     addParser(

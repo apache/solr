@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
@@ -29,8 +30,8 @@ import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ToParentBlockJoinSortField;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.WrappedFieldValueSource;
 import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.ValueSourceParser;
@@ -42,13 +43,14 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final class BlockJoinSortFieldValueSource extends ValueSource {
+  private static final class BlockJoinSortFieldValueSource extends FieldCacheSource {
     private final BitSetProducer childFilter;
     private final BitSetProducer parentFilter;
     private final SchemaField childField;
 
     private BlockJoinSortFieldValueSource(
         BitSetProducer childFilter, BitSetProducer parentFilter, SchemaField childField) {
+      super(childField.getName());
       this.childFilter = childFilter;
       this.parentFilter = parentFilter;
       this.childField = childField;
@@ -163,7 +165,6 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
       log.error("can't parse {}", fp.getString(), e);
       throw e;
     }
-    return new WrappedFieldValueSource(
-        sf, new BlockJoinSortFieldValueSource(childFilter, parentFilter, sf));
+    return new BlockJoinSortFieldValueSource(childFilter, parentFilter, sf);
   }
 }
