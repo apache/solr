@@ -2626,14 +2626,16 @@ public class ZkController implements Closeable {
 
   public static void touchConfDir(ZkSolrResourceLoader zkLoader) {
     SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
+    String configSetZkPath = zkLoader.getConfigSetZkPath();
     try {
-      byte[] currentData = zkClient.getData(zkLoader.getConfigSetZkPath(), null, null, true);
-      zkClient.setData(zkLoader.getConfigSetZkPath(), currentData, true);
+      zkClient.makePath(configSetZkPath, new byte[] {0}, true);
+    } catch (KeeperException.NodeExistsException ignore) {
+      // ignore if node already exists so we don't overwrite
     } catch (Exception e) {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt(); // Restore the interrupted status
       }
-      final String msg = "Error 'touching' conf location " + zkLoader.getConfigSetZkPath();
+      final String msg = "Error 'touching' conf location " + configSetZkPath;
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
     }

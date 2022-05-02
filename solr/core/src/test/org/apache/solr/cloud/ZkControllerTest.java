@@ -20,9 +20,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,7 +45,6 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -342,20 +340,45 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTouchConfDir() throws KeeperException, InterruptedException {
-    ZkSolrResourceLoader zkLoader = mock(ZkSolrResourceLoader.class);
-    ZkController zkController = mock(ZkController.class);
-    SolrZkClient zkClient = mock(SolrZkClient.class);
-    when(zkLoader.getZkController()).thenReturn(zkController);
-    when(zkController.getZkClient()).thenReturn(zkClient);
-    String configPath = "configs/path";
-    when(zkLoader.getConfigSetZkPath()).thenReturn(configPath);
-    byte[] data = {123, 124};
-    when(zkClient.getData(configPath, null, null, true)).thenReturn(data);
+  public void testTouchConfDir() throws Exception {
+    Path zkDir = createTempDir("zkData");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+      try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
+        CoreContainer cc = getCoreContainer();
+        try {
+          CloudConfig cloudConfig =
+              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
+          try (ZkController zkController =
+              new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null)) {
+            final Path dir = createTempDir();
+            final String configsetName = "testconfigset";
+            try (ZkSolrResourceLoader loader =
+                new ZkSolrResourceLoader(dir, configsetName, null, zkController)) {
+              String zkpath = "/configs/" + configsetName;
+              assertFalse(zkClient.exists(zkpath, true));
+              ZkController.touchConfDir(loader);
+              assertTrue(zkClient.exists(zkpath, true));
+              assertArrayEquals(new byte[] {0}, zkClient.getData(zkpath, null, null, true));
 
-    ZkController.touchConfDir(zkLoader);
+              byte[] data = "new data".getBytes(StandardCharsets.UTF_8);
+              zkClient.setData(zkpath, data, true);
 
-    verify(zkClient).setData(configPath, data, true);
+              // make sure touchConfDir doesn't overwrite existing data
+              assertTrue(zkClient.exists(zkpath, true));
+              ZkController.touchConfDir(loader);
+              assertTrue(zkClient.exists(zkpath, true));
+              assertArrayEquals(data, zkClient.getData(zkpath, null, null, true));
+            }
+          }
+        } finally {
+          cc.shutdown();
+        }
+      }
+    } finally {
+      server.shutdown();
+    }
   }
 
   private CoreContainer getCoreContainer() {
