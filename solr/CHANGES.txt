@@ -73,6 +73,8 @@ Bug Fixes
 
 * SOLR-16169: IndexBasedSpellChecker with empty spellcheck.q results in NegativeArraySizeException (Kevin Risden)
 
+* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
+
 Other Changes
 ---------------------
 * SOLR-15897: Remove <jmx/> from all unit test solrconfig.xml files. (Eric Pugh)
