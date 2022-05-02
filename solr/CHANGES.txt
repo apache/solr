@@ -13,6 +13,8 @@ Bug Fixes
 
 * SOLR-16585: Fixed NPE when paginating MatchAllDocs with non-zero start offset, like q=*:*&start=10 (Michael Gibney)
 
+* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
+
 Other Changes
 ---------------------
 
