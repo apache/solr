@@ -121,7 +121,7 @@ abstract class FacetFieldProcessorByArray extends FacetFieldProcessor {
         // AIOOBE
         // NOTE: because collectAcc will be null, it is fine/irrelevant to set a countAcc that
         // doesn't support sweeping
-        countAcc = SlotAcc.DEV_NULL_SLOT_ACC;
+        countAcc = Constants.DEV_NULL_SLOT_ACC;
         createAccs(nDocs, 1);
         assert collectAcc == null;
         // accs is created above and set on allBucketsAcc; but during collection, setNextReader is
