@@ -1662,11 +1662,6 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     indexDoc(parent);
     commit();
 
-    // Distributed grouping with sort on a string field in child document
-    // Crashes with java.lang.ClassCastException: class java.lang.String cannot be cast to class
-    // org.apache.lucene.util.BytesRef
-    // during TopGroupsResultTransformer.serializeTopGroups()
-    // in org.apache.solr.schema.FieldType.marshalStringSortValue(
     QueryResponse res =
         query(
             "seq0",
@@ -1685,7 +1680,6 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
             "OR",
             "q",
             "id:1 AND +({!parent which='class_s1:parent' v='value_s1:abc123'})");
-    System.out.println(res);
   }
 
   private void simpleQuery(Object... queryParams) throws SolrServerException, IOException {
