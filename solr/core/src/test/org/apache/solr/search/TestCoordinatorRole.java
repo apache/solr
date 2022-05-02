@@ -17,7 +17,6 @@
 
 package org.apache.solr.search;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,11 +29,8 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.servlet.CoordinatorHttpSolrCall;
 import org.junit.BeforeClass;
