@@ -103,7 +103,7 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
     executorService.invokeAll(callees);
     executorService.shutdown();
 
-    // TIMEOUT * 3 because there are 3 tests - add, replace, delete each running for the length of TIMEOUT
+    // TIMEOUT * 3 there are 3 tests - add, replace, delete each running for the length of TIMEOUT
     assertTrue(
         "Running for too long...", executorService.awaitTermination(TIMEOUT * 3, TimeUnit.SECONDS));
 
@@ -158,7 +158,7 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
     // don't close publisher - gets closed at teardown
     RestTestHarness publisher = randomRestTestHarness(r);
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
-    Map<String, Object> map = (Map<String, Object>)Utils.fromJSONString(response);
+    Map<String, Object> map = (Map<String, Object>) Utils.fromJSONString(response);
     Object errors = map.get("errors");
     if (errors != null) {
       errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));
