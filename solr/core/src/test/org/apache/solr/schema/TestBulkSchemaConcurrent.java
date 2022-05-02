@@ -93,7 +93,7 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
               Thread.currentThread().interrupt();
             } catch (Exception e) {
               // TODO this might be double logged, but safer to log here anyway
-              log.error("Exception from thread " + finalI, e);
+              log.error("Exception from thread {}", finalI, e);
             }
             return null;
           };
