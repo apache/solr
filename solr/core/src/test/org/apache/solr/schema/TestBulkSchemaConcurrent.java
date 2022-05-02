@@ -35,8 +35,10 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestHarness;
+import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -169,9 +171,8 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
     Set<String> errmessages = new HashSet<>();
     // don't close harness - gets closed at teardown
     RestTestHarness harness = randomRestTestHarness(r);
-    long startTime = System.nanoTime();
-    while (TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS)
-        < TIMEOUT) {
+    TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeout.hasTimedOut()) {
       errmessages.clear();
       Map<?, ?> m = getObj(harness, aField, "fields");
       if (m == null) {
@@ -199,7 +200,7 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
         break;
       }
 
-      Thread.sleep(10);
+      timeout.sleep(10);
     }
     if (!errmessages.isEmpty()) {
       errs.addAll(errmessages);
@@ -250,9 +251,8 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
     Set<String> errmessages = new HashSet<>();
     // don't close harness - gets closed at teardown
     RestTestHarness harness = randomRestTestHarness(r);
-    long startTime = System.nanoTime();
-    while (TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS)
-        < TIMEOUT) {
+    TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeout.hasTimedOut()) {
       errmessages.clear();
       Map<?, ?> m = getObj(harness, aField, "fields");
       if (m == null) {
@@ -281,7 +281,7 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
         break;
       }
 
-      Thread.sleep(10);
+      timeout.sleep(10);
     }
     if (!errmessages.isEmpty()) {
       errs.addAll(errmessages);
@@ -324,9 +324,8 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
     Set<String> errmessages = new HashSet<>();
     // don't close harness - gets closed at teardown
     RestTestHarness harness = randomRestTestHarness(r);
-    long startTime = System.nanoTime();
-    while (TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS)
-        < TIMEOUT) {
+    TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeout.hasTimedOut()) {
       errmessages.clear();
       Map<?, ?> m = getObj(harness, aField, "fields");
       if (m != null) {
@@ -354,7 +353,7 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
         break;
       }
 
-      Thread.sleep(10);
+      timeout.sleep(10);
     }
     if (!errmessages.isEmpty()) {
       errs.addAll(errmessages);
