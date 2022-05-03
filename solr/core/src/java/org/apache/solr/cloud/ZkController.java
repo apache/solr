@@ -719,6 +719,8 @@ public class ZkController implements Closeable {
 
     customThreadPool.submit(() -> IOUtils.closeQuietly(overseer));
 
+    futures.forEach(future -> future.cancel(true));
+
     try {
       customThreadPool.submit(
           () -> {
@@ -2739,6 +2741,8 @@ public class ZkController implements Closeable {
     }
   }
 
+  Set<Future<?>> futures = ConcurrentHashMap.newKeySet();
+
   private boolean fireEventListeners(String zkDir) {
     if (isClosed || cc.isShutDown()) {
       return false;
@@ -2753,18 +2757,25 @@ public class ZkController implements Closeable {
       if (listeners != null && !listeners.isEmpty()) {
         final Set<Runnable> listenersCopy = new HashSet<>(listeners);
         // run these in a separate thread because this can be long running
+        final AtomicReference<Future<?>> listenerFuture = new AtomicReference<>();
         Runnable work =
             () -> {
-              log.debug("Running listeners for {}", zkDir);
-              for (final Runnable listener : listenersCopy) {
-                try {
-                  listener.run();
-                } catch (RuntimeException e) {
-                  log.warn("listener throws error", e);
+              try {
+                log.debug("Running listeners for {}", zkDir);
+                for (final Runnable listener : listenersCopy) {
+                  try {
+                    listener.run();
+                  } catch (RuntimeException e) {
+                    log.warn("listener throws error", e);
+                  }
                 }
+              } finally {
+                futures.remove(listenerFuture.getAndSet(null));
               }
             };
-        cc.getCoreZkRegisterExecutorService().submit(work);
+        Future<?> future = cc.getCoreZkRegisterExecutorService().submit(work);
+        listenerFuture.set(future);
+        futures.add(future);
       }
     }
     return true;
