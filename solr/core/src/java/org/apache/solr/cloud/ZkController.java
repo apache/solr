@@ -706,11 +706,13 @@ public class ZkController implements Closeable {
           () ->
               replicateFromLeaders.values().parallelStream()
                   .forEach(ReplicateFromLeader::stopReplication));
+
+      // Shutdown immediately since we don't care what event listeners are running
+      customThreadPool.submit(
+          () -> ExecutorUtil.shutdownNowAndAwaitTermination(fireEventListenersThreadPool));
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     }
-
-    ExecutorUtil.shutdownAndAwaitTermination(fireEventListenersThreadPool);
   }
 
   /** Closes the underlying ZooKeeper client. */
@@ -2770,7 +2772,6 @@ public class ZkController implements Closeable {
                   log.warn("listener throws error", e);
                 }
               }
-              return null;
             });
       }
     }
