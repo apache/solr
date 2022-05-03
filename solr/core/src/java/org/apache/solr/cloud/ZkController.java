@@ -135,6 +135,10 @@ public class ZkController implements Closeable {
   public static final String COLLECTION_PARAM_PREFIX = "collection.";
   public static final String CONFIGNAME_PROP = "configName";
 
+  private static final ExecutorService fireEventListenersThreadPool =
+      ExecutorUtil.newMDCAwareSingleThreadExecutor(
+          new SolrNamedThreadFactory("ZKEventListenerThread"));
+
   static class ContextKey {
 
     private String collection;
@@ -705,6 +709,8 @@ public class ZkController implements Closeable {
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     }
+
+    ExecutorUtil.shutdownAndAwaitTermination(fireEventListenersThreadPool);
   }
 
   /** Closes the underlying ZooKeeper client. */
@@ -2754,19 +2760,18 @@ public class ZkController implements Closeable {
       if (listeners != null && !listeners.isEmpty()) {
         final Set<Runnable> listenersCopy = new HashSet<>(listeners);
         // run these in a separate thread because this can be long running
-        new Thread(
-                () -> {
-                  log.debug("Running listeners for {}", zkDir);
-                  for (final Runnable listener : listenersCopy) {
-                    try {
-                      listener.run();
-                    } catch (Exception e) {
-                      log.warn("listener throws error", e);
-                    }
-                  }
-                },
-                "ZKEventListenerThread")
-            .start();
+        fireEventListenersThreadPool.submit(
+            () -> {
+              log.debug("Running listeners for {}", zkDir);
+              for (final Runnable listener : listenersCopy) {
+                try {
+                  listener.run();
+                } catch (Exception e) {
+                  log.warn("listener throws error", e);
+                }
+              }
+              return null;
+            });
       }
     }
     return true;
