@@ -68,7 +68,6 @@ allprojects {
             exclude "src/**/*.csv"
 
             // TODO: SOLR-15601: Some of these should carry the license, perhaps?
-            exclude "**/README.md"
             exclude "**/*.html"
             exclude "**/*.xml"
             exclude "**/*.json"
@@ -145,7 +144,9 @@ allprojects {
                     break
 
                 case ":solr:solr-ref-guide":
-                    exclude "src/**"
+                    include "*.yml"
+                    include "**/*.adoc"
+                    exclude "ui-src/**"
                     exclude "node_modules/**"
                     break
 
