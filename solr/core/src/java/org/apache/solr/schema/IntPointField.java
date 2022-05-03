@@ -146,7 +146,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource();
-    return new IntFieldSource(field.getName());
+    return new PointFieldValueSource(field, new IntFieldSource(field.getName()));
   }
 
   @Override
@@ -165,6 +165,6 @@ public class IntPointField extends PointField implements IntValueFieldType {
 
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
-    return new MultiValuedIntFieldSource(f.getName(), choice);
+    return new PointFieldValueSource(f, new MultiValuedIntFieldSource(f.getName(), choice));
   }
 }

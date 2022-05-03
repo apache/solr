@@ -28,8 +28,14 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -318,5 +324,64 @@ public abstract class PointField extends NumericFieldType {
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
     return getNumericSort(field, getNumberType(), top);
+  }
+
+  protected class PointFieldValueSource extends FieldCacheSource {
+
+    private final FieldCacheSource backing;
+    private final SchemaField sf;
+
+    public PointFieldValueSource(SchemaField sf, FieldCacheSource backing) {
+      super(sf.getName());
+      this.backing = backing;
+      this.sf = sf;
+    }
+
+    @Override
+    public String description() {
+      return backing.description();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof PointFieldValueSource)) return false;
+      PointFieldValueSource other = (PointFieldValueSource) o;
+      return this.backing.equals(other.backing);
+    }
+
+    @Override
+    public int hashCode() {
+      return backing.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return backing.toString();
+    }
+
+    @Override
+    public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
+      backing.createWeight(context, searcher);
+    }
+
+    @Override
+    public LongValuesSource asLongValuesSource() {
+      return backing.asLongValuesSource();
+    }
+
+    @Override
+    public DoubleValuesSource asDoubleValuesSource() {
+      return backing.asDoubleValuesSource();
+    }
+
+    @Override
+    public SortField getSortField(boolean reverse) {
+      return PointField.this.getSortField(sf, reverse);
+    }
+
+    @Override
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+      return backing.getValues(context, readerContext);
+    }
   }
 }

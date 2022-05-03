@@ -152,12 +152,12 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource();
-    return new FloatFieldSource(field.getName());
+    return new PointFieldValueSource(field, new FloatFieldSource(field.getName()));
   }
 
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
-    return new MultiValuedFloatFieldSource(f.getName(), choice);
+    return new PointFieldValueSource(f, new MultiValuedFloatFieldSource(f.getName(), choice));
   }
 
   @Override

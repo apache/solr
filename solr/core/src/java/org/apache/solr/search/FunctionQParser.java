@@ -40,7 +40,6 @@ public class FunctionQParser extends QParser {
   // When a field name is encountered, use the placeholder FieldNameValueSource instead of resolving
   // to a real ValueSource
   public static final int FLAG_USE_FIELDNAME_SOURCE = 0x04;
-  public static final int FLAG_TOP_LEVEL = 0x08;
   public static final int FLAG_DEFAULT = FLAG_CONSUME_DELIMITER;
 
   /**
@@ -89,8 +88,7 @@ public class FunctionQParser extends QParser {
     List<ValueSource> lst = null;
 
     for (; ; ) {
-      ValueSource valsource =
-          parseValueSource((FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER) | FLAG_TOP_LEVEL);
+      ValueSource valsource = parseValueSource(FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER);
       sp.eatws();
       if (!parseMultipleSources) {
         vs = valsource;

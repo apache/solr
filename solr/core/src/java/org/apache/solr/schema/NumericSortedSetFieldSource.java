@@ -41,12 +41,6 @@ public class NumericSortedSetFieldSource extends SortedSetFieldSource {
     this.sf = sf;
   }
 
-  public NumericSortedSetFieldSource(SchemaField sf, NumberType numericType) {
-    super(sf.name);
-    this.numberType = validateType(numericType);
-    this.sf = sf;
-  }
-
   private static NumberType validateType(NumberType type) {
     switch (type) {
         // whitelisted types

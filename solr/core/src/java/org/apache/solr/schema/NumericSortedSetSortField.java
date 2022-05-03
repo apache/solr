@@ -49,27 +49,6 @@ public class NumericSortedSetSortField extends SortField {
   private final NumberType numberType;
 
   /**
-   * Creates a sort, by the minimum value in the set for the document.
-   *
-   * @param field Name of field to sort by. Must not be null.
-   * @param type Type of values
-   */
-  public NumericSortedSetSortField(String field, NumberType type) {
-    this(field, type, false);
-  }
-
-  /**
-   * Creates a sort, possibly in reverse, by the minimum value in the set for the document.
-   *
-   * @param field Name of field to sort by. Must not be null.
-   * @param type Type of values
-   * @param reverse True if natural order should be reversed.
-   */
-  public NumericSortedSetSortField(String field, NumberType type, boolean reverse) {
-    this(field, type, reverse, SortedSetSelector.Type.MIN);
-  }
-
-  /**
    * Creates a sort, possibly in reverse, specifying how the sort value from the document's set is
    * selected.
    *
