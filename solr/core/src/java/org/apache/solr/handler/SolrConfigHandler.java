@@ -105,7 +105,7 @@ public class SolrConfigHandler extends RequestHandlerBase
   public static final boolean configEditing_disabled =
       Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
-  private Lock reloadLock = new ReentrantLock(true);
+  private final Lock reloadLock = new ReentrantLock(true);
 
   public Lock getReloadLock() {
     return reloadLock;

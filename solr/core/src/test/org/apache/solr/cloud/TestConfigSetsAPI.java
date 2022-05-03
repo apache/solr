@@ -198,54 +198,79 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   @Test
   public void testCreateWithTrust() throws Exception {
     String configsetName = "regular";
-    String configsetSuffix = "testCreateWithTrust";
-    String configsetSuffix2 = "testCreateWithTrust2";
-    uploadConfigSetWithAssertions(configsetName, configsetSuffix, "solr");
-    uploadConfigSetWithAssertions(configsetName, configsetSuffix2, null);
+    String trustedConfigsetSuffix = "testCreateWithTrustTrusted";
+    String untrustedConfigsetSuffix = "testCreateWithTrustUntrusted";
+    uploadConfigSetWithAssertions(configsetName, trustedConfigsetSuffix, "solr");
+    uploadConfigSetWithAssertions(configsetName, untrustedConfigsetSuffix, null);
     try (SolrZkClient zkClient =
         new SolrZkClient(
             cluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null)) {
-      assertTrue(isTrusted(zkClient, configsetName, configsetSuffix));
-      assertFalse(isTrusted(zkClient, configsetName, configsetSuffix2));
-      try {
-        ignoreException("unauthenticated request");
-        // trusted -> unstrusted
-        createConfigSet(
-            configsetName + configsetSuffix,
-            "foo",
-            Collections.emptyMap(),
-            cluster.getSolrClient(),
-            null);
-        fail("Expecting exception");
-      } catch (SolrException e) {
-        assertEquals(SolrException.ErrorCode.UNAUTHORIZED.code, e.code());
-        unIgnoreException("unauthenticated request");
-      }
+      assertTrue(isTrusted(zkClient, configsetName, trustedConfigsetSuffix));
+      assertFalse(isTrusted(zkClient, configsetName, untrustedConfigsetSuffix));
+      // base trusted -> untrusted
+      SolrException e =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  createConfigSet(
+                      null, // base is default trusted
+                      "abc",
+                      Collections.emptyMap(),
+                      cluster.getSolrClient(),
+                      null) // without username is untrusted
+              );
+      assertEquals(SolrException.ErrorCode.UNAUTHORIZED.code, e.code());
+      // base trusted -> untrusted
+      SolrException e2 =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  createConfigSet(
+                      "_default", // base is default trusted
+                      "def",
+                      Collections.emptyMap(),
+                      cluster.getSolrClient(),
+                      null) // without username is untrusted
+              );
+      assertEquals(SolrException.ErrorCode.UNAUTHORIZED.code, e2.code());
+      // trusted -> untrusted
+      SolrException e3 =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  createConfigSet(
+                      configsetName + trustedConfigsetSuffix,
+                      "foo",
+                      Collections.emptyMap(),
+                      cluster.getSolrClient(),
+                      null) // without username is untrusted
+              );
+      assertEquals(SolrException.ErrorCode.UNAUTHORIZED.code, e3.code());
       // trusted -> trusted
       verifyCreate(
-          configsetName + configsetSuffix,
+          configsetName + trustedConfigsetSuffix,
           "foo2",
           Collections.emptyMap(),
           Collections.emptyMap(),
-          "solr");
+          "solr"); // with username is trusted
       assertTrue(isTrusted(zkClient, "foo2", ""));
 
-      // unstrusted -> unstrusted
+      // untrusted -> untrusted
       verifyCreate(
-          configsetName + configsetSuffix2,
+          configsetName + untrustedConfigsetSuffix,
           "bar",
           Collections.emptyMap(),
           Collections.emptyMap(),
-          null);
+          null); // without username is untrusted
       assertFalse(isTrusted(zkClient, "bar", ""));
 
-      // unstrusted -> trusted
+      // untrusted -> trusted
       verifyCreate(
-          configsetName + configsetSuffix2,
+          configsetName + untrustedConfigsetSuffix,
           "bar2",
           Collections.emptyMap(),
           Collections.emptyMap(),
-          "solr");
+          "solr"); // with username is trusted
       assertFalse(isTrusted(zkClient, "bar2", ""));
     }
   }
@@ -276,13 +301,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     try (final SolrClient solrClient = getHttpSolrClient(baseUrl)) {
       setupBaseConfigSet(baseConfigSetName, oldProps);
 
-      SolrZkClient zkClient =
+      try (SolrZkClient zkClient =
           new SolrZkClient(
               cluster.getZkServer().getZkAddress(),
               AbstractZkTestCase.TIMEOUT,
               AbstractZkTestCase.TIMEOUT,
-              null);
-      try {
+              null)) {
         assertFalse(getConfigSetService().checkConfigExists(configSetName));
 
         ConfigSetAdminResponse response =
@@ -291,8 +315,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         assertTrue(getConfigSetService().checkConfigExists(configSetName));
 
         verifyProperties(configSetName, oldProps, newProps, zkClient);
-      } finally {
-        zkClient.close();
       }
     }
   }

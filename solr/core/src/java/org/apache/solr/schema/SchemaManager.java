@@ -132,17 +132,21 @@ public class SchemaManager {
             SolrConfigHandler configHandler =
                 ((SolrConfigHandler) req.getCore().getRequestHandler("/config"));
             if (configHandler.getReloadLock().tryLock()) {
-              latestVersion =
-                  ZkController.persistConfigResourceToZooKeeper(
-                      zkLoader,
-                      managedIndexSchema.getSchemaZkVersion(),
-                      managedIndexSchema.getResourceName(),
-                      sw.toString().getBytes(StandardCharsets.UTF_8),
-                      true);
-              req.getCore()
-                  .getCoreContainer()
-                  .reload(req.getCore().getName(), req.getCore().uniqueId);
-              break;
+              try {
+                latestVersion =
+                    ZkController.persistConfigResourceToZooKeeper(
+                        zkLoader,
+                        managedIndexSchema.getSchemaZkVersion(),
+                        managedIndexSchema.getResourceName(),
+                        sw.toString().getBytes(StandardCharsets.UTF_8),
+                        true);
+                req.getCore()
+                    .getCoreContainer()
+                    .reload(req.getCore().getName(), req.getCore().uniqueId);
+                break;
+              } finally {
+                configHandler.getReloadLock().unlock();
+              }
             } else {
               log.info("Another reload is in progress. Not doing anything.");
             }

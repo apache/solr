@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -237,7 +236,6 @@ public class ZkConfigSetService extends ConfigSetService {
       Map<String, Object> data =
           (Map<String, Object>)
               Utils.fromJSON(zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null, true));
-      if (data == null) return new HashMap<>();
       return data;
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error getting config metadata", SolrZkClient.checkInterrupted(e));
