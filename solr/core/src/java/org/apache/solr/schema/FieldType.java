@@ -813,7 +813,7 @@ public abstract class FieldType extends FieldProperties {
    * @see #getSortField
    * @see #getSortedSetSortField
    */
-  static void applySetMissingValue(
+  private static void applySetMissingValue(
       SchemaField field, SortField sortField, Object missingLow, Object missingHigh) {
     final boolean reverse = sortField.getReverse();
 
