@@ -27,14 +27,14 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.AbstractVMParamsZkACLAndCredentialsProvidersTestBase;
+import org.apache.solr.cloud.AbstractDigestZkACLAndCredentialsProvidersTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
 import org.apache.solr.common.cloud.SaslZkACLProvider;
-import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkACLProvider;
+import org.apache.solr.common.cloud.acl.SecurityAwareZkACLProvider;
+import org.apache.solr.common.cloud.acl.ZkACLProvider;
 import org.apache.solr.util.BadZookeeperThreadsFilter;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -155,7 +155,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     SolrZkClient zkClient =
         new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      AbstractVMParamsZkACLAndCredentialsProvidersTestBase.doTest(
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
     } finally {
       zkClient.close();
@@ -166,7 +166,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     System.setProperty("zookeeper.sasl.client", "false");
     zkClient = new SolrZkClientNoACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      AbstractVMParamsZkACLAndCredentialsProvidersTestBase.doTest(
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, false, false, false, false, false, false, false, false);
     } finally {
       zkClient.close();

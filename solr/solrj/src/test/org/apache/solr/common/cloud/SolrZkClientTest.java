@@ -32,6 +32,8 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.common.cloud.acl.ZkACLProvider;
+import org.apache.solr.common.cloud.acl.ZkCredentialsProvider;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;

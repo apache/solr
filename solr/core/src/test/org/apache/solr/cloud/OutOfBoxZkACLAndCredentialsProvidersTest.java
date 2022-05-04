@@ -22,8 +22,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.acl.SecurityAwareZkACLProvider;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
@@ -50,7 +50,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
   }
 
@@ -108,7 +108,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   public void testOutOfBoxSolrZkClient() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
     } finally {
       zkClient.close();

@@ -48,8 +48,9 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
     <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:600000}</int>
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
-    <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>
-    <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>
+    <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.acl.DefaultZkCredentialsProvider}</str>
+    <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.acl.DefaultZkACLProvider}</str>
+    <str name="zkCredentialsInjector">${zkCredentialsInjector:org.apache.solr.common.cloud.acl.DefaultZkCredentialsInjector}</str>
     <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
     <bool name="distributedCollectionConfigSetExecution">${distributedCollectionConfigSetExecution:false}</bool>
 

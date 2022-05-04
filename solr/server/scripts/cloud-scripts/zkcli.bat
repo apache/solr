@@ -12,8 +12,9 @@ if "%SDIR:~-1%"=="\" set SDIR=%SDIR:~0,-1%
 set "LOG4J_CONFIG=file:///%SDIR%\..\..\resources\log4j2-console.xml"
 
 REM Settings for ZK ACL
-REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider ^
-REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider ^
+REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.acl.DigestZkACLProvider ^
+REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.acl.DigestZkCredentialsProvider ^
+REM  -DzkCredentialsInjector=org.apache.solr.common.cloud.acl.VMParamsZkCredentialsInjector ^
 REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
 REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 

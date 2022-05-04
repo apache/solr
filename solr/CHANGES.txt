@@ -44,6 +44,12 @@ Improvements
 * SOLR-15045: `DistributedZkUpdateProcessor` now issues commits to local shards and remote shards in parallel,
   halving the latency of synchronous commits (Michael Gibney)
 
+Security
+----------------------
+* SOLR-15857: Solr now supports Secret Manager for Zookeeper ACL/credentials retrieval.
+  The default supported SM is AWS SM.
+  It also allows injecting custom Credentials Injectors. (Lamine Idjeraoui)
+
 Optimizations
 ---------------------
 * SOLR-16120: Optimise hl.fl expansion. (Christine Poerschke, David Smiley, Mike Drob)
