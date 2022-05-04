@@ -202,7 +202,8 @@ public class DatePointField extends PointField implements DateValueFieldType {
 
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField field) {
-    return new SortDelegatingValueSource(field, this, new MultiValuedLongFieldSource(field.getName(), choice));
+    return new SortDelegatingValueSource(
+        field, this, new MultiValuedLongFieldSource(field.getName(), choice));
   }
 
   @Override

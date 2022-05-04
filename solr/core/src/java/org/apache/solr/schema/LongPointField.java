@@ -152,7 +152,8 @@ public class LongPointField extends PointField implements LongValueFieldType {
   @Override
   protected ValueSource getSingleValueSource(
       org.apache.lucene.search.SortedNumericSelector.Type choice, SchemaField field) {
-    return new SortDelegatingValueSource(field, this, new MultiValuedLongFieldSource(field.getName(), choice));
+    return new SortDelegatingValueSource(
+        field, this, new MultiValuedLongFieldSource(field.getName(), choice));
   }
 
   @Override

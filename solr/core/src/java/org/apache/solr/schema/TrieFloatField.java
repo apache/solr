@@ -67,72 +67,77 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
   @Override
   protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
 
-    return new SortDelegatingValueSource(f, this, new SortedSetFieldSource(f.getName(), choice) {
-      @Override
-      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
-          throws IOException {
-        SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
-
-        SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
-        SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
-
-        return new FloatDocValues(thisAsSortedSetFieldSource) {
-          private int lastDocID;
-
-          private boolean setDoc(int docID) throws IOException {
-            if (docID < lastDocID) {
-              throw new IllegalArgumentException(
-                  "docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
-            }
-            if (docID > view.docID()) {
-              return docID == view.advance(docID);
-            } else {
-              return docID == view.docID();
-            }
-          }
-
+    SortedSetFieldSource ssfs =
+        new SortedSetFieldSource(f.getName(), choice) {
           @Override
-          public float floatVal(int doc) throws IOException {
-            if (setDoc(doc)) {
-              BytesRef bytes = view.lookupOrd(view.ordValue());
-              assert bytes.length > 0;
-              return NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(bytes));
-            } else {
-              return 0F;
-            }
-          }
+          public FunctionValues getValues(
+              Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
 
-          @Override
-          public boolean exists(int doc) throws IOException {
-            return setDoc(doc);
-          }
+            // needed for nested anon class ref
+            SortedSetFieldSource thisAsSortedSetFieldSource = this;
 
-          @Override
-          public ValueFiller getValueFiller() {
-            return new ValueFiller() {
-              private final MutableValueFloat mval = new MutableValueFloat();
+            SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
+            SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
 
-              @Override
-              public MutableValue getValue() {
-                return mval;
+            return new FloatDocValues(thisAsSortedSetFieldSource) {
+              private int lastDocID;
+
+              private boolean setDoc(int docID) throws IOException {
+                if (docID < lastDocID) {
+                  throw new IllegalArgumentException(
+                      "docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
+                }
+                if (docID > view.docID()) {
+                  return docID == view.advance(docID);
+                } else {
+                  return docID == view.docID();
+                }
               }
 
               @Override
-              public void fillValue(int doc) throws IOException {
+              public float floatVal(int doc) throws IOException {
                 if (setDoc(doc)) {
-                  mval.exists = true;
-                  mval.value =
-                      NumericUtils.sortableIntToFloat(
-                          LegacyNumericUtils.prefixCodedToInt(view.lookupOrd(view.ordValue())));
+                  BytesRef bytes = view.lookupOrd(view.ordValue());
+                  assert bytes.length > 0;
+                  return NumericUtils.sortableIntToFloat(
+                      LegacyNumericUtils.prefixCodedToInt(bytes));
                 } else {
-                  mval.exists = false;
-                  mval.value = 0F;
+                  return 0F;
                 }
+              }
+
+              @Override
+              public boolean exists(int doc) throws IOException {
+                return setDoc(doc);
+              }
+
+              @Override
+              public ValueFiller getValueFiller() {
+                return new ValueFiller() {
+                  private final MutableValueFloat mval = new MutableValueFloat();
+
+                  @Override
+                  public MutableValue getValue() {
+                    return mval;
+                  }
+
+                  @Override
+                  public void fillValue(int doc) throws IOException {
+                    if (setDoc(doc)) {
+                      mval.exists = true;
+                      mval.value =
+                          NumericUtils.sortableIntToFloat(
+                              LegacyNumericUtils.prefixCodedToInt(view.lookupOrd(view.ordValue())));
+                    } else {
+                      mval.exists = false;
+                      mval.value = 0F;
+                    }
+                  }
+                };
               }
             };
           }
         };
-      }
-    });
+    return new SortDelegatingValueSource(f, this, ssfs);
   }
 }
